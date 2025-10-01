@@ -51,10 +51,10 @@ const FormCenter = () => {
           status: f.status || 'draft', // draft | available | published
           priority: f.priority || 'medium', // low | medium | high
           estimatedTime: f.estimatedTime || '1-5 min',
-          fields: f.fields ?? 0, // si viene undefined
+          fields: f.questions.length, // si viene undefined
           documentsRequired: f.documentsRequired ?? false,
           tags: f.tags || [],
-          lastModified: f.lastModified || null
+          lastModified: f.updatedAt.split("T")[0] || null
         }));
 
         setAllForms(normalizedForms);

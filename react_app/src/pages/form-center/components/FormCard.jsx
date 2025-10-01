@@ -48,7 +48,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
             <h3 className="font-semibold text-foreground group-hover:text-primary transition-brand">
               {form?.title}
             </h3>
-            <p className="text-sm text-muted-foreground">{form?.category}</p>
+            <p className="text-sm text-muted-foreground">{form?.category}, Ultima Modificacion:    {form?.lastModified}</p>
           </div>
         </div>
         
