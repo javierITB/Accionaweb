@@ -72,7 +72,7 @@ const FormFilters = ({ onFiltersChange, className = '' }) => {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground flex items-center space-x-2">
           <Icon name="Filter" size={20} />
-          <span>Filters</span>
+          <span>Filtros</span>
         </h3>
         {getActiveFilterCount() > 0 && (
           <Button
@@ -84,7 +84,7 @@ const FormFilters = ({ onFiltersChange, className = '' }) => {
             iconSize={14}
             className="text-muted-foreground hover:text-foreground"
           >
-            Clear All ({getActiveFilterCount()})
+            Limpiar Filtros({getActiveFilterCount()})
           </Button>
         )}
       </div>
@@ -92,7 +92,7 @@ const FormFilters = ({ onFiltersChange, className = '' }) => {
       <div className="space-y-3">
         <h4 className="font-medium text-foreground flex items-center space-x-2">
           <Icon name="CheckCircle" size={16} />
-          <span>Status</span>
+          <span>Estado</span>
         </h4>
         <div className="space-y-2">
           {filterOptions?.status?.map((option) => (
@@ -116,7 +116,7 @@ const FormFilters = ({ onFiltersChange, className = '' }) => {
       <div className="space-y-3">
         <h4 className="font-medium text-foreground flex items-center space-x-2">
           <Icon name="AlertTriangle" size={16} />
-          <span>Priority</span>
+          <span>Prioridad</span>
         </h4>
         <div className="space-y-2">
           {filterOptions?.priority?.map((option) => (
@@ -140,7 +140,7 @@ const FormFilters = ({ onFiltersChange, className = '' }) => {
       <div className="space-y-3">
         <h4 className="font-medium text-foreground flex items-center space-x-2">
           <Icon name="Clock" size={16} />
-          <span>Estimated Time</span>
+          <span>Tiempo de Respuesta</span>
         </h4>
         <div className="space-y-2">
           {filterOptions?.estimatedTime?.map((option) => (
@@ -164,7 +164,7 @@ const FormFilters = ({ onFiltersChange, className = '' }) => {
       <div className="space-y-3 pt-3 border-t border-border">
         <h4 className="font-medium text-foreground flex items-center space-x-2">
           <Icon name="Settings" size={16} />
-          <span>Additional Options</span>
+          <span>Opciones Adicionales</span>
         </h4>
         <div className="space-y-2">
           <Checkbox

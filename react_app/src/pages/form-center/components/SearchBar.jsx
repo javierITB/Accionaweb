@@ -60,7 +60,7 @@ const SearchBar = ({ onSearch, onFilterToggle, showFilters, className = '' }) =>
             />
             <Input
               type="search"
-              placeholder="Search forms by name, category, or description..."
+              placeholder="buscar forms por nombre, categoria o descripción..."
               value={searchQuery}
               onChange={handleSearchChange}
               className="pl-10 pr-10"

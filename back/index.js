@@ -1,19 +1,48 @@
 const express = require("express");
 const cors = require("cors");
-const authRoutes = require("./auth"); // <- importa el router
+const { MongoClient } = require("mongodb");
+
+const authRoutes = require("./auth");
+const formRoutes = require("./forms");
+
 const app = express();
 const PORT = 4000;
 
 app.use(cors());
 app.use(express.json());
 
-// Rutas
-app.use("/api/auth", authRoutes);
+// Función para conectar a Mongo y arrancar el server
+async function startServer() {
+  try {
+    const client = new MongoClient("mongodb://127.0.0.1:27017");
+    await client.connect();
+    console.log("✅ Conectado a MongoDB");
 
-app.get("/", (req, res) => {
-  res.send({ message: "API funcionando 🚀" });
-});
+    const db = client.db("formsdb");
 
-app.listen(PORT, () => {
-  console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
-});
+    // Inyectamos db en cada request
+    app.use((req, res, next) => {
+      req.db = db;
+      next();
+    });
+
+    // Rutas
+    app.use("/api/auth", authRoutes);
+    app.use("/api/forms", formRoutes);
+
+    app.get("/", (req, res) => {
+      res.send({ message: "API funcionando 🚀" });
+    });
+
+    // Iniciar servidor
+    app.listen(PORT, () => {
+      console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
+    });
+
+  } catch (err) {
+    console.error("❌ Error al conectar a MongoDB:", err);
+    process.exit(1);
+  }
+}
+
+startServer();

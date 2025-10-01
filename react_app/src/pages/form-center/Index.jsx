@@ -229,9 +229,9 @@ const FormCenter = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Form Center</h1>
+                <h1 className="text-3xl font-bold text-foreground">Gestion de Formularios</h1>
                 <p className="text-muted-foreground mt-1">
-                  Access and submit all your HR forms in one centralized location
+                  Administración y gestion de formularios
                 </p>
               </div>
               
@@ -269,7 +269,7 @@ const FormCenter = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">{allForms?.length}</p>
-                    <p className="text-sm text-muted-foreground">Available Forms</p>
+                    <p className="text-sm text-muted-foreground">Formularios Disponibles</p>
                   </div>
                 </div>
               </div>
@@ -281,7 +281,7 @@ const FormCenter = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">2</p>
-                    <p className="text-sm text-muted-foreground">Draft Forms</p>
+                    <p className="text-sm text-muted-foreground">Borradores</p>
                   </div>
                 </div>
               </div>
@@ -293,7 +293,7 @@ const FormCenter = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">15</p>
-                    <p className="text-sm text-muted-foreground">Completed This Month</p>
+                    <p className="text-sm text-muted-foreground">Confirmaciones esta semana</p>
                   </div>
                 </div>
               </div>
@@ -305,7 +305,7 @@ const FormCenter = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">3.2</p>
-                    <p className="text-sm text-muted-foreground">Avg. Completion Time</p>
+                    <p className="text-sm text-muted-foreground">Solicitudes Pendientes</p>
                   </div>
                 </div>
               </div>
@@ -345,12 +345,12 @@ const FormCenter = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-foreground">
-                      All Forms ({filteredForms?.length})
+                      Formularios ({filteredForms?.length})
                     </h3>
                     
                     {searchQuery && (
                       <div className="text-sm text-muted-foreground">
-                        Showing results for "{searchQuery}"
+                        Resultados de "{searchQuery}"
                       </div>
                     )}
                   </div>
@@ -362,7 +362,7 @@ const FormCenter = () => {
                       </div>
                       <h3 className="text-lg font-medium text-foreground mb-2">No forms found</h3>
                       <p className="text-muted-foreground mb-4">
-                        Try adjusting your search criteria or filters
+                        prueba a ajustar los criterios de busqueda y filtrado
                       </p>
                       <Button
                         variant="outline"
