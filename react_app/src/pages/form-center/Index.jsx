@@ -20,120 +20,8 @@ const FormCenter = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);;
 
   // Mock form data
-  const allForms = [
-    {
-      id: 'form-1',
-      title: 'Annual Leave Request',
-      description: 'Submit requests for vacation time, personal days, and other approved leave types with automatic calendar integration.',
-      category: 'timeoff',
-      icon: 'Calendar',
-      status: 'available',
-      priority: 'medium',
-      estimatedTime: '3-5 min',
-      fields: 8,
-      documentsRequired: false,
-      tags: ['vacation', 'personal', 'calendar'],
-      lastModified: null
-    },
-    {
-      id: 'form-2',
-      title: 'Expense Reimbursement',
-      description: 'Submit business expenses for reimbursement including travel, meals, and office supplies with receipt upload.',
-      category: 'expense',
-      icon: 'Receipt',
-      status: 'draft',
-      priority: 'high',
-      estimatedTime: '5-10 min',
-      fields: 12,
-      documentsRequired: true,
-      tags: ['travel', 'meals', 'receipts'],
-      lastModified: '2 hours ago'
-    },
-    {
-      id: 'form-3',
-      title: 'IT Support Request',
-      description: 'Request technical assistance, equipment, or software access with priority routing to IT department.',
-      category: 'it',
-      icon: 'Monitor',
-      status: 'available',
-      priority: 'low',
-      estimatedTime: '2-3 min',
-      fields: 6,
-      documentsRequired: false,
-      tags: ['technical', 'equipment', 'software'],
-      lastModified: null
-    },
-    {
-      id: 'form-4',
-      title: 'Salary Certificate Request',
-      description: 'Request official salary certificates for bank loans, visa applications, or other official purposes.',
-      category: 'hr',
-      icon: 'FileText',
-      status: 'available',
-      priority: 'medium',
-      estimatedTime: '1-2 min',
-      fields: 4,
-      documentsRequired: false,
-      tags: ['certificate', 'official', 'salary'],
-      lastModified: null
-    },
-    {
-      id: 'form-5',
-      title: 'Training Request',
-      description: 'Submit requests for professional development courses, conferences, and skill enhancement programs.',
-      category: 'training',
-      icon: 'GraduationCap',
-      status: 'available',
-      priority: 'low',
-      estimatedTime: '4-6 min',
-      fields: 10,
-      documentsRequired: true,
-      tags: ['development', 'courses', 'skills'],
-      lastModified: null
-    },
-    {
-      id: 'form-6',
-      title: 'Benefits Enrollment',
-      description: 'Enroll in or modify your health insurance, retirement plans, and other employee benefits.',
-      category: 'benefits',
-      icon: 'Heart',
-      status: 'available',
-      priority: 'high',
-      estimatedTime: '10-15 min',
-      fields: 20,
-      documentsRequired: true,
-      tags: ['health', 'insurance', 'retirement'],
-      lastModified: null
-    },
-    {
-      id: 'form-7',
-      title: 'Payroll Inquiry',
-      description: 'Submit questions or corrections related to your payroll, deductions, or tax withholdings.',
-      category: 'payroll',
-      icon: 'CreditCard',
-      status: 'available',
-      priority: 'medium',
-      estimatedTime: '3-4 min',
-      fields: 7,
-      documentsRequired: false,
-      tags: ['payroll', 'deductions', 'tax'],
-      lastModified: null
-    },
-    {
-      id: 'form-8',
-      title: 'Performance Review Self-Assessment',
-      description: 'Complete your annual performance review self-assessment with goal setting and achievement tracking.',
-      category: 'hr',
-      icon: 'Target',
-      status: 'draft',
-      priority: 'high',
-      estimatedTime: '15-20 min',
-      fields: 25,
-      documentsRequired: false,
-      tags: ['performance', 'goals', 'assessment'],
-      lastModified: '1 day ago'
-    }
-  ];
+  const [allForms, setAllForms] = useState([]);
+  
 
   const categories = [
     { id: 'all', name: 'All Forms', count: allForms?.length },
@@ -148,6 +36,34 @@ const FormCenter = () => {
 
   // Filter forms based on search, category, and filters
   useEffect(() => {
+    const fetchForms = async () => {
+      try {
+        const res = await fetch('http://localhost:4000/api/forms');
+        const data = await res.json();
+
+        // Normalizar los datos: rellenar campos faltantes
+        const normalizedForms = data.map(f => ({
+          id: f._id,
+          title: f.title || 'Sin título',
+          description: f.description || '',
+          category: f.category || 'general',
+          icon: f.icon || 'FileText',
+          status: f.status || 'draft', // draft | available | published
+          priority: f.priority || 'medium', // low | medium | high
+          estimatedTime: f.estimatedTime || '1-5 min',
+          fields: f.fields ?? 0, // si viene undefined
+          documentsRequired: f.documentsRequired ?? false,
+          tags: f.tags || [],
+          lastModified: f.lastModified || null
+        }));
+
+        setAllForms(normalizedForms);
+      } catch (err) {
+        console.error('Error cargando formularios:', err);
+      }
+    };
+
+    fetchForms();
     let filtered = allForms;
 
     // Category filter
@@ -360,7 +276,7 @@ const FormCenter = () => {
                       <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                         <Icon name="Search" size={24} className="text-muted-foreground" />
                       </div>
-                      <h3 className="text-lg font-medium text-foreground mb-2">No forms found</h3>
+                      <h3 className="text-lg font-medium text-foreground mb-2">No se encontraron Formularios</h3>
                       <p className="text-muted-foreground mb-4">
                         prueba a ajustar los criterios de busqueda y filtrado
                       </p>
@@ -372,7 +288,7 @@ const FormCenter = () => {
                           setFilters({});
                         }}
                       >
-                        Clear All Filters
+                        Limpiar Filtros
                       </Button>
                     </div>
                   ) : (

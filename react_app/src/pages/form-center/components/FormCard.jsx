@@ -108,12 +108,12 @@ const FormCard = ({ form, onSelect, className = '' }) => {
         <Button
           variant={form?.status === 'draft' ? 'outline' : 'default'}
           size="sm"
-          onClick={() => onSelect(form)}
+          onClick={() => window.location.href = `/form-builder?id=${form?.id}`}
           iconName={form?.status === 'draft' ? 'Edit' : 'ArrowRight'}
           iconPosition="right"
           iconSize={16}
         >
-          {form?.status === 'draft' ? 'Continue' : 'Start Form'}
+          {form?.status === 'draft' ? 'Continuar' : 'Editar'}
         </Button>
       </div>
     </div>

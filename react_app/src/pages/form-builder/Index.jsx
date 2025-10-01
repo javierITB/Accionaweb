@@ -55,6 +55,40 @@ const FormBuilder = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const formId = urlParams?.get('id');
     
+    
+
+    const fetchForm = async () => {
+      try {
+        const res = await fetch(`http://localhost:4000/api/forms/${formId}`);
+        if (!res.ok) throw new Error('Formulario no encontrado');
+        const data = await res.json();
+
+        // Normalizar campos faltantes
+        const normalizedForm = {
+          id: data._id || data.id || null,
+          title: data.title || '',
+          category: data.category || '',
+          responseTime: data.responseTime || '',
+          author: data.author || 'Sarah Johnson',
+          primaryColor: data.primaryColor || '#3B82F6',
+          secondaryColor: data.secondaryColor || '#F3F4F6',
+          questions: data.questions || [],
+          status: data.status || 'draft',
+          createdAt: data.createdAt || new Date().toISOString(),
+          updatedAt: data.updatedAt || new Date().toISOString()
+        };
+
+        setFormData(normalizedForm);
+      } catch (err) {
+        console.error('Error cargando el formulario:', err);
+        alert('No se pudo cargar el formulario');
+      }
+    };
+
+    if (formId){
+      fetchForm();
+    }
+
     if (formId) {
       const savedForms = JSON.parse(localStorage.getItem('customForms') || '[]');
       const existingForm = savedForms?.find(form => form?.id === formId);
@@ -63,6 +97,8 @@ const FormBuilder = () => {
         setFormData(existingForm);
       }
     }
+
+    if (!formId) return;
   }, []);
 
   // Update form data
@@ -292,6 +328,7 @@ const FormBuilder = () => {
               </Button>
               
               <Button
+                type="button"
                 variant="default"
                 onClick={publishForm}
                 loading={isPublishing}
