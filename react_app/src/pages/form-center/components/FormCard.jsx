@@ -48,7 +48,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
             <h3 className="font-semibold text-foreground group-hover:text-primary transition-brand">
               {form?.title}
             </h3>
-            <p className="text-sm text-muted-foreground">{form?.category}, Ultima Modificacion:    {form?.lastModified}</p>
+            <p className="text-sm text-muted-foreground">{form?.category}, Fecha Creación: {form?.createdAt}</p>
           </div>
         </div>
         
@@ -90,7 +90,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
       </div>
       {form?.lastModified && (
         <div className="text-xs text-muted-foreground mb-4">
-          Last modified: {form?.lastModified}
+          Ultima modificación: {form?.lastModified}
         </div>
       )}
       <div className="flex items-center justify-between">

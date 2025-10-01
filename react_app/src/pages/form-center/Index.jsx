@@ -42,7 +42,7 @@ const FormCenter = () => {
         const data = await res.json();
 
         // Normalizar los datos: rellenar campos faltantes
-        const normalizedForms = data.map(f => ({
+        const normalizedForms = await data.map(f => ({
           id: f._id,
           title: f.title || 'Sin título',
           description: f.description || '',
@@ -54,6 +54,7 @@ const FormCenter = () => {
           fields: f.questions.length, // si viene undefined
           documentsRequired: f.documentsRequired ?? false,
           tags: f.tags || [],
+          createdAt: f.createdAt.split("T")[0] || null,
           lastModified: f.updatedAt.split("T")[0] || null
         }));
 

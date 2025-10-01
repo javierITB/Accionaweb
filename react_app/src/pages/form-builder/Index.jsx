@@ -69,7 +69,7 @@ const FormBuilder = () => {
           title: data.title || '',
           category: data.category || '',
           responseTime: data.responseTime || '',
-          author: data.author || 'Sarah Johnson',
+          author: data.author || 'BoldRank',
           primaryColor: data.primaryColor || '#3B82F6',
           secondaryColor: data.secondaryColor || '#F3F4F6',
           questions: data.questions || [],
@@ -363,7 +363,7 @@ const FormBuilder = () => {
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Última modificación</p>
+                <p className="text-sm text-muted-foreground">Fecha creación</p>
                 <p className="font-medium text-foreground">
                   {new Date(formData.updatedAt)?.toLocaleDateString('es-ES')}
                 </p>
