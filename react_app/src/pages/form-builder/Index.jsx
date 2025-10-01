@@ -135,114 +135,66 @@ const FormBuilder = () => {
   };
 
   // Save form as draft
+  // Guardar como borrador
   const saveForm = async () => {
     if (!formData?.title?.trim()) {
-      alert('Por favor ingresa un título para el formulario');
+      alert("Por favor ingresa un título para el formulario");
       return;
     }
 
     setIsSaving(true);
-
     try {
-      // Generate ID if new form
-      const formToSave = {
-        ...formData,
-        id: formData?.id || Date.now()?.toString(),
-        status: 'draft'
-      };
+      const response = await fetch("http://localhost:4000/api/forms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-      // Save to localStorage (simulate API call)
-      const savedForms = JSON.parse(localStorage.getItem('customForms') || '[]');
-      const existingIndex = savedForms?.findIndex(form => form?.id === formToSave?.id);
+      const savedForm = await response.json();
+      setFormData(savedForm);
 
-      if (existingIndex >= 0) {
-        savedForms[existingIndex] = formToSave;
-      } else {
-        savedForms?.push(formToSave);
-      }
+      alert("Formulario guardado como borrador exitosamente");
 
-      localStorage.setItem('customForms', JSON.stringify(savedForms));
-      setFormData(formToSave);
-
-      alert('Formulario guardado como borrador exitosamente');
-      
-      // Update URL if new form
+      // actualiza URL si es nuevo
       if (!formData?.id) {
-        window.history?.replaceState({}, '', `?id=${formToSave?.id}`);
+        window.history.replaceState({}, "", `?id=${savedForm._id}`);
       }
     } catch (error) {
-      console.error('Error saving form:', error);
-      alert('Error al guardar el formulario');
+      console.error(error);
+      alert("Error al guardar el formulario");
     } finally {
       setIsSaving(false);
     }
   };
 
   // Publish form
+  // Publicar
   const publishForm = async () => {
-    if (!formData?.title?.trim()) {
-      alert('Por favor ingresa un título para el formulario');
-      return;
-    }
-
-    if (formData?.questions?.length === 0) {
-      alert('Por favor agrega al menos una pregunta al formulario');
-      return;
-    }
-
-    // Validate all questions have titles
-    const invalidQuestions = formData?.questions?.filter(q => !q?.title?.trim());
-    if (invalidQuestions?.length > 0) {
-      alert('Por favor completa el título de todas las preguntas');
-      return;
-    }
-
-    // Validate choice questions have options
-    const choiceQuestions = formData?.questions?.filter(q => 
-      (q?.type === 'single_choice' || q?.type === 'multiple_choice') && 
-      (!q?.options || q?.options?.length < 2)
-    );
-    if (choiceQuestions?.length > 0) {
-      alert('Las preguntas de selección deben tener al menos 2 opciones');
+    if (!formData?.id) {
+      alert("Primero guarda el borrador");
       return;
     }
 
     setIsPublishing(true);
-
     try {
-      const formToPublish = {
-        ...formData,
-        id: formData?.id || Date.now()?.toString(),
-        status: 'published',
-        publishedAt: new Date()?.toISOString()
-      };
+      const response = await fetch(`http://localhost:4000/api/forms/${formData._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...formData, status: "published" }),
+      });
 
-      // Save to localStorage
-      const savedForms = JSON.parse(localStorage.getItem('customForms') || '[]');
-      const existingIndex = savedForms?.findIndex(form => form?.id === formToPublish?.id);
+      const updatedForm = await response.json();
+      setFormData({ ...formData, status: "published" });
 
-      if (existingIndex >= 0) {
-        savedForms[existingIndex] = formToPublish;
-      } else {
-        savedForms?.push(formToPublish);
-      }
-
-      localStorage.setItem('customForms', JSON.stringify(savedForms));
-      setFormData(formToPublish);
-
-      alert('¡Formulario publicado exitosamente!');
-      
-      // Update URL if new form
-      if (!formData?.id) {
-        window.history?.replaceState({}, '', `?id=${formToPublish?.id}`);
-      }
+      alert("¡Formulario publicado exitosamente!");
     } catch (error) {
-      console.error('Error publishing form:', error);
-      alert('Error al publicar el formulario');
+      console.error(error);
+      alert("Error al publicar el formulario");
     } finally {
       setIsPublishing(false);
     }
   };
+
 
   // Navigation tabs
   const tabs = [
@@ -328,6 +280,7 @@ const FormBuilder = () => {
 
               {/* Action Buttons */}
               <Button
+                type="button"
                 variant="outline"
                 onClick={saveForm}
                 loading={isSaving}
