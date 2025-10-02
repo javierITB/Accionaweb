@@ -41,7 +41,7 @@ const FormCenter = () => {
           icon: f.icon || 'FileText',
           status: f.status || 'draft', // draft | available | published
           priority: f.priority || 'medium', // low | medium | high
-          estimatedTime: f.estimatedTime || '1-5 min',
+          estimatedTime: f.responseTime || '1-5 min',
           fields: f.questions.length, // si viene undefined
           documentsRequired: f.documentsRequired ?? false,
           tags: f.tags || [],
