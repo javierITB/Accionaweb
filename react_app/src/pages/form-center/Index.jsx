@@ -29,7 +29,7 @@ const FormCenter = () => {
   useEffect(() => {
     const fetchForms = async () => {
       try {
-        const res = await fetch('http://localhost:4000/api/forms');
+        const res = await fetch('http://192.168.0.2:4000/api/forms');
         const data = await res.json();
         
         // Normalizar los datos: rellenar campos faltantes
