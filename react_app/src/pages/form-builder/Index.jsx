@@ -219,7 +219,7 @@ const FormBuilder = () => {
       console.error(error);
       alert("Error al eliminar el formulario");
     }
-  };x
+  };
   // Publish form
   // Publicar
   const publishForm = async () => {
