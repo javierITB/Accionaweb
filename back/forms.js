@@ -5,26 +5,14 @@ const { ObjectId } = require("mongodb");
 // Crear un formulario
 router.post("/", async (req, res) => {
   try {
-    data = req.body;
-    let result;
-    if (!data.id){
-      result = await req.db.collection("forms").insertOne({
-        ...req.body,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-    } else {
-      result = await req.db.collection("forms").findOneAndUpdate(
-        { _id: new ObjectId(data.id)},
-        { $set: { ...req.body, updatedAt: new Date() } },
-        { returnDocument: "after" }
-      );
-      if (!result.value) return res.status(404).json({ error: "Formulario no encontrado" });
-    }
+    const result = await req.db.collection("forms").insertOne({
+      ...req.body,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
     res.status(201).json(result);
   } catch (err) {
-    res.status(500).json({ error: "Error al crear formulario, error: ", err });
+    res.status(500).json({ error: "Error al crear formulario" });
   }
 });
 
@@ -70,7 +58,6 @@ router.put("/:id", async (req, res) => {
 
 // Eliminar un formulario
 router.delete("/:id", async (req, res) => {
-  console.log("BORRAR AQUI")
   try {
     const result = await req.db
       .collection("forms")
@@ -80,7 +67,7 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ error: "Formulario no encontrado" });
     }
 
-    res.status(200).json({ message: "Formulario eliminado" });
+    res.json({ message: "Formulario eliminado" });
   } catch (err) {
     res.status(500).json({ error: "Error al eliminar formulario" });
   }
