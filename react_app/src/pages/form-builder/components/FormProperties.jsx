@@ -3,7 +3,7 @@ import Input from '../../../components/ui/Input';
 
 import Icon from '../../../components/AppIcon';
 
-const FormProperties = ({ formData, categories, onUpdateFormData }) => {
+const FormProperties = ({ formData, categories, sections, onUpdateFormData }) => {
   // Time options for response time
   const timeOptions = [
     { value: '1-2', label: '1-2 minutos' },
@@ -100,6 +100,27 @@ const FormProperties = ({ formData, categories, onUpdateFormData }) => {
               Tiempo promedio que tomará completar el formulario
             </p>
           </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Seccion <span className="text-destructive">*</span>
+            </label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={formData?.section}
+              onChange={(e) => onUpdateFormData('section', e?.target?.value)}
+            >
+              <option value="">Selecciona una sección</option>
+              {sections?.map((section) => (
+                <option key={section?.value} value={section?.value}>
+                  {section?.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm text-muted-foreground">
+              Define la seccion en la que se verá el formulario
+            </p>
+          </div>
 
           <Input
             label="Autor"
@@ -108,6 +129,7 @@ const FormProperties = ({ formData, categories, onUpdateFormData }) => {
             description="Nombre de quien creó el formulario"
             disabled
           />
+
         </div>
       </div>
       {/* Color Customization */}

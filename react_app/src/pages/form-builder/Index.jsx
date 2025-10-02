@@ -19,7 +19,8 @@ const FormBuilder = () => {
     primaryColor: '#3B82F6',
     secondaryColor: '#F3F4F6',
     questions: [],
-    status: 'draft', // draft | published
+    status: 'draft', // draft | published,
+    section: '',
     createdAt: new Date()?.toISOString(),
     updatedAt: new Date()?.toISOString()
   });
@@ -48,6 +49,13 @@ const FormBuilder = () => {
     { value: 'feedback', label: 'Retroalimentación' },
     { value: 'survey', label: 'Encuesta' },
     { value: 'evaluation', label: 'Evaluación' }
+  ];
+
+  const section = [
+    { value: 'Remuneraciones', label: 'Remuneraciones' },
+    { value: 'Anexos', label: 'Anexos' },
+    { value: 'Finiquitos', label: 'Finiquitos' },
+    { value: 'Otras', label: 'Otras' }
   ];
 
   // Load form from localStorage if editing
@@ -263,6 +271,7 @@ const FormBuilder = () => {
           <FormProperties
             formData={formData}
             categories={categories}
+            sections={section}
             onUpdateFormData={updateFormData}
           />
         );
