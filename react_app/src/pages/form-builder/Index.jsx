@@ -203,6 +203,23 @@ const FormBuilder = () => {
     }
   };
 
+  const deleteForm = async () => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/forms/${formData.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-cache",
+      });
+
+      if (!response.ok) throw new Error("No se pudo eliminar el formulario");
+
+      alert("Formulario borrado exitosamente");
+      window.location.href = "/form-center";
+    } catch (error) {
+      console.error(error);
+      alert("Error al eliminar el formulario");
+    }
+  };
   // Publish form
   // Publicar
   const publishForm = async () => {
@@ -397,6 +414,18 @@ const FormBuilder = () => {
                     )}
                   </button>
                 ))}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    if (window.confirm('¿Estás seguro de que quieres eliminar este Formulario?')) {
+                      deleteForm();
+                    }
+                  }}
+                  className="mt-3 h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Icon name="Trash2" size={14} />
+                </Button>
               </nav>
             </div>
 
