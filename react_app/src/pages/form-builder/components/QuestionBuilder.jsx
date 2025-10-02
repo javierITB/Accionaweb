@@ -404,24 +404,6 @@ const QuestionBuilder = ({
           <QuestionCard key={q.id} question={q} index={i} />
         ))}
       </div>
-      {/* Quick Add Section */}
-      {questions?.length > 0 && (
-        <div onClick={onAddQuestion} className="bg-muted/50 border-2 border-dashed border-muted-foreground/50 rounded-lg p-6 text-center">
-
-          <Icon name="Plus" size={24} className="text-muted-foreground mx-auto mb-2" />
-          <p className="text-muted-foreground mb-3">
-            ¿Listo para la siguiente pregunta?
-          </p>
-          <Button
-            onClick={onAddQuestion}
-            variant="outline"
-            iconName="Plus"
-            iconPosition="left"
-          >
-            Agregar Otra Pregunta
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
