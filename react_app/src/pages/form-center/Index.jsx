@@ -21,9 +21,18 @@ const FormCenter = () => {
 
   // Mock form data
   const [allForms, setAllForms] = useState([]);
-  const[draft, setDraft] = useState (0);
-
   
+
+  const categories = [
+    { id: 'all', name: 'All Forms', count: allForms?.length },
+    { id: 'timeoff', name: 'Time Off', count: allForms?.filter(f => f?.category === 'timeoff')?.length },
+    { id: 'expense', name: 'Expenses', count: allForms?.filter(f => f?.category === 'expense')?.length },
+    { id: 'hr', name: 'HR Services', count: allForms?.filter(f => f?.category === 'hr')?.length },
+    { id: 'payroll', name: 'Payroll', count: allForms?.filter(f => f?.category === 'payroll')?.length },
+    { id: 'benefits', name: 'Benefits', count: allForms?.filter(f => f?.category === 'benefits')?.length },
+    { id: 'training', name: 'Training', count: allForms?.filter(f => f?.category === 'training')?.length },
+    { id: 'it', name: 'IT Support', count: allForms?.filter(f => f?.category === 'it')?.length }
+  ];
 
   // Filter forms based on search, category, and filters
   useEffect(() => {
@@ -31,9 +40,9 @@ const FormCenter = () => {
       try {
         const res = await fetch('http://192.168.0.2:4000/api/forms');
         const data = await res.json();
-        
+
         // Normalizar los datos: rellenar campos faltantes
-        const normalizedForms = await data.map(f => ({
+        const normalizedForms = data.map(f => ({
           id: f._id,
           title: f.title || 'Sin título',
           description: f.description || '',
@@ -41,25 +50,19 @@ const FormCenter = () => {
           icon: f.icon || 'FileText',
           status: f.status || 'draft', // draft | available | published
           priority: f.priority || 'medium', // low | medium | high
-          estimatedTime: f.responseTime || '1-5 min',
-          fields: f.questions.length, // si viene undefined
+          estimatedTime: f.estimatedTime || '1-5 min',
+          fields: f.fields ?? 0, // si viene undefined
           documentsRequired: f.documentsRequired ?? false,
           tags: f.tags || [],
-          createdAt: f.createdAt.split("T")[0] || null,
-          lastModified: f.updatedAt.split("T")[0] || null
+          lastModified: f.lastModified || null
         }));
-        
+
         setAllForms(normalizedForms);
       } catch (err) {
         console.error('Error cargando formularios:', err);
       }
     };
-    console.log(allForms);
 
-    for (const nf in allForms) {
-        (nf.status==='draft')?setDraft(draft+1):null;
-              
-        }
     fetchForms();
     let filtered = allForms;
 
@@ -97,17 +100,6 @@ const FormCenter = () => {
 
     setFilteredForms(filtered);
   }, [searchQuery, activeCategory, filters]);
-
-  const categories = [
-    { id: 'all', name: 'All Forms', count: allForms?.length },
-    { id: 'timeoff', name: 'Time Off', count: allForms?.filter(f => f?.category === 'timeoff')?.length },
-    { id: 'expense', name: 'Expenses', count: allForms?.filter(f => f?.category === 'expense')?.length },
-    { id: 'hr', name: 'HR Services', count: allForms?.filter(f => f?.category === 'hr')?.length },
-    { id: 'payroll', name: 'Payroll', count: allForms?.filter(f => f?.category === 'payroll')?.length },
-    { id: 'benefits', name: 'Benefits', count: allForms?.filter(f => f?.category === 'benefits')?.length },
-    { id: 'training', name: 'Training', count: allForms?.filter(f => f?.category === 'training')?.length },
-    { id: 'it', name: 'IT Support', count: allForms?.filter(f => f?.category === 'it')?.length }
-  ];
 
   const handleFormSelect = (form) => {
     console.log('Selected form:', form);
@@ -204,7 +196,7 @@ const FormCenter = () => {
                     <Icon name="Edit" size={20} className="text-warning" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{allForms?.filter(f => f?.status === 'draft')?.length}</p>
+                    <p className="text-2xl font-bold text-foreground">2</p>
                     <p className="text-sm text-muted-foreground">Borradores</p>
                   </div>
                 </div>
@@ -216,8 +208,8 @@ const FormCenter = () => {
                     <Icon name="CheckCircle" size={20} className="text-success" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{allForms?.filter(f => new Date(f?.lastModified) - new Date() < 604800000)?.length}</p>
-                    <p className="text-sm text-muted-foreground">creaciones esta semana</p>
+                    <p className="text-2xl font-bold text-foreground">15</p>
+                    <p className="text-sm text-muted-foreground">Confirmaciones esta semana</p>
                   </div>
                 </div>
               </div>
@@ -228,13 +220,7 @@ const FormCenter = () => {
                     <Icon name="Clock" size={20} className="text-secondary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">
-                      {allForms?.filter(f => {
-                        if (!f?.lastModified) return false;
-                        const diff = new Date() - new Date(f.lastModified); // diferencia en ms
-                        return diff <= 7 * 24 * 60 * 60 * 1000; // 7 días en ms
-                      })?.length}
-                    </p>
+                    <p className="text-2xl font-bold text-foreground">3.2</p>
                     <p className="text-sm text-muted-foreground">Solicitudes Pendientes</p>
                   </div>
                 </div>

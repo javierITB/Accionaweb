@@ -48,7 +48,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
             <h3 className="font-semibold text-foreground group-hover:text-primary transition-brand">
               {form?.title}
             </h3>
-            <p className="text-sm text-muted-foreground">{form?.category}, Fecha Creación: {form?.createdAt}</p>
+            <p className="text-sm text-muted-foreground">{form?.category}</p>
           </div>
         </div>
         
@@ -90,10 +90,10 @@ const FormCard = ({ form, onSelect, className = '' }) => {
       </div>
       {form?.lastModified && (
         <div className="text-xs text-muted-foreground mb-4">
-          Ultima modificación: {form?.lastModified}
+          Last modified: {form?.lastModified}
         </div>
       )}
-      <div onClick={() => window.location.href = `/form-builder?id=${form?.id}`} className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {form?.tags?.slice(0, 2)?.map((tag, index) => (
             <span key={index} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
