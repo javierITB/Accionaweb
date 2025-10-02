@@ -107,16 +107,6 @@ const SearchBar = ({ onSearch, onFilterToggle, showFilters, className = '' }) =>
           Filters
         </Button>
         
-        <Button
-          variant="outline"
-          size="default"
-          iconName="SortAsc"
-          iconPosition="left"
-          iconSize={18}
-          className="hidden md:flex"
-        >
-          Sort
-        </Button>
       </div>
       {searchQuery && (
         <div className="mt-2 text-sm text-muted-foreground">

@@ -3,8 +3,6 @@ import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
-
-
 import FormProperties from './components/FormProperties';
 import QuestionBuilder from './components/QuestionBuilder';
 import FormPreview from './components/FormPreview';
