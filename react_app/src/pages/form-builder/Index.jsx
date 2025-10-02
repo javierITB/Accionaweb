@@ -3,8 +3,6 @@ import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
-
-
 import FormProperties from './components/FormProperties';
 import QuestionBuilder from './components/QuestionBuilder';
 import FormPreview from './components/FormPreview';
@@ -15,17 +13,17 @@ const FormBuilder = () => {
     title: '',
     category: '',
     responseTime: '',
-    author: 'Sarah Johnson', // Default from current user
+    author: 'Admin',
     primaryColor: '#3B82F6',
     secondaryColor: '#F3F4F6',
     questions: [],
-    status: 'draft', // draft | published,
+    status: 'draft',
     section: '',
-    createdAt: new Date()?.toISOString(),
-    updatedAt: new Date()?.toISOString()
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   });
 
-  const [activeTab, setActiveTab] = useState('properties'); // properties | questions | preview
+  const [activeTab, setActiveTab] = useState('properties');
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -62,8 +60,6 @@ const FormBuilder = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const formId = urlParams?.get('id');
-    
-    
 
     const fetchForm = async () => {
       try {
@@ -93,14 +89,14 @@ const FormBuilder = () => {
       }
     };
 
-    if (formId){
+    if (formId) {
       fetchForm();
     }
 
     if (formId) {
       const savedForms = JSON.parse(localStorage.getItem('customForms') || '[]');
       const existingForm = savedForms?.find(form => form?.id === formId);
-      
+
       if (existingForm) {
         setFormData(existingForm);
       }
@@ -114,25 +110,25 @@ const FormBuilder = () => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
-      updatedAt: new Date()?.toISOString()
+      updatedAt: new Date().toISOString()
     }));
   };
 
   // Add new question
   const addQuestion = () => {
     const newQuestion = {
-      id: Date.now()?.toString(),
+      id: Date.now().toString(),
       type: 'text',
       title: '',
       description: '',
       required: false,
-      options: [] // For single/multiple choice questions
+      options: []
     };
 
     setFormData(prev => ({
       ...prev,
-      questions: [...prev?.questions, newQuestion],
-      updatedAt: new Date()?.toISOString()
+      questions: [...prev.questions, newQuestion],
+      updatedAt: new Date().toISOString()
     }));
 
     // Switch to questions tab if not already there
@@ -141,45 +137,64 @@ const FormBuilder = () => {
     }
   };
 
-  // Update question
-  const updateQuestion = (questionId, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      questions: prev?.questions?.map(q =>
-        q?.id === questionId ? { ...q, [field]: value } : q
-      ),
-      updatedAt: new Date()?.toISOString()
-    }));
+  // Update question - CORREGIDO para manejar tanto (id, field, value) como (id, updates)
+  const updateQuestion = (questionId, updatesOrField, value) => {
+    setFormData(prev => {
+      let updatedQuestions;
+      
+      // Si se pasan 3 argumentos (id, field, value) - compatibilidad con código antiguo
+      if (value !== undefined && typeof updatesOrField === 'string') {
+        updatedQuestions = prev.questions.map(q =>
+          q.id === questionId ? { ...q, [updatesOrField]: value } : q
+        );
+      } 
+      // Si se pasan 2 argumentos (id, updates) - nuevo formato
+      else if (typeof updatesOrField === 'object') {
+        updatedQuestions = prev.questions.map(q =>
+          q.id === questionId ? { ...q, ...updatesOrField } : q
+        );
+      }
+      // Fallback por seguridad
+      else {
+        console.warn('Formato inválido en updateQuestion:', { questionId, updatesOrField, value });
+        return prev;
+      }
+
+      return {
+        ...prev,
+        questions: updatedQuestions,
+        updatedAt: new Date().toISOString()
+      };
+    });
   };
 
   // Delete question
   const deleteQuestion = (questionId) => {
     setFormData(prev => ({
       ...prev,
-      questions: prev?.questions?.filter(q => q?.id !== questionId),
-      updatedAt: new Date()?.toISOString()
+      questions: prev.questions.filter(q => q.id !== questionId),
+      updatedAt: new Date().toISOString()
     }));
   };
 
   // Move question up/down
   const moveQuestion = (questionId, direction) => {
-    const currentIndex = formData?.questions?.findIndex(q => q?.id === questionId);
+    const currentIndex = formData.questions.findIndex(q => q.id === questionId);
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
 
-    if (newIndex < 0 || newIndex >= formData?.questions?.length) return;
+    if (newIndex < 0 || newIndex >= formData.questions.length) return;
 
-    const newQuestions = [...formData?.questions];
-    [newQuestions[currentIndex], newQuestions[newIndex]] = [newQuestions?.[newIndex], newQuestions?.[currentIndex]];
+    const newQuestions = [...formData.questions];
+    [newQuestions[currentIndex], newQuestions[newIndex]] = [newQuestions[newIndex], newQuestions[currentIndex]];
 
     setFormData(prev => ({
       ...prev,
       questions: newQuestions,
-      updatedAt: new Date()?.toISOString()
+      updatedAt: new Date().toISOString()
     }));
   };
 
   // Save form as draft
-  // Guardar como borrador
   const saveForm = async () => {
     if (!formData?.title?.trim()) {
       alert("Por favor ingresa un título para el formulario");
@@ -228,8 +243,8 @@ const FormBuilder = () => {
       alert("Error al eliminar el formulario");
     }
   };
+
   // Publish form
-  // Publicar
   const publishForm = async () => {
     if (!formData?.id) {
       alert("Primero guarda el borrador");
@@ -256,11 +271,10 @@ const FormBuilder = () => {
     }
   };
 
-
   // Navigation tabs
   const tabs = [
     { id: 'properties', label: 'Propiedades', icon: 'Settings' },
-    { id: 'questions', label: 'Preguntas', icon: 'HelpCircle', count: formData?.questions?.length },
+    { id: 'questions', label: 'Preguntas', icon: 'HelpCircle', count: formData.questions.length },
     { id: 'preview', label: 'Vista Previa', icon: 'Eye' }
   ];
 
@@ -278,13 +292,13 @@ const FormBuilder = () => {
       case 'questions':
         return (
           <QuestionBuilder
-            questions={formData?.questions}
+            questions={formData.questions}
             questionTypes={questionTypes}
             onUpdateQuestion={updateQuestion}
             onDeleteQuestion={deleteQuestion}
             onMoveQuestion={moveQuestion}
             onAddQuestion={addQuestion}
-            primaryColor={formData?.primaryColor}
+            primaryColor={formData.primaryColor}
           />
         );
       case 'preview':
@@ -318,13 +332,13 @@ const FormBuilder = () => {
                   Volver al Centro de Formularios
                 </Button>
               </div>
-              
+
               <div>
                 <h1 className="text-3xl font-bold text-foreground">
                   {formData?.id ? 'Editar Formulario' : 'Crear Formulario Personalizado'}
                 </h1>
                 <p className="text-muted-foreground">
-                  {formData?.id 
+                  {formData?.id
                     ? 'Modifica tu formulario existente y administra las preguntas'
                     : 'Diseña un formulario personalizado con preguntas dinámicas'
                   }
@@ -335,7 +349,7 @@ const FormBuilder = () => {
             <div className="flex items-center space-x-3">
               {/* Status Badge */}
               <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                formData?.status === 'published' ?'bg-green-100 text-green-700' :'bg-yellow-100 text-yellow-700'
+                formData?.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
               }`}>
                 {formData?.status === 'published' ? 'Publicado' : 'Borrador'}
               </div>
@@ -352,7 +366,7 @@ const FormBuilder = () => {
               >
                 Guardar Borrador
               </Button>
-              
+
               <Button
                 type="button"
                 variant="default"
@@ -407,7 +421,7 @@ const FormBuilder = () => {
                     onClick={() => setActiveTab(tab?.id)}
                     className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                       activeTab === tab?.id
-                        ? 'border-primary text-primary' :'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
+                        ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
                     }`}
                   >
                     <Icon name={tab?.icon} size={16} />

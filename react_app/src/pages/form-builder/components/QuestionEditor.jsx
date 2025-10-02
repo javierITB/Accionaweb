@@ -1,36 +1,88 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
 
 const QuestionEditor = ({ question, isSelected, onUpdate }) => {
-  const updateQuestion = (updates) => {
-    onUpdate(question?.id, updates);
+  // Estado local para evitar pérdida de foco
+  const [localQuestion, setLocalQuestion] = useState({ ...question });
+  const [localOptions, setLocalOptions] = useState([...question?.options || []]);
+
+  // Sincronizar cuando la pregunta cambia externamente
+  useEffect(() => {
+    setLocalQuestion({ ...question });
+    setLocalOptions([...question?.options || []]);
+  }, [question]);
+
+  // Guardar cambios inmediatamente para campos críticos
+  const saveChanges = (updates = {}) => {
+    const updatedQuestion = { ...localQuestion, ...updates };
+    onUpdate(localQuestion.id, { 
+      ...updatedQuestion, 
+      options: localOptions 
+    });
+  };
+
+  // Manejo de cambios del título - guardado inmediato
+  const handleTitleChange = (value) => {
+    const updatedQuestion = { ...localQuestion, title: value };
+    setLocalQuestion(updatedQuestion);
+    // Guardar inmediatamente el título
+    onUpdate(localQuestion.id, { 
+      ...updatedQuestion, 
+      options: localOptions 
+    });
+  };
+
+  // Manejo de opciones locales
+  const handleOptionChange = (index, value) => {
+    const newOptions = [...localOptions];
+    newOptions[index] = value;
+    setLocalOptions(newOptions);
+  };
+
+  // Guardar opciones al perder foco
+  const saveOptions = () => {
+    onUpdate(localQuestion.id, { 
+      ...localQuestion, 
+      options: localOptions 
+    });
   };
 
   const addOption = () => {
-    const newOptions = [...question?.options, `Opción ${question?.options?.length + 1}`];
-    updateQuestion({ options: newOptions });
-  };
-
-  const updateOption = (index, value) => {
-    const newOptions = [...question?.options];
-    newOptions[index] = value;
-    updateQuestion({ options: newOptions });
+    const newOptions = [...localOptions, `Opción ${localOptions.length + 1}`];
+    setLocalOptions(newOptions);
+    onUpdate(localQuestion.id, { 
+      ...localQuestion, 
+      options: newOptions 
+    });
   };
 
   const removeOption = (index) => {
-    const newOptions = question?.options?.filter((_, i) => i !== index);
-    updateQuestion({ options: newOptions });
+    const newOptions = localOptions.filter((_, i) => i !== index);
+    setLocalOptions(newOptions);
+    onUpdate(localQuestion.id, { 
+      ...localQuestion, 
+      options: newOptions 
+    });
+  };
+
+  // Normalizar tipos para compatibilidad
+  const getNormalizedType = () => {
+    const type = localQuestion.type;
+    if (type === 'single_choice') return 'single-choice';
+    if (type === 'multiple_choice') return 'multiple-choice';
+    return type;
   };
 
   const renderQuestionInput = () => {
-    switch (question?.type) {
+    const normalizedType = getNormalizedType();
+    
+    switch (normalizedType) {
       case 'text':
         return (
           <input
             type="text"
-            placeholder={question?.placeholder || 'Escriba su respuesta aquí'}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-            disabled
+            placeholder={localQuestion?.placeholder || 'Escriba su respuesta aquí'}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
           />
         );
 
@@ -39,8 +91,7 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
           <input
             type="number"
             placeholder="0"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-            disabled
+            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
           />
         );
 
@@ -48,8 +99,7 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
         return (
           <input
             type="date"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-            disabled
+            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
           />
         );
 
@@ -57,19 +107,18 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
         return (
           <input
             type="time"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-            disabled
+            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
           />
         );
 
       case 'single-choice':
         return (
           <div className="space-y-2">
-            {question?.options?.map((option, index) => (
+            {localOptions.map((option, index) => (
               <div key={index} className="flex items-center space-x-2">
                 <input
                   type="radio"
-                  name={`question-${question?.id}`}
+                  name={`question-${localQuestion.id}`}
                   className="h-4 w-4 text-blue-600"
                   disabled
                 />
@@ -78,15 +127,18 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
                     <input
                       type="text"
                       value={option}
-                      onChange={(e) => updateOption(index, e?.target?.value)}
+                      onChange={(e) => handleOptionChange(index, e.target.value)}
+                      onBlur={saveOptions}
                       className="flex-1 px-2 py-1 border border-gray-300 rounded"
                     />
-                    <button
-                      onClick={() => removeOption(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <X size={16} />
-                    </button>
+                    {localOptions.length > 2 && (
+                      <button
+                        onClick={() => removeOption(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <span className="text-gray-700">{option}</span>
@@ -108,7 +160,7 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
       case 'multiple-choice':
         return (
           <div className="space-y-2">
-            {question?.options?.map((option, index) => (
+            {localOptions.map((option, index) => (
               <div key={index} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -120,15 +172,18 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
                     <input
                       type="text"
                       value={option}
-                      onChange={(e) => updateOption(index, e?.target?.value)}
+                      onChange={(e) => handleOptionChange(index, e.target.value)}
+                      onBlur={saveOptions}
                       className="flex-1 px-2 py-1 border border-gray-300 rounded"
                     />
-                    <button
-                      onClick={() => removeOption(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <X size={16} />
-                    </button>
+                    {localOptions.length > 2 && (
+                      <button
+                        onClick={() => removeOption(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <span className="text-gray-700">{option}</span>
@@ -150,29 +205,32 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
       case 'dropdown':
         return (
           <div>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" disabled>
+            <select className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white">
               <option>Seleccione una opción</option>
-              {question?.options?.map((option, index) => (
+              {localOptions.map((option, index) => (
                 <option key={index} value={option}>{option}</option>
               ))}
             </select>
             {isSelected && (
               <div className="mt-3 space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Opciones:</label>
-                {question?.options?.map((option, index) => (
+                {localOptions.map((option, index) => (
                   <div key={index} className="flex items-center space-x-2">
                     <input
                       type="text"
                       value={option}
-                      onChange={(e) => updateOption(index, e?.target?.value)}
+                      onChange={(e) => handleOptionChange(index, e.target.value)}
+                      onBlur={saveOptions}
                       className="flex-1 px-2 py-1 border border-gray-300 rounded"
                     />
-                    <button
-                      onClick={() => removeOption(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <X size={16} />
-                    </button>
+                    {localOptions.length > 1 && (
+                      <button
+                        onClick={() => removeOption(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
                   </div>
                 ))}
                 <button
@@ -198,14 +256,14 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
       {isSelected ? (
         <input
           type="text"
-          value={question?.title}
-          onChange={(e) => updateQuestion({ title: e?.target?.value })}
+          value={localQuestion.title || ''}
+          onChange={(e) => handleTitleChange(e.target.value)}
           className="w-full text-lg font-medium mb-3 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Escribe tu pregunta aquí"
         />
       ) : (
         <h3 className="text-lg font-medium text-gray-900 mb-3">
-          {question?.title}
+          {localQuestion.title || 'Pregunta sin título'}
         </h3>
       )}
       {/* Componente de entrada según el tipo */}
