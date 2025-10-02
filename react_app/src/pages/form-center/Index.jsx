@@ -57,7 +57,7 @@ const FormCenter = () => {
     console.log(allForms);
 
     for (const nf in allForms) {
-          (nf.status==='draft')?setDraft(draft++):null;
+        (nf.status==='draft')?setDraft(draft+1):null;
               
         }
     fetchForms();

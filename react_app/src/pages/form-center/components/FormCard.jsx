@@ -93,7 +93,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
           Ultima modificación: {form?.lastModified}
         </div>
       )}
-      <div className="flex items-center justify-between">
+      <div onClick={() => window.location.href = `/form-builder?id=${form?.id}`} className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {form?.tags?.slice(0, 2)?.map((tag, index) => (
             <span key={index} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">

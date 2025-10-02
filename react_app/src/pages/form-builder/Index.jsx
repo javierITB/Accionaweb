@@ -52,8 +52,8 @@ const FormBuilder = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const formId = urlParams?.get('id');
-    
-    
+
+
 
     const fetchForm = async () => {
       try {
@@ -83,14 +83,14 @@ const FormBuilder = () => {
       }
     };
 
-    if (formId){
+    if (formId) {
       fetchForm();
     }
 
     if (formId) {
       const savedForms = JSON.parse(localStorage.getItem('customForms') || '[]');
       const existingForm = savedForms?.find(form => form?.id === formId);
-      
+
       if (existingForm) {
         setFormData(existingForm);
       }
@@ -191,13 +191,31 @@ const FormBuilder = () => {
 
       // actualiza URL si es nuevo
       if (!formData?.id) {
-        window.history.replaceState({}, "", `?id=${savedForm._id}`);
+        window.location.href = `/form-center?id=${savedForm._id}`
       }
     } catch (error) {
       console.error(error);
       alert("Error al guardar el formulario");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const deleteForm = async () => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/forms/${formData.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-cache",
+      });
+
+      if (!response.ok) throw new Error("No se pudo eliminar el formulario");
+
+      alert("Formulario borrado exitosamente");
+      window.location.href = "/form-center";
+    } catch (error) {
+      console.error(error);
+      alert("Error al eliminar el formulario");
     }
   };
 
@@ -228,6 +246,7 @@ const FormBuilder = () => {
       setIsPublishing(false);
     }
   };
+
 
 
   // Navigation tabs
@@ -265,6 +284,7 @@ const FormBuilder = () => {
             formData={formData}
           />
         );
+
       default:
         return null;
     }
@@ -290,13 +310,13 @@ const FormBuilder = () => {
                   Volver al Centro de Formularios
                 </Button>
               </div>
-              
+
               <div>
                 <h1 className="text-3xl font-bold text-foreground">
                   {formData?.id ? 'Editar Formulario' : 'Crear Formulario Personalizado'}
                 </h1>
                 <p className="text-muted-foreground">
-                  {formData?.id 
+                  {formData?.id
                     ? 'Modifica tu formulario existente y administra las preguntas'
                     : 'Diseña un formulario personalizado con preguntas dinámicas'
                   }
@@ -306,9 +326,8 @@ const FormBuilder = () => {
 
             <div className="flex items-center space-x-3">
               {/* Status Badge */}
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                formData?.status === 'published' ?'bg-green-100 text-green-700' :'bg-yellow-100 text-yellow-700'
-              }`}>
+              <div className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                }`}>
                 {formData?.status === 'published' ? 'Publicado' : 'Borrador'}
               </div>
 
@@ -324,7 +343,7 @@ const FormBuilder = () => {
               >
                 Guardar Borrador
               </Button>
-              
+
               <Button
                 type="button"
                 variant="default"
@@ -377,24 +396,34 @@ const FormBuilder = () => {
                   <button
                     key={tab?.id}
                     onClick={() => setActiveTab(tab?.id)}
-                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === tab?.id
-                        ? 'border-primary text-primary' :'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
-                    }`}
+                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab?.id
+                      ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
+                      }`}
                   >
                     <Icon name={tab?.icon} size={16} />
                     <span>{tab?.label}</span>
                     {tab?.count !== undefined && (
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        activeTab === tab?.id 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
+                      <span className={`px-2 py-1 text-xs rounded-full ${activeTab === tab?.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                        }`}>
                         {tab?.count}
                       </span>
                     )}
                   </button>
                 ))}
+                <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  if (window.confirm('¿Estás seguro de que quieres eliminar este Formulario?')) {
+                    deleteForm();
+                  }
+                }}
+                className="mt-3 h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Icon name="Trash2" size={14} />
+              </Button>
               </nav>
             </div>
 
