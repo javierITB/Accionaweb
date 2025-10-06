@@ -1,34 +1,54 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
+import { useState, useEffect } from 'react';
 
-
-const QuickActionsCard = () => {
-  const quickActions = [
-    {
-      id: 1,
-      title: 'Informe de anticipo',
+const QuickActionsCard = ({ section }) => {
+  /*
+  id: 1,
+      title: 'Contrato de trabajo',
       description: 'Solicita días libres y vacaciones',
       icon: 'FileText',
       color: 'bg-blue-500',
       path: '/form-center?type=vacation'
-    },
-    {
-      id: 2,
-      title: 'Prestamo al personal',
-      description: 'Envía tus gastos empresariales',
-      icon: 'FileText',
-      color: 'bg-blue-500',
-      path: '/form-center?type=expenses'
-    },
-    {
-      id: 3,
-      title: 'Modificaciones de solicitud',
-      description: 'Solicita ayuda con equipos IT',
-      icon: 'Receipt',
-      color: 'bg-green-500',
-      path: '/support-portal?category=it'
-    }
-  ];
+  */
+  const [allForms, setAllForms] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+      const fetchForms = async () => {
+        try {
+          
+          setIsLoading(true);
+          const res = await fetch(`http://192.168.0.2:4000/api/forms/section/${section}`);
+          const data = await res.json();
+  
+          const normalizedForms = data.map(f => ({
+            id: f._id,
+            title: f.title || 'Sin título',
+            description: f.description || '',
+            category: f.category || 'general',
+            icon: f.icon || 'FileText',
+            status: f.status || 'draft',
+            priority: f.priority || 'medium',
+            estimatedTime: f.responseTime || '1-5 min',
+            fields: f.questions ? f.questions.length : 0,
+            documentsRequired: f.documentsRequired ?? false,
+            color : f.primaryColor,
+            tags: f.tags || [],
+            lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null
+          }));
+  
+          setAllForms(normalizedForms);
+        } catch (err) {
+          console.error('Error cargando formularios:', err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+  
+      fetchForms();
+    }, []);
+
 
   const handleActionClick = (path) => {
     window.location.href = path;
@@ -47,13 +67,16 @@ const QuickActionsCard = () => {
       </div>
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {quickActions?.map((action) => (
+          {allForms?.map((action) => (
             <button
               key={action?.id}
               onClick={() => handleActionClick(action?.path)}
               className="flex items-start space-x-4 p-4 rounded-lg border border-border hover:border-primary hover:shadow-brand-hover transition-brand text-left group"
             >
-              <div className={`w-12 h-12 ${action?.color} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
+              <div
+                className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform"
+                style={{ backgroundColor: action?.color }}
+              >
                 <Icon name={action?.icon} size={20} color="white" />
               </div>
               <div className="flex-1 min-w-0">

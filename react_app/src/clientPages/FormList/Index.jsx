@@ -4,9 +4,10 @@ import QuickActionsCard from './components/QuickActionsCard';
 import Icon from '../components/AppIcon';
 import Button from '../components/ui/Button';
 
-const DashboardHome = () => {
+const DashboardHome = ( {section} ) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
 
   // Mock user data
   const currentUser = {
@@ -72,7 +73,7 @@ const DashboardHome = () => {
             {/* Left Column - Primary Actions */}
             <div className="xl:col-span-2 space-y-12">
               {/* Quick Actions */}
-              <QuickActionsCard />
+              <QuickActionsCard section={section}/>
               
             </div>
             

@@ -10,8 +10,7 @@ import DashboardHome from './pages/dashboard-home/Index.jsx';
 import RequestTracking from './pages/request-tracking/Index.jsx';
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Home from './clientPages/home/Index.jsx';
-import Remuneraciones from './clientPages/remuneraciones/Index.jsx';
-import Finiquitos from './clientPages/Finiquitos/Index.jsx';
+import FormList from './clientPages/FormList/Index.jsx';
 import FormBuilder from './pages/form-builder/Index.jsx';
 import FormRenderer from './pages/form-renderer/Index.jsx';
 import Form from './clientPages/formulario/Index.jsx';
@@ -24,8 +23,8 @@ const Routes = () => {
         <RouterRoutes>
           <Route path="/login" element = {<Login />}/>
           <Route path="/" element = {<Home />}/>
-          <Route path="/Remuneraciones" element = {<Remuneraciones />}/>
-          <Route path="/finiquitos" element = {<Finiquitos />}/>
+          <Route path="/Remuneraciones" element = {<FormList section={"Remuneraciones"}/>}/>
+          <Route path="/Finiquitos" element = {<FormList section={"Finiquitos"} />}/>
           <Route path="/form-builder" element={<FormBuilder />} />
           <Route path="/form-renderer" element={<FormRenderer />} />
           <Route path="/forms" element={<Form />} />

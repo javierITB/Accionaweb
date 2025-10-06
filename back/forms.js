@@ -41,6 +41,7 @@ router.get("/", async (req, res) => {
 // Obtener un formulario por ID (Mongo ObjectId)
 router.get("/:id", async (req, res) => {
   try {
+    console.log("AQUI LOS IDEADOS")
     const form = await req.db
       .collection("forms")
       .findOne({ _id: new ObjectId(req.params.id) });
@@ -49,6 +50,24 @@ router.get("/:id", async (req, res) => {
     res.json(form);
   } catch (err) {
     res.status(500).json({ error: "Error al obtener formulario" });
+  }
+});
+
+router.get("/section/:section", async (req, res) => {
+  try {
+    console.log("AQUI LOS FILTRADOS")
+    const forms = await req.db
+      .collection("forms")
+      .find({ section: req.params.section })
+      .toArray();
+
+    if (!forms.length)
+      return res.status(404).json({ error: "No se encontraron formularios en esta sección" });
+
+    res.status(200).json(forms);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al obtener formularios por sección" });
   }
 });
 
