@@ -12,24 +12,23 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
     setLocalOptions([...question?.options || []]);
   }, [question]);
 
-  // Guardar cambios inmediatamente para campos críticos
-  const saveChanges = (updates = {}) => {
-    const updatedQuestion = { ...localQuestion, ...updates };
-    onUpdate(localQuestion.id, { 
-      ...updatedQuestion, 
-      options: localOptions 
+  // Guardar cambios de manera optimizada
+  const saveChanges = (questionUpdates = {}, optionsUpdates = null) => {
+    const updatedQuestion = { ...localQuestion, ...questionUpdates };
+    const finalOptions = optionsUpdates !== null ? optionsUpdates : localOptions;
+    
+    setLocalQuestion(updatedQuestion);
+    if (optionsUpdates) setLocalOptions([...finalOptions]);
+    
+    onUpdate(localQuestion.id, {
+      ...updatedQuestion,
+      options: finalOptions
     });
   };
 
-  // Manejo de cambios del título - guardado inmediato
+  // Manejo de cambios del título
   const handleTitleChange = (value) => {
-    const updatedQuestion = { ...localQuestion, title: value };
-    setLocalQuestion(updatedQuestion);
-    // Guardar inmediatamente el título
-    onUpdate(localQuestion.id, { 
-      ...updatedQuestion, 
-      options: localOptions 
-    });
+    saveChanges({ title: value });
   };
 
   // Manejo de opciones locales
@@ -41,28 +40,17 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
 
   // Guardar opciones al perder foco
   const saveOptions = () => {
-    onUpdate(localQuestion.id, { 
-      ...localQuestion, 
-      options: localOptions 
-    });
+    saveChanges({}, localOptions);
   };
 
   const addOption = () => {
     const newOptions = [...localOptions, `Opción ${localOptions.length + 1}`];
-    setLocalOptions(newOptions);
-    onUpdate(localQuestion.id, { 
-      ...localQuestion, 
-      options: newOptions 
-    });
+    saveChanges({}, newOptions);
   };
 
   const removeOption = (index) => {
     const newOptions = localOptions.filter((_, i) => i !== index);
-    setLocalOptions(newOptions);
-    onUpdate(localQuestion.id, { 
-      ...localQuestion, 
-      options: newOptions 
-    });
+    saveChanges({}, newOptions);
   };
 
   // Normalizar tipos para compatibilidad
@@ -73,9 +61,68 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
     return type;
   };
 
+  // Renderizar opciones para tipos de selección
+  const renderOptions = () => {
+    return (
+      <div className="space-y-2">
+        {localOptions.map((option, index) => (
+          <div key={`option-${localQuestion.id}-${index}`} className="flex items-center space-x-2">
+            {getNormalizedType() === 'single-choice' ? (
+              <input
+                type="radio"
+                name={`question-${localQuestion.id}`}
+                className="h-4 w-4 text-blue-600"
+                disabled
+              />
+            ) : (
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-blue-600"
+                disabled
+              />
+            )}
+            {isSelected ? (
+              <div className="flex items-center space-x-2 flex-1">
+                <input
+                  type="text"
+                  value={option}
+                  onChange={(e) => handleOptionChange(index, e.target.value)}
+                  onBlur={saveOptions}
+                  placeholder={`Opción ${index + 1}`}
+                  className="flex-1 px-2 py-1 border border-gray-300 rounded"
+                />
+                {localOptions.length > (getNormalizedType() === 'dropdown' ? 1 : 2) && (
+                  <button
+                    onClick={() => removeOption(index)}
+                    className="text-red-500 hover:text-red-700"
+                    type="button"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <span className="text-gray-700">{option || `Opción ${index + 1}`}</span>
+            )}
+          </div>
+        ))}
+        {isSelected && (
+          <button
+            onClick={addOption}
+            className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
+            type="button"
+          >
+            <Plus size={16} />
+            <span>Agregar opción</span>
+          </button>
+        )}
+      </div>
+    );
+  };
+
   const renderQuestionInput = () => {
     const normalizedType = getNormalizedType();
-    
+
     switch (normalizedType) {
       case 'text':
         return (
@@ -83,6 +130,7 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
             type="text"
             placeholder={localQuestion?.placeholder || 'Escriba su respuesta aquí'}
             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+            disabled={!isSelected}
           />
         );
 
@@ -92,6 +140,7 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
             type="number"
             placeholder="0"
             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+            disabled={!isSelected}
           />
         );
 
@@ -100,6 +149,7 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
           <input
             type="date"
             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+            disabled={!isSelected}
           />
         );
 
@@ -108,125 +158,46 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
           <input
             type="time"
             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+            disabled={!isSelected}
           />
         );
 
       case 'single-choice':
-        return (
-          <div className="space-y-2">
-            {localOptions.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  name={`question-${localQuestion.id}`}
-                  className="h-4 w-4 text-blue-600"
-                  disabled
-                />
-                {isSelected ? (
-                  <div className="flex items-center space-x-2 flex-1">
-                    <input
-                      type="text"
-                      value={option}
-                      onChange={(e) => handleOptionChange(index, e.target.value)}
-                      onBlur={saveOptions}
-                      className="flex-1 px-2 py-1 border border-gray-300 rounded"
-                    />
-                    {localOptions.length > 2 && (
-                      <button
-                        onClick={() => removeOption(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-gray-700">{option}</span>
-                )}
-              </div>
-            ))}
-            {isSelected && (
-              <button
-                onClick={addOption}
-                className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
-              >
-                <Plus size={16} />
-                <span>Agregar opción</span>
-              </button>
-            )}
-          </div>
-        );
-
       case 'multiple-choice':
-        return (
-          <div className="space-y-2">
-            {localOptions.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600"
-                  disabled
-                />
-                {isSelected ? (
-                  <div className="flex items-center space-x-2 flex-1">
-                    <input
-                      type="text"
-                      value={option}
-                      onChange={(e) => handleOptionChange(index, e.target.value)}
-                      onBlur={saveOptions}
-                      className="flex-1 px-2 py-1 border border-gray-300 rounded"
-                    />
-                    {localOptions.length > 2 && (
-                      <button
-                        onClick={() => removeOption(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-gray-700">{option}</span>
-                )}
-              </div>
-            ))}
-            {isSelected && (
-              <button
-                onClick={addOption}
-                className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
-              >
-                <Plus size={16} />
-                <span>Agregar opción</span>
-              </button>
-            )}
-          </div>
-        );
+        return renderOptions();
 
       case 'dropdown':
         return (
           <div>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white">
-              <option>Seleccione una opción</option>
+            <select 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+              disabled={!isSelected}
+            >
+              <option value="">Seleccione una opción</option>
               {localOptions.map((option, index) => (
-                <option key={index} value={option}>{option}</option>
+                <option key={`dropdown-${localQuestion.id}-${index}`} value={option}>
+                  {option || `Opción ${index + 1}`}
+                </option>
               ))}
             </select>
             {isSelected && (
               <div className="mt-3 space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Opciones:</label>
                 {localOptions.map((option, index) => (
-                  <div key={index} className="flex items-center space-x-2">
+                  <div key={`dropdown-edit-${localQuestion.id}-${index}`} className="flex items-center space-x-2">
                     <input
                       type="text"
                       value={option}
                       onChange={(e) => handleOptionChange(index, e.target.value)}
                       onBlur={saveOptions}
+                      placeholder={`Opción ${index + 1}`}
                       className="flex-1 px-2 py-1 border border-gray-300 rounded"
                     />
                     {localOptions.length > 1 && (
                       <button
                         onClick={() => removeOption(index)}
                         className="text-red-500 hover:text-red-700"
+                        type="button"
                       >
                         <X size={16} />
                       </button>
@@ -236,6 +207,7 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
                 <button
                   onClick={addOption}
                   className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
+                  type="button"
                 >
                   <Plus size={16} />
                   <span>Agregar opción</span>
@@ -246,26 +218,29 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
         );
 
       default:
-        return null;
+        return (
+          <div className="text-gray-500">Tipo de pregunta no soportado: {normalizedType}</div>
+        );
     }
   };
 
   return (
-    <div>
-      {/* Título de la pregunta */}
+    <div className="p-4 border border-gray-200 rounded-lg">
+      {/* Título de la pregunta CORREGIDO */}
       {isSelected ? (
         <input
           type="text"
           value={localQuestion.title || ''}
           onChange={(e) => handleTitleChange(e.target.value)}
-          className="w-full text-lg font-medium mb-3 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Escribe tu pregunta aquí"
+          placeholder="Título de la pregunta"
+          className="w-full text-lg font-medium text-gray-900 mb-3 px-3 py-2 border border-gray-300 rounded"
         />
       ) : (
         <h3 className="text-lg font-medium text-gray-900 mb-3">
           {localQuestion.title || 'Pregunta sin título'}
         </h3>
       )}
+      
       {/* Componente de entrada según el tipo */}
       {renderQuestionInput()}
     </div>

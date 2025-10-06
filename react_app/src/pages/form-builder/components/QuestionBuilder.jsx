@@ -3,14 +3,14 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 
-const QuestionBuilder = ({ 
-  questions, 
-  questionTypes, 
-  onUpdateQuestion, 
-  onDeleteQuestion, 
+const QuestionBuilder = ({
+  questions,
+  questionTypes,
+  onUpdateQuestion,
+  onDeleteQuestion,
   onMoveQuestion,
   onAddQuestion,
-  primaryColor 
+  primaryColor
 }) => {
   const [expandedQuestion, setExpandedQuestion] = useState(null);
 
@@ -27,19 +27,9 @@ const QuestionBuilder = ({
 
     // Guardar cambios al perder foco
     const saveChanges = () => {
-      onUpdateQuestion(localQuestion.id, { 
-        ...localQuestion, 
-        options: localOptions 
-      });
-    };
-
-    // Guardar cambios inmediatamente (para campos críticos)
-    const saveImmediately = (updates) => {
-      const updatedQuestion = { ...localQuestion, ...updates };
-      setLocalQuestion(updatedQuestion);
-      onUpdateQuestion(localQuestion.id, { 
-        ...updatedQuestion, 
-        options: localOptions 
+      onUpdateQuestion(localQuestion.id, {
+        ...localQuestion,
+        options: localOptions
       });
     };
 
@@ -57,11 +47,11 @@ const QuestionBuilder = ({
 
     // Función para agregar opción
     const addOption = () => {
-      const newOptions = [...localOptions, `Opción ${localOptions.length + 1}`];
+      const newOptions = [...localOptions, '']; // Cambiar a string vacío
       setLocalOptions(newOptions);
-      onUpdateQuestion(localQuestion.id, { 
-        ...localQuestion, 
-        options: newOptions 
+      onUpdateQuestion(localQuestion.id, {
+        ...localQuestion,
+        options: newOptions
       });
     };
 
@@ -69,9 +59,9 @@ const QuestionBuilder = ({
     const removeOption = (index) => {
       const newOptions = localOptions.filter((_, i) => i !== index);
       setLocalOptions(newOptions);
-      onUpdateQuestion(localQuestion.id, { 
-        ...localQuestion, 
-        options: newOptions 
+      onUpdateQuestion(localQuestion.id, {
+        ...localQuestion,
+        options: newOptions
       });
     };
 
@@ -83,7 +73,7 @@ const QuestionBuilder = ({
       let updatedOptions = [...localOptions];
       if (newType === 'single_choice' || newType === 'multiple_choice') {
         if (!localOptions || localOptions.length === 0) {
-          updatedOptions = ['Opción 1', 'Opción 2'];
+          updatedOptions = ['', '']; // Cambiar a strings vacíos
           setLocalOptions(updatedOptions);
         }
       } else {
@@ -94,9 +84,9 @@ const QuestionBuilder = ({
       
       setLocalQuestion(updatedQuestion);
       // Guardar inmediatamente el cambio de tipo
-      onUpdateQuestion(localQuestion.id, { 
-        ...updatedQuestion, 
-        options: updatedOptions 
+      onUpdateQuestion(localQuestion.id, {
+        ...updatedQuestion,
+        options: updatedOptions
       });
     };
 
@@ -104,9 +94,9 @@ const QuestionBuilder = ({
     const handleRequiredChange = (checked) => {
       const updatedQuestion = { ...localQuestion, required: checked };
       setLocalQuestion(updatedQuestion);
-      onUpdateQuestion(localQuestion.id, { 
-        ...updatedQuestion, 
-        options: localOptions 
+      onUpdateQuestion(localQuestion.id, {
+        ...updatedQuestion,
+        options: localOptions
       });
     };
 
@@ -118,13 +108,13 @@ const QuestionBuilder = ({
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div 
+              <div
                 className="p-2 rounded-lg"
                 style={{ backgroundColor: `${primaryColor}20` }}
               >
-                <Icon 
-                  name={questionType?.icon || 'HelpCircle'} 
-                  size={16} 
+                <Icon
+                  name={questionType?.icon || 'HelpCircle'}
+                  size={16}
                   style={{ color: primaryColor }}
                 />
               </div>
@@ -154,7 +144,7 @@ const QuestionBuilder = ({
               >
                 <Icon name="ChevronUp" size={14} />
               </Button>
-              
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -290,7 +280,7 @@ const QuestionBuilder = ({
                           onBlur={saveChanges}
                         />
                       </div>
-                      
+
                       {localOptions.length > 2 && (
                         <Button
                           variant="ghost"
@@ -333,7 +323,7 @@ const QuestionBuilder = ({
                       disabled
                     />
                   )}
-                  
+
                   {localQuestion.type === 'number' && (
                     <input
                       type="number"
@@ -342,7 +332,7 @@ const QuestionBuilder = ({
                       disabled
                     />
                   )}
-                  
+
                   {localQuestion.type === 'date' && (
                     <input
                       type="date"
@@ -350,7 +340,7 @@ const QuestionBuilder = ({
                       disabled
                     />
                   )}
-                  
+
                   {localQuestion.type === 'time' && (
                     <input
                       type="time"
@@ -358,7 +348,7 @@ const QuestionBuilder = ({
                       disabled
                     />
                   )}
-                  
+
                   {localQuestion.type === 'single_choice' && (
                     <select
                       className="w-full px-3 py-2 border border-input rounded-md bg-white"
@@ -372,7 +362,7 @@ const QuestionBuilder = ({
                       ))}
                     </select>
                   )}
-                  
+
                   {localQuestion.type === 'multiple_choice' && (
                     <div className="space-y-2">
                       {localOptions.map((option, idx) => (
