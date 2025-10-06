@@ -67,9 +67,7 @@ const FormBuilder = () => {
         if (!res.ok) throw new Error('Formulario no encontrado');
         const data = await res.json();
 
-        console.log('📥 Datos recibidos del backend:', data); // Para debug
-
-        // ✅ NORMALIZACIÓN CORREGIDA - incluyendo section
+        //  NORMALIZACIÓN CORREGIDA - incluyendo section
         const normalizedForm = {
           id: data._id || data.id || null,
           title: data.title || '',
@@ -80,12 +78,12 @@ const FormBuilder = () => {
           secondaryColor: data.secondaryColor || '#F3F4F6',
           questions: data.questions || [],
           status: data.status || 'draft',
-          section: data.section || '', // ✅ AGREGADO ESTE CAMPO
+          section: data.section || '',
           createdAt: data.createdAt || new Date().toISOString(),
           updatedAt: data.updatedAt || new Date().toISOString()
         };
 
-        console.log('🔄 Datos normalizados:', normalizedForm); // Para debug
+        //  SETEAR LOS DATOS - ESTO FALTABA
         setFormData(normalizedForm);
       } catch (err) {
         console.error('Error cargando el formulario:', err);
@@ -98,8 +96,14 @@ const FormBuilder = () => {
     }
   }, []);
 
-  // Update form data
+  //  Update form data - FUNCIÓN CORREGIDA
   const updateFormData = (field, value) => {
+    // Validación específica para el título
+    if (field === 'title' && value.length > 50) {
+      alert('El título no puede tener más de 50 caracteres');
+      return; // No actualiza si excede el límite
+    }
+
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -107,7 +111,7 @@ const FormBuilder = () => {
     }));
   };
 
-  // Add new question
+  //  Add new question - FUNCIÓN SEPARADA CORRECTAMENTE
   const addQuestion = () => {
     const newQuestion = {
       id: Date.now().toString(),
@@ -134,13 +138,13 @@ const FormBuilder = () => {
   const updateQuestion = (questionId, updatesOrField, value) => {
     setFormData(prev => {
       let updatedQuestions;
-      
+
       // Si se pasan 3 argumentos (id, field, value) - compatibilidad con código antiguo
       if (value !== undefined && typeof updatesOrField === 'string') {
         updatedQuestions = prev.questions.map(q =>
           q.id === questionId ? { ...q, [updatesOrField]: value } : q
         );
-      } 
+      }
       // Si se pasan 2 argumentos (id, updates) - nuevo formato
       else if (typeof updatesOrField === 'object') {
         updatedQuestions = prev.questions.map(q =>
@@ -187,17 +191,22 @@ const FormBuilder = () => {
     }));
   };
 
-  // Save form as draft - VERSIÓN MEJORADA CON DEBUG
+  // Save form as draft - VERSIÓN MEJORADA
   const saveForm = async () => {
     if (!formData?.title?.trim()) {
       alert("Por favor ingresa un título para el formulario");
       return;
     }
 
-    console.log('📤 Enviando al guardar:', {
-      section: formData.section, // Verifica que tenga valor
-      fullData: formData
-    });
+    //  VALIDACIÓN ADICIONAL DE TÍTULOS DE PREGUNTAS
+    const hasLongQuestionTitles = formData.questions.some(
+      q => (q.title?.length || 0) > 50
+    );
+
+    if (hasLongQuestionTitles) {
+      alert('Una o más preguntas tienen títulos que exceden los 50 caracteres');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -208,14 +217,13 @@ const FormBuilder = () => {
       });
 
       const savedForm = await response.json();
-      console.log('💾 Respuesta del guardado:', savedForm); // Verifica la respuesta
       setFormData(savedForm);
 
       alert("Formulario guardado como borrador exitosamente");
 
-      // actualiza URL si es nuevo
+      //  CORREGIDO: window.history.replaceState en lugar de window.href
       if (!formData?.id) {
-        window.href(`form-builder?id=${savedForm._id}`);
+        window.history.replaceState({}, "", `?id=${savedForm._id}`);
       }
     } catch (error) {
       console.error(error);
@@ -273,7 +281,7 @@ const FormBuilder = () => {
   // Navigation tabs
   const tabs = [
     { id: 'properties', label: 'Propiedades', icon: 'Settings' },
-    { id: 'questions', label: 'Preguntas', icon: 'HelpCircle', count: formData.questions.length },
+    { id: 'questions', label: 'Preguntas', icon: 'HelpCircle', count: formData?.questions?.length },
     { id: 'preview', label: 'Vista Previa', icon: 'Eye' }
   ];
 
@@ -348,7 +356,9 @@ const FormBuilder = () => {
             <div className="flex items-center space-x-3">
               {/* Status Badge */}
               <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                formData?.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                formData?.status === 'published' 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-yellow-100 text-yellow-700'
               }`}>
                 {formData?.status === 'published' ? 'Publicado' : 'Borrador'}
               </div>
@@ -378,13 +388,6 @@ const FormBuilder = () => {
                 Publicar Formulario
               </Button>
             </div>
-          </div>
-
-          {/* Debug Section - Temporal */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <p className="text-sm text-yellow-800">
-              <strong>Debug:</strong> Sección actual: "{formData.section || 'Vacía'}"
-            </p>
           </div>
 
           {/* Form Info Bar */}
@@ -433,7 +436,8 @@ const FormBuilder = () => {
                     onClick={() => setActiveTab(tab?.id)}
                     className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                       activeTab === tab?.id
-                        ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
+                        ? 'border-primary text-primary' 
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
                     }`}
                   >
                     <Icon name={tab?.icon} size={16} />
@@ -441,7 +445,7 @@ const FormBuilder = () => {
                     {tab?.count !== undefined && (
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         activeTab === tab?.id 
-                          ? 'bg-primary text-primary-foreground' 
+                          ? 'bg-primary text-primary-foreground'
                           : 'bg-muted text-muted-foreground'
                       }`}>
                         {tab?.count}

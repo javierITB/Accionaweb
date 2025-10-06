@@ -25,6 +25,14 @@ const QuestionBuilder = ({
       setLocalOptions([...question?.options || []]);
     }, [question]);
 
+    //  FUNCIÓN PARA MANEJAR CAMBIOS EN EL TÍTULO CON VALIDACIÓN
+    const handleTitleChange = (value) => {
+      if (value.length <= 50) {
+        setLocalQuestion(prev => ({ ...prev, title: value }));
+      }
+      // Si excede 50 caracteres, no hacemos nada
+    };
+
     // Guardar cambios al perder foco
     const saveChanges = () => {
       onUpdateQuestion(localQuestion.id, {
@@ -124,6 +132,11 @@ const QuestionBuilder = ({
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {questionType?.label || 'Tipo no definido'}
+                  {localQuestion.title && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      ({localQuestion.title.length}/50)
+                    </span>
+                  )}
                 </p>
               </div>
               {localQuestion.required && (
@@ -221,13 +234,33 @@ const QuestionBuilder = ({
 
             {/* Question Details */}
             <div className="space-y-4">
-              <Input
-                label="Título de la Pregunta"
-                placeholder="Escribe tu pregunta aquí..."
-                value={localQuestion.title || ''}
-                onChange={(e) => handleFieldChange('title', e.target.value)}
-                onBlur={saveChanges}
-              />
+              {/*  INPUT DE TÍTULO CON VALIDACIÓN MEJORADA */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Título de la Pregunta *
+                  <span className="text-xs text-muted-foreground ml-2">
+                    ({localQuestion.title?.length || 0}/50 caracteres)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Escribe tu pregunta aquí..."
+                  value={localQuestion.title || ''}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  onBlur={saveChanges}
+                  maxLength={50}
+                  className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    (localQuestion.title?.length || 0) >= 50
+                      ? 'border-red-500 focus-visible:ring-red-200' 
+                      : 'border-input focus-visible:ring-blue-200'
+                  }`}
+                />
+                {(localQuestion.title?.length || 0) >= 50 && (
+                  <p className="text-red-500 text-xs">
+                     Límite de 50 caracteres alcanzado
+                  </p>
+                )}
+              </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">

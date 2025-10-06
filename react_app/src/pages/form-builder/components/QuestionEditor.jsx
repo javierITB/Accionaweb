@@ -12,6 +12,14 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
     setLocalOptions([...question?.options || []]);
   }, [question]);
 
+  // FUNCIÓN PARA MANEJAR CAMBIOS EN EL TÍTULO CON VALIDACIÓN
+  const handleTitleChange = (value) => {
+    if (value.length <= 50) {
+      saveChanges({ title: value });
+    }
+    // Si excede 50 caracteres, no hacemos nada
+  };
+
   // Guardar cambios de manera optimizada
   const saveChanges = (questionUpdates = {}, optionsUpdates = null) => {
     const updatedQuestion = { ...localQuestion, ...questionUpdates };
@@ -24,11 +32,6 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
       ...updatedQuestion,
       options: finalOptions
     });
-  };
-
-  // Manejo de cambios del título
-  const handleTitleChange = (value) => {
-    saveChanges({ title: value });
   };
 
   // Manejo de opciones locales
@@ -226,15 +229,34 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
 
   return (
     <div className="p-4 border border-gray-200 rounded-lg">
-      {/* Título de la pregunta CORREGIDO */}
+      {/* TÍTULO DE LA PREGUNTA CON VALIDACIÓN MEJORADA */}
       {isSelected ? (
-        <input
-          type="text"
-          value={localQuestion.title || ''}
-          onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="Título de la pregunta" 
-          className="w-full text-lg font-medium text-gray-900 mb-3 px-3 py-2 border border-gray-300 rounded"
-        />
+        <div className="mb-3">
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={localQuestion.title || ''}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              maxLength={50}
+              placeholder="Título de la pregunta"
+              className={`w-full text-lg font-medium px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                (localQuestion.title?.length || 0) >= 50 
+                  ? 'border-red-500 focus:ring-red-200' 
+                  : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
+              }`}
+            />
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-500">
+                {localQuestion.title?.length || 0}/50 caracteres
+              </span>
+              {(localQuestion.title?.length || 0) >= 50 && (
+                <span className="text-xs text-red-500">
+                   Límite de caracteres alcanzado
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
       ) : (
         <h3 className="text-lg font-medium text-gray-900 mb-3">
           {localQuestion.title || 'Pregunta sin título'}

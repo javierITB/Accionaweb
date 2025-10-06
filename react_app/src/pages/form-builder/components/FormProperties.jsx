@@ -1,6 +1,5 @@
 import React from 'react';
 import Input from '../../../components/ui/Input';
-
 import Icon from '../../../components/AppIcon';
 
 const FormProperties = ({ formData, categories, sections, onUpdateFormData }) => {
@@ -26,6 +25,14 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
     { primary: '#F97316', secondary: '#FFF7ED', name: 'Naranja Cálido' }
   ];
 
+  // FUNCIÓN PARA MANEJAR CAMBIOS EN EL TÍTULO CON VALIDACIÓN
+  const handleTitleChange = (value) => {
+    if (value.length <= 50) {
+      onUpdateFormData('title', value);
+    }
+    // Si excede 50 caracteres, no hacemos nada (o podrías mostrar un toast)
+  };
+
   const handleColorPresetSelect = (preset) => {
     onUpdateFormData('primaryColor', preset?.primary);
     onUpdateFormData('secondaryColor', preset?.secondary);
@@ -50,14 +57,35 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Input
-            label="Título del Formulario"
-            placeholder="Ej: Evaluación de Desempeño Anual"
-            value={formData?.title}
-            onChange={(e) => onUpdateFormData('title', e?.target?.value)}
-            required
-            description="Este será el nombre visible del formulario"
-          />
+          {/* INPUT DE TÍTULO CON VALIDACIÓN MEJORADA */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Título del Formulario <span className="text-destructive">*</span>
+              <span className="text-xs text-muted-foreground ml-2">
+                ({formData?.title?.length || 0}/50 caracteres)
+              </span>
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: Evaluación de Desempeño Anual"
+              value={formData?.title || ''}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              maxLength={50}
+              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                (formData?.title?.length || 0) >= 50
+                  ? 'border-red-500 focus-visible:ring-red-200' 
+                  : 'border-input focus-visible:ring-blue-200'
+              }`}
+            />
+            {(formData?.title?.length || 0) >= 50 && (
+              <p className="text-red-500 text-xs">
+                Límite de 50 caracteres alcanzado
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Este será el nombre visible del formulario
+            </p>
+          </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
@@ -103,7 +131,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
           
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              Seccion <span className="text-destructive">*</span>
+              Sección <span className="text-destructive">*</span>
             </label>
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -118,7 +146,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               ))}
             </select>
             <p className="text-sm text-muted-foreground">
-              Define la seccion en la que se verá el formulario
+              Define la sección en la que se verá el formulario
             </p>
           </div>
 
@@ -132,6 +160,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
 
         </div>
       </div>
+
       {/* Color Customization */}
       <div className="space-y-6">
         <div className="flex items-center space-x-3">
