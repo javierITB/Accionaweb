@@ -49,7 +49,7 @@ const FormBuilder = () => {
     { value: 'evaluation', label: 'Evaluación' }
   ];
 
-  const section = [
+  const sections = [
     { value: 'Remuneraciones', label: 'Remuneraciones' },
     { value: 'Anexos', label: 'Anexos' },
     { value: 'Finiquitos', label: 'Finiquitos' },
@@ -67,21 +67,25 @@ const FormBuilder = () => {
         if (!res.ok) throw new Error('Formulario no encontrado');
         const data = await res.json();
 
-        // Normalizar campos faltantes
+        console.log('📥 Datos recibidos del backend:', data); // Para debug
+
+        // ✅ NORMALIZACIÓN CORREGIDA - incluyendo section
         const normalizedForm = {
           id: data._id || data.id || null,
           title: data.title || '',
           category: data.category || '',
           responseTime: data.responseTime || '',
-          author: data.author || 'Sarah Johnson',
+          author: data.author || 'Admin',
           primaryColor: data.primaryColor || '#3B82F6',
           secondaryColor: data.secondaryColor || '#F3F4F6',
           questions: data.questions || [],
           status: data.status || 'draft',
+          section: data.section || '', // ✅ AGREGADO ESTE CAMPO
           createdAt: data.createdAt || new Date().toISOString(),
           updatedAt: data.updatedAt || new Date().toISOString()
         };
 
+        console.log('🔄 Datos normalizados:', normalizedForm); // Para debug
         setFormData(normalizedForm);
       } catch (err) {
         console.error('Error cargando el formulario:', err);
@@ -92,17 +96,6 @@ const FormBuilder = () => {
     if (formId) {
       fetchForm();
     }
-
-    if (formId) {
-      const savedForms = JSON.parse(localStorage.getItem('customForms') || '[]');
-      const existingForm = savedForms?.find(form => form?.id === formId);
-
-      if (existingForm) {
-        setFormData(existingForm);
-      }
-    }
-
-    if (!formId) return;
   }, []);
 
   // Update form data
@@ -194,12 +187,17 @@ const FormBuilder = () => {
     }));
   };
 
-  // Save form as draft
+  // Save form as draft - VERSIÓN MEJORADA CON DEBUG
   const saveForm = async () => {
     if (!formData?.title?.trim()) {
       alert("Por favor ingresa un título para el formulario");
       return;
     }
+
+    console.log('📤 Enviando al guardar:', {
+      section: formData.section, // Verifica que tenga valor
+      fullData: formData
+    });
 
     setIsSaving(true);
     try {
@@ -210,6 +208,7 @@ const FormBuilder = () => {
       });
 
       const savedForm = await response.json();
+      console.log('💾 Respuesta del guardado:', savedForm); // Verifica la respuesta
       setFormData(savedForm);
 
       alert("Formulario guardado como borrador exitosamente");
@@ -228,7 +227,7 @@ const FormBuilder = () => {
 
   const deleteForm = async () => {
     try {
-      const response = await fetch(`http://192.168.0.2:4000/api/forms/${formData.id}`, {
+      const response = await fetch(`http://localhost:4000/api/forms/${formData.id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         cache: "no-cache",
@@ -253,14 +252,14 @@ const FormBuilder = () => {
 
     setIsPublishing(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/forms/${formData._id}`, {
+      const response = await fetch(`http://localhost:4000/api/forms/${formData._id || formData.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...formData, status: "published" }),
       });
 
       const updatedForm = await response.json();
-      setFormData({ ...formData, status: "published" });
+      setFormData(prev => ({ ...prev, status: "published" }));
 
       alert("¡Formulario publicado exitosamente!");
     } catch (error) {
@@ -285,7 +284,7 @@ const FormBuilder = () => {
           <FormProperties
             formData={formData}
             categories={categories}
-            sections={section}
+            sections={sections}
             onUpdateFormData={updateFormData}
           />
         );
@@ -381,6 +380,13 @@ const FormBuilder = () => {
             </div>
           </div>
 
+          {/* Debug Section - Temporal */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <p className="text-sm text-yellow-800">
+              <strong>Debug:</strong> Sección actual: "{formData.section || 'Vacía'}"
+            </p>
+          </div>
+
           {/* Form Info Bar */}
           <div className="bg-card border border-border rounded-lg p-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -394,6 +400,12 @@ const FormBuilder = () => {
                 <p className="text-sm text-muted-foreground">Categoría</p>
                 <p className="font-medium text-foreground">
                   {categories?.find(cat => cat?.value === formData?.category)?.label || 'Sin categoría'}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Sección</p>
+                <p className="font-medium text-foreground">
+                  {sections?.find(sec => sec?.value === formData?.section)?.label || 'Sin sección'}
                 </p>
               </div>
               <div className="space-y-1">
