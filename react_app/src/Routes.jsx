@@ -14,6 +14,7 @@ import Remuneraciones from './clientPages/remuneraciones/Index.jsx';
 import Finiquitos from './clientPages/Finiquitos/Index.jsx';
 import FormBuilder from './pages/form-builder/Index.jsx';
 import FormRenderer from './pages/form-renderer/Index.jsx';
+import Form from './clientPages/formulario/Index.jsx';
 
 const Routes = () => {
   return (
@@ -27,6 +28,7 @@ const Routes = () => {
           <Route path="/finiquitos" element = {<Finiquitos />}/>
           <Route path="/form-builder" element={<FormBuilder />} />
           <Route path="/form-renderer" element={<FormRenderer />} />
+          <Route path="/forms" element={<Form />} />
           {/* Rutas protegidas */}
           
           <Route path="/form-center"

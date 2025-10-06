@@ -68,6 +68,22 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+router.put("/public/:id", async (req, res) => {
+  try {
+    const result = await req.db.collection("forms").findOneAndUpdate(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { ...req.body, updatedAt: new Date() } },
+      { returnDocument: "after" }
+    );
+
+    if (!result.value) return res.status(404).json({ error: "Formulario no encontrado" });
+    res.json(result.value);
+  } catch (err) {
+    res.status(500).json({ error: "Error al actualizar formulario" });
+  }
+});
+
+
 // Eliminar un formulario
 router.delete("/:id", async (req, res) => {
   console.log("BORRAR AQUI")
