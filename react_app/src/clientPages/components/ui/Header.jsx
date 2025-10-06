@@ -14,7 +14,7 @@ const Header = ({ className = '' }) => {
     { name: 'Remuneraciones', path: '/remuneraciones', icon: 'LayoutDashboard' },
     { name: 'Anexos', path: '/Anexos', icon: 'FileText' },
     { name: 'Finiquitos', path: '/Finiquitos', icon: 'Clock' },
-    { name: 'Otras', path: '/support-portal', icon: 'HelpCircle' },
+    { name: 'Otras', path: '/otras', icon: 'HelpCircle' },
     { name: 'Envío Documentos', path: '/support-portal', icon: 'FileText' },
   ];
 
