@@ -21,7 +21,6 @@ const FormCenter = () => {
   const [allForms, setAllForms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Efecto separado para cargar los formularios
   useEffect(() => {
     const fetchForms = async () => {
       try {
@@ -53,9 +52,8 @@ const FormCenter = () => {
     };
 
     fetchForms();
-  }, []); // Solo se ejecuta una vez al montar el componente
+  }, []);
 
-  // Efecto separado para filtrar los formularios
   useEffect(() => {
     if (allForms.length === 0) {
       setFilteredForms([]);
@@ -64,12 +62,10 @@ const FormCenter = () => {
 
     let filtered = [...allForms];
 
-    // Category filter
     if (activeCategory !== 'all') {
       filtered = filtered.filter(form => form.category === activeCategory);
     }
 
-    // Search filter
     if (searchQuery) {
       filtered = filtered.filter(form =>
         form.title?.toLowerCase()?.includes(searchQuery?.toLowerCase()) ||
@@ -79,7 +75,6 @@ const FormCenter = () => {
       );
     }
 
-    // Additional filters
     if (filters.status && filters.status.length > 0) {
       filtered = filtered.filter(form => filters.status.includes(form.status));
     }
@@ -97,7 +92,7 @@ const FormCenter = () => {
     }
 
     setFilteredForms(filtered);
-  }, [searchQuery, activeCategory, filters, allForms]); // Se ejecuta cuando cambian estos valores
+  }, [searchQuery, activeCategory, filters, allForms]);
 
   const categories = [
     { id: 'all', name: 'All Forms', count: allForms.length },
@@ -110,7 +105,6 @@ const FormCenter = () => {
     { id: 'it', name: 'IT Support', count: allForms.filter(f => f.category === 'it').length }
   ];
 
-  // Resto de las funciones permanecen igual...
   const handleFormSelect = (form) => {
     console.log('Selected form:', form);
     alert(`Opening form: ${form.title}`);
@@ -141,7 +135,6 @@ const FormCenter = () => {
     setViewMode(viewMode === 'grid' ? 'list' : 'grid');
   };
 
-  // Calcular estadísticas en tiempo real
   const draftCount = allForms.filter(f => f.status === 'draft').length;
   const recentCount = allForms.filter(f => {
     if (!f.lastModified) return false;
@@ -158,7 +151,6 @@ const FormCenter = () => {
         sidebarCollapsed ? 'ml-16' : 'ml-64'
       } pt-16`}>
         <div className="p-6 space-y-8">
-          {/* Page Header */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -193,7 +185,6 @@ const FormCenter = () => {
               </div>
             </div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-3">
@@ -247,7 +238,6 @@ const FormCenter = () => {
             </div>
           </div>
 
-          {/* Search and Filters */}
           <div className="space-y-4">
             <SearchBar
               onSearch={handleSearch}
@@ -262,16 +252,13 @@ const FormCenter = () => {
             />
           </div>
 
-          {/* Main Content */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Sidebar Filters */}
             {showFilters && (
               <div className="lg:col-span-1">
                 <FormFilters onFiltersChange={handleFiltersChange} />
               </div>
             )}
 
-            {/* Forms Grid/List */}
             <div className={showFilters ? 'lg:col-span-3' : 'lg:col-span-4'}>
               <div className="space-y-6">
                 {isLoading ? (

@@ -67,7 +67,7 @@ const FormBuilder = () => {
         if (!res.ok) throw new Error('Formulario no encontrado');
         const data = await res.json();
 
-        //  NORMALIZACIÓN CORREGIDA - incluyendo section
+        // Normalización corregida - incluyendo section
         const normalizedForm = {
           id: data._id || data.id || null,
           title: data.title || '',
@@ -83,7 +83,6 @@ const FormBuilder = () => {
           updatedAt: data.updatedAt || new Date().toISOString()
         };
 
-        //  SETEAR LOS DATOS - ESTO FALTABA
         setFormData(normalizedForm);
       } catch (err) {
         console.error('Error cargando el formulario:', err);
@@ -96,12 +95,12 @@ const FormBuilder = () => {
     }
   }, []);
 
-  //  Update form data - FUNCIÓN CORREGIDA
+  // Update form data
   const updateFormData = (field, value) => {
     // Validación específica para el título
     if (field === 'title' && value.length > 50) {
       alert('El título no puede tener más de 50 caracteres');
-      return; // No actualiza si excede el límite
+      return;
     }
 
     setFormData(prev => ({
@@ -111,7 +110,7 @@ const FormBuilder = () => {
     }));
   };
 
-  //  Add new question - FUNCIÓN SEPARADA CORRECTAMENTE
+  // Add new question
   const addQuestion = () => {
     const newQuestion = {
       id: Date.now().toString(),
@@ -134,18 +133,18 @@ const FormBuilder = () => {
     }
   };
 
-  // Update question - CORREGIDO para manejar tanto (id, field, value) como (id, updates)
+  // Update question
   const updateQuestion = (questionId, updatesOrField, value) => {
     setFormData(prev => {
       let updatedQuestions;
 
-      // Si se pasan 3 argumentos (id, field, value) - compatibilidad con código antiguo
+      // Si se pasan 3 argumentos (id, field, value)
       if (value !== undefined && typeof updatesOrField === 'string') {
         updatedQuestions = prev.questions.map(q =>
           q.id === questionId ? { ...q, [updatesOrField]: value } : q
         );
       }
-      // Si se pasan 2 argumentos (id, updates) - nuevo formato
+      // Si se pasan 2 argumentos (id, updates)
       else if (typeof updatesOrField === 'object') {
         updatedQuestions = prev.questions.map(q =>
           q.id === questionId ? { ...q, ...updatesOrField } : q
@@ -191,14 +190,14 @@ const FormBuilder = () => {
     }));
   };
 
-  // Save form as draft - VERSIÓN MEJORADA
+  // Save form as draft - FUNCIÓN CORREGIDA
   const saveForm = async () => {
     if (!formData?.title?.trim()) {
       alert("Por favor ingresa un título para el formulario");
       return;
     }
 
-    //  VALIDACIÓN ADICIONAL DE TÍTULOS DE PREGUNTAS
+    // Validación adicional de títulos de preguntas
     const hasLongQuestionTitles = formData.questions.some(
       q => (q.title?.length || 0) > 50
     );
@@ -216,18 +215,35 @@ const FormBuilder = () => {
         body: JSON.stringify(formData),
       });
 
+      if (!response.ok) {
+        throw new Error('Error en la respuesta del servidor');
+      }
+
       const savedForm = await response.json();
-      setFormData(savedForm);
+      
+      // Actualizar el estado preservando los datos locales
+      setFormData(prev => ({
+        ...prev,
+        ...savedForm,
+        id: savedForm._id || savedForm.id || prev.id,
+        title: savedForm.title || prev.title,
+        section: savedForm.section || prev.section,
+        category: savedForm.category || prev.category,
+        questions: savedForm.questions || prev.questions,
+        status: savedForm.status || prev.status,
+        updatedAt: savedForm.updatedAt || new Date().toISOString()
+      }));
 
       alert("Formulario guardado como borrador exitosamente");
 
-      //  CORREGIDO: window.history.replaceState en lugar de window.href
+      // Actualizar URL si es nuevo
       if (!formData?.id) {
-        window.history.replaceState({}, "", `?id=${savedForm._id}`);
+        window.history.replaceState({}, "", `?id=${savedForm._id || savedForm.id}`);
       }
+
     } catch (error) {
       console.error(error);
-      alert("Error al guardar el formulario");
+      alert("Error al guardar el formulario: " + error.message);
     } finally {
       setIsSaving(false);
     }

@@ -29,11 +29,19 @@ const FormCard = ({ form, onSelect, className = '' }) => {
     }
   };
 
+  // Función para truncar texto manualmente como fallback
+  const truncateText = (text, maxLength = 30) => {
+    if (!text) return '';
+    return text.length > maxLength 
+      ? `${text.substring(0, maxLength)}...` 
+      : text;
+  };
+
   return (
     <div className={`bg-card border border-border rounded-lg p-6 hover:shadow-brand-hover transition-brand group ${className}`}>
       <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <div className={`p-2 rounded-lg ${form?.category === 'timeoff' ? 'bg-primary/10' : 
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <div className={`p-2 rounded-lg flex-shrink-0 ${form?.category === 'timeoff' ? 'bg-primary/10' : 
             form?.category === 'expense' ? 'bg-secondary/10' : 
             form?.category === 'hr' ? 'bg-accent/10' : 'bg-muted'}`}>
             <Icon 
@@ -44,16 +52,21 @@ const FormCard = ({ form, onSelect, className = '' }) => {
                 form?.category === 'hr' ? 'text-accent' : 'text-muted-foreground'}
             />
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground group-hover:text-primary transition-brand">
-              {form?.title}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <h3 
+              className="font-semibold text-foreground group-hover:text-primary transition-brand truncate overflow-hidden whitespace-nowrap text-ellipsis"
+              title={form?.title}
+            >
+              {truncateText(form?.title, 30)}
             </h3>
-            <p className="text-sm text-muted-foreground">{form?.category}</p>
+            <p className="text-sm text-muted-foreground truncate overflow-hidden whitespace-nowrap text-ellipsis">
+              {form?.category}
+            </p>
           </div>
         </div>
         
         {form?.priority && (
-          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPriorityColor(form?.priority)}`}>
+          <span className={`px-2 py-1 text-xs font-medium rounded-full border flex-shrink-0 ml-2 ${getPriorityColor(form?.priority)}`}>
             {form?.priority}
           </span>
         )}
