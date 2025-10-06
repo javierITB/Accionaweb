@@ -215,7 +215,7 @@ const FormBuilder = () => {
 
       // actualiza URL si es nuevo
       if (!formData?.id) {
-        window.history.replaceState({}, "", `?id=${savedForm._id}`);
+        window.href(`form-builder?id=${savedForm._id}`);
       }
     } catch (error) {
       console.error(error);
