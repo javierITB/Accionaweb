@@ -63,7 +63,7 @@ const FormBuilder = () => {
 
     const fetchForm = async () => {
       try {
-        const res = await fetch(`http://localhost:4000/api/forms/${formId}`);
+        const res = await fetch(`http://192.168.0.2:4000/api/forms/${formId}`);
         if (!res.ok) throw new Error('Formulario no encontrado');
         const data = await res.json();
 

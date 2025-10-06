@@ -232,7 +232,7 @@ const QuestionEditor = ({ question, isSelected, onUpdate }) => {
           type="text"
           value={localQuestion.title || ''}
           onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="Título de la pregunta"
+          placeholder="Título de la pregunta" 
           className="w-full text-lg font-medium text-gray-900 mb-3 px-3 py-2 border border-gray-300 rounded"
         />
       ) : (
