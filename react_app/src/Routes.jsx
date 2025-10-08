@@ -8,12 +8,15 @@ import Login from './pages/login/Index.jsx';
 import SupportPortal from './pages/support-portal/Index.jsx';
 import DashboardHome from './pages/dashboard-home/Index.jsx';
 import RequestTracking from './pages/request-tracking/Index.jsx';
+import RespuestasForms from './pages/Respuestas/Index.jsx';
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Home from './clientPages/home/Index.jsx';
 import FormList from './clientPages/FormList/Index.jsx';
 import FormBuilder from './pages/form-builder/Index.jsx';
 import FormRenderer from './pages/form-renderer/Index.jsx';
 import Form from './clientPages/formulario/Index.jsx';
+
+
 
 const Routes = () => {
   return (
@@ -36,6 +39,13 @@ const Routes = () => {
             element={
               <ProtectedRoute>
                 <FormCenter />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/RespuestasForms"
+            element={
+              <ProtectedRoute>
+                <RespuestasForms />
               </ProtectedRoute>
             }
           />

@@ -43,7 +43,7 @@ const FormPreview = ({ formData }) => {
         submittedAt: new Date().toISOString(),
       };
 
-      const res = await fetch(`http://192.168.0.2:4000/api/forms/respuestas`, {
+      const res = await fetch(`http://192.168.0.2:4000/api/respuestas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
