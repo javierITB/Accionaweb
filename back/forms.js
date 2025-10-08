@@ -129,4 +129,18 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+router.post("/respuestas", async (req, res) => {
+  try {
+    const result = await req.db.collection("respuestas").insertOne({
+      ...req.body,
+      createdAt: new Date()
+    });
+
+    res.json({ _id: result.insertedId, ...req.body });
+  } catch (err) {
+    res.status(500).json({ error: "Error al guardar respuesta" });
+  }
+});
+
+
 module.exports = router;
