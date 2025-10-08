@@ -16,53 +16,15 @@ router.post("/", async (req, res) => {
   }
 });
 
-
+// Listar todos los formularios
 router.get("/", async (req, res) => {
   try {
-    const db = req.db;
-    const respuestas = await db.collection("respuestas").find().toArray();
-
-    // Normalizar formId a string (evita mismatches ObjectId vs string)
-    const formIdStrings = [...new Set(
-      respuestas
-        .map(r => {
-          if (!r.formId) return null;
-          // si viene como ObjectId -> toString() o toHexString()
-          try {
-            return typeof r.formId === "string" ? r.formId : r.formId.toString();
-          } catch (e) {
-            return String(r.formId);
-          }
-        })
-        .filter(Boolean)
-    )];
-
-    // Filtrar sólo los ids válidos para ObjectId
-    const validObjectIds = formIdStrings.filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id));
-
-    const forms = validObjectIds.length > 0
-      ? await db.collection("form").find({ _id: { $in: validObjectIds } }).toArray()
-      : [];
-
-    const formMap = Object.fromEntries(forms.map(f => [f._id.toString(), f]));
-
-    const respuestasConForm = respuestas.map(r => {
-      const key = r.formId ? (typeof r.formId === "string" ? r.formId : r.formId.toString()) : null;
-      return {
-        ...r,
-        formData: key ? (formMap[key] || null) : null
-      };
-    });
-
-    res.json(respuestasConForm);
+    const answers = await req.db.collection("respuestas").find().toArray();
+    res.json(answers);
   } catch (err) {
-    console.error("Error al obtener respuestas con formularios:", err);
-    res.status(500).json({ error: "Error al obtener respuestas con formularios asociados" });
+    res.status(500).json({ error: "Error al obtener formularios" });
   }
 });
-
-
-
 
 // Obtener un formulario por ID (Mongo ObjectId)
 router.get("/:id", async (req, res) => {
