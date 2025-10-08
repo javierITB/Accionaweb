@@ -5,34 +5,34 @@ const FormPreview = ({ formData }) => {
   const [answers, setAnswers] = useState({});
 
   // Manejar cambios en inputs
-  const handleInputChange = (questionPath, value) => {
+  const handleInputChange = (questionTitle, value) => {
     setAnswers((prev) => ({
       ...prev,
-      [questionPath]: value,
+      [questionTitle]: value,
     }));
   };
 
   // Manejar cambios en radio buttons
-  const handleRadioChange = (questionPath, optionValue) => {
+  const handleRadioChange = (questionTitle, optionValue) => {
     setAnswers((prev) => ({
       ...prev,
-      [questionPath]: optionValue,
+      [questionTitle]: optionValue,
     }));
   };
 
   // Manejar cambios en checkboxes múltiples
-  const handleCheckboxChange = (questionPath, option) => {
+  const handleCheckboxChange = (questionTitle, option) => {
     setAnswers((prev) => {
-      const currentAnswers = prev[questionPath] || [];
+      const currentAnswers = prev[questionTitle] || [];
       if (currentAnswers.includes(option)) {
         return {
           ...prev,
-          [questionPath]: currentAnswers.filter((o) => o !== option),
+          [questionTitle]: currentAnswers.filter((o) => o !== option),
         };
       } else {
         return {
           ...prev,
-          [questionPath]: [...currentAnswers, option],
+          [questionTitle]: [...currentAnswers, option],
         };
       }
     });
@@ -41,8 +41,9 @@ const FormPreview = ({ formData }) => {
   // Función para renderizar una pregunta individual CON soporte para subsecciones recursivas
   const renderQuestion = (question, index, showNumber = true, parentPath = '') => {
     const questionPath = parentPath ? `${parentPath}.${question.id}` : question.id;
+    const questionTitle = question.title || `Pregunta ${index + 1}`; // 👈 SOLO el título, sin jerarquía
     const baseInputClass = 'w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-black text-base';
-    const value = answers[questionPath] || '';
+    const value = answers[questionTitle] || '';
 
     const renderInput = () => {
       switch (question?.type) {
@@ -53,7 +54,7 @@ const FormPreview = ({ formData }) => {
               placeholder="Escribe tu respuesta aquí..."
               className={baseInputClass}
               value={value}
-              onChange={(e) => handleInputChange(questionPath, e.target.value)}
+              onChange={(e) => handleInputChange(questionTitle, e.target.value)}
             />
           );
 
@@ -64,7 +65,7 @@ const FormPreview = ({ formData }) => {
               placeholder="0"
               className={baseInputClass}
               value={value}
-              onChange={(e) => handleInputChange(questionPath, e.target.value)}
+              onChange={(e) => handleInputChange(questionTitle, e.target.value)}
             />
           );
 
@@ -74,7 +75,7 @@ const FormPreview = ({ formData }) => {
               type="date"
               className={baseInputClass}
               value={value}
-              onChange={(e) => handleInputChange(questionPath, e.target.value)}
+              onChange={(e) => handleInputChange(questionTitle, e.target.value)}
             />
           );
 
@@ -84,7 +85,7 @@ const FormPreview = ({ formData }) => {
               type="time"
               className={baseInputClass}
               value={value}
-              onChange={(e) => handleInputChange(questionPath, e.target.value)}
+              onChange={(e) => handleInputChange(questionTitle, e.target.value)}
             />
           );
 
@@ -103,7 +104,7 @@ const FormPreview = ({ formData }) => {
                         name={questionPath}
                         value={optionValue}
                         checked={value === optionValue}
-                        onChange={(e) => handleRadioChange(questionPath, e.target.value)}
+                        onChange={(e) => handleRadioChange(questionTitle, e.target.value)}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-base text-black">{optionText}</span>
@@ -125,10 +126,10 @@ const FormPreview = ({ formData }) => {
                   <div key={idx} className="space-y-2">
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
-                        type="checkbox"  // 👈 MANTENER como checkbox para selección múltiple
+                        type="checkbox"
                         checked={isChecked}
-                        onChange={() => handleCheckboxChange(questionPath, optionText)}
-                        className="h-4 w-4 rounded-full border-2 border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2"  // 👈 rounded-full para círculos
+                        onChange={() => handleCheckboxChange(questionTitle, optionText)}
+                        className="h-4 w-4 rounded-full border-2 border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2"
                       />
                       <span className="text-base text-black">{optionText}</span>
                     </label>
@@ -166,7 +167,7 @@ const FormPreview = ({ formData }) => {
 
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-black mb-1">
-                  {question?.title || `Pregunta ${index + 1}`}
+                  {questionTitle}
                   {question?.required && (
                     <span className="text-red-600 ml-1">*</span>
                   )}
@@ -194,9 +195,9 @@ const FormPreview = ({ formData }) => {
             // Verificar si esta subsección debe mostrarse (AUTOMÁTICO)
             const shouldShowSubsection = 
               question.type === 'single_choice' 
-                ? answers[questionPath] === optionText
+                ? answers[questionTitle] === optionText
                 : question.type === 'multiple_choice'
-                ? Array.isArray(answers[questionPath]) && answers[questionPath].includes(optionText)
+                ? Array.isArray(answers[questionTitle]) && answers[questionTitle].includes(optionText)
                 : false;
 
             if (shouldShowSubsection) {
@@ -218,12 +219,24 @@ const FormPreview = ({ formData }) => {
   // Enviar formulario al endpoint de tu API
   const handleSubmit = async () => {
     try {
+      // Limpiar respuestas vacías
+      const cleanAnswers = Object.fromEntries(
+        Object.entries(answers).filter(([_, value]) => 
+          value !== '' && 
+          value !== null && 
+          value !== undefined &&
+          !(Array.isArray(value) && value.length === 0)
+        )
+      );
+
       const payload = {
         formId: formData?.id,
-        title: formData?.title,
-        responses: answers,
+        formTitle: formData?.title,
+        responses: cleanAnswers,
         submittedAt: new Date().toISOString(),
       };
+
+      console.log('Enviando respuestas:', payload); // Para debug
 
       const res = await fetch(`http://192.168.0.2:4000/api/respuestas`, {
         method: 'POST',

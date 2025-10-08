@@ -92,7 +92,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
                   <h2 className="text-xl font-semibold text-foreground">{request?.title}</h2>
-                  <p className="text-sm text-muted-foreground">ID: {request?.id}</p>
+                  <p className="text-sm text-muted-foreground">ID: {request?._id}</p>
                 </div>
               </div>
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(request?.status)}`}>
@@ -120,7 +120,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Categoría:</span>
-                    <span className="text-sm font-medium text-foreground">{request?.category}</span>
+                    <span className="text-sm font-medium text-foreground">{request?.form?.section}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Prioridad:</span>
@@ -135,10 +135,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                     <span className="text-sm text-muted-foreground">Enviado por:</span>
                     <span className="text-sm font-medium text-foreground">{request?.submittedBy}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Fecha de envío:</span>
-                    <span className="text-sm font-medium text-foreground">{formatDate(request?.submittedDate)}</span>
-                  </div>
+                  
                 </div>
               </div>
             </div>
@@ -152,30 +149,26 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                     <span className="text-sm font-medium text-foreground">{request?.assignedTo || 'No asignado'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Última actualización:</span>
+                    <span className="text-sm text-muted-foreground">Fecha de envío:</span>
                     <span className="text-sm font-medium text-foreground">{formatDate(request?.lastUpdated)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Fecha límite:</span>
-                    <span className="text-sm font-medium text-foreground">
-                      {request?.dueDate ? formatDate(request?.dueDate) : 'No especificada'}
-                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+          
 
           {/* Description */}
+          {request?.form?.description && (
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Descripción</h3>
             <div className="bg-muted/50 rounded-lg p-4">
               <p className="text-sm text-muted-foreground leading-relaxed">
-                {request?.description}
+                {request?.form?.description}
               </p>
             </div>
-          </div>
-
+          </div>)
+          }            
           {/* Additional Details */}
           {request?.details && (
             <div>

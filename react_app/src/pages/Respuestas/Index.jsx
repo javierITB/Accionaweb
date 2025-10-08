@@ -16,13 +16,14 @@ const RequestTracking = () => {
   const [showTimeline, setShowTimeline] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
   const [forms, setAllForms] = useState([]);
+  const [resp, setResp] = useState([]);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showRequestDetails, setShowRequestDetails] = useState(false);
   const [messageRequest, setMessageRequest] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [isLoading,setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -35,132 +36,74 @@ const RequestTracking = () => {
     submittedBy: ''
   });
 
-//http://192.168.0.2:4000/api/respuestas
   useEffect(() => {
-      const fetchForms = async () => {
-        try {
-          setIsLoading(true);
-          const res = await fetch('http://192.168.0.2:4000/api/respuestas/');
-          const data = await res.json();
-  
-          const normalizedForms = data.map(f => ({
-            id: f._id,
-            title: f.title,
-            description: f.description,
-            category: f.category,
-            status: f.status,
-            section: f.section,
-            submittedBy: f.author,
-            submittedDate: f.createdAt,
-            lastUpdated: f.updatedAt,
-            assignedTo: "Insertar Empresa que rellena",
-            details: f.responses,
-            hasMessages: false
-          }));
-  
-          setAllForms(normalizedForms);
-        } catch (err) {
-          console.error('Error cargando formularios:', err);
-        } finally {
-          setIsLoading(false);
+    const fetchForms = async () => {
+      try {
+        setIsLoading(true);
+
+        // 1) Traer ambas colecciones en paralelo
+        const [resResp, resForms] = await Promise.all([
+          fetch('http://192.168.0.2:4000/api/respuestas/'),
+          fetch('http://192.168.0.2:4000/api/forms/')
+        ]);
+
+        if (!resResp.ok || !resForms.ok) {
+          throw new Error('Error al obtener datos del servidor');
         }
-      };
-  
-      fetchForms();
-    }, []);
-  // Mock data for requests
-  const mockRequests = [
-    {
-      id: "REQ-2025-001",
-      title: "Solicitud de Vacaciones - Febrero 2025",
-      description: "Solicitud de 10 días de vacaciones del 8 al 19 de febrero de 2025 para viaje familiar.",
-      category: "time_off",
-      status: "pending",
-      priority: "medium",
-      submittedBy: "Sarah Johnson",
-      submittedDate: "2025-01-18T09:30:00Z",
-      lastUpdated: "2025-01-20T14:15:00Z",
-      assignedTo: "María González",
-      dueDate: "2025-01-25T17:00:00Z",
-      hasMessages: true,
-      details: `Estimado equipo de RR.HH.,\n\nSolicito formalmente 10 días de vacaciones del 8 al 19 de febrero de 2025. He coordinado con mi equipo para asegurar la cobertura de mis responsabilidades durante mi ausencia.\n\nMotivo: Viaje familiar planificado con anticipación.\nFechas solicitadas: 8-19 de febrero de 2025\nDías laborales: 10 días\n\nAgradeceré su pronta respuesta para confirmar la aprobación.`
-    },
-    {
-      id: "REQ-2025-002",
-      title: "Reembolso de Gastos de Viaje - Conferencia TI",
-      description: "Reembolso de gastos de transporte y alojamiento para asistencia a conferencia tecnológica en Santiago.",
-      category: "expense",
-      status: "approved",
-      priority: "low",
-      submittedBy: "Carlos Mendoza",
-      submittedDate: "2025-01-15T11:20:00Z",
-      lastUpdated: "2025-01-19T16:45:00Z",
-      assignedTo: "Ana Rodríguez",
-      dueDate: null,
-      hasMessages: false,
-      details: `Solicito el reembolso de los siguientes gastos incurridos durante mi participación en la Conferencia de Tecnología 2025:\n\n- Transporte aéreo: $180.000 CLP\n- Alojamiento (2 noches): $120.000 CLP\n- Alimentación: $45.000 CLP\n\nTotal solicitado: $345.000 CLP\n\nTodos los recibos están adjuntos a esta solicitud.`
-    },
-    {
-      id: "REQ-2025-003",
-      title: "Soporte TI - Problema con Acceso al Sistema",
-      description: "No puedo acceder al sistema de gestión de proyectos desde hace 2 días. Error de autenticación.",
-      category: "it_support",
-      status: "in_review",
-      priority: "high",
-      submittedBy: "Laura Fernández",
-      submittedDate: "2025-01-19T08:15:00Z",
-      lastUpdated: "2025-01-20T10:30:00Z",
-      assignedTo: "Equipo TI",
-      dueDate: "2025-01-21T12:00:00Z",
-      hasMessages: true,
-      details: `Desde el lunes 17 de enero no puedo acceder al sistema de gestión de proyectos. Aparece el siguiente error:\n\n"Error de autenticación - Credenciales inválidas"\n\nHe intentado:\n- Restablecer contraseña\n- Limpiar caché del navegador\n- Probar desde diferentes navegadores\n\nNecesito acceso urgente para completar el reporte semanal.`
-    },
-    {
-      id: "REQ-2025-004",
-      title: "Actualización de Datos Personales",
-      description: "Cambio de dirección y número de teléfono en el sistema de RR.HH.",
-      category: "hr_general",
-      status: "draft",
-      priority: "low",
-      submittedBy: "Roberto Silva",
-      submittedDate: "2025-01-20T15:45:00Z",
-      lastUpdated: "2025-01-20T15:45:00Z",
-      assignedTo: null,
-      dueDate: null,
-      hasMessages: false,
-      details: `Solicito la actualización de mis datos personales en el sistema:\n\nDirección anterior: Av. Providencia 1234, Santiago\nNueva dirección: Av. Las Condes 5678, Las Condes\n\nTeléfono anterior: +56 9 8765 4321\nNuevo teléfono: +56 9 1234 5678\n\nAdjunto comprobante de domicilio actualizado.`
-    },
-    {
-      id: "REQ-2025-005",
-      title: "Consulta sobre Liquidación de Sueldo",
-      description: "Discrepancia en el cálculo de horas extras en la liquidación de diciembre 2024.",
-      category: "payroll",
-      status: "rejected",
-      priority: "medium",
-      submittedBy: "Patricia Morales",
-      submittedDate: "2025-01-12T13:20:00Z",
-      lastUpdated: "2025-01-18T09:15:00Z",
-      assignedTo: "Departamento de Nóminas",
-      dueDate: null,
-      hasMessages: true,
-      details: `He revisado mi liquidación de sueldo de diciembre 2024 y encontré una discrepancia en el cálculo de horas extras.\n\nSegún mis registros:\n- Horas extras trabajadas: 15 horas\n- Horas extras pagadas: 10 horas\n\nSolicito revisión y corrección si corresponde. Adjunto registro detallado de horas trabajadas.`
-    },
-    {
-      id: "REQ-2025-006",
-      title: "Inscripción en Seguro Complementario",
-      description: "Solicitud de inscripción en el plan de seguro médico complementario para empleados.",
-      category: "benefits",
-      status: "pending",
-      priority: "medium",
-      submittedBy: "Diego Herrera",
-      submittedDate: "2025-01-16T10:00:00Z",
-      lastUpdated: "2025-01-19T14:30:00Z",
-      assignedTo: "Beneficios",
-      dueDate: "2025-01-30T17:00:00Z",
-      hasMessages: false,
-      details: `Solicito mi inscripción en el plan de seguro médico complementario ofrecido por la empresa.\n\nPlan solicitado: Plan Familiar Premium\nBeneficiarios: Cónyuge e hijo menor\n\nAdjunto formularios completados y documentos requeridos.`
-    }
-  ];
+
+        // 2) Convertir a JSON
+        const responses = await resResp.json(); // lista de respuestas
+        const forms = await resForms.json();    // lista de formularios
+
+        // 3) Construir mapa de forms para lookup rápido (mapeamos _id e id si existen)
+        const formsMap = new Map();
+        forms.forEach(f => {
+          const keyA = f._id ? String(f._id) : null;
+          const keyB = f.id ? String(f.id) : null;
+          if (keyA) formsMap.set(keyA, f);
+          if (keyB) formsMap.set(keyB, f);
+        });
+
+        // 4) Normalizar responses uniendo con su form
+        const normalized = responses.map(r => {
+          const formIdKey = r.formId ? String(r.formId) : null;
+          const matchedForm = formIdKey ? formsMap.get(formIdKey) || null : null;
+
+          return {
+            // campos originales de la respuesta
+            _id: r._id,
+            formId: r.formId,
+            title: r.title || (matchedForm ? matchedForm.title : ''),
+            responses: r.responses || {},
+            submittedAt: r.submittedAt || r.createdAt || null,
+            createdAt: r.createdAt || null,
+            updatedAt: r.updatedAt || null,
+
+            // tus campos normalizados/auxiliares (ajusta según lo necesites)
+            submittedBy: r.submittedBy || matchedForm?.author || '',
+            lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
+            assignedTo: "Insertar Empresa que rellena",
+            hasMessages: false,
+
+            // aquí va el objeto form asociado (o null si no se encuentra)
+            form: matchedForm
+          };
+        });
+
+        // 5) Actualizar estados
+        setAllForms(forms);    // lista de formularios tal cual vino del backend
+        setResp(normalized);   // respuestas ya unidas con su form
+
+      } catch (err) {
+        console.error('Error cargando formularios:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchForms();
+  }, []);
+
 
   // Mock timeline data
   const mockTimeline = [
@@ -216,16 +159,16 @@ const RequestTracking = () => {
 
   // Mock stats data
   const mockStats = {
-    total: 156,
-    pending: 23,
-    inReview: 12,
-    approved: 98,
-    rejected: 8,
-    avgProcessingTime: 5.2
+    total: resp?.length || 0,
+    pending: resp?.filter(r => !r.status || r.status === 'pending')?.length || 0,
+    inReview: resp?.filter(r => r.status === 'inReview')?.length || 0,
+    approved: resp?.filter(r => r.status === 'approved')?.length || 0,
+    rejected: resp?.filter(r => r.status === 'rejected')?.length || 0,
+    avgProcessingTime: 5.2 // puedes calcularlo después si tienes timestamps
   };
 
   // Filter and sort requests
-  const filteredRequests = forms?.filter(request => {
+  const filteredRequests = resp?.filter(request => {
     if (filters?.search && !request?.title?.toLowerCase()?.includes(filters?.search?.toLowerCase()) &&
       !request?.description?.toLowerCase()?.includes(filters?.search?.toLowerCase()) &&
       !request?.id?.toLowerCase()?.includes(filters?.search?.toLowerCase())) {
@@ -342,7 +285,7 @@ const RequestTracking = () => {
             </div>
 
             <div className="flex items-center space-x-3">
-              
+
               <Button
                 variant="ghost"
                 size="icon"

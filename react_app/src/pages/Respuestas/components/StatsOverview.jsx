@@ -4,7 +4,7 @@ import Icon from '../../../components/AppIcon';
 const StatsOverview = ({ stats }) => {
   const statCards = [
     {
-      title: 'Total de Solicitudes',
+      title: 'Total de Respuestas',
       value: stats?.total,
       icon: 'FileText',
       color: 'text-primary',

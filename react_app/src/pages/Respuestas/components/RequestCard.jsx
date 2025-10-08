@@ -89,7 +89,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
             <div className="flex items-center space-x-1">
               <Icon name="Tag" size={14} />
               <span className={getPriorityColor(request?.priority)}>
-                {request?.priority?.toUpperCase()}
+                {request?.form?.section?.toUpperCase()}
               </span>
             </div>
           </div>
