@@ -35,7 +35,8 @@ const QuickActionsCard = ({ section }) => {
             documentsRequired: f.documentsRequired ?? false,
             color : f.primaryColor,
             tags: f.tags || [],
-            lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null
+            lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null,
+            path : "/forms?id=" + f._id
           }));
   
           setAllForms(normalizedForms);

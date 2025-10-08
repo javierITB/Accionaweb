@@ -18,15 +18,58 @@ const DashboardHome = () => {
     employeeId: "ACC-2024-001",
     avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
   };
-
+  const [formData, setFormData] = useState({
+      id: null,
+      title: '',
+      category: '',
+      responseTime: '',
+      author: 'Admin',
+      primaryColor: '#3B82F6',
+      secondaryColor: '#F3F4F6',
+      questions: [],
+      status: 'draft',
+      section: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
   // Update time every minute
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-
-    return () => clearInterval(timer);
-  }, []);
+      const urlParams = new URLSearchParams(window.location.search);
+      const formId = urlParams?.get('id');
+  
+      const fetchForm = async () => {
+        try {
+          const res = await fetch(`http://192.168.0.2:4000/api/forms/${formId}`);
+          if (!res.ok) throw new Error('Formulario no encontrado');
+          const data = await res.json();
+  
+          // Normalización corregida - incluyendo section
+          const normalizedForm = {
+            id: data._id || data.id || null,
+            title: data.title || '',
+            category: data.category || '',
+            responseTime: data.responseTime || '',
+            author: data.author || 'Admin',
+            primaryColor: data.primaryColor || '#3B82F6',
+            secondaryColor: data.secondaryColor || '#F3F4F6',
+            questions: data.questions || [],
+            status: data.status || 'draft',
+            section: data.section || '',
+            createdAt: data.createdAt || new Date().toISOString(),
+            updatedAt: data.updatedAt || new Date().toISOString()
+          };
+  
+          setFormData(normalizedForm);
+        } catch (err) {
+          console.error('Error cargando el formulario:', err);
+          alert('No se pudo cargar el formulario');
+        }
+      };
+  
+      if (formId) {
+        fetchForm();
+      }
+    }, []);
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -71,7 +114,7 @@ const DashboardHome = () => {
             {/* Left Column - Primary Actions */}
             <div className="xl:col-span-2 space-y-12">
               {/* Quick Actions */}
-              <QuickActionsCard />
+              <QuickActionsCard formData={formData}/>
               
             </div>
             

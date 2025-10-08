@@ -92,7 +92,7 @@ router.put("/public/:id", async (req, res) => {
   try {
     const result = await req.db.collection("forms").findOneAndUpdate(
       { _id: new ObjectId(req.params.id) },
-      { 
+      {
         $set: { 
           status: "published", 
           updatedAt: new Date() 
@@ -110,8 +110,6 @@ router.put("/public/:id", async (req, res) => {
     res.status(500).json({ error: "Error al publicar formulario" });
   }
 });
-
-
 
 // Eliminar un formulario
 router.delete("/:id", async (req, res) => {
