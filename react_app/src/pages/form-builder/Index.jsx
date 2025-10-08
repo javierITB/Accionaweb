@@ -131,6 +131,9 @@ const FormBuilder = () => {
     if (activeTab !== 'questions') {
       setActiveTab('questions');
     }
+
+    // AGREGAR ESTA LÍNEA PARA RETORNAR LA NUEVA PREGUNTA
+    return newQuestion;
   };
 
   // Update question
@@ -220,7 +223,7 @@ const FormBuilder = () => {
       }
 
       const savedForm = await response.json();
-      
+
       // Actualizar el estado preservando los datos locales
       setFormData(prev => ({
         ...prev,
@@ -371,11 +374,10 @@ const FormBuilder = () => {
 
             <div className="flex items-center space-x-3">
               {/* Status Badge */}
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                formData?.status === 'published' 
-                  ? 'bg-green-100 text-green-700' 
+              <div className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === 'published'
+                  ? 'bg-green-100 text-green-700'
                   : 'bg-yellow-100 text-yellow-700'
-              }`}>
+                }`}>
                 {formData?.status === 'published' ? 'Publicado' : 'Borrador'}
               </div>
 
@@ -450,20 +452,18 @@ const FormBuilder = () => {
                   <button
                     key={tab?.id}
                     onClick={() => setActiveTab(tab?.id)}
-                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === tab?.id
-                        ? 'border-primary text-primary' 
+                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab?.id
+                        ? 'border-primary text-primary'
                         : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
-                    }`}
+                      }`}
                   >
                     <Icon name={tab?.icon} size={16} />
                     <span>{tab?.label}</span>
                     {tab?.count !== undefined && (
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        activeTab === tab?.id 
+                      <span className={`px-2 py-1 text-xs rounded-full ${activeTab === tab?.id
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted text-muted-foreground'
-                      }`}>
+                        }`}>
                         {tab?.count}
                       </span>
                     )}

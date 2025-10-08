@@ -1,7 +1,6 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon.jsx';
 
-
 const FormPreview = ({ formData }) => {
   const renderQuestionInput = (question) => {
     const baseInputClass = "w-full px-3 py-2 border border-input rounded-md bg-white text-black";
@@ -47,31 +46,58 @@ const FormPreview = ({ formData }) => {
       
       case 'single_choice':
         return (
-          <select className={baseInputClass} disabled>
-            <option>Selecciona una opción</option>
-            {(question?.options || [])?.map((option, idx) => (
-              <option key={idx} value={option}>
-                {option || `Opción ${idx + 1}`}
-              </option>
-            ))}
-          </select>
+          <div className="space-y-3">
+            {(question?.options || [])?.map((option, idx) => {
+              const optionText = typeof option === 'object' ? option.text : option;
+              const hasSubform = typeof option === 'object' ? option.hasSubform : false;
+              
+              return (
+                <label key={idx} className="flex items-center space-x-3 cursor-not-allowed">
+                  <input
+                    type="radio"
+                    name={`question-${question.id}`}
+                    className="h-4 w-4 text-blue-600"
+                    disabled
+                  />
+                  <span className="text-sm text-black">
+                    {optionText || `Opción ${idx + 1}`}
+                  </span>
+                  {hasSubform && (
+                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      Subsección
+                    </span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
         );
       
       case 'multiple_choice':
         return (
           <div className="space-y-3">
-            {(question?.options || [])?.map((option, idx) => (
-              <label key={idx} className="flex items-center space-x-3 cursor-not-allowed">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-2 border-input"
-                  disabled
-                />
-                <span className="text-sm text-black">
-                  {option || `Opción ${idx + 1}`}
-                </span>
-              </label>
-            ))}
+            {(question?.options || [])?.map((option, idx) => {
+              const optionText = typeof option === 'object' ? option.text : option;
+              const hasSubform = typeof option === 'object' ? option.hasSubform : false;
+              
+              return (
+                <label key={idx} className="flex items-center space-x-3 cursor-not-allowed">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-2 border-input"
+                    disabled
+                  />
+                  <span className="text-sm text-black">
+                    {optionText || `Opción ${idx + 1}`}
+                  </span>
+                  {hasSubform && (
+                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      Subsección
+                    </span>
+                  )}
+                </label>
+              );
+            })}
           </div>
         );
       
@@ -116,6 +142,7 @@ const FormPreview = ({ formData }) => {
           </p>
         </div>
       </div>
+
       {/* Preview Container */}
       <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-1">
         <div 
@@ -161,7 +188,7 @@ const FormPreview = ({ formData }) => {
             )}
           </div>
 
-          {/* Form Questions */}
+          {/* Form Questions - MOSTRAR PREGUNTAS DEL NIVEL 0 NORMALMENTE */}
           {formData?.questions?.length > 0 ? (
             <div className="space-y-8">
               {formData?.questions?.map((question, index) => (
@@ -241,6 +268,7 @@ const FormPreview = ({ formData }) => {
           )}
         </div>
       </div>
+
       {/* Preview Notes */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <div className="flex items-start space-x-3">

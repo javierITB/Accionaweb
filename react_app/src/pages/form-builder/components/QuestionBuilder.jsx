@@ -183,6 +183,13 @@ const QuestionBuilder = ({
           ...localQuestion,
           options: newOptions
         });
+
+        // EXPANDIR AUTOMÁTICAMENTE LA NUEVA SUBPREGUNTA
+        const newQuestionPath = `${questionPath}.sub.${newQuestion.id}`;
+        setExpandedQuestions(prev => ({
+          ...prev,
+          [newQuestionPath]: true
+        }));
       }
     };
 
@@ -265,11 +272,26 @@ const QuestionBuilder = ({
       }));
     };
 
-    const toggleQuestionExpansion = () => {
-      setExpandedQuestions(prev => ({
-        ...prev,
-        [questionPath]: !prev[questionPath]
-      }));
+    const toggleQuestionExpansion = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
+      setExpandedQuestions(prev => {
+        const newState = {
+          ...prev,
+          [questionPath]: !prev[questionPath]
+        };
+
+        requestAnimationFrame(() => {
+          window.scrollTo(0, currentScroll);
+        });
+
+        return newState;
+      });
     };
 
     const getOptionText = (option) => {
@@ -365,9 +387,15 @@ const QuestionBuilder = ({
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-sm text-blue-600">Subsección - Nivel {depth + 1}</span>
                             <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleAddSubformQuestion(optionIndex)}
+                              onClick={() => {
+                                const newQuestion = handleAddSubformQuestion(optionIndex);
+                                if (newQuestion && newQuestion.id) {
+                                  setExpandedQuestions(prev => ({
+                                    ...prev,
+                                    [newQuestion.id]: true
+                                  }));
+                                }
+                              }}
                               iconName="Plus"
                               iconPosition="left"
                             >
@@ -396,7 +424,7 @@ const QuestionBuilder = ({
                           ))}
 
                           {option.subformQuestions.length === 0 && (
-                            <div className="text-center py-4 text-sm text-blue-600 bg-blue-100 rounded">
+                            <div className="text-center py-4 text-sm text-blue-600 bg-blue-50 rounded">
                               No hay preguntas en esta subsección
                             </div>
                           )}
@@ -560,7 +588,7 @@ const QuestionBuilder = ({
                     type="checkbox"
                     checked={localQuestion.required || false}
                     onChange={(e) => handleRequiredChange(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border border-gray-900 bg-white"
                   />
                   <span className="text-sm font-medium text-foreground">
                     Campo obligatorio
@@ -585,8 +613,8 @@ const QuestionBuilder = ({
                   onBlur={saveChanges}
                   maxLength={50}
                   className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${(localQuestion.title?.length || 0) >= 50
-                      ? 'border-red-500 focus-visible:ring-red-200'
-                      : 'border-input focus-visible:ring-blue-200'
+                    ? 'border-red-500 focus-visible:ring-red-200'
+                    : 'border-input focus-visible:ring-blue-200'
                     }`}
                 />
                 {(localQuestion.title?.length || 0) >= 50 && (
@@ -614,8 +642,6 @@ const QuestionBuilder = ({
             {(localQuestion.type === 'single_choice' || localQuestion.type === 'multiple_choice') && (
               renderOptionsWithSubsections()
             )}
-
-            {/* SE ELIMINÓ LA SECCIÓN DE VISTA PREVIA */}
           </div>
         )}
       </div>
@@ -640,7 +666,15 @@ const QuestionBuilder = ({
         </div>
 
         <Button
-          onClick={onAddQuestion}
+          onClick={() => {
+            const newQuestion = onAddQuestion();
+            if (newQuestion && newQuestion.id) {
+              setExpandedQuestions(prev => ({
+                ...prev,
+                [newQuestion.id]: true
+              }));
+            }
+          }}
           iconName="Plus"
           iconPosition="left"
         >
@@ -660,7 +694,15 @@ const QuestionBuilder = ({
             Comienza agregando tu primera pregunta al formulario
           </p>
           <Button
-            onClick={onAddQuestion}
+            onClick={() => {
+              const newQuestion = onAddQuestion();
+              if (newQuestion && newQuestion.id) {
+                setExpandedQuestions(prev => ({
+                  ...prev,
+                  [newQuestion.id]: true
+                }));
+              }
+            }}
             iconName="Plus"
             iconPosition="left"
           >
@@ -689,8 +731,15 @@ const QuestionBuilder = ({
             ¿Listo para la siguiente pregunta?
           </p>
           <Button
-            onClick={onAddQuestion}
-            variant="outline"
+            onClick={() => {
+              const newQuestion = onAddQuestion();
+              if (newQuestion && newQuestion.id) {
+                setExpandedQuestions(prev => ({
+                  ...prev,
+                  [newQuestion.id]: true
+                }));
+              }
+            }}
             iconName="Plus"
             iconPosition="left"
           >
