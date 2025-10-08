@@ -13,6 +13,70 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
     { value: '30+', label: 'Más de 30 minutos' }
   ];
 
+  // Icono options with icons from quickActions
+  const IconoOptions = [
+    { 
+      value: 'Icono1', 
+      label: 'Contrato de trabajo', 
+      icon: 'FileText', 
+      color: 'bg-blue-500' 
+    },
+    { 
+      value: 'Icono2', 
+      label: 'Contrato trabajo por obra', 
+      icon: 'FileText', 
+      color: 'bg-blue-500' 
+    },
+    { 
+      value: 'Icono3', 
+      label: 'Sueldo empresarial', 
+      icon: 'Receipt', 
+      color: 'bg-green-500' 
+    },
+    { 
+      value: 'Icono4', 
+      label: 'Permiso sin goce de sueldo', 
+      icon: 'Receipt', 
+      color: 'bg-red-500' 
+    },
+    { 
+      value: 'Icono5', 
+      label: 'Certificado de Vigencia', 
+      icon: 'Clock', 
+      color: 'bg-purple-500' 
+    },
+    { 
+      value: 'Icono6', 
+      label: 'Certificado de Antigüedad', 
+      icon: 'MessageCircle', 
+      color: 'bg-teal-500' 
+    },
+    { 
+      value: 'Icono7', 
+      label: 'Certificado Licencias Médicas', 
+      icon: 'Edit', 
+      color: 'bg-teal-500' 
+    },
+    { 
+      value: 'Icono8', 
+      label: 'Solicitud de vacaciones', 
+      icon: 'Calendar', 
+      color: 'bg-orange-500' 
+    }
+  ];
+
+  // Company options
+  const companyOptions = [
+    { value: 'empresa1', label: 'Empresa 1' },
+    { value: 'empresa2', label: 'Empresa 2' },
+    { value: 'empresa3', label: 'Empresa 3' },
+    { value: 'empresa4', label: 'Empresa 4' },
+    { value: 'empresa5', label: 'Empresa 5' },
+    { value: 'empresa6', label: 'Empresa 6' },
+    { value: 'empresa7', label: 'Empresa 7' },
+    { value: 'empresa8', label: 'Empresa 8' }
+  ];
+
   // Color presets
   const colorPresets = [
     { primary: '#3B82F6', secondary: '#F3F4F6', name: 'Azul Clásico' },
@@ -30,7 +94,6 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
     if (value.length <= 50) {
       onUpdateFormData('title', value);
     }
-    // Si excede 50 caracteres, no hacemos nada (o podrías mostrar un toast)
   };
 
   const handleColorPresetSelect = (preset) => {
@@ -87,24 +150,25 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             </p>
           </div>
 
+          {/* EMPRESA */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              Categoría <span className="text-destructive">*</span>
+              Empresa <span className="text-destructive">*</span>
             </label>
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={formData?.category}
-              onChange={(e) => onUpdateFormData('category', e?.target?.value)}
+              value={formData?.company}
+              onChange={(e) => onUpdateFormData('company', e?.target?.value)}
             >
-              <option value="">Selecciona una categoría</option>
-              {categories?.map((category) => (
-                <option key={category?.value} value={category?.value}>
-                  {category?.label}
+              <option value="">Selecciona una empresa</option>
+              {companyOptions?.map((company) => (
+                <option key={company?.value} value={company?.value}>
+                  {company?.label}
                 </option>
               ))}
             </select>
             <p className="text-sm text-muted-foreground">
-              Ayuda a organizar y filtrar los formularios
+              Selecciona la empresa asociada
             </p>
           </div>
 
@@ -158,6 +222,45 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             disabled
           />
 
+        </div>
+      </div>
+
+      {/* Icono Selection - Minimalista y antes de colores */}
+      <div className="space-y-4">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-muted rounded-lg">
+            <Icon name="Image" size={20} className="text-foreground" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">
+              Icono del Formulario
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Selecciona un icono para identificar el formulario
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 gap-3">
+          {IconoOptions?.map((Icono) => (
+            <button
+              key={Icono.value}
+              type="button"
+              onClick={() => onUpdateFormData('Icono', Icono.value)}
+              className={`flex flex-col items-center p-2 rounded-lg transition-all ${
+                formData?.Icono === Icono.value
+                  ? 'bg-primary/10 ring-2 ring-primary/50'
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <div className={`${Icono.color} p-2 rounded-full mb-1`}>
+                <Icon name={Icono.icon} size={16} className="text-white" />
+              </div>
+              <span className="text-xs text-center text-muted-foreground leading-tight">
+                {Icono.label}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
