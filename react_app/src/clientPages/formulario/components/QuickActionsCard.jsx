@@ -1,10 +1,74 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon.jsx';
 
-
 const FormPreview = ({ formData }) => {
+  // 🧠 Estado para almacenar las respuestas de cada pregunta
+  const [answers, setAnswers] = useState({});
+
+  // Manejar cambios en inputs
+  const handleInputChange = (question, value) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [question]: value,
+    }));
+  };
+
+  // Manejar cambios en checkboxes múltiples
+  const handleCheckboxChange = (questionId, option) => {
+    setAnswers((prev) => {
+      const currentAnswers = prev[questionId] || [];
+      if (currentAnswers.includes(option)) {
+        // Si ya está seleccionada, la quitamos
+        return {
+          ...prev,
+          [questionId]: currentAnswers.filter((o) => o !== option),
+        };
+      } else {
+        // Si no está seleccionada, la agregamos
+        return {
+          ...prev,
+          [questionId]: [...currentAnswers, option],
+        };
+      }
+    });
+  };
+
+  // Enviar formulario al endpoint de tu API
+  const handleSubmit = async () => {
+    try {
+      const payload = {
+        formId: formData?.id,
+        title: formData?.title,
+        responses: answers,
+        submittedAt: new Date().toISOString(),
+      };
+
+      const res = await fetch('http://192.168.0.2:4000/api/respuestas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error('Error al enviar respuestas');
+
+      const data = await res.json();
+      alert('✅ Respuestas enviadas con éxito');
+      console.log('Respuestas guardadas:', data);
+
+      // Limpia el formulario
+      setAnswers({});
+    } catch (err) {
+      console.error(err);
+      alert('❌ No se pudieron enviar las respuestas');
+    }
+  };
+
+  // Renderizado dinámico según tipo de pregunta
   const renderQuestionInput = (question) => {
-    const baseInputClass = "w-full px-3 py-2 border border-input rounded-md bg-white text-black";
+    const baseInputClass =
+      'w-full px-3 py-2 border border-input rounded-md bg-white text-black';
+
+    const value = answers[question?.title] || '';
 
     switch (question?.type) {
       case 'text':
@@ -13,7 +77,8 @@ const FormPreview = ({ formData }) => {
             type="text"
             placeholder="Escribe tu respuesta aquí..."
             className={baseInputClass}
-
+            value={value}
+            onChange={(e) => handleInputChange(question.title, e.target.value)}
           />
         );
 
@@ -23,6 +88,8 @@ const FormPreview = ({ formData }) => {
             type="number"
             placeholder="0"
             className={baseInputClass}
+            value={value}
+            onChange={(e) => handleInputChange(question.title, e.target.value)}
           />
         );
 
@@ -31,7 +98,8 @@ const FormPreview = ({ formData }) => {
           <input
             type="date"
             className={baseInputClass}
-
+            value={value}
+            onChange={(e) => handleInputChange(question.title, e.target.value)}
           />
         );
 
@@ -40,17 +108,22 @@ const FormPreview = ({ formData }) => {
           <input
             type="time"
             className={baseInputClass}
-
+            value={value}
+            onChange={(e) => handleInputChange(question.title, e.target.value)}
           />
         );
 
       case 'single_choice':
         return (
-          <select className={baseInputClass} >
-            <option>Selecciona una opción</option>
-            {(question?.options || [])?.map((option, idx) => (
+          <select
+            className={baseInputClass}
+            value={value}
+            onChange={(e) => handleInputChange(question.title, e.target.value)}
+          >
+            <option value="">Selecciona una opción</option>
+            {(question?.options || []).map((option, idx) => (
               <option key={idx} value={option}>
-                {option || `Opción ${idx + 1}`}
+                {option}
               </option>
             ))}
           </select>
@@ -59,16 +132,18 @@ const FormPreview = ({ formData }) => {
       case 'multiple_choice':
         return (
           <div className="space-y-3">
-            {(question?.options || [])?.map((option, idx) => (
-              <label key={idx} className="flex items-center space-x-3 cursor-not-allowed">
+            {(question?.options || []).map((option, idx) => (
+              <label
+                key={idx}
+                className="flex items-center space-x-3 cursor-pointer"
+              >
                 <input
                   type="checkbox"
+                  checked={answers[question.title]?.includes(option) || false}
+                  onChange={() => handleCheckboxChange(question.title, option)}
                   className="h-4 w-4 rounded border-2 border-input"
-                  disabled
                 />
-                <span className="text-sm text-black">
-                  {option || `Opción ${idx + 1}`}
-                </span>
+                <span className="text-sm text-black">{option}</span>
               </label>
             ))}
           </div>
@@ -93,7 +168,8 @@ const FormPreview = ({ formData }) => {
           Vista previa no disponible
         </h3>
         <p className="text-muted-foreground">
-          Completa las propiedades del formulario y agrega preguntas para ver la vista previa
+          Completa las propiedades del formulario y agrega preguntas para ver la
+          vista previa
         </p>
       </div>
     );
@@ -101,15 +177,15 @@ const FormPreview = ({ formData }) => {
 
   return (
     <div className="space-y-6">
-      {/* Preview Container */}
+      {/* Contenedor de la vista previa */}
       <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-1">
         <div
           className="rounded-lg p-6 min-h-96"
           style={{
-            backgroundColor: formData?.secondaryColor || '#F3F4F6'
+            backgroundColor: formData?.secondaryColor || '#F3F4F6',
           }}
         >
-          {/* Form Header */}
+          {/* Cabecera del formulario */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-black mb-2">
               {formData?.title || 'Título del Formulario'}
@@ -140,22 +216,34 @@ const FormPreview = ({ formData }) => {
 
             {formData?.questions?.length > 0 && (
               <p className="text-gray-600">
-                {formData?.questions?.length} pregunta{formData?.questions?.length !== 1 ? 's' : ''} •
-                {formData?.questions?.filter(q => q?.required)?.length} obligatoria{formData?.questions?.filter(q => q?.required)?.length !== 1 ? 's' : ''}
+                {formData?.questions?.length} pregunta
+                {formData?.questions?.length !== 1 ? 's' : ''} •{' '}
+                {
+                  formData?.questions?.filter((q) => q?.required)?.length
+                }{' '}
+                obligatoria
+                {formData?.questions?.filter((q) => q?.required)?.length !== 1
+                  ? 's'
+                  : ''}
               </p>
             )}
           </div>
 
-          {/* Form Questions */}
+          {/* Preguntas */}
           <div className="space-y-8">
             {formData?.questions?.map((question, index) => (
-              <div key={question?.id} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-                {/* Question Header */}
+              <div
+                key={question?.id}
+                className="bg-white rounded-lg p-6 shadow-sm border border-gray-200"
+              >
                 <div className="mb-4">
                   <div className="flex items-start space-x-3">
                     <div
                       className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                      style={{ backgroundColor: formData?.primaryColor || '#3B82F6' }}
+                      style={{
+                        backgroundColor:
+                          formData?.primaryColor || '#3B82F6',
+                      }}
                     >
                       {index + 1}
                     </div>
@@ -177,14 +265,11 @@ const FormPreview = ({ formData }) => {
                   </div>
                 </div>
 
-                {/* Question Input */}
-                <div className="ml-11">
-                  {renderQuestionInput(question)}
-                </div>
+                <div className="ml-11">{renderQuestionInput(question)}</div>
               </div>
             ))}
 
-            {/* Form Actions */}
+            {/* Botones */}
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-500">
@@ -194,14 +279,18 @@ const FormPreview = ({ formData }) => {
                 <div className="flex items-center space-x-3">
                   <button
                     className="px-6 py-3 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    onClick={() => setAnswers({})}
                   >
                     Cancelar
                   </button>
 
                   <button
-                    style={{ backgroundColor: formData?.primaryColor || '#3B82F6' }}
+                    onClick={handleSubmit}
+                    style={{
+                      backgroundColor:
+                        formData?.primaryColor || '#3B82F6',
+                    }}
                     className="px-6 py-3 rounded-md font-medium text-white hover:opacity-90 transition-opacity"
-
                   >
                     Enviar Formulario
                   </button>
@@ -211,7 +300,6 @@ const FormPreview = ({ formData }) => {
           </div>
         </div>
       </div>
-
     </div>
   );
 };
