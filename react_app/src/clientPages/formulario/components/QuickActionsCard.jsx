@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon.jsx';
 
 const FormPreview = ({ formData }) => {
@@ -6,6 +6,35 @@ const FormPreview = ({ formData }) => {
   const [respaldo, setRespaldo] = useState("");
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [user, setUser] = useState({
+    uid: '',
+    nombre: '',
+    empresa: '',
+  });
+  const usuario = sessionStorage.getItem("user");
+  const cargo = sessionStorage.getItem("cargo");
+  useEffect(() => {
+
+
+    const fetchForm = async () => {
+      try {
+        const res = await fetch(`http://192.168.0.2:4000/api/auth/${usuario}`);
+        if (!res.ok) throw new Error('Usuario no encontrado');
+        const data = await res.json();
+
+        setUser({
+          uid: data.id,
+          nombre: usuario,
+          empresa: data.empresa,
+        });
+      } catch (err) {
+        console.error('Error cargando el usuario:', err);
+        alert('No se pudo cargar el usuario');
+      }
+    };
+
+    fetchForm();
+  }, []);
 
   // Función para obtener el título de una pregunta (sin concatenación para el envío)
   const getQuestionTitle = (question) => {
@@ -18,7 +47,7 @@ const FormPreview = ({ formData }) => {
       ...prev,
       [questionId]: value,
     }));
-    
+
     if (errors[questionId]) {
       setErrors(prev => ({
         ...prev,
@@ -48,7 +77,7 @@ const FormPreview = ({ formData }) => {
       ...prev,
       [questionId]: optionValue,
     }));
-    
+
     if (errors[questionId]) {
       setErrors(prev => ({
         ...prev,
@@ -62,7 +91,7 @@ const FormPreview = ({ formData }) => {
     setAnswers((prev) => {
       const currentAnswers = prev[questionId] || [];
       let newAnswers;
-      
+
       if (currentAnswers.includes(option)) {
         newAnswers = currentAnswers.filter((o) => o !== option);
       } else {
@@ -89,14 +118,14 @@ const FormPreview = ({ formData }) => {
 
     questions.forEach((question, index) => {
       const questionPath = parentPath ? `${parentPath}.${question.id}` : question.id;
-      
+
       // Validar pregunta principal
       if (question.required) {
         const answer = answers[question.id];
-        
-        if (!answer || 
-            (Array.isArray(answer) && answer.length === 0) ||
-            answer === '') {
+
+        if (!answer ||
+          (Array.isArray(answer) && answer.length === 0) ||
+          answer === '') {
           errors[question.id] = 'Este campo es obligatorio';
         }
       }
@@ -105,14 +134,14 @@ const FormPreview = ({ formData }) => {
       (question?.options || []).forEach((option, optionIndex) => {
         if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
           const optionText = option.text || `Opción ${optionIndex + 1}`;
-          
+
           // Verificar si esta subsección debe estar activa
-          const shouldValidateSubsection = 
-            question.type === 'single_choice' 
+          const shouldValidateSubsection =
+            question.type === 'single_choice'
               ? answers[question.id] === optionText
               : question.type === 'multiple_choice'
-              ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
-              : false;
+                ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
+                : false;
 
           if (shouldValidateSubsection) {
             // Validar recursivamente las preguntas de la subsección
@@ -131,7 +160,7 @@ const FormPreview = ({ formData }) => {
     questions.forEach((question) => {
       const questionTitle = getQuestionTitle(question);
       const answer = answers[question.id];
-      
+
       // Mapear respuesta principal
       if (answer !== undefined && answer !== null && answer !== '') {
         if (!(Array.isArray(answer) && answer.length === 0)) {
@@ -143,14 +172,14 @@ const FormPreview = ({ formData }) => {
       (question?.options || []).forEach((option) => {
         if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
           const optionText = option.text || 'Opción';
-          
+
           // Verificar si esta subsección debe estar activa
-          const shouldProcessSubsection = 
-            question.type === 'single_choice' 
+          const shouldProcessSubsection =
+            question.type === 'single_choice'
               ? answers[question.id] === optionText
               : question.type === 'multiple_choice'
-              ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
-              : false;
+                ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
+                : false;
 
           if (shouldProcessSubsection) {
             // Mapear recursivamente las preguntas de la subsección
@@ -379,14 +408,14 @@ const FormPreview = ({ formData }) => {
         {(question?.options || []).map((option, optionIndex) => {
           if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
             const optionText = option.text || `Opción ${optionIndex + 1}`;
-            
+
             // Verificar si esta subsección debe mostrarse
-            const shouldShowSubsection = 
-              question.type === 'single_choice' 
+            const shouldShowSubsection =
+              question.type === 'single_choice'
                 ? answers[question.id] === optionText
                 : question.type === 'multiple_choice'
-                ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
-                : false;
+                  ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
+                  : false;
 
             if (shouldShowSubsection) {
               return (
@@ -418,9 +447,9 @@ const FormPreview = ({ formData }) => {
 
       // Limpiar respuestas vacías
       const cleanAnswers = Object.fromEntries(
-        Object.entries(answersWithTitles).filter(([_, value]) => 
-          value !== '' && 
-          value !== null && 
+        Object.entries(answersWithTitles).filter(([_, value]) =>
+          value !== '' &&
+          value !== null &&
           value !== undefined &&
           !(Array.isArray(value) && value.length === 0)
         )
@@ -432,6 +461,7 @@ const FormPreview = ({ formData }) => {
         responses: cleanAnswers, // AHORA SE ENVÍAN LOS TÍTULOS EN LUGAR DE IDs
         mail: respaldo,
         submittedAt: new Date().toISOString(),
+        user
       };
 
       console.log('Enviando respuestas:', payload);
@@ -474,7 +504,7 @@ const FormPreview = ({ formData }) => {
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-6">
       {/* Contenedor de la vista previa */}

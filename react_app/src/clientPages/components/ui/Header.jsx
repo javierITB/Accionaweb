@@ -9,7 +9,7 @@ const Header = ({ className = '' }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   
   const user = sessionStorage.getItem("user");
-  const cargo = sessionStorage.getItem("user");
+  const cargo = sessionStorage.getItem("cargo");
   
   // Refs para detectar clics fuera
   const menuRef = useRef(null);

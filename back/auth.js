@@ -7,10 +7,24 @@ const TOKEN_EXPIRATION = 1000 * 60 * 60; // 1 hora
 
 router.get("/", async (req, res) => {
   try {
-    const forms = await req.db.collection("usuarios").find().toArray();
-    res.json(forms);
+    const usr = await req.db.collection("usuarios").find().toArray();
+    res.json(usr);
   } catch (err) {
     res.status(500).json({ error: "Error al obtener usuarios" });
+  }
+});
+
+router.get("/:name", async (req, res) => {
+  try {
+    const usr = await req.db
+      .collection("usuarios")
+      .findOne({ nombre: req.params.name});
+
+    if (!usr) return res.status(404).json({ error: "Usuario no encontrado" });
+    
+    res.json({id: usr.id, empresa: usr.empresa, cargo: usr.cargo});
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener Usuario" });
   }
 });
 
