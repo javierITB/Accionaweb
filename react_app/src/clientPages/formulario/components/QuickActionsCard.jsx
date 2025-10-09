@@ -233,6 +233,7 @@ const FormPreview = ({ formData }) => {
         formId: formData?.id,
         formTitle: formData?.title,
         responses: cleanAnswers,
+        mail: respaldo,
         submittedAt: new Date().toISOString(),
       };
 
