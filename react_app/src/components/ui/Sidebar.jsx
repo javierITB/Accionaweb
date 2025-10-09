@@ -13,6 +13,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = '' }) => {
     { name: 'Formularios', path: '/form-center', icon: 'FileText', description: 'Panel gestion de formularios' },
     { name: 'Respuestas', path: '/RespuestasForms', icon: 'FileText', description: 'Gestionar respuestas de formularios' },
     { name: 'Seguimiento de Solicitudes', path: '/request-tracking', icon: 'Clock', description: 'Monitorear estado de solicitudes' },
+    { name: 'Usuarios', path: '/users', icon: 'User', description: 'Gestion de empresas y Admins' },
     { name: 'Soporte', path: '/support-portal', icon: 'HelpCircle', description: 'Conseguir ayuda y recuros' },
     
   ];
