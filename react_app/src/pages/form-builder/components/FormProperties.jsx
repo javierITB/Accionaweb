@@ -1,6 +1,115 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Input from '../../../components/ui/Input';
 import Icon from '../../../components/AppIcon';
+
+// Componente de selección múltiple personalizado
+const CustomMultiSelect = ({ options, value = [], onChange, placeholder = "Selecciona opciones..." }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef(null);
+
+  const filteredOptions = options.filter(option =>
+    option.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const toggleOption = (optionValue) => {
+    const newValue = value.includes(optionValue)
+      ? value.filter(v => v !== optionValue)
+      : [...value, optionValue];
+    onChange(newValue);
+  };
+
+  const handleClickOutside = (event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setIsOpen(false);
+      setSearchTerm('');
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedLabels = value.map(val => {
+    const option = options.find(opt => opt.value === val);
+    return option ? option.label : '';
+  }).filter(label => label);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Input que muestra las opciones seleccionadas */}
+      <div
+        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="flex flex-wrap gap-1 flex-1">
+          {selectedLabels.length > 0 ? (
+            selectedLabels.map((label, index) => (
+              <span
+                key={index}
+                className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded"
+              >
+                {label}
+              </span>
+            ))
+          ) : (
+            <span className="text-muted-foreground">{placeholder}</span>
+          )}
+        </div>
+        <Icon 
+          name={isOpen ? "ChevronUp" : "ChevronDown"} 
+          size={16} 
+          className="text-muted-foreground ml-2" 
+        />
+      </div>
+
+      {/* Dropdown */}
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-background border border-input rounded-md shadow-lg max-h-60 overflow-auto">
+          {/* Barra de búsqueda */}
+          <div className="p-2 border-b border-input">
+            <input
+              type="text"
+              placeholder="Buscar empresas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+
+          {/* Lista de opciones */}
+          <div className="py-1">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <div
+                  key={option.value}
+                  className="flex items-center px-3 py-2 hover:bg-muted cursor-pointer"
+                  onClick={() => toggleOption(option.value)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={value.includes(option.value)}
+                    onChange={() => {}}
+                    className="w-4 h-4 text-primary rounded focus:ring-primary border-input"
+                  />
+                  <span className="ml-2 text-sm text-foreground">
+                    {option.label}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-sm text-muted-foreground text-center">
+                No se encontraron empresas
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const FormProperties = ({ formData, categories, sections, onUpdateFormData }) => {
   // Time options for response time
@@ -13,55 +122,47 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
     { value: '30+', label: 'Más de 30 minutos' }
   ];
 
-  // Logo options with icons from quickActions
-  const logoOptions = [
-    {
-      value: 'logo1',
-      label: 'Contrato de trabajo',
-      icon: 'FileText',
-      color: 'bg-blue-500'
+  // Icono options - SIN colores individuales
+  const IconoOptions = [
+    { 
+      value: 'Icono1', 
+      label: 'Contrato de trabajo', 
+      icon: 'FileText'
     },
-    {
-      value: 'logo2',
-      label: 'Contrato trabajo por obra',
-      icon: 'FileText',
-      color: 'bg-blue-500'
+    { 
+      value: 'Icono2', 
+      label: 'Contrato trabajo por obra', 
+      icon: 'FileText'
     },
-    {
-      value: 'logo3',
-      label: 'Sueldo empresarial',
-      icon: 'Receipt',
-      color: 'bg-green-500'
+    { 
+      value: 'Icono3', 
+      label: 'Sueldo empresarial', 
+      icon: 'Receipt'
     },
-    {
-      value: 'logo4',
-      label: 'Permiso sin goce de sueldo',
-      icon: 'Receipt',
-      color: 'bg-red-500'
+    { 
+      value: 'Icono4', 
+      label: 'Permiso sin goce de sueldo', 
+      icon: 'Receipt'
     },
-    {
-      value: 'logo5',
-      label: 'Certificado de Vigencia',
-      icon: 'Clock',
-      color: 'bg-purple-500'
+    { 
+      value: 'Icono5', 
+      label: 'Certificado de Vigencia', 
+      icon: 'Clock'
     },
-    {
-      value: 'logo6',
-      label: 'Certificado de Antigüedad',
-      icon: 'MessageCircle',
-      color: 'bg-teal-500'
+    { 
+      value: 'Icono6', 
+      label: 'Certificado de Antigüedad', 
+      icon: 'MessageCircle'
     },
-    {
-      value: 'logo7',
-      label: 'Certificado Licencias Médicas',
-      icon: 'Edit',
-      color: 'bg-teal-500'
+    { 
+      value: 'Icono7', 
+      label: 'Certificado Licencias Médicas', 
+      icon: 'Edit'
     },
-    {
-      value: 'logo8',
-      label: 'Solicitud de vacaciones',
-      icon: 'Calendar',
-      color: 'bg-orange-500'
+    { 
+      value: 'Icono8', 
+      label: 'Solicitud de vacaciones', 
+      icon: 'Calendar'
     }
   ];
 
@@ -96,11 +197,9 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
     }
   };
 
-  // FUNCIÓN PARA MANEJAR CAMBIOS EN LA DESCRIPCIÓN
-  const handleDescriptionChange = (value) => {
-    if (value.length <= 200) {
-      onUpdateFormData('description', value);
-    }
+  // FUNCIÓN PARA MANEJAR MULTISELECT DE EMPRESAS
+  const handleCompanyChange = (selectedValues) => {
+    onUpdateFormData('companies', selectedValues);
   };
 
   const handleColorPresetSelect = (preset) => {
@@ -141,10 +240,11 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               value={formData?.title || ''}
               onChange={(e) => handleTitleChange(e.target.value)}
               maxLength={50}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.title?.length || 0) >= 50
-                  ? 'border-red-500 focus-visible:ring-red-200'
+              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                (formData?.title?.length || 0) >= 50
+                  ? 'border-red-500 focus-visible:ring-red-200' 
                   : 'border-input focus-visible:ring-blue-200'
-                }`}
+              }`}
             />
             {(formData?.title?.length || 0) >= 50 && (
               <p className="text-red-500 text-xs">
@@ -156,109 +256,6 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             </p>
           </div>
 
-          {/* DESCRIPCIÓN DEL FORMULARIO */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              Descripción del Formulario
-              <span className="text-xs text-muted-foreground ml-2">
-                ({formData?.description?.length || 0}/200 caracteres)
-              </span>
-            </label>
-            <textarea
-              placeholder="Ej: Formulario para evaluar el desempeño anual de los empleados"
-              value={formData?.description || ''}
-              onChange={(e) => handleDescriptionChange(e.target.value)}
-              maxLength={200}
-              rows={3}
-              className={`flex w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.description?.length || 0) >= 200
-                  ? 'border-red-500 focus-visible:ring-red-200'
-                  : 'border-input focus-visible:ring-blue-200'
-                }`}
-            />
-            {(formData?.description?.length || 0) >= 200 && (
-              <p className="text-red-500 text-xs">
-                Límite de 200 caracteres alcanzado
-              </p>
-            )}
-            <p className="text-sm text-muted-foreground">
-              Breve descripción del propósito del formulario
-            </p>
-          </div>
-
-          {/* CATEGORÍA */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              Categoría <span className="text-destructive">*</span>
-            </label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={formData?.category}
-              onChange={(e) => onUpdateFormData('category', e?.target?.value)}
-            >
-              <option value="">Selecciona una categoría</option>
-              {categories?.map((category) => (
-                <option key={category?.value} value={category?.value}>
-                  {category?.label}
-                </option>
-              ))}
-            </select>
-            <p className="text-sm text-muted-foreground">
-              Ayuda a organizar y filtrar los formularios
-            </p>
-          </div>
-
-          {/* EMPRESA */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              Empresas <span className="text-destructive">*</span>
-              <span className="text-xs text-muted-foreground ml-2">
-                ({formData?.companies?.length || 0} seleccionadas)
-              </span>
-            </label>
-
-            <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-input rounded-md">
-                {companyOptions?.map((company) => {
-                  const isSelected = formData?.companies?.includes(company.value);
-                  return (
-                    <label
-                      key={company.value}
-                      className={`flex items-center space-x-2 p-2 rounded-md cursor-pointer transition-colors ${isSelected
-                          ? 'bg-primary/10 border border-primary/20'
-                          : 'hover:bg-muted/50 border border-transparent'
-                        }`}
-                    >
-                      <input
-                        type="checkbox"
-                        value={company.value}
-                        checked={isSelected || false}
-                        onChange={(e) => {
-                          const currentCompanies = formData?.companies || [];
-                          let newCompanies;
-
-                          if (e.target.checked) {
-                            newCompanies = [...currentCompanies, company.value];
-                          } else {
-                            newCompanies = currentCompanies.filter(c => c !== company.value);
-                          }
-
-                          onUpdateFormData('companies', newCompanies);
-                        }}
-                        className="h-4 w-4 text-primary focus:ring-primary border-input rounded"
-                      />
-                      <span className="text-sm">{company.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            <p className="text-sm text-muted-foreground">
-              Selecciona las empresas asociadas al formulario
-            </p>
-          </div>
-
-          {/* TIEMPO ESTIMADO */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
               Tiempo Estimado de Respuesta
@@ -279,8 +276,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               Tiempo promedio que tomará completar el formulario
             </p>
           </div>
-
-          {/* SECCIÓN */}
+          
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
               Sección <span className="text-destructive">*</span>
@@ -302,7 +298,6 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             </p>
           </div>
 
-          {/* AUTOR */}
           <Input
             label="Autor"
             value={formData?.author}
@@ -311,10 +306,55 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             disabled
           />
 
+          {/* CATEGORÍA - MOVIDA ABAJO, DESPUÉS DEL AUTOR */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Categoría <span className="text-destructive">*</span>
+            </label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={formData?.category}
+              onChange={(e) => onUpdateFormData('category', e?.target?.value)}
+            >
+              <option value="">Selecciona una categoría</option>
+              {categories?.map((category) => (
+                <option key={category?.value} value={category?.value}>
+                  {category?.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm text-muted-foreground">
+              Define la categoría del formulario
+            </p>
+          </div>
+
+          {/* EMPRESAS - MODIFICADO: USANDO CUSTOM MULTISELECT */}
+          <div className="space-y-2 md:col-span-1">
+            <label className="text-sm font-medium text-foreground">
+              Empresas <span className="text-destructive">*</span>
+            </label>
+            <CustomMultiSelect
+              options={companyOptions}
+              value={formData?.companies || []}
+              onChange={handleCompanyChange}
+              placeholder="Selecciona las empresas asociadas"
+            />
+            <p className="text-sm text-muted-foreground">
+              Selecciona las empresas que podrán ver este formulario
+            </p>
+            {(formData?.companies || []).length > 0 && (
+              <div className="mt-2">
+                <p className="text-sm font-medium">
+                  Empresas seleccionadas: {(formData?.companies || []).length}
+                </p>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 
-      {/* Logo Selection - Minimalista */}
+      {/* Icono Selection - MODIFICADO: Todos usan el color primario */}
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-muted rounded-lg">
@@ -322,7 +362,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
           </div>
           <div>
             <h3 className="text-lg font-semibold text-foreground">
-              Logo del Formulario
+              Icono del Formulario
             </h3>
             <p className="text-sm text-muted-foreground">
               Selecciona un icono para identificar el formulario
@@ -330,28 +370,31 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-3">
-          {logoOptions?.map((logo) => (
+        {/* MODIFICADO: Todos los iconos usan el color primario */}
+        <div className="flex flex-wrap justify-center gap-3">
+          {IconoOptions?.map((Icono) => (
             <button
-              key={logo.value}
+              key={Icono.value}
               type="button"
-              onClick={() => onUpdateFormData('logo', logo.value)}
-              className={`flex flex-col items-center p-2 rounded-lg transition-all ${formData?.logo === logo.value
-                  ? 'bg-primary/10 ring-2 ring-primary/50'
-                  : 'hover:bg-muted/50'
-                }`}
+              onClick={() => onUpdateFormData('Icono', Icono.value)}
+              className={`p-4 rounded-full transition-all transform hover:scale-110 hover:shadow-lg ${
+                formData?.Icono === Icono.value
+                  ? 'ring-4 ring-primary/50 shadow-lg scale-110'
+                  : 'shadow-md opacity-70 hover:opacity-100'
+              }`}
+              style={{ 
+                backgroundColor: formData?.primaryColor || '#3B82F6',
+                color: 'white' 
+              }}
+              title={Icono.label}
             >
-              <div className={`${logo.color} p-2 rounded-full mb-1`}>
-                <Icon name={logo.icon} size={16} className="text-white" />
-              </div>
-              <span className="text-xs text-center text-muted-foreground leading-tight">
-                {logo.label}
-              </span>
+              <Icon name={Icono.icon} size={24} className="text-white" />
             </button>
           ))}
         </div>
       </div>
 
+      {/* El resto del código se mantiene igual para Color Customization */}
       {/* Color Customization */}
       <div className="space-y-6">
         <div className="flex items-center space-x-3">
@@ -377,9 +420,10 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
                 type="button"
                 key={index}
                 onClick={() => handleColorPresetSelect(preset)}
-                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${formData?.primaryColor === preset?.primary && formData?.secondaryColor === preset?.secondary
-                    ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-muted-foreground'
-                  }`}
+                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                  formData?.primaryColor === preset?.primary && formData?.secondaryColor === preset?.secondary
+                    ? 'border-primary ring-2 ring-primary/20' :'border-border hover:border-muted-foreground'
+                }`}
                 style={{
                   background: `linear-gradient(135deg, ${preset?.primary} 0%, ${preset?.secondary} 100%)`
                 }}
