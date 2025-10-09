@@ -76,7 +76,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
             </span>
           </div>
           <p className="text-sm text-muted-foreground mb-3">{request?.description}</p>
-          
+
           <div className="flex items-center space-x-4 text-xs text-muted-foreground">
             <div className="flex items-center space-x-1">
               <Icon name="Calendar" size={14} />
@@ -94,7 +94,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2 ml-4">
           {request?.hasMessages && (
             <div className="relative">
@@ -120,18 +120,17 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onRemove(request)}
-            iconName="Trash"
-            iconPosition="left"
-            iconSize={16}
+            variant="ghost"
+            size="icon"
+            onClick={() => {onRemove(request);}}
+            className=" h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
           >
-            Eliminar
+            <Icon name="Trash2" size={14} />
           </Button>
+
           <Button
             variant="outline"
             size="sm"
