@@ -3,7 +3,8 @@ import Icon from '../../../components/AppIcon.jsx';
 
 const FormPreview = ({ formData }) => {
   const [answers, setAnswers] = useState({});
-
+  const[respaldo,setRespaldo] = useState("");
+  
   // Manejar cambios en inputs
   const handleInputChange = (questionTitle, value) => {
     setAnswers((prev) => ({
@@ -274,7 +275,7 @@ const FormPreview = ({ formData }) => {
       </div>
     );
   }
-
+  
   return (
     <div className="space-y-6">
       {/* Contenedor de la vista previa */}
@@ -362,7 +363,7 @@ const FormPreview = ({ formData }) => {
                   placeholder="Escribe tu mail aquí..."
                   className='w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-black text-base'
                   value={respaldo}
-                  onChange={(e) => handleInputChange(questionTitle, e.target.value)}
+                  onChange={(e) => setRespaldo(e.target.value)}
                 />
               </div>
             </div>

@@ -33,13 +33,14 @@ const FormCenter = () => {
           title: f.title || 'Sin título',
           description: f.description || '',
           category: f.category || 'general',
-          icon: f.icon || 'FileText',
+          icon: f.logo || 'FileText', // CAMBIADO: usa el logo guardado en lugar de icon
           status: f.status || 'draft',
           priority: f.priority || 'medium',
           estimatedTime: f.responseTime || '1-5 min',
           fields: f.questions ? f.questions.length : 0,
           documentsRequired: f.documentsRequired ?? false,
           tags: f.tags || [],
+          companies: f.companies || [], // NUEVO: array de empresas
           lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null
         }));
 
@@ -147,9 +148,8 @@ const FormCenter = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} />
-      <main className={`transition-all duration-300 ${
-        sidebarCollapsed ? 'ml-16' : 'ml-64'
-      } pt-16`}>
+      <main className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'
+        } pt-16`}>
         <div className="p-6 space-y-8">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -159,7 +159,7 @@ const FormCenter = () => {
                   Administración y gestion de formularios
                 </p>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <Button
                   variant="outline"
@@ -171,7 +171,7 @@ const FormCenter = () => {
                 >
                   {viewMode === 'grid' ? 'List View' : 'Grid View'}
                 </Button>
-                
+
                 <Button
                   variant="default"
                   size="default"
@@ -197,7 +197,7 @@ const FormCenter = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-warning/10 rounded-lg">
@@ -209,7 +209,7 @@ const FormCenter = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-success/10 rounded-lg">
@@ -221,7 +221,7 @@ const FormCenter = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-secondary/10 rounded-lg">
@@ -244,7 +244,7 @@ const FormCenter = () => {
               onFilterToggle={toggleFilters}
               showFilters={showFilters}
             />
-            
+
             <CategoryFilter
               categories={categories}
               activeCategory={activeCategory}
@@ -274,7 +274,7 @@ const FormCenter = () => {
                       <h3 className="text-lg font-semibold text-foreground">
                         Formularios ({filteredForms.length})
                       </h3>
-                      
+
                       {searchQuery && (
                         <div className="text-sm text-muted-foreground">
                           Resultados de "{searchQuery}"
@@ -303,7 +303,7 @@ const FormCenter = () => {
                         </Button>
                       </div>
                     ) : (
-                      <div className={viewMode === 'grid' 
+                      <div className={viewMode === 'grid'
                         ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
                         : 'space-y-4'
                       }>

@@ -11,6 +11,7 @@ const FormBuilder = () => {
   const [formData, setFormData] = useState({
     id: null,
     title: '',
+    description: '', // NUEVO
     category: '',
     responseTime: '',
     author: 'Admin',
@@ -19,6 +20,8 @@ const FormBuilder = () => {
     questions: [],
     status: 'draft',
     section: '',
+    logo: '', // NUEVO
+    company: '', // NUEVO
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
@@ -71,6 +74,7 @@ const FormBuilder = () => {
         const normalizedForm = {
           id: data._id || data.id || null,
           title: data.title || '',
+          description: data.description || '', // NUEVO
           category: data.category || '',
           responseTime: data.responseTime || '',
           author: data.author || 'Admin',
@@ -79,6 +83,8 @@ const FormBuilder = () => {
           questions: data.questions || [],
           status: data.status || 'draft',
           section: data.section || '',
+          logo: data.logo || '', // NUEVO
+          company: data.company || '', // NUEVO
           createdAt: data.createdAt || new Date().toISOString(),
           updatedAt: data.updatedAt || new Date().toISOString()
         };
@@ -375,8 +381,8 @@ const FormBuilder = () => {
             <div className="flex items-center space-x-3">
               {/* Status Badge */}
               <div className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === 'published'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-yellow-100 text-yellow-700'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-yellow-100 text-yellow-700'
                 }`}>
                 {formData?.status === 'published' ? 'Publicado' : 'Borrador'}
               </div>
@@ -453,16 +459,16 @@ const FormBuilder = () => {
                     key={tab?.id}
                     onClick={() => setActiveTab(tab?.id)}
                     className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab?.id
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
                       }`}
                   >
                     <Icon name={tab?.icon} size={16} />
                     <span>{tab?.label}</span>
                     {tab?.count !== undefined && (
                       <span className={`px-2 py-1 text-xs rounded-full ${activeTab === tab?.id
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
                         }`}>
                         {tab?.count}
                       </span>
