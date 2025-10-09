@@ -2,30 +2,43 @@ const express = require("express");
 const router = express.Router();
 const crypto = require("crypto");
 
-let activeTokens = []; 
+let activeTokens = [];
 const TOKEN_EXPIRATION = 1000 * 60 * 60; // 1 hora
 
 // Login
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  if (email === "admin@admin.com" && password === "1234") {
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
+  try {
+    console.log("AQUI LOS IDEADOS")
+    const user = await req.db
+      .collection("usuarios")
+      .findOne({ mail: email, pass: password });
 
-    const user = { name: "Admin", email };
-    activeTokens.push({ token, user, expiresAt });
+    console.log(user);
+    
+    if (!user) return res.status(401).json({ success: false, message: "Credenciales inválidas" });
 
-    return res.json({ success: true, token, user });
-  } else {
-    return res.status(401).json({ success: false, message: "Credenciales inválidas" });
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
+
+      const usr = { name: user.nombre, email, cargo:user.cargo};
+      activeTokens.push({ token, usr, expiresAt });
+
+      return res.json({ success: true, token, usr });
+
+    
+  } catch (err) {
+    return res.status(505).json({ error: "Error al obtener usuario", msg: err});
   }
+
+
 });
 
 // Validación de token con match de usuario
 router.post("/validate", (req, res) => {
   const { token, email } = req.body;
-
+  console.log(activeTokens);
   if (!token || !email) {
     return res.status(401).json({ valid: false, message: "Faltan token o usuario" });
   }
@@ -43,7 +56,7 @@ router.post("/validate", (req, res) => {
   }
 
   // Verificar que el token corresponde al usuario enviado
-  if (tokenRecord.user.email !== email) {
+  if (tokenRecord.usr.email !== email) {
     return res.status(401).json({ valid: false, message: "Token no corresponde al usuario" });
   }
 

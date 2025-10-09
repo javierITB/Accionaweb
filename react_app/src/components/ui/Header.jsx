@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../AppIcon';
 import Button from './Button';
 import NotificationsCard from './NotificationsCard';
 
 const Header = ({ className = '' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const user = sessionStorage.getItem("user");
+  const cargo = sessionStorage.getItem("cargo");
+  // Refs para detectar clics fuera
+  const menuRef = useRef(null);
+  const notiRef = useRef(null);
+  const userMenuRef = useRef(null);
+  
   const navigationItems = [
     { name: 'Incio', path: '/', icon: 'Home' },
     { name: 'Dashboard', path: '/dashboard-home', icon: 'LayoutDashboard' },
@@ -20,18 +27,55 @@ const Header = ({ className = '' }) => {
     { name: 'Admin', path: '/admin', icon: 'Shield' },
   ];
 
-  const [isNotiOpen, setisNotiOpen] = useState(false);
+  const [isNotiOpen, setIsNotiOpen] = useState(false);
+  
+  // Effect para detectar clics fuera de los menús
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Cerrar menú principal si se hace clic fuera
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+      
+      // Cerrar notificaciones si se hace clic fuera
+      if (notiRef.current && !notiRef.current.contains(event.target)) {
+        setIsNotiOpen(false);
+      }
+      
+      // Cerrar menú de usuario si se hace clic fuera
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
   const toggleNoti = () => {
-    setisNotiOpen(!isNotiOpen);
+    setIsNotiOpen(!isNotiOpen);
   };
 
   const handleNavigation = (path) => {
     window.location.href = path;
     setIsMenuOpen(false);
+    setIsUserMenuOpen(false);
   };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const toggleUserMenu = () => {
+    setIsUserMenuOpen(!isUserMenuOpen);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    window.location.href = '/';
+    setIsUserMenuOpen(false);
   };
 
   return (
@@ -70,7 +114,7 @@ const Header = ({ className = '' }) => {
           ))}
           
           {/* More Menu */}
-          <div className="relative">
+          <div className="relative" ref={menuRef}>
             <Button
               variant="ghost"
               size="sm"
@@ -104,41 +148,72 @@ const Header = ({ className = '' }) => {
         {/* User Profile & Actions */}
         <div className="flex items-center space-x-3">
           {/* Notifications */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleNoti}
-            className="relative hover:bg-muted transition-brand"
-            iconName = "Bell"
-          >
-            <span className="absolute-top-1 -right-1 w-2 h-2 bg-error rounded-full animate-pulse-subtle"></span>
-          </Button>
-          
-          {isNotiOpen && (
-            <div className="absolute right-0 top-full mt-2 mr-2w-48 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
-                <div className="by-2">
+          <div className="relative" ref={notiRef}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleNoti}
+              className="relative hover:bg-muted transition-brand"
+              iconName="Bell"
+            >
+              <span className="absolute top-1 -right-1 w-2 h-2 bg-error rounded-full animate-pulse-subtle"></span>
+            </Button>
+            
+            {isNotiOpen && (
+              <div className="absolute right-0 top-full mt-2 mr-2 w-48 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
+                <div className="py-2">
                   <NotificationsCard />
                 </div>
               </div>
-            )} 
+            )}
+          </div>
 
           {/* User Profile */}
           <div className="flex items-center space-x-3 pl-3 border-l border-border">
-            {user && (<div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-foreground">{user}</p>
-              <p className="text-xs text-muted-foreground">HR Specialist</p>
-            </div>)
-            }
-            {user &&
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
-                <span className="text-sm font-semibold text-white">SJ</span>
+            {user && (
+              <div className="hidden md:block text-right">
+                <p className="text-sm font-medium text-foreground">{user}</p>
+                <p className="text-xs text-muted-foreground">{cargo}</p>
               </div>
-            }
-            {!user &&
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
-                <span className="text-sm font-semibold text-white"></span>
-              </div>
-            }
+            )}
+            
+            {/* User Avatar with Dropdown */}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={toggleUserMenu}
+                className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                {user ? (
+                  <span className="text-sm font-semibold text-white">
+                    {user.charAt(0).toUpperCase()}
+                  </span>
+                ) : (
+                  <Icon name="User" size={16} className="text-white" />
+                )}
+              </button>
+              
+              {/* User Dropdown Menu - SOLO CERRAR SESIÓN */}
+              {isUserMenuOpen && user && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
+                  <div className="py-2">
+                    {/* Información del usuario */}
+                    <div className="px-4 py-2 border-b border-border">
+                      <p className="text-sm font-medium text-popover-foreground">{user}</p>
+                      <p className="text-xs text-muted-foreground">Sesión activa</p>
+                    </div>
+                    
+                    {/* Solo opción de Cerrar Sesión */}
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-2 text-sm text-popover-foreground hover:bg-muted transition-brand"
+                    >
+                      <Icon name="LogOut" size={16} className="mr-3" />
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -152,6 +227,7 @@ const Header = ({ className = '' }) => {
           </Button>
         </div>
       </div>
+
       {/* Mobile Navigation Menu */}
       {isMenuOpen && (
         <div className="lg:hidden bg-card border-t border-border animate-slide-up">

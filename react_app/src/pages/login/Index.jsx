@@ -24,12 +24,13 @@ export default function LoginPage() {
 
       const data = await res.json();
 
-      if (res.ok && data.success) {
+      if (res?.ok && data?.success) {
         // Guardamos token en sessionStorage
         setError(data.message || "algo");
-        sessionStorage.setItem("user", data.user.name); // solo string
-        sessionStorage.setItem("email", data.user.email);
-        sessionStorage.setItem("token", data.token);
+        sessionStorage.setItem("cargo", data?.usr?.cargo); // solo string
+        sessionStorage.setItem("email", data?.usr?.email);
+        sessionStorage.setItem("user", data?.usr?.name);
+        sessionStorage.setItem("token", data?.token);
 
         navigate(from, { replace: true });
       } else {
