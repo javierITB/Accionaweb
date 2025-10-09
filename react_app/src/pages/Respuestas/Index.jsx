@@ -226,7 +226,7 @@ const RequestTracking = () => {
   });
 
   const handleRemove = async (request) => {
-    requestId = request?._id
+    const requestId = request?._id
     if (!requestId) return alert("ID no válido para eliminar.");
 
     const confirmDelete = window.confirm("¿Seguro que deseas eliminar esta solicitud?");
@@ -234,7 +234,6 @@ const RequestTracking = () => {
 
     try {
       setIsLoading(true);
-
       const res = await fetch(`http://192.168.0.2:4000/api/respuestas/${requestId}`, {
         method: 'DELETE',
       });

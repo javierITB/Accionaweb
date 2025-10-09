@@ -98,10 +98,7 @@ const FormPreview = ({ formData }) => {
       }
     });
 
-    // Validar campo de respaldo si es requerido
-    if (!respaldo.trim()) {
-      newErrors['respaldo'] = 'El correo de respaldo es obligatorio';
-    }
+    
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -475,7 +472,6 @@ const FormPreview = ({ formData }) => {
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-black mb-1">
                       Respaldo de información
-                      <span className="text-red-600 ml-1">*</span>
                     </h3>
 
                     <p className="text-gray-600 text-base">
@@ -499,11 +495,7 @@ const FormPreview = ({ formData }) => {
                       setErrors(prev => ({ ...prev, respaldo: '' }));
                     }
                   }}
-                  onBlur={(e) => {
-                    if (!e.target.value.trim()) {
-                      setErrors(prev => ({ ...prev, respaldo: 'El correo de respaldo es obligatorio' }));
-                    }
-                  }}
+                  
                 />
                 {errors.respaldo && (
                   <p className="text-red-600 text-sm mt-1 flex items-center">

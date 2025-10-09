@@ -125,7 +125,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => {onRemove(request);}}
+            onClick={() => onRemove(request)}
             className=" h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             <Icon name="Trash2" size={14} />
