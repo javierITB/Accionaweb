@@ -7,60 +7,60 @@ const FormPreview = ({ formData }) => {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
-  // Función para obtener el título de una pregunta (sin concatenación)
+  // Función para obtener el título de una pregunta (sin concatenación para el envío)
   const getQuestionTitle = (question) => {
     return question.title || 'Pregunta sin título';
   };
 
-  // Manejar cambios en inputs - USA TÍTULOS
-  const handleInputChange = (questionTitle, value) => {
+  // Manejar cambios en inputs - INTERNAMENTE USA IDs, PERO PARA ENVÍO USA TÍTULOS
+  const handleInputChange = (questionId, questionTitle, value) => {
     setAnswers((prev) => ({
       ...prev,
-      [questionTitle]: value,
+      [questionId]: value,
     }));
     
-    if (errors[questionTitle]) {
+    if (errors[questionId]) {
       setErrors(prev => ({
         ...prev,
-        [questionTitle]: ''
+        [questionId]: ''
       }));
     }
   };
 
-  // Manejar blur en inputs (para validación) - USA TÍTULOS
-  const handleInputBlur = (questionTitle, value, isRequired) => {
+  // Manejar blur en inputs - INTERNAMENTE USA IDs
+  const handleInputBlur = (questionId, value, isRequired) => {
     setTouched(prev => ({
       ...prev,
-      [questionTitle]: true
+      [questionId]: true
     }));
 
     if (isRequired && !value) {
       setErrors(prev => ({
         ...prev,
-        [questionTitle]: 'Este campo es obligatorio'
+        [questionId]: 'Este campo es obligatorio'
       }));
     }
   };
 
-  // Manejar cambios en radio buttons - USA TÍTULOS
-  const handleRadioChange = (questionTitle, optionValue) => {
+  // Manejar cambios en radio buttons - INTERNAMENTE USA IDs
+  const handleRadioChange = (questionId, questionTitle, optionValue) => {
     setAnswers((prev) => ({
       ...prev,
-      [questionTitle]: optionValue,
+      [questionId]: optionValue,
     }));
     
-    if (errors[questionTitle]) {
+    if (errors[questionId]) {
       setErrors(prev => ({
         ...prev,
-        [questionTitle]: ''
+        [questionId]: ''
       }));
     }
   };
 
-  // Manejar cambios en checkboxes múltiples - USA TÍTULOS
-  const handleCheckboxChange = (questionTitle, option) => {
+  // Manejar cambios en checkboxes múltiples - INTERNAMENTE USA IDs
+  const handleCheckboxChange = (questionId, questionTitle, option) => {
     setAnswers((prev) => {
-      const currentAnswers = prev[questionTitle] || [];
+      const currentAnswers = prev[questionId] || [];
       let newAnswers;
       
       if (currentAnswers.includes(option)) {
@@ -69,63 +69,98 @@ const FormPreview = ({ formData }) => {
         newAnswers = [...currentAnswers, option];
       }
 
-      if (errors[questionTitle] && newAnswers.length > 0) {
+      if (errors[questionId] && newAnswers.length > 0) {
         setErrors(prev => ({
           ...prev,
-          [questionTitle]: ''
+          [questionId]: ''
         }));
       }
 
       return {
         ...prev,
-        [questionTitle]: newAnswers,
+        [questionId]: newAnswers,
       };
     });
   };
 
-  // Función recursiva para validar preguntas y subsecciones - USA TÍTULOS
-  const validateQuestions = (questions, answers) => {
+  // Función recursiva para validar preguntas y subsecciones - INTERNAMENTE USA IDs
+  const validateQuestions = (questions, answers, parentPath = '') => {
     const errors = {};
 
-    const validateQuestionRecursive = (questionList) => {
-      questionList.forEach((question) => {
-        const questionTitle = getQuestionTitle(question);
+    questions.forEach((question, index) => {
+      const questionPath = parentPath ? `${parentPath}.${question.id}` : question.id;
+      
+      // Validar pregunta principal
+      if (question.required) {
+        const answer = answers[question.id];
         
-        // Validar pregunta principal
-        if (question.required) {
-          const answer = answers[questionTitle];
+        if (!answer || 
+            (Array.isArray(answer) && answer.length === 0) ||
+            answer === '') {
+          errors[question.id] = 'Este campo es obligatorio';
+        }
+      }
+
+      // Validar subsecciones si están activas
+      (question?.options || []).forEach((option, optionIndex) => {
+        if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
+          const optionText = option.text || `Opción ${optionIndex + 1}`;
           
-          if (!answer || 
-              (Array.isArray(answer) && answer.length === 0) ||
-              answer === '') {
-            errors[questionTitle] = 'Este campo es obligatorio';
+          // Verificar si esta subsección debe estar activa
+          const shouldValidateSubsection = 
+            question.type === 'single_choice' 
+              ? answers[question.id] === optionText
+              : question.type === 'multiple_choice'
+              ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
+              : false;
+
+          if (shouldValidateSubsection) {
+            // Validar recursivamente las preguntas de la subsección
+            const subErrors = validateQuestions(option.subformQuestions, answers, questionPath);
+            Object.assign(errors, subErrors);
           }
         }
-
-        // Validar subsecciones si están activas
-        (question?.options || []).forEach((option) => {
-          if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
-            const optionText = option.text || 'Opción';
-            
-            // Verificar si esta subsección debe estar activa
-            const shouldValidateSubsection = 
-              question.type === 'single_choice' 
-                ? answers[questionTitle] === optionText
-                : question.type === 'multiple_choice'
-                ? Array.isArray(answers[questionTitle]) && answers[questionTitle].includes(optionText)
-                : false;
-
-            if (shouldValidateSubsection) {
-              // Validar recursivamente las preguntas de la subsección
-              validateQuestionRecursive(option.subformQuestions);
-            }
-          }
-        });
       });
-    };
+    });
 
-    validateQuestionRecursive(questions);
     return errors;
+  };
+
+  // Función recursiva para mapear respuestas de IDs a Títulos para el envío
+  const mapAnswersToTitles = (questions, answers, mappedAnswers = {}) => {
+    questions.forEach((question) => {
+      const questionTitle = getQuestionTitle(question);
+      const answer = answers[question.id];
+      
+      // Mapear respuesta principal
+      if (answer !== undefined && answer !== null && answer !== '') {
+        if (!(Array.isArray(answer) && answer.length === 0)) {
+          mappedAnswers[questionTitle] = answer;
+        }
+      }
+
+      // Procesar subsecciones
+      (question?.options || []).forEach((option) => {
+        if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
+          const optionText = option.text || 'Opción';
+          
+          // Verificar si esta subsección debe estar activa
+          const shouldProcessSubsection = 
+            question.type === 'single_choice' 
+              ? answers[question.id] === optionText
+              : question.type === 'multiple_choice'
+              ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
+              : false;
+
+          if (shouldProcessSubsection) {
+            // Mapear recursivamente las preguntas de la subsección
+            mapAnswersToTitles(option.subformQuestions, answers, mappedAnswers);
+          }
+        }
+      });
+    });
+
+    return mappedAnswers;
   };
 
   // Validar formulario antes de enviar
@@ -135,244 +170,238 @@ const FormPreview = ({ formData }) => {
     // Validar preguntas principales y subsecciones recursivamente
     newErrors = validateQuestions(formData?.questions || [], answers);
 
+    // EL CAMPO RESPALDO YA NO ES OBLIGATORIO
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Función recursiva para renderizar todas las preguntas (principales y subsecciones)
-  const renderAllQuestions = (questions, parentIndex = 0) => {
-    let currentIndex = parentIndex;
-    const renderedQuestions = [];
+  // Función para renderizar una pregunta individual (MANTIENE LA VISUAL ORIGINAL)
+  const renderQuestion = (question, index, showNumber = true, parentPath = '') => {
+    const questionPath = parentPath ? `${parentPath}.${question.id}` : question.id;
+    const questionTitle = question.title || `Pregunta ${index + 1}`;
+    const baseInputClass = 'w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-black text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all';
+    const value = answers[question.id] || '';
+    const error = errors[question.id];
+    const isTouched = touched[question.id];
 
-    const renderQuestionRecursive = (questionList, isSubsection = false) => {
-      return questionList.map((question, localIndex) => {
-        const questionTitle = getQuestionTitle(question);
-        const displayTitle = question.title || `Pregunta ${currentIndex + 1}`;
-        const baseInputClass = 'w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-black text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all';
-        const value = answers[questionTitle] || '';
-        const error = errors[questionTitle];
-        const isTouched = touched[questionTitle];
+    const renderInput = () => {
+      switch (question?.type) {
+        case 'text':
+          return (
+            <div>
+              <input
+                type="text"
+                placeholder="Escribe tu respuesta aquí..."
+                className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
+                value={value}
+                onChange={(e) => handleInputChange(question.id, getQuestionTitle(question), e.target.value)}
+                onBlur={(e) => handleInputBlur(question.id, e.target.value, question.required)}
+              />
+              {error && (
+                <p className="text-red-600 text-sm mt-1 flex items-center">
+                  <Icon name="AlertCircle" size={14} className="mr-1" />
+                  {error}
+                </p>
+              )}
+            </div>
+          );
 
-        const renderInput = () => {
-          switch (question?.type) {
-            case 'text':
-              return (
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Escribe tu respuesta aquí..."
-                    className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
-                    value={value}
-                    onChange={(e) => handleInputChange(questionTitle, e.target.value)}
-                    onBlur={(e) => handleInputBlur(questionTitle, e.target.value, question.required)}
-                  />
-                  {error && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center">
-                      <Icon name="AlertCircle" size={14} className="mr-1" />
-                      {error}
-                    </p>
-                  )}
-                </div>
-              );
+        case 'number':
+          return (
+            <div>
+              <input
+                type="number"
+                placeholder="0"
+                className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
+                value={value}
+                onChange={(e) => handleInputChange(question.id, getQuestionTitle(question), e.target.value)}
+                onBlur={(e) => handleInputBlur(question.id, e.target.value, question.required)}
+              />
+              {error && (
+                <p className="text-red-600 text-sm mt-1 flex items-center">
+                  <Icon name="AlertCircle" size={14} className="mr-1" />
+                  {error}
+                </p>
+              )}
+            </div>
+          );
 
-            case 'number':
-              return (
-                <div>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
-                    value={value}
-                    onChange={(e) => handleInputChange(questionTitle, e.target.value)}
-                    onBlur={(e) => handleInputBlur(questionTitle, e.target.value, question.required)}
-                  />
-                  {error && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center">
-                      <Icon name="AlertCircle" size={14} className="mr-1" />
-                      {error}
-                    </p>
-                  )}
-                </div>
-              );
+        case 'date':
+          return (
+            <div>
+              <input
+                type="date"
+                className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
+                value={value}
+                onChange={(e) => handleInputChange(question.id, getQuestionTitle(question), e.target.value)}
+                onBlur={(e) => handleInputBlur(question.id, e.target.value, question.required)}
+              />
+              {error && (
+                <p className="text-red-600 text-sm mt-1 flex items-center">
+                  <Icon name="AlertCircle" size={14} className="mr-1" />
+                  {error}
+                </p>
+              )}
+            </div>
+          );
 
-            case 'date':
-              return (
-                <div>
-                  <input
-                    type="date"
-                    className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
-                    value={value}
-                    onChange={(e) => handleInputChange(questionTitle, e.target.value)}
-                    onBlur={(e) => handleInputBlur(questionTitle, e.target.value, question.required)}
-                  />
-                  {error && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center">
-                      <Icon name="AlertCircle" size={14} className="mr-1" />
-                      {error}
-                    </p>
-                  )}
-                </div>
-              );
+        case 'time':
+          return (
+            <div>
+              <input
+                type="time"
+                className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
+                value={value}
+                onChange={(e) => handleInputChange(question.id, getQuestionTitle(question), e.target.value)}
+                onBlur={(e) => handleInputBlur(question.id, e.target.value, question.required)}
+              />
+              {error && (
+                <p className="text-red-600 text-sm mt-1 flex items-center">
+                  <Icon name="AlertCircle" size={14} className="mr-1" />
+                  {error}
+                </p>
+              )}
+            </div>
+          );
 
-            case 'time':
-              return (
-                <div>
-                  <input
-                    type="time"
-                    className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
-                    value={value}
-                    onChange={(e) => handleInputChange(questionTitle, e.target.value)}
-                    onBlur={(e) => handleInputBlur(questionTitle, e.target.value, question.required)}
-                  />
-                  {error && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center">
-                      <Icon name="AlertCircle" size={14} className="mr-1" />
-                      {error}
-                    </p>
-                  )}
-                </div>
-              );
+        case 'single_choice':
+          return (
+            <div className="space-y-3">
+              {(question?.options || []).map((option, idx) => {
+                const optionText = typeof option === 'object' ? option.text : option;
+                const optionValue = typeof option === 'object' ? option.text : option;
 
-            case 'single_choice':
-              return (
-                <div className="space-y-3">
-                  {(question?.options || []).map((option, idx) => {
-                    const optionText = typeof option === 'object' ? option.text : option;
-                    const optionValue = typeof option === 'object' ? option.text : option;
-
-                    return (
-                      <div key={idx} className="space-y-2">
-                        <label className="flex items-center space-x-3 cursor-pointer">
-                          <input
-                            type="radio"
-                            name={questionTitle}
-                            value={optionValue}
-                            checked={value === optionValue}
-                            onChange={(e) => handleRadioChange(questionTitle, e.target.value)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-base text-black">{optionText}</span>
-                        </label>
-                      </div>
-                    );
-                  })}
-                  {error && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center">
-                      <Icon name="AlertCircle" size={14} className="mr-1" />
-                      {error}
-                    </p>
-                  )}
-                </div>
-              );
-
-            case 'multiple_choice':
-              return (
-                <div className="space-y-3">
-                  {(question?.options || []).map((option, idx) => {
-                    const optionText = typeof option === 'object' ? option.text : option;
-                    const isChecked = Array.isArray(value) && value.includes(optionText);
-
-                    return (
-                      <div key={idx} className="space-y-2">
-                        <label className="flex items-center space-x-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => handleCheckboxChange(questionTitle, optionText)}
-                            className="h-4 w-4 rounded border-2 border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2"
-                          />
-                          <span className="text-base text-black">{optionText}</span>
-                        </label>
-                      </div>
-                    );
-                  })}
-                  {error && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center">
-                      <Icon name="AlertCircle" size={14} className="mr-1" />
-                      {error}
-                    </p>
-                  )}
-                </div>
-              );
-
-            default:
-              return (
-                <div className="text-center py-4 text-gray-500">
-                  Tipo de pregunta no soportado
-                </div>
-              );
-          }
-        };
-
-        const questionElement = (
-          <div key={`${questionTitle}-${currentIndex}`} className="space-y-4">
-            {/* Pregunta */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-              <div className="mb-4">
-                <div className="flex items-start space-x-3">
-                  <div
-                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                    style={{
-                      backgroundColor: formData?.primaryColor || '#3B82F6',
-                    }}
-                  >
-                    {currentIndex + 1}
+                return (
+                  <div key={idx} className="space-y-2">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name={questionPath}
+                        value={optionValue}
+                        checked={value === optionValue}
+                        onChange={(e) => handleRadioChange(question.id, getQuestionTitle(question), e.target.value)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-base text-black">{optionText}</span>
+                    </label>
                   </div>
+                );
+              })}
+              {error && (
+                <p className="text-red-600 text-sm mt-1 flex items-center">
+                  <Icon name="AlertCircle" size={14} className="mr-1" />
+                  {error}
+                </p>
+              )}
+            </div>
+          );
 
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-black mb-1">
-                      {displayTitle}
-                      {question?.required && (
-                        <span className="text-red-600 ml-1">*</span>
-                      )}
-                    </h3>
+        case 'multiple_choice':
+          return (
+            <div className="space-y-3">
+              {(question?.options || []).map((option, idx) => {
+                const optionText = typeof option === 'object' ? option.text : option;
+                const isChecked = Array.isArray(value) && value.includes(optionText);
 
-                    {question?.description && (
-                      <p className="text-gray-600 text-base">
-                        {question?.description}
-                      </p>
-                    )}
+                return (
+                  <div key={idx} className="space-y-2">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => handleCheckboxChange(question.id, getQuestionTitle(question), optionText)}
+                        className="h-4 w-4 rounded border-2 border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2"
+                      />
+                      <span className="text-base text-black">{optionText}</span>
+                    </label>
                   </div>
-                </div>
-              </div>
+                );
+              })}
+              {error && (
+                <p className="text-red-600 text-sm mt-1 flex items-center">
+                  <Icon name="AlertCircle" size={14} className="mr-1" />
+                  {error}
+                </p>
+              )}
+            </div>
+          );
 
-              <div className="ml-11">
-                {renderInput()}
+        default:
+          return (
+            <div className="text-center py-4 text-gray-500">
+              Tipo de pregunta no soportado
+            </div>
+          );
+      }
+    };
+
+    return (
+      <div key={question?.id} className="space-y-4">
+        {/* Pregunta principal */}
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+          <div className="mb-4">
+            <div className="flex items-start space-x-3">
+              {showNumber && (
+                <div
+                  className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                  style={{
+                    backgroundColor: formData?.primaryColor || '#3B82F6',
+                  }}
+                >
+                  {index + 1}
+                </div>
+              )}
+
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-black mb-1">
+                  {questionTitle}
+                  {question?.required && (
+                    <span className="text-red-600 ml-1">*</span>
+                  )}
+                </h3>
+
+                {question?.description && (
+                  <p className="text-gray-600 text-base">
+                    {question?.description}
+                  </p>
+                )}
               </div>
             </div>
           </div>
-        );
 
-        currentIndex++;
-        renderedQuestions.push(questionElement);
+          <div className={showNumber ? "ml-11" : ""}>
+            {renderInput()}
+          </div>
+        </div>
 
-        // Procesar subsecciones si están activas
-        (question?.options || []).forEach((option) => {
+        {/* Subsecciones recursivas de esta pregunta - VISUAL ORIGINAL */}
+        {(question?.options || []).map((option, optionIndex) => {
           if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
-            const optionText = option.text || 'Opción';
+            const optionText = option.text || `Opción ${optionIndex + 1}`;
             
             // Verificar si esta subsección debe mostrarse
             const shouldShowSubsection = 
               question.type === 'single_choice' 
-                ? answers[questionTitle] === optionText
+                ? answers[question.id] === optionText
                 : question.type === 'multiple_choice'
-                ? Array.isArray(answers[questionTitle]) && answers[questionTitle].includes(optionText)
+                ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
                 : false;
 
             if (shouldShowSubsection) {
-              // Renderizar subsecciones al mismo nivel
-              const subQuestions = renderQuestionRecursive(option.subformQuestions, true);
-              renderedQuestions.push(...subQuestions);
+              return (
+                <div key={`${questionPath}-${optionIndex}`} className="space-y-4 ml-8 border-l-2 border-gray-200 pl-4">
+                  {option.subformQuestions.map((subQuestion, subIndex) =>
+                    renderQuestion(subQuestion, subIndex, false, questionPath)
+                  )}
+                </div>
+              );
             }
           }
-        });
-
-        return questionElement;
-      });
-    };
-
-    renderQuestionRecursive(questions);
-    return renderedQuestions;
+          return null;
+        })}
+      </div>
+    );
   };
 
   // Enviar formulario al endpoint de tu API
@@ -384,9 +413,12 @@ const FormPreview = ({ formData }) => {
     }
 
     try {
+      // Mapear respuestas de IDs a Títulos para el envío
+      const answersWithTitles = mapAnswersToTitles(formData?.questions || [], answers);
+
       // Limpiar respuestas vacías
       const cleanAnswers = Object.fromEntries(
-        Object.entries(answers).filter(([_, value]) => 
+        Object.entries(answersWithTitles).filter(([_, value]) => 
           value !== '' && 
           value !== null && 
           value !== undefined &&
@@ -397,7 +429,7 @@ const FormPreview = ({ formData }) => {
       const payload = {
         formId: formData?.id,
         formTitle: formData?.title,
-        responses: cleanAnswers, // SE ENVÍAN LOS TÍTULOS DE LAS PREGUNTAS
+        responses: cleanAnswers, // AHORA SE ENVÍAN LOS TÍTULOS EN LUGAR DE IDs
         mail: respaldo,
         submittedAt: new Date().toISOString(),
       };
@@ -492,27 +524,31 @@ const FormPreview = ({ formData }) => {
             )}
           </div>
 
-          {/* Preguntas y subsecciones recursivas - TODAS AL MISMO NIVEL */}
+          {/* Preguntas y subsecciones recursivas - VISUAL ORIGINAL */}
           <div className="space-y-6">
-            {renderAllQuestions(formData?.questions || [])}
+            {formData?.questions?.map((question, index) =>
+              renderQuestion(question, index, true)
+            )}
 
             {/* CAMPO RESPALDO - NO OBLIGATORIO */}
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
               <div className="mb-4">
                 <div className="flex items-start space-x-3">
-                  <div
-                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                    style={{
-                      backgroundColor: formData?.primaryColor || '#3B82F6',
-                    }}
-                  >
-                    {/* Número dinámico basado en el total de preguntas */}
-                    {(formData?.questions?.length || 0) + 1}
-                  </div>
+                  {formData?.questions?.length && (
+                    <div
+                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                      style={{
+                        backgroundColor: formData?.primaryColor || '#3B82F6',
+                      }}
+                    >
+                      {formData?.questions?.length + 1}
+                    </div>
+                  )}
 
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-black mb-1">
                       Respaldo de información
+                      {/* SIN ASTERISCO ROJO */}
                     </h3>
 
                     <p className="text-gray-600 text-base">
@@ -522,7 +558,7 @@ const FormPreview = ({ formData }) => {
                 </div>
               </div>
 
-              <div className="ml-11">
+              <div className={"ml-11"}>
                 <input
                   type="email"
                   placeholder="Escribe tu mail aquí (opcional)..."
