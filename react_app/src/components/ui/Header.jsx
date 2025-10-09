@@ -8,6 +8,7 @@ const Header = ({ className = '' }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const user = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
+  
   // Refs para detectar clics fuera
   const menuRef = useRef(null);
   const notiRef = useRef(null);
@@ -148,7 +149,7 @@ const Header = ({ className = '' }) => {
         {/* User Profile & Actions */}
         <div className="flex items-center space-x-3">
           {/* Notifications */}
-          <div className="relative" ref={notiRef}>
+          <div ref={notiRef}>
             <Button
               variant="ghost"
               size="icon"
@@ -160,7 +161,7 @@ const Header = ({ className = '' }) => {
             </Button>
             
             {isNotiOpen && (
-              <div className="absolute right-0 top-full mt-2 mr-2 w-48 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
+              <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
                 <div className="py-2">
                   <NotificationsCard />
                 </div>

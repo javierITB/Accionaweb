@@ -5,6 +5,15 @@ const crypto = require("crypto");
 let activeTokens = [];
 const TOKEN_EXPIRATION = 1000 * 60 * 60; // 1 hora
 
+router.get("/", async (req, res) => {
+  try {
+    const forms = await req.db.collection("usuarios").find().toArray();
+    res.json(forms);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener usuarios" });
+  }
+});
+
 // Login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
