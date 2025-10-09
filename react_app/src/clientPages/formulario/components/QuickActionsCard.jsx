@@ -329,6 +329,43 @@ const FormPreview = ({ formData }) => {
               renderQuestion(question, index, true)
             )}
 
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+              <div className="mb-4">
+                <div className="flex items-start space-x-3">
+                  {formData?.questions?.length && (
+                    <div
+                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                      style={{
+                        backgroundColor: formData?.primaryColor || '#3B82F6',
+                      }}
+                    >
+                      {formData?.questions?.length + 1}
+                    </div>
+                  )}
+
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-black mb-1">
+                      Respaldo de información
+                    </h3>
+
+                    <p className="text-gray-600 text-base">
+                      mail de envio de respaldo de respuestas
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={"ml-11"}>
+                <input
+                  type="mail"
+                  placeholder="Escribe tu mail aquí..."
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-black text-base'
+                  value={respaldo}
+                  onChange={(e) => handleInputChange(questionTitle, e.target.value)}
+                />
+              </div>
+            </div>
+
             {/* Botones */}
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between">
