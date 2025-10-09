@@ -225,6 +225,33 @@ const RequestTracking = () => {
     }
   });
 
+  const handleRemove = async (request) => {
+    requestId = request.
+    if (!requestId) return alert("ID no válido para eliminar.");
+
+    const confirmDelete = window.confirm("¿Seguro que deseas eliminar esta solicitud?");
+    if (!confirmDelete) return;
+
+    try {
+      setIsLoading(true);
+
+      const res = await fetch(`http://192.168.0.2:4000/api/respuestas/${requestId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) throw new Error('Error al eliminar la solicitud.');
+
+      // ✅ Eliminamos del estado local sin recargar todo
+      setResp((prev) => prev.filter((r) => r._id !== requestId));
+
+      alert("Solicitud eliminada correctamente.");
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo eliminar la solicitud.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const handleViewDetails = (request) => {
     setSelectedRequest(request);
     setShowRequestDetails(true);
@@ -369,6 +396,7 @@ const RequestTracking = () => {
                 <RequestCard
                   key={request?.id}
                   request={request}
+                  onRemove={hanfdleRemove}
                   onViewDetails={handleViewDetails}
                   onSendMessage={handleSendMessage}
                 />

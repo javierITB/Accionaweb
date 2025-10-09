@@ -8,18 +8,6 @@ const DashboardHome = ( {section} ) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   
-
-  // Mock user data
-  const currentUser = {
-    id: 1,
-    name: "Sarah Johnson",
-    email: "sarah.johnson@acciona.com",
-    department: "Recursos Humanos",
-    position: "HR Specialist",
-    employeeId: "ACC-2024-001",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
-  };
-
   // Update time every minute
   useEffect(() => {
     const timer = setInterval(() => {

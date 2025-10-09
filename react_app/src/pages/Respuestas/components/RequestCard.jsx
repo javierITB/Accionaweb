@@ -2,7 +2,7 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
+const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
@@ -122,6 +122,16 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
         </div>
         
         <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onremove(request)}
+            iconName="Trash"
+            iconPosition="left"
+            iconSize={16}
+          >
+            Eliminar
+          </Button>
           <Button
             variant="outline"
             size="sm"

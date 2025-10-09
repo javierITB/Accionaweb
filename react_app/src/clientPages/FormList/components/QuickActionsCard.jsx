@@ -38,7 +38,7 @@ const QuickActionsCard = ({ section }) => {
             lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null,
             path : "/forms?id=" + f._id
           }));
-  
+          
           setAllForms(normalizedForms);
         } catch (err) {
           console.error('Error cargando formularios:', err);
