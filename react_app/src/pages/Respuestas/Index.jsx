@@ -226,7 +226,7 @@ const RequestTracking = () => {
   });
 
   const handleRemove = async (request) => {
-    requestId = request.
+    requestId = request?._id
     if (!requestId) return alert("ID no válido para eliminar.");
 
     const confirmDelete = window.confirm("¿Seguro que deseas eliminar esta solicitud?");
@@ -241,7 +241,6 @@ const RequestTracking = () => {
 
       if (!res.ok) throw new Error('Error al eliminar la solicitud.');
 
-      // ✅ Eliminamos del estado local sin recargar todo
       setResp((prev) => prev.filter((r) => r._id !== requestId));
 
       alert("Solicitud eliminada correctamente.");
@@ -252,6 +251,7 @@ const RequestTracking = () => {
       setIsLoading(false);
     }
   };
+
   const handleViewDetails = (request) => {
     setSelectedRequest(request);
     setShowRequestDetails(true);
@@ -389,20 +389,25 @@ const RequestTracking = () => {
             </div>
           </div>
 
-          {/* Requests List */}
-          <div className={viewMode === 'grid' ? 'space-y-4' : 'space-y-2'}>
+          {/* Requests List - CORREGIDO */}
+          <div className={
+            viewMode === 'grid'
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+              : 'space-y-4'
+          }>
             {filteredRequests?.length > 0 ? (
               filteredRequests?.map((request) => (
                 <RequestCard
-                  key={request?.id}
+                  key={request?._id || request?.id}
                   request={request}
-                  onRemove={hanfdleRemove}
+                  onRemove={handleRemove}
                   onViewDetails={handleViewDetails}
                   onSendMessage={handleSendMessage}
+                  viewMode={viewMode} // Pasar el viewMode al componente
                 />
               ))
             ) : (
-              <div className="text-center py-12 bg-card border border-border rounded-lg">
+              <div className="text-center py-12 bg-card border border-border rounded-lg col-span-full">
                 <Icon name="Search" size={48} className="mx-auto mb-4 text-muted-foreground opacity-50" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
                 <p className="text-muted-foreground mb-4">

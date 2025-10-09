@@ -125,7 +125,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onremove(request)}
+            onClick={() => onRemove(request)}
             iconName="Trash"
             iconPosition="left"
             iconSize={16}
