@@ -242,7 +242,6 @@ const RequestTracking = () => {
 
       setResp((prev) => prev.filter((r) => r._id !== requestId));
 
-      alert("Solicitud eliminada correctamente.");
     } catch (err) {
       console.error(err);
       alert("No se pudo eliminar la solicitud.");
