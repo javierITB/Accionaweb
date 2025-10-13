@@ -11,7 +11,7 @@ const FormBuilder = () => {
   const [formData, setFormData] = useState({
     id: null,
     title: '',
-    description: '', // NUEVO
+    description: '',
     category: '',
     responseTime: '',
     author: 'Admin',
@@ -20,8 +20,8 @@ const FormBuilder = () => {
     questions: [],
     status: 'draft',
     section: '',
-    logo: '', // NUEVO
-    company: '', // NUEVO
+    icon: 'FileText', // ✅ CAMBIADO: Valor por defecto en lugar de vacío
+    companies: [], // ✅ AGREGADO: Campo companies que usa FormProperties
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
@@ -74,7 +74,7 @@ const FormBuilder = () => {
         const normalizedForm = {
           id: data._id || data.id || null,
           title: data.title || '',
-          description: data.description || '', // NUEVO
+          description: data.description || '',
           category: data.category || '',
           responseTime: data.responseTime || '',
           author: data.author || 'Admin',
@@ -83,8 +83,8 @@ const FormBuilder = () => {
           questions: data.questions || [],
           status: data.status || 'draft',
           section: data.section || '',
-          logo: data.logo || '', // NUEVO
-          company: data.company || '', // NUEVO
+          icon: data.icon || 'FileText', // ✅ CAMBIADO: Valor por defecto
+          companies: data.companies || [], // ✅ AGREGADO
           createdAt: data.createdAt || new Date().toISOString(),
           updatedAt: data.updatedAt || new Date().toISOString()
         };

@@ -33,14 +33,15 @@ const FormCenter = () => {
           title: f.title || 'Sin título',
           description: f.description || '',
           category: f.category || 'general',
-          icon: f.logo || 'FileText', // CAMBIADO: usa el logo guardado en lugar de icon
+          icon: f.icon || 'FileText', // Usa el icono guardado
+          primaryColor: f.primaryColor || '#3B82F6', // ✅ AGREGADO: Color principal del formulario
           status: f.status || 'draft',
           priority: f.priority || 'medium',
           estimatedTime: f.responseTime || '1-5 min',
           fields: f.questions ? f.questions.length : 0,
           documentsRequired: f.documentsRequired ?? false,
           tags: f.tags || [],
-          companies: f.companies || [], // NUEVO: array de empresas
+          companies: f.companies || [],
           lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null
         }));
 

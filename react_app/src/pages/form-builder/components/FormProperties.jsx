@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Input from '../../../components/ui/Input';
 import Icon from '../../../components/AppIcon';
 
-// Componente de selección múltiple personalizado
+// Componente de selección múltiple personalizado CON SCROLLBAR
 const CustomMultiSelect = ({ options, value = [], onChange, placeholder = "Selecciona opciones..." }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,16 +57,16 @@ const CustomMultiSelect = ({ options, value = [], onChange, placeholder = "Selec
             <span className="text-muted-foreground">{placeholder}</span>
           )}
         </div>
-        <Icon 
-          name={isOpen ? "ChevronUp" : "ChevronDown"} 
-          size={16} 
-          className="text-muted-foreground ml-2" 
+        <Icon
+          name={isOpen ? "ChevronUp" : "ChevronDown"}
+          size={16}
+          className="text-muted-foreground ml-2"
         />
       </div>
 
-      {/* Dropdown */}
+      {/* Dropdown CON SCROLLBAR MEJORADO */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-background border border-input rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 w-full mt-1 bg-background border border-input rounded-md shadow-lg max-h-60 overflow-hidden">
           {/* Barra de búsqueda */}
           <div className="p-2 border-b border-input">
             <input
@@ -79,19 +79,19 @@ const CustomMultiSelect = ({ options, value = [], onChange, placeholder = "Selec
             />
           </div>
 
-          {/* Lista de opciones */}
-          <div className="py-1">
+          {/* Lista de opciones CON SCROLLBAR ESTILIZADO */}
+          <div className="py-1 max-h-48 overflow-y-auto custom-scrollbar">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => (
                 <div
                   key={option.value}
-                  className="flex items-center px-3 py-2 hover:bg-muted cursor-pointer"
+                  className="flex items-center px-3 py-2 hover:bg-muted cursor-pointer transition-colors"
                   onClick={() => toggleOption(option.value)}
                 >
                   <input
                     type="checkbox"
                     checked={value.includes(option.value)}
-                    onChange={() => {}}
+                    onChange={() => { }}
                     className="w-4 h-4 text-primary rounded focus:ring-primary border-input"
                   />
                   <span className="ml-2 text-sm text-foreground">
@@ -122,46 +122,46 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
     { value: '30+', label: 'Más de 30 minutos' }
   ];
 
-  // Icono options - SIN colores individuales
+  // Icono options - SOLO usa primaryColor, sin colores individuales
   const IconoOptions = [
-    { 
-      value: 'Icono1', 
-      label: 'Contrato de trabajo', 
+    {
+      value: 'FileText',
+      label: 'Contrato de trabajo',
       icon: 'FileText'
     },
-    { 
-      value: 'Icono2', 
-      label: 'Contrato trabajo por obra', 
-      icon: 'FileText'
+    {
+      value: 'Briefcase', // ✅ NUEVO - representa trabajo/contrato
+      label: 'Contrato trabajo por obra',
+      icon: 'Briefcase'
     },
-    { 
-      value: 'Icono3', 
-      label: 'Sueldo empresarial', 
+    {
+      value: 'Receipt',
+      label: 'Sueldo empresarial',
       icon: 'Receipt'
     },
-    { 
-      value: 'Icono4', 
-      label: 'Permiso sin goce de sueldo', 
-      icon: 'Receipt'
+    {
+      value: 'DollarSign', // ✅ NUEVO - representa dinero/permiso sin goce
+      label: 'Permiso sin goce de sueldo',
+      icon: 'DollarSign'
     },
-    { 
-      value: 'Icono5', 
-      label: 'Certificado de Vigencia', 
+    {
+      value: 'Clock',
+      label: 'Certificado de Vigencia',
       icon: 'Clock'
     },
-    { 
-      value: 'Icono6', 
-      label: 'Certificado de Antigüedad', 
+    {
+      value: 'MessageCircle',
+      label: 'Certificado de Antigüedad',
       icon: 'MessageCircle'
     },
-    { 
-      value: 'Icono7', 
-      label: 'Certificado Licencias Médicas', 
+    {
+      value: 'Edit',
+      label: 'Certificado Licencias Médicas',
       icon: 'Edit'
     },
-    { 
-      value: 'Icono8', 
-      label: 'Solicitud de vacaciones', 
+    {
+      value: 'Calendar',
+      label: 'Solicitud de vacaciones',
       icon: 'Calendar'
     }
   ];
@@ -240,11 +240,10 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               value={formData?.title || ''}
               onChange={(e) => handleTitleChange(e.target.value)}
               maxLength={50}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                (formData?.title?.length || 0) >= 50
-                  ? 'border-red-500 focus-visible:ring-red-200' 
+              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.title?.length || 0) >= 50
+                  ? 'border-red-500 focus-visible:ring-red-200'
                   : 'border-input focus-visible:ring-blue-200'
-              }`}
+                }`}
             />
             {(formData?.title?.length || 0) >= 50 && (
               <p className="text-red-500 text-xs">
@@ -276,7 +275,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               Tiempo promedio que tomará completar el formulario
             </p>
           </div>
-          
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
               Sección <span className="text-destructive">*</span>
@@ -328,16 +327,16 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             </p>
           </div>
 
-          {/* EMPRESAS - MODIFICADO: USANDO CUSTOM MULTISELECT */}
+          {/* EMPRESAS - CON SCROLLBAR MEJORADO */}
           <div className="space-y-2 md:col-span-1">
             <label className="text-sm font-medium text-foreground">
-              Empresas <span className="text-destructive">*</span>
+              Empresa/s <span className="text-destructive">*</span>
             </label>
             <CustomMultiSelect
               options={companyOptions}
               value={formData?.companies || []}
               onChange={handleCompanyChange}
-              placeholder="Selecciona las empresas asociadas"
+              placeholder="Selecciona las empresas destino..."
             />
             <p className="text-sm text-muted-foreground">
               Selecciona las empresas que podrán ver este formulario
@@ -354,7 +353,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
         </div>
       </div>
 
-      {/* Icono Selection - MODIFICADO: Todos usan el color primario */}
+      {/* Icono Selection - SOLO USA PRIMARY COLOR */}
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-muted rounded-lg">
@@ -370,21 +369,20 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
           </div>
         </div>
 
-        {/* MODIFICADO: Todos los iconos usan el color primario */}
+        {/* TODOS LOS ICONOS USAN SOLO EL PRIMARY COLOR */}
         <div className="flex flex-wrap justify-center gap-3">
           {IconoOptions?.map((Icono) => (
             <button
               key={Icono.value}
               type="button"
-              onClick={() => onUpdateFormData('Icono', Icono.value)}
-              className={`p-4 rounded-full transition-all transform hover:scale-110 hover:shadow-lg ${
-                formData?.Icono === Icono.value
+              onClick={() => onUpdateFormData('icon', Icono.value)} // Cambiado a 'icon' para consistencia
+              className={`p-4 rounded-full transition-all transform hover:scale-110 hover:shadow-lg ${formData?.icon === Icono.value
                   ? 'ring-4 ring-primary/50 shadow-lg scale-110'
                   : 'shadow-md opacity-70 hover:opacity-100'
-              }`}
-              style={{ 
-                backgroundColor: formData?.primaryColor || '#3B82F6',
-                color: 'white' 
+                }`}
+              style={{
+                backgroundColor: formData?.primaryColor || '#3B82F6', // SOLO primaryColor
+                color: 'white'
               }}
               title={Icono.label}
             >
@@ -394,7 +392,6 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
         </div>
       </div>
 
-      {/* El resto del código se mantiene igual para Color Customization */}
       {/* Color Customization */}
       <div className="space-y-6">
         <div className="flex items-center space-x-3">
@@ -420,10 +417,9 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
                 type="button"
                 key={index}
                 onClick={() => handleColorPresetSelect(preset)}
-                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                  formData?.primaryColor === preset?.primary && formData?.secondaryColor === preset?.secondary
-                    ? 'border-primary ring-2 ring-primary/20' :'border-border hover:border-muted-foreground'
-                }`}
+                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${formData?.primaryColor === preset?.primary && formData?.secondaryColor === preset?.secondary
+                    ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-muted-foreground'
+                  }`}
                 style={{
                   background: `linear-gradient(135deg, ${preset?.primary} 0%, ${preset?.secondary} 100%)`
                 }}
@@ -519,6 +515,24 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
           </div>
         </div>
       </div>
+
+      {/* Estilos para el scrollbar personalizado */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
+        }
+      `}</style>
     </div>
   );
 };
