@@ -42,7 +42,6 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ success: false, message: "Credenciales inválidas" });
     }
     
-    // ✅ BLOQUEAR USUARIOS CON CONTRASEÑA PENDIENTE
     if (user.pass === "pending") {
       return res.status(401).json({ 
         success: false, 
@@ -50,7 +49,6 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // ✅ VERIFICAR CONTRASEÑA CORRECTA
     if (user.pass !== password) {
       return res.status(401).json({ success: false, message: "Credenciales inválidas" });
     }
@@ -58,7 +56,6 @@ router.post("/login", async (req, res) => {
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
 
-    // ✅ NOMBRE COMPLETO (nombre + apellido)
     const usr = { 
       name: `${user.nombre} ${user.apellido}`, 
       email, 
@@ -148,7 +145,7 @@ router.post("/register", async (req, res) => {
       success: true,
       message: "Usuario registrado exitosamente",
       user: {
-        _id: result.insertedId,
+        _id: new ObjectId(req.params.id) ,
         ...newUser
       }
     });
