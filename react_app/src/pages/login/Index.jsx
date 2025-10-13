@@ -26,12 +26,12 @@ export default function LoginPage() {
 
       if (res?.ok && data?.success) {
         // Guardamos token en sessionStorage
-        setError(data.message || "algo");
+        setError(data.message || "error");
         sessionStorage.setItem("cargo", data?.usr?.cargo); // solo string
         sessionStorage.setItem("email", data?.usr?.email);
         sessionStorage.setItem("user", data?.usr?.name);
         sessionStorage.setItem("token", data?.token);
-        
+
         navigate(from, { replace: true });
       } else {
         setError(data.message || "Error de login");

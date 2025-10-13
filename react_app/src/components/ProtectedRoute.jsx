@@ -22,7 +22,7 @@ export default function ProtectedRoute({ children }) {
         const res = await fetch("http://192.168.0.2:4000/api/auth/validate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, email }),
+          body: JSON.stringify({ token, email, cargo }),
         });
         if (cargo == "Admin"){
           setIsAuth(res.ok);
