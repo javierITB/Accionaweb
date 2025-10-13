@@ -4,7 +4,7 @@ const crypto = require("crypto");
 const { ObjectId } = require('mongodb');
 
 let activeTokens = [];
-const TOKEN_EXPIRATION = 1000 * 60 * 60; // 1 hora
+const TOKEN_EXPIRATION = 1000 * 60 * 60;
 
 router.get("/", async (req, res) => {
   try {
@@ -29,7 +29,6 @@ router.get("/:name", async (req, res) => {
   }
 });
 
-// Login - MEJORADO CON SEGURIDAD Y NOMBRE COMPLETO
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -70,7 +69,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Validación de token con match de usuario
 router.post("/validate", (req, res) => {
   const { token, email, cargo } = req.body; 
   if (!token || !email || !cargo) {
@@ -89,7 +87,6 @@ router.post("/validate", (req, res) => {
     return res.status(401).json({ valid: false, message: "Token expirado" });
   }
 
-  // Verificar que el token corresponde al usuario enviado
   if (tokenRecord.usr.email !== email) {
     return res.status(401).json({ valid: false, message: "Token no corresponde al usuario" });
   }
@@ -101,34 +98,25 @@ router.post("/validate", (req, res) => {
   return res.json({ valid: true, user: tokenRecord.user });
 });
 
-// Logout
 router.post("/logout", (req, res) => {
   const { token } = req.body;
   activeTokens = activeTokens.filter((t) => t.token !== token);
   res.json({ success: true });
 });
 
-// ==============================================
-// NUEVAS RUTAS AGREGADAS
-// ==============================================
-
-// Ruta para registrar usuario (sin contraseña)
 router.post("/register", async (req, res) => {
   try {
     const { nombre, apellido, mail, empresa, cargo, rol } = req.body;
 
-    // Validar campos obligatorios
     if (!nombre || !apellido || !mail || !empresa || !cargo || !rol) {
       return res.status(400).json({ error: "Todos los campos son obligatorios" });
     }
 
-    // Verificar si el usuario ya existe
     const existingUser = await req.db.collection("usuarios").findOne({ mail });
     if (existingUser) {
       return res.status(400).json({ error: "El usuario ya existe" });
     }
 
-    // Crear nuevo usuario con contraseña pendiente
     const newUser = {
       nombre,
       apellido,
@@ -136,21 +124,21 @@ router.post("/register", async (req, res) => {
       empresa,
       cargo,
       rol,
-      pass: "pending", // Marcamos que la contraseña está pendiente
+      pass: "pending",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
-    // Insertar en la base de datos
     const result = await req.db.collection("usuarios").insertOne(newUser);
+
+    const createdUser = await req.db.collection("usuarios").findOne({ 
+      _id: result.insertedId 
+    });
 
     res.status(201).json({
       success: true,
       message: "Usuario registrado exitosamente",
-      user: {
-        _id: new ObjectId(req.params.id) ,
-        ...newUser
-      }
+      user: createdUser
     });
 
   } catch (err) {
@@ -159,7 +147,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Ruta para establecer contraseña
 router.post("/set-password", async (req, res) => {
   try {
     const { userId, password } = req.body;
@@ -168,14 +155,29 @@ router.post("/set-password", async (req, res) => {
       return res.status(400).json({ error: "UserId y contraseña son requeridos" });
     }
 
-    // Validar longitud mínima de contraseña
     if (password.length < 4) {
       return res.status(400).json({ error: "La contraseña debe tener al menos 4 caracteres" });
     }
 
-    // Actualizar el usuario con la contraseña
+    const existingUser = await req.db.collection("usuarios").findOne({ 
+      _id: new ObjectId(userId) 
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    if (existingUser.pass !== "pending") {
+      return res.status(400).json({ 
+        error: "La contraseña ya fue establecida anteriormente. Si necesitas cambiarla, contacta al administrador." 
+      });
+    }
+
     const result = await req.db.collection("usuarios").updateOne(
-      { _id: new ObjectId(userId) },
+      { 
+        _id: new ObjectId(userId),
+        pass: "pending"
+      },
       { 
         $set: { 
           pass: password,
@@ -185,7 +187,9 @@ router.post("/set-password", async (req, res) => {
     );
 
     if (result.matchedCount === 0) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
+      return res.status(400).json({ 
+        error: "No se puede establecer la contraseña. Ya fue configurada anteriormente o el enlace expiró." 
+      });
     }
 
     res.json({ 
@@ -196,7 +200,6 @@ router.post("/set-password", async (req, res) => {
   } catch (error) {
     console.error("Error al establecer contraseña:", error);
     
-    // Manejar error de ObjectId inválido
     if (error.message.includes("ObjectId")) {
       return res.status(400).json({ error: "ID de usuario inválido" });
     }

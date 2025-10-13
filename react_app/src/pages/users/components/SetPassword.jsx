@@ -42,8 +42,9 @@ const SetPassword = () => {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Error al establecer la contraseña');
       }
 
@@ -53,6 +54,13 @@ const SetPassword = () => {
     } catch (error) {
       console.error('Error:', error);
       setError(error.message);
+      
+      // ✅ Si ya tiene contraseña, redirigir al login después de 3 segundos
+      if (error.message.includes("ya fue establecida") || error.message.includes("Ya fue configurada")) {
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 3000);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -64,6 +72,12 @@ const SetPassword = () => {
         <div className="bg-white p-8 rounded shadow-md w-full max-w-md text-center">
           <h2 className="text-2xl font-bold mb-4 text-destructive">Enlace Inválido</h2>
           <p className="text-gray-600">El enlace para establecer la contraseña no es válido.</p>
+          <button 
+            onClick={() => window.location.href = '/login'}
+            className="mt-4 w-full bg-[#f97316] text-white py-2 rounded font-bold hover:bg-orange-500 transition"
+          >
+            Ir al Login
+          </button>
         </div>
       </div>
     );
@@ -74,7 +88,16 @@ const SetPassword = () => {
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">Establecer Contraseña</h2>
         
-        {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
+        {error && (
+          <div className="mb-4">
+            <p className="text-red-500 text-center">{error}</p>
+            {(error.includes("ya fue establecida") || error.includes("Ya fue configurada")) && (
+              <p className="text-blue-500 text-sm text-center mt-2">
+                Serás redirigido al login en 3 segundos...
+              </p>
+            )}
+          </div>
+        )}
         
         <div className="mb-4">
           <label className="block mb-2 font-semibold">Contraseña</label>
@@ -85,6 +108,7 @@ const SetPassword = () => {
             onChange={(e) => setPassword(e.target.value)} 
             placeholder="Ingresa tu contraseña"
             required 
+            disabled={isLoading}
           />
         </div>
         
@@ -97,16 +121,27 @@ const SetPassword = () => {
             onChange={(e) => setConfirmPassword(e.target.value)} 
             placeholder="Repite tu contraseña"
             required 
+            disabled={isLoading}
           />
         </div>
         
         <button 
           type="submit" 
-          className="w-full bg-[#f97316] text-white py-2 rounded font-bold hover:bg-orange-500 transition disabled:opacity-50"
+          className="w-full bg-[#f97316] text-white py-2 rounded font-bold hover:bg-orange-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isLoading}
         >
           {isLoading ? 'Guardando...' : 'Guardar Contraseña'}
         </button>
+
+        <div className="mt-4 text-center">
+          <button 
+            type="button"
+            onClick={() => window.location.href = '/login'}
+            className="text-blue-500 hover:text-blue-700"
+          >
+            ¿Ya tienes cuenta? Inicia sesión
+          </button>
+        </div>
       </form>
     </div>
   );
