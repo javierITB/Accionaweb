@@ -103,7 +103,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             </label>
             <input
               type="mail"
-              placeholder="Ej: Juan"
+              placeholder="Ej: mail@gmail.com"
               value={formData?.title || ''}
               onChange={(e) => handleTitleChange(e.target.value)}
               maxLength={25}
@@ -120,6 +120,27 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             <p className="text-sm text-muted-foreground">
               Este será el nombre visible del usuario
             </p>
+          </div>
+          
+           {/* EMPRESA */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Empresa <span className="text-destructive">*</span>
+            </label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={formData?.section}
+              onChange={(e) => onUpdateFormData('section', e?.target?.value)}
+            >
+              <option value="">Selecciona una empresa</option>
+              {sections?.map((section) => (
+                <option key={section?.value} value={section?.value}>
+                  {section?.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm text-muted-foreground">
+              Define la empresa a la que pertenece el usuario </p>
           </div>
 
           {/* Cargo */}
@@ -144,91 +165,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             </p>
           </div>
 
-           {/* EMPRESA */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              Sección <span className="text-destructive">*</span>
-            </label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={formData?.section}
-              onChange={(e) => onUpdateFormData('section', e?.target?.value)}
-            >
-              <option value="">Selecciona una empresa</option>
-              {sections?.map((section) => (
-                <option key={section?.value} value={section?.value}>
-                  {section?.label}
-                </option>
-              ))}
-            </select>
-            <p className="text-sm text-muted-foreground">
-              Define la empresa a la que pertenece el usuario </p>
-          </div>
           
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              Contraseña<span className="text-destructive">*</span>
-              <span className="text-xs text-muted-foreground ml-2">
-                ({formData?.title?.length || 0}/25 caracteres)
-              </span>
-            </label>
-            <input
-              type="text"
-              placeholder="Contraseña"
-              value={formData?.title || ''}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              maxLength={25}
-              minLength={8}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.title?.length || 0) >= 50
-                  ? 'border-red-500 focus-visible:ring-red-200'
-                  : 'border-input focus-visible:ring-blue-200'
-                } ${(formData?.title?.length || 0) < 8
-                  ? 'border-red-500 focus-visible:ring-red-200'
-                  : 'border-input focus-visible:ring-blue-200'
-                }
-                `}
-            />
-            {(formData?.title?.length || 0) >= 50 && (
-              <p className="text-red-500 text-xs">
-                Límite de 25 caracteres alcanzado
-              </p>
-            )}
-            <p className="text-sm text-muted-foreground">
-              Este será el nombre visible del usuario
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              Repetir Contraseña<span className="text-destructive">*</span>
-              
-            </label>
-            <input
-              type="text"
-              placeholder="Contraseña"
-              value={formData?.title || ''}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              maxLength={25}
-              minLength={8}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.title?.length || 0) >= 50
-                  ? 'border-red-500 focus-visible:ring-red-200'
-                  : 'border-input focus-visible:ring-blue-200'
-                } ${(formData?.title?.length || 0) < 8
-                  ? 'border-red-500 focus-visible:ring-red-200'
-                  : 'border-input focus-visible:ring-blue-200'
-                }
-                `}
-            />
-            {(formData?.title?.length || 0) >= 50 && (
-              <p className="text-red-500 text-xs">
-                Límite de 25 caracteres alcanzado
-              </p>
-            )}
-            <p className="text-sm text-muted-foreground">
-              Este será el nombre visible del usuario
-            </p>
-          </div>
 
 
 
