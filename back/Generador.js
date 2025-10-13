@@ -235,11 +235,32 @@ async function generarAnexo(datos) {
 }
 
 // Endpoint POST
-router.post("/generar-anexo", async (req, res) => {
+router.post("/", async (req, res) => {
     try {
-        const datos = req.body; // Aquí recibes tu formulario como JSON
+        const body = req.body;
+
+        // Mapear explícitamente las variables que vienen del frontend
+        const datos = {
+            trabajador: body.trabajador || "",          // nombre del trabajador
+            rut_trabajador: body.rut_trabajador || "",  // RUT del trabajador
+            empresa: body.empresa || "",                // nombre de la empresa
+            fecha_contrato: body.fecha_contrato || "",  // fecha del contrato original
+            sueldo: body.sueldo || "",                  // sueldo del trabajador
+            cargo: body.cargo || "",                    // cargo del trabajador
+            fecha_anexo: body.fecha_anexo || "",        // fecha del anexo
+            // Agrega aquí todas las demás variables que tu frontend envíe
+            // ejemplo:
+            // jornada: body.jornada || "",
+            // modalidad: body.modalidad || "",
+            // bonos: body.bonos || [],
+        };
+
+        // Llamada a la función que genera el docx
         const archivo = await generarAnexo(datos);
-        res.download(archivo); // devuelve el docx al cliente
+
+        // Devolver el docx al cliente
+        res.download(archivo);
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Error generando el anexo" });
