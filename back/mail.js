@@ -14,12 +14,12 @@ const router = express.Router();
 // ⚠️ Reemplaza por tus valores (o idealmente usa variables de entorno)
 const ACCESS_KEY = "MI_CLAVE_SECRETA_AQUI";
 const MAIL_CREDENTIALS = {
-  host: "smtp.ejemplo.com",
-  port: 587,
-  secure: false, // true si usas 465
+  host: "mail.infoacciona.cl",
+  port: 465,
+  secure: true, // true si usas 465
   auth: {
-    user: "usuario@ejemplo.com",
-    pass: "CONTRASEÑA_AQUI",
+    user: "administracion@infoacciona.cl",
+    pass: "Vicente2025",
   },
 };
 const MAX_RECIPIENTS = 10;
@@ -66,6 +66,15 @@ function validarDestinatarios(raw) {
 
   return { lista };
 }
+
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("❌ Error al conectar al SMTP:", error);
+  } else {
+    console.log("✅ Servidor SMTP listo para enviar correos");
+  }
+});
+
 
 // --- RUTA PRINCIPAL ---
 router.post("/send", async (req, res) => {
