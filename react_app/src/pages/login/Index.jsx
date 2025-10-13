@@ -31,7 +31,7 @@ export default function LoginPage() {
         sessionStorage.setItem("email", data?.usr?.email);
         sessionStorage.setItem("user", data?.usr?.name);
         sessionStorage.setItem("token", data?.token);
-
+        
         navigate(from, { replace: true });
       } else {
         setError(data.message || "Error de login");

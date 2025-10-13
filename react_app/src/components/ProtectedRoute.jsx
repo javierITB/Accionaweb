@@ -10,7 +10,7 @@ export default function ProtectedRoute({ children }) {
     const validarToken = async () => {
       const token = sessionStorage.getItem("token");
       const email = sessionStorage.getItem("email"); // ahora es correcto
-
+      const cargo = sessionStorage.getItem("cargo");
 
       if (!token || !email) {
         setIsAuth(false);
@@ -24,8 +24,13 @@ export default function ProtectedRoute({ children }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token, email }),
         });
-
-        setIsAuth(res.ok);
+        if (cargo == "Admin"){
+          setIsAuth(res.ok);
+        } else {
+          alert("Requiere elevacion de permisos...")
+          window.location.href = "/";
+          setIsAuth(false);
+        }
       } catch (err) {
         setIsAuth(false);
       } finally {

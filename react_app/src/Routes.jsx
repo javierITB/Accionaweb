@@ -14,13 +14,11 @@ import RespuestasForms from './pages/Respuestas/Index.jsx';
 import FormBuilder from './pages/form-builder/Index.jsx';
 import FormRenderer from './pages/form-renderer/Index.jsx';
 import Users from './pages/users/Index.jsx';
+import SetPassword from './pages/users/components/SetPassword.jsx'; 
 
 import Home from './clientPages/home/Index.jsx';
 import FormList from './clientPages/FormList/Index.jsx';
 import Form from './clientPages/formulario/Index.jsx';
-
-
-
 
 const Routes = () => {
   return (
@@ -37,8 +35,9 @@ const Routes = () => {
           <Route path="/form-builder" element={<FormBuilder />} />
           <Route path="/form-renderer" element={<FormRenderer />} />
           <Route path="/forms" element={<Form />} />
-          {/* Rutas protegidas */}
+          <Route path="/set-password" element={<SetPassword />} />
           
+          {/* Rutas protegidas */}
           <Route path="/form-center"
             element={
               <ProtectedRoute>

@@ -201,7 +201,7 @@ const FormReg = () => {
                   <tbody>
                     {users.map((u) => (
                       <tr key={u.id} className="border-t hover:bg-muted/30 transition">
-                        <td className="px-4 py-2">{u.id}</td>
+                        <td className="px-4 py-2">{u._id}</td>
                         <td className="px-4 py-2">{u.nombre || '—'}</td>
                         <td className="px-4 py-2">{u.empresa || '—'}</td>
                         <td className="px-4 py-2">{u.mail || '—'}</td>
