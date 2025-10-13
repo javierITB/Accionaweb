@@ -33,12 +33,10 @@ router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    console.log("AQUI LOS IDEADOS")
     const user = await req.db
       .collection("usuarios")
       .findOne({ mail: email, pass: password });
 
-    console.log(user);
     
     if (!user) return res.status(401).json({ success: false, message: "Credenciales inválidas" });
 
