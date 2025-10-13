@@ -5,6 +5,7 @@ const { MongoClient } = require("mongodb");
 const authRoutes = require("./auth");
 const formRoutes = require("./forms");
 const answersRoutes = require("./answers")
+const mailRoutes = require("./mail");
 
 const app = express();
 const PORT = 4000;
@@ -31,6 +32,7 @@ async function startServer() {
     app.use("/api/auth", authRoutes);
     app.use("/api/forms", formRoutes);
     app.use("/api/respuestas", answersRoutes);
+    app.use("/api/mail", mailRoutes);
 
     app.get("/", (req, res) => {
       res.send({ message: "API funcionando 🚀" });
