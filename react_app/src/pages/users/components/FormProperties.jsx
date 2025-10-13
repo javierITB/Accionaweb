@@ -30,7 +30,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               Registrar Usuario
             </h3>
             <p className="text-sm text-muted-foreground">
-              Añadir usuario para permitir infresar al sistema
+              Añadir usuario para permitir ingresar al sistema
             </p>
           </div>
         </div>
@@ -90,6 +90,35 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             )}
             <p className="text-sm text-muted-foreground">
               Este será el Apellido del usuario
+            </p>
+          </div>
+
+          {/* Mail*/}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Mail<span className="text-destructive">*</span>
+              <span className="text-xs text-muted-foreground ml-2">
+                ({formData?.title?.length || 0}/25 caracteres)
+              </span>
+            </label>
+            <input
+              type="mail"
+              placeholder="Ej: Juan"
+              value={formData?.title || ''}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              maxLength={25}
+              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.title?.length || 0) >= 50
+                  ? 'border-red-500 focus-visible:ring-red-200'
+                  : 'border-input focus-visible:ring-blue-200'
+                }`}
+            />
+            {(formData?.title?.length || 0) >= 50 && (
+              <p className="text-red-500 text-xs">
+                Límite de 25 caracteres alcanzado
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Este será el nombre visible del usuario
             </p>
           </div>
 
