@@ -111,7 +111,6 @@ router.put("/public/:id", async (req, res) => {
 
 // Eliminar un formulario
 router.delete("/:id", async (req, res) => {
-  console.log("BORRAR AQUI")
   try {
     const result = await req.db
       .collection("forms")

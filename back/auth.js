@@ -72,8 +72,7 @@ router.post("/login", async (req, res) => {
 
 // Validación de token con match de usuario
 router.post("/validate", (req, res) => {
-  const { token, email, cargo } = req.body;
-  console.log(activeTokens);
+  const { token, email, cargo } = req.body; 
   if (!token || !email || !cargo) {
     return res.status(401).json({ valid: false, message: "Acceso inválido" });
   }
@@ -98,7 +97,7 @@ router.post("/validate", (req, res) => {
   if (tokenRecord.usr.cargo !== cargo) {
     return res.status(401).json({ valid: false, message: "Cargo no corresponde al usuario" });
   }
-  
+
   return res.json({ valid: true, user: tokenRecord.user });
 });
 
