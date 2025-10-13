@@ -3,6 +3,45 @@ import Icon from '../../components/AppIcon.jsx';
 import Button from '../../components/ui/Button';
 
 const NotificationsCard = () => {
+
+    const [allForms, setAllForms] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+  
+    useEffect(() => {
+      const fetchForms = async () => {
+        try {
+          setIsLoading(true);
+          const res = await fetch('http://192.168.0.2:4000/api/noti');
+          const data = await res.json();
+  
+          const normalizedForms = data.map(f => ({
+            id: f._id,
+            title: f.title || 'Sin título',
+            description: f.description || '',
+            category: f.category || 'general',
+            icon: f.icon || 'FileText', // Usa el icono guardado
+            primaryColor: f.primaryColor || '#3B82F6', // ✅ AGREGADO: Color principal del formulario
+            status: f.status || 'draft',
+            priority: f.priority || 'medium',
+            estimatedTime: f.responseTime || '1-5 min',
+            fields: f.questions ? f.questions.length : 0,
+            documentsRequired: f.documentsRequired ?? false,
+            tags: f.tags || [],
+            companies: f.companies || [],
+            lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null
+          }));
+  
+          setAllForms(normalizedForms);
+        } catch (err) {
+          console.error('Error cargando formularios:', err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+  
+      fetchForms();
+    }, []);
+  
   const [notifications, setNotifications] = useState([
     {
       id: 1,

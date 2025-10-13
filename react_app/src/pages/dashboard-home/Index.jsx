@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
-import WelcomeCard from './components/WelcomeCard';
 import QuickActionsCard from './components/QuickActionsCard';
 import PendingTasksCard from './components/PendingTasksCard';
-import RecentActivityCard from './components/RecentActivityCard';
 import StatsOverviewCard from './components/StatsOverviewCard';
-import NotificationsCard from './components/NotificationsCard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 
