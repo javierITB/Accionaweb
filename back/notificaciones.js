@@ -26,16 +26,16 @@ router.post("/", async (req, res) => {
 
     // Inyectar la notificación en el array de notificaciones del usuario
     const result = await req.db.collection("usuarios").findOneAndUpdate(
-      { _id: new ObjectId(userId) },
+      { id: userId },
       { $push: { notificaciones: notificacion } },
       { returnDocument: "after" }
     );
-
-    if (!result.value) {
+    
+    if (!result) {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    res.status(201).json(result.value);
+    res.status(201).json(result);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al crear notificación", detalles: err.message });
@@ -43,16 +43,17 @@ router.post("/", async (req, res) => {
 });
 
 // Listar notificaciones de un usuario
-router.get("/:userId", async (req, res) => {
+router.get("/:user", async (req, res) => {
   try {
-    const user = await req.db.collection("usuarios").findOne(
-      { _id: new ObjectId(req.params.userId) },
-      { projection: { notificaciones: 1 } }
-    );
+    const users = await req.db.collection("usuarios")
+      .find({ nombre: req.params.user }, { projection: { notificaciones: 1 } })
+      .toArray();
 
-    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+    if (!users.length) return res.status(404).json({ error: "Usuario no encontrado" });
 
-    res.json(user.notificaciones || []);
+    // Si quieres devolver todas las notificaciones de todos los usuarios que coincidan
+    const allNotis = users.flatMap(u => u.notificaciones || []);
+    res.json(allNotis);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al obtener notificaciones" });

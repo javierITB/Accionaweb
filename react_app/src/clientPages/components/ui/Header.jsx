@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../AppIcon';
 import Button from './Button';
-import NotificationsCard from './NotificationsCard';
+import NotificationsCard from '../../../components/ui/NotificationsCard';
 
 const Header = ({ className = '' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

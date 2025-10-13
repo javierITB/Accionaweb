@@ -163,7 +163,7 @@ const Header = ({ className = '' }) => {
             {isNotiOpen && (
               <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
                 <div className="py-2">
-                  <NotificationsCard />
+                  <NotificationsCard user ={user}/>
                 </div>
               </div>
             )}

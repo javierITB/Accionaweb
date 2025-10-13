@@ -4,7 +4,6 @@ import WelcomeCard from './components/WelcomeCard';
 import QuickActionsCard from './components/QuickActionsCard';
 import RecentActivityCard from './components/RecentActivityCard';
 import StatsOverviewCard from './components/StatsOverviewCard';
-import NotificationsCard from './components/NotificationsCard';
 import Icon from '../components/AppIcon';
 import Button from '../components/ui/Button';
 

@@ -1,90 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon.jsx';
 import Button from '../../components/ui/Button';
 
-const NotificationsCard = () => {
+const NotificationsCard = (user) => {
+  const [notifications, setNotifications] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-    const [allForms, setAllForms] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-  
-    useEffect(() => {
-      const fetchForms = async () => {
-        try {
-          setIsLoading(true);
-          const res = await fetch('http://192.168.0.2:4000/api/noti');
-          const data = await res.json();
-  
-          const normalizedForms = data.map(f => ({
-            id: f._id,
-            title: f.title || 'Sin título',
-            description: f.description || '',
-            category: f.category || 'general',
-            icon: f.icon || 'FileText', // Usa el icono guardado
-            primaryColor: f.primaryColor || '#3B82F6', // ✅ AGREGADO: Color principal del formulario
-            status: f.status || 'draft',
-            priority: f.priority || 'medium',
-            estimatedTime: f.responseTime || '1-5 min',
-            fields: f.questions ? f.questions.length : 0,
-            documentsRequired: f.documentsRequired ?? false,
-            tags: f.tags || [],
-            companies: f.companies || [],
-            lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null
-          }));
-  
-          setAllForms(normalizedForms);
-        } catch (err) {
-          console.error('Error cargando formularios:', err);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-  
-      fetchForms();
-    }, []);
-  
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'reminder',
-      title: 'Recordatorio: Evaluación de Desempeño',
-      message: 'Tu evaluación anual vence el 15 de enero. Completa el formulario antes de la fecha límite.',
-      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-      isRead: false,
-      priority: 'high',
-      actionUrl: '/form-center?type=evaluation'
-    },
-    {
-      id: 2,
-      type: 'approval',
-      title: 'Solicitud de Vacaciones Aprobada',
-      message: 'Tu solicitud de vacaciones del 15-20 de enero ha sido aprobada por tu supervisor.',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      isRead: false,
-      priority: 'medium',
-      actionUrl: '/request-tracking'
-    },
-    {
-      id: 3,
-      type: 'system',
-      title: 'Actualización del Sistema',
-      message: 'El portal estará en mantenimiento el domingo 26 de enero de 02:00 a 06:00 hrs.',
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-      isRead: true,
-      priority: 'low',
-      actionUrl: null
-    },
-    {
-      id: 4,
-      type: 'document',
-      title: 'Nuevo Documento Disponible',
-      message: 'Se ha publicado la nueva política de trabajo remoto. Revísala en la sección de documentos.',
-      timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-      isRead: true,
-      priority: 'medium',
-      actionUrl: '/form-center?type=policy'
-    }
-  ]);
-  
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setIsLoading(true);
+
+        const res = await fetch(`http://192.168.0.2:4000/api/noti/${user}`);
+        const data = await res.json();
+
+        // Normalizar la información al formato que tu UI usa
+        const normalizedNotis = data.map(n => ({
+          id: n.id,
+          type: n.tipo || "system", // Puedes agregar un tipo si lo manejas
+          title: n.titulo,
+          message: n.descripcion,
+          timestamp: new Date(n.fecha_creacion),
+          isRead: n.leido,
+          priority: n.prioridad === 1 ? "low" : n.prioridad === 2 ? "medium" : "high",
+          actionUrl: n.actionUrl || null, // Opcional
+          icon: n.icono,
+          color: n.color
+        }));
+
+        setNotifications(normalizedNotis);
+      } catch (err) {
+        console.error("Error cargando notificaciones:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [user]);
+
+
+
+
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'reminder': return 'Clock';
@@ -135,7 +92,7 @@ const NotificationsCard = () => {
 
   const handleNotificationClick = (notification) => {
     // Mark as read
-    setNotifications(prev => 
+    setNotifications(prev =>
       prev?.map(n => n?.id === notification?.id ? { ...n, isRead: true } : n)
     );
 
@@ -153,14 +110,15 @@ const NotificationsCard = () => {
 
   return (
     <div className="bg-card rounded-xl shadow-brand border border-border">
-        <div className="space-y-4 max-h-96 overflow-y-auto">
-          {notifications?.map((notification) => (
+      <div className="space-y-4 max-h-96 overflow-y-auto">
+        {notifications && notifications.length > 0 ? (
+          notifications.map((notification) => (
             <div
               key={notification?.id}
-              className={`border rounded-lg p-4 transition-brand cursor-pointer hover:shadow-brand-hover ${
-                notification?.isRead 
-                  ? 'border-border bg-card' :'border-primary/30 bg-primary/5 shadow-sm'
-              }`}
+              className={`border rounded-lg p-4 transition-brand cursor-pointer hover:shadow-brand-hover ${notification?.isRead
+                  ? 'border-border bg-card'
+                  : 'border-primary/30 bg-primary/5 shadow-sm'
+                }`}
               onClick={() => handleNotificationClick(notification)}
             >
               <div className="flex items-start space-x-4">
@@ -196,22 +154,30 @@ const NotificationsCard = () => {
                   </div>
                 </div>
               </div>
+              <div className="mt-6 py-4 border-t border-border">
+                <Button
+                  variant="outline"
+                  fullWidth
+                  iconName="Bell"
+                  iconPosition="left"
+                  onClick={() => window.location.href = '/support-portal?section=notifications'}
+                >
+                  Ver Todas las Notificaciones
+                </Button>
+              </div>
             </div>
-          ))}
-        </div>
-        <div className="mt-6 py-4 border-t border-border">
-          <Button
-            variant="outline"
-            fullWidth
-            iconName="Bell"
-            iconPosition="left"
-            onClick={() => window.location.href = '/support-portal?section=notifications'}
-          >
-            Ver Todas las Notificaciones
-          </Button>
-        </div>
+
+          ))
+        ) : (
+          <div className="text-center text-muted-foreground py-6">
+            No hay notificaciones disponibles
+          </div>
+        )}
+      </div>
+
     </div>
   );
+
 };
 
 export default NotificationsCard;
