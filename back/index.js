@@ -7,6 +7,7 @@ const formRoutes = require("./forms");
 const answersRoutes = require("./answers")
 const mailRoutes = require("./mail");
 const gen = require("./Generador");
+const noti = require("./notificaciones");
 
 
 const app = express();
@@ -36,6 +37,8 @@ async function startServer() {
     app.use("/api/respuestas", answersRoutes);
     app.use("/api/mail", mailRoutes);
     app.use("/api/gen", gen);
+    app.use("/api/noti", noti);
+
 
     app.get("/", (req, res) => {
       res.send({ message: "API funcionando 🚀" });
