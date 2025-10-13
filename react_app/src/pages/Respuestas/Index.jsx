@@ -82,7 +82,7 @@ const RequestTracking = () => {
             // tus campos normalizados/auxiliares (ajusta según lo necesites)
             submittedBy: r.submittedBy || matchedForm?.author || '',
             lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
-            assignedTo: "Insertar Empresa que rellena",
+            assignedTo: r.updatedAt || " - ",
             hasMessages: false,
 
             // aquí va el objeto form asociado (o null si no se encuentra)
