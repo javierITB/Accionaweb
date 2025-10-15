@@ -9,8 +9,6 @@ const NotificationsCard = ({ user }) => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        setIsLoading(true);
-
         const res = await fetch(`http://192.168.0.2:4000/api/noti/${user}`);
         const data = await res.json();
 

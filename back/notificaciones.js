@@ -1,65 +1,62 @@
+// routes/notificaciones.js
 const express = require("express");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
+const { addNotification } = require("./notificaciones.helper");
 
-// Crear notificación para un usuario
+// Crear una notificación (para 1 usuario o grupo)
 router.post("/", async (req, res) => {
   try {
     const data = req.body;
-    const { userId, titulo, descripcion, prioridad = 1, color = "#f5872dff", icono = "paper" } = data;
+    const { filtro, formTitle, prioridad, color, icono, actionUrl } = data;
 
-    if (!userId || !titulo || !descripcion) {
-      return res.status(400).json({ error: "Faltan campos requeridos: userId, titulo, descripcion" });
+    if (!titulo) {
+      return res.status(400).json({ error: "Faltan campos requeridos: titulo, descripcion" });
     }
 
-    // Construir la notificación
-    const notificacion = {
-      id: new ObjectId().toString(),  // Genera un ID único
-      titulo,
-      leido: false,
-      descripcion,
+    const { notificacion, modifiedCount } = await addNotification(req.db, {
+      userId,
+      filtro,
+      formTitle: `Se ha añadido notificacion manual.`,
+      descripcion: `Se a usado postman para añadir nuevas notificaciones desde fuera`,
       prioridad,
-      fecha_creacion: new Date(),
       color,
       icono,
-    };
+      actionUrl,
+    });
 
-    // Inyectar la notificación en el array de notificaciones del usuario
-    const result = await req.db.collection("usuarios").findOneAndUpdate(
-      { id: userId },
-      { $push: { notificaciones: notificacion } },
-      { returnDocument: "after" }
-    );
-    
-    if (!result) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
+    if (modifiedCount === 0) {
+      return res.status(404).json({ error: "No se encontraron usuarios para la notificación" });
     }
 
-    res.status(201).json(result);
+    res.status(201).json({
+      message: "Notificación creada exitosamente",
+      notificacion,
+      usuarios_afectados: modifiedCount,
+    });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error al crear notificación:", err);
     res.status(500).json({ error: "Error al crear notificación", detalles: err.message });
   }
 });
 
 // Listar notificaciones de un usuario
-router.get("/:user", async (req, res) => {
+router.get("/:nombre", async (req, res) => {
   try {
-    const users = await req.db.collection("usuarios")
-      .find({ nombre: req.params.user }, { projection: { notificaciones: 1 } })
-      .toArray();
+    const usuario = await req.db
+      .collection("usuarios")
+      .findOne({ nombre: req.params.nombre }, { projection: { notificaciones: 1 } });
 
-    if (!users.length) return res.status(404).json({ error: "Usuario no encontrado" });
+    if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
 
-    // Si quieres devolver todas las notificaciones de todos los usuarios que coincidan
-    const allNotis = users.flatMap(u => u.notificaciones || []);
-    res.json(allNotis);
+    res.json(usuario.notificaciones || []);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al obtener notificaciones" });
   }
 });
 
+// Marcar una notificación como leída
 router.put("/:userId/:notiId/leido", async (req, res) => {
   try {
     const result = await req.db.collection("usuarios").findOneAndUpdate(
@@ -68,25 +65,27 @@ router.put("/:userId/:notiId/leido", async (req, res) => {
       { returnDocument: "after" }
     );
 
-    if (!result.value) return res.status(404).json({ error: "Usuario o notificación no encontrada" });
+    if (!result.value)
+      return res.status(404).json({ error: "Usuario o notificación no encontrada" });
 
-    res.json(result.value);
+    res.json({ message: "Notificación marcada como leída", usuario: result.value });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al marcar notificación como leída" });
   }
 });
 
-// Eliminar notificación
-router.delete("/:userId/:notiId", async (req, res) => {
+// Eliminar una notificación
+router.delete("/:nombre/:notiId", async (req, res) => {
   try {
     const result = await req.db.collection("usuarios").findOneAndUpdate(
-      { _id: new ObjectId(req.params.userId) },
+      { nombre: req.params.nombre },
       { $pull: { notificaciones: { id: req.params.notiId } } },
       { returnDocument: "after" }
     );
 
-    if (!result.value) return res.status(404).json({ error: "Usuario o notificación no encontrada" });
+    if (!result.value)
+      return res.status(404).json({ error: "Usuario o notificación no encontrada" });
 
     res.json({ message: "Notificación eliminada", usuario: result.value });
   } catch (err) {

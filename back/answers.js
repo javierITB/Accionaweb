@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
+const { addNotification } = require("./notificaciones.helper");
+
+
 
 // Crear un formulario
 router.post("/", async (req, res) => {
@@ -9,6 +12,28 @@ router.post("/", async (req, res) => {
       ...req.body,
       createdAt: new Date()
     });
+
+
+    /****************************************************
+    SECCION DE INYECCION DE NOTIFICACION DE RESPUESTAS
+    ****************************************************/
+    const usuario = req.body.user.nombre;
+    const empresa = req.body.user.empresa;
+    const nombreFormulario = req.body.formTitle;
+
+    await addNotification(req.db, {
+      filtro: { rol: "admin" },
+      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondido el formulario ${nombreFormulario}`,
+      descripcion: "Puedes revisar los detalles en el panel de respuestas.",
+      prioridad: 2,
+      color: "#fb8924",
+      icono: "form",
+      actionUrl: "/admin/respuestas",
+    });
+    /****************************************************
+    SECCION DE INYECCION DE NOTIFICACION DE RESPUESTAS
+    ****************************************************/
+
 
     res.json({ _id: result.insertedId, ...req.body });
   } catch (err) {
@@ -79,10 +104,10 @@ router.put("/public/:id", async (req, res) => {
     const result = await req.db.collection("respuestas").findOneAndUpdate(
       { _id: new ObjectId(req.params.id) },
       {
-        $set: { 
-          status: "published", 
-          updatedAt: new Date() 
-        } 
+        $set: {
+          status: "published",
+          updatedAt: new Date()
+        }
       },
       { returnDocument: "after" }
     );

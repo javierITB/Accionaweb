@@ -58,10 +58,40 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
     });
   };
 
-  const getDaysAgo = (dateString) => {
-    const diffTime = Math.abs(new Date() - new Date(dateString));
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  const getRelativeTime = (dateString) => {
+    if (!dateString) return 'fecha desconocida';
+
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = now.getTime() - date.getTime(); // Sin Math.abs
+
+    const diffSeconds = Math.floor(diffTime / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffTime < 0) {
+      return 'en el futuro';
+    } else if (diffSeconds < 60) {
+      return 'hace un momento';
+    } else if (diffMinutes < 60) {
+      return `hace ${diffMinutes} minuto${diffMinutes > 1 ? 's' : ''}`;
+    } else if (diffHours < 24) {
+      return `hace ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+    } else if (diffDays === 1) {
+      return 'hace 1 día';
+    } else if (diffDays < 7) {
+      return `hace ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+    } else if (diffDays < 30) {
+      const diffWeeks = Math.floor(diffDays / 7);
+      return `hace ${diffWeeks} semana${diffWeeks > 1 ? 's' : ''}`;
+    } else if (diffDays < 365) {
+      const diffMonths = Math.floor(diffDays / 30);
+      return `hace ${diffMonths} mes${diffMonths > 1 ? 'es' : ''}`;
+    } else {
+      const diffYears = Math.floor(diffDays / 365);
+      return `hace ${diffYears} año${diffYears > 1 ? 's' : ''}`;
+    }
   };
 
   return (
@@ -103,7 +133,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
             </div>
           )}
           <span className="text-xs text-muted-foreground">
-            {getDaysAgo(request?.lastUpdated)} días
+            {getRelativeTime(request?.submittedAt )}
           </span>
         </div>
       </div>

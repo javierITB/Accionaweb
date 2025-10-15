@@ -56,7 +56,7 @@ router.post("/login", async (req, res) => {
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
 
     const usr = { 
-      name: `${user.nombre} ${user.apellido}`, 
+      name: `${user.nombre}`, 
       email, 
       cargo: user.cargo 
     };
