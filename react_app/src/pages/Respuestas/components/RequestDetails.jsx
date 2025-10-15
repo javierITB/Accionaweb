@@ -101,31 +101,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     });
   };
 
-  // Función para manejar la descarga
-  const handleDownload = (file) => {
-    // Aquí llamarías a tu API para descargar el archivo
-    console.log('Descargando archivo:', file.name);
-    
-    // Ejemplo de cómo podría ser la descarga
-    fetch(file.downloadUrl)
-      .then(response => response.blob())
-      .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = file.name;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      })
-      .catch(error => {
-        console.error('Error descargando archivo:', error);
-        alert('Error al descargar el archivo');
-      });
-  };
-
   const getFileIcon = (type) => {
     switch (type?.toLowerCase()) {
       case 'pdf':
@@ -254,7 +229,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDownload(file)}
                       iconName="Download"
                       iconPosition="left"
                       iconSize={16}
@@ -301,7 +275,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => realAttachments[0] && handleDownload(realAttachments[0])}
                 iconName="Download"
                 iconPosition="left"
                 iconSize={16}
