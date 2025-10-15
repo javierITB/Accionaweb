@@ -115,21 +115,32 @@ const NotificationsCard = ({ user }) => {
           notifications.map((notification) => (
             <div
               key={notification?.id}
-              className={`border rounded-lg p-4  transition-brand cursor-pointer hover:shadow-brand-hover ${notification?.isRead
-                ? 'border-border bg-card'
-                : 'border-primary/30 bg-primary/5 shadow-sm'
+              className={`border rounded-lg p-4 m-2 transition-brand cursor-pointer hover:shadow-brand-hover ${notification?.isRead
+                  ? 'border-border bg-card'
+                  : 'border-primary/30 bg-primary/5 shadow-sm'
                 }`}
-              onClick={() => handleNotificationClick(notification)}
             >
               <div className="flex items-start space-x-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getNotificationColor(notification?.type, notification?.priority)}`}>
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getNotificationColor(
+                    notification?.type,
+                    notification?.priority
+                  )}`}
+                >
                   <Icon name={getNotificationIcon(notification?.type)} size={16} />
                 </div>
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div
+                      className="flex-1 cursor-pointer"
+                      onClick={() => handleNotificationClick(notification)}
+                    >
                       <div className="flex items-center space-x-2 mb-1">
-                        <h3 className={`font-medium ${notification?.isRead ? 'text-foreground' : 'text-primary'}`}>
+                        <h3
+                          className={`font-medium ${notification?.isRead ? 'text-foreground' : 'text-primary'
+                            }`}
+                        >
                           {notification?.title}
                         </h3>
                         {!notification?.isRead && (
@@ -143,33 +154,41 @@ const NotificationsCard = ({ user }) => {
                         <span className="text-xs text-muted-foreground">
                           {formatTimestamp(notification?.timestamp)}
                         </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityBadge(notification?.priority)?.class}`}>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityBadge(notification?.priority)?.class
+                            }`}
+                        >
                           {getPriorityBadge(notification?.priority)?.text}
                         </span>
                       </div>
                     </div>
-                    {notification?.actionUrl && (
-                      <Icon name="ChevronRight" size={16} className="text-muted-foreground mt-1" />
-                    )}
+
+                    {/* ✅ Botón para eliminar notificación */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // evita que se dispare el click general
+                        handleDeleteNotification(notification?.id);
+                      }}
+                      className="ml-3 text-muted-foreground hover:text-red-600 transition-colors"
+                      title="Eliminar notificación"
+                    >
+                      <Icon name="X" size={16} />
+                    </button>
                   </div>
                 </div>
               </div>
-
-
-
             </div>
 
-          )
 
-          )
+          ))
         ) : (
           <div className="text-center text-muted-foreground py-6">
             No hay notificaciones disponibles
           </div>
         )}
       </div>
-      <div className="mt-6 py-4 border-t border-border">
-        <div className="flex gap-2 justify-between">
+      <div className="mt-3 py-2 border-t border-border">
+        <div className="flex gap-2 justify-between m-2">
           <Button
             variant="outline"
             className="flex-1"
