@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon.jsx';
 import Button from '../../components/ui/Button';
 
-const NotificationsCard = (user) => {
+const NotificationsCard = ({ user }) => {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -109,15 +109,15 @@ const NotificationsCard = (user) => {
   const unreadCount = notifications?.filter(n => !n?.isRead)?.length;
 
   return (
-    <div className="bg-card rounded-xl shadow-brand border border-border">
+    <div className="bg-card rounded-xl m-4 shadow-brand border border-border">
       <div className="space-y-4 max-h-96 overflow-y-auto">
         {notifications && notifications.length > 0 ? (
           notifications.map((notification) => (
             <div
               key={notification?.id}
-              className={`border rounded-lg p-4 transition-brand cursor-pointer hover:shadow-brand-hover ${notification?.isRead
-                  ? 'border-border bg-card'
-                  : 'border-primary/30 bg-primary/5 shadow-sm'
+              className={`border rounded-lg p-4  transition-brand cursor-pointer hover:shadow-brand-hover ${notification?.isRead
+                ? 'border-border bg-card'
+                : 'border-primary/30 bg-primary/5 shadow-sm'
                 }`}
               onClick={() => handleNotificationClick(notification)}
             >
@@ -154,27 +154,42 @@ const NotificationsCard = (user) => {
                   </div>
                 </div>
               </div>
-              <div className="mt-6 py-4 border-t border-border">
-                <Button
-                  variant="outline"
-                  fullWidth
-                  iconName="Bell"
-                  iconPosition="left"
-                  onClick={() => window.location.href = '/support-portal?section=notifications'}
-                >
-                  Ver Todas las Notificaciones
-                </Button>
-              </div>
+
+
+
             </div>
 
-          ))
+          )
+
+          )
         ) : (
           <div className="text-center text-muted-foreground py-6">
             No hay notificaciones disponibles
           </div>
         )}
       </div>
-
+      <div className="mt-6 py-4 border-t border-border">
+        <div className="flex gap-2 justify-between">
+          <Button
+            variant="outline"
+            className="flex-1"
+            iconName="Bell"
+            iconPosition="left"
+            onClick={() => window.location.href = '/support-portal?section=notifications'}
+          >
+            Ver Todas
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors"
+            iconName="Trash2"
+            iconPosition="left"
+            onClick={() => console.log('Eliminar todas las notificaciones')}
+          >
+            Eliminar Todas
+          </Button>
+        </div>
+      </div>
     </div>
   );
 
