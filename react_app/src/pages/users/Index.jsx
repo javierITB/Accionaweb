@@ -5,6 +5,7 @@ import RegisterForm from './components/RegisterForm';
 
 const FormReg = () => {
   const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -71,6 +72,7 @@ const FormReg = () => {
     }
 
     try {
+      setIsLoading(true);
       // 1. Primero guardar el usuario en la base de datos (sin contraseña)
       const userResponse = await fetch('http://192.168.0.2:4000/api/auth/register', {
         method: 'POST',
@@ -86,7 +88,7 @@ const FormReg = () => {
       if (!userResponse.ok) {
         throw new Error('Error al guardar el usuario');
       }
-
+      
       const saved = await userResponse.json();
       const savedUser = saved?.user;
       // 2. Enviar correo con enlace para establecer contraseña

@@ -5,6 +5,57 @@ import Button from '../../../components/ui/Button';
 const RequestDetails = ({ request, isVisible, onClose }) => {
   if (!isVisible || !request) return null;
 
+  // Función para formatear el nombre del archivo
+  const formatFileName = () => {
+    const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
+    const userName = request?.submittedBy || request?.user?.nombre || 'Usuario';
+    const submitDate = request?.submittedAt || request?.createdAt;
+    
+    // Formatear fecha para el nombre del archivo (sin caracteres especiales)
+    const formatDateForFileName = (dateString) => {
+      if (!dateString) return 'fecha-desconocida';
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0]; // YYYY-MM-DD
+    };
+
+    const datePart = formatDateForFileName(submitDate);
+    
+    // Limpiar caracteres especiales y espacios
+    const cleanText = (text) => {
+      return text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // quitar acentos
+        .replace(/[^a-zA-Z0-9]/g, '_')   // reemplazar caracteres especiales con _
+        .replace(/_+/g, '_')             // reemplazar múltiples _ por uno solo
+        .toLowerCase();
+    };
+
+    const cleanFormTitle = cleanText(formTitle);
+    const cleanUserName = cleanText(userName);
+
+    return `${cleanFormTitle}_${cleanUserName}_${datePart}.docx`;
+  };
+
+  // Función para obtener archivos reales desde la BD
+  const getRealAttachments = () => {
+    if (!request) return [];
+
+    const fileName = formatFileName();
+    
+    // Aquí deberías obtener esta información real de tu base de datos
+    // Por ahora simulamos con los datos que tienes en el request
+    return [
+      {
+        id: request?._id || 1,
+        name: fileName,
+        size: "Calculando...", // Esto deberías obtenerlo del archivo real
+        type: "docx",
+        uploadedAt: request?.submittedAt || request?.createdAt,
+        downloadUrl: `/api/documents/download/${request?._id}` // Endpoint para descargar
+      }
+    ];
+  };
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
@@ -40,6 +91,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'Fecha no disponible';
     return new Date(dateString)?.toLocaleDateString('es-CL', {
       day: '2-digit',
       month: '2-digit',
@@ -49,37 +101,48 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     });
   };
 
-  const mockAttachments = [
-    {
-      id: 1,
-      name: "Certificado_Medico.pdf",
-      size: "245 KB",
-      type: "pdf",
-      uploadedAt: "2025-01-18T09:30:00Z"
-    },
-    {
-      id: 2,
-      name: "Formulario_Solicitud.docx",
-      size: "128 KB",
-      type: "docx",
-      uploadedAt: "2025-01-18T09:32:00Z"
-    }
-  ];
+  // Función para manejar la descarga
+  const handleDownload = (file) => {
+    // Aquí llamarías a tu API para descargar el archivo
+    console.log('Descargando archivo:', file.name);
+    
+    // Ejemplo de cómo podría ser la descarga
+    fetch(file.downloadUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      })
+      .catch(error => {
+        console.error('Error descargando archivo:', error);
+        alert('Error al descargar el archivo');
+      });
+  };
 
   const getFileIcon = (type) => {
     switch (type?.toLowerCase()) {
       case 'pdf':
         return 'FileText';
-      case 'docx': case'doc':
+      case 'docx': case 'doc':
         return 'FileText';
-      case 'xlsx': case'xls':
+      case 'xlsx': case 'xls':
         return 'FileSpreadsheet';
-      case 'jpg': case'jpeg': case'png':
+      case 'jpg': case 'jpeg': case 'png':
         return 'Image';
       default:
         return 'File';
     }
   };
+
+  // Obtener archivos reales
+  const realAttachments = getRealAttachments();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -119,6 +182,10 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                 <h3 className="text-lg font-semibold text-foreground mb-3">Información General</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Título del Formulario:</span>
+                    <span className="text-sm font-medium text-foreground">{request?.formTitle}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Categoría:</span>
                     <span className="text-sm font-medium text-foreground">{request?.form?.section}</span>
                   </div>
@@ -131,75 +198,63 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                       {request?.priority?.toUpperCase()}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Enviado por:</span>
-                    <span className="text-sm font-medium text-foreground">{request?.submittedBy}</span>
-                  </div>
-                  
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-semibold text-foreground mb-3">Estado y Asignación</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-3">Usuario y Fechas</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Asignado a:</span>
-                    <span className="text-sm font-medium text-foreground">{request?.assignedTo || 'No asignado'}</span>
+                    <span className="text-sm text-muted-foreground">Enviado por:</span>
+                    <span className="text-sm font-medium text-foreground">{request?.submittedBy}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Fecha de envío:</span>
-                    <span className="text-sm font-medium text-foreground">{formatDate(request?.lastUpdated)}</span>
+                    <span className="text-sm font-medium text-foreground">{formatDate(request?.submittedAt)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Usuario:</span>
+                    <span className="text-sm font-medium text-foreground">{request?.user?.nombre}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          
 
           {/* Description */}
           {request?.form?.description && (
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3">Descripción</h3>
-            <div className="bg-muted/50 rounded-lg p-4">
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {request?.form?.description}
-              </p>
-            </div>
-          </div>)
-          }            
-          {/* Additional Details */}
-          {request?.details && (
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">Detalles Adicionales</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Descripción</h3>
               <div className="bg-muted/50 rounded-lg p-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {request?.details}
+                  {request?.form?.description}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Attachments */}
+          {/* Attachments - AHORA CON DATOS REALES */}
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3">Archivos Adjuntos</h3>
-            {mockAttachments?.length > 0 ? (
+            <h3 className="text-lg font-semibold text-foreground mb-3">Documento Generado</h3>
+            {realAttachments?.length > 0 ? (
               <div className="space-y-2">
-                {mockAttachments?.map((file) => (
+                {realAttachments?.map((file) => (
                   <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
                       <div>
                         <p className="text-sm font-medium text-foreground">{file?.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {file?.size} • Subido el {formatDate(file?.uploadedAt)}
+                          {file?.size} • Generado el {formatDate(file?.uploadedAt)}
                         </p>
                       </div>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => handleDownload(file)}
                       iconName="Download"
                       iconPosition="left"
                       iconSize={16}
@@ -212,7 +267,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Icon name="Paperclip" size={48} className="mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No hay archivos adjuntos</p>
+                <p className="text-sm">No hay documentos generados para este formulario</p>
               </div>
             )}
           </div>
@@ -246,11 +301,12 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
               </Button>
               <Button
                 variant="outline"
+                onClick={() => realAttachments[0] && handleDownload(realAttachments[0])}
                 iconName="Download"
                 iconPosition="left"
                 iconSize={16}
               >
-                Exportar PDF
+                Descargar DOCX
               </Button>
               <Button
                 variant="default"

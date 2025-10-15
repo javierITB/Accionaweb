@@ -39,6 +39,35 @@ const NotificationsCard = ({ user }) => {
     fetchNotifications();
   }, [user]);
 
+const handleDeleteNotification = async (id) => {
+  try {
+    const username = sessionStorage.getItem("user");
+
+    if (!username) {
+      console.error("Usuario no encontrado en sesión.");
+      return;
+    }
+
+    const res = await fetch(`http://192.168.0.2:4000/api/noti/${username}/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.error("Error al eliminar notificación:", errorData);
+      return;
+    }
+
+    // Actualiza el estado local si la eliminación fue exitosa
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    console.log(`Notificación ${id} eliminada correctamente.`);
+  } catch (err) {
+    console.error("Error eliminando notificación:", err);
+  }
+};
 
 
 
@@ -116,8 +145,8 @@ const NotificationsCard = ({ user }) => {
             <div
               key={notification?.id}
               className={`border rounded-lg p-4 m-2 transition-brand cursor-pointer hover:shadow-brand-hover ${notification?.isRead
-                  ? 'border-border bg-card'
-                  : 'border-primary/30 bg-primary/5 shadow-sm'
+                ? 'border-border bg-card'
+                : 'border-primary/30 bg-primary/5 shadow-sm'
                 }`}
             >
               <div className="flex items-start space-x-4">
