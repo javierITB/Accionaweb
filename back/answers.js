@@ -2,8 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
 const { addNotification } = require("./notificaciones.helper");
-
-
+const { generarAnexoDesdeRespuesta } = require("./generador.helper");
 
 // Crear un formulario
 router.post("/", async (req, res) => {
@@ -12,7 +11,6 @@ router.post("/", async (req, res) => {
       ...req.body,
       createdAt: new Date()
     });
-
 
     /****************************************************
     SECCION DE INYECCION DE NOTIFICACION DE RESPUESTAS
@@ -41,14 +39,56 @@ router.post("/", async (req, res) => {
       color: "#3B82F6",
       actionUrl: `/?id=${result.insertedId}`,
     });
-
     /****************************************************
     SECCION DE INYECCION DE NOTIFICACION DE RESPUESTAS
     ****************************************************/
 
+    /****************************************************
+    SECCION DE GENERACION AUTOMATICA DE DOCX - IMPLEMENTADA
+    ****************************************************/
+    console.log("=== INICIANDO GENERACIÓN AUTOMÁTICA DE DOCX ===");
+    console.log("Response ID:", result.insertedId.toString());
+    console.log("DB disponible:", !!req.db);
+    console.log("Usuario:", usuario);
+    console.log("Empresa:", empresa);
+    console.log("Formulario:", nombreFormulario);
+    
+    if (req.body.responses) {
+      console.log("Número de campos en responses:", Object.keys(req.body.responses).length);
+      
+      // Verificar campos críticos
+      const camposCriticos = [
+        "Nombre de la Empresa solicitante:",
+        "Nombre del trabajador:", 
+        "Fecha del contrato vigente:"
+      ];
+      camposCriticos.forEach(campo => {
+        const valor = req.body.responses[campo];
+        console.log(`Campo crítico "${campo}":`, valor || "NO ENCONTRADO");
+      });
+    } else {
+      console.log("⚠️ ADVERTENCIA: No hay req.body.responses");
+    }
+
+    try {
+      await generarAnexoDesdeRespuesta(
+        req.body.responses,
+        result.insertedId.toString(),
+        req.db
+      );
+      console.log('✅ DOCX generado automáticamente para respuesta:', result.insertedId);
+    } catch (error) {
+      console.error('❌ Error generando DOCX automáticamente:', error.message);
+      console.error('Stack trace:', error.stack);
+      // No fallar toda la operación por error en DOCX
+    }
+    /****************************************************
+    SECCION DE GENERACION AUTOMATICA DE DOCX - IMPLEMENTADA
+    ****************************************************/
 
     res.json({ _id: result.insertedId, ...req.body });
   } catch (err) {
+    console.error('Error general al guardar respuesta:', err);
     res.status(500).json({ error: "Error al guardar respuesta: " + err });
   }
 });
@@ -164,7 +204,5 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: "Error al eliminar formulario" });
   }
 });
-
-
 
 module.exports = router;

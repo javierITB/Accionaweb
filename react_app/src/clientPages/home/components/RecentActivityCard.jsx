@@ -320,7 +320,7 @@ const RequestTracking = () => {
                 <Icon name="Search" size={48} className="mx-auto mb-4 text-muted-foreground opacity-50" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
                 <p className="text-muted-foreground mb-4">
-                  Intenta ajustar los filtros o rellenar un primerformulario
+                  Intenta ajustar los filtros o rellenar un primer formulario
                 </p>
               </div>
             )}
