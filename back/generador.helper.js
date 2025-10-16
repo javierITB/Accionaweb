@@ -405,12 +405,13 @@ function generarClausulasCondicionales(datos) {
 }
 
 // Genera docx desde datos y lo guarda en MongoDB colección docxs
+// Genera docx desde datos y lo guarda en MongoDB colección docxs
 async function generarAnexo(datos, responseId, db) {
-    // VERIFICACIÓN DE CONEXIÓN A BD - SOLO ESTO SE AGREGÓ
+    // VERIFICACIÓN DE CONEXIÓN A BD
     console.log("=== VERIFICANDO CONEXIÓN BD EN generarAnexo ===");
     console.log("db disponible:", !!db);
     console.log("db tipo:", typeof db);
-    
+
     if (!db) {
         throw new Error("Base de datos no inicializada.");
     }
@@ -419,8 +420,7 @@ async function generarAnexo(datos, responseId, db) {
         throw new Error("db.collection no es una función - conexión inválida");
     }
 
-    const doc = new Document();
-
+    // CONFIGURACIÓN DE VARIABLES (mantener igual)
     const ciudad = "PROVIDENCIA";
     const hoy = formatearFechaEspanol(new Date().toISOString().split("T")[0]);
     const trabajador = datos.trabajador || "[NOMBRE DEL TRABAJADOR]";
@@ -440,7 +440,11 @@ async function generarAnexo(datos, responseId, db) {
         }
     }
 
-    const pEncabezado = new Paragraph({
+    // PREPARAR TODOS LOS PÁRRAFOS PRIMERO
+    const children = [];
+
+    // 1. ENCABEZADO
+    children.push(new Paragraph({
         alignment: AlignmentType.JUSTIFIED,
         children: [
             new TextRun(`En ${ciudad} a ${hoy}, entre `),
@@ -449,30 +453,33 @@ async function generarAnexo(datos, responseId, db) {
             new TextRun({ text: `${trabajador.toUpperCase()}`, bold: true }),
             new TextRun(`, se conviene modificar el Contrato de Trabajo vigente de fecha ${formatearFechaEspanol(datos.fecha_contrato)} y sus posteriores ANEXOS.`)
         ]
-    });
-    doc.addParagraph(pEncabezado);
+    }));
 
-    const pMod = new Paragraph({
-        children: [
-            new TextRun({ text: "MODIFICACIÓN", bold: true })
-        ]
-    });
-    doc.addParagraph(pMod);
+    // 2. TÍTULO "MODIFICACIÓN"
+    children.push(new Paragraph({
+        children: [new TextRun({ text: "MODIFICACIÓN", bold: true })]
+    }));
 
+    // 3. CLAUSULAS CONDICIONALES
     let modificacionNum = 1;
     function agregarModificacion(textos = []) {
         const ordinal = ORDINALES[modificacionNum] || `${modificacionNum}°`;
         modificacionNum++;
-        const p = new Paragraph({ alignment: AlignmentType.JUSTIFIED });
-        p.addRun(new TextRun({ text: ordinal, bold: true }));
+
+        const paragraphChildren = [new TextRun({ text: ordinal, bold: true })];
+
         textos.forEach(t => {
             if (typeof t === "string") {
-                p.addRun(new TextRun(t));
+                paragraphChildren.push(new TextRun(t));
             } else {
-                p.addRun(new TextRun({ text: t.text, bold: t.bold || false }));
+                paragraphChildren.push(new TextRun({ text: t.text, bold: t.bold || false }));
             }
         });
-        doc.addParagraph(p);
+
+        children.push(new Paragraph({
+            alignment: AlignmentType.JUSTIFIED,
+            children: paragraphChildren
+        }));
     }
 
     const clausulasCondicionales = generarClausulasCondicionales(datos);
@@ -482,6 +489,7 @@ async function generarAnexo(datos, responseId, db) {
         }
     });
 
+    // 4. CLAUSULAS FIJAS
     agregarModificacion([
         "Queda Expresamente convenido que las cláusulas existentes en el contrato de trabajo celebrado por las partes el día ",
         { text: formatearFechaEspanol(datos.fecha_contrato), bold: true },
@@ -494,7 +502,8 @@ async function generarAnexo(datos, responseId, db) {
         "."
     ]);
 
-    const tabla = new Table({
+    // 5. TABLA DE FIRMAS
+    children.push(new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
         rows: [
             new TableRow({
@@ -518,14 +527,23 @@ async function generarAnexo(datos, responseId, db) {
                 ]
             })
         ]
-    });
-    doc.addTable(tabla);
+    }));
 
+    // CREAR DOCUMENTO CON TODOS LOS ELEMENTOS (CORRECTO SEGÚN DOCUMENTACIÓN)
+    const doc = new Document({
+        sections: [
+            {
+                properties: {},
+                children: children // ← TODOS los elementos aquí
+            }
+        ]
+    });
+
+    // RESTANTE DEL CÓDIGO IGUAL (generar buffer y guardar en BD)
     const buffer = await Packer.toBuffer(doc);
 
     const IDdoc = `ANEXO_${trabajador.replace(/\s+/g, '_').toUpperCase()}_${Date.now()}`;
 
-    // LOG ANTES DE INSERTAR
     console.log("=== INTENTANDO INSERTAR EN BD ===");
     console.log("IDdoc:", IDdoc);
     console.log("Buffer length:", buffer.length);

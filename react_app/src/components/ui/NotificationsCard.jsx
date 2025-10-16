@@ -37,35 +37,65 @@ const NotificationsCard = ({ user }) => {
     fetchNotifications();
   }, [user]);
 
-const handleDeleteNotification = async (id) => {
-  try {
-    const mail = sessionStorage.getItem("email");
+  const handleDeleteNotifications = async () => {
+    try {
+      const mail = sessionStorage.getItem("email");
 
-    if (!mail) {
-      console.error("Usuario no encontrado en sesión.");
-      return;
+      if (!mail) {
+        console.error("Usuario no encontrado en sesión.");
+        return;
+      }
+
+      const res = await fetch(`http://192.168.0.2:4000/api/noti/${mail}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Error al eliminar notificación:", errorData);
+        return;
+      }
+
+      // Actualiza el estado local si la eliminación fue exitosa
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      console.log(`Notificación ${id} eliminada correctamente.`);
+    } catch (err) {
+      console.error("Error eliminando notificación:", err);
     }
+  };
 
-    const res = await fetch(`http://192.168.0.2:4000/api/noti/${mail}/${id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  const handleDeleteNotification = async (id) => {
+    try {
+      const mail = sessionStorage.getItem("email");
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("Error al eliminar notificación:", errorData);
-      return;
+      if (!mail) {
+        console.error("Usuario no encontrado en sesión.");
+        return;
+      }
+
+      const res = await fetch(`http://192.168.0.2:4000/api/noti/${mail}/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Error al eliminar notificación:", errorData);
+        return;
+      }
+
+      // Actualiza el estado local si la eliminación fue exitosa
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      console.log(`Notificación ${id} eliminada correctamente.`);
+    } catch (err) {
+      console.error("Error eliminando notificación:", err);
     }
-
-    // Actualiza el estado local si la eliminación fue exitosa
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    console.log(`Notificación ${id} eliminada correctamente.`);
-  } catch (err) {
-    console.error("Error eliminando notificación:", err);
-  }
-};
+  };
 
 
 
@@ -190,7 +220,6 @@ const handleDeleteNotification = async (id) => {
                       </div>
                     </div>
 
-                    {/* ✅ Botón para eliminar notificación */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); // evita que se dispare el click general
@@ -215,26 +244,32 @@ const handleDeleteNotification = async (id) => {
         )}
       </div>
       <div className="mt-3 py-2 border-t border-border">
-        <div className="flex gap-2 justify-between m-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            iconName="Bell"
-            iconPosition="left"
-            onClick={() => window.location.href = '/support-portal?section=notifications'}
-          >
-            Ver Todas
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors"
-            iconName="Trash2"
-            iconPosition="left"
-            onClick={() => console.log('Eliminar todas las notificaciones')}
-          >
-            Eliminar Todas
-          </Button>
-        </div>
+        {notifications.length > 0 ?(
+          <div className="flex gap-2 justify-between m-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              iconName="Bell"
+              iconPosition="left"
+              onClick={() => window.location.href = '/support-portal?section=notifications'}
+            >
+              Ver Todas
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors"
+              iconName="Trash2"
+              iconPosition="left"
+              onClick={(e) => {
+                e.stopPropagation(); // evita que se dispare el click general
+                handleDeleteNotifications();
+                setNotifications([]);
+              }}
+            >
+              Eliminar Todas
+            </Button>
+          </div>):null
+}
       </div>
     </div>
   );

@@ -94,4 +94,27 @@ router.delete("/:mail/:notiId", async (req, res) => {
   }
 });
 
+router.delete("/:mail", async (req, res) => {
+  try {
+    const result = await req.db.collection("usuarios").findOneAndUpdate(
+      { mail: req.params.mail },
+      { $set: { notificaciones: [] } }, // ✅ Vacía el array completo
+      { returnDocument: "after" }
+    );
+
+    if (!result.value) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.json({
+      message: "Todas las notificaciones fueron eliminadas correctamente.",
+      usuario: result.value
+    });
+  } catch (err) {
+    console.error("Error al eliminar todas las notificaciones:", err);
+    res.status(500).json({ error: "Error al eliminar notificaciones" });
+  }
+});
+
+
 module.exports = router;
