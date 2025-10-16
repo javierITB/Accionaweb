@@ -13,6 +13,7 @@ const FormPreview = ({ formData }) => {
   });
   const usuario = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
+  const mail = sessionStorage.getItem("mail");
   useEffect(() => {
 
 
@@ -26,6 +27,7 @@ const FormPreview = ({ formData }) => {
           uid: data.id,
           nombre: usuario,
           empresa: data.empresa,
+          mail: data.mail
         });
       } catch (err) {
         console.error('Error cargando el usuario:', err);

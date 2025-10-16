@@ -28,7 +28,7 @@ router.post("/", async (req, res) => {
       prioridad: 2,
       color: "#fb8924",
       icono: "form",
-      actionUrl: "/admin/respuestas",
+      actionUrl: `/admin/respuestas?id=${result.insertedId}`,
     });
     /****************************************************
     SECCION DE INYECCION DE NOTIFICACION DE RESPUESTAS
@@ -48,6 +48,20 @@ router.get("/", async (req, res) => {
     res.json(answers);
   } catch (err) {
     res.status(500).json({ error: "Error al obtener formularios" });
+  }
+});
+
+router.get("/mail/:mail", async (req, res) => {
+  try {
+    const form = await req.db
+      .collection("respuestas")
+      .find({ "user.mail" : req.params.mail })
+      .toArray();
+    console.log(req.params);
+    if (!form) return res.status(404).json({ error: "Formulario no encontrado" });
+    res.json(form);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener formulario" });
   }
 });
 

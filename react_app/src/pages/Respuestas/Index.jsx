@@ -80,7 +80,7 @@ const RequestTracking = () => {
             updatedAt: r.updatedAt || null,
 
             // tus campos normalizados/auxiliares (ajusta según lo necesites)
-            submittedBy: r.submittedBy || matchedForm?.author || '',
+            submittedBy: r.user.nombre || 'Desconocido',
             lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
             assignedTo: r.updatedAt || " - ",
             hasMessages: false,

@@ -1,25 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import Header from '../../components/ui/Header';
+import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import RequestCard from './components/RequestCard';
+import TimelineView from './components/TimelineView';
 import FilterPanel from './components/FilterPanel';
 import MessageModal from './components/MessageModal';
 import RequestDetails from './components/RequestDetails';
+import StatsOverview from './components/StatsOverview';
 
 const RequestTracking = () => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [forms, setAllForms] = useState([]);
   const [resp, setResp] = useState([]);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showRequestDetails, setShowRequestDetails] = useState(false);
   const [messageRequest, setMessageRequest] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
-  const mail = sessionStorage.getItem("email");
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -39,7 +43,7 @@ const RequestTracking = () => {
 
         // 1) Traer ambas colecciones en paralelo
         const [resResp, resForms] = await Promise.all([
-          fetch(`http://192.168.0.2:4000/api/respuestas/mail/${mail}`),
+          fetch('http://192.168.0.2:4000/api/respuestas/'),
           fetch('http://192.168.0.2:4000/api/forms/')
         ]);
 
@@ -99,6 +103,69 @@ const RequestTracking = () => {
 
     fetchForms();
   }, []);
+
+
+  // Mock timeline data
+  const mockTimeline = [
+    {
+      id: 1,
+      title: "Solicitud Enviada",
+      description: "La solicitud ha sido enviada y está pendiente de revisión inicial.",
+      status: "completed",
+      completedAt: "2025-01-18T09:30:00Z",
+      assignedTo: "Sistema Automático",
+      notes: "Solicitud recibida correctamente. Todos los campos obligatorios completados."
+    },
+    {
+      id: 2,
+      title: "Revisión Inicial",
+      description: "El equipo de RR.HH. está realizando la revisión inicial de la documentación.",
+      status: "completed",
+      completedAt: "2025-01-19T11:15:00Z",
+      assignedTo: "María González",
+      notes: "Documentación completa. Procede a aprobación del supervisor."
+    },
+    {
+      id: 3,
+      title: "Aprobación del Supervisor",
+      description: "Esperando aprobación del supervisor directo.",
+      status: "current",
+      completedAt: null,
+      assignedTo: "Carlos Mendoza",
+      estimatedCompletion: "2025-01-22T17:00:00Z",
+      notes: null
+    },
+    {
+      id: 4,
+      title: "Aprobación Final",
+      description: "Aprobación final por parte del departamento de RR.HH.",
+      status: "pending",
+      completedAt: null,
+      assignedTo: "Ana Rodríguez",
+      estimatedCompletion: "2025-01-24T17:00:00Z",
+      notes: null
+    },
+    {
+      id: 5,
+      title: "Procesamiento",
+      description: "Procesamiento final y notificación al empleado.",
+      status: "pending",
+      completedAt: null,
+      assignedTo: "Sistema Automático",
+      estimatedCompletion: "2025-01-25T12:00:00Z",
+      notes: null
+    }
+  ];
+
+  // Mock stats data
+  const mockStats = {
+    total: resp?.length || 0,
+    pending: resp?.filter(r => !r.status || r.status === 'pending')?.length || 0,
+    inReview: resp?.filter(r => r.status === 'inReview')?.length || 0,
+    approved: resp?.filter(r => r.status === 'approved')?.length || 0,
+    rejected: resp?.filter(r => r.status === 'rejected')?.length || 0,
+    avgProcessingTime: 5.2 // puedes calcularlo después si tienes timestamps
+  };
 
   // Filter and sort requests
   const filteredRequests = resp?.filter(request => {
@@ -213,6 +280,11 @@ const RequestTracking = () => {
     });
   };
 
+  const handleViewTimeline = (request) => {
+    setSelectedRequest(request);
+    setShowTimeline(true);
+  };
+
   const sortOptions = [
     { value: 'date', label: 'Fecha' },
     { value: 'title', label: 'Título' },
@@ -222,8 +294,35 @@ const RequestTracking = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className={`transition-all duration-300 'ml-16' pt-16`}>
+      <Header />
+      <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)
+      } />
+      <main className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'
+        } pt-16`}>
         <div className="p-6 space-y-6">
+          {/* Page Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Seguimiento de Solicitudes</h1>
+              <p className="text-muted-foreground mt-1">
+                Monitorea el estado de todas tus solicitudes con cronología detallada
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-3">
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                iconName={sidebarCollapsed ? "PanelLeftOpen" : "PanelLeftClose"}
+                iconSize={20}
+              />
+            </div>
+          </div>
+
+          {/* Stats Overview */}
+          <StatsOverview stats={mockStats} />
 
           {/* Filters */}
           <FilterPanel
@@ -299,6 +398,7 @@ const RequestTracking = () => {
                 <RequestCard
                   key={request?._id || request?.id}
                   request={request}
+                  onRemove={handleRemove}
                   onViewDetails={handleViewDetails}
                   onSendMessage={handleSendMessage}
                   viewMode={viewMode} // Pasar el viewMode al componente
@@ -309,7 +409,7 @@ const RequestTracking = () => {
                 <Icon name="Search" size={48} className="mx-auto mb-4 text-muted-foreground opacity-50" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
                 <p className="text-muted-foreground mb-4">
-                  Intenta ajustar los filtros o rellenar un primerformulario
+                  Intenta ajustar los filtros o crear una nueva solicitud
                 </p>
               </div>
             )}
@@ -333,6 +433,9 @@ const RequestTracking = () => {
                       iconSize={20}
                     />
                   </div>
+                </div>
+                <div className="p-6">
+                  <TimelineView timeline={mockTimeline} isVisible={true} />
                 </div>
               </div>
             </div>
