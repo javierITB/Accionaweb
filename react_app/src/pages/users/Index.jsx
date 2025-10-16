@@ -1,484 +1,240 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
-import Icon from '../../components/AppIcon';
-import Button from '../../components/ui/Button';
-import RequestCard from './components/RequestCard';
-import TimelineView from './components/TimelineView';
-import FilterPanel from './components/FilterPanel';
-import MessageModal from './components/MessageModal';
-import RequestDetails from './components/RequestDetails';
-import StatsOverview from './components/StatsOverview';
+import RegisterForm from './components/RegisterForm';
 
-const RequestTracking = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [showTimeline, setShowTimeline] = useState(false);
-  const [showFilters, setShowFilters] = useState(true);
-  const [forms, setAllForms] = useState([]);
-  const [resp, setResp] = useState([]);
-  const [showMessageModal, setShowMessageModal] = useState(false);
-  const [showRequestDetails, setShowRequestDetails] = useState(false);
-  const [messageRequest, setMessageRequest] = useState(null);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-  const [sortBy, setSortBy] = useState('date');
-  const [sortOrder, setSortOrder] = useState('desc');
+const FormReg = () => {
+  const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [filters, setFilters] = useState({
-    search: '',
-    status: '',
-    category: '',
-    priority: '',
-    dateRange: '',
-    startDate: '',
-    endDate: '',
-    company: '', // Cambiado de assignedTo a company
-    submittedBy: ''
+  const [formData, setFormData] = useState({
+    nombre: '',
+    apellido: '',
+    mail: '',
+    empresa: '',
+    cargo: '',
+    rol: 'Cliente'
   });
+  const [activeTab, setActiveTab] = useState('properties');
+
+  const empresas = [
+    { value: 'acciona', label: 'Acciona' },
+    { value: 'empresa1', label: 'Empresa 1' },
+    { value: 'empresa2', label: 'Empresa 2' },
+  ];
+
+  const cargos = [
+    { value: 'Admin', label: 'Administrador' },
+    { value: 'Gerente', label: 'Gerente' },
+    { value: 'Supervisor', label: 'Supervisor' },
+    { value: 'Empleado', label: 'Empleado' },
+  ];
+
+  const roles = [
+    { value: 'admin', label: 'Administrador' },
+    { value: 'user', label: 'Usuario' },
+  ];
 
   useEffect(() => {
-    const fetchForms = async () => {
+    const fetchUsers = async () => {
       try {
-        setIsLoading(true);
-
-        // 1) Traer ambas colecciones en paralelo
-        const [resResp, resForms] = await Promise.all([
-          fetch('http://192.168.0.2:4000/api/respuestas/'),
-          fetch('http://192.168.0.2:4000/api/forms/')
-        ]);
-
-        if (!resResp.ok || !resForms.ok) {
-          throw new Error('Error al obtener datos del servidor');
-        }
-
-        // 2) Convertir a JSON
-        const responses = await resResp.json(); // lista de respuestas
-        const forms = await resForms.json();    // lista de formularios
-
-        // 3) Construir mapa de forms para lookup rápido (mapeamos _id e id si existen)
-        const formsMap = new Map();
-        forms.forEach(f => {
-          const keyA = f._id ? String(f._id) : null;
-          const keyB = f.id ? String(f.id) : null;
-          if (keyA) formsMap.set(keyA, f);
-          if (keyB) formsMap.set(keyB, f);
-        });
-
-        // 4) Normalizar responses uniendo con su form
-        const normalized = responses.map(r => {
-          const formIdKey = r.formId ? String(r.formId) : null;
-          const matchedForm = formIdKey ? formsMap.get(formIdKey) || null : null;
-
-          return {
-            // campos originales de la respuesta
-            _id: r._id,
-            formId: r.formId,
-            title: r.title || (matchedForm ? matchedForm.title : ''),
-            responses: r.responses || {},
-            submittedAt: r.submittedAt || r.createdAt || null,
-            createdAt: r.createdAt || null,
-            updatedAt: r.updatedAt || null,
-
-
-            // tus campos normalizados/auxiliares (ajusta según lo necesites)
-            submittedBy: r.user?.nombre || r.user?.email || 'Usuario Desconocido',
-            lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
-            assignedTo: r.updatedAt || " - ",
-            hasMessages: false,
-            company: r.user?.empresa || 'desconocida',
-
-            // aquí va el objeto form asociado (o null si no se encuentra)
-            form: matchedForm
-          };
-        });
-
-        // 5) Actualizar estados
-        setAllForms(forms);    // lista de formularios tal cual vino del backend
-        setResp(normalized);   // respuestas ya unidas con su form
-
+        const res = await fetch(`http://192.168.0.2:4000/api/auth/`);
+        if (!res.ok) throw new Error('Usuarios no encontrados');
+        const data = await res.json();
+        setUsers(data);
       } catch (err) {
-        console.error('Error cargando formularios:', err);
-      } finally {
-        setIsLoading(false);
+        console.error('Error cargando los usuarios:', err);
+        alert('No se pudo cargar la lista de usuarios');
       }
     };
 
-    fetchForms();
+    fetchUsers();
   }, []);
 
-
-  // Mock timeline data
-  const mockTimeline = [
-    {
-      id: 1,
-      title: "Solicitud Enviada",
-      description: "La solicitud ha sido enviada y está pendiente de revisión inicial.",
-      status: "completed",
-      completedAt: "2025-01-18T09:30:00Z",
-      assignedTo: "Sistema Automático",
-      notes: "Solicitud recibida correctamente. Todos los campos obligatorios completados."
-    },
-    {
-      id: 2,
-      title: "Revisión Inicial",
-      description: "El equipo de RR.HH. está realizando la revisión inicial de la documentación.",
-      status: "completed",
-      completedAt: "2025-01-19T11:15:00Z",
-      assignedTo: "María González",
-      notes: "Documentación completa. Procede a aprobación del supervisor."
-    },
-    {
-      id: 3,
-      title: "Aprobación del Supervisor",
-      description: "Esperando aprobación del supervisor directo.",
-      status: "current",
-      completedAt: null,
-      assignedTo: "Carlos Mendoza",
-      estimatedCompletion: "2025-01-22T17:00:00Z",
-      notes: null
-    },
-    {
-      id: 4,
-      title: "Aprobación Final",
-      description: "Aprobación final por parte del departamento de RR.HH.",
-      status: "pending",
-      completedAt: null,
-      assignedTo: "Ana Rodríguez",
-      estimatedCompletion: "2025-01-24T17:00:00Z",
-      notes: null
-    },
-    {
-      id: 5,
-      title: "Procesamiento",
-      description: "Procesamiento final y notificación al empleado.",
-      status: "pending",
-      completedAt: null,
-      assignedTo: "Sistema Automático",
-      estimatedCompletion: "2025-01-25T12:00:00Z",
-      notes: null
-    }
-  ];
-
-  // Mock stats data
-  const mockStats = {
-    total: resp?.length || 0,
-    pending: resp?.filter(r => !r.status || r.status === 'pending')?.length || 0,
-    inReview: resp?.filter(r => r.status === 'inReview')?.length || 0,
-    approved: resp?.filter(r => r.status === 'approved')?.length || 0,
-    rejected: resp?.filter(r => r.status === 'rejected')?.length || 0,
-    avgProcessingTime: 5.2 // puedes calcularlo después si tienes timestamps
+  const updateFormData = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  // Filter and sort requests
-  const filteredRequests = resp?.filter(request => {
-    // Search filter
-    if (filters?.search) {
-      const searchTerm = filters.search.toLowerCase();
-      const matchesSearch =
-        request?.title?.toLowerCase()?.includes(searchTerm) ||
-        request?.company?.toLowerCase()?.includes(searchTerm) ||
-        request?.submittedBy?.toLowerCase()?.includes(searchTerm) ||
-        request?._id?.toLowerCase()?.includes(searchTerm);
-
-      if (!matchesSearch) return false;
+  const handleRegister = async () => {
+    if (!formData.nombre || !formData.apellido || !formData.mail || !formData.empresa || !formData.cargo) {
+      alert('Por favor completa todos los campos obligatorios');
+      return;
     }
 
-    // Status filter
-    if (filters?.status && request?.status !== filters?.status) return false;
-
-    // Category filter (usando form.section o form.title)
-    if (filters?.category) {
-      const requestCategory = request?.form?.section || request?.form?.title || '';
-      if (requestCategory.toLowerCase() !== filters.category.toLowerCase()) return false;
+    if (!formData.mail.includes('@')) {
+      alert('Por favor ingresa un email válido');
+      return;
     }
-
-    // Priority filter
-    if (filters?.priority && request?.priority !== filters?.priority) return false;
-
-    // Company filter
-    if (filters?.company && (!request?.company || !request?.company?.toLowerCase()?.includes(filters?.company?.toLowerCase()))) {
-      return false;
-    }
-
-    // Submitted by filter
-    if (filters?.submittedBy && (!request?.submittedBy || !request?.submittedBy?.toLowerCase()?.includes(filters?.submittedBy?.toLowerCase()))) {
-      return false;
-    }
-
-    // Date filtering - CORREGIDO (usando submittedAt en lugar de submittedDate)
-    if (filters?.startDate) {
-      const requestDate = new Date(request.submittedAt || request.createdAt);
-      const startDate = new Date(filters.startDate);
-      if (requestDate < startDate) return false;
-    }
-
-    if (filters?.endDate) {
-      const requestDate = new Date(request.submittedAt || request.createdAt);
-      const endDate = new Date(filters.endDate);
-      endDate.setHours(23, 59, 59, 999); // Incluir todo el día
-      if (requestDate > endDate) return false;
-    }
-
-    return true;
-  })?.sort((a, b) => {
-    let aValue, bValue;
-
-    switch (sortBy) {
-      case 'date':
-        aValue = new Date(a.submittedAt || a.createdAt);
-        bValue = new Date(b.submittedAt || b.createdAt);
-        break;
-      case 'title':
-        aValue = a?.title?.toLowerCase();
-        bValue = b?.title?.toLowerCase();
-        break;
-      case 'status':
-        aValue = a?.status || '';
-        bValue = b?.status || '';
-        break;
-      case 'priority':
-        const priorityOrder = { high: 3, medium: 2, low: 1 };
-        aValue = priorityOrder?.[a?.priority] || 0;
-        bValue = priorityOrder?.[b?.priority] || 0;
-        break;
-      default:
-        return 0;
-    }
-
-    if (sortOrder === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
-    }
-  });
-
-  const handleRemove = async (request) => {
-    const requestId = request?._id
-    if (!requestId) return alert("ID no válido para eliminar.");
-
-    const confirmDelete = window.confirm("¿Seguro que deseas eliminar esta solicitud?");
-    if (!confirmDelete) return;
 
     try {
       setIsLoading(true);
-      const res = await fetch(`http://192.168.0.2:4000/api/respuestas/${requestId}`, {
-        method: 'DELETE',
+      
+      const userResponse = await fetch('http://192.168.0.2:4000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          pass: "",
+          estado: "pendiente"
+        }),
       });
 
-      if (!res.ok) throw new Error('Error al eliminar la solicitud.');
+      if (!userResponse.ok) {
+        throw new Error('Error al guardar el usuario');
+      }
+      
+      const saved = await userResponse.json();
+      const savedUser = saved?.user;
+      
+      const mailResponse = await fetch('http://192.168.0.2:4000/api/mail/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessKey: "MI_CLAVE_SECRETA_AQUI",
+          to: [formData.mail],
+          subject: "Completa tu registro en la plataforma",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #3B82F6;">¡Bienvenido a la plataforma!</h2>
+              <p>Hola <strong>${formData.nombre} ${formData.apellido}</strong>,</p>
+              <p>Has sido registrado en nuestra plataforma. Para completar tu registro y establecer tu contraseña, haz clic en el siguiente botón:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="http://localhost:5173/set-password?userId=${savedUser?.id || savedUser?._id}" 
+                   style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                  Establecer Contraseña
+                </a>
+              </div>
+              <p><strong>Datos de tu cuenta:</strong></p>
+              <ul>
+                <li><strong>Empresa:</strong> ${formData.empresa}</li>
+                <li><strong>Cargo:</strong> ${formData.cargo}</li>
+                <li><strong>Rol:</strong> ${formData.rol}</li>
+              </ul>
+              <p style="color: #666; font-size: 12px;">Si no solicitaste este registro, por favor ignora este correo.</p>
+            </div>
+          `
+        }),
+      });
 
-      setResp((prev) => prev.filter((r) => r._id !== requestId));
+      if (!mailResponse.ok) {
+        throw new Error('Error al enviar el correo');
+      }
 
-    } catch (err) {
-      console.error(err);
-      alert("No se pudo eliminar la solicitud.");
+      alert('Usuario registrado exitosamente. Se ha enviado un correo para establecer la contraseña.');
+      
+      setFormData({
+        nombre: '',
+        apellido: '',
+        mail: '',
+        empresa: '',
+        cargo: '',
+        rol: 'user'
+      });
+
+      const res = await fetch(`http://192.168.0.2:4000/api/auth/`);
+      const data = await res.json();
+      setUsers(data);
+
+    } catch (error) {
+      console.error('Error en el registro:', error);
+      alert('Error al registrar el usuario: ' + error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleViewDetails = (request) => {
-    setSelectedRequest(request);
-    setShowRequestDetails(true);
+  const getTabContent = () => {
+    switch (activeTab) {
+      case 'properties':
+        return (
+          <RegisterForm
+            formData={formData}
+            empresas={empresas}
+            cargos={cargos}
+            roles={roles}
+            onUpdateFormData={updateFormData}
+            onRegister={handleRegister}
+          />
+        );
+      default:
+        return null;
+    }
   };
-
-  const handleSendMessage = (request) => {
-    setMessageRequest(request);
-    setShowMessageModal(true);
-  };
-
-  const handleSendMessageSubmit = async (messageData) => {
-    // Mock API call
-    console.log('Sending message:', messageData);
-    // In real app, this would send to API
-  };
-
-  const handleClearFilters = () => {
-    setFilters({
-      search: '',
-      status: '',
-      category: '',
-      priority: '',
-      dateRange: '',
-      startDate: '',
-      endDate: '',
-      company: '',
-      submittedBy: ''
-    });
-  };
-
-
-  const sortOptions = [
-    { value: 'date', label: 'Fecha' },
-    { value: 'title', label: 'Título' },
-    { value: 'status', label: 'Estado' },
-    { value: 'priority', label: 'Prioridad' }
-  ];
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)
-      } />
-      <main className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'
-        } pt-16`}>
+      <Sidebar />
+      <main className="ml-64 pt-16">
         <div className="p-6 space-y-6">
-          {/* Page Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Seguimiento de Solicitudes</h1>
-              <p className="text-muted-foreground mt-1">
-                Monitorea el estado de todas tus solicitudes con cronología detallada
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-3">
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                iconName={sidebarCollapsed ? "PanelLeftOpen" : "PanelLeftClose"}
-                iconSize={20}
-              />
-            </div>
+          <div className="bg-card border border-border rounded-lg">
+            <div className="p-6">{getTabContent()}</div>
           </div>
 
-          {/* Stats Overview */}
-          <StatsOverview stats={mockStats} />
+          <div className="bg-card border border-border rounded-lg mt-8 p-6">
+            <h2 className="text-xl font-semibold mb-4">Usuarios registrados</h2>
 
-          {/* Filters */}
-          <FilterPanel
-            filters={filters}
-            onFilterChange={setFilters}
-            onClearFilters={handleClearFilters}
-            isVisible={showFilters}
-            onToggle={() => setShowFilters(!showFilters)}
-          />
-
-          {/* Controls */}
-          <div className="flex items-center justify-between bg-card border border-border rounded-lg p-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">Vista:</span>
-                <div className="flex items-center border border-border rounded-lg">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    iconName="Grid3X3"
-                    iconSize={16}
-                    className="rounded-r-none"
-                  />
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    iconName="List"
-                    iconSize={16}
-                    className="rounded-l-none border-l"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">Ordenar por:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e?.target?.value)}
-                  className="px-3 py-1 border border-border rounded-md text-sm bg-input text-foreground"
-                >
-                  {sortOptions?.map(option => (
-                    <option key={option?.value} value={option?.value}>
-                      {option?.label}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  iconName={sortOrder === 'asc' ? "ArrowUp" : "ArrowDown"}
-                  iconSize={16}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Icon name="FileText" size={16} />
-              <span>{filteredRequests?.length} solicitudes encontradas</span>
-            </div>
-          </div>
-
-          {/* Requests List - CORREGIDO */}
-          <div className={
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-              : 'space-y-4'
-          }>
-            {filteredRequests?.length > 0 ? (
-              filteredRequests?.map((request) => (
-                <RequestCard
-                  key={request?._id || request?.id}
-                  request={request}
-                  onRemove={handleRemove}
-                  onViewDetails={handleViewDetails}
-                  onSendMessage={handleSendMessage}
-                  viewMode={viewMode} // Pasar el viewMode al componente
-                />
-              ))
+            {users.length === 0 ? (
+              <p className="text-muted-foreground">No hay usuarios registrados.</p>
             ) : (
-              <div className="text-center py-12 bg-card border border-border rounded-lg col-span-full">
-                <Icon name="Search" size={48} className="mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
-                <p className="text-muted-foreground mb-4">
-                  Intenta ajustar los filtros o crear una nueva solicitud
-                </p>
+              <div className="overflow-x-auto">
+                <table className="min-w-full border border-border rounded-lg">
+                  <thead className="bg-muted text-sm text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-2 text-left">ID</th>
+                      <th className="px-4 py-2 text-left">Nombre</th>
+                      <th className="px-4 py-2 text-left">Empresa</th>
+                      <th className="px-4 py-2 text-left">Email</th>
+                      <th className="px-4 py-2 text-left">Cargo</th>
+                      <th className="px-4 py-2 text-left">Rol</th>
+                      <th className="px-4 py-2 text-left">Estado</th>
+                      <th className="px-4 py-2 text-left">Creado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id} className="border-t hover:bg-muted/30 transition">
+                        <td className="px-4 py-2">{u._id}</td>
+                        <td className="px-4 py-2">{u.nombre || '—'}</td>
+                        <td className="px-4 py-2">{u.empresa || '—'}</td>
+                        <td className="px-4 py-2">{u.mail || '—'}</td>
+                        <td className="px-4 py-2">{u.cargo || '—'}</td>
+                        <td className="px-4 py-2">{u.rol || '—'}</td>
+                        <td className="px-4 py-2">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            u.estado === 'pendiente' 
+                              ? 'bg-yellow-100 text-yellow-800' 
+                              : u.estado === 'activo'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {u.estado === 'pendiente' ? 'Pendiente' : 
+                             u.estado === 'activo' ? 'Activo' : 
+                             'Inactivo'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2">
+                          {u.createdAt
+                            ? new Date(u.createdAt).toLocaleDateString()
+                            : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
-
-          {/* Timeline View */}
-          {showTimeline && selectedRequest && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-              <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-foreground">Cronología de la Solicitud</h2>
-                      <p className="text-sm text-muted-foreground">{selectedRequest?.title}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowTimeline(false)}
-                      iconName="X"
-                      iconSize={20}
-                    />
-                  </div>
-                </div>
-                <div className="p-6">
-                  <TimelineView timeline={mockTimeline} isVisible={true} />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </main>
-      {/* Modals */}
-      <MessageModal
-        isOpen={showMessageModal}
-        onClose={() => setShowMessageModal(false)}
-        request={messageRequest}
-        onSendMessage={handleSendMessageSubmit}
-      />
-      <RequestDetails
-        request={selectedRequest}
-        isVisible={showRequestDetails}
-        onClose={() => setShowRequestDetails(false)}
-      />
     </div>
   );
 };
 
-export default RequestTracking;
+export default FormReg;
