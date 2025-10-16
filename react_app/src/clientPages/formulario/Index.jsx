@@ -39,7 +39,7 @@ const DashboardHome = () => {
             title: data.title || '',
             category: data.category || '',
             responseTime: data.responseTime || '',
-            author: data.author || 'Admin',
+            author: data.author || 'Invitado',
             primaryColor: data.primaryColor || '#3B82F6',
             secondaryColor: data.secondaryColor || '#F3F4F6',
             questions: data.questions || [],

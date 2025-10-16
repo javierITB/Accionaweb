@@ -34,7 +34,7 @@ const FormPreview = ({ formData }) => {
     };
 
     fetchForm();
-  }, []);
+  }, [user]);
 
   // Función para obtener el título de una pregunta (sin concatenación para el envío)
   const getQuestionTitle = (question) => {
@@ -461,7 +461,7 @@ const FormPreview = ({ formData }) => {
         responses: cleanAnswers, // AHORA SE ENVÍAN LOS TÍTULOS EN LUGAR DE IDs
         mail: respaldo,
         submittedAt: new Date().toISOString(),
-        user
+        user: user
       };
 
       console.log('Enviando respuestas:', payload);
