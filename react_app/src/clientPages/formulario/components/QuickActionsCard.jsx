@@ -466,7 +466,6 @@ const FormPreview = ({ formData }) => {
         user: user
       };
 
-      console.log('Enviando respuestas:', payload);
 
       const res = await fetch(`http://192.168.0.2:4000/api/respuestas`, {
         method: 'POST',

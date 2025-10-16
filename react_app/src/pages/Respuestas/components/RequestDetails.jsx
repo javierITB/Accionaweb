@@ -3,6 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const RequestDetails = ({ request, isVisible, onClose }) => {
+  
   if (!isVisible || !request) return null;
 
   // Función para formatear el nombre del archivo

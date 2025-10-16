@@ -11,9 +11,11 @@ import RequestDetails from './components/RequestDetails';
 import StatsOverview from './components/StatsOverview';
 
 const RequestTracking = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const formId = urlParams?.get('id');
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [showTimeline, setShowTimeline] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
   const [forms, setAllForms] = useState([]);
   const [resp, setResp] = useState([]);
@@ -35,6 +37,21 @@ const RequestTracking = () => {
     company: '', // Cambiado de assignedTo a company
     submittedBy: ''
   });
+
+  useEffect(() => {
+    if (!formId || resp.length === 0) return; // esperar a que carguen los datos
+
+    // Buscar el request que tenga el mismo _id o formId
+    const found = resp.find(
+      (r) => String(r._id) === formId || String(r.formId) === formId
+    );
+
+    if (found) {
+      setSelectedRequest(found);
+      setShowRequestDetails(true);
+    }
+  }, [formId, resp]);
+
 
   useEffect(() => {
     const fetchForms = async () => {
@@ -106,58 +123,6 @@ const RequestTracking = () => {
     fetchForms();
   }, []);
 
-
-  // Mock timeline data
-  const mockTimeline = [
-    {
-      id: 1,
-      title: "Solicitud Enviada",
-      description: "La solicitud ha sido enviada y está pendiente de revisión inicial.",
-      status: "completed",
-      completedAt: "2025-01-18T09:30:00Z",
-      assignedTo: "Sistema Automático",
-      notes: "Solicitud recibida correctamente. Todos los campos obligatorios completados."
-    },
-    {
-      id: 2,
-      title: "Revisión Inicial",
-      description: "El equipo de RR.HH. está realizando la revisión inicial de la documentación.",
-      status: "completed",
-      completedAt: "2025-01-19T11:15:00Z",
-      assignedTo: "María González",
-      notes: "Documentación completa. Procede a aprobación del supervisor."
-    },
-    {
-      id: 3,
-      title: "Aprobación del Supervisor",
-      description: "Esperando aprobación del supervisor directo.",
-      status: "current",
-      completedAt: null,
-      assignedTo: "Carlos Mendoza",
-      estimatedCompletion: "2025-01-22T17:00:00Z",
-      notes: null
-    },
-    {
-      id: 4,
-      title: "Aprobación Final",
-      description: "Aprobación final por parte del departamento de RR.HH.",
-      status: "pending",
-      completedAt: null,
-      assignedTo: "Ana Rodríguez",
-      estimatedCompletion: "2025-01-24T17:00:00Z",
-      notes: null
-    },
-    {
-      id: 5,
-      title: "Procesamiento",
-      description: "Procesamiento final y notificación al empleado.",
-      status: "pending",
-      completedAt: null,
-      assignedTo: "Sistema Automático",
-      estimatedCompletion: "2025-01-25T12:00:00Z",
-      notes: null
-    }
-  ];
 
   // Mock stats data
   const mockStats = {
@@ -438,31 +403,6 @@ const RequestTracking = () => {
             )}
           </div>
 
-          {/* Timeline View */}
-          {showTimeline && selectedRequest && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-              <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-foreground">Cronología de la Solicitud</h2>
-                      <p className="text-sm text-muted-foreground">{selectedRequest?.title}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowTimeline(false)}
-                      iconName="X"
-                      iconSize={20}
-                    />
-                  </div>
-                </div>
-                <div className="p-6">
-                  <TimelineView timeline={mockTimeline} isVisible={true} />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </main>
       {/* Modals */}

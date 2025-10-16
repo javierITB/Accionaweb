@@ -115,7 +115,7 @@ router.post("/logout", (req, res) => {
 
 router.post("/register", async (req, res) => {
   try {
-    const { nombre, apellido, mail, empresa, cargo, rol } = req.body;
+    const { nombre, apellido, mail, empresa, cargo, rol, estado } = req.body;
 
     if (!nombre || !apellido || !mail || !empresa || !cargo || !rol) {
       return res.status(400).json({ error: "Todos los campos son obligatorios" });
@@ -134,7 +134,7 @@ router.post("/register", async (req, res) => {
       cargo,
       rol,
       pass: "", // ✅ CAMBIO: Contraseña vacía inicialmente
-      estado: "pendiente", // ✅ NUEVO CAMPO: estado del usuario
+      estado: estado, // ✅ NUEVO CAMPO: estado del usuario
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

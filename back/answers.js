@@ -28,8 +28,20 @@ router.post("/", async (req, res) => {
       prioridad: 2,
       color: "#fb8924",
       icono: "form",
-      actionUrl: `/admin/respuestas?id=${result.insertedId}`,
+      actionUrl: `/respuestas?id=${result.insertedId}`,
     });
+
+    await addNotification(db, {
+      titulo: "Formulario completado",
+      descripcion: `El formulario ${formularioName} fue completado correctamente.`,
+      prioridad: 2,
+      icono: "CheckCircle",
+      color: "#3B82F6",
+      actionUrl: `/?id=${result.insertedId}`,
+    }, {
+      userId
+    });
+
     /****************************************************
     SECCION DE INYECCION DE NOTIFICACION DE RESPUESTAS
     ****************************************************/
@@ -55,7 +67,7 @@ router.get("/mail/:mail", async (req, res) => {
   try {
     const form = await req.db
       .collection("respuestas")
-      .find({ "user.mail" : req.params.mail })
+      .find({ "user.mail": req.params.mail })
       .toArray();
     console.log(req.params);
     if (!form) return res.status(404).json({ error: "Formulario no encontrado" });

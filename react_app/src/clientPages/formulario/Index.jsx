@@ -79,9 +79,7 @@ const DashboardHome = () => {
       <Header />
       
       {/* Main Content */}
-      <main className={`transition-all duration-300 ${
-        sidebarCollapsed ? 'ml-16' : 'ml-64'
-      } pt-16`}>
+      <main className={`transition-all duration-300 pt-16`}>
         <div className="p-6 space-y-6">
           {/* Page Header */}
           <div className="flex items-center justify-between">
