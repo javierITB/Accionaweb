@@ -20,6 +20,7 @@ router.post("/", async (req, res) => {
     const usuario = req.body.user.nombre;
     const empresa = req.body.user.empresa;
     const nombreFormulario = req.body.formTitle;
+    const userId = req.body.user._id
 
     await addNotification(req.db, {
       filtro: { rol: "admin" },

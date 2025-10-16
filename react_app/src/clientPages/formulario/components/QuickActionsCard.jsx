@@ -15,8 +15,6 @@ const FormPreview = ({ formData }) => {
   const cargo = sessionStorage.getItem("cargo");
   const mail = sessionStorage.getItem("mail");
   useEffect(() => {
-
-
     const fetchForm = async () => {
       try {
         const res = await fetch(`http://192.168.0.2:4000/api/auth/${usuario}`);
@@ -36,7 +34,7 @@ const FormPreview = ({ formData }) => {
     };
 
     fetchForm();
-  }, [user]);
+  }, []);
 
   // Función para obtener el título de una pregunta (sin concatenación para el envío)
   const getQuestionTitle = (question) => {

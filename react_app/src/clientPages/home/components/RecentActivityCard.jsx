@@ -227,7 +227,7 @@ const RequestTracking = () => {
           <div>
             <h2 className="text-xl font-semibold text-foreground">Actividad Reciente</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Últimas acciones y notificaciones
+              Últimas respuestas a forms
             </p>
           </div>
           <Icon name="Activity" size={24} className="text-accent" />
