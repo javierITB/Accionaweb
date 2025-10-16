@@ -76,16 +76,16 @@ router.put("/:userId/:notiId/leido", async (req, res) => {
 });
 
 // Eliminar una notificación
-router.delete("/:nombre/:notiId", async (req, res) => {
+router.delete("/:mail/:notiId", async (req, res) => {
   try {
     const result = await req.db.collection("usuarios").findOneAndUpdate(
-      { nombre: req.params.nombre },
+      { mail: req.params.mail },
       { $pull: { notificaciones: { id: req.params.notiId } } },
       { returnDocument: "after" }
     );
 
-    if (!result.value)
-      return res.status(404).json({ error: "Usuario o notificación no encontrada" });
+    if (!result)
+      return res.status(404).json({ error: "Usuario o notificación no encontrada: ", result});
 
     res.json({ message: "Notificación eliminada", usuario: result.value });
   } catch (err) {

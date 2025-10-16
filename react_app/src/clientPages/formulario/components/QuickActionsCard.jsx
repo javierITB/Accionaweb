@@ -13,11 +13,11 @@ const FormPreview = ({ formData }) => {
   });
   const usuario = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
-  const mail = sessionStorage.getItem("mail");
+  const mail = sessionStorage.getItem("email");
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const res = await fetch(`http://192.168.0.2:4000/api/auth/${usuario}`);
+        const res = await fetch(`http://192.168.0.2:4000/api/auth/${mail}`);
         if (!res.ok) throw new Error('Usuario no encontrado');
         const data = await res.json();
 
@@ -25,7 +25,7 @@ const FormPreview = ({ formData }) => {
           uid: data.id,
           nombre: usuario,
           empresa: data.empresa,
-          mail: data.mail
+          mail: mail
         });
       } catch (err) {
         console.error('Error cargando el usuario:', err);

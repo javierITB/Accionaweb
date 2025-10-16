@@ -44,10 +44,11 @@ async function addNotification(
   };
 
   const query = userId ? { _id: new ObjectId(userId) } : filtro;
-
+  console.log(query);
   const result = await db.collection("usuarios").updateMany(query, {
     $push: { notificaciones: notificacion },
   });
+  console.log(result);
 
   return { notificacion, modifiedCount: result.modifiedCount };
 }

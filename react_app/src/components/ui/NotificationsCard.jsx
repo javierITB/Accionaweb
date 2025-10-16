@@ -39,14 +39,14 @@ const NotificationsCard = ({ user }) => {
 
 const handleDeleteNotification = async (id) => {
   try {
-    const username = sessionStorage.getItem("user");
+    const mail = sessionStorage.getItem("email");
 
-    if (!username) {
+    if (!mail) {
       console.error("Usuario no encontrado en sesión.");
       return;
     }
 
-    const res = await fetch(`http://192.168.0.2:4000/api/noti/${username}/${id}`, {
+    const res = await fetch(`http://192.168.0.2:4000/api/noti/${mail}/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",

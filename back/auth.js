@@ -16,15 +16,15 @@ router.get("/", async (req, res) => {
 });
 
 
-router.get("/:name", async (req, res) => {
+router.get("/:mail", async (req, res) => {
   try {
     const usr = await req.db
       .collection("usuarios")
-      .findOne({ nombre: req.params.name});
+      .findOne({ mail: req.params.mail});
 
     if (!usr) return res.status(404).json({ error: "Usuario no encontrado" });
     
-    res.json({id: usr.id, empresa: usr.empresa, cargo: usr.cargo});
+    res.json({id: usr._id, empresa: usr.empresa, cargo: usr.cargo});
   } catch (err) {
     res.status(500).json({ error: "Error al obtener Usuario" });
   }
