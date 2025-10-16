@@ -41,13 +41,22 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ success: false, message: "Credenciales inválidas" });
     }
     
-    if (user.pass === "pending") {
+    // ✅ CAMBIO IMPORTANTE: Validar por estado en lugar de por contraseña
+    if (user.estado === "pendiente") {
       return res.status(401).json({ 
         success: false, 
-        message: "Usuario pendiente de activación. Revisa tu correo." 
+        message: "Usuario pendiente de activación. Revisa tu correo para establecer tu contraseña." 
       });
     }
 
+    if (user.estado === "inactivo") {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Usuario inactivo. Contacta al administrador." 
+      });
+    }
+
+    // ✅ Ahora la contraseña puede ser cualquier valor, incluso "pending"
     if (user.pass !== password) {
       return res.status(401).json({ success: false, message: "Credenciales inválidas" });
     }
@@ -124,7 +133,8 @@ router.post("/register", async (req, res) => {
       empresa,
       cargo,
       rol,
-      pass: "pending",
+      pass: "", // ✅ CAMBIO: Contraseña vacía inicialmente
+      estado: "pendiente", // ✅ NUEVO CAMPO: estado del usuario
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -167,7 +177,8 @@ router.post("/set-password", async (req, res) => {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    if (existingUser.pass !== "pending") {
+    // ✅ CAMBIO: Validar por estado en lugar de por contraseña
+    if (existingUser.estado !== "pendiente") {
       return res.status(400).json({ 
         error: "La contraseña ya fue establecida anteriormente. Si necesitas cambiarla, contacta al administrador." 
       });
@@ -176,11 +187,12 @@ router.post("/set-password", async (req, res) => {
     const result = await req.db.collection("usuarios").updateOne(
       { 
         _id: new ObjectId(userId),
-        pass: "pending"
+        estado: "pendiente" // ✅ Solo permitir si está pendiente
       },
       { 
         $set: { 
           pass: password,
+          estado: "activo", // ✅ Cambiar estado a activo
           updatedAt: new Date().toISOString()
         } 
       }

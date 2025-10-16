@@ -221,8 +221,19 @@ const RequestTracking = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className={`transition-all duration-300 'ml-16' pt-16`}>
+    <div className="bg-card rounded-xl shadow-brand border border-border">
+      <div className="p-6 border-b border-border">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">Actividad Reciente</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Últimas acciones y notificaciones
+            </p>
+          </div>
+          <Icon name="Activity" size={24} className="text-accent" />
+        </div>
+      </div>
+      <main className={``}>
         <div className="p-6 space-y-6">
 
           {/* Filters */}
