@@ -32,7 +32,7 @@ const RequestTracking = () => {
     dateRange: '',
     startDate: '',
     endDate: '',
-    assignedTo: '',
+    company: '', // Cambiado de assignedTo a company
     submittedBy: ''
   });
 
@@ -79,11 +79,13 @@ const RequestTracking = () => {
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,
 
+
             // tus campos normalizados/auxiliares (ajusta según lo necesites)
-            submittedBy: r.user.nombre || 'Desconocido',
+            submittedBy: r.user?.nombre || r.user?.email || 'Usuario Desconocido',
             lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
             assignedTo: r.updatedAt || " - ",
             hasMessages: false,
+            company: r.user?.empresa || 'desconocida',
 
             // aquí va el objeto form asociado (o null si no se encuentra)
             form: matchedForm
@@ -169,26 +171,51 @@ const RequestTracking = () => {
 
   // Filter and sort requests
   const filteredRequests = resp?.filter(request => {
-    if (filters?.search && !request?.title?.toLowerCase()?.includes(filters?.search?.toLowerCase()) &&
-      !request?.description?.toLowerCase()?.includes(filters?.search?.toLowerCase()) &&
-      !request?.id?.toLowerCase()?.includes(filters?.search?.toLowerCase())) {
+    // Search filter
+    if (filters?.search) {
+      const searchTerm = filters.search.toLowerCase();
+      const matchesSearch =
+        request?.title?.toLowerCase()?.includes(searchTerm) ||
+        request?.company?.toLowerCase()?.includes(searchTerm) ||
+        request?.submittedBy?.toLowerCase()?.includes(searchTerm) ||
+        request?._id?.toLowerCase()?.includes(searchTerm);
+
+      if (!matchesSearch) return false;
+    }
+
+    // Status filter
+    if (filters?.status && request?.status !== filters?.status) return false;
+
+    // Category filter (usando form.section o form.title)
+    if (filters?.category) {
+      const requestCategory = request?.form?.section || request?.form?.title || '';
+      if (requestCategory.toLowerCase() !== filters.category.toLowerCase()) return false;
+    }
+
+    // Priority filter
+    if (filters?.priority && request?.priority !== filters?.priority) return false;
+
+    // Company filter
+    if (filters?.company && (!request?.company || !request?.company?.toLowerCase()?.includes(filters?.company?.toLowerCase()))) {
       return false;
     }
-    if (filters?.status && request?.status !== filters?.status) return false;
-    if (filters?.category && request?.category !== filters?.category) return false;
-    if (filters?.priority && request?.priority !== filters?.priority) return false;
-    if (filters?.assignedTo && (!request?.assignedTo || !request?.assignedTo?.toLowerCase()?.includes(filters?.assignedTo?.toLowerCase()))) return false;
-    if (filters?.submittedBy && !request?.submittedBy?.toLowerCase()?.includes(filters?.submittedBy?.toLowerCase())) return false;
 
-    // Date filtering
+    // Submitted by filter
+    if (filters?.submittedBy && (!request?.submittedBy || !request?.submittedBy?.toLowerCase()?.includes(filters?.submittedBy?.toLowerCase()))) {
+      return false;
+    }
+
+    // Date filtering - CORREGIDO (usando submittedAt en lugar de submittedDate)
     if (filters?.startDate) {
-      const requestDate = new Date(request.submittedDate);
+      const requestDate = new Date(request.submittedAt || request.createdAt);
       const startDate = new Date(filters.startDate);
       if (requestDate < startDate) return false;
     }
+
     if (filters?.endDate) {
-      const requestDate = new Date(request.submittedDate);
+      const requestDate = new Date(request.submittedAt || request.createdAt);
       const endDate = new Date(filters.endDate);
+      endDate.setHours(23, 59, 59, 999); // Incluir todo el día
       if (requestDate > endDate) return false;
     }
 
@@ -198,21 +225,21 @@ const RequestTracking = () => {
 
     switch (sortBy) {
       case 'date':
-        aValue = new Date(a.submittedDate);
-        bValue = new Date(b.submittedDate);
+        aValue = new Date(a.submittedAt || a.createdAt);
+        bValue = new Date(b.submittedAt || b.createdAt);
         break;
       case 'title':
         aValue = a?.title?.toLowerCase();
         bValue = b?.title?.toLowerCase();
         break;
       case 'status':
-        aValue = a?.status;
-        bValue = b?.status;
+        aValue = a?.status || '';
+        bValue = b?.status || '';
         break;
       case 'priority':
         const priorityOrder = { high: 3, medium: 2, low: 1 };
-        aValue = priorityOrder?.[a?.priority];
-        bValue = priorityOrder?.[b?.priority];
+        aValue = priorityOrder?.[a?.priority] || 0;
+        bValue = priorityOrder?.[b?.priority] || 0;
         break;
       default:
         return 0;
@@ -275,15 +302,11 @@ const RequestTracking = () => {
       dateRange: '',
       startDate: '',
       endDate: '',
-      assignedTo: '',
+      company: '',
       submittedBy: ''
     });
   };
 
-  const handleViewTimeline = (request) => {
-    setSelectedRequest(request);
-    setShowTimeline(true);
-  };
 
   const sortOptions = [
     { value: 'date', label: 'Fecha' },

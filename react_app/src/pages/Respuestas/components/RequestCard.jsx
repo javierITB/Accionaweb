@@ -109,8 +109,8 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
 
           <div className="flex items-center space-x-4 text-xs text-muted-foreground">
             <div className="flex items-center space-x-1">
-              <Icon name="Calendar" size={14} />
-              <span>Enviado: {formatDate(request?.submittedDate)}</span>
+              <Icon name="Briefcase" size={14} />
+              <span>Empresa: {request?.company}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Icon name="User" size={14} />
@@ -140,13 +140,9 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="text-sm">
-            <span className="text-muted-foreground">Categoría: </span>
-            <span className="font-medium text-foreground">{request?.category}</span>
           </div>
           {request?.assignedTo && (
             <div className="text-sm">
-              <span className="text-muted-foreground">Asignado a: </span>
-              <span className="font-medium text-foreground">{request?.assignedTo}</span>
             </div>
           )}
         </div>
@@ -171,6 +167,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
           >
             Mensaje
           </Button>
+
           <Button
             variant="default"
             size="sm"

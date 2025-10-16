@@ -11,23 +11,22 @@ const FilterPanel = ({
   isVisible, 
   onToggle 
 }) => {
+  // Opciones de estado basadas en tus datos reales
   const statusOptions = [
     { value: '', label: 'Todos los Estados' },
-    { value: 'draft', label: 'Borrador' },
     { value: 'pending', label: 'Pendiente' },
-    { value: 'in_review', label: 'En Revisión' },
+    { value: 'inReview', label: 'En Revisión' },
     { value: 'approved', label: 'Aprobado' },
-    { value: 'rejected', label: 'Rechazado' }
+    { value: 'rejected', label: 'Rechazado' },
   ];
 
+  // Opciones de categoría basadas en los formularios existentes
   const categoryOptions = [
     { value: '', label: 'Todas las Categorías' },
-    { value: 'time_off', label: 'Tiempo Libre' },
-    { value: 'expense', label: 'Gastos' },
-    { value: 'it_support', label: 'Soporte TI' },
-    { value: 'hr_general', label: 'RR.HH. General' },
-    { value: 'payroll', label: 'Nómina' },
-    { value: 'benefits', label: 'Beneficios' }
+    { value: 'solicitudes', label: 'Solicitudes' },
+    { value: 'evaluaciones', label: 'Evaluaciones' },
+    { value: 'encuestas', label: 'Encuestas' },
+    { value: 'otros', label: 'Otros' }
   ];
 
   const priorityOptions = [
@@ -98,7 +97,7 @@ const FilterPanel = ({
             <Input
               label="Buscar Solicitudes"
               type="search"
-              placeholder="Buscar por título, descripción o ID..."
+              placeholder="Buscar por título, empresa o usuario..."
               value={filters?.search || ''}
               onChange={(e) => handleInputChange('search', e?.target?.value)}
               className="w-full"
@@ -157,17 +156,17 @@ const FilterPanel = ({
           <div className="pt-4 border-t border-border">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Asignado a"
+                label="Empresa"
                 type="text"
-                placeholder="Nombre del asignado..."
-                value={filters?.assignedTo || ''}
-                onChange={(e) => handleInputChange('assignedTo', e?.target?.value)}
+                placeholder="Filtrar por empresa..."
+                value={filters?.company || ''}
+                onChange={(e) => handleInputChange('company', e?.target?.value)}
               />
 
               <Input
                 label="Enviado por"
                 type="text"
-                placeholder="Nombre del remitente..."
+                placeholder="Nombre del usuario..."
                 value={filters?.submittedBy || ''}
                 onChange={(e) => handleInputChange('submittedBy', e?.target?.value)}
               />

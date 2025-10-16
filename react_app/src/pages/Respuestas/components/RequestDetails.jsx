@@ -10,7 +10,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
     const userName = request?.submittedBy || request?.user?.nombre || 'Usuario';
     const submitDate = request?.submittedAt || request?.createdAt;
-    
+
     // Formatear fecha para el nombre del archivo (sin caracteres especiales)
     const formatDateForFileName = (dateString) => {
       if (!dateString) return 'fecha-desconocida';
@@ -19,7 +19,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     };
 
     const datePart = formatDateForFileName(submitDate);
-    
+
     // Limpiar caracteres especiales y espacios
     const cleanText = (text) => {
       return text
@@ -41,7 +41,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     if (!request) return [];
 
     const fileName = formatFileName();
-    
+
     // Aquí deberías obtener esta información real de tu base de datos
     // Por ahora simulamos con los datos que tienes en el request
     return [
@@ -92,13 +92,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Fecha no disponible';
-    return new Date(dateString)?.toLocaleDateString('es-CL', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return request?.submittedAt;
   };
 
   const getFileIcon = (type) => {
@@ -157,7 +151,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                 <h3 className="text-lg font-semibold text-foreground mb-3">Información General</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Título del Formulario:</span>
                     <span className="text-sm font-medium text-foreground">{request?.formTitle}</span>
                   </div>
                   <div className="flex justify-between">
@@ -165,11 +158,9 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                     <span className="text-sm font-medium text-foreground">{request?.form?.section}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Prioridad:</span>
-                    <span className={`text-sm font-medium ${
-                      request?.priority === 'high' ? 'text-error' :
+                    <span className={`text-sm font-medium ${request?.priority === 'high' ? 'text-error' :
                       request?.priority === 'medium' ? 'text-warning' : 'text-success'
-                    }`}>
+                      }`}>
                       {request?.priority?.toUpperCase()}
                     </span>
                   </div>
@@ -183,14 +174,13 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Enviado por:</span>
-                    <span className="text-sm font-medium text-foreground">{request?.submittedBy}</span>
+                    <span className="text-sm font-medium text-foreground">{request?.submittedBy}, {request?.company}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Fecha de envío:</span>
                     <span className="text-sm font-medium text-foreground">{formatDate(request?.submittedAt)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Usuario:</span>
                     <span className="text-sm font-medium text-foreground">{request?.user?.nombre}</span>
                   </div>
                 </div>
@@ -250,8 +240,8 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Comentarios Internos</h3>
             <div className="bg-muted/50 rounded-lg p-4">
-              <p className="text-sm text-muted-foreground italic">
-                No hay comentarios internos para esta solicitud.
+              <p className="text-sm text-muted-foreground italic text-right">
+                hay x mensajes nuevos
               </p>
             </div>
           </div>
@@ -260,9 +250,9 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
         {/* Footer Actions */}
         <div className="sticky bottom-0 bg-card border-t border-border p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <div property className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Icon name="Clock" size={16} />
-              <span>Última actualización: {formatDate(request?.lastUpdated)}</span>
+              <span>Última actualización: {formatDate(request?.submittedAt)}</span>
             </div>
             <div className="flex items-center space-x-3">
               <Button
