@@ -20,7 +20,7 @@ router.post("/", async (req, res) => {
     const usuario = req.body.user.nombre;
     const empresa = req.body.user.empresa;
     const nombreFormulario = req.body.formTitle;
-    const userId = req.body.user._id
+    const userId = req.body.user?.uid;
 
     await addNotification(req.db, {
       filtro: { rol: "admin" },
@@ -32,15 +32,14 @@ router.post("/", async (req, res) => {
       actionUrl: `/respuestas?id=${result.insertedId}`,
     });
 
-    await addNotification(db, {
+    await addNotification(req.db, {
+      userId: userId,
       titulo: "Formulario completado",
-      descripcion: `El formulario ${formularioName} fue completado correctamente.`,
+      descripcion: `El formulario ${nombreFormulario} fue completado correctamente.`,
       prioridad: 2,
       icono: "CheckCircle",
       color: "#3B82F6",
       actionUrl: `/?id=${result.insertedId}`,
-    }, {
-      userId
     });
 
     /****************************************************
@@ -50,7 +49,7 @@ router.post("/", async (req, res) => {
 
     res.json({ _id: result.insertedId, ...req.body });
   } catch (err) {
-    res.status(500).json({ error: "Error al guardar respuesta" });
+    res.status(500).json({ error: "Error al guardar respuesta: " + err });
   }
 });
 
