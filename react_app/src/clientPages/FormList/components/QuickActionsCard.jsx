@@ -17,9 +17,22 @@ const QuickActionsCard = ({ section }) => {
   useEffect(() => {
     const fetchForms = async () => {
       try {
-
         setIsLoading(true);
-        const res = await fetch(`http://192.168.0.2:4000/api/forms/section/${section}`);
+
+        const mail = sessionStorage.getItem("email");
+
+        if (!mail) {
+          console.error("No se encontró el email del usuario en sessionStorage.");
+          return;
+        }
+
+        // Enviar mail como query param
+        const res = await fetch(`http://192.168.0.2:4000/api/forms/section/${section}?mail=${encodeURIComponent(mail)}`);
+
+        if (!res.ok) {
+          throw new Error(`Error en la respuesta del servidor: ${res.status}`);
+        }
+
         const data = await res.json();
 
         const normalizedForms = data.map(f => ({
@@ -46,6 +59,7 @@ const QuickActionsCard = ({ section }) => {
         setIsLoading(false);
       }
     };
+
 
     fetchForms();
   }, []);
