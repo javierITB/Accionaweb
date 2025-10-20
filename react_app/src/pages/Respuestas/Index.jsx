@@ -101,6 +101,7 @@ const RequestTracking = () => {
             submittedAt: r.submittedAt || r.createdAt || null,
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,
+            status: r.status || 'pendiente',
 
             // Información del documento generado
             IDdoc: matchedDoc?.IDdoc,
@@ -137,10 +138,10 @@ const RequestTracking = () => {
   // Mock stats data
   const mockStats = {
     total: resp?.length || 0,
-    pending: resp?.filter(r => !r.status || r.status === 'pending')?.length || 0,
-    inReview: resp?.filter(r => r.status === 'inReview')?.length || 0,
-    approved: resp?.filter(r => r.status === 'approved')?.length || 0,
-    rejected: resp?.filter(r => r.status === 'rejected')?.length || 0,
+    pending: resp?.filter(r => r.status === 'pendiente')?.length || 0,
+    inReview: resp?.filter(r => r.status === 'en_revision')?.length || 0,
+    approved: resp?.filter(r => r.status === 'aprobado')?.length || 0,
+    rejected: resp?.filter(r => r.status === 'rechazado')?.length || 0,
     avgProcessingTime: 5.2 // puedes calcularlo después si tienes timestamps
   };
 

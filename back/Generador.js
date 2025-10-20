@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { ObjectId } = require("mongodb");
 
 // Endpoint para obtener todos los documentos
 router.get("/docxs", async (req, res) => {
@@ -35,13 +36,13 @@ router.get("/download/:IDdoc", async (req, res) => {
         const docxBuffer = documento.docxFile.buffer;
         const bufferLength = docxBuffer.length;
 
-        // Actualizar estado a "en_revision"
-        await req.db.collection('docxs').updateOne(
-            { IDdoc: IDdoc },
+        // Actualizar estado en respuestas
+        await req.db.collection("respuestas").updateOne(
+            { _id: new ObjectId(documento.responseId) },
             { 
                 $set: { 
-                    estado: 'en_revision',
-                    updatedAt: new Date()
+                    status: "en_revision",
+                    reviewedAt: new Date()
                 } 
             }
         );

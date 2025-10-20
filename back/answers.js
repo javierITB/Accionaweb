@@ -4,11 +4,12 @@ const { ObjectId } = require("mongodb");
 const { addNotification } = require("./notificaciones.helper");
 const { generarAnexoDesdeRespuesta } = require("./generador.helper");
 
-// Crear un formulario
+
 router.post("/", async (req, res) => {
   try {
     const result = await req.db.collection("respuestas").insertOne({
       ...req.body,
+      status: "pendiente",
       createdAt: new Date()
     });
 
@@ -93,7 +94,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Listar todos los formularios
+
 router.get("/", async (req, res) => {
   try {
     const answers = await req.db.collection("respuestas").find().toArray();
@@ -117,7 +118,7 @@ router.get("/mail/:mail", async (req, res) => {
   }
 });
 
-// Obtener un formulario por ID (Mongo ObjectId)
+
 router.get("/:id", async (req, res) => {
   try {
     const form = await req.db
@@ -130,6 +131,7 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ error: "Error al obtener formulario" });
   }
 });
+
 
 router.get("/section/:section", async (req, res) => {
   try {
@@ -148,7 +150,7 @@ router.get("/section/:section", async (req, res) => {
   }
 });
 
-// Actualizar un formulario
+
 router.put("/:id", async (req, res) => {
   try {
     const result = await req.db.collection("respuestas").findOneAndUpdate(
@@ -164,7 +166,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Publicar un formulario (cambiar status de draft → published)
+
 router.put("/public/:id", async (req, res) => {
   try {
     const result = await req.db.collection("respuestas").findOneAndUpdate(
@@ -188,7 +190,7 @@ router.put("/public/:id", async (req, res) => {
   }
 });
 
-// Eliminar un formulario
+
 router.delete("/:id", async (req, res) => {
   try {
     const result = await req.db
@@ -251,24 +253,47 @@ router.post("/chat", async (req, res) => {
     };
 
     let query;
-    // Si el formId es válido, permite ambas opciones
     if (ObjectId.isValid(formId)) {
       query = { $or: [{ _id: new ObjectId(formId) }, { formId }] };
     } else {
       query = { formId };
     }
 
-    const result = await req.db.collection("respuestas").updateOne(
-      query,
-      { $push: { mensajes: nuevoMensaje } }
-    );
-
-    if (result.matchedCount === 0) {
+    // Obtener la respuesta para conocer el autor original
+    const respuesta = await req.db.collection("respuestas").findOne(query);
+    if (!respuesta) {
       return res.status(404).json({ error: "No se encontró la respuesta para agregar el mensaje" });
     }
 
+    // Agregar el mensaje
+    await req.db.collection("respuestas").updateOne(
+      { _id: respuesta._id },
+      { $push: { mensajes: nuevoMensaje } }
+    );
+
+    // --- Aquí va la lógica de notificaciones ---
+    if (respuesta?.user?.nombre === autor) {
+      // Mismo autor → notificar a admins
+      await addNotification(req.db, {
+        filtro: { rol: "admin" },
+        titulo: "Nuevo mensaje en tu formulario",
+        descripcion: `${autor} le ha enviado un mensaje por un formulario.`,
+        icono: "chat",
+        actionUrl: `/form/${respuesta._id}`,
+      });
+    } else {
+      // Autor distinto → notificar al autor original
+      await addNotification(req.db, {
+        userId: respuesta.user.uid, // asumimos que el autor original es el userId
+        titulo: "Nuevo mensaje recibido",
+        descripcion: `${autor} le ha respondido un mensaje.`,
+        icono: "chat",
+        actionUrl: `/form/${respuesta._id}`,
+      });
+    }
+
     res.json({
-      message: "Mensaje agregado correctamente",
+      message: "Mensaje agregado correctamente y notificación enviada",
       data: nuevoMensaje,
     });
   } catch (err) {
