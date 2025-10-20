@@ -581,7 +581,6 @@ async function generarAnexo(datos, responseId, db) {
     await db.collection('docxs').insertOne({
         IDdoc: IDdoc,
         docxFile: buffer,
-        estado: 'pendiente',
         responseId: responseId,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -592,7 +591,6 @@ async function generarAnexo(datos, responseId, db) {
     return {
         IDdoc: IDdoc,
         buffer: buffer,
-        estado: 'pendiente'
     };
 }
 

@@ -116,5 +116,28 @@ router.delete("/:mail", async (req, res) => {
   }
 });
 
+router.put("/:mail/leido-todas", async (req, res) => {
+  try {
+    const { mail } = req.params;
+
+    const result = await req.db.collection("usuarios").updateOne(
+      { mail },
+      { $set: { "notificaciones.$[].leido": true } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.json({
+      message: "Todas las notificaciones fueron marcadas como leídas",
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (err) {
+    console.error("Error al marcar todas como leídas:", err);
+    res.status(500).json({ error: "Error al marcar todas las notificaciones como leídas" });
+  }
+});
+
 
 module.exports = router;

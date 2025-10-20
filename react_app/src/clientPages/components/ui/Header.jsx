@@ -7,6 +7,7 @@ const Header = ({ className = '' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotiOpen, setIsNotiOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   
   const user = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
@@ -162,13 +163,15 @@ const Header = ({ className = '' }) => {
               className="relative hover:bg-muted transition-brand"
               iconName="Bell"
             >
-              <span className="absolute top-1 -right-1 w-2 h-2 bg-error rounded-full animate-pulse-subtle"></span>
+              {unreadCount > 0 && ( // solo si hay sin leer
+                <span className="absolute top-1 -right-1 w-2 h-2 bg-error rounded-full animate-pulse-subtle"></span>
+              )}
             </Button>
             
             {isNotiOpen && (
               <div className="absolute right-0 top-full mt-2 mr-2  bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
                 <div className="py-2">
-                  <NotificationsCard user = {user}/>
+                  <NotificationsCard user = {user} onUnreadChange={setUnreadCount}/>
                 </div>
               </div>
             )}

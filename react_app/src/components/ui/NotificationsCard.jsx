@@ -2,9 +2,16 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon.jsx';
 import Button from '../../components/ui/Button';
 
-const NotificationsCard = ({ user }) => {
+const NotificationsCard = ({ user, onUnreadChange }) => {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+   useEffect(() => {
+    if (onUnreadChange) {
+      const unread = notifications.filter(n => !n.isRead).length;
+      onUnreadChange(unread);
+    }
+  }, [notifications, onUnreadChange]);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -147,20 +154,16 @@ const NotificationsCard = ({ user }) => {
     }
   };
 
-  const handleNotificationClick = (notification) => {
-    // Mark as read
-    setNotifications(prev =>
-      prev?.map(n => n?.id === notification?.id ? { ...n, isRead: true } : n)
-    );
-
-    // Navigate if there's an action URL
-    if (notification?.actionUrl) {
-      window.location.href = notification?.actionUrl;
-    }
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev?.map(n => ({ ...n, isRead: true })));
+  const handleNotificationClick = (notification) => {
+    setNotifications(prev =>
+      prev.map(n =>
+        n.id === notification.id ? { ...n, isRead: true } : n
+      )
+    );
   };
 
   const unreadCount = notifications?.filter(n => !n?.isRead)?.length;
@@ -195,7 +198,7 @@ const NotificationsCard = ({ user }) => {
                     >
                       <div className="flex items-center space-x-2 mb-1">
                         <h3
-                          className={`font-medium ${notification?.isRead ? 'text-foreground' : 'text-primary'
+                          className={`font-medium ${notification?.leido ? 'text-foreground' : 'text-primary'
                             }`}
                         >
                           {notification?.title}
@@ -251,9 +254,9 @@ const NotificationsCard = ({ user }) => {
               className="flex-1"
               iconName="Bell"
               iconPosition="left"
-              onClick={() => window.location.href = '/support-portal?section=notifications'}
+              onClick={() => markAllAsRead()}
             >
-              Ver Todas
+              Marcar como leido
             </Button>
             <Button
               variant="outline"
