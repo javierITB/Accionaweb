@@ -455,6 +455,18 @@ async function generarAnexo(datos, responseId, db) {
         ]
     }));
 
+    children.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+            new TextRun({
+                text: "ANEXO DE MODIFICACIÓN Y ACTUALIZACIÓN DE CONTRATO INDIVIDUAL DE TRABAJO",
+                bold: true,
+                size: 28 // o el tamaño que prefieras
+            })
+        ]
+    }));
+
+
     // 2. TÍTULO "MODIFICACIÓN"
     children.push(new Paragraph({
         children: [new TextRun({ text: "MODIFICACIÓN", bold: true })]
