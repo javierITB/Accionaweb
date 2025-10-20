@@ -97,14 +97,19 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         <div ref={chatRef} className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.length > 0 ? messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] rounded-lg p-4 ${msg.autor === user ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">{msg.autor}</span>
-                </div>
+              <div className={`max-w-[85%] rounded-lg px-3 py-2 ${msg.autor === user ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+
+                {msg.autor !== user && (
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">{msg.autor}</span>
+                  </div>
+                )}
+
                 <p className="text-sm mb-2">{msg.mensaje}</p>
                 <span className="text-xs opacity-75">{formatMessageTime(msg.fecha)}</span>
               </div>
             </div>
+
           )) : <p className="text-center text-muted-foreground">Sin mensajes aún.</p>}
         </div>
 
