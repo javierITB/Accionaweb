@@ -443,17 +443,6 @@ async function generarAnexo(datos, responseId, db) {
     // PREPARAR TODOS LOS PÁRRAFOS PRIMERO
     const children = [];
 
-    // 1. ENCABEZADO
-    children.push(new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        children: [
-            new TextRun(`En ${ciudad} a ${hoy}, entre `),
-            new TextRun({ text: `${empresa.toUpperCase()} `, bold: true }),
-            new TextRun("y Don(ña) "),
-            new TextRun({ text: `${trabajador.toUpperCase()}`, bold: true }),
-            new TextRun(`, se conviene modificar el Contrato de Trabajo vigente de fecha ${formatearFechaEspanol(datos.fecha_contrato)} y sus posteriores ANEXOS.`)
-        ]
-    }));
 
     children.push(new Paragraph({
         alignment: AlignmentType.CENTER,
@@ -466,11 +455,33 @@ async function generarAnexo(datos, responseId, db) {
         ]
     }));
 
+    children.push(new Paragraph({ text: "" }));
+    children.push(new Paragraph({ text: "" }));
+    children.push(new Paragraph({ text: "" }));
+    children.push(new Paragraph({ text: "" }));
+
+    // 1. ENCABEZADO
+    children.push(new Paragraph({
+        alignment: AlignmentType.JUSTIFIED,
+        children: [
+            new TextRun(`En ${ciudad} a ${hoy}, entre `),
+            new TextRun({ text: `${empresa.toUpperCase()} `, bold: true }),
+            new TextRun("y Don(ña) "),
+            new TextRun({ text: `${trabajador.toUpperCase()}`, bold: true }),
+            new TextRun(`, se conviene modificar el Contrato de Trabajo vigente de fecha ${formatearFechaEspanol(datos.fecha_contrato)} y sus posteriores ANEXOS.`)
+        ]
+    }));
+
+    children.push(new Paragraph({ text: "" }));
+    children.push(new Paragraph({ text: "" }));
+
 
     // 2. TÍTULO "MODIFICACIÓN"
     children.push(new Paragraph({
         children: [new TextRun({ text: "MODIFICACIÓN", bold: true })]
     }));
+
+    children.push(new Paragraph({ text: "" }));
 
     // 3. CLAUSULAS CONDICIONALES
     let modificacionNum = 1;
@@ -501,6 +512,8 @@ async function generarAnexo(datos, responseId, db) {
         }
     });
 
+    children.push(new Paragraph({ text: "" }));
+
     // 4. CLAUSULAS FIJAS
     agregarModificacion([
         "Queda Expresamente convenido que las cláusulas existentes en el contrato de trabajo celebrado por las partes el día ",
@@ -513,6 +526,11 @@ async function generarAnexo(datos, responseId, db) {
         { text: empresa.toUpperCase(), bold: true },
         "."
     ]);
+
+    children.push(new Paragraph({ text: "" }));
+    children.push(new Paragraph({ text: "" }));
+    children.push(new Paragraph({ text: "" }));
+    children.push(new Paragraph({ text: "" }));
 
     // 5. TABLA DE FIRMAS
     children.push(new Table({
