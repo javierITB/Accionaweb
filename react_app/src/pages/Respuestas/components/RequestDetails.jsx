@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const RequestDetails = ({ request, isVisible, onClose }) => {
-  
+  const [correctedFile, setCorrectedFile] = useState(null);
+  const fileInputRef = useRef(null);
+
   if (!isVisible || !request) return null;
 
   // Función para descargar el DOCX
@@ -15,28 +17,110 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     }
   };
 
+  // Función para manejar la subida de corrección
+  const handleUploadCorrection = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.type === 'application/pdf') {
+        setCorrectedFile(file);
+      } else {
+        alert('Por favor, sube solo archivos PDF');
+        event.target.value = '';
+      }
+    }
+  };
+
+  // Función para abrir el selector de archivos
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Función para eliminar corrección y volver a estado "en_revision"
+  const handleRemoveCorrection = async () => {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta corrección y volver a revisión?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://192.168.0.2:4000/api/respuestas/${request._id}/remove-correction`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setCorrectedFile(null);
+        alert('Corrección eliminada, formulario vuelve a estado "en revisión"');
+      } else {
+        alert('Error al eliminar la corrección');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al eliminar la corrección');
+    }
+  };
+
+  // Función para aprobar el formulario
+  const handleApprove = async () => {
+    if (!correctedFile) {
+      alert('Debes subir un documento corregido antes de aprobar');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('correctedFile', correctedFile);
+
+      console.log("Subiendo PDF a la base de datos...");
+      
+      const uploadResponse = await fetch(`http://192.168.0.2:4000/api/respuestas/${request._id}/upload-correction`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        const uploadError = await uploadResponse.json();
+        console.log("Error subiendo PDF:", uploadError);
+        throw new Error('Error subiendo corrección a la base de datos');
+      }
+
+      console.log("PDF subido correctamente, ahora aprobando...");
+      
+      const approveResponse = await fetch(`http://192.168.0.2:4000/api/respuestas/${request._id}/approve`, {
+        method: 'POST',
+      });
+
+      if (approveResponse.ok) {
+        alert('Formulario aprobado correctamente');
+        onClose();
+      } else {
+        const errorData = await approveResponse.json();
+        alert(`Error al aprobar el formulario: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al aprobar el formulario: ' + error.message);
+    }
+  };
+
   // Función para formatear el nombre del archivo
   const formatFileName = () => {
     const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
     const userName = request?.submittedBy || request?.user?.nombre || 'Usuario';
     const submitDate = request?.submittedAt || request?.createdAt;
 
-    // Formatear fecha para el nombre del archivo (sin caracteres especiales)
     const formatDateForFileName = (dateString) => {
       if (!dateString) return 'fecha-desconocida';
       const date = new Date(dateString);
-      return date.toISOString().split('T')[0]; // YYYY-MM-DD
+      return date.toISOString().split('T')[0];
     };
 
     const datePart = formatDateForFileName(submitDate);
 
-    // Limpiar caracteres especiales y espacios
     const cleanText = (text) => {
       return text
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // quitar acentos
-        .replace(/[^a-zA-Z0-9]/g, '_')   // reemplazar caracteres especiales con _
-        .replace(/_+/g, '_')             // reemplazar múltiples _ por uno solo
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .replace(/_+/g, '_')
         .toLowerCase();
     };
 
@@ -52,16 +136,14 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
 
     const fileName = formatFileName();
 
-    // Aquí deberías obtener esta información real de tu base de datos
-    // Por ahora simulamos con los datos que tienes en el request
     return [
       {
         id: request?._id || 1,
         name: fileName,
-        size: "Calculando...", // Esto deberías obtenerlo del archivo real
+        size: "Calculando...",
         type: "docx",
         uploadedAt: request?.submittedAt || request?.createdAt,
-        downloadUrl: `/api/documents/download/${request?._id}` // Endpoint para descargar
+        downloadUrl: `/api/documents/download/${request?._id}`
       }
     ];
   };
@@ -126,7 +208,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -152,9 +233,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
@@ -198,7 +277,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
             </div>
           </div>
 
-          {/* Description */}
           {request?.form?.description && (
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">Descripción</h3>
@@ -210,7 +288,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
             </div>
           )}
 
-          {/* Attachments - AHORA CON DATOS REALES */}
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Documento Generado</h3>
             {realAttachments?.length > 0 ? (
@@ -247,7 +324,62 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
             )}
           </div>
 
-          {/* Comments/Notes */}
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-3">Documento Corregido</h3>
+            <div className="bg-muted/50 rounded-lg p-4">
+              {correctedFile ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Icon name="FileText" size={20} className="text-accent" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{correctedFile.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(correctedFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUploadClick}
+                    >
+                      Cambiar Archivo
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleRemoveCorrection}
+                      className="text-error hover:bg-error/10"
+                    >
+                      <Icon name="X" size={16} />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">No se han subido correcciones aún</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    iconName="Upload"
+                    iconPosition="left"
+                    onClick={handleUploadClick}
+                  >
+                    Subir
+                  </Button>
+                </div>
+              )}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleUploadCorrection}
+                accept=".pdf"
+                className="hidden"
+              />
+            </div>
+          </div>
+
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Comentarios Internos</h3>
             <div className="bg-muted/50 rounded-lg p-4">
@@ -258,10 +390,9 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
           </div>
         </div>
 
-        {/* Footer Actions */}
         <div className="sticky bottom-0 bg-card border-t border-border p-6">
           <div className="flex items-center justify-between">
-            <div property className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Icon name="Clock" size={16} />
               <span>Última actualización: {formatDate(request?.submittedAt)}</span>
             </div>
@@ -282,6 +413,16 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                 onClick={handleDownload}
               >
                 Descargar DOCX
+              </Button>
+              <Button
+                variant="default"
+                iconName="CheckCircle"
+                iconPosition="left"
+                iconSize={16}
+                onClick={handleApprove}
+                disabled={!correctedFile}
+              >
+                Aprobar
               </Button>
               <Button
                 variant="default"

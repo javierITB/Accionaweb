@@ -1,9 +1,24 @@
 const express = require("express");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
+const multer = require('multer');
 const { addNotification } = require("./notificaciones.helper");
 const { generarAnexoDesdeRespuesta } = require("./generador.helper");
 
+// Configurar Multer para almacenar en memoria (buffer)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos PDF'), false);
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024
+  }
+});
 
 router.post("/", async (req, res) => {
   try {
@@ -23,7 +38,7 @@ router.post("/", async (req, res) => {
 
     await addNotification(req.db, {
       filtro: { rol: "admin" },
-      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondido el formulario ${nombreFormulario}`,
+      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondedo el formulario ${nombreFormulario}`,
       descripcion: "Puedes revisar los detalles en el panel de respuestas.",
       prioridad: 2,
       color: "#fb8924",
@@ -47,6 +62,7 @@ router.post("/", async (req, res) => {
     /****************************************************
     SECCION DE GENERACION AUTOMATICA DE DOCX - IMPLEMENTADA
     ****************************************************/
+
     console.log("=== INICIANDO GENERACIÓN AUTOMÁTICA DE DOCX ===");
     console.log("Response ID:", result.insertedId.toString());
     console.log("DB disponible:", !!req.db);
@@ -57,7 +73,6 @@ router.post("/", async (req, res) => {
     if (req.body.responses) {
       console.log("Número de campos en responses:", Object.keys(req.body.responses).length);
       
-      // Verificar campos críticos
       const camposCriticos = [
         "Nombre de la Empresa solicitante:",
         "Nombre del trabajador:", 
@@ -68,7 +83,7 @@ router.post("/", async (req, res) => {
         console.log(`Campo crítico "${campo}":`, valor || "NO ENCONTRADO");
       });
     } else {
-      console.log("⚠️ ADVERTENCIA: No hay req.body.responses");
+      console.log("ADVERTENCIA: No hay req.body.responses");
     }
 
     try {
@@ -77,11 +92,10 @@ router.post("/", async (req, res) => {
         result.insertedId.toString(),
         req.db
       );
-      console.log('✅ DOCX generado automáticamente para respuesta:', result.insertedId);
+      console.log('DOCX generado automáticamente para respuesta:', result.insertedId);
     } catch (error) {
-      console.error('❌ Error generando DOCX automáticamente:', error.message);
+      console.error('Error generando DOCX automáticamente:', error.message);
       console.error('Stack trace:', error.stack);
-      // No fallar toda la operación por error en DOCX
     }
     /****************************************************
     SECCION DE GENERACION AUTOMATICA DE DOCX - IMPLEMENTADA
@@ -213,11 +227,9 @@ router.get("/:formId/chat", async (req, res) => {
     const { formId } = req.params;
 
     let query;
-    // Si el formId es un ObjectId válido, busca por _id
     if (ObjectId.isValid(formId)) {
       query = { $or: [{ _id: new ObjectId(formId) }, { formId }] };
     } else {
-      // Si no es un ObjectId válido, busca solo por formId string
       query = { formId };
     }
 
@@ -259,21 +271,17 @@ router.post("/chat", async (req, res) => {
       query = { formId };
     }
 
-    // Obtener la respuesta para conocer el autor original
     const respuesta = await req.db.collection("respuestas").findOne(query);
     if (!respuesta) {
       return res.status(404).json({ error: "No se encontró la respuesta para agregar el mensaje" });
     }
 
-    // Agregar el mensaje
     await req.db.collection("respuestas").updateOne(
       { _id: respuesta._id },
       { $push: { mensajes: nuevoMensaje } }
     );
 
-    // --- Aquí va la lógica de notificaciones ---
     if (respuesta?.user?.nombre === autor) {
-      // Mismo autor → notificar a admins
       await addNotification(req.db, {
         filtro: { rol: "admin" },
         titulo: "Nuevo mensaje en tu formulario",
@@ -282,9 +290,8 @@ router.post("/chat", async (req, res) => {
         actionUrl: `/form/${respuesta._id}`,
       });
     } else {
-      // Autor distinto → notificar al autor original
       await addNotification(req.db, {
-        userId: respuesta.user.uid, // asumimos que el autor original es el userId
+        userId: respuesta.user.uid,
         titulo: "Nuevo mensaje recibido",
         descripcion: `${autor} le ha respondido un mensaje.`,
         icono: "chat",
@@ -317,6 +324,82 @@ router.put("/chat/marcar-leidos", async (req, res) => {
   } catch (err) {
     console.error("Error al marcar mensajes como leídos:", err);
     res.status(500).json({ error: "Error al marcar mensajes como leídos" });
+  }
+});
+
+// Subir corrección PDF
+router.post("/:id/upload-correction", upload.single('correctedFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No se subió ningún archivo" });
+    }
+
+    const correctionData = {
+      fileName: req.file.originalname,
+      fileData: req.file.buffer,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype,
+      uploadedAt: new Date()
+    };
+
+    await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { 
+        $set: { 
+          correctedFile: correctionData,
+          updatedAt: new Date()
+        } 
+      }
+    );
+
+    res.json({ 
+      message: "Corrección subida correctamente",
+      fileName: correctionData.fileName,
+      fileSize: correctionData.fileSize
+    });
+  } catch (err) {
+    console.error("Error subiendo corrección:", err);
+    res.status(500).json({ error: "Error subiendo corrección" });
+  }
+});
+
+// Aprobar formulario y guardar en aprobados
+router.post("/:id/approve", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const respuesta = await req.db.collection("respuestas").findOne({ _id: new ObjectId(id) });
+    
+    if (!respuesta.correctedFile) {
+      return res.status(400).json({ error: "No hay corrección subida para aprobar" });
+    }
+
+    await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(id) },
+      { 
+        $set: { 
+          status: "aprobado",
+          approvedAt: new Date()
+        } 
+      }
+    );
+
+    await req.db.collection("aprobados").insertOne({
+      responseId: id,
+      correctedFile: respuesta.correctedFile,
+      approvedAt: new Date(),
+      approvedBy: req.user?.id,
+      status: "aprobado",
+      createdAt: new Date(),
+      formTitle: respuesta.formTitle,
+      submittedBy: respuesta.submittedBy,
+      company: respuesta.company
+    });
+
+    res.json({ message: "Formulario aprobado correctamente" });
+  } catch (err) {
+    console.error("Error aprobando formulario:", err);
+    res.status(500).json({ error: "Error aprobando formulario" });
   }
 });
 
