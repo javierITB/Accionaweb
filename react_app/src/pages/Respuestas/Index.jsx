@@ -258,7 +258,6 @@ const RequestTracking = () => {
   };
 
   const handleSendMessage = (request) => {
-    formId = request._id;
     setMessageRequest(request);
     setShowMessageModal(true);
   };

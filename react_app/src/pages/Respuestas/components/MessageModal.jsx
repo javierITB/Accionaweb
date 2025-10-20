@@ -8,55 +8,43 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [messages, setMessages] = useState([]);
   const chatRef = useRef(null);
 
-  // 🔁 Polling en tiempo real (cada 3 segundos)
+  const id = formId || request?._id;
+
+  // 🔁 Fetch de mensajes
+  const fetchMessages = async () => {
+    if (!id) return;
+    try {
+      const res = await fetch(`http://192.168.0.2:4000/api/respuestas/${id}/chat`);
+      if (!res.ok) throw new Error("Error al obtener chat");
+      const data = await res.json();
+      setMessages(data || []);
+    } catch (err) {
+      console.error("Error cargando mensajes:", err);
+    }
+  };
+
   useEffect(() => {
+    if (!isOpen || !id) return;
 
-    if (!isOpen || !formId) return;
-
-    const fetchMessages = async () => {
-      try {
-        const id = formId || request?._id;
-        if (!id) return;
-        const res = await fetch(`http://192.168.0.2:4000/api/respuestas/${id}/chat`);
-
-
-        if (res.ok && data?.data) {
-          setMessages(prev => [...prev, data.data]);
-        } else {
-          console.error("Error enviando mensaje:", data);
-        }
-
-        if (!res.ok) throw new Error("Error al obtener chat");
-        const data = await res.json();
-        setMessages(data || []);
-      } catch (err) {
-        console.error("Error cargando mensajes:", err);
-      }
-    };
-
-    fetchMessages();
+    fetchMessages(); // fetch inicial
     const interval = setInterval(fetchMessages, 3000);
-
     return () => clearInterval(interval);
-  }, [isOpen, formId, request?._id]);
+  }, [isOpen, id]);
 
-  // ⬇️ Auto-scroll al fondo del chat
+  // ⬇️ Auto-scroll
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
 
+  // Enviar mensaje
   const handleSend = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !id) return;
     setIsSending(true);
-
-    const id = formId || request._id;
-    if (!id) return console.error("No hay formId válido");
 
     try {
       const autor = sessionStorage.getItem("user") || "Anónimo";
-
       const res = await fetch("http://192.168.0.2:4000/api/respuestas/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -67,18 +55,15 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
       if (res.ok && data?.data) {
         setMessages(prev => [...prev, data.data]);
         setMessage('');
-        // 🔄 Refrescar mensajes del servidor
-        await fetchMessages();
       } else {
         console.error("Error enviando mensaje:", data.error || data);
       }
-    } catch (error) {
-      console.error("Error enviando mensaje:", error);
+    } catch (err) {
+      console.error("Error enviando mensaje:", err);
     } finally {
       setIsSending(false);
     }
   };
-
 
   const formatMessageTime = (timestamp) =>
     new Date(timestamp).toLocaleString('es-CL', {
@@ -93,7 +78,6 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] flex flex-col">
-
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center space-x-3">
@@ -108,24 +92,17 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
         {/* Chat */}
         <div ref={chatRef} className="flex-1 overflow-y-auto p-6 space-y-4">
-          {messages.length > 0 ? (
-            messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.autor === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-lg p-4 ${msg.autor === 'admin'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
-                  }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">{msg.autor}</span>
-                  </div>
-                  <p className="text-sm mb-2">{msg.mensaje}</p>
-                  <span className="text-xs opacity-75">{formatMessageTime(msg.fecha)}</span>
+          {messages.length > 0 ? messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.autor === 'admin' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] rounded-lg p-4 ${msg.autor === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">{msg.autor}</span>
                 </div>
+                <p className="text-sm mb-2">{msg.mensaje}</p>
+                <span className="text-xs opacity-75">{formatMessageTime(msg.fecha)}</span>
               </div>
-            ))
-          ) : (
-            <p className="text-center text-muted-foreground">Sin mensajes aún.</p>
-          )}
+            </div>
+          )) : <p className="text-center text-muted-foreground">Sin mensajes aún.</p>}
         </div>
 
         {/* Input */}

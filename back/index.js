@@ -36,7 +36,7 @@ async function startServer() {
     app.use("/api/forms", formRoutes);
     app.use("/api/respuestas", answersRoutes);
     app.use("/api/mail", mailRoutes);
-    app.use("/api/gen", gen);
+    app.use("/api/generador", gen);
     app.use("/api/noti", noti);
 
 
