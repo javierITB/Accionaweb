@@ -15,40 +15,40 @@ const QuickActionsCard = ({ section }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-      const fetchForms = async () => {
-        try {
-          
-          setIsLoading(true);
-          const res = await fetch(`http://192.168.0.2:4000/api/forms/section/${section}`);
-          const data = await res.json();
-  
-          const normalizedForms = data.map(f => ({
-            id: f._id,
-            title: f.title || 'Sin título',
-            description: f.description || '',
-            category: f.category || 'general',
-            icon: f.icon || 'FileText',
-            status: f.status || 'draft',
-            priority: f.priority || 'medium',
-            estimatedTime: f.responseTime || '1-5 min',
-            fields: f.questions ? f.questions.length : 0,
-            documentsRequired: f.documentsRequired ?? false,
-            color : f.primaryColor,
-            tags: f.tags || [],
-            lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null,
-            path : "/forms?id=" + f._id
-          }));
-          
-          setAllForms(normalizedForms);
-        } catch (err) {
-          console.error('Error cargando formularios:', err);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-  
-      fetchForms();
-    }, []);
+    const fetchForms = async () => {
+      try {
+
+        setIsLoading(true);
+        const res = await fetch(`http://192.168.0.2:4000/api/forms/section/${section}`);
+        const data = await res.json();
+
+        const normalizedForms = data.map(f => ({
+          id: f._id,
+          title: f.title || 'Sin título',
+          description: f.description || '',
+          category: f.category || 'general',
+          icon: f.icon || 'FileText',
+          status: f.status || 'draft',
+          priority: f.priority || 'medium',
+          estimatedTime: f.responseTime || '1-5 min',
+          fields: f.questions ? f.questions.length : 0,
+          documentsRequired: f.documentsRequired ?? false,
+          color: f.primaryColor,
+          tags: f.tags || [],
+          lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null,
+          path: "/forms?id=" + f._id
+        }));
+
+        setAllForms(normalizedForms);
+      } catch (err) {
+        console.error('Error cargando formularios:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchForms();
+  }, []);
 
 
   const handleActionClick = (path) => {
