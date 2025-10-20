@@ -52,20 +52,39 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.get("/section/:section", async (req, res) => {
+router.get("/section/:section/:mail", async (req, res) => {
   try {
+    const { section, mail } = req.params;
+
+    // Buscar la empresa asociada al usuario
+    const user = await req.db.collection("usuarios").findOne({ mail });
+    if (!user || !user.empresa) {
+      return res.status(404).json({ error: "Usuario o empresa no encontrados" });
+    }
+
+    const empresaUsuario = user.empresa;
+
+    // Buscar formularios que cumplan ambas condiciones:
+    // 1. Que pertenezcan a la sección indicada
+    // 2. Que la empresa del usuario esté dentro del array "companies"
     const forms = await req.db
       .collection("forms")
-      .find({ section: req.params.section })
+      .find({
+        section,
+        companies: empresaUsuario,
+      })
       .toArray();
 
-    if (!forms.length)
-      return res.status(404).json({ error: "No se encontraron formularios en esta sección" });
+    if (!forms.length) {
+      return res.status(404).json({
+        error: `No se encontraron formularios para la sección "${section}" y la empresa "${empresaUsuario}"`,
+      });
+    }
 
     res.status(200).json(forms);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error al obtener formularios por sección" });
+    console.error("Error al obtener formularios filtrados:", err);
+    res.status(500).json({ error: "Error al obtener formularios por sección y empresa" });
   }
 });
 
