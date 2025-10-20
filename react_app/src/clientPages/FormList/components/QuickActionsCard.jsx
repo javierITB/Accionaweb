@@ -15,6 +15,7 @@ const QuickActionsCard = ({ section }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    
     const fetchForms = async () => {
       try {
         setIsLoading(true);
@@ -27,7 +28,7 @@ const QuickActionsCard = ({ section }) => {
         }
 
         // Enviar mail como query param
-        const res = await fetch(`http://192.168.0.2:4000/api/forms/section/${section}?mail=${encodeURIComponent(mail)}`);
+        const res = await fetch(`http://192.168.0.2:4000/api/forms/section/${section}/${encodeURIComponent(mail)}`);
 
         if (!res.ok) {
           throw new Error(`Error en la respuesta del servidor: ${res.status}`);
