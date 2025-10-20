@@ -139,5 +139,32 @@ router.put("/:mail/leido-todas", async (req, res) => {
   }
 });
 
+router.get("/:mail/unread-count", async (req, res) => {
+  try {
+    const { mail } = req.params;
+
+    // Buscar usuario y proyectar solo las notificaciones
+    const usuario = await req.db
+      .collection("usuarios")
+      .findOne({ mail }, { projection: { notificaciones: 1 } });
+
+    if (!usuario) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    // Contar las notificaciones con leido = false
+    const unreadCount = (usuario.notificaciones || []).filter(
+      (n) => n.leido === false
+    ).length;
+
+    res.json({ unreadCount });
+  } catch (err) {
+    console.error("Error al obtener contador de no leídas:", err);
+    res.status(500).json({
+      error: "Error al obtener contador de notificaciones no leídas",
+      detalles: err.message,
+    });
+  }
+});
 
 module.exports = router;

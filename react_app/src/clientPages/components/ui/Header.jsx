@@ -8,10 +8,13 @@ const Header = ({ className = '' }) => {
   const [isNotiOpen, setIsNotiOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
   const user = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
+  const userMail = sessionStorage.getItem("email");
+
   
+
   // Refs para detectar clics fuera
   const menuRef = useRef(null);
   const notiRef = useRef(null);
@@ -36,6 +39,20 @@ const Header = ({ className = '' }) => {
     { name: 'Iniciar Sesión', path: '/login', icon: 'LogIn' },
   ];
 
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      const response = await fetch(`http://192.168.0.2:4000/api/noti/${userMail}/unread-count`);
+      const data = await response.json();
+      console.log("No leídas:", data.unreadCount);
+      setUnreadCount(data.unreadCount);
+    };
+
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 10000); // cada 10 segundos
+    return () => clearInterval(interval);
+  }, [user]);
+
+
   // Effect para detectar clics fuera de los menús
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -43,12 +60,12 @@ const Header = ({ className = '' }) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false);
       }
-      
+
       // Cerrar notificaciones si se hace clic fuera
       if (notiRef.current && !notiRef.current.contains(event.target)) {
         setIsNotiOpen(false);
       }
-      
+
       // Cerrar menú de usuario si se hace clic fuera
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
@@ -60,13 +77,13 @@ const Header = ({ className = '' }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-   
+
   const handleNavigation = (path) => {
     window.location.href = path;
     setIsMenuOpen(false);
     setIsUserMenuOpen(false);
   };
-  
+
   const toggleNoti = () => {
     setIsNotiOpen(!isNotiOpen);
   };
@@ -119,7 +136,7 @@ const Header = ({ className = '' }) => {
               {item?.name}
             </Button>
           ))}
-          
+
           {/* More Menu */}
           <div className="relative" ref={menuRef}>
             <Button
@@ -132,7 +149,7 @@ const Header = ({ className = '' }) => {
             >
               Más
             </Button>
-            
+
             {isMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
                 <div className="py-2">
@@ -167,11 +184,11 @@ const Header = ({ className = '' }) => {
                 <span className="absolute top-1 -right-1 w-2 h-2 bg-error rounded-full animate-pulse-subtle"></span>
               )}
             </Button>
-            
+
             {isNotiOpen && (
               <div className="absolute right-0 top-full mt-2 mr-2  bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
                 <div className="py-2">
-                  <NotificationsCard user = {user} onUnreadChange={setUnreadCount}/>
+                  <NotificationsCard user={user} onUnreadChange={setUnreadCount} />
                 </div>
               </div>
             )}
@@ -185,7 +202,7 @@ const Header = ({ className = '' }) => {
                 <p className="text-xs text-muted-foreground">{cargo}</p>
               </div>
             )}
-            
+
             {/* User Avatar with Dropdown */}
             <div className="relative" ref={userMenuRef}>
               <button
@@ -200,7 +217,7 @@ const Header = ({ className = '' }) => {
                   <Icon name="User" size={16} className="text-white" />
                 )}
               </button>
-              
+
               {/* User Dropdown Menu */}
               {isUserMenuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
@@ -271,7 +288,7 @@ const Header = ({ className = '' }) => {
                 {item?.name}
               </button>
             ))}
-            
+
             <div className="border-t border-border pt-2 mt-4">
               {moreMenuItems?.map((item) => (
                 <button

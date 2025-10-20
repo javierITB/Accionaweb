@@ -14,6 +14,7 @@ const Header = ({ className = '' }) => {
   const menuRef = useRef(null);
   const notiRef = useRef(null);
   const userMenuRef = useRef(null);
+  const userMail = sessionStorage.getItem("email");
   
   const navigationItems = [
     { name: 'Incio', path: '/', icon: 'Home' },
@@ -31,6 +32,19 @@ const Header = ({ className = '' }) => {
 
   const [isNotiOpen, setIsNotiOpen] = useState(false);
   
+    useEffect(() => {
+      const fetchUnreadCount = async () => {
+        const response = await fetch(`http://192.168.0.2:4000/api/noti/${userMail}/unread-count`);
+        const data = await response.json();
+        console.log("No leídas:", data.unreadCount);
+        setUnreadCount(data.unreadCount);
+      };
+  
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 10000); // cada 10 segundos
+      return () => clearInterval(interval);
+    }, [user]);
+
   // Effect para detectar clics fuera de los menús
   useEffect(() => {
     const handleClickOutside = (event) => {

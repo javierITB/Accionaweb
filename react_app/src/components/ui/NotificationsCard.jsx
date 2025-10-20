@@ -6,7 +6,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-   useEffect(() => {
+  useEffect(() => {
     if (onUnreadChange) {
       const unread = notifications.filter(n => !n.isRead).length;
       onUnreadChange(unread);
@@ -104,8 +104,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
     }
   };
 
-
-
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'reminder': return 'Clock';
@@ -154,9 +152,37 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
     }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  const markAllAsRead = async () => {
+    try {
+      const mail = sessionStorage.getItem("email");
+
+      if (!mail) {
+        console.error("Usuario no encontrado en sesión.");
+        return;
+      }
+
+      const res = await fetch(`http://192.168.0.2:4000/api/noti/${mail}/leido-todas`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Error al marcar todas como leídas:", errorData);
+        return;
+      }
+
+      // Actualiza el estado local después del éxito
+      setNotifications(prev =>
+        prev.map(n => ({ ...n, isRead: true, leido: true }))
+      );
+
+      console.log("Todas las notificaciones marcadas como leídas");
+    } catch (err) {
+      console.error("Error al marcar todas como leídas:", err);
+    }
   };
+
 
   const handleNotificationClick = (notification) => {
     setNotifications(prev =>
@@ -247,7 +273,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         )}
       </div>
       <div className="mt-3 py-2 border-t border-border">
-        {notifications.length > 0 ?(
+        {notifications.length > 0 ? (
           <div className="flex gap-2 justify-between m-2">
             <Button
               variant="outline"
@@ -271,8 +297,8 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
             >
               Eliminar Todas
             </Button>
-          </div>):null
-}
+          </div>) : null
+        }
       </div>
     </div>
   );
