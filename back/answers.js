@@ -389,7 +389,6 @@ router.post("/:id/approve", async (req, res) => {
       correctedFile: respuesta.correctedFile,
       approvedAt: new Date(),
       approvedBy: req.user?.id,
-      status: "aprobado",
       createdAt: new Date(),
       formTitle: respuesta.formTitle,
       submittedBy: respuesta.submittedBy,
