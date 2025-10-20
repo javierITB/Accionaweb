@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
@@ -6,9 +6,19 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
   const [correctedFile, setCorrectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
+  useEffect(() => {
+    if (request?.correctedFile) {
+      setCorrectedFile({
+        name: request.correctedFile.fileName,
+        size: request.correctedFile.fileSize
+      });
+    } else {
+      setCorrectedFile(null);
+    }
+  }, [request]);
+
   if (!isVisible || !request) return null;
 
-  // Función para descargar el DOCX
   const handleDownload = () => {
     if (request?.IDdoc) {
       window.open(`http://192.168.0.2:4000/api/generador/download/${request.IDdoc}`, '_blank');
@@ -17,7 +27,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     }
   };
 
-  // Función para manejar la subida de corrección
   const handleUploadCorrection = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -30,12 +39,10 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     }
   };
 
-  // Función para abrir el selector de archivos
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  // Función para eliminar corrección y volver a estado "en_revision"
   const handleRemoveCorrection = async () => {
     if (!confirm('¿Estás seguro de que quieres eliminar esta corrección y volver a revisión?')) {
       return;
@@ -58,7 +65,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     }
   };
 
-  // Función para aprobar el formulario
   const handleApprove = async () => {
     if (!correctedFile) {
       alert('Debes subir un documento corregido antes de aprobar');
@@ -69,21 +75,17 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
       const formData = new FormData();
       formData.append('correctedFile', correctedFile);
 
-      console.log("Subiendo PDF a la base de datos...");
-      
       const uploadResponse = await fetch(`http://192.168.0.2:4000/api/respuestas/${request._id}/upload-correction`, {
         method: 'POST',
         body: formData,
       });
 
       if (!uploadResponse.ok) {
-        const uploadError = await uploadResponse.json();
-        console.log("Error subiendo PDF:", uploadError);
-        throw new Error('Error subiendo corrección a la base de datos');
+        throw new Error('Error subiendo corrección');
       }
 
-      console.log("PDF subido correctamente, ahora aprobando...");
-      
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const approveResponse = await fetch(`http://192.168.0.2:4000/api/respuestas/${request._id}/approve`, {
         method: 'POST',
       });
@@ -101,7 +103,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     }
   };
 
-  // Función para formatear el nombre del archivo
   const formatFileName = () => {
     const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
     const userName = request?.submittedBy || request?.user?.nombre || 'Usuario';
@@ -130,7 +131,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     return `${cleanFormTitle}_${cleanUserName}_${datePart}.docx`;
   };
 
-  // Función para obtener archivos reales desde la BD
   const getRealAttachments = () => {
     if (!request) return [];
 
@@ -202,7 +202,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     }
   };
 
-  // Obtener archivos reales
   const realAttachments = getRealAttachments();
 
   return (
