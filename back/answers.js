@@ -205,4 +205,94 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+
+router.get("/:formId/chat", async (req, res) => {
+  try {
+    const { formId } = req.params;
+
+    let query;
+    // Si el formId es un ObjectId válido, busca por _id
+    if (ObjectId.isValid(formId)) {
+      query = { $or: [{ _id: new ObjectId(formId) }, { formId }] };
+    } else {
+      // Si no es un ObjectId válido, busca solo por formId string
+      query = { formId };
+    }
+
+    const respuesta = await req.db
+      .collection("respuestas")
+      .findOne(query, { projection: { mensajes: 1 } });
+
+    if (!respuesta) {
+      return res.status(404).json({ error: "No se encontró la respuesta con ese formId o _id" });
+    }
+
+    res.json(respuesta.mensajes || []);
+  } catch (err) {
+    console.error("Error obteniendo chat:", err);
+    res.status(500).json({ error: "Error al obtener chat" });
+  }
+});
+
+
+router.post("/chat", async (req, res) => {
+  try {
+    const { formId, autor, mensaje } = req.body;
+
+    if (!autor || !mensaje || !formId) {
+      return res.status(400).json({ error: "Faltan campos: formId, autor o mensaje" });
+    }
+
+    const nuevoMensaje = {
+      autor,
+      mensaje,
+      leido: false,
+      fecha: new Date(),
+    };
+
+    let query;
+    // Si el formId es válido, permite ambas opciones
+    if (ObjectId.isValid(formId)) {
+      query = { $or: [{ _id: new ObjectId(formId) }, { formId }] };
+    } else {
+      query = { formId };
+    }
+
+    const result = await req.db.collection("respuestas").updateOne(
+      query,
+      { $push: { mensajes: nuevoMensaje } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "No se encontró la respuesta para agregar el mensaje" });
+    }
+
+    res.json({
+      message: "Mensaje agregado correctamente",
+      data: nuevoMensaje,
+    });
+  } catch (err) {
+    console.error("Error al agregar mensaje:", err);
+    res.status(500).json({ error: "Error al agregar mensaje" });
+  }
+});
+
+
+router.put("/chat/marcar-leidos", async (req, res) => {
+  try {
+    const result = await req.db.collection("respuestas").updateMany(
+      { "mensajes.leido": false },
+      { $set: { "mensajes.$[].leido": true } }
+    );
+
+    res.json({
+      message: "Todos los mensajes fueron marcados como leídos",
+      result,
+    });
+  } catch (err) {
+    console.error("Error al marcar mensajes como leídos:", err);
+    res.status(500).json({ error: "Error al marcar mensajes como leídos" });
+  }
+});
+
 module.exports = router;

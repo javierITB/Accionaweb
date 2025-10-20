@@ -59,18 +59,20 @@ const RequestTracking = () => {
         setIsLoading(true);
 
         // 1) Traer ambas colecciones en paralelo
-        const [resResp, resForms] = await Promise.all([
+        const [resResp, resForms, resDocxs] = await Promise.all([
           fetch('http://192.168.0.2:4000/api/respuestas/'),
-          fetch('http://192.168.0.2:4000/api/forms/')
+          fetch('http://192.168.0.2:4000/api/forms/'),
+          fetch('http://192.168.0.2:4000/api/generador/docxs')
         ]);
 
-        if (!resResp.ok || !resForms.ok) {
+        if (!resResp.ok || !resForms.ok || !resDocxs.ok) {
           throw new Error('Error al obtener datos del servidor');
         }
 
         // 2) Convertir a JSON
         const responses = await resResp.json(); // lista de respuestas
         const forms = await resForms.json();    // lista de formularios
+        const docxs = await resDocxs.json();    // lista de documentos
 
         // 3) Construir mapa de forms para lookup rápido (mapeamos _id e id si existen)
         const formsMap = new Map();
@@ -86,6 +88,10 @@ const RequestTracking = () => {
           const formIdKey = r.formId ? String(r.formId) : null;
           const matchedForm = formIdKey ? formsMap.get(formIdKey) || null : null;
 
+          const matchedDoc = docxs.find(doc => 
+            doc.responseId === String(r._id)
+          );
+
           return {
             // campos originales de la respuesta
             _id: r._id,
@@ -96,6 +102,10 @@ const RequestTracking = () => {
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,
 
+            // Información del documento generado
+            IDdoc: matchedDoc?.IDdoc,
+            docxStatus: matchedDoc?.estado,
+            docxCreatedAt: matchedDoc?.createdAt,
 
             // tus campos normalizados/auxiliares (ajusta según lo necesites)
             submittedBy: r.user?.nombre || r.user?.email || 'Usuario Desconocido',
@@ -248,6 +258,7 @@ const RequestTracking = () => {
   };
 
   const handleSendMessage = (request) => {
+    formId = request._id;
     setMessageRequest(request);
     setShowMessageModal(true);
   };
@@ -411,6 +422,7 @@ const RequestTracking = () => {
         onClose={() => setShowMessageModal(false)}
         request={messageRequest}
         onSendMessage={handleSendMessageSubmit}
+        formId= {formId}
       />
       <RequestDetails
         request={selectedRequest}

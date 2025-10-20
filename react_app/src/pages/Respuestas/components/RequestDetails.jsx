@@ -6,6 +6,15 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
   
   if (!isVisible || !request) return null;
 
+  // Función para descargar el DOCX
+  const handleDownload = () => {
+    if (request?.IDdoc) {
+      window.open(`http://192.168.0.2:4000/api/generador/download/${request.IDdoc}`, '_blank');
+    } else {
+      alert('No hay documento disponible para descargar');
+    }
+  };
+
   // Función para formatear el nombre del archivo
   const formatFileName = () => {
     const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
@@ -223,6 +232,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                       iconName="Download"
                       iconPosition="left"
                       iconSize={16}
+                      onClick={handleDownload}
                     >
                       Descargar
                     </Button>
@@ -269,6 +279,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                 iconName="Download"
                 iconPosition="left"
                 iconSize={16}
+                onClick={handleDownload}
               >
                 Descargar DOCX
               </Button>

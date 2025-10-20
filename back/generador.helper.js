@@ -552,6 +552,7 @@ async function generarAnexo(datos, responseId, db) {
         IDdoc: IDdoc,
         docxFile: buffer,
         estado: 'pendiente',
+        responseId: responseId,
         createdAt: new Date(),
         updatedAt: new Date()
     });
