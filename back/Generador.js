@@ -29,8 +29,12 @@ router.get("/download/:IDdoc", async (req, res) => {
         console.log("Documento encontrado");
         console.log("Tipo de docxFile:", typeof documento.docxFile);
         console.log("Tiene buffer?:", !!documento.docxFile.buffer);
-        console.log("Tiene length?:", documento.docxFile.length);
+        console.log("Es función length?:", typeof documento.docxFile.length === 'function');
         
+        // OBTENER EL BUFFER CORRECTAMENTE
+        const docxBuffer = documento.docxFile.buffer;
+        const bufferLength = docxBuffer.length;
+
         // Actualizar estado a "en_revision"
         await req.db.collection('docxs').updateOne(
             { IDdoc: IDdoc },
@@ -46,13 +50,13 @@ router.get("/download/:IDdoc", async (req, res) => {
         res.set({
             'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'Content-Disposition': `attachment; filename="${IDdoc}.docx"`,
-            'Content-Length': documento.docxFile.length
+            'Content-Length': bufferLength
         });
 
-        console.log("Enviando documento al cliente");
+        console.log("Enviando documento al cliente, tamaño:", bufferLength);
         
         // ENVIAR EL BUFFER CORRECTAMENTE
-        res.send(documento.docxFile.buffer);
+        res.send(docxBuffer);
 
     } catch (err) {
         console.error("Error descargando DOCX:", err);

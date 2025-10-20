@@ -5,6 +5,7 @@ import Button from '../../../components/ui/Button';
 const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [user, setUser] = useState(sessionStorage.getItem("user"));
   const [messages, setMessages] = useState([]);
   const chatRef = useRef(null);
 
@@ -22,6 +23,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
       console.error("Error cargando mensajes:", err);
     }
   };
+
+
 
   useEffect(() => {
     if (!isOpen || !id) return;
@@ -93,8 +96,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         {/* Chat */}
         <div ref={chatRef} className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.length > 0 ? messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.autor === 'admin' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] rounded-lg p-4 ${msg.autor === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] rounded-lg p-4 ${msg.autor === user ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">{msg.autor}</span>
                 </div>
