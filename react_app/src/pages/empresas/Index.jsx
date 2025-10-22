@@ -2,53 +2,38 @@ import React, { useState, useEffect } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import RegisterForm from './components/RegisterForm';
+import Icon from '../../components/AppIcon';
 
-const FormReg = () => {
-  const [users, setUsers] = useState([]);
+const CompanyReg = () => {
+  const [empresas, setEmpresas] = useState([]);
   const [formData, setFormData] = useState({
     nombre: '',
-    apellido: '',
-    mail: '',
-    empresa: '',
-    cargo: '',
-    rol: 'Cliente' // valor por defecto
+    rut: '',
+    direccion: '',
+    encargadoId: '',
+    logo: null
   });
-  const [activeTab, setActiveTab] = useState('properties');
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('register');
 
-  // Empresas reales (reemplaza con las tuyas)
-  const empresas = [
-    { value: 'acciona', label: 'Acciona' },
-    { value: 'empresa1', label: 'Empresa 1' },
-    { value: 'empresa2', label: 'Empresa 2' },
-  ];
-
-  const cargos = [
-    { value: 'Admin', label: 'Administrador' },
-    { value: 'Gerente', label: 'Gerente' },
-    { value: 'Supervisor', label: 'Supervisor' },
-    { value: 'Empleado', label: 'Empleado' },
-  ];
-
-  const roles = [
-    { value: 'admin', label: 'Administrador' },
-    { value: 'user', label: 'Usuario' },
-  ];
-
+  // Cargar empresas desde la base de datos
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch(`https://accionaweb.vercel.app/api/auth/`);
-        if (!res.ok) throw new Error('Usuarios no encontrados');
-        const data = await res.json();
-        setUsers(data);
-      } catch (err) {
-        console.error('Error cargando los usuarios:', err);
-        alert('No se pudo cargar la lista de usuarios');
-      }
-    };
-
-    fetchUsers();
+    fetchEmpresas();
   }, []);
+
+  const fetchEmpresas = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const response = await fetch(`${API_URL}/api/empresas/todas`);
+      if (response.ok) {
+        const empresasData = await response.json();
+        setEmpresas(empresasData);
+      }
+    } catch (error) {
+      console.error('Error cargando empresas:', error);
+      alert('No se pudo cargar la lista de empresas');
+    }
+  };
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({
@@ -57,110 +42,128 @@ const FormReg = () => {
     }));
   };
 
-  // Función para enviar el correo de registro
-  const handleRegister = async () => {
+  // Función para registrar nueva empresa
+  const handleRegisterEmpresa = async () => {
     // Validaciones básicas
-    if (!formData.nombre || !formData.apellido || !formData.mail || !formData.empresa || !formData.cargo) {
-      alert('Por favor completa todos los campos obligatorios');
+    if (!formData.nombre || !formData.rut) {
+      alert('Por favor completa los campos obligatorios: Nombre y RUT');
       return;
     }
 
-    if (!formData.mail.includes('@')) {
-      alert('Por favor ingresa un email válido');
-      return;
-    }
+    setIsLoading(true);
 
     try {
-      // 1. Primero guardar el usuario en la base de datos (sin contraseña)
-      const userResponse = await fetch('https://accionaweb.vercel.app/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          pass: 'pending' // marcamos que la contraseña está pendiente
-        }),
-      });
-
-      if (!userResponse.ok) {
-        throw new Error('Error al guardar el usuario');
-      }
-
-      const saved = await userResponse.json();
-      const savedUser = saved?.user;
-      // 2. Enviar correo con enlace para establecer contraseña
-      const mailResponse = await fetch('https://accionaweb.vercel.app/api/mail/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          accessKey: "MI_CLAVE_SECRETA_AQUI",
-          to: [formData.mail],
-          subject: "Completa tu registro en la plataforma",
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #3B82F6;">¡Bienvenido a la plataforma!</h2>
-              <p>Hola <strong>${formData.nombre} ${formData.apellido}</strong>,</p>
-              <p>Has sido registrado en nuestra plataforma. Para completar tu registro y establecer tu contraseña, haz clic en el siguiente botón:</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="http://localhost:5173/set-password?userId=${savedUser?.id || savedUser?._id}" 
-                   style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                  Establecer Contraseña
-                </a>
-              </div>
-              <p><strong>Datos de tu cuenta:</strong></p>
-              <ul>
-                <li><strong>Empresa:</strong> ${formData.empresa}</li>
-                <li><strong>Cargo:</strong> ${formData.cargo}</li>
-                <li><strong>Rol:</strong> ${formData.rol}</li>
-              </ul>
-              <p style="color: #666; font-size: 12px;">Si no solicitaste este registro, por favor ignora este correo.</p>
-            </div>
-          `
-        }),
-      });
-
-      if (!mailResponse.ok) {
-        throw new Error('Error al enviar el correo');
-      }
-
-      alert('Usuario registrado exitosamente. Se ha enviado un correo para establecer la contraseña.');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
       
-      // 3. Limpiar el formulario
+      // Crear FormData para enviar archivos
+      const submitData = new FormData();
+      submitData.append('nombre', formData.nombre);
+      submitData.append('rut', formData.rut);
+      submitData.append('direccion', formData.direccion || '');
+      submitData.append('encargadoId', formData.encargadoId || '');
+      
+      if (formData.logo) {
+        submitData.append('logo', formData.logo);
+      }
+
+      const response = await fetch(`${API_URL}/api/auth/empresas/register`, {
+        method: 'POST',
+        body: submitData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al registrar la empresa');
+      }
+
+      const result = await response.json();
+      
+      alert('Empresa registrada exitosamente');
+      
+      // Limpiar formulario
       setFormData({
         nombre: '',
-        apellido: '',
-        mail: '',
-        empresa: '',
-        cargo: '',
-        rol: 'user'
+        rut: '',
+        direccion: '',
+        encargadoId: '',
+        logo: null
       });
 
-      // 4. Recargar la lista de usuarios
-      const res = await fetch(`https://accionaweb.vercel.app/api/auth/`);
-      const data = await res.json();
-      setUsers(data);
+      // Recargar lista de empresas
+      fetchEmpresas();
 
     } catch (error) {
-      console.error('Error en el registro:', error);
-      alert('Error al registrar el usuario: ' + error.message);
+      console.error('Error registrando empresa:', error);
+      alert('Error al registrar la empresa: ' + error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const getTabContent = () => {
     switch (activeTab) {
-      case 'properties':
+      case 'register':
         return (
           <RegisterForm
             formData={formData}
-            empresas={empresas}
-            cargos={cargos}
-            roles={roles}
             onUpdateFormData={updateFormData}
-            onRegister={handleRegister}
+            onRegister={handleRegisterEmpresa}
+            isLoading={isLoading}
           />
+        );
+      case 'list':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-foreground">Empresas Registradas</h3>
+            {empresas.length === 0 ? (
+              <p className="text-muted-foreground">No hay empresas registradas.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full border border-border rounded-lg">
+                  <thead className="bg-muted text-sm text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Logo</th>
+                      <th className="px-4 py-2 text-left">Nombre</th>
+                      <th className="px-4 py-2 text-left">RUT</th>
+                      <th className="px-4 py-2 text-left">Dirección</th>
+                      <th className="px-4 py-2 text-left">Encargado</th>
+                      <th className="px-4 py-2 text-left">Fecha Registro</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {empresas.map((empresa) => (
+                      <tr key={empresa._id} className="border-t hover:bg-muted/30 transition">
+                        <td className="px-4 py-2">
+                          {empresa.logo ? (
+                            <img 
+                              src={empresa.logo} 
+                              alt={`Logo ${empresa.nombre}`}
+                              className="w-10 h-10 object-contain rounded"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
+                              <Icon name="Building2" size={16} className="text-muted-foreground" />
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 font-medium">{empresa.nombre}</td>
+                        <td className="px-4 py-2">{empresa.rut}</td>
+                        <td className="px-4 py-2">{empresa.direccion || '—'}</td>
+                        <td className="px-4 py-2">
+                          {empresa.encargadoNombre || '—'}
+                        </td>
+                        <td className="px-4 py-2">
+                          {empresa.createdAt
+                            ? new Date(empresa.createdAt).toLocaleDateString('es-CL')
+                            : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         );
       default:
         return null;
@@ -173,44 +176,48 @@ const FormReg = () => {
       <Sidebar />
       <main className="ml-64 pt-16">
         <div className="p-6 space-y-6">
-          <div className="bg-card border border-border rounded-lg">
-            <div className="p-6">{getTabContent()}</div>
+          {/* Header de la página */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Gestión de Empresas</h1>
+              <p className="text-muted-foreground mt-1">
+                Administra el registro y información de empresas en la plataforma
+              </p>
+            </div>
           </div>
 
-          {/* 🧾 Tabla de Usuarios */}
-          <div className="bg-card border border-border rounded-lg mt-8 p-6">
-            <h2 className="text-xl font-semibold mb-4">Usuarios registrados</h2>
-
-            {users.length === 0 ? (
-              <p className="text-muted-foreground">No hay usuarios registrados.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full border border-border rounded-lg">
-                  <thead className="bg-muted text-sm text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-2 text-left">ID</th>
-                      <th className="px-4 py-2 text-left">Nombre Empresa</th>
-                      <th className="px-4 py-2 text-left">Encargado</th>
-                      <th className="px-4 py-2 text-left">Fecha Creacion</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((u) => (
-                      <tr key={u.id} className="border-t hover:bg-muted/30 transition">
-                        <td className="px-4 py-2">{u._id}</td>
-                        <td className="px-4 py-2">{u.nombre || '—'}</td>
-                        <td className="px-4 py-2">{u.cargo || '—'}</td>
-                        <td className="px-4 py-2">
-                          {u.createdAt
-                            ? new Date(u.createdAt).toLocaleDateString()
-                            : '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Tabs de Navegación */}
+          <div className="bg-card border border-border rounded-lg">
+            <div className="border-b border-border">
+              <div className="flex space-x-1 p-4">
+                <button
+                  onClick={() => setActiveTab('register')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'register'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Plus" size={16} className="inline mr-2" />
+                  Registrar Empresa
+                </button>
+                <button
+                  onClick={() => setActiveTab('list')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'list'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="List" size={16} className="inline mr-2" />
+                  Lista de Empresas ({empresas.length})
+                </button>
               </div>
-            )}
+            </div>
+            
+            <div className="p-6">
+              {getTabContent()}
+            </div>
           </div>
         </div>
       </main>
@@ -218,4 +225,4 @@ const FormReg = () => {
   );
 };
 
-export default FormReg;
+export default CompanyReg;
