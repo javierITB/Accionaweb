@@ -489,7 +489,10 @@ async function generarAnexo(datos, responseId, db) {
         const ordinal = ORDINALES[modificacionNum] || `${modificacionNum}°`;
         modificacionNum++;
 
-        const paragraphChildren = [new TextRun({ text: ordinal, bold: true })];
+        const paragraphChildren = [
+            new TextRun({ text: ordinal, bold: true }),
+            new TextRun({ text: "\n" }) // Solo el salto de línea
+        ];
 
         textos.forEach(t => {
             if (typeof t === "string") {
