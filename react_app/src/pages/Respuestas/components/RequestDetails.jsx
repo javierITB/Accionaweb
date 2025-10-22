@@ -222,7 +222,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
               <div className="flex items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">{request?.FormTitle}</h2>
+                  <h2 className="text-xl font-semibold text-foreground">{request?.formTitle}</h2>
                   <p className="text-sm text-muted-foreground">ID: {request?._id}</p>
                 </div>
               </div>
@@ -347,13 +347,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleUploadClick}
-                    >
-                      Cambiar Archivo
-                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
