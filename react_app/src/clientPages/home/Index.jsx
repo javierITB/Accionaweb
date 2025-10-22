@@ -79,15 +79,17 @@ const DashboardHome = () => {
           <div className="grid grid-cols-1  gap-6">
             {/* Left Column - Primary Actions */}
             <div className="xl:col-span-2 space-y-6">
-              {/* Quick Actions */}
-              <QuickActionsCard />
               
+              {/* Quick Actions }
+              <QuickActionsCard />
+              */}
+
               {/* Recent Activity */}
               <RecentActivityCard />
 
-              {/* Stats Overview */}
+              {/* Stats Overview 
               <StatsOverviewCard />
-              
+              */}
             </div>
           </div>
 
