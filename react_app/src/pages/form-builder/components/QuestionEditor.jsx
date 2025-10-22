@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, X } from 'lucide-react';
 
-const QuestionEditor = ({ 
-  question, 
-  isSelected, 
-  onUpdate, 
-  isSubform = false, 
+const QuestionEditor = ({
+  question,
+  isSelected,
+  onUpdate,
+  isSubform = false,
   depth = 0,
   questionTypes = [],
   primaryColor = '#3B82F6',
@@ -22,12 +22,12 @@ const QuestionEditor = ({
   const saveChanges = useCallback((questionUpdates = {}, optionsUpdates = null) => {
     const updatedQuestion = { ...localQuestion, ...questionUpdates };
     const finalOptions = optionsUpdates !== null ? optionsUpdates : localOptions;
-    
+
     setLocalQuestion(updatedQuestion);
     if (optionsUpdates !== null) {
       setLocalOptions([...finalOptions]);
     }
-    
+
     onUpdate(localQuestion.id, {
       ...updatedQuestion,
       options: finalOptions
@@ -48,7 +48,7 @@ const QuestionEditor = ({
 
   const handleOptionChange = useCallback((index, value) => {
     const newOptions = [...localOptions];
-    
+
     if (typeof newOptions[index] === 'string') {
       newOptions[index] = {
         id: `opt-${index}-${Date.now()}`,
@@ -61,7 +61,7 @@ const QuestionEditor = ({
         text: value
       };
     }
-    
+
     setLocalOptions(newOptions);
   }, [localOptions]);
 
@@ -75,7 +75,7 @@ const QuestionEditor = ({
       text: `Opción ${localOptions.length + 1}`,
       hasSubform: false
     };
-    
+
     const newOptions = [...localOptions, newOption];
     saveChanges({}, newOptions);
   }, [localOptions, saveChanges]);
@@ -86,9 +86,12 @@ const QuestionEditor = ({
   }, [localOptions, saveChanges]);
 
   const handleToggleSubform = useCallback((index, hasSubform) => {
+    // GUARDAR POSICIÓN ACTUAL DEL SCROLL
+    const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
     const newOptions = [...localOptions];
     const option = newOptions[index];
-    
+
     if (typeof option === 'string') {
       newOptions[index] = {
         id: `opt-${index}-${Date.now()}`,
@@ -103,13 +106,18 @@ const QuestionEditor = ({
         subformQuestions: hasSubform ? (option.subformQuestions || []) : undefined
       };
     }
-    
+
     setLocalOptions(newOptions);
     saveChanges({}, newOptions);
-    
+
     if (onToggleSubform) {
       onToggleSubform(index, hasSubform);
     }
+
+    // RESTAURAR POSICIÓN DEL SCROLL
+    requestAnimationFrame(() => {
+      window.scrollTo(0, currentScroll);
+    });
   }, [localOptions, saveChanges, onToggleSubform]);
 
   const getNormalizedType = useCallback(() => {
@@ -147,7 +155,7 @@ const QuestionEditor = ({
                   disabled
                 />
               )}
-              
+
               {isSelected ? (
                 <div className="flex items-center space-x-2 flex-1">
                   <input
@@ -158,7 +166,7 @@ const QuestionEditor = ({
                     placeholder={`Opción ${index + 1}`}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  
+
                   <label className="flex items-center space-x-2 text-sm text-blue-600 cursor-pointer whitespace-nowrap">
                     <input
                       type="checkbox"
@@ -185,7 +193,7 @@ const QuestionEditor = ({
             </div>
           </div>
         ))}
-        
+
         {isSelected && (
           <button
             onClick={addOption}
@@ -261,7 +269,7 @@ const QuestionEditor = ({
       case 'dropdown':
         return (
           <div>
-            <select 
+            <select
               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={!isSelected}
             >
@@ -285,7 +293,7 @@ const QuestionEditor = ({
                       placeholder={`Opción ${index + 1}`}
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
-                    
+
                     <label className="flex items-center space-x-2 text-sm text-blue-600 cursor-pointer whitespace-nowrap">
                       <input
                         type="checkbox"
@@ -344,7 +352,7 @@ const QuestionEditor = ({
     if (isSubform) {
       const depthColors = [
         'border-blue-200 bg-blue-50',
-        'border-green-200 bg-green-50', 
+        'border-green-200 bg-green-50',
         'border-yellow-200 bg-yellow-50',
         'border-purple-200 bg-purple-50'
       ];
@@ -365,7 +373,7 @@ const QuestionEditor = ({
   const handleTypeChange = useCallback((e) => {
     const newType = e.target.value;
     const updatedQuestion = { ...localQuestion, type: newType };
-    
+
     let updatedOptions = [...localOptions];
     if (newType === 'single_choice' || newType === 'multiple_choice') {
       if (!localOptions || localOptions.length === 0) {
@@ -379,7 +387,7 @@ const QuestionEditor = ({
       updatedOptions = [];
       setLocalOptions(updatedOptions);
     }
-    
+
     setLocalQuestion(updatedQuestion);
     onUpdate(localQuestion.id, {
       ...updatedQuestion,
@@ -434,11 +442,10 @@ const QuestionEditor = ({
               onBlur={handleTitleBlur}
               maxLength={50}
               placeholder="Título de la pregunta"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-blue-500 ${
-                (localQuestion.title?.length || 0) >= 50 
-                  ? 'border-red-500 focus:ring-red-200' 
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-blue-500 ${(localQuestion.title?.length || 0) >= 50
+                  ? 'border-red-500 focus:ring-red-200'
                   : 'border-gray-300 focus:ring-blue-200'
-              }`}
+                }`}
             />
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-500">
@@ -492,7 +499,7 @@ const QuestionEditor = ({
           )}
         </div>
       )}
-      
+
       {renderQuestionInput()}
     </div>
   );
