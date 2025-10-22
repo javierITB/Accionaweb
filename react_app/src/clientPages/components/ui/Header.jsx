@@ -109,7 +109,7 @@ const Header = ({ className = '' }) => {
         <div className="flex items-center space-x-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden bg-white p-1">
             <img
-              src="/logo.jpeg"               // archivo: public/logo.png
+              src="/logo2.jpeg"               // archivo: public/logo.png
               alt="Logo Acciona"
               className="w-full h-full object-contain"
               onError={(e) => {
