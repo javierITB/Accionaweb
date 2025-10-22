@@ -22,7 +22,7 @@ const RequestTracking = () => {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showRequestDetails, setShowRequestDetails] = useState(false);
   const [messageRequest, setMessageRequest] = useState(null);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
@@ -34,14 +34,23 @@ const RequestTracking = () => {
     dateRange: '',
     startDate: '',
     endDate: '',
-    company: '', // Cambiado de assignedTo a company
+    company: '',
     submittedBy: ''
   });
 
-  useEffect(() => {
-    if (!formId || resp.length === 0) return; // esperar a que carguen los datos
+  // FUNCIÓN updateRequest CORRECTAMENTE UBICADA
+  const updateRequest = (updatedRequest) => {
+    setResp(prevResp =>
+      prevResp.map(req =>
+        req._id === updatedRequest._id ? updatedRequest : req
+      )
+    );
+    setSelectedRequest(updatedRequest);
+  };
 
-    // Buscar el request que tenga el mismo _id o formId
+  useEffect(() => {
+    if (!formId || resp.length === 0) return;
+
     const found = resp.find(
       (r) => String(r._id) === formId || String(r.formId) === formId
     );
@@ -52,13 +61,11 @@ const RequestTracking = () => {
     }
   }, [formId, resp]);
 
-
   useEffect(() => {
     const fetchForms = async () => {
       try {
         setIsLoading(true);
 
-        // 1) Traer ambas colecciones en paralelo
         const [resResp, resForms, resDocxs] = await Promise.all([
           fetch('http://192.168.0.2:4000/api/respuestas/'),
           fetch('http://192.168.0.2:4000/api/forms/'),
@@ -69,12 +76,10 @@ const RequestTracking = () => {
           throw new Error('Error al obtener datos del servidor');
         }
 
-        // 2) Convertir a JSON
-        const responses = await resResp.json(); // lista de respuestas
-        const forms = await resForms.json();    // lista de formularios
-        const docxs = await resDocxs.json();    // lista de documentos
+        const responses = await resResp.json();
+        const forms = await resForms.json();
+        const docxs = await resDocxs.json();
 
-        // 3) Construir mapa de forms para lookup rápido (mapeamos _id e id si existen)
         const formsMap = new Map();
         forms.forEach(f => {
           const keyA = f._id ? String(f._id) : null;
@@ -83,17 +88,15 @@ const RequestTracking = () => {
           if (keyB) formsMap.set(keyB, f);
         });
 
-        // 4) Normalizar responses uniendo con su form
         const normalized = responses.map(r => {
           const formIdKey = r.formId ? String(r.formId) : null;
           const matchedForm = formIdKey ? formsMap.get(formIdKey) || null : null;
 
-          const matchedDoc = docxs.find(doc => 
+          const matchedDoc = docxs.find(doc =>
             doc.responseId === String(r._id)
           );
 
           return {
-            // campos originales de la respuesta
             _id: r._id,
             formId: r.formId,
             title: r.title || (matchedForm ? matchedForm.title : ''),
@@ -102,27 +105,20 @@ const RequestTracking = () => {
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,
             status: r.status || 'pendiente',
-
-            // Información del documento generado
             IDdoc: matchedDoc?.IDdoc,
             docxStatus: matchedDoc?.estado,
             docxCreatedAt: matchedDoc?.createdAt,
-
-            // tus campos normalizados/auxiliares (ajusta según lo necesites)
             submittedBy: r.user?.nombre || r.user?.email || 'Usuario Desconocido',
             lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
             assignedTo: r.updatedAt || " - ",
             hasMessages: false,
             company: r.user?.empresa || 'desconocida',
-
-            // aquí va el objeto form asociado (o null si no se encuentra)
             form: matchedForm
           };
         });
 
-        // 5) Actualizar estados
-        setAllForms(forms);    // lista de formularios tal cual vino del backend
-        setResp(normalized);   // respuestas ya unidas con su form
+        setAllForms(forms);
+        setResp(normalized);
 
       } catch (err) {
         console.error('Error cargando formularios:', err);
@@ -134,7 +130,6 @@ const RequestTracking = () => {
     fetchForms();
   }, []);
 
-
   // Mock stats data
   const mockStats = {
     total: resp?.length || 0,
@@ -142,10 +137,10 @@ const RequestTracking = () => {
     inReview: resp?.filter(r => r.status === 'en_revision')?.length || 0,
     approved: resp?.filter(r => r.status === 'aprobado')?.length || 0,
     rejected: resp?.filter(r => r.status === 'rechazado')?.length || 0,
-    avgProcessingTime: 5.2 // puedes calcularlo después si tienes timestamps
+    avgProcessingTime: 5.2
   };
 
-  // Filter and sort requests
+  // Filter and sort requests - SIN la función updateRequest dentro
   const filteredRequests = resp?.filter(request => {
     // Search filter
     if (filters?.search) {
@@ -162,7 +157,7 @@ const RequestTracking = () => {
     // Status filter
     if (filters?.status && request?.status !== filters?.status) return false;
 
-    // Category filter (usando form.section o form.title)
+    // Category filter
     if (filters?.category) {
       const requestCategory = request?.form?.section || request?.form?.title || '';
       if (requestCategory.toLowerCase() !== filters.category.toLowerCase()) return false;
@@ -181,7 +176,7 @@ const RequestTracking = () => {
       return false;
     }
 
-    // Date filtering - CORREGIDO (usando submittedAt en lugar de submittedDate)
+    // Date filtering
     if (filters?.startDate) {
       const requestDate = new Date(request.submittedAt || request.createdAt);
       const startDate = new Date(filters.startDate);
@@ -191,7 +186,7 @@ const RequestTracking = () => {
     if (filters?.endDate) {
       const requestDate = new Date(request.submittedAt || request.createdAt);
       const endDate = new Date(filters.endDate);
-      endDate.setHours(23, 59, 59, 999); // Incluir todo el día
+      endDate.setHours(23, 59, 59, 999);
       if (requestDate > endDate) return false;
     }
 
@@ -264,9 +259,7 @@ const RequestTracking = () => {
   };
 
   const handleSendMessageSubmit = async (messageData) => {
-    // Mock API call
     console.log('Sending message:', messageData);
-    // In real app, this would send to API
   };
 
   const handleClearFilters = () => {
@@ -283,7 +276,6 @@ const RequestTracking = () => {
     });
   };
 
-
   const sortOptions = [
     { value: 'date', label: 'Fecha' },
     { value: 'title', label: 'Título' },
@@ -294,10 +286,8 @@ const RequestTracking = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)
-      } />
-      <main className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'
-        } pt-16`}>
+      <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} />
+      <main className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'} pt-16`}>
         <div className="p-6 space-y-6">
           {/* Page Header */}
           <div className="flex items-center justify-between">
@@ -309,7 +299,6 @@ const RequestTracking = () => {
             </div>
 
             <div className="flex items-center space-x-3">
-
               <Button
                 variant="ghost"
                 size="icon"
@@ -386,7 +375,7 @@ const RequestTracking = () => {
             </div>
           </div>
 
-          {/* Requests List - CORREGIDO */}
+          {/* Requests List */}
           <div className={
             viewMode === 'grid'
               ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
@@ -400,7 +389,7 @@ const RequestTracking = () => {
                   onRemove={handleRemove}
                   onViewDetails={handleViewDetails}
                   onSendMessage={handleSendMessage}
-                  viewMode={viewMode} // Pasar el viewMode al componente
+                  viewMode={viewMode}
                 />
               ))
             ) : (
@@ -422,12 +411,13 @@ const RequestTracking = () => {
         onClose={() => setShowMessageModal(false)}
         request={messageRequest}
         onSendMessage={handleSendMessageSubmit}
-        formId= {formId}
+        formId={formId}
       />
       <RequestDetails
         request={selectedRequest}
         isVisible={showRequestDetails}
         onClose={() => setShowRequestDetails(false)}
+        onUpdate={updateRequest} // ← AHORA SÍ ESTÁ DISPONIBLE
       />
     </div>
   );
