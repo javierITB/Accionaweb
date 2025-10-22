@@ -123,6 +123,8 @@ const QuestionBuilder = ({
     };
 
     const handleToggleSubform = (optionIndex, hasSubform) => {
+      const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
       const newOptions = [...localOptions];
       const option = newOptions[optionIndex];
 
@@ -154,9 +156,15 @@ const QuestionBuilder = ({
           [`${questionPath}-${optionIndex}`]: true
         }));
       }
+
+      requestAnimationFrame(() => {
+        window.scrollTo(0, currentScroll);
+      });
     };
 
     const handleAddSubformQuestion = (optionIndex) => {
+      const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
       const newOptions = [...localOptions];
       const option = newOptions[optionIndex];
 
@@ -184,12 +192,15 @@ const QuestionBuilder = ({
           options: newOptions
         });
 
-        // EXPANDIR AUTOMÁTICAMENTE LA NUEVA SUBPREGUNTA
         const newQuestionPath = `${questionPath}.sub.${newQuestion.id}`;
         setExpandedQuestions(prev => ({
           ...prev,
           [newQuestionPath]: true
         }));
+
+        requestAnimationFrame(() => {
+          window.scrollTo(0, currentScroll);
+        });
       }
     };
 
