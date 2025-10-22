@@ -35,7 +35,7 @@ router.post("/", async (req, res) => {
 
     await addNotification(req.db, {
       filtro: { rol: "admin" },
-      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondedo el formulario ${nombreFormulario}`,
+      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondido el formulario ${nombreFormulario}`,
       descripcion: "Puedes revisar los detalles en el panel de respuestas.",
       prioridad: 2,
       color: "#fb8924",
@@ -272,7 +272,7 @@ router.post("/chat", async (req, res) => {
       await addNotification(req.db, {
         filtro: { rol: "admin" },
         titulo: "Nuevo mensaje en tu formulario",
-        descripcion: `${autor} le ha enviado un mensaje por un formulario.`,
+        descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
         icono: "chat",
         actionUrl: `/RespuestasForms/${respuesta._id}`,
       });
@@ -280,7 +280,7 @@ router.post("/chat", async (req, res) => {
       await addNotification(req.db, {
         userId: respuesta.user.uid,
         titulo: "Nuevo mensaje recibido",
-        descripcion: `${autor} le ha respondido un mensaje.`,
+        descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
         icono: "chat",
         actionUrl: `/?id=${result.insertedId}`,
       });
