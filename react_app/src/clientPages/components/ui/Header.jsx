@@ -104,7 +104,7 @@ const Header = ({ className = '' }) => {
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-brand ${className}`}>
-      <div className="flex items-center justify-between h-16 px-6 bg-warning">
+      <div className="flex items-center justify-between h-20 px-6 bg-warning">
         {/* Logo Section */}
         <div className="flex items-center space-x-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-lg gradient-primary">
@@ -131,7 +131,7 @@ const Header = ({ className = '' }) => {
               iconName={item?.icon}
               iconPosition="left"
               iconSize={18}
-              className="px-4 py-2 text-sm font-medium text-foreground hover:text-foreground hover:bg-muted transition-brand"
+              className="px-4 py-2 text-md font-medium text-foreground hover:text-foreground hover:bg-muted transition-brand"
             >
               {item?.name}
             </Button>
