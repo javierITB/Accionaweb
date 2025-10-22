@@ -28,9 +28,6 @@ router.post("/", async (req, res) => {
       createdAt: new Date()
     });
 
-    /****************************************************
-    SECCION DE INYECCION DE NOTIFICACION DE RESPUESTAS
-    ****************************************************/
     const usuario = req.body.user.nombre;
     const empresa = req.body.user.empresa;
     const nombreFormulario = req.body.formTitle;
@@ -55,13 +52,6 @@ router.post("/", async (req, res) => {
       color: "#3B82F6",
       actionUrl: `/?id=${result.insertedId}`,
     });
-    /****************************************************
-    SECCION DE INYECCION DE NOTIFICACION DE RESPUESTAS
-    ****************************************************/
-
-    /****************************************************
-    SECCION DE GENERACION AUTOMATICA DE DOCX - IMPLEMENTADA
-    ****************************************************/
 
     console.log("=== INICIANDO GENERACIÓN AUTOMÁTICA DE DOCX ===");
     console.log("Response ID:", result.insertedId.toString());
@@ -69,13 +59,13 @@ router.post("/", async (req, res) => {
     console.log("Usuario:", usuario);
     console.log("Empresa:", empresa);
     console.log("Formulario:", nombreFormulario);
-    
+
     if (req.body.responses) {
       console.log("Número de campos en responses:", Object.keys(req.body.responses).length);
-      
+
       const camposCriticos = [
         "Nombre de la Empresa solicitante:",
-        "Nombre del trabajador:", 
+        "Nombre del trabajador:",
         "Fecha del contrato vigente:"
       ];
       camposCriticos.forEach(campo => {
@@ -97,9 +87,6 @@ router.post("/", async (req, res) => {
       console.error('Error generando DOCX automáticamente:', error.message);
       console.error('Stack trace:', error.stack);
     }
-    /****************************************************
-    SECCION DE GENERACION AUTOMATICA DE DOCX - IMPLEMENTADA
-    ****************************************************/
 
     res.json({ _id: result.insertedId, ...req.body });
   } catch (err) {
@@ -330,9 +317,14 @@ router.put("/chat/marcar-leidos", async (req, res) => {
 // Subir corrección PDF
 router.post("/:id/upload-correction", upload.single('correctedFile'), async (req, res) => {
   try {
+    console.log("Debug: Iniciando upload-correction para ID:", req.params.id);
+    
     if (!req.file) {
+      console.log("Debug: No se subió ningún archivo");
       return res.status(400).json({ error: "No se subió ningún archivo" });
     }
+
+    console.log("Debug: Archivo recibido:", req.file.originalname, "Tamaño:", req.file.size);
 
     const correctionData = {
       fileName: req.file.originalname,
@@ -342,17 +334,26 @@ router.post("/:id/upload-correction", upload.single('correctedFile'), async (req
       uploadedAt: new Date()
     };
 
-    await req.db.collection("respuestas").updateOne(
+    const result = await req.db.collection("respuestas").updateOne(
       { _id: new ObjectId(req.params.id) },
-      { 
-        $set: { 
+      {
+        $set: {
           correctedFile: correctionData,
           updatedAt: new Date()
-        } 
+        }
       }
     );
 
-    res.json({ 
+    console.log("Debug: Resultado de la actualización en BD:", result);
+
+    if (result.matchedCount === 0) {
+      console.log("Debug: No se encontró la respuesta con ID:", req.params.id);
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
+    console.log("Debug: Corrección subida exitosamente para ID:", req.params.id);
+
+    res.json({
       message: "Corrección subida correctamente",
       fileName: correctionData.fileName,
       fileSize: correctionData.fileSize
@@ -366,26 +367,36 @@ router.post("/:id/upload-correction", upload.single('correctedFile'), async (req
 // Aprobar formulario y guardar en aprobados
 router.post("/:id/approve", async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    const respuesta = await req.db.collection("respuestas").findOne({ _id: new ObjectId(id) });
-    
+    console.log("Debug: Iniciando approve para ID:", req.params.id);
+
+    const respuesta = await req.db.collection("respuestas").findOne({ _id: new ObjectId(req.params.id) });
+
+    if (!respuesta) {
+      console.log("Debug: Respuesta no encontrada para ID:", req.params.id);
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
     if (!respuesta.correctedFile) {
+      console.log("Debug: No hay corrección subida para ID:", req.params.id);
       return res.status(400).json({ error: "No hay corrección subida para aprobar" });
     }
 
-    await req.db.collection("respuestas").updateOne(
-      { _id: new ObjectId(id) },
-      { 
-        $set: { 
+    console.log("Debug: Aprobando respuesta con corrección:", respuesta.correctedFile.fileName);
+
+    const updateResult = await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      {
+        $set: {
           status: "aprobado",
           approvedAt: new Date()
-        } 
+        }
       }
     );
 
-    await req.db.collection("aprobados").insertOne({
-      responseId: id,
+    console.log("Debug: Resultado de actualización de estado:", updateResult);
+
+    const insertResult = await req.db.collection("aprobados").insertOne({
+      responseId: req.params.id,
       correctedFile: respuesta.correctedFile,
       approvedAt: new Date(),
       approvedBy: req.user?.id,
@@ -395,10 +406,45 @@ router.post("/:id/approve", async (req, res) => {
       company: respuesta.company
     });
 
+    console.log("Debug: Resultado de inserción en aprobados:", insertResult);
+
     res.json({ message: "Formulario aprobado correctamente" });
   } catch (err) {
     console.error("Error aprobando formulario:", err);
     res.status(500).json({ error: "Error aprobando formulario" });
+  }
+});
+
+// Eliminar corrección y volver a estado "en_revision"
+router.delete("/:id/remove-correction", async (req, res) => {
+  try {
+    console.log("Debug: Iniciando remove-correction para ID:", req.params.id);
+    console.log("Debug: ID recibido:", req.params.id);
+
+    const result = await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      {
+        $set: {
+          status: "en_revision",
+          correctedFile: null,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    console.log("Debug: Resultado de la actualización:", result);
+
+    if (result.matchedCount === 0) {
+      console.log("Debug: No se encontró la respuesta con ID:", req.params.id);
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
+    console.log("Debug: Corrección eliminada exitosamente para ID:", req.params.id);
+
+    res.json({ message: "Corrección eliminada y estado actualizado a en_revision" });
+  } catch (err) {
+    console.error("Error eliminando corrección:", err);
+    res.status(500).json({ error: "Error eliminando corrección" });
   }
 });
 
