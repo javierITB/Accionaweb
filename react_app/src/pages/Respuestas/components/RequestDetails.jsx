@@ -54,13 +54,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
       });
 
       if (response.ok) {
-        setCorrectedFile(null);
-        if (onUpdate) {
-          const updatedResponse = await fetch(`http://192.168.0.2:4000/api/respuestas/${request._id}`);
-          const updatedRequest = await updatedResponse.json();
-          onUpdate(updatedRequest);
+        const result = await response.json();
+
+        // Actualizar el estado local con los datos REALES de la base de datos
+        if (onUpdate && result.updatedRequest) {
+          onUpdate(result.updatedRequest);
         }
+
+        setCorrectedFile(null);
         alert('Corrección eliminada, formulario vuelve a estado "en revisión"');
+
       } else {
         alert('Error al eliminar la corrección');
       }
@@ -69,7 +72,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
       alert('Error al eliminar la corrección');
     }
   };
-
   const handleApprove = async () => {
     if (!correctedFile) {
       alert('Debes subir un documento corregido antes de aprobar');
