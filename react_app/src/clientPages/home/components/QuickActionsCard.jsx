@@ -6,43 +6,35 @@ const QuickActionsCard = () => {
   const quickActions = [
     {
       id: 1,
-      title: 'Solicitud de Vacaciones',
+      title: 'Remuneraciones',
       description: 'Solicita días libres y vacaciones',
-      icon: 'Calendar',
+      icon: 'Receipt',
       color: 'bg-blue-500',
-      path: '/form-center?type=vacation'
+      path: '/remuneraciones'
     },
     {
       id: 2,
-      title: 'Reporte de Gastos',
+      title: 'Anexos',
       description: 'Envía tus gastos empresariales',
-      icon: 'Receipt',
+      icon: 'Calendar',
       color: 'bg-green-500',
-      path: '/form-center?type=expenses'
+      path: '/Anexos'
     },
     {
       id: 3,
-      title: 'Soporte Técnico',
+      title: 'Finiquitos',
       description: 'Solicita ayuda con equipos IT',
-      icon: 'Monitor',
+      icon: 'FileText',
       color: 'bg-orange-500',
-      path: '/support-portal?category=it'
+      path: '/Finiquitos'
     },
     {
       id: 4,
-      title: 'Certificado Laboral',
+      title: 'Otras',
       description: 'Solicita certificados de trabajo',
       icon: 'FileText',
       color: 'bg-purple-500',
-      path: '/form-center?type=certificate'
-    },
-    {
-      id: 5,
-      title: 'Cambio de Datos',
-      description: 'Actualiza información personal',
-      icon: 'Edit',
-      color: 'bg-teal-500',
-      path: '/form-center?type=personal-data'
+      path: '/otras'
     },
     {
       id: 6,

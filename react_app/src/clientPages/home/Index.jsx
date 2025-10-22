@@ -80,9 +80,9 @@ const DashboardHome = () => {
             {/* Left Column - Primary Actions */}
             <div className="xl:col-span-2 space-y-6">
               
-              {/* Quick Actions }
+              {/* Quick Actions }*/}
               <QuickActionsCard />
-              */}
+              
 
               {/* Recent Activity */}
               <RecentActivityCard />
