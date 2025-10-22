@@ -421,35 +421,44 @@ router.delete("/:id/remove-correction", async (req, res) => {
     console.log("Debug: Iniciando remove-correction para ID:", req.params.id);
     console.log("Debug: ID recibido:", req.params.id);
 
-    // Buscar y eliminar por responseId en la colección "aprobados"
+    // 1. Eliminar de la colección "aprobados"
     const deleteResult = await req.db.collection("aprobados").deleteOne({
       responseId: req.params.id
     });
 
     console.log("Debug: Resultado de la eliminación en aprobados:", deleteResult);
 
-    if (deleteResult.deletedCount === 0) {
-      console.log("Debug: No se encontró la corrección en aprobados con responseId:", req.params.id);
-      
-      // Intentar eliminar por _id directo en aprobados
-      if (ObjectId.isValid(req.params.id)) {
-        const deleteByIdResult = await req.db.collection("aprobados").deleteOne({
-          _id: new ObjectId(req.params.id)
-        });
-        
-        console.log("Debug: Resultado eliminación por _id:", deleteByIdResult);
-        
-        if (deleteByIdResult.deletedCount === 0) {
-          return res.status(404).json({ error: "Corrección no encontrada en aprobados" });
+    // 2. ACTUALIZAR EL ESTADO EN LA BASE DE DATOS "respuestas" - ESTO ES LO CRÍTICO
+    const updateResult = await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      {
+        $set: {
+          status: "en_revision",  // Cambiar de "aprobado" a "en_revision"
+          correctedFile: null,    // Eliminar el archivo corregido
+          updatedAt: new Date()
         }
-      } else {
-        return res.status(404).json({ error: "Corrección no encontrada en aprobados" });
       }
+    );
+
+    console.log("Debug: Resultado de actualización en respuestas:", updateResult);
+
+    if (updateResult.matchedCount === 0) {
+      console.log("Debug: No se encontró la respuesta con ID:", req.params.id);
+      return res.status(404).json({ error: "Respuesta no encontrada" });
     }
 
-    console.log("Debug: Corrección eliminada exitosamente de aprobados para ID:", req.params.id);
+    console.log("Debug: Estado actualizado a 'en_revision' en la base de datos para ID:", req.params.id);
 
-    res.json({ message: "Corrección eliminada exitosamente" });
+    // Obtener la respuesta actualizada de la base de datos
+    const updatedResponse = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(req.params.id)
+    });
+
+    res.json({ 
+      message: "Corrección eliminada exitosamente",
+      updatedRequest: updatedResponse
+    });
+
   } catch (err) {
     console.error("Error eliminando corrección:", err);
     res.status(500).json({ error: "Error eliminando corrección" });
