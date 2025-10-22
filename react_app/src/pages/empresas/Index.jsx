@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
@@ -10,7 +11,7 @@ const CompanyReg = () => {
     nombre: '',
     rut: '',
     direccion: '',
-    encargadoId: '',
+    encargado: '',
     logo: null
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -23,8 +24,7 @@ const CompanyReg = () => {
 
   const fetchEmpresas = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-      const response = await fetch(`${API_URL}/api/empresas/todas`);
+      const response = await fetch(`/api/auth/empresas/todas`);
       if (response.ok) {
         const empresasData = await response.json();
         setEmpresas(empresasData);
@@ -53,20 +53,18 @@ const CompanyReg = () => {
     setIsLoading(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-      
       // Crear FormData para enviar archivos
       const submitData = new FormData();
       submitData.append('nombre', formData.nombre);
       submitData.append('rut', formData.rut);
       submitData.append('direccion', formData.direccion || '');
-      submitData.append('encargadoId', formData.encargadoId || '');
+      submitData.append('encargado', formData.encargado || '');
       
       if (formData.logo) {
         submitData.append('logo', formData.logo);
       }
 
-      const response = await fetch(`${API_URL}/api/auth/empresas/register`, {
+      const response = await fetch(`/api/auth/empresas/register`, {
         method: 'POST',
         body: submitData,
       });
@@ -85,7 +83,7 @@ const CompanyReg = () => {
         nombre: '',
         rut: '',
         direccion: '',
-        encargadoId: '',
+        encargado: '',
         logo: null
       });
 
@@ -150,7 +148,7 @@ const CompanyReg = () => {
                         <td className="px-4 py-2">{empresa.rut}</td>
                         <td className="px-4 py-2">{empresa.direccion || '—'}</td>
                         <td className="px-4 py-2">
-                          {empresa.encargadoNombre || '—'}
+                          {empresa.encargado || '—'}
                         </td>
                         <td className="px-4 py-2">
                           {empresa.createdAt
