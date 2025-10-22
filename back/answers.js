@@ -465,4 +465,39 @@ router.delete("/:id/remove-correction", async (req, res) => {
   }
 });
 
+router.get("/download-approved-pdf/:responseId", async (req, res) => {
+  try {
+    console.log("Debug: Solicitando descarga de PDF aprobado para responseId:", req.params.responseId);
+
+    // Buscar en la colección "aprobados" por responseId
+    const approvedDoc = await req.db.collection("aprobados").findOne({
+      responseId: req.params.responseId
+    });
+
+    if (!approvedDoc) {
+      console.log("Debug: No se encontró documento aprobado para responseId:", req.params.responseId);
+      return res.status(404).json({ error: "Documento aprobado no encontrado" });
+    }
+
+    if (!approvedDoc.correctedFile || !approvedDoc.correctedFile.fileData) {
+      console.log("Debug: No hay archivo PDF en el documento aprobado");
+      return res.status(404).json({ error: "Archivo PDF no disponible" });
+    }
+
+    console.log("Debug: Enviando PDF:", approvedDoc.correctedFile.fileName);
+
+    // Configurar headers para descarga
+    res.setHeader('Content-Type', approvedDoc.correctedFile.mimeType || 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${approvedDoc.correctedFile.fileName}"`);
+    res.setHeader('Content-Length', approvedDoc.correctedFile.fileSize);
+
+    // Enviar el buffer directamente - igual que con DOCX
+    res.send(approvedDoc.correctedFile.fileData.buffer);
+
+  } catch (err) {
+    console.error("Error descargando PDF aprobado:", err);
+    res.status(500).json({ error: "Error descargando PDF aprobado" });
+  }
+});
+
 module.exports = router;

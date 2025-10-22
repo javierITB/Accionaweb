@@ -5,6 +5,48 @@ import Button from '../../../components/ui/Button';
 const RequestDetails = ({ request, isVisible, onClose }) => {
   if (!isVisible || !request) return null;
 
+  // Función para descargar PDF aprobado
+  const handleDownloadApprovedPDF = async (responseId) => {
+    try {
+      const response = await fetch(`http://192.168.0.2:4000/api/respuestas/download-approved-pdf/${responseId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al descargar el PDF');
+      }
+
+      // Convertir la respuesta a blob
+      const blob = await response.blob();
+      
+      // Crear URL temporal para descargar
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      
+      // Obtener el nombre del archivo del header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let fileName = 'documento_aprobado.pdf';
+      
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (fileNameMatch) fileName = fileNameMatch[1];
+      }
+      
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Limpiar
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+    } catch (error) {
+      console.error('Error descargando PDF:', error);
+      alert('Error al descargar el PDF aprobado: ' + error.message);
+    }
+  };
+
   // Función para formatear el nombre del archivo
   const formatFileName = () => {
     const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
@@ -59,12 +101,16 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
+      case 'aprobado':
         return 'bg-success text-success-foreground';
       case 'pending':
+      case 'pendiente':
         return 'bg-warning text-warning-foreground';
       case 'in_review':
+      case 'en_revision':
         return 'bg-accent text-accent-foreground';
       case 'rejected':
+      case 'rechazado':
         return 'bg-error text-error-foreground';
       case 'draft':
         return 'bg-muted text-muted-foreground';
@@ -76,12 +122,16 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
+      case 'aprobado':
         return 'CheckCircle';
       case 'pending':
+      case 'pendiente':
         return 'Clock';
       case 'in_review':
+      case 'en_revision':
         return 'Eye';
       case 'rejected':
+      case 'rechazado':
         return 'XCircle';
       case 'draft':
         return 'FileText';
@@ -245,6 +295,37 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
               </div>
             )}
           </div>
+
+          {/* NUEVA SECCIÓN: Documento Aprobado */}
+          {request?.status === 'aprobado' && (
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Documento Aprobado</h3>
+              <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Icon name="FileText" size={20} className="text-success" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Documento PDF Aprobado</p>
+                      <p className="text-xs text-muted-foreground">
+                        Tu formulario ha sido aprobado. Descarga el documento final.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    iconName="Download"
+                    iconPosition="left"
+                    iconSize={16}
+                    onClick={() => handleDownloadApprovedPDF(request._id)}
+                    className="bg-success hover:bg-success/90"
+                  >
+                    Descargar PDF
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Comments/Notes */}
           <div>
