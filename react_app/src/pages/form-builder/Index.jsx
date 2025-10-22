@@ -247,7 +247,7 @@ const FormBuilder = () => {
 
       // Actualizar URL si es nuevo
       if (!formData?.id) {
-        window.history.replaceState({}, "", `?id=${savedForm._id || savedForm.id}`);
+        window.history.replaceState({}, "", `?id=${savedForm.insertedId || savedForm._Id || savedForm.id}`);
       }
 
     } catch (error) {
