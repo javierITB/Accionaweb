@@ -4,7 +4,6 @@ import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import RequestCard from './components/RequestCard';
-import TimelineView from './components/TimelineView';
 import FilterPanel from './components/FilterPanel';
 import MessageModal from './components/MessageModal';
 import RequestDetails from './components/RequestDetails';

@@ -5,10 +5,8 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import FormCard from './components/FormCard';
 import CategoryFilter from './components/CategoryFilter';
-import QuickActions from './components/QuickActions';
 import SearchBar from './components/SearchBar';
 import FormFilters from './components/FormFilters';
-import RecentForms from './components/RecentForms';
 
 const FormCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');

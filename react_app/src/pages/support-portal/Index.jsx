@@ -1,6 +1,5 @@
 import React from 'react';
 import Header from '../../components/ui/Header.jsx';
-import Sidebar from '../../components/ui/Sidebar.jsx';
 import SupportHeader from './components/SupportHeader.jsx';
 import QuickActions from './components/QuickActions.jsx';
 import LiveChat from './components/LiveChat.jsx';
