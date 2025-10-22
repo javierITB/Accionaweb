@@ -9,7 +9,7 @@ import RequestDetails from './components/RequestDetails';
 const RequestTracking = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const formId = urlParams?.get('id');
-  
+
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -84,7 +84,7 @@ const RequestTracking = () => {
           const matchedForm = formIdKey ? formsMap.get(formIdKey) || null : null;
 
           return {
-            // campos originales de la respuesta
+            // campos originales de la respuesta - INCLUIR TODOS LOS CAMPOS
             _id: r._id,
             formId: r.formId,
             title: r.title || (matchedForm ? matchedForm.title : ''),
@@ -93,8 +93,14 @@ const RequestTracking = () => {
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,
 
-            // tus campos normalizados/auxiliares (ajusta según lo necesites)
-            submittedBy: r.submittedBy || matchedForm?.author || '',
+            // ESTOS CAMPOS SON CRÍTICOS - INCLUIRLOS
+            status: r.status || 'pendiente', // ← ESTE ES EL QUE FALTA
+            correctedFile: r.correctedFile, // ← Y ESTE TAMBIÉN
+            formTitle: r.formTitle, // ← Y ESTE PARA EL NOMBRE DEL FORMULARIO
+
+            // tus campos normalizados/auxiliares
+            submittedBy: r.user?.nombre || r.submittedBy || 'Usuario',
+            company: r.user?.empresa || 'Empresa',
             lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
             assignedTo: r.updatedAt || " - ",
             hasMessages: false,

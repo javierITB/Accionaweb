@@ -260,42 +260,6 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
             </div>
           )}
 
-          {/* Attachments - AHORA CON DATOS REALES */}
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3">Documento Generado</h3>
-            {realAttachments?.length > 0 ? (
-              <div className="space-y-2">
-                {realAttachments?.map((file) => (
-                  <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{file?.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {file?.size} • Generado el {formatDate(file?.uploadedAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      iconName="Download"
-                      iconPosition="left"
-                      iconSize={16}
-                    >
-                      Descargar
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Icon name="Paperclip" size={48} className="mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No hay documentos generados para este formulario</p>
-              </div>
-            )}
-          </div>
-
           {/* NUEVA SECCIÓN: Documento Aprobado */}
           {request?.status === 'aprobado' && (
             <div>

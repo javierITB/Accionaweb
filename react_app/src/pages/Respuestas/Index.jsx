@@ -105,6 +105,12 @@ const RequestTracking = () => {
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,
             status: r.status || 'pendiente',
+
+            // AGREGAR ESTOS CAMPOS CRÍTICOS:
+            correctedFile: r.correctedFile, // ← ESTE ES EL MÁS IMPORTANTE
+            formTitle: r.formTitle, // ← Y ESTE TAMBIÉN
+            approvedAt: r.approvedAt, // ← PARA SABER CUÁNDO FUE APROBADO
+
             IDdoc: matchedDoc?.IDdoc,
             docxStatus: matchedDoc?.estado,
             docxCreatedAt: matchedDoc?.createdAt,

@@ -6,14 +6,19 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
+      case 'aprobado':
         return 'bg-success text-success-foreground';
       case 'pending':
+      case 'pendiente':
         return 'bg-warning text-warning-foreground';
       case 'in_review':
+      case 'en_revision':
         return 'bg-accent text-accent-foreground';
       case 'rejected':
+      case 'rechazado':
         return 'bg-error text-error-foreground';
       case 'draft':
+      case 'borrador':
         return 'bg-muted text-muted-foreground';
       default:
         return 'bg-muted text-muted-foreground';
@@ -23,18 +28,40 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
+      case 'aprobado':
         return 'CheckCircle';
       case 'pending':
+      case 'pendiente':
         return 'Clock';
       case 'in_review':
+      case 'en_revision':
         return 'Eye';
       case 'rejected':
+      case 'rechazado':
         return 'XCircle';
       case 'draft':
+      case 'borrador':
         return 'FileText';
       default:
         return 'Circle';
     }
+  };
+
+  const formatStatusText = (status) => {
+    const statusMap = {
+      'approved': 'APROBADO',
+      'aprobado': 'APROBADO',
+      'pending': 'PENDIENTE',
+      'pendiente': 'PENDIENTE',
+      'in_review': 'EN REVISIÓN',
+      'en_revision': 'EN REVISIÓN',
+      'rejected': 'RECHAZADO',
+      'rechazado': 'RECHAZADO',
+      'draft': 'BORRADOR',
+      'borrador': 'BORRADOR'
+    };
+    
+    return statusMap[status?.toLowerCase()] || status?.replace('_', ' ')?.toUpperCase() || 'DESCONOCIDO';
   };
 
   const getPriorityColor = (priority) => {
@@ -63,7 +90,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
 
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = now.getTime() - date.getTime(); // Sin Math.abs
+    const diffTime = now.getTime() - date.getTime();
 
     const diffSeconds = Math.floor(diffTime / 1000);
     const diffMinutes = Math.floor(diffSeconds / 60);
@@ -102,7 +129,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
             <h3 className="text-lg font-semibold text-foreground">{request?.formTitle || request?.form?.title || request?.title}</h3>
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request?.status)}`}>
               <Icon name={getStatusIcon(request?.status)} size={12} className="mr-1" />
-              {request?.status?.replace('_', ' ')?.toUpperCase()}
+              {formatStatusText(request?.status)}
             </span>
           </div>
           <p className="text-sm text-muted-foreground mb-3">{request?.description}</p>
@@ -133,7 +160,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
             </div>
           )}
           <span className="text-xs text-muted-foreground">
-            {getRelativeTime(request?.submittedAt )}
+            {getRelativeTime(request?.submittedAt)}
           </span>
         </div>
       </div>
@@ -152,7 +179,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
             variant="ghost"
             size="icon"
             onClick={() => onRemove(request)}
-            className=" h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             <Icon name="Trash2" size={14} />
           </Button>
