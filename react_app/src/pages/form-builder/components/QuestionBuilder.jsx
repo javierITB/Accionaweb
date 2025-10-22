@@ -87,7 +87,11 @@ const QuestionBuilder = ({
       });
     };
 
-    const handleTypeChange = (newType) => {
+    const handleTypeChange = useCallback((e) => {
+      // GUARDAR POSICIÓN DEL SCROLL
+      const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
+      const newType = e.target.value;
       const updatedQuestion = { ...localQuestion, type: newType };
 
       let updatedOptions = [...localOptions];
@@ -105,22 +109,33 @@ const QuestionBuilder = ({
       }
 
       setLocalQuestion(updatedQuestion);
-      const updateFunction = depth > 0 ? onUpdateSubquestion : onUpdateQuestion;
-      updateFunction(localQuestion.id, {
+      onUpdate(localQuestion.id, {
         ...updatedQuestion,
         options: updatedOptions
       });
-    };
 
-    const handleRequiredChange = (checked) => {
-      const updatedQuestion = { ...localQuestion, required: checked };
+      // RESTAURAR SCROLL
+      requestAnimationFrame(() => {
+        window.scrollTo(0, currentScroll);
+      });
+    }, [localQuestion, localOptions, onUpdate]);
+
+    const handleRequiredChange = useCallback((e) => {
+      // GUARDAR POSICIÓN DEL SCROLL
+      const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
+      const updatedQuestion = { ...localQuestion, required: e.target.checked };
       setLocalQuestion(updatedQuestion);
-      const updateFunction = depth > 0 ? onUpdateSubquestion : onUpdateQuestion;
-      updateFunction(localQuestion.id, {
+      onUpdate(localQuestion.id, {
         ...updatedQuestion,
         options: localOptions
       });
-    };
+
+      // RESTAURAR SCROLL
+      requestAnimationFrame(() => {
+        window.scrollTo(0, currentScroll);
+      });
+    }, [localQuestion, localOptions, onUpdate]);
 
     const handleToggleSubform = (optionIndex, hasSubform) => {
       const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
