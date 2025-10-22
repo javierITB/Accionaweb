@@ -162,14 +162,19 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
+      case 'aprobado':
         return 'bg-success text-success-foreground';
       case 'pending':
+      case 'pendiente':
         return 'bg-warning text-warning-foreground';
       case 'in_review':
+      case 'en_revision':
         return 'bg-accent text-accent-foreground';
       case 'rejected':
+      case 'rechazado':
         return 'bg-error text-error-foreground';
       case 'draft':
+      case 'borrador':
         return 'bg-muted text-muted-foreground';
       default:
         return 'bg-muted text-muted-foreground';
@@ -179,14 +184,19 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
+      case 'aprobado':
         return 'CheckCircle';
       case 'pending':
+      case 'pendiente':
         return 'Clock';
       case 'in_review':
+      case 'en_revision':
         return 'Eye';
       case 'rejected':
+      case 'rechazado':
         return 'XCircle';
       case 'draft':
+      case 'borrador':
         return 'FileText';
       default:
         return 'Circle';
@@ -224,7 +234,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
               <div className="flex items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">{request?.formTitle}</h2>
+                  <h2 className="text-xl font-semibold text-foreground">{request?.formTitle || request?.title}</h2>
                   <p className="text-sm text-muted-foreground">ID: {request?._id}</p>
                 </div>
               </div>
