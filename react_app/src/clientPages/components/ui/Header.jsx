@@ -13,7 +13,7 @@ const Header = ({ className = '' }) => {
   const cargo = sessionStorage.getItem("cargo");
   const userMail = sessionStorage.getItem("email");
 
-  
+
 
   // Refs para detectar clics fuera
   const menuRef = useRef(null);
@@ -107,8 +107,12 @@ const Header = ({ className = '' }) => {
       <div className="flex items-center justify-between h-20 px-6 bg-warning">
         {/* Logo Section */}
         <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg gradient-primary">
-            <Icon name="Building2" size={24} color="white" strokeWidth={2} />
+          <div className="flex items-center justify-center w-10 h-10 rounded-lg gradient-primary overflow-hidden">
+            <img
+              src="/logo.jpeg"
+              alt="Logo Acciona"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold text-foreground leading-tight">
