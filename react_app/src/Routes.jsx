@@ -37,16 +37,17 @@ const Routes = () => {
           <Route path="/form-renderer" element={<FormRenderer />} />
           <Route path="/forms" element={<Form />} />
           <Route path="/set-password" element={<SetPassword />} />
-          
+          <Route path="/support-portal" element={ <SupportPortal />}/>
+
           {/* Rutas protegidas */}
           <Route path="/form-center" element={<ProtectedRoute><FormCenter /></ProtectedRoute>}/>
           <Route path="/RespuestasForms" element={<ProtectedRoute><RespuestasForms /></ProtectedRoute>}/>
-          <Route path="/support-portal" element={<ProtectedRoute> <SupportPortal /> </ProtectedRoute>}/>
+          
           <Route path="/users" element={<ProtectedRoute> <Users /> </ProtectedRoute>}/>
           <Route path="/empresas" element={<ProtectedRoute> <Empresas /> </ProtectedRoute>}/>
           <Route path="/dashboard-home" element={<ProtectedRoute> <DashboardHome /> </ProtectedRoute>}/>
           <Route path="/request-tracking" element={<ProtectedRoute> <RequestTracking /> </ProtectedRoute>}/>
-          <Route path="/support-portal" element={<ProtectedRoute> <DashboardHome /> </ProtectedRoute>}/>
+          
 
           {/* Rutas libres */}
           <Route path="*" element={<NotFound />} />

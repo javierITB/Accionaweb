@@ -14,10 +14,8 @@ const SupportPortal = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)
-        } />
       
-      <main className="ml-64 pt-16">
+      <main className="pt-16">
         <div className="p-8 max-w-7xl mx-auto">
           <SupportHeader />
           <QuickActions />
