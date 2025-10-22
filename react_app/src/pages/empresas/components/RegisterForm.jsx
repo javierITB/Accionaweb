@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Input from 'components/ui/Input';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
