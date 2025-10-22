@@ -52,6 +52,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+//Filtrado de forms por seccion y empresa en web clientes
 router.get("/section/:section/:mail", async (req, res) => {
   try {
     const { section, mail } = req.params;

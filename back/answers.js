@@ -180,7 +180,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-
+//publicar formulario
 router.put("/public/:id", async (req, res) => {
   try {
     const result = await req.db.collection("respuestas").findOneAndUpdate(
@@ -221,7 +221,7 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-
+//solicitar de mensajes
 router.get("/:formId/chat", async (req, res) => {
   try {
     const { formId } = req.params;
@@ -248,7 +248,7 @@ router.get("/:formId/chat", async (req, res) => {
   }
 });
 
-
+//enviar mensaje
 router.post("/chat", async (req, res) => {
   try {
     const { formId, autor, mensaje } = req.body;
@@ -287,7 +287,7 @@ router.post("/chat", async (req, res) => {
         titulo: "Nuevo mensaje en tu formulario",
         descripcion: `${autor} le ha enviado un mensaje por un formulario.`,
         icono: "chat",
-        actionUrl: `/form/${respuesta._id}`,
+        actionUrl: `/RespuestasForms/${respuesta._id}`,
       });
     } else {
       await addNotification(req.db, {
@@ -295,7 +295,7 @@ router.post("/chat", async (req, res) => {
         titulo: "Nuevo mensaje recibido",
         descripcion: `${autor} le ha respondido un mensaje.`,
         icono: "chat",
-        actionUrl: `/form/${respuesta._id}`,
+        actionUrl: `/msg/${respuesta._id}`,
       });
     }
 

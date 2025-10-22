@@ -185,6 +185,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
 
   const handleNotificationClick = (notification) => {
+    window.location.href = notification?.actionUrl;
     setNotifications(prev =>
       prev.map(n =>
         n.id === notification.id ? { ...n, isRead: true } : n
