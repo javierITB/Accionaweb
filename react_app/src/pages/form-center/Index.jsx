@@ -25,7 +25,7 @@ const FormCenter = () => {
     const fetchForms = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch('http://192.168.0.2:4000/api/forms');
+        const res = await fetch('https://accionaweb.vercel.app/api/forms');
         const data = await res.json();
 
         const normalizedForms = data.map(f => ({

@@ -16,7 +16,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`http://192.168.0.2:4000/api/noti/${user}`);
+        const res = await fetch(`https://accionaweb.vercel.app/api/noti/${user}`);
         const data = await res.json();
 
         // Normalizar la información al formato que tu UI usa
@@ -53,7 +53,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      const res = await fetch(`http://192.168.0.2:4000/api/noti/${mail}`, {
+      const res = await fetch(`https://accionaweb.vercel.app/api/noti/${mail}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -83,7 +83,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      const res = await fetch(`http://192.168.0.2:4000/api/noti/${mail}/${id}`, {
+      const res = await fetch(`https://accionaweb.vercel.app/api/noti/${mail}/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -161,7 +161,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      const res = await fetch(`http://192.168.0.2:4000/api/noti/${mail}/leido-todas`, {
+      const res = await fetch(`https://accionaweb.vercel.app/api/noti/${mail}/leido-todas`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
       });

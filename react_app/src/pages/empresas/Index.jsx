@@ -37,7 +37,7 @@ const FormReg = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch(`http://192.168.0.2:4000/api/auth/`);
+        const res = await fetch(`https://accionaweb.vercel.app/api/auth/`);
         if (!res.ok) throw new Error('Usuarios no encontrados');
         const data = await res.json();
         setUsers(data);
@@ -72,7 +72,7 @@ const FormReg = () => {
 
     try {
       // 1. Primero guardar el usuario en la base de datos (sin contraseña)
-      const userResponse = await fetch('http://192.168.0.2:4000/api/auth/register', {
+      const userResponse = await fetch('https://accionaweb.vercel.app/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ const FormReg = () => {
       const saved = await userResponse.json();
       const savedUser = saved?.user;
       // 2. Enviar correo con enlace para establecer contraseña
-      const mailResponse = await fetch('http://192.168.0.2:4000/api/mail/send', {
+      const mailResponse = await fetch('https://accionaweb.vercel.app/api/mail/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -139,7 +139,7 @@ const FormReg = () => {
       });
 
       // 4. Recargar la lista de usuarios
-      const res = await fetch(`http://192.168.0.2:4000/api/auth/`);
+      const res = await fetch(`https://accionaweb.vercel.app/api/auth/`);
       const data = await res.json();
       setUsers(data);
 

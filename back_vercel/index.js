@@ -1,9 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient } = require("mongodb");
-const nodemailer = require("nodemailer");
 
-// Rutas
+// Importar rutas
 const authRoutes = require("./auth");
 const formRoutes = require("./forms");
 const answersRoutes = require("./answers");
@@ -12,10 +11,11 @@ const gen = require("./Generador");
 const noti = require("./notificaciones");
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-// Conexión Mongo (usa variable de entorno en producción)
+// Configurar conexión a MongoDB (desde variable de entorno)
 const client = new MongoClient(process.env.MONGO_URI);
 let db;
 
@@ -28,7 +28,7 @@ async function connectDB() {
   return db;
 }
 
-// Middleware de conexión
+// Middleware para inyectar la base de datos en cada request
 app.use(async (req, res, next) => {
   try {
     req.db = await connectDB();
@@ -39,9 +39,6 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Tu código SMTP (si lo usas)
-console.log("✅ Servidor SMTP listo para enviar correos");
-
 // Rutas
 app.use("/api/auth", authRoutes);
 app.use("/api/forms", formRoutes);
@@ -50,10 +47,11 @@ app.use("/api/mail", mailRoutes);
 app.use("/api/generador", gen);
 app.use("/api/noti", noti);
 
+// Ruta base
 app.get("/", (req, res) => {
   res.json({ message: "API funcionando 🚀" });
 });
 
-// ❌ NO pongas app.listen()
-// ✅ Exporta la app
+// ⚠️ Importante: NO usar app.listen() en Vercel
+// Exportar la app para que Vercel la maneje como serverless function
 module.exports = app;

@@ -31,7 +31,7 @@ const SetPassword = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`http://192.168.0.2:4000/api/auth/set-password`, {
+      const response = await fetch(`https://accionaweb.vercel.app/api/auth/set-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
