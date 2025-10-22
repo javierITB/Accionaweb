@@ -20,7 +20,7 @@ router.post("/", async (req, res) => {
         { $set: { ...req.body, updatedAt: new Date() } },
         { returnDocument: "after" }
       );
-      if (!result.value) return res.status(404).json({ error: "Formulario no encontrado" });
+      if (!result) return res.status(404).json({ error: "Formulario no encontrado" });
     }
     res.status(201).json(result);
   } catch (err) {
@@ -73,10 +73,11 @@ router.get("/section/:section/:mail", async (req, res) => {
       .find({
         section,
         companies: empresaUsuario,
+        status: "published",
       })
       .toArray();
 
-    if (!forms.length) {
+    if (!forms) {
       return res.status(404).json({
         error: `No se encontraron formularios para la sección "${section}" y la empresa "${empresaUsuario}"`,
       });
