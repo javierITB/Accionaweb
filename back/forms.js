@@ -73,6 +73,7 @@ router.get("/section/:section/:mail", async (req, res) => {
       .find({
         section,
         companies: empresaUsuario,
+        status: "published",
       })
       .toArray();
 
