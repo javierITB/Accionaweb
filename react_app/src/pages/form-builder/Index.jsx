@@ -234,7 +234,7 @@ const FormBuilder = () => {
       setFormData(prev => ({
         ...prev,
         ...savedForm,
-        id: savedForm._id || savedForm.id || prev.id,
+        id: savedForm.insertedId || savedForm.id || prev.id,
         title: savedForm.title || prev.title,
         section: savedForm.section || prev.section,
         category: savedForm.category || prev.category,
