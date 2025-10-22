@@ -415,33 +415,41 @@ router.post("/:id/approve", async (req, res) => {
   }
 });
 
-// Eliminar corrección y volver a estado "en_revision"
+// Eliminar corrección de formularios APROBADOS
 router.delete("/:id/remove-correction", async (req, res) => {
   try {
     console.log("Debug: Iniciando remove-correction para ID:", req.params.id);
     console.log("Debug: ID recibido:", req.params.id);
 
-    const result = await req.db.collection("respuestas").updateOne(
-      { _id: new ObjectId(req.params.id) },
-      {
-        $set: {
-          status: "en_revision",
-          correctedFile: null,
-          updatedAt: new Date()
+    // Buscar y eliminar por responseId en la colección "aprobados"
+    const deleteResult = await req.db.collection("aprobados").deleteOne({
+      responseId: req.params.id
+    });
+
+    console.log("Debug: Resultado de la eliminación en aprobados:", deleteResult);
+
+    if (deleteResult.deletedCount === 0) {
+      console.log("Debug: No se encontró la corrección en aprobados con responseId:", req.params.id);
+      
+      // Intentar eliminar por _id directo en aprobados
+      if (ObjectId.isValid(req.params.id)) {
+        const deleteByIdResult = await req.db.collection("aprobados").deleteOne({
+          _id: new ObjectId(req.params.id)
+        });
+        
+        console.log("Debug: Resultado eliminación por _id:", deleteByIdResult);
+        
+        if (deleteByIdResult.deletedCount === 0) {
+          return res.status(404).json({ error: "Corrección no encontrada en aprobados" });
         }
+      } else {
+        return res.status(404).json({ error: "Corrección no encontrada en aprobados" });
       }
-    );
-
-    console.log("Debug: Resultado de la actualización:", result);
-
-    if (result.matchedCount === 0) {
-      console.log("Debug: No se encontró la respuesta con ID:", req.params.id);
-      return res.status(404).json({ error: "Respuesta no encontrada" });
     }
 
-    console.log("Debug: Corrección eliminada exitosamente para ID:", req.params.id);
+    console.log("Debug: Corrección eliminada exitosamente de aprobados para ID:", req.params.id);
 
-    res.json({ message: "Corrección eliminada y estado actualizado a en_revision" });
+    res.json({ message: "Corrección eliminada exitosamente" });
   } catch (err) {
     console.error("Error eliminando corrección:", err);
     res.status(500).json({ error: "Error eliminando corrección" });
