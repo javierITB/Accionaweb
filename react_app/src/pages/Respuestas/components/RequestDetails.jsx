@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestDetails = ({ request, isVisible, onClose }) => {
+const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const [correctedFile, setCorrectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -55,6 +55,11 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
 
       if (response.ok) {
         setCorrectedFile(null);
+        if (onUpdate) {
+          const updatedResponse = await fetch(`http://192.168.0.2:4000/api/respuestas/${request._id}`);
+          const updatedRequest = await updatedResponse.json();
+          onUpdate(updatedRequest);
+        }
         alert('Corrección eliminada, formulario vuelve a estado "en revisión"');
       } else {
         alert('Error al eliminar la corrección');
@@ -84,15 +89,19 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
         throw new Error('Error subiendo corrección');
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const approveResponse = await fetch(`http://192.168.0.2:4000/api/respuestas/${request._id}/approve`, {
         method: 'POST',
       });
 
       if (approveResponse.ok) {
+        if (onUpdate) {
+          const updatedResponse = await fetch(`http://192.168.0.2:4000/api/respuestas/${request._id}`);
+          const updatedRequest = await updatedResponse.json();
+          onUpdate(updatedRequest);
+        }
         alert('Formulario aprobado correctamente');
-        onClose();
       } else {
         const errorData = await approveResponse.json();
         alert(`Error al aprobar el formulario: ${errorData.error}`);
@@ -213,7 +222,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
               <div className="flex items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">{request?.title}</h2>
+                  <h2 className="text-xl font-semibold text-foreground">{request?.FormTitle}</h2>
                   <p className="text-sm text-muted-foreground">ID: {request?._id}</p>
                 </div>
               </div>
