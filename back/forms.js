@@ -77,7 +77,7 @@ router.get("/section/:section/:mail", async (req, res) => {
       })
       .toArray();
 
-    if (!forms.length) {
+    if (!forms) {
       return res.status(404).json({
         error: `No se encontraron formularios para la sección "${section}" y la empresa "${empresaUsuario}"`,
       });
