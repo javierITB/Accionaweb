@@ -107,13 +107,20 @@ const Header = ({ className = '' }) => {
       <div className="flex items-center justify-between h-20 px-6 bg-warning">
         {/* Logo Section */}
         <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg gradient-primary overflow-hidden">
+          <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden bg-white p-1">
             <img
-              src="/logo.jpeg"
+              src="/logo.png"               // archivo: public/logo.png
               alt="Logo Acciona"
               className="w-full h-full object-contain"
+              onError={(e) => {
+                // fallback: si no carga la imagen, muestra un SVG inline o otro recurso
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/placeholder-logo.png"; // opcional: otro archivo en public
+              }}
+              loading="lazy"
             />
           </div>
+
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold text-foreground leading-tight">
               Portal Acciona
@@ -123,6 +130,7 @@ const Header = ({ className = '' }) => {
             </span>
           </div>
         </div>
+
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center space-x-1">
