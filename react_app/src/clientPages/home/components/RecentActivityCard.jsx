@@ -7,6 +7,9 @@ import MessageModal from './components/MessageModal';
 import RequestDetails from './components/RequestDetails';
 
 const RequestTracking = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const formId = urlParams?.get('id');
+  
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -31,6 +34,21 @@ const RequestTracking = () => {
     assignedTo: '',
     submittedBy: ''
   });
+
+  //buscar id de respuesta que se busca abrir
+  useEffect(() => {
+    if (!formId || resp.length === 0) return; // esperar a que carguen los datos
+
+    // Buscar el request que tenga el mismo _id o formId
+    const found = resp.find(
+      (r) => String(r._id) === formId || String(r.formId) === formId
+    );
+
+    if (found) {
+      setSelectedRequest(found);
+      setShowRequestDetails(true);
+    }
+  }, [formId, resp]);
 
   useEffect(() => {
     const fetchForms = async () => {

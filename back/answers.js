@@ -43,7 +43,7 @@ router.post("/", async (req, res) => {
       prioridad: 2,
       color: "#fb8924",
       icono: "form",
-      actionUrl: `/respuestas?id=${result.insertedId}`,
+      actionUrl: `/RespuestasForms?id=${result.insertedId}`,
     });
 
     await addNotification(req.db, {
@@ -295,7 +295,7 @@ router.post("/chat", async (req, res) => {
         titulo: "Nuevo mensaje recibido",
         descripcion: `${autor} le ha respondido un mensaje.`,
         icono: "chat",
-        actionUrl: `/msg/${respuesta._id}`,
+        actionUrl: `/?id=${result.insertedId}`,
       });
     }
 

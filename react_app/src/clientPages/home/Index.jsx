@@ -8,6 +8,7 @@ import Icon from '../components/AppIcon';
 import Button from '../components/ui/Button';
 
 const DashboardHome = () => {
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const user = sessionStorage.getItem("user");
@@ -23,6 +24,8 @@ const DashboardHome = () => {
     employeeId: "ACC-2024-001",
     avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
   };
+
+
 
   // Update time every minute
   useEffect(() => {
