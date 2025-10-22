@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../AppIcon';
 import Button from './Button';
 import NotificationsCard from '../../../components/ui/NotificationsCard';
+import logo from "/logo2.png";
 
 const Header = ({ className = '' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -106,30 +107,31 @@ const Header = ({ className = '' }) => {
     <header className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-brand ${className}`}>
       <div className="flex items-center justify-between h-20 px-6 bg-warning">
         {/* Logo Section */}
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden bg-white p-1">
-            <img
-              src="/logo2.jpeg"               // archivo: public/logo.png
-              alt="Logo Acciona"
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                // fallback: si no carga la imagen, muestra un SVG inline o otro recurso
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = "/placeholder-logo.png"; // opcional: otro archivo en public
-              }}
-              loading="lazy"
-            />
-          </div>
+       <div className="flex items-center space-x-3">
+  <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden ">
+    <img
+      src={logo}              // archivo: public/logo.png
+      alt="Logo Acciona"
+      className="max-w-full max-h-full"
+      style={{ objectFit: 'contain' }}
+      onError={(e) => {
+        e.currentTarget.onerror = null;
+        e.currentTarget.src = "/placeholder-logo.png";
+      }}
+      loading="lazy"
+    />
+  </div>
 
-          <div className="flex flex-col">
-            <h1 className="text-lg font-semibold text-foreground leading-tight">
-              Portal Acciona
-            </h1>
-            <span className="text-xs text-muted-foreground font-mono">
-              plataforma de asistencia a clientes
-            </span>
-          </div>
-        </div>
+  <div className="flex flex-col">
+    <h1 className="text-lg font-semibold text-foreground leading-tight">
+      Portal Acciona
+    </h1>
+    <span className="text-xs text-muted-foreground font-mono">
+      plataforma de asistencia a clientes
+    </span>
+  </div>
+</div>
+
 
 
         {/* Desktop Navigation */}
