@@ -20,7 +20,7 @@ const Header = ({ className = '' }) => {
   const menuRef = useRef(null);
   const notiRef = useRef(null);
   const userMenuRef = useRef(null);
-//listo
+
   const navigationItems = [
     { name: 'Incio', path: '/', icon: 'Home' },
     { name: 'Remuneraciones', path: '/remuneraciones', icon: 'LayoutDashboard' },
