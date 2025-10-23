@@ -1,12 +1,12 @@
 export async function validarToken(db, token) {
-  const tokenData = await db.collection("tokens").findOne({ token: token });
+  const tokenData = await db.collection("tokens").findOne({ "token": token });
   console.log("TOKEN DATA", tokenData)
   if (!tokenData) {
     return { ok: false, reason: "No existe" };
   }
 
   const ahora = new Date();
-  const expiracion = new Date(tokenData.expiration);
+  const expiracion = new Date(tokenData.expiresAt || tokenData.expiration);
   const creacion = new Date(tokenData.createdAt);
 
   // Verificar expiración
