@@ -32,7 +32,7 @@ router.post("/", async (req, res) => {
     // === VALIDAR TOKEN ===
     const tokenValido = await validarToken(req.db, token);
     if (!tokenValido.ok) {
-      return res.status(401).json({ error: "Token inválido o expirado" });
+      return res.status(401).json({ error: tokenValido.reason });
     }
 
     // === VERIFICAR QUE LA EMPRESA ESTÉ AUTORIZADA PARA ESTE FORMULARIO ===
