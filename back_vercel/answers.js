@@ -20,7 +20,7 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024
   }
 });
-//algo de answers
+
 
 router.post("/", async (req, res) => {
   try {
