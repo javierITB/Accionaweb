@@ -8,7 +8,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
   // Función para descargar PDF aprobado
   const handleDownloadApprovedPDF = async (responseId) => {
     try {
-      const response = await fetch(`https://accionaweb.vercel.app/api/respuestas/download-approved-pdf/${responseId}`);
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/download-approved-pdf/${responseId}`);
       
       if (!response.ok) {
         const errorData = await response.json();

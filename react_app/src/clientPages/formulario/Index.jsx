@@ -29,7 +29,7 @@ const DashboardHome = () => {
   
       const fetchForm = async () => {
         try {
-          const res = await fetch(`https://accionaweb.vercel.app/api/forms/${formId}`);
+          const res = await fetch(`https://accionaapi.vercel.app/api/forms/${formId}`);
           if (!res.ok) throw new Error('Formulario no encontrado');
           const data = await res.json();
   

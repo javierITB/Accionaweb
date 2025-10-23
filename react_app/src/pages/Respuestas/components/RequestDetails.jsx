@@ -21,7 +21,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
   const handleDownload = () => {
     if (request?.IDdoc) {
-      window.open(`https://accionaweb.vercel.app/api/generador/download/${request.IDdoc}`, '_blank');
+      window.open(`https://accionaapi.vercel.app/api/generador/download/${request.IDdoc}`, '_blank');
     } else {
       alert('No hay documento disponible para descargar');
     }
@@ -49,7 +49,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
 
     try {
-      const response = await fetch(`https://accionaweb.vercel.app/api/respuestas/${request._id}/remove-correction`, {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/remove-correction`, {
         method: 'DELETE',
       });
 
@@ -82,7 +82,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
       const formData = new FormData();
       formData.append('correctedFile', correctedFile);
 
-      const uploadResponse = await fetch(`https://accionaweb.vercel.app/api/respuestas/${request._id}/upload-correction`, {
+      const uploadResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/upload-correction`, {
         method: 'POST',
         body: formData,
       });
@@ -93,13 +93,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const approveResponse = await fetch(`https://accionaweb.vercel.app/api/respuestas/${request._id}/approve`, {
+      const approveResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/approve`, {
         method: 'POST',
       });
 
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://accionaweb.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }

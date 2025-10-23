@@ -19,7 +19,7 @@ const FormPreview = ({ formData }) => {
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const res = await fetch(`https://accionaweb.vercel.app/api/auth/${mail}`);
+        const res = await fetch(`https://accionaapi.vercel.app/api/auth/${mail}`);
         if (!res.ok) throw new Error('Usuario no encontrado');
         const data = await res.json();
 
@@ -468,7 +468,7 @@ const FormPreview = ({ formData }) => {
       };
 
 
-      const res = await fetch(`https://accionaweb.vercel.app/api/respuestas`, {
+      const res = await fetch(`https://accionaapi.vercel.app/api/respuestas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

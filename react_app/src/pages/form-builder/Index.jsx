@@ -68,7 +68,7 @@ const FormBuilder = () => {
 
     const fetchForm = async () => {
       try {
-        const res = await fetch(`https://accionaweb.vercel.app/api/forms/${formId}`);
+        const res = await fetch(`https://accionaapi.vercel.app/api/forms/${formId}`);
         if (!res.ok) throw new Error('Formulario no encontrado');
         const data = await res.json();
 
@@ -220,7 +220,7 @@ const FormBuilder = () => {
 
     setIsSaving(true);
     try {
-      const response = await fetch("https://accionaweb.vercel.app/api/forms", {
+      const response = await fetch("https://accionaapi.vercel.app/api/forms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -262,7 +262,7 @@ const FormBuilder = () => {
 
   const deleteForm = async () => {
     try {
-      const response = await fetch(`https://accionaweb.vercel.app/api/forms/${formData.id}`, {
+      const response = await fetch(`https://accionaapi.vercel.app/api/forms/${formData.id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         cache: "no-cache",
@@ -287,7 +287,7 @@ const FormBuilder = () => {
 
     setIsPublishing(true);
     try {
-      const response = await fetch(`https://accionaweb.vercel.app/api/forms/public/${formData._id || formData.id}`, {
+      const response = await fetch(`https://accionaapi.vercel.app/api/forms/public/${formData._id || formData.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...formData, status: "published" }),

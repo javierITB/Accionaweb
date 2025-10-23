@@ -23,7 +23,7 @@ const CompanyReg = () => {
 
   const fetchEmpresas = async () => {
     try {
-      const response = await fetch('https://accionaweb.vercel.app/api/auth/empresas/todas');
+      const response = await fetch('https://accionaapi.vercel.app/api/auth/empresas/todas');
       if (response.ok) {
         const empresasData = await response.json();
         setEmpresas(empresasData);
@@ -63,7 +63,7 @@ const CompanyReg = () => {
         submitData.append('logo', formData.logo);
       }
 
-      const response = await fetch('https://accionaweb.vercel.app/api/auth/empresas/register', {
+      const response = await fetch('https://accionaapi.vercel.app/api/auth/empresas/register', {
         method: 'POST',
         body: submitData,
       });

@@ -23,7 +23,7 @@ const FormReg = () => {
     const fetchEmpresas = async () => {
       try {
         setLoadingEmpresas(true);
-        const response = await fetch('https://accionaweb.vercel.app/api/auth/empresas/todas');
+        const response = await fetch('https://accionaapi.vercel.app/api/auth/empresas/todas');
         
         if (!response.ok) {
           throw new Error('Error al cargar empresas');
@@ -68,7 +68,7 @@ const FormReg = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch(`https://accionaweb.vercel.app/api/auth/`);
+        const res = await fetch(`https://accionaapi.vercel.app/api/auth/`);
         if (!res.ok) throw new Error('Usuarios no encontrados');
         const data = await res.json();
         setUsers(data);
@@ -102,7 +102,7 @@ const FormReg = () => {
     try {
       setIsLoading(true);
       
-      const userResponse = await fetch('https://accionaweb.vercel.app/api/auth/register', {
+      const userResponse = await fetch('https://accionaapi.vercel.app/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ const FormReg = () => {
       const saved = await userResponse.json();
       const savedUser = saved?.user;
       
-      const mailResponse = await fetch('https://accionaweb.vercel.app/api/mail/send', {
+      const mailResponse = await fetch('https://accionaapi.vercel.app/api/mail/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +168,7 @@ const FormReg = () => {
         rol: 'user'
       });
 
-      const res = await fetch(`https://accionaweb.vercel.app/api/auth/`);
+      const res = await fetch(`https://accionaapi.vercel.app/api/auth/`);
       const data = await res.json();
       setUsers(data);
 
