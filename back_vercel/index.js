@@ -11,7 +11,7 @@ const gen = require("./Generador");
 const noti = require("./notificaciones");
 
 const app = express();
-
+//actualizando
 // Configuración CORS
 app.use(cors());
 
