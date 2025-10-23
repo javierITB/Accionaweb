@@ -120,24 +120,30 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
     const fetchEmpresas = async () => {
       try {
         setLoadingCompanies(true);
-        const response = await fetch('/api/auth/empresas/todas');
-        
+
+        const response = await fetch('https://accionaweb.vercel.app/api/auth/empresas/todas', {
+          method: 'GET',
+          credentials: 'include', // ✅ ESTA LÍNEA ES CLAVE
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
         if (!response.ok) {
-          throw new Error('Error al cargar empresas');
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
-        
+
         const empresasData = await response.json();
-        
-        // Transformar datos de MongoDB al formato que necesita CustomMultiSelect
+
         const options = empresasData.map(empresa => ({
           value: empresa._id || empresa.id,
           label: empresa.nombre
         }));
-        
+
         setCompanyOptions(options);
       } catch (error) {
         console.error('Error cargando empresas:', error);
-        alert('No se pudieron cargar las empresas. Intenta recargar la página.');
+        alert('No se pudieron cargar las empresas: ' + error.message);
       } finally {
         setLoadingCompanies(false);
       }
@@ -263,8 +269,8 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               onChange={(e) => handleTitleChange(e.target.value)}
               maxLength={50}
               className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.title?.length || 0) >= 50
-                  ? 'border-red-500 focus-visible:ring-red-200'
-                  : 'border-input focus-visible:ring-blue-200'
+                ? 'border-red-500 focus-visible:ring-red-200'
+                : 'border-input focus-visible:ring-blue-200'
                 }`}
             />
             {(formData?.title?.length || 0) >= 50 && (
@@ -354,7 +360,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             <label className="text-sm font-medium text-foreground">
               Empresa/s <span className="text-destructive">*</span>
             </label>
-            
+
             {loadingCompanies ? (
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                 <Icon name="Loader" size={16} className="animate-spin" />
@@ -368,11 +374,11 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
                 placeholder="Selecciona las empresas destino..."
               />
             )}
-            
+
             <p className="text-sm text-muted-foreground">
               Selecciona las empresas que podrán ver este formulario
             </p>
-            
+
             {(formData?.companies || []).length > 0 && (
               <div className="mt-2">
                 <p className="text-sm font-medium">
@@ -408,8 +414,8 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               type="button"
               onClick={() => onUpdateFormData('icon', Icono.value)}
               className={`p-4 rounded-full transition-all transform hover:scale-110 hover:shadow-lg ${formData?.icon === Icono.value
-                  ? 'ring-4 ring-primary/50 shadow-lg scale-110'
-                  : 'shadow-md opacity-70 hover:opacity-100'
+                ? 'ring-4 ring-primary/50 shadow-lg scale-110'
+                : 'shadow-md opacity-70 hover:opacity-100'
                 }`}
               style={{
                 backgroundColor: formData?.primaryColor || '#3B82F6',
@@ -449,7 +455,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
                 key={index}
                 onClick={() => handleColorPresetSelect(preset)}
                 className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${formData?.primaryColor === preset.primary && formData?.secondaryColor === preset.secondary
-                    ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-muted-foreground'
+                  ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-muted-foreground'
                   }`}
                 style={{
                   background: `linear-gradient(135deg, ${preset.primary} 0%, ${preset.secondary} 100%)`
