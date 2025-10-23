@@ -27,7 +27,8 @@ const FormPreview = ({ formData }) => {
           uid: data.id,
           nombre: usuario,
           empresa: data.empresa,
-          mail: mail
+          mail: mail,
+          token: token
         });
       } catch (err) {
         console.error('Error cargando el usuario:', err);
