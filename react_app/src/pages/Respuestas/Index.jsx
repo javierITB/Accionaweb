@@ -8,6 +8,7 @@ import FilterPanel from './components/FilterPanel';
 import MessageModal from './components/MessageModal';
 import RequestDetails from './components/RequestDetails';
 import StatsOverview from './components/StatsOverview';
+import DocxPreview from './components/DocsPreview'
 
 const RequestTracking = () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -20,6 +21,10 @@ const RequestTracking = () => {
   const [resp, setResp] = useState([]);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showRequestDetails, setShowRequestDetails] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewDocId, setPreviewDocId] = useState(null);
+
+
   const [messageRequest, setMessageRequest] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('date');
@@ -177,13 +182,13 @@ const RequestTracking = () => {
     }
 
     const requestDate = new Date(request.submittedAt || request.createdAt);
-    
+
     if (filters?.dateRange) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       let startPeriod, endPeriod;
-      
+
       switch (filters.dateRange) {
         case 'today':
           startPeriod = new Date(today);
@@ -217,7 +222,7 @@ const RequestTracking = () => {
           startPeriod = null;
           endPeriod = null;
       }
-      
+
       if (startPeriod && endPeriod && (requestDate < startPeriod || requestDate > endPeriod)) {
         return false;
       }
@@ -449,6 +454,15 @@ const RequestTracking = () => {
         isVisible={showRequestDetails}
         onClose={() => setShowRequestDetails(false)}
         onUpdate={updateRequest}
+        onPreview={(IDdoc) => {
+          setPreviewDocId(IDdoc);
+          setShowPreview(true);
+        }}
+      />
+      <DocxPreview
+        IDdoc={previewDocId}
+        isVisible={showPreview}
+        onClose={() => setShowPreview(false)}
       />
     </div>
   );

@@ -192,19 +192,20 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
             iconPosition="left"
             iconSize={16}
           >
-            Mensaje
           </Button>
 
           <Button
-            variant="default"
+            variant="ghost"
             size="sm"
             onClick={() => onViewDetails(request)}
-            iconName="Eye"
+            iconName="Info"
             iconPosition="left"
             iconSize={16}
           >
-            Ver Detalles
+            
           </Button>
+
+          
         </div>
       </div>
     </div>

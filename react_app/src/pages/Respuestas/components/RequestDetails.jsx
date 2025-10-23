@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
+const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) => {
   const [correctedFile, setCorrectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -419,13 +419,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
                 Enviar Mensaje
               </Button>
               <Button
-                variant="outline"
-                iconName="Download"
+                variant="ghost"
+                size="sm"
+                onClick={() => onPreview(request.IDdoc)}
+                iconName="Eye"
                 iconPosition="left"
                 iconSize={16}
-                onClick={handleDownload}
               >
-                Descargar DOCX
+                Vista Previa
               </Button>
               <Button
                 variant="default"

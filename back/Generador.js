@@ -66,4 +66,28 @@ router.get("/download/:IDdoc", async (req, res) => {
     }
 });
 
+router.get("/preview/:IDdoc", async (req, res) => {
+  try {
+    const { IDdoc } = req.params;
+    const documento = await req.db.collection('docxs').findOne({ IDdoc: IDdoc });
+
+    if (!documento) {
+      return res.status(404).json({ error: "Documento no encontrado" });
+    }
+
+    // Convertir el binario en base64 legible
+    const base64 = documento.docxFile.buffer.toString('base64');
+
+    res.json({
+      IDdoc,
+      base64,
+      contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+
+  } catch (err) {
+    console.error("Error obteniendo preview DOCX:", err);
+    res.status(500).json({ error: "Error al obtener la vista previa del documento" });
+  }
+});
+
 module.exports = router;

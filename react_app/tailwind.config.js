@@ -59,5 +59,7 @@ export default {
     require("@tailwindcss/aspect-ratio"),
     require("@tailwindcss/container-queries"),
     require("@tailwindcss/line-clamp"),
+    
   ],
+  
 };
