@@ -37,7 +37,7 @@ router.post("/", async (req, res) => {
 
     // === VERIFICAR QUE LA EMPRESA ESTÉ AUTORIZADA PARA ESTE FORMULARIO ===
     const form = await req.db
-      .collection("formularios")
+      .collection("forms")
       .findOne({ _id: new ObjectId(formId) });
 
     if (!form) {
