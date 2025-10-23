@@ -6,6 +6,8 @@ import RegisterForm from './components/RegisterForm';
 const FormReg = () => {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [empresas, setEmpresas] = useState([]);
+  const [loadingEmpresas, setLoadingEmpresas] = useState(true);
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -16,11 +18,40 @@ const FormReg = () => {
   });
   const [activeTab, setActiveTab] = useState('properties');
 
-  const empresas = [
-    { value: 'acciona', label: 'Acciona' },
-    { value: 'empresa1', label: 'Empresa 1' },
-    { value: 'empresa2', label: 'Empresa 2' },
-  ];
+  // Cargar empresas desde MongoDB
+  useEffect(() => {
+    const fetchEmpresas = async () => {
+      try {
+        setLoadingEmpresas(true);
+        const response = await fetch('https://accionaweb.vercel.app/api/auth/empresas/todas');
+        
+        if (!response.ok) {
+          throw new Error('Error al cargar empresas');
+        }
+        
+        const empresasData = await response.json();
+        
+        const empresasOptions = empresasData.map(empresa => ({
+          value: empresa.nombre,
+          label: empresa.nombre
+        }));
+        
+        setEmpresas(empresasOptions);
+      } catch (error) {
+        console.error('Error cargando empresas:', error);
+        // Fallback con empresas de ejemplo
+        setEmpresas([
+          { value: 'Acciona', label: 'Acciona' },
+          { value: 'Empresa Ejemplo 1', label: 'Empresa Ejemplo 1' },
+          { value: 'Empresa Ejemplo 2', label: 'Empresa Ejemplo 2' },
+        ]);
+      } finally {
+        setLoadingEmpresas(false);
+      }
+    };
+
+    fetchEmpresas();
+  }, []);
 
   const cargos = [
     { value: 'Admin', label: 'Administrador' },
