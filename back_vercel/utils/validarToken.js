@@ -4,7 +4,7 @@ export async function validarToken(db, token) {
 
   console.log("TOKEN DATA: ", tokenData)
   if (!tokenData) {
-    return { ok: false, reason: "No existe" };
+    return { ok: false, reason: "parece que No existe" };
   }
 
   const ahora = new Date();
