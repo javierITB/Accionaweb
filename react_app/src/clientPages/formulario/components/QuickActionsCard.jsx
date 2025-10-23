@@ -39,12 +39,10 @@ const FormPreview = ({ formData }) => {
     fetchForm();
   }, []);
 
-  // Función para obtener el título de una pregunta (sin concatenación para el envío)
   const getQuestionTitle = (question) => {
     return question.title || 'Pregunta sin título';
   };
 
-  // Manejar cambios en inputs - INTERNAMENTE USA IDs, PERO PARA ENVÍO USA TÍTULOS
   const handleInputChange = (questionId, questionTitle, value) => {
     setAnswers((prev) => ({
       ...prev,
@@ -59,7 +57,20 @@ const FormPreview = ({ formData }) => {
     }
   };
 
-  // Manejar blur en inputs - INTERNAMENTE USA IDs
+  const handleFileChange = (questionId, questionTitle, files) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: files,
+    }));
+
+    if (errors[questionId]) {
+      setErrors(prev => ({
+        ...prev,
+        [questionId]: ''
+      }));
+    }
+  };
+
   const handleInputBlur = (questionId, value, isRequired) => {
     setTouched(prev => ({
       ...prev,
@@ -74,7 +85,6 @@ const FormPreview = ({ formData }) => {
     }
   };
 
-  // Manejar cambios en radio buttons - INTERNAMENTE USA IDs
   const handleRadioChange = (questionId, questionTitle, optionValue) => {
     setAnswers((prev) => ({
       ...prev,
@@ -89,7 +99,6 @@ const FormPreview = ({ formData }) => {
     }
   };
 
-  // Manejar cambios en checkboxes múltiples - INTERNAMENTE USA IDs
   const handleCheckboxChange = (questionId, questionTitle, option) => {
     setAnswers((prev) => {
       const currentAnswers = prev[questionId] || [];
@@ -115,14 +124,12 @@ const FormPreview = ({ formData }) => {
     });
   };
 
-  // Función recursiva para validar preguntas y subsecciones - INTERNAMENTE USA IDs
   const validateQuestions = (questions, answers, parentPath = '') => {
     const errors = {};
 
     questions.forEach((question, index) => {
       const questionPath = parentPath ? `${parentPath}.${question.id}` : question.id;
 
-      // Validar pregunta principal
       if (question.required) {
         const answer = answers[question.id];
 
@@ -133,12 +140,10 @@ const FormPreview = ({ formData }) => {
         }
       }
 
-      // Validar subsecciones si están activas
       (question?.options || []).forEach((option, optionIndex) => {
         if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
           const optionText = option.text || `Opción ${optionIndex + 1}`;
 
-          // Verificar si esta subsección debe estar activa
           const shouldValidateSubsection =
             question.type === 'single_choice'
               ? answers[question.id] === optionText
@@ -147,7 +152,6 @@ const FormPreview = ({ formData }) => {
                 : false;
 
           if (shouldValidateSubsection) {
-            // Validar recursivamente las preguntas de la subsección
             const subErrors = validateQuestions(option.subformQuestions, answers, questionPath);
             Object.assign(errors, subErrors);
           }
@@ -158,25 +162,26 @@ const FormPreview = ({ formData }) => {
     return errors;
   };
 
-  // Función recursiva para mapear respuestas de IDs a Títulos para el envío
   const mapAnswersToTitles = (questions, answers, mappedAnswers = {}) => {
     questions.forEach((question) => {
       const questionTitle = getQuestionTitle(question);
       const answer = answers[question.id];
 
-      // Mapear respuesta principal
       if (answer !== undefined && answer !== null && answer !== '') {
         if (!(Array.isArray(answer) && answer.length === 0)) {
-          mappedAnswers[questionTitle] = answer;
+          if (question.type === 'file' && answer instanceof FileList) {
+            const fileNames = Array.from(answer).map(file => file.name).join(', ');
+            mappedAnswers[questionTitle] = fileNames;
+          } else {
+            mappedAnswers[questionTitle] = answer;
+          }
         }
       }
 
-      // Procesar subsecciones
       (question?.options || []).forEach((option) => {
         if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
           const optionText = option.text || 'Opción';
 
-          // Verificar si esta subsección debe estar activa
           const shouldProcessSubsection =
             question.type === 'single_choice'
               ? answers[question.id] === optionText
@@ -185,7 +190,6 @@ const FormPreview = ({ formData }) => {
                 : false;
 
           if (shouldProcessSubsection) {
-            // Mapear recursivamente las preguntas de la subsección
             mapAnswersToTitles(option.subformQuestions, answers, mappedAnswers);
           }
         }
@@ -195,20 +199,15 @@ const FormPreview = ({ formData }) => {
     return mappedAnswers;
   };
 
-  // Validar formulario antes de enviar
   const validateForm = () => {
     let newErrors = {};
 
-    // Validar preguntas principales y subsecciones recursivamente
     newErrors = validateQuestions(formData?.questions || [], answers);
-
-    // EL CAMPO RESPALDO YA NO ES OBLIGATORIO
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Función para renderizar una pregunta individual (MANTIENE LA VISUAL ORIGINAL)
   const renderQuestion = (question, index, showNumber = true, parentPath = '') => {
     const questionPath = parentPath ? `${parentPath}.${question.id}` : question.id;
     const questionTitle = question.title || `Pregunta ${index + 1}`;
@@ -297,6 +296,91 @@ const FormPreview = ({ formData }) => {
             </div>
           );
 
+        case 'email':
+          return (
+            <div>
+              <input
+                type="email"
+                placeholder="ejemplo@correo.com"
+                className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
+                value={value}
+                onChange={(e) => handleInputChange(question.id, getQuestionTitle(question), e.target.value)}
+                onBlur={(e) => handleInputBlur(question.id, e.target.value, question.required)}
+              />
+              {error && (
+                <p className="text-red-600 text-sm mt-1 flex items-center">
+                  <Icon name="AlertCircle" size={14} className="mr-1" />
+                  {error}
+                </p>
+              )}
+            </div>
+          );
+
+        case 'file':
+          const getFileTypesDescription = (acceptString) => {
+            if (!acceptString) return 'Todos los tipos de archivo';
+            
+            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'];
+            const documentExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.csv', '.txt', '.rtf'];
+            
+            const acceptArray = acceptString.split(',');
+            
+            const hasImages = acceptArray.some(ext => imageExtensions.includes(ext));
+            const hasDocuments = acceptArray.some(ext => documentExtensions.includes(ext));
+            
+            if (hasImages && hasDocuments) {
+              return 'Imágenes y Documentos';
+            } else if (hasImages) {
+              return 'Imágenes (PNG, JPG, GIF, etc.)';
+            } else if (hasDocuments) {
+              return 'Documentos (PDF, Word, Excel, PowerPoint, etc.)';
+            } else {
+              return `Formatos: ${acceptString}`;
+            }
+          };
+
+          const fileTypesDescription = getFileTypesDescription(question.accept);
+
+          return (
+            <div>
+              <input
+                type="file"
+                className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
+                multiple={question.multiple || false}
+                accept={question.accept || ''}
+                onChange={(e) => handleFileChange(question.id, getQuestionTitle(question), e.target.files)}
+              />
+              <div className="mt-2 space-y-1">
+                {question.accept && (
+                  <p className="text-xs text-gray-500">
+                    {fileTypesDescription}
+                  </p>
+                )}
+                {question.multiple && (
+                  <p className="text-xs text-gray-500">
+                    Se permiten múltiples archivos
+                  </p>
+                )}
+                {question.maxSize && (
+                  <p className="text-xs text-gray-500">
+                    Tamaño máximo: {question.maxSize} MB
+                  </p>
+                )}
+                {value instanceof FileList && value.length > 0 && (
+                  <p className="text-xs text-green-600">
+                    {value.length} archivo(s) seleccionado(s)
+                  </p>
+                )}
+              </div>
+              {error && (
+                <p className="text-red-600 text-sm mt-1 flex items-center">
+                  <Icon name="AlertCircle" size={14} className="mr-1" />
+                  {error}
+                </p>
+              )}
+            </div>
+          );
+
         case 'single_choice':
           return (
             <div className="space-y-3">
@@ -370,7 +454,6 @@ const FormPreview = ({ formData }) => {
 
     return (
       <div key={question?.id} className="space-y-4">
-        {/* Pregunta principal */}
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
           <div className="mb-4">
             <div className="flex items-start space-x-3">
@@ -407,12 +490,10 @@ const FormPreview = ({ formData }) => {
           </div>
         </div>
 
-        {/* Subsecciones recursivas de esta pregunta - VISUAL ORIGINAL */}
         {(question?.options || []).map((option, optionIndex) => {
           if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
             const optionText = option.text || `Opción ${optionIndex + 1}`;
 
-            // Verificar si esta subsección debe mostrarse
             const shouldShowSubsection =
               question.type === 'single_choice'
                 ? answers[question.id] === optionText
@@ -436,19 +517,15 @@ const FormPreview = ({ formData }) => {
     );
   };
 
-  // Enviar formulario al endpoint de tu API
   const handleSubmit = async () => {
-    // Validar antes de enviar
     if (!validateForm()) {
       alert('Por favor completa todos los campos obligatorios');
       return;
     }
 
     try {
-      // Mapear respuestas de IDs a Títulos para el envío
       const answersWithTitles = mapAnswersToTitles(formData?.questions || [], answers);
 
-      // Limpiar respuestas vacías
       const cleanAnswers = Object.fromEntries(
         Object.entries(answersWithTitles).filter(([_, value]) =>
           value !== '' &&
@@ -461,12 +538,11 @@ const FormPreview = ({ formData }) => {
       const payload = {
         formId: formData?.id,
         formTitle: formData?.title,
-        responses: cleanAnswers, // AHORA SE ENVÍAN LOS TÍTULOS EN LUGAR DE IDs
+        responses: cleanAnswers,
         mail: respaldo,
         submittedAt: new Date().toISOString(),
         user: user
       };
-
 
       const res = await fetch(`https://accionaapi.vercel.app/api/respuestas`, {
         method: 'POST',
@@ -480,7 +556,6 @@ const FormPreview = ({ formData }) => {
       alert('Respuestas enviadas con éxito');
       console.log('Respuestas guardadas:', data);
 
-      // Limpia el formulario
       setAnswers({});
       setRespaldo("");
       setErrors({});
@@ -509,7 +584,6 @@ const FormPreview = ({ formData }) => {
 
   return (
     <div className="space-y-6">
-      {/* Contenedor de la vista previa */}
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-1">
         <div
           className="rounded-lg p-6 min-h-96"
@@ -517,7 +591,6 @@ const FormPreview = ({ formData }) => {
             backgroundColor: formData?.secondaryColor || '#F3F4F6',
           }}
         >
-          {/* Cabecera del formulario */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-black mb-2">
               {formData?.title || 'Título del Formulario'}
@@ -556,13 +629,11 @@ const FormPreview = ({ formData }) => {
             )}
           </div>
 
-          {/* Preguntas y subsecciones recursivas - VISUAL ORIGINAL */}
           <div className="space-y-6">
             {formData?.questions?.map((question, index) =>
               renderQuestion(question, index, true)
             )}
 
-            {/* CAMPO RESPALDO - NO OBLIGATORIO */}
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
               <div className="mb-4">
                 <div className="flex items-start space-x-3">
@@ -580,7 +651,6 @@ const FormPreview = ({ formData }) => {
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-black mb-1">
                       Respaldo de información
-                      {/* SIN ASTERISCO ROJO */}
                     </h3>
 
                     <p className="text-gray-600 text-base">
@@ -601,7 +671,6 @@ const FormPreview = ({ formData }) => {
               </div>
             </div>
 
-            {/* Botones */}
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-500">
