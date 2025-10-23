@@ -1,5 +1,6 @@
 export async function validarToken(db, token) {
-  const tokenData = await db.collection("tokens").findOne({ "token": token });
+  const tokenData = await db.collection("tokens").find();
+  
   console.log("TOKEN DATA", tokenData)
   if (!tokenData) {
     return { ok: false, reason: "No existe" };
