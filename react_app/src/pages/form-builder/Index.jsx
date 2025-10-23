@@ -309,7 +309,7 @@ const FormBuilder = () => {
     { id: 'questions', label: 'Preguntas', icon: 'HelpCircle', count: formData?.questions?.length },
     { id: 'preview', label: 'Vista Previa', icon: 'Eye' }
   ];
-
+//JAJA
   const getTabContent = () => {
     switch (activeTab) {
       case 'properties':
