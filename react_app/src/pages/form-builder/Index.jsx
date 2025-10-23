@@ -36,6 +36,8 @@ const FormBuilder = () => {
     { value: 'number', label: 'Número', icon: 'Hash' },
     { value: 'date', label: 'Fecha', icon: 'Calendar' },
     { value: 'time', label: 'Hora', icon: 'Clock' },
+    { value: 'email', label: 'Email', icon: 'Mail' },
+    { value: 'file', label: 'Archivo', icon: 'Paperclip' },
     { value: 'single_choice', label: 'Selección Única', icon: 'CheckCircle' },
     { value: 'multiple_choice', label: 'Selección Múltiple', icon: 'CheckSquare' }
   ];

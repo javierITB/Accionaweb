@@ -86,7 +86,6 @@ const QuestionEditor = ({
   }, [localOptions, saveChanges]);
 
   const handleToggleSubform = useCallback((index, hasSubform) => {
-    // GUARDAR POSICIÓN ACTUAL DEL SCROLL
     const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
 
     const newOptions = [...localOptions];
@@ -114,7 +113,6 @@ const QuestionEditor = ({
       onToggleSubform(index, hasSubform);
     }
 
-    // RESTAURAR POSICIÓN DEL SCROLL
     requestAnimationFrame(() => {
       window.scrollTo(0, currentScroll);
     });
@@ -262,6 +260,71 @@ const QuestionEditor = ({
           />
         );
 
+      case 'email':
+        return (
+          <input
+            type="email"
+            placeholder={localQuestion?.placeholder || 'ejemplo@correo.com'}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            disabled={!isSelected}
+          />
+        );
+
+      case 'file':
+        return (
+          <div>
+            <input
+              type="file"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              disabled={!isSelected}
+              multiple={localQuestion.multiple || false}
+              accept={localQuestion.accept || ''}
+            />
+            {isSelected && (
+              <div className="mt-3 space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={localQuestion.multiple || false}
+                    onChange={(e) => handleFieldChange('multiple', e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Permitir múltiples archivos</span>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Tipos de archivo permitidos
+                  </label>
+                  <input
+                    type="text"
+                    value={localQuestion.accept || ''}
+                    onChange={(e) => handleFieldChange('accept', e.target.value)}
+                    placeholder=".pdf,.doc,.docx,.jpg,.png"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Separar extensiones con comas: .pdf, .doc, .jpg
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Tamaño máximo (MB)
+                  </label>
+                  <input
+                    type="number"
+                    value={localQuestion.maxSize || ''}
+                    onChange={(e) => handleFieldChange('maxSize', e.target.value)}
+                    placeholder="10"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
       case 'single-choice':
       case 'multiple-choice':
         return renderOptions();
@@ -345,7 +408,8 @@ const QuestionEditor = ({
     handleOptionBlur,
     handleToggleSubform,
     removeOption,
-    addOption
+    addOption,
+    handleFieldChange
   ]);
 
   const getContainerClass = useCallback(() => {
