@@ -20,22 +20,47 @@ const upload = multer({
   }
 });
 
+
 router.post("/", async (req, res) => {
   try {
+    const { token, formId, user, responses, formTitle } = req.body;
+    const usuario = user?.nombre;
+    const empresa = user?.empresa;
+    const userId = user?.uid;
+
+    // === VALIDAR TOKEN ===
+    const tokenValido = await validarToken(req.db, token);
+    if (!tokenValido.ok) {
+      return res.status(401).json({ error: "Token inválido o expirado" });
+    }
+
+    // === VERIFICAR QUE LA EMPRESA ESTÉ AUTORIZADA PARA ESTE FORMULARIO ===
+    const form = await req.db
+      .collection("formularios")
+      .findOne({ _id: new ObjectId(formId) });
+
+    if (!form) {
+      return res.status(404).json({ error: "Formulario no encontrado" });
+    }
+
+    const empresaAutorizada = form.companies?.includes(empresa);
+    if (!empresaAutorizada) {
+      return res.status(403).json({
+        error: `La empresa ${empresa} no está autorizada para responder este formulario.`,
+      });
+    }
+
+    // === INSERTAR RESPUESTA ===
     const result = await req.db.collection("respuestas").insertOne({
       ...req.body,
       status: "pendiente",
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
-    const usuario = req.body.user.nombre;
-    const empresa = req.body.user.empresa;
-    const nombreFormulario = req.body.formTitle;
-    const userId = req.body.user?.uid;
-
+    // === NOTIFICACIONES ===
     await addNotification(req.db, {
       filtro: { rol: "admin" },
-      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondido el formulario ${nombreFormulario}`,
+      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondido el formulario ${formTitle}`,
       descripcion: "Puedes revisar los detalles en el panel de respuestas.",
       prioridad: 2,
       color: "#fb8924",
@@ -44,54 +69,28 @@ router.post("/", async (req, res) => {
     });
 
     await addNotification(req.db, {
-      userId: userId,
+      userId,
       titulo: "Formulario completado",
-      descripcion: `El formulario ${nombreFormulario} fue completado correctamente.`,
+      descripcion: `El formulario ${formTitle} fue completado correctamente.`,
       prioridad: 2,
       icono: "CheckCircle",
       color: "#3B82F6",
       actionUrl: `/?id=${result.insertedId}`,
     });
 
-    console.log("=== INICIANDO GENERACIÓN AUTOMÁTICA DE DOCX ===");
-    console.log("Response ID:", result.insertedId.toString());
-    console.log("DB disponible:", !!req.db);
-    console.log("Usuario:", usuario);
-    console.log("Empresa:", empresa);
-    console.log("Formulario:", nombreFormulario);
-
-    if (req.body.responses) {
-      console.log("Número de campos en responses:", Object.keys(req.body.responses).length);
-
-      const camposCriticos = [
-        "Nombre de la Empresa solicitante:",
-        "Nombre del trabajador:",
-        "Fecha del contrato vigente:"
-      ];
-      camposCriticos.forEach(campo => {
-        const valor = req.body.responses[campo];
-        console.log(`Campo crítico "${campo}":`, valor || "NO ENCONTRADO");
-      });
-    } else {
-      console.log("ADVERTENCIA: No hay req.body.responses");
-    }
-
+    // === GENERAR DOCX (opcional) ===
     try {
-      await generarAnexoDesdeRespuesta(
-        req.body.responses,
-        result.insertedId.toString(),
-        req.db
-      );
-      console.log('DOCX generado automáticamente para respuesta:', result.insertedId);
+      await generarAnexoDesdeRespuesta(responses, result.insertedId.toString(), req.db);
+      console.log("DOCX generado automáticamente para respuesta:", result.insertedId);
     } catch (error) {
-      console.error('Error generando DOCX automáticamente:', error.message);
-      console.error('Stack trace:', error.stack);
+      console.error("Error generando DOCX:", error.message);
     }
 
     res.json({ _id: result.insertedId, ...req.body });
+
   } catch (err) {
-    console.error('Error general al guardar respuesta:', err);
-    res.status(500).json({ error: "Error al guardar respuesta: " + err });
+    console.error("Error general al guardar respuesta:", err);
+    res.status(500).json({ error: "Error al guardar respuesta: " + err.message });
   }
 });
 
