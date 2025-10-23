@@ -112,6 +112,40 @@ const CustomMultiSelect = ({ options, value = [], onChange, placeholder = "Selec
 };
 
 const FormProperties = ({ formData, categories, sections, onUpdateFormData }) => {
+  const [companyOptions, setCompanyOptions] = useState([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
+
+  // Cargar empresas desde MongoDB
+  useEffect(() => {
+    const fetchEmpresas = async () => {
+      try {
+        setLoadingCompanies(true);
+        const response = await fetch('/api/auth/empresas/todas');
+        
+        if (!response.ok) {
+          throw new Error('Error al cargar empresas');
+        }
+        
+        const empresasData = await response.json();
+        
+        // Transformar datos de MongoDB al formato que necesita CustomMultiSelect
+        const options = empresasData.map(empresa => ({
+          value: empresa._id || empresa.id,
+          label: empresa.nombre
+        }));
+        
+        setCompanyOptions(options);
+      } catch (error) {
+        console.error('Error cargando empresas:', error);
+        alert('No se pudieron cargar las empresas. Intenta recargar la página.');
+      } finally {
+        setLoadingCompanies(false);
+      }
+    };
+
+    fetchEmpresas();
+  }, []);
+
   // Time options for response time
   const timeOptions = [
     { value: '1-2', label: '1-2 minutos' },
@@ -130,7 +164,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
       icon: 'FileText'
     },
     {
-      value: 'Briefcase', // ✅ NUEVO - representa trabajo/contrato
+      value: 'Briefcase',
       label: 'Contrato trabajo por obra',
       icon: 'Briefcase'
     },
@@ -140,7 +174,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
       icon: 'Receipt'
     },
     {
-      value: 'DollarSign', // ✅ NUEVO - representa dinero/permiso sin goce
+      value: 'DollarSign',
       label: 'Permiso sin goce de sueldo',
       icon: 'DollarSign'
     },
@@ -164,18 +198,6 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
       label: 'Solicitud de vacaciones',
       icon: 'Calendar'
     }
-  ];
-
-  // Company options
-  const companyOptions = [
-    { value: 'empresa1', label: 'Empresa 1' },
-    { value: 'empresa2', label: 'Empresa 2' },
-    { value: 'empresa3', label: 'Empresa 3' },
-    { value: 'empresa4', label: 'Empresa 4' },
-    { value: 'empresa5', label: 'Empresa 5' },
-    { value: 'empresa6', label: 'Empresa 6' },
-    { value: 'empresa7', label: 'Empresa 7' },
-    { value: 'empresa8', label: 'Empresa 8' }
   ];
 
   // Color presets
@@ -203,8 +225,8 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
   };
 
   const handleColorPresetSelect = (preset) => {
-    onUpdateFormData('primaryColor', preset?.primary);
-    onUpdateFormData('secondaryColor', preset?.secondary);
+    onUpdateFormData('primaryColor', preset.primary);
+    onUpdateFormData('secondaryColor', preset.secondary);
   };
 
   return (
@@ -262,12 +284,12 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData?.responseTime}
-              onChange={(e) => onUpdateFormData('responseTime', e?.target?.value)}
+              onChange={(e) => onUpdateFormData('responseTime', e.target.value)}
             >
               <option value="">Selecciona tiempo estimado</option>
-              {timeOptions?.map((option) => (
-                <option key={option?.value} value={option?.value}>
-                  {option?.label}
+              {timeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
@@ -283,12 +305,12 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData?.section}
-              onChange={(e) => onUpdateFormData('section', e?.target?.value)}
+              onChange={(e) => onUpdateFormData('section', e.target.value)}
             >
               <option value="">Selecciona una sección</option>
-              {sections?.map((section) => (
-                <option key={section?.value} value={section?.value}>
-                  {section?.label}
+              {sections.map((section) => (
+                <option key={section.value} value={section.value}>
+                  {section.label}
                 </option>
               ))}
             </select>
@@ -300,7 +322,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
           <Input
             label="Autor"
             value={formData?.author}
-            onChange={(e) => onUpdateFormData('author', e?.target?.value)}
+            onChange={(e) => onUpdateFormData('author', e.target.value)}
             description="Nombre de quien creó el formulario"
             disabled
           />
@@ -313,12 +335,12 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData?.category}
-              onChange={(e) => onUpdateFormData('category', e?.target?.value)}
+              onChange={(e) => onUpdateFormData('category', e.target.value)}
             >
               <option value="">Selecciona una categoría</option>
-              {categories?.map((category) => (
-                <option key={category?.value} value={category?.value}>
-                  {category?.label}
+              {categories.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
                 </option>
               ))}
             </select>
@@ -327,20 +349,30 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             </p>
           </div>
 
-          {/* EMPRESAS - CON SCROLLBAR MEJORADO */}
+          {/* EMPRESAS - CON DATOS DESDE MONGODB */}
           <div className="space-y-2 md:col-span-1">
             <label className="text-sm font-medium text-foreground">
               Empresa/s <span className="text-destructive">*</span>
             </label>
-            <CustomMultiSelect
-              options={companyOptions}
-              value={formData?.companies || []}
-              onChange={handleCompanyChange}
-              placeholder="Selecciona las empresas destino..."
-            />
+            
+            {loadingCompanies ? (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Icon name="Loader" size={16} className="animate-spin" />
+                <span>Cargando empresas...</span>
+              </div>
+            ) : (
+              <CustomMultiSelect
+                options={companyOptions}
+                value={formData?.companies || []}
+                onChange={handleCompanyChange}
+                placeholder="Selecciona las empresas destino..."
+              />
+            )}
+            
             <p className="text-sm text-muted-foreground">
               Selecciona las empresas que podrán ver este formulario
             </p>
+            
             {(formData?.companies || []).length > 0 && (
               <div className="mt-2">
                 <p className="text-sm font-medium">
@@ -349,7 +381,6 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               </div>
             )}
           </div>
-
         </div>
       </div>
 
@@ -371,17 +402,17 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
 
         {/* TODOS LOS ICONOS USAN SOLO EL PRIMARY COLOR */}
         <div className="flex flex-wrap justify-center gap-3">
-          {IconoOptions?.map((Icono) => (
+          {IconoOptions.map((Icono) => (
             <button
               key={Icono.value}
               type="button"
-              onClick={() => onUpdateFormData('icon', Icono.value)} // Cambiado a 'icon' para consistencia
+              onClick={() => onUpdateFormData('icon', Icono.value)}
               className={`p-4 rounded-full transition-all transform hover:scale-110 hover:shadow-lg ${formData?.icon === Icono.value
                   ? 'ring-4 ring-primary/50 shadow-lg scale-110'
                   : 'shadow-md opacity-70 hover:opacity-100'
                 }`}
               style={{
-                backgroundColor: formData?.primaryColor || '#3B82F6', // SOLO primaryColor
+                backgroundColor: formData?.primaryColor || '#3B82F6',
                 color: 'white'
               }}
               title={Icono.label}
@@ -412,20 +443,20 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
         <div className="space-y-4">
           <h4 className="font-medium text-foreground">Esquemas Predefinidos</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {colorPresets?.map((preset, index) => (
+            {colorPresets.map((preset, index) => (
               <button
                 type="button"
                 key={index}
                 onClick={() => handleColorPresetSelect(preset)}
-                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${formData?.primaryColor === preset?.primary && formData?.secondaryColor === preset?.secondary
+                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${formData?.primaryColor === preset.primary && formData?.secondaryColor === preset.secondary
                     ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-muted-foreground'
                   }`}
                 style={{
-                  background: `linear-gradient(135deg, ${preset?.primary} 0%, ${preset?.secondary} 100%)`
+                  background: `linear-gradient(135deg, ${preset.primary} 0%, ${preset.secondary} 100%)`
                 }}
               >
                 <div className="text-xs font-medium text-white drop-shadow-sm">
-                  {preset?.name}
+                  {preset.name}
                 </div>
               </button>
             ))}
@@ -442,12 +473,12 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               <input
                 type="color"
                 value={formData?.primaryColor}
-                onChange={(e) => onUpdateFormData('primaryColor', e?.target?.value)}
+                onChange={(e) => onUpdateFormData('primaryColor', e.target.value)}
                 className="w-12 h-10 rounded-md border border-input cursor-pointer"
               />
               <Input
                 value={formData?.primaryColor}
-                onChange={(e) => onUpdateFormData('primaryColor', e?.target?.value)}
+                onChange={(e) => onUpdateFormData('primaryColor', e.target.value)}
                 placeholder="#3B82F6"
                 className="flex-1"
               />
@@ -465,12 +496,12 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               <input
                 type="color"
                 value={formData?.secondaryColor}
-                onChange={(e) => onUpdateFormData('secondaryColor', e?.target?.value)}
+                onChange={(e) => onUpdateFormData('secondaryColor', e.target.value)}
                 className="w-12 h-10 rounded-md border border-input cursor-pointer"
               />
               <Input
                 value={formData?.secondaryColor}
-                onChange={(e) => onUpdateFormData('secondaryColor', e?.target?.value)}
+                onChange={(e) => onUpdateFormData('secondaryColor', e.target.value)}
                 placeholder="#F3F4F6"
                 className="flex-1"
               />
