@@ -10,10 +10,12 @@ const FormPreview = ({ formData }) => {
     uid: '',
     nombre: '',
     empresa: '',
+    token: ''
   });
   const usuario = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
   const mail = sessionStorage.getItem("email");
+  const token = sessionStorage.getItem("token");
   useEffect(() => {
     const fetchForm = async () => {
       try {
