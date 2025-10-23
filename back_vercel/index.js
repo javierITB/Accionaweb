@@ -12,7 +12,7 @@ const noti = require("./notificaciones");
 
 const app = express();
 
-// Configuración CORS actualizada
+// Configuración CORS
 app.use(cors());
 
 app.use(express.json());
