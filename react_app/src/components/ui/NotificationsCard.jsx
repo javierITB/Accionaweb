@@ -33,7 +33,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
           color: n.color
         }));
 
-        setNotifications(normalizedNotis);
+        setNotifications(normalizedNotis.reverse());
       } catch (err) {
         console.error("Error cargando notificaciones:", err);
       } finally {
@@ -199,7 +199,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
     <div className="bg-card rounded-xl m-4 shadow-brand border border-border">
       <div className="space-y-4 max-h-96 overflow-y-auto">
         {notifications && notifications.length > 0 ? (
-          notifications.reverse().map((notification) => (
+          notifications.map((notification) => (
             <div
               key={notification?.id}
               className={`border rounded-lg p-4 m-2 transition-brand cursor-pointer hover:shadow-brand-hover ${notification?.isRead
