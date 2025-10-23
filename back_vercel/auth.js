@@ -46,83 +46,115 @@ router.get("/:mail", async (req, res) => {
   }
 });
 
-
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await req.db
-      .collection("usuarios")
-      .findOne({ mail: email });
+    const user = await req.db.collection("usuarios").findOne({ mail: email });
+    if (!user) return res.status(401).json({ success: false, message: "Credenciales inválidas" });
 
-    if (!user) {
-      return res.status(401).json({ success: false, message: "Credenciales inválidas" });
-    }
-    
-    if (user.estado === "pendiente") {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Usuario pendiente de activación. Revisa tu correo para establecer tu contraseña." 
+    if (user.estado === "pendiente")
+      return res.status(401).json({
+        success: false,
+        message: "Usuario pendiente de activación. Revisa tu correo para establecer tu contraseña."
       });
-    }
 
-    if (user.estado === "inactivo") {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Usuario inactivo. Contacta al administrador." 
+    if (user.estado === "inactivo")
+      return res.status(401).json({
+        success: false,
+        message: "Usuario inactivo. Contacta al administrador."
       });
-    }
 
-    if (user.pass !== password) {
+    if (user.pass !== password)
       return res.status(401).json({ success: false, message: "Credenciales inválidas" });
-    }
 
+    // Crear token
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
+    const usr = { name: user.nombre, email, cargo: user.cargo };
 
-    const usr = { 
-      name: `${user.nombre}`, 
-      email, 
-      cargo: user.cargo 
-    };
-    activeTokens.push({ token, usr, expiresAt });
+    // Guarda token en la colección 'tokens'
+    await req.db.collection("tokens").insertOne({
+      token,
+      email,
+      cargo: user.cargo,
+      createdAt: new Date(),
+      expiresAt,
+      active: true
+    });
 
     return res.json({ success: true, token, usr });
-
   } catch (err) {
-    return res.status(505).json({ error: "Error al obtener usuario", msg: err});
+    console.error("Error en login:", err);
+    return res.status(500).json({ error: "Error interno en login" });
   }
 });
 
+// VALIDATE - Consulta token desde DB
+router.post("/validate", async (req, res) => {
+  const { token, email, cargo } = req.body;
 
-router.post("/validate", (req, res) => {
-  const { token, email, cargo } = req.body; 
-  if (!token || !email || !cargo) {
+  if (!token || !email || !cargo)
     return res.status(401).json({ valid: false, message: "Acceso inválido" });
+
+  try {
+    const tokenRecord = await req.db.collection("tokens").findOne({ token, active: true });
+    if (!tokenRecord)
+      return res.status(401).json({ valid: false, message: "Token inválido o inexistente" });
+
+    const now = new Date();
+    const expiresAt = new Date(tokenRecord.expiresAt);
+    const createdAt = new Date(tokenRecord.createdAt);
+
+    // 1. Verificar si expiró
+    const expired = expiresAt < now;
+
+    // 2. Verificar si es del mismo día calendario
+    const isSameDay =
+      createdAt.getFullYear() === now.getFullYear() &&
+      createdAt.getMonth() === now.getMonth() &&
+      createdAt.getDate() === now.getDate();
+
+    if (expired || !isSameDay) {
+      // 🔹 Eliminar token viejo o expirado para no acumular
+      await req.db.collection("tokens").deleteOne({ token });
+      return res.status(401).json({
+        valid: false,
+        message: expired
+          ? "Token expirado. Inicia sesión nuevamente."
+          : "El token ya no es válido porque pertenece a otro día."
+      });
+    }
+
+    if (tokenRecord.email !== email)
+      return res.status(401).json({ valid: false, message: "Token no corresponde al usuario" });
+
+    if (tokenRecord.cargo !== cargo)
+      return res.status(401).json({ valid: false, message: "Cargo no corresponde al usuario" });
+
+    return res.json({ valid: true, user: { email, cargo } });
+  } catch (err) {
+    console.error("Error validando token:", err);
+    res.status(500).json({ valid: false, message: "Error interno al validar token" });
   }
-  const tokenRecord = activeTokens.find((t) => t.token === token);
-  if (!tokenRecord) {
-    return res.status(401).json({ valid: false, message: "Token inválido" });
-  }
-  const now = new Date();
-  if (tokenRecord.expiresAt < now) {
-    activeTokens = activeTokens.filter((t) => t.token !== token);
-    return res.status(401).json({ valid: false, message: "Token expirado" });
-  }
-  if (tokenRecord.usr.email !== email) {
-    return res.status(401).json({ valid: false, message: "Token no corresponde al usuario" });
-  }
-  if (tokenRecord.usr.cargo !== cargo) {
-    return res.status(401).json({ valid: false, message: "Cargo no corresponde al usuario" });
-  }
-  return res.json({ valid: true, user: tokenRecord.user });
 });
 
 
-router.post("/logout", (req, res) => {
+// LOGOUT - Elimina o desactiva token en DB
+router.post("/logout", async (req, res) => {
   const { token } = req.body;
-  activeTokens = activeTokens.filter((t) => t.token !== token);
-  res.json({ success: true });
+  if (!token) return res.status(400).json({ success: false, message: "Token requerido" });
+
+  try {
+    await req.db.collection("tokens").updateOne(
+      { token },
+      { $set: { active: false, revokedAt: new Date() } }
+    );
+    res.json({ success: true, message: "Sesión cerrada" });
+  } catch (err) {
+    console.error("Error cerrando sesión:", err);
+    res.status(500).json({ success: false, message: "Error interno al cerrar sesión" });
+  }
 });
 
 
