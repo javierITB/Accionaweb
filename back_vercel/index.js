@@ -12,7 +12,14 @@ const noti = require("./notificaciones");
 
 const app = express();
 
-app.use(cors());
+// Configuración CORS actualizada
+app.use(cors({
+  origin: 'https://accionaweb.vercel.app',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // Configurar conexión a MongoDB (desde variable de entorno)
@@ -23,7 +30,7 @@ async function connectDB() {
   if (!db) {
     await client.connect();
     db = client.db("formsdb");
-    console.log("✅ Conectado a MongoDB");
+    console.log("Conectado a MongoDB");
   }
   return db;
 }
@@ -34,7 +41,7 @@ app.use(async (req, res, next) => {
     req.db = await connectDB();
     next();
   } catch (err) {
-    console.error("❌ Error al conectar con MongoDB:", err);
+    console.error("Error al conectar con MongoDB:", err);
     res.status(500).json({ error: "Error con base de datos" });
   }
 });
@@ -49,9 +56,8 @@ app.use("/api/noti", noti);
 
 // Ruta base
 app.get("/", (req, res) => {
-  res.json({ message: "API funcionando 🚀" });
+  res.json({ message: "API funcionando" });
 });
 
-// ⚠️ Importante: NO usar app.listen() en Vercel
 // Exportar la app para que Vercel la maneje como serverless function
 module.exports = app;
