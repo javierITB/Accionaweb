@@ -14,98 +14,60 @@ function formatearFechaEspanol(fechaIso) {
 // Diccionario de ordinales
 const ORDINALES = ["", "PRIMERO:", "SEGUNDO:", "TERCERO:", "CUARTO:", "QUINTO:", "SEXTO:", "SÉPTIMO:", "OCTAVO:", "NOVENO:", "DÉCIMO:"];
 
-// Diccionarios de empresas
-const rutEmpresas = {
-    "AGUAS": "65.110.913-2",
-    "CORDERO": "77.039.974-2",
-    "MCC": "76.887.205-8",
-    "YIREHPAL": "76.422.314-4",
-    "AZOCAR": "76.084.474-8",
-    "DINSIDE": "76.697.693-K",
-    "FERDINAND": "77.577.628-5",
-    "GREEN BUSINESS": "77.123.226-4",
-    "GROW": "76.875.644-9",
-    "AGUSTIN": "77.328.293-5",
-    "SANTA MARIA": "76.397.289-5",
-    "PLAN D": "76.155.283-K",
-    "ODONTOLOGIA": "77.570.852-2",
-    "YINET": "76.993.230-5",
-    "RYS": "77.315.309-4",
-    "EMBRY": "78.330.870-3",
-    "SANDOVAL": "77.420.334-6",
-    "SIENTEVITAL": "77.489.147-1",
-    "SOCOTEC": "76.373.078-6",
-    "SYNIXTOR": "76.696.743-4",
-    "ALTO LOS ANDES": "77.680.543-2",
-    "MVP": "76.974.777-K",
-    "ICEGCLINIC": "77.126.237-6",
-    "LSOFT": "76.815.534-8",
-    "RANIA": "77.919.204-0",
-    "PIDA": "77.851.576-8",
-    "KAMI": "77.947.515-8",
-    "BRUTAL": "77.975.744-7",
-    "GREENACTION": "77.894.212-7",
-    "AZUCCA": "77.933.997-1",
-    "HOME": "77.292.823-8",
-    "SANTA ELOISA": "78.144.149-K"
-};
+// ELIMINAR LOS DICCIONARIOS HARDCODEADOS
+// const rutEmpresas = { ... }; ← ELIMINADO
+// const nombreEmpresa = { ... }; ← ELIMINADO
 
-const nombreEmpresa = {
-    "77.975.065-5": "F & M ODONTOLOGIC MEDICAL SPA",
-    "77.947.515-8": "MINIMRKET KAMI 2024 SPA",
-    "77.975.744-7": "BRUTAL STUDIO CHILE SPA",
-    "77.397.128-5": "PRESTACIONES MÉDICAS CASTRO & SELMA LIMITADA",
-    "77.933.997-1": "AZZUCA SPA",
-    "78.055.137-2": "JANUSNET SPA",
-    "78.083.288-6": "FLIPPKO SPA",
-    "78.153.281-9": "GCU ATENCIONES SPA",
-    "78.144.149-K": "SANTA ELOISA SPA",
-    "77.924.401-6": "IMPORTADORA OUSTO COSMETIC CHILE SPA",
-    "76.373.078-6": "SOCIEDAD COMERCIAL TECNOLOGICA LIMITADA",
-    "76.778.293-4": "ACCIONA CENTRO DE NEGOCIOS SPA",
-    "76.687.921-7": "JMCIA CONSTRUCCIONES SPA",
-    "76.678.453-4": "BORDADOS AMG SPA",
-    "76.867.785-9": "DH HILOS SPA",
-    "76.887.205-8": "ARIDOS MCC SPA",
-    "76.275.709-5": "SERVICIOS Y ASESORIAS DE ATENCION INTEGRAL LIMITAD",
-    "76.974.777-K": "CORPORACIÓN MVP SPA",
-    "78.330.870-3": "SERVICIO DE MANTENCION DE VEHICULOS EMBRY LIMITADA",
-    "76.993.230-5": "PELUQUERÍA YINET DÍAZ E.I.R.L.",
-    "76.493.699-K": "OPENZ EXPERIENCIA CONSULTORES SPA",
-    "77.039.974-2": "SOCIEDAD ARIDOS CORDERO SPA",
-    "76.875.644-9": "GROW GREEN CHILE SPA",
-    "76.084.474-8": "COMERCIAL YIREHPAL LIMITADA",
-    "76.926.747-6": "CENTRO CLINICO EDUCATIVO CRECE SPA",
-    "77.032.053-4": "COMERCIALIZADORA Y DISTRIBUIDORA LOOK & GLOW SPA",
-    "76.697.693-K": "DINSIDE SPA",
-    "76.155.283-K": "INVERSIONES Y ASESORIAS PLAN D SPA",
-    "76.084.487-K": "TRANSPORTE YIREHPAL LIMITADA",
-    "77.123.226-4": "GREEN BUSINESS CHILE SPA",
-    "76.743.599-1": "SOCIEDAD DE INVERSIONES COMERCIALIZADORA R Y V SPA",
-    "77.292.823-8": "HOME STYLE SPA",
-    "77.197.781-2": "DISTRIBUIDORA V Y R SPA",
-    "77.413.001-2": "COMERCIALIZADORA JKA SPA",
-    "76.397.289-5": "INVERSIONES SANTA MARIA SPA",
-    "77.328.293-5": "INVERSIONES SAN AGUSTÍN SPA",
-    "77.489.147-1": "SIENTE VITAL SPA",
-    "77.515.709-7": "IRON WORLD SERVICES INGENIERIA SPA",
-    "76.746.098-8": "COMERCIALIZADORA LD SPA",
-    "77.570.852-2": "J & P MEDICAL SPA",
-    "77.420.334-6": "SERVICIOS PROFESIONALES DE SALUD CAROLINA SANDOVAL SALINAS E.I.R.L.",
-    "76.815.534-8": "LSOFT SERVICIOS INFORMÁTICOS SPA",
-    "77.625.197-6": "GOLD GREEN SPA",
-    "77.577.628-5": "FERDINAND CLAUSEN & ASOCIADOS SPA",
-    "77.315.309-4": "RYS SEGURIDAD Y VIGILANCIA CHILE SPA",
-    "77.680.543-2": "CLINICA DENTAL ALTO LOS ANDES SPA",
-    "76.696.743-4": "SYNIXTOR CHILE SPA",
-    "77.126.237-6": "ICEGCLINIC SPA",
-    "77.851.576-8": "PIDA 2024 SPA",
-    "77.894.212-7": "GREENACTIO ENVIRO SPA",
-    "77.926.019-4": "COMERCIALIZADORA DYM",
-    "77.919.204-0": "VENTA DE PRODUCTOS Y MINIMARKET RANIA ZEIDAN ABDUL E.I.R.L.",
-    "77.879.121-8": "SERVICIOS DE MARKETING LABIFY SPA",
-    "65.110.913-2": "AGUAS PARA SANIDAD"
-};
+// Función para obtener empresa desde MongoDB
+async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
+    try {
+        console.log("=== BUSCANDO EMPRESA EN BD ===");
+        console.log("Nombre empresa buscado:", nombreEmpresa);
+        
+        if (!db || typeof db.collection !== 'function') {
+            throw new Error("Base de datos no disponible");
+        }
+
+        // Buscar por nombre (case insensitive)
+        const empresa = await db.collection('empresas').findOne({
+            nombre: { $regex: new RegExp(nombreEmpresa, 'i') }
+        });
+
+        console.log("Empresa encontrada en BD:", empresa);
+
+        if (empresa) {
+            return {
+                nombre: empresa.nombre,
+                rut: empresa.rut
+            };
+        }
+
+        // Si no se encuentra, buscar por palabras clave en el nombre
+        const palabras = nombreEmpresa.toUpperCase().split(' ');
+        for (const palabra of palabras) {
+            if (palabra.length > 3) { // Solo buscar palabras significativas
+                const empresaPorPalabra = await db.collection('empresas').findOne({
+                    nombre: { $regex: new RegExp(palabra, 'i') }
+                });
+
+                if (empresaPorPalabra) {
+                    console.log("Empresa encontrada por palabra clave:", empresaPorPalabra);
+                    return {
+                        nombre: empresaPorPalabra.nombre,
+                        rut: empresaPorPalabra.rut
+                    };
+                }
+            }
+        }
+
+        console.log("No se encontró empresa en BD");
+        return null;
+
+    } catch (error) {
+        console.error('Error buscando empresa en BD:', error);
+        return null;
+    }
+}
 
 // Función para mapear datos del formulario según las etiquetas exactas
 function mapearDatosFormulario(responses) {
@@ -405,7 +367,6 @@ function generarClausulasCondicionales(datos) {
 }
 
 // Genera docx desde datos y lo guarda en MongoDB colección docxs
-// Genera docx desde datos y lo guarda en MongoDB colección docxs
 async function generarAnexo(datos, responseId, db) {
     // VERIFICACIÓN DE CONEXIÓN A BD
     console.log("=== VERIFICANDO CONEXIÓN BD EN generarAnexo ===");
@@ -420,29 +381,24 @@ async function generarAnexo(datos, responseId, db) {
         throw new Error("db.collection no es una función - conexión inválida");
     }
 
-    // CONFIGURACIÓN DE VARIABLES (mantener igual)
+    // CONFIGURACIÓN DE VARIABLES
     const ciudad = "PROVIDENCIA";
     const hoy = formatearFechaEspanol(new Date().toISOString().split("T")[0]);
     const trabajador = datos.trabajador || "[NOMBRE DEL TRABAJADOR]";
-    let empresa = datos.empresa || "[EMPRESA]";
+    let empresaInput = datos.empresa || "[EMPRESA]";
 
-    let rut = "";
-    for (const [palabraClave, rutEmpresa] of Object.entries(rutEmpresas)) {
-        if (empresa.toUpperCase().includes(palabraClave) || palabraClave.includes(empresa.toUpperCase())) {
-            rut = rutEmpresa;
-            for (const [rutEmpresaKey, razonSocial] of Object.entries(nombreEmpresa)) {
-                if (rut === rutEmpresaKey) {
-                    empresa = razonSocial;
-                    break;
-                }
-            }
-            break;
-        }
-    }
+    // OBTENER EMPRESA DESDE MONGODB
+    let empresaInfo = await obtenerEmpresaDesdeBD(empresaInput, db);
+    
+    let empresa = empresaInfo ? empresaInfo.nombre : empresaInput.toUpperCase();
+    let rut = empresaInfo ? empresaInfo.rut : "";
+
+    console.log("=== INFORMACIÓN DE EMPRESA FINAL ===");
+    console.log("Empresa:", empresa);
+    console.log("RUT:", rut);
 
     // PREPARAR TODOS LOS PÁRRAFOS PRIMERO
     const children = [];
-
 
     children.push(new Paragraph({
         alignment: AlignmentType.CENTER,
@@ -450,7 +406,7 @@ async function generarAnexo(datos, responseId, db) {
             new TextRun({
                 text: "ANEXO DE MODIFICACIÓN Y ACTUALIZACIÓN DE CONTRATO INDIVIDUAL DE TRABAJO",
                 bold: true,
-                size: 28 // o el tamaño que prefieras
+                size: 28
             })
         ]
     }));
@@ -465,7 +421,7 @@ async function generarAnexo(datos, responseId, db) {
         alignment: AlignmentType.JUSTIFIED,
         children: [
             new TextRun(`En ${ciudad} a ${hoy}, entre `),
-            new TextRun({ text: `${empresa.toUpperCase()} `, bold: true }),
+            new TextRun({ text: `${empresa} `, bold: true }),
             new TextRun("y Don(ña) "),
             new TextRun({ text: `${trabajador.toUpperCase()}`, bold: true }),
             new TextRun(`, se conviene modificar el Contrato de Trabajo vigente de fecha ${formatearFechaEspanol(datos.fecha_contrato)} y sus posteriores ANEXOS.`)
@@ -474,7 +430,6 @@ async function generarAnexo(datos, responseId, db) {
 
     children.push(new Paragraph({ text: "" }));
     children.push(new Paragraph({ text: "" }));
-
 
     // 2. TÍTULO "MODIFICACIÓN"
     children.push(new Paragraph({
@@ -491,7 +446,7 @@ async function generarAnexo(datos, responseId, db) {
 
         const paragraphChildren = [
             new TextRun({ text: ordinal, bold: true }),
-            new TextRun({ text: "\n" }) // Solo el salto de línea
+            new TextRun({ text: "\n" })
         ];
 
         textos.forEach(t => {
@@ -526,7 +481,7 @@ async function generarAnexo(datos, responseId, db) {
 
     agregarModificacion([
         "En expresa conformidad con lo precedentemente estipulado las partes firman el presente anexo en dos ejemplares de idéntico tenor y fecha, declarando el trabajador haber recibido uno de ellos en este acto. El otro queda en los archivos de ",
-        { text: empresa.toUpperCase(), bold: true },
+        { text: empresa, bold: true },
         "."
     ]);
 
@@ -546,7 +501,7 @@ async function generarAnexo(datos, responseId, db) {
                             new Paragraph({ text: "_____________________________", alignment: AlignmentType.CENTER }),
                             new Paragraph({ text: "Empleador / Representante Legal", alignment: AlignmentType.CENTER }),
                             new Paragraph({ text: `RUT: ${rut}`, alignment: AlignmentType.CENTER }),
-                            new Paragraph({ text: empresa.toUpperCase(), alignment: AlignmentType.CENTER })
+                            new Paragraph({ text: empresa, alignment: AlignmentType.CENTER })
                         ]
                     }),
                     new TableCell({
@@ -562,17 +517,16 @@ async function generarAnexo(datos, responseId, db) {
         ]
     }));
 
-    // CREAR DOCUMENTO CON TODOS LOS ELEMENTOS (CORRECTO SEGÚN DOCUMENTACIÓN)
+    // CREAR DOCUMENTO
     const doc = new Document({
         sections: [
             {
                 properties: {},
-                children: children // ← TODOS los elementos aquí
+                children: children
             }
         ]
     });
 
-    // RESTANTE DEL CÓDIGO IGUAL (generar buffer y guardar en BD)
     const buffer = await Packer.toBuffer(doc);
 
     const IDdoc = `ANEXO_${trabajador.replace(/\s+/g, '_').toUpperCase()}_${Date.now()}`;
@@ -599,7 +553,6 @@ async function generarAnexo(datos, responseId, db) {
 
 async function generarAnexoDesdeRespuesta(responses, responseId, db) {
     try {
-        // LOG DE VERIFICACIÓN DE BD
         console.log("=== VERIFICANDO BD EN generarAnexoDesdeRespuesta ===");
         console.log("db recibida:", !!db);
         console.log("db tiene collection?:", db && typeof db.collection === 'function');
