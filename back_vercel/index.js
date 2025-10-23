@@ -13,15 +13,7 @@ const noti = require("./notificaciones");
 const app = express();
 
 // Configuración CORS actualizada
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://accionaweb.vercel.app'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 
 app.use(express.json());
 
