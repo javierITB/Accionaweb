@@ -4,8 +4,46 @@ import Icon from '../../../components/AppIcon.jsx';
 const FormPreview = ({ formData }) => {
   const renderQuestionInput = (question) => {
     const baseInputClass = "w-full px-3 py-2 border border-input rounded-md bg-white text-black";
-    
+
     switch (question?.type) {
+      case 'email':
+        return (
+          <input
+            type="email"
+            placeholder="ejemplo@correo.com"
+            className={baseInputClass}
+            readOnly
+          />
+        );
+
+      case 'file':
+        return (
+          <div className="space-y-2">
+            <input
+              type="file"
+              className={baseInputClass}
+              readOnly
+              multiple={question.multiple || false}
+              accept={question.accept || ''}
+            />
+            {question.accept && (
+              <p className="text-xs text-gray-500">
+                Formatos permitidos: {question.accept}
+              </p>
+            )}
+            {question.multiple && (
+              <p className="text-xs text-gray-500">
+                Se permiten múltiples archivos
+              </p>
+            )}
+            {question.maxSize && (
+              <p className="text-xs text-gray-500">
+                Tamaño máximo: {question.maxSize} MB
+              </p>
+            )}
+          </div>
+        );
+
       case 'text':
         return (
           <input
@@ -15,7 +53,7 @@ const FormPreview = ({ formData }) => {
             readOnly
           />
         );
-      
+
       case 'number':
         return (
           <input
@@ -25,7 +63,7 @@ const FormPreview = ({ formData }) => {
             readOnly
           />
         );
-      
+
       case 'date':
         return (
           <input
@@ -34,7 +72,7 @@ const FormPreview = ({ formData }) => {
             readOnly
           />
         );
-      
+
       case 'time':
         return (
           <input
@@ -43,14 +81,14 @@ const FormPreview = ({ formData }) => {
             readOnly
           />
         );
-      
+
       case 'single_choice':
         return (
           <div className="space-y-3">
             {(question?.options || [])?.map((option, idx) => {
               const optionText = typeof option === 'object' ? option.text : option;
               const hasSubform = typeof option === 'object' ? option.hasSubform : false;
-              
+
               return (
                 <label key={idx} className="flex items-center space-x-3 cursor-not-allowed">
                   <input
@@ -72,14 +110,14 @@ const FormPreview = ({ formData }) => {
             })}
           </div>
         );
-      
+
       case 'multiple_choice':
         return (
           <div className="space-y-3">
             {(question?.options || [])?.map((option, idx) => {
               const optionText = typeof option === 'object' ? option.text : option;
               const hasSubform = typeof option === 'object' ? option.hasSubform : false;
-              
+
               return (
                 <label key={idx} className="flex items-center space-x-3 cursor-not-allowed">
                   <input
@@ -100,7 +138,7 @@ const FormPreview = ({ formData }) => {
             })}
           </div>
         );
-      
+
       default:
         return (
           <div className="text-center py-4 text-muted-foreground">
@@ -145,9 +183,9 @@ const FormPreview = ({ formData }) => {
 
       {/* Preview Container */}
       <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-1">
-        <div 
+        <div
           className="rounded-lg p-6 min-h-96"
-          style={{ 
+          style={{
             backgroundColor: formData?.secondaryColor || '#F3F4F6'
           }}
         >
@@ -156,7 +194,7 @@ const FormPreview = ({ formData }) => {
             <h1 className="text-3xl font-bold text-black mb-2">
               {formData?.title || 'Título del Formulario'}
             </h1>
-            
+
             <div className="flex items-center justify-center space-x-6 text-sm text-gray-600 mb-4">
               {formData?.category && (
                 <div className="flex items-center space-x-1">
@@ -164,14 +202,14 @@ const FormPreview = ({ formData }) => {
                   <span className="capitalize">{formData?.category}</span>
                 </div>
               )}
-              
+
               {formData?.responseTime && (
                 <div className="flex items-center space-x-1">
                   <Icon name="Clock" size={14} />
                   <span>{formData?.responseTime} minutos</span>
                 </div>
               )}
-              
+
               {formData?.author && (
                 <div className="flex items-center space-x-1">
                   <Icon name="User" size={14} />
@@ -182,7 +220,7 @@ const FormPreview = ({ formData }) => {
 
             {formData?.questions?.length > 0 && (
               <p className="text-gray-600">
-                {formData?.questions?.length} pregunta{formData?.questions?.length !== 1 ? 's' : ''} • 
+                {formData?.questions?.length} pregunta{formData?.questions?.length !== 1 ? 's' : ''} •
                 {formData?.questions?.filter(q => q?.required)?.length} obligatoria{formData?.questions?.filter(q => q?.required)?.length !== 1 ? 's' : ''}
               </p>
             )}
@@ -196,13 +234,13 @@ const FormPreview = ({ formData }) => {
                   {/* Question Header */}
                   <div className="mb-4">
                     <div className="flex items-start space-x-3">
-                      <div 
+                      <div
                         className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
                         style={{ backgroundColor: formData?.primaryColor || '#3B82F6' }}
                       >
                         {index + 1}
                       </div>
-                      
+
                       <div className="flex-1">
                         <h3 className="text-lg font-semibold text-black mb-1">
                           {question?.title || `Pregunta ${index + 1}`}
@@ -210,7 +248,7 @@ const FormPreview = ({ formData }) => {
                             <span className="text-red-600 ml-1">*</span>
                           )}
                         </h3>
-                        
+
                         {question?.description && (
                           <p className="text-gray-600 text-sm">
                             {question?.description}
@@ -233,7 +271,7 @@ const FormPreview = ({ formData }) => {
                   <div className="text-sm text-gray-500">
                     * Campos obligatorios
                   </div>
-                  
+
                   <div className="flex items-center space-x-3">
                     <button
                       className="px-6 py-3 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -241,7 +279,7 @@ const FormPreview = ({ formData }) => {
                     >
                       Cancelar
                     </button>
-                    
+
                     <button
                       style={{ backgroundColor: formData?.primaryColor || '#3B82F6' }}
                       className="px-6 py-3 rounded-md font-medium text-white hover:opacity-90 transition-opacity"
@@ -276,8 +314,8 @@ const FormPreview = ({ formData }) => {
           <div className="text-sm text-yellow-800">
             <p className="font-medium mb-1">Nota sobre la vista previa</p>
             <p>
-              Esta es una representación visual de cómo se verá tu formulario. 
-              Los campos están deshabilitados en la vista previa. Una vez publicado, 
+              Esta es una representación visual de cómo se verá tu formulario.
+              Los campos están deshabilitados en la vista previa. Una vez publicado,
               los usuarios podrán interactuar completamente con el formulario.
             </p>
           </div>

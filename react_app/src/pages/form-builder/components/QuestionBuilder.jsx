@@ -463,6 +463,55 @@ const QuestionBuilder = ({
       );
     };
 
+    const renderFileConfiguration = () => {
+      return (
+        <div className="space-y-4 mt-4">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={localQuestion.multiple || false}
+              onChange={(e) => handleFieldChange('multiple', e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-foreground">
+              Permitir múltiples archivos
+            </span>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Tipos de archivo permitidos
+            </label>
+            <input
+              type="text"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              value={localQuestion.accept || ''}
+              onChange={(e) => handleFieldChange('accept', e.target.value)}
+              placeholder=".pdf,.doc,.docx,.jpg,.png"
+              onBlur={saveChanges}
+            />
+            <p className="text-xs text-muted-foreground">
+              Separar extensiones con comas: .pdf, .doc, .jpg
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Tamaño máximo (MB)
+            </label>
+            <input
+              type="number"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              value={localQuestion.maxSize || ''}
+              onChange={(e) => handleFieldChange('maxSize', e.target.value)}
+              placeholder="10"
+              onBlur={saveChanges}
+            />
+          </div>
+        </div>
+      );
+    };
+
     const questionType = questionTypes.find(type => type.value === localQuestion.type);
 
     const handleDelete = () => {
@@ -664,6 +713,10 @@ const QuestionBuilder = ({
 
             {(localQuestion.type === 'single_choice' || localQuestion.type === 'multiple_choice') && (
               renderOptionsWithSubsections()
+            )}
+
+            {localQuestion.type === 'file' && (
+              renderFileConfiguration()
             )}
           </div>
         )}
