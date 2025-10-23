@@ -24,10 +24,11 @@ const upload = multer({
 
 router.post("/", async (req, res) => {
   try {
-    const { token, formId, user, responses, formTitle } = req.body;
+    const {formId, user, responses, formTitle } = req.body;
     const usuario = user?.nombre;
     const empresa = user?.empresa;
     const userId = user?.uid;
+    const token = user?.token;
 
     // === VALIDAR TOKEN ===
     const tokenValido = await validarToken(req.db, token);
