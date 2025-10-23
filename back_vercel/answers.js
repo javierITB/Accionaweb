@@ -4,6 +4,7 @@ const { ObjectId } = require("mongodb");
 const multer = require('multer');
 const { addNotification } = require("./notificaciones.helper");
 const { generarAnexoDesdeRespuesta } = require("./generador.helper");
+const { validarToken } = require("./utils/validarToken.js");
 
 // Configurar Multer para almacenar en memoria (buffer)
 const upload = multer({
