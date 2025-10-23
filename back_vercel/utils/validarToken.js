@@ -1,5 +1,5 @@
 export async function validarToken(db, token) {
-  const tokenData = await db.collection("tokens").find().toArray();
+  const tokenData = await db.collection("tokens").findOne({ "token": token });
 
   console.log("TOKEN DATA", tokenData)
   if (!tokenData) {
