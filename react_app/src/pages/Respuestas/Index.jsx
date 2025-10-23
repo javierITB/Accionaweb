@@ -8,7 +8,7 @@ import FilterPanel from './components/FilterPanel';
 import MessageModal from './components/MessageModal';
 import RequestDetails from './components/RequestDetails';
 import StatsOverview from './components/StatsOverview';
-//holi
+
 const RequestTracking = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const formId = urlParams?.get('id');
@@ -29,7 +29,6 @@ const RequestTracking = () => {
     search: '',
     status: '',
     category: '',
-    priority: '',
     dateRange: '',
     startDate: '',
     endDate: '',
@@ -37,7 +36,6 @@ const RequestTracking = () => {
     submittedBy: ''
   });
 
-  // FUNCIÓN updateRequest CORRECTAMENTE UBICADA
   const updateRequest = (updatedRequest) => {
     setResp(prevResp =>
       prevResp.map(req =>
@@ -95,30 +93,35 @@ const RequestTracking = () => {
             doc.responseId === String(r._id)
           );
 
+          const userName = r.user?.nombre || r.userId?.nombre || 'Usuario Desconocido';
+          const userCompany = r.user?.empresa || r.userId?.empresa || 'desconocida';
+          const userEmail = r.user?.mail || r.userId?.mail || '';
+
           return {
             _id: r._id,
             formId: r.formId,
-            title: r.title || (matchedForm ? matchedForm.title : ''),
+            title: r.title || r.formTitle || (matchedForm ? matchedForm.title : ''),
             responses: r.responses || {},
             submittedAt: r.submittedAt || r.createdAt || null,
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,
             status: r.status || 'pendiente',
 
-            // AGREGAR ESTOS CAMPOS CRÍTICOS:
-            correctedFile: r.correctedFile, // ← ESTE ES EL MÁS IMPORTANTE
-            formTitle: r.formTitle, // ← Y ESTE TAMBIÉN
-            approvedAt: r.approvedAt, // ← PARA SABER CUÁNDO FUE APROBADO
+            correctedFile: r.correctedFile,
+            formTitle: r.formTitle,
+            approvedAt: r.approvedAt,
 
             IDdoc: matchedDoc?.IDdoc,
             docxStatus: matchedDoc?.estado,
             docxCreatedAt: matchedDoc?.createdAt,
-            submittedBy: r.user?.nombre || r.user?.email || 'Usuario Desconocido',
+            submittedBy: userName,
             lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
             assignedTo: r.updatedAt || " - ",
             hasMessages: false,
-            company: r.user?.empresa || 'desconocida',
-            form: matchedForm
+            company: userCompany,
+            userEmail: userEmail,
+            form: matchedForm,
+            searchData: JSON.stringify(r.responses).toLowerCase()
           };
         });
 
@@ -135,7 +138,6 @@ const RequestTracking = () => {
     fetchForms();
   }, []);
 
-  // Mock stats data
   const mockStats = {
     total: resp?.length || 0,
     pending: resp?.filter(r => r.status === 'pendiente')?.length || 0,
@@ -145,51 +147,88 @@ const RequestTracking = () => {
     avgProcessingTime: 5.2
   };
 
-  // Filter and sort requests - SIN la función updateRequest dentro
   const filteredRequests = resp?.filter(request => {
-    // Search filter
     if (filters?.search) {
       const searchTerm = filters.search.toLowerCase();
       const matchesSearch =
         request?.title?.toLowerCase()?.includes(searchTerm) ||
         request?.company?.toLowerCase()?.includes(searchTerm) ||
         request?.submittedBy?.toLowerCase()?.includes(searchTerm) ||
-        request?._id?.toLowerCase()?.includes(searchTerm);
+        request?.userEmail?.toLowerCase()?.includes(searchTerm) ||
+        request?._id?.toLowerCase()?.includes(searchTerm) ||
+        request?.searchData?.includes(searchTerm);
 
       if (!matchesSearch) return false;
     }
 
-    // Status filter
     if (filters?.status && request?.status !== filters?.status) return false;
 
-    // Category filter
     if (filters?.category) {
-      const requestCategory = request?.form?.section || request?.form?.title || '';
+      const requestCategory = request?.form?.category || '';
       if (requestCategory.toLowerCase() !== filters.category.toLowerCase()) return false;
     }
 
-    // Priority filter
-    if (filters?.priority && request?.priority !== filters?.priority) return false;
-
-    // Company filter
     if (filters?.company && (!request?.company || !request?.company?.toLowerCase()?.includes(filters?.company?.toLowerCase()))) {
       return false;
     }
 
-    // Submitted by filter
     if (filters?.submittedBy && (!request?.submittedBy || !request?.submittedBy?.toLowerCase()?.includes(filters?.submittedBy?.toLowerCase()))) {
       return false;
     }
 
-    // Date filtering
+    const requestDate = new Date(request.submittedAt || request.createdAt);
+    
+    if (filters?.dateRange) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      let startPeriod, endPeriod;
+      
+      switch (filters.dateRange) {
+        case 'today':
+          startPeriod = new Date(today);
+          endPeriod = new Date(today);
+          endPeriod.setHours(23, 59, 59, 999);
+          break;
+        case 'week':
+          startPeriod = new Date(today);
+          startPeriod.setDate(today.getDate() - today.getDay());
+          endPeriod = new Date(today);
+          endPeriod.setDate(today.getDate() + (6 - today.getDay()));
+          endPeriod.setHours(23, 59, 59, 999);
+          break;
+        case 'month':
+          startPeriod = new Date(today.getFullYear(), today.getMonth(), 1);
+          endPeriod = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          endPeriod.setHours(23, 59, 59, 999);
+          break;
+        case 'quarter':
+          const quarter = Math.floor(today.getMonth() / 3);
+          startPeriod = new Date(today.getFullYear(), quarter * 3, 1);
+          endPeriod = new Date(today.getFullYear(), (quarter + 1) * 3, 0);
+          endPeriod.setHours(23, 59, 59, 999);
+          break;
+        case 'year':
+          startPeriod = new Date(today.getFullYear(), 0, 1);
+          endPeriod = new Date(today.getFullYear(), 11, 31);
+          endPeriod.setHours(23, 59, 59, 999);
+          break;
+        default:
+          startPeriod = null;
+          endPeriod = null;
+      }
+      
+      if (startPeriod && endPeriod && (requestDate < startPeriod || requestDate > endPeriod)) {
+        return false;
+      }
+    }
+
     if (filters?.startDate) {
-      const requestDate = new Date(request.submittedAt || request.createdAt);
       const startDate = new Date(filters.startDate);
       if (requestDate < startDate) return false;
     }
 
     if (filters?.endDate) {
-      const requestDate = new Date(request.submittedAt || request.createdAt);
       const endDate = new Date(filters.endDate);
       endDate.setHours(23, 59, 59, 999);
       if (requestDate > endDate) return false;
@@ -211,11 +250,6 @@ const RequestTracking = () => {
       case 'status':
         aValue = a?.status || '';
         bValue = b?.status || '';
-        break;
-      case 'priority':
-        const priorityOrder = { high: 3, medium: 2, low: 1 };
-        aValue = priorityOrder?.[a?.priority] || 0;
-        bValue = priorityOrder?.[b?.priority] || 0;
         break;
       default:
         return 0;
@@ -272,7 +306,6 @@ const RequestTracking = () => {
       search: '',
       status: '',
       category: '',
-      priority: '',
       dateRange: '',
       startDate: '',
       endDate: '',
@@ -284,8 +317,7 @@ const RequestTracking = () => {
   const sortOptions = [
     { value: 'date', label: 'Fecha' },
     { value: 'title', label: 'Título' },
-    { value: 'status', label: 'Estado' },
-    { value: 'priority', label: 'Prioridad' }
+    { value: 'status', label: 'Estado' }
   ];
 
   return (
@@ -294,7 +326,6 @@ const RequestTracking = () => {
       <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} />
       <main className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'} pt-16`}>
         <div className="p-6 space-y-6">
-          {/* Page Header */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground">Seguimiento de Solicitudes</h1>
@@ -314,10 +345,8 @@ const RequestTracking = () => {
             </div>
           </div>
 
-          {/* Stats Overview */}
           <StatsOverview stats={mockStats} />
 
-          {/* Filters */}
           <FilterPanel
             filters={filters}
             onFilterChange={setFilters}
@@ -326,7 +355,6 @@ const RequestTracking = () => {
             onToggle={() => setShowFilters(!showFilters)}
           />
 
-          {/* Controls */}
           <div className="flex items-center justify-between bg-card border border-border rounded-lg p-4">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
@@ -380,7 +408,6 @@ const RequestTracking = () => {
             </div>
           </div>
 
-          {/* Requests List */}
           <div className={
             viewMode === 'grid'
               ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
@@ -410,7 +437,6 @@ const RequestTracking = () => {
 
         </div>
       </main>
-      {/* Modals */}
       <MessageModal
         isOpen={showMessageModal}
         onClose={() => setShowMessageModal(false)}
@@ -422,7 +448,7 @@ const RequestTracking = () => {
         request={selectedRequest}
         isVisible={showRequestDetails}
         onClose={() => setShowRequestDetails(false)}
-        onUpdate={updateRequest} // ← AHORA SÍ ESTÁ DISPONIBLE
+        onUpdate={updateRequest}
       />
     </div>
   );

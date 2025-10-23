@@ -11,29 +11,25 @@ const FilterPanel = ({
   isVisible, 
   onToggle 
 }) => {
-  // Opciones de estado basadas en tus datos reales
+  // Opciones de estado basadas en los estados reales del sistema
   const statusOptions = [
     { value: '', label: 'Todos los Estados' },
-    { value: 'pending', label: 'Pendiente' },
-    { value: 'inReview', label: 'En Revisión' },
-    { value: 'approved', label: 'Aprobado' },
-    { value: 'rejected', label: 'Rechazado' },
+    { value: 'pendiente', label: 'Pendiente' },
+    { value: 'en_revision', label: 'En Revisión' },
+    { value: 'aprobado', label: 'Aprobado' },
   ];
 
   // Opciones de categoría basadas en los formularios existentes
   const categoryOptions = [
     { value: '', label: 'Todas las Categorías' },
-    { value: 'solicitudes', label: 'Solicitudes' },
-    { value: 'evaluaciones', label: 'Evaluaciones' },
-    { value: 'encuestas', label: 'Encuestas' },
-    { value: 'otros', label: 'Otros' }
-  ];
-
-  const priorityOptions = [
-    { value: '', label: 'Todas las Prioridades' },
-    { value: 'high', label: 'Alta' },
-    { value: 'medium', label: 'Media' },
-    { value: 'low', label: 'Baja' }
+    { value: 'hr', label: 'Recursos Humanos' },
+    { value: 'it', label: 'Tecnología' },
+    { value: 'finance', label: 'Finanzas' },
+    { value: 'operations', label: 'Operaciones' },
+    { value: 'training', label: 'Capacitación' },
+    { value: 'feedback', label: 'Retroalimentación' },
+    { value: 'survey', label: 'Encuesta' },
+    { value: 'evaluation', label: 'Evaluación' }
   ];
 
   const dateRangeOptions = [
@@ -105,7 +101,7 @@ const FilterPanel = ({
           </div>
 
           {/* Filter Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Select
               label="Estado"
               options={statusOptions}
@@ -118,13 +114,6 @@ const FilterPanel = ({
               options={categoryOptions}
               value={filters?.category || ''}
               onChange={(value) => handleInputChange('category', value)}
-            />
-
-            <Select
-              label="Prioridad"
-              options={priorityOptions}
-              value={filters?.priority || ''}
-              onChange={(value) => handleInputChange('priority', value)}
             />
 
             <Select
