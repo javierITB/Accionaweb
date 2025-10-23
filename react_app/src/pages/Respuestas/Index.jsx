@@ -15,7 +15,7 @@ const RequestTracking = () => {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [forms, setAllForms] = useState([]);
   const [resp, setResp] = useState([]);
   const [showMessageModal, setShowMessageModal] = useState(false);
