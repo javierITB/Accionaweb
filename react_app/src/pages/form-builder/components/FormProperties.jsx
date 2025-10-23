@@ -121,15 +121,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
       try {
         setLoadingCompanies(true);
 
-        let response;
-
-        // Intentar con URL absoluta primero
-        try {
-          response = await fetch('https://accionaweb.vercel.app/api/auth/empresas/todas');
-        } catch (error) {
-          // Si falla, intentar con URL relativa
-          response = await fetch('/api/auth/empresas/todas');
-        }
+        const response = await fetch('https://accionaweb.vercel.app/api/auth/empresas/todas');
 
         if (!response.ok) {
           throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -138,18 +130,17 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
         const empresasData = await response.json();
 
         const options = empresasData.map(empresa => ({
-          value: empresa._id || empresa.id,
-          label: empresa.nombre
+          value: empresa.nombre,  // ← Usar nombre como valor
+          label: empresa.nombre   // ← Nombre como etiqueta
         }));
 
         setCompanyOptions(options);
       } catch (error) {
         console.error('Error cargando empresas:', error);
 
-        // Fallback más informativo
         const fallbackOptions = [
-          { value: 'fallback1', label: 'No se pudieron cargar las empresas' },
-          { value: 'fallback2', label: 'Recarga la página para intentar nuevamente' }
+          { value: 'Empresa Ejemplo 1', label: 'Empresa Ejemplo 1' },
+          { value: 'Empresa Ejemplo 2', label: 'Empresa Ejemplo 2' }
         ];
         setCompanyOptions(fallbackOptions);
       } finally {
