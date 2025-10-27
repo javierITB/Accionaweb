@@ -34,10 +34,10 @@ router.post("/filter", async (req, res) => {
         return res.status(401).json({ error: "Acceso denegado. Usuario no existe." });
     }
     
-    const userRole = user.rol; 
+    const userRole = user.cargo; 
 
     if (!userRole) {
-         return res.status(403).json({ error: "Rol no definido para el usuario." });
+         return res.status(403).json({ error: "Cargo no definido para el usuario." });
     }
 
     // =========================================================
@@ -48,7 +48,7 @@ router.post("/filter", async (req, res) => {
 
     // Colección 'menu' (AJUSTAR si es necesario)
     const menuItems = await req.db.collection('menu').find({
-        cargos: { $in: allowedRoles }
+        cargo: { $in: allowedRoles }
     }).toArray();
     
     // 4. Retornar las secciones de menú filtradas

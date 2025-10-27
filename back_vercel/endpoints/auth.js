@@ -71,13 +71,13 @@ router.post("/login", async (req, res) => {
     // Crear token
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
-    const usr = { name: user.nombre, email, cargo: user.cargo };
+    const usr = { name: user.nombre, email, cargo: user.rol };
 
     // Guarda token en la colección 'tokens'
     await req.db.collection("tokens").insertOne({
       token,
       email,
-      cargo: user.cargo,
+      rol: user.rol,
       createdAt: new Date(),
       expiresAt,
       active: true
@@ -129,7 +129,7 @@ router.post("/validate", async (req, res) => {
     if (tokenRecord.email !== email)
       return res.status(401).json({ valid: false, message: "Token no corresponde al usuario" });
 
-    if (tokenRecord.cargo !== cargo)
+    if (tokenRecord.rol !== cargo)
       return res.status(401).json({ valid: false, message: "Cargo no corresponde al usuario" });
 
     return res.json({ valid: true, user: { email, cargo } });

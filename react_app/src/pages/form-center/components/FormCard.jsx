@@ -35,7 +35,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
   const iconInfo = getIconInfo();
 
   return (
-    <div className={`bg-card border border-border rounded-lg p-6 hover:shadow-brand-hover transition-brand group ${className}`}>
+    <div className={`bg-card border border-border rounded-lg p-4 hover:shadow-brand-hover transition-brand group ${className}`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
           {/* ✅ ICONO CON COLOR DINÁMICO */}
@@ -59,7 +59,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
               {truncateText(form?.title, 30)}
             </h3>
             <p className="text-sm text-muted-foreground truncate overflow-hidden whitespace-nowrap text-ellipsis">
-              {form?.category}
+              {form?.category}, modificado: {form?.lastModified}
             </p>
           </div>
         </div>
@@ -70,11 +70,6 @@ const FormCard = ({ form, onSelect, className = '' }) => {
           </span>
         )}
       </div>
-
-      {/* DESCRIPCIÓN */}
-      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-        {form?.description}
-      </p>
 
       {/* SECCIÓN: EMPRESAS - MEJORADA */}
       {form?.companies && form.companies.length > 0 && (
@@ -102,7 +97,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
       )}
 
       {/* ... (el resto del código permanece igual) ... */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center space-x-4 text-xs text-muted-foreground">
           <div className="flex items-center space-x-1">
             <Icon name="Clock" size={14} />
@@ -110,33 +105,13 @@ const FormCard = ({ form, onSelect, className = '' }) => {
           </div>
           <div className="flex items-center space-x-1">
             <Icon name="FileText" size={14} />
-            <span>{form?.fields} fields</span>
+            <span>{form?.fields} Preguntas</span>
           </div>
           {form?.documentsRequired && (
             <div className="flex items-center space-x-1">
               <Icon name="Paperclip" size={14} />
               <span>Docs required</span>
             </div>
-          )}
-        </div>
-
-      </div>
-
-      {form?.lastModified && (
-        <div className="text-xs text-muted-foreground mb-4">
-          última actualización: {form?.lastModified}
-        </div>
-      )}
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          {form?.tags?.slice(0, 2)?.map((tag, index) => (
-            <span key={index} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
-              {tag}
-            </span>
-          ))}
-          {form?.tags?.length > 2 && (
-            <span className="text-xs text-muted-foreground">+{form?.tags?.length - 2} more</span>
           )}
         </div>
 

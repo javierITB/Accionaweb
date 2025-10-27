@@ -55,14 +55,13 @@ const FormReg = () => {
 
   const cargos = [
     { value: 'Admin', label: 'Administrador' },
-    { value: 'Gerente', label: 'Gerente' },
-    { value: 'Supervisor', label: 'Supervisor' },
-    { value: 'Empleado', label: 'Empleado' },
+    { value: 'RRHH', label: 'Recursos Humanos' },
+    { value: 'Cliente', label: 'Cliente' },
   ];
 
   const roles = [
     { value: 'admin', label: 'Administrador' },
-    { value: 'user', label: 'Usuario' },
+    { value: 'user', label: 'Cliente' },
   ];
 
   useEffect(() => {
