@@ -13,7 +13,7 @@ const FilterPanel = ({
 }) => {
   const statusOptions = [
     { value: '', label: 'Todos los Estados' },
-    { value: 'draft', label: 'Borrador' },
+    { value: 'borrador', label: 'Borrador' },
     { value: 'pending', label: 'Pendiente' },
     { value: 'in_review', label: 'En Revisión' },
     { value: 'approved', label: 'Aprobado' },

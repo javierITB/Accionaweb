@@ -33,7 +33,7 @@ const FormCenter = () => {
           category: f.category || 'general',
           icon: f.icon || 'FileText', // Usa el icono guardado
           primaryColor: f.primaryColor || '#3B82F6', // ✅ AGREGADO: Color principal del formulario
-          status: f.status || 'draft',
+          status: f.status || 'borrador',
           priority: f.priority || 'medium',
           estimatedTime: f.responseTime || '1-5 min',
           fields: f.questions ? f.questions.length : 0,
@@ -135,7 +135,7 @@ const FormCenter = () => {
     setViewMode(viewMode === 'grid' ? 'list' : 'grid');
   };
 
-  const draftCount = allForms.filter(f => f.status === 'draft').length;
+  const borradorCount = allForms.filter(f => f.status === 'borrador').length;
   const recentCount = allForms.filter(f => {
     if (!f.lastModified) return false;
     const lastModDate = new Date(f.lastModified);
@@ -203,7 +203,7 @@ const FormCenter = () => {
                     <Icon name="Edit" size={20} className="text-warning" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{draftCount}</p>
+                    <p className="text-2xl font-bold text-foreground">{borradorCount}</p>
                     <p className="text-sm text-muted-foreground">Borradores</p>
                   </div>
                 </div>

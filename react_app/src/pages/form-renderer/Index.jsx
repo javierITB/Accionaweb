@@ -21,7 +21,7 @@ const FormRenderer = () => {
     if (formId) {
       // Try to load from localStorage first (for custom forms)
       const savedForms = JSON.parse(localStorage.getItem('customForms') || '[]');
-      const customForm = savedForms?.find(form => form?.id === formId && form?.status === 'published');
+      const customForm = savedForms?.find(form => form?.id === formId && form?.status === 'publicado');
       
       if (customForm) {
         setFormData(customForm);

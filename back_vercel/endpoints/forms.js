@@ -73,7 +73,7 @@ router.get("/section/:section/:mail", async (req, res) => {
       .find({
         section,
         companies: empresaUsuario,
-        status: "published",
+        status: "publicado",
       })
       .toArray();
 
@@ -106,14 +106,14 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Publicar un formulario (cambiar status de draft → published)
+// Publicar un formulario (cambiar status de borrador → publicado)
 router.put("/public/:id", async (req, res) => {
   try {
     const result = await req.db.collection("forms").findOneAndUpdate(
       { _id: new ObjectId(req.params.id) },
       {
         $set: { 
-          status: "published", 
+          status: "publicado", 
           updatedAt: new Date() 
         } 
       },

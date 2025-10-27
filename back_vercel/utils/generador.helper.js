@@ -2,7 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const docx = require("docx");
-const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType } = docx;
+const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, ImageRun, BorderStyle } = docx;
 
 // Función auxiliar para formatear fecha
 function formatearFechaEspanol(fechaIso) {
@@ -11,12 +11,14 @@ function formatearFechaEspanol(fechaIso) {
     return `${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
-// Diccionario de ordinales
-const ORDINALES = ["", "PRIMERO:", "SEGUNDO:", "TERCERO:", "CUARTO:", "QUINTO:", "SEXTO:", "SÉPTIMO:", "OCTAVO:", "NOVENO:", "DÉCIMO:"];
-
-// ELIMINAR LOS DICCIONARIOS HARDCODEADOS
-// const rutEmpresas = { ... }; ← ELIMINADO
-// const nombreEmpresa = { ... }; ← ELIMINADO
+// Diccionario de ordinales extendido hasta VIGÉSIMO
+const ORDINALES = [
+    "", "PRIMERO:", "SEGUNDO:", "TERCERO:", "CUARTO:", "QUINTO:", 
+    "SEXTO:", "SÉPTIMO:", "OCTAVO:", "NOVENO:", "DÉCIMO:",
+    "UNDÉCIMO:", "DUODÉCIMO:", "DÉCIMO TERCERO:", "DÉCIMO CUARTO:", 
+    "DÉCIMO QUINTO:", "DÉCIMO SEXTO:", "DÉCIMO SÉPTIMO:", 
+    "DÉCIMO OCTAVO:", "DÉCIMO NOVENO:", "VIGÉSIMO:"
+];
 
 // Función para obtener empresa desde MongoDB
 async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
@@ -28,7 +30,6 @@ async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
             throw new Error("Base de datos no disponible");
         }
 
-        // Buscar por nombre (case insensitive)
         const empresa = await db.collection('empresas').findOne({
             nombre: { $regex: new RegExp(nombreEmpresa, 'i') }
         });
@@ -38,14 +39,14 @@ async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
         if (empresa) {
             return {
                 nombre: empresa.nombre,
-                rut: empresa.rut
+                rut: empresa.rut,
+                logo: empresa.logo
             };
         }
 
-        // Si no se encuentra, buscar por palabras clave en el nombre
         const palabras = nombreEmpresa.toUpperCase().split(' ');
         for (const palabra of palabras) {
-            if (palabra.length > 3) { // Solo buscar palabras significativas
+            if (palabra.length > 3) {
                 const empresaPorPalabra = await db.collection('empresas').findOne({
                     nombre: { $regex: new RegExp(palabra, 'i') }
                 });
@@ -54,7 +55,8 @@ async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
                     console.log("Empresa encontrada por palabra clave:", empresaPorPalabra);
                     return {
                         nombre: empresaPorPalabra.nombre,
-                        rut: empresaPorPalabra.rut
+                        rut: empresaPorPalabra.rut,
+                        logo: empresaPorPalabra.logo
                     };
                 }
             }
@@ -69,6 +71,34 @@ async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
     }
 }
 
+// Función para crear imagen del logo desde base64
+function crearLogoImagen(logoData) {
+    if (!logoData || !logoData.fileData) {
+        return null;
+    }
+
+    try {
+        return new ImageRun({
+            data: logoData.fileData.buffer,
+            transformation: {
+                width: 100,
+                height: 100,
+            },
+            floating: {
+                horizontalPosition: {
+                    offset: 201440,
+                },
+                verticalPosition: {
+                    offset: 201440,
+                },
+            }
+        });
+    } catch (error) {
+        console.error('Error creando imagen del logo:', error);
+        return null;
+    }
+}
+
 // Función para mapear datos del formulario según las etiquetas exactas
 function mapearDatosFormulario(responses) {
     console.log("=== CAMPOS DISPONIBLES EN RESPONSES ===");
@@ -76,58 +106,47 @@ function mapearDatosFormulario(responses) {
         console.log(`"${key}":`, responses[key]);
     });
 
-    // MAPEO CORREGIDO - usa los nombres EXACTOS de tu formulario
     const datosMapeados = {
-        // EMPRESA - múltiples alternativas
         empresa: responses["Nombre de la Empresa solicitante:"] ||
             responses["Nombre del responsable de la empresa:"] ||
             "[EMPRESA NO ESPECIFICADA]",
 
-        // TRABAJADOR
         trabajador: responses["Nombre del trabajador:"] || "[TRABAJADOR NO ESPECIFICADO]",
         rut_trabajador: responses["Rut del trabajador:"] || "",
 
-        // FECHAS
         fecha_inicio: responses["Fecha de inicio de modificación:"] || "",
         fecha_contrato: responses["Fecha del contrato vigente:"] || "",
         termino_contrato: responses["FECHA DE TÉRMINO DEL CONTRATADO FIJO:"] || "",
 
-        // TIPO DE CONTRATO Y CARGO
         tipo_contrato: Array.isArray(responses["Tipo de Anexo:"]) ?
             responses["Tipo de Anexo:"] :
             [responses["Tipo de Anexo:"]].filter(Boolean),
         nuevo_cargo: responses["NUEVO CARGO DEL TRABAJADOR"] || "",
 
-        // REMUNERACIONES
         sueldo: responses["MONTO DEL NUEVO SUELDO:"] || "",
         colacion: responses["MONTO DE NUEVA ASIGNACIÓN DE COLACIÓN:"] || "",
         movilizacion: responses["MONTO DE NUEVA ASIGNACIÓN DE MOVILIZACIÓN:"] || "",
 
-        // HORARIOS
         hora_ingreso: responses["HORA DE INGRESO DE JORNADA LABORAL:"] || "",
         hora_salida: responses["HORA DE SALIDA DE JORNADA LABORAL:"] || "",
         hora_ingreso_colacion: responses["HORA DE INGRESO COLACIÓN:"] || "",
         hora_salida_colacion: responses["HORA DE SALIDA COLACIÓN:"] || "",
 
-        // BONOS
         bonos: responses["PERIODO:"] || "",
         nombre_bono: responses["NOMBRE DEL BONO:"] || "",
         monto: responses["MONTO DEL BONO:"] || "",
         condiciado: responses["CONDICIONADO:"] || "",
 
-        // DOMICILIO Y CONTACTO
         local: responses["CAMBIO DE DOMICILIO LABORAL DEL TRABAJADOR:"] || "",
         nuevo_domicilio: responses["NUEVO DOMICILIO TRABAJADOR:"] || "",
         telefono: responses["NUEVO NÚMERO DE TELÉFONO TRABAJADOR:"] || "",
         correo: responses["NUEVO CORREO TRABAJADOR:"] || "",
 
-        // TURNOS
         doble_turno: responses["DOBLE TURNO:"] || "",
         segundo_turno: responses["SEGUNDO TURNO:"] || "",
         primer_turno: responses["PRIMER TURNO:"] || "",
         un_solo_turno: responses["UN SOLO TURNO:"] || "",
 
-        // COMPENSACIONES
         compensacion: Array.isArray(responses["DÍA DE COMPENSACIÓN"]) ?
             responses["DÍA DE COMPENSACIÓN"] :
             [responses["DÍA DE COMPENSACIÓN"]].filter(Boolean),
@@ -368,7 +387,6 @@ function generarClausulasCondicionales(datos) {
 
 // Genera docx desde datos y lo guarda en MongoDB colección docxs
 async function generarAnexo(datos, responseId, db) {
-    // VERIFICACIÓN DE CONEXIÓN A BD
     console.log("=== VERIFICANDO CONEXIÓN BD EN generarAnexo ===");
     console.log("db disponible:", !!db);
     console.log("db tipo:", typeof db);
@@ -381,24 +399,33 @@ async function generarAnexo(datos, responseId, db) {
         throw new Error("db.collection no es una función - conexión inválida");
     }
 
-    // CONFIGURACIÓN DE VARIABLES
     const ciudad = "PROVIDENCIA";
     const hoy = formatearFechaEspanol(new Date().toISOString().split("T")[0]);
     const trabajador = datos.trabajador || "[NOMBRE DEL TRABAJADOR]";
     let empresaInput = datos.empresa || "[EMPRESA]";
 
-    // OBTENER EMPRESA DESDE MONGODB
     let empresaInfo = await obtenerEmpresaDesdeBD(empresaInput, db);
     
     let empresa = empresaInfo ? empresaInfo.nombre : empresaInput.toUpperCase();
     let rut = empresaInfo ? empresaInfo.rut : "";
+    let logo = empresaInfo ? empresaInfo.logo : null;
 
     console.log("=== INFORMACIÓN DE EMPRESA FINAL ===");
     console.log("Empresa:", empresa);
     console.log("RUT:", rut);
+    console.log("Logo disponible:", !!logo);
 
-    // PREPARAR TODOS LOS PÁRRAFOS PRIMERO
     const children = [];
+
+    if (logo) {
+        const logoImagen = crearLogoImagen(logo);
+        if (logoImagen) {
+            children.push(new Paragraph({
+                children: [logoImagen]
+            }));
+            children.push(new Paragraph({ text: "" }));
+        }
+    }
 
     children.push(new Paragraph({
         alignment: AlignmentType.CENTER,
@@ -416,7 +443,6 @@ async function generarAnexo(datos, responseId, db) {
     children.push(new Paragraph({ text: "" }));
     children.push(new Paragraph({ text: "" }));
 
-    // 1. ENCABEZADO
     children.push(new Paragraph({
         alignment: AlignmentType.JUSTIFIED,
         children: [
@@ -431,24 +457,25 @@ async function generarAnexo(datos, responseId, db) {
     children.push(new Paragraph({ text: "" }));
     children.push(new Paragraph({ text: "" }));
 
-    // 2. TÍTULO "MODIFICACIÓN"
     children.push(new Paragraph({
         children: [new TextRun({ text: "MODIFICACIÓN", bold: true })]
     }));
 
     children.push(new Paragraph({ text: "" }));
 
-    // 3. CLAUSULAS CONDICIONALES
     let modificacionNum = 1;
     function agregarModificacion(textos = []) {
         const ordinal = ORDINALES[modificacionNum] || `${modificacionNum}°`;
         modificacionNum++;
 
-        const paragraphChildren = [
-            new TextRun({ text: ordinal, bold: true }),
-            new TextRun({ text: "\n" })
-        ];
+        children.push(new Paragraph({
+            alignment: AlignmentType.JUSTIFIED,
+            children: [
+                new TextRun({ text: ordinal, bold: true })
+            ]
+        }));
 
+        const paragraphChildren = [];
         textos.forEach(t => {
             if (typeof t === "string") {
                 paragraphChildren.push(new TextRun(t));
@@ -461,6 +488,8 @@ async function generarAnexo(datos, responseId, db) {
             alignment: AlignmentType.JUSTIFIED,
             children: paragraphChildren
         }));
+
+        children.push(new Paragraph({ text: "" }));
     }
 
     const clausulasCondicionales = generarClausulasCondicionales(datos);
@@ -470,9 +499,6 @@ async function generarAnexo(datos, responseId, db) {
         }
     });
 
-    children.push(new Paragraph({ text: "" }));
-
-    // 4. CLAUSULAS FIJAS
     agregarModificacion([
         "Queda Expresamente convenido que las cláusulas existentes en el contrato de trabajo celebrado por las partes el día ",
         { text: formatearFechaEspanol(datos.fecha_contrato), bold: true },
@@ -490,13 +516,21 @@ async function generarAnexo(datos, responseId, db) {
     children.push(new Paragraph({ text: "" }));
     children.push(new Paragraph({ text: "" }));
 
-    // 5. TABLA DE FIRMAS
+    const noBorder = {
+        top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }
+    };
+
     children.push(new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: noBorder,
         rows: [
             new TableRow({
                 children: [
                     new TableCell({
+                        borders: noBorder,
                         children: [
                             new Paragraph({ text: "_____________________________", alignment: AlignmentType.CENTER }),
                             new Paragraph({ text: "Empleador / Representante Legal", alignment: AlignmentType.CENTER }),
@@ -505,6 +539,7 @@ async function generarAnexo(datos, responseId, db) {
                         ]
                     }),
                     new TableCell({
+                        borders: noBorder,
                         children: [
                             new Paragraph({ text: "_____________________________", alignment: AlignmentType.CENTER }),
                             new Paragraph({ text: "Trabajador", alignment: AlignmentType.CENTER }),
@@ -517,7 +552,6 @@ async function generarAnexo(datos, responseId, db) {
         ]
     }));
 
-    // CREAR DOCUMENTO
     const doc = new Document({
         sections: [
             {
@@ -539,31 +573,97 @@ async function generarAnexo(datos, responseId, db) {
         IDdoc: IDdoc,
         docxFile: buffer,
         responseId: responseId,
+        tipo: 'docx', // AGREGAR TIPO DOCX
         createdAt: new Date(),
         updatedAt: new Date()
     });
 
-    console.log("✅ DOCX guardado en BD exitosamente");
+    console.log("DOCX guardado en BD exitosamente");
 
     return {
         IDdoc: IDdoc,
         buffer: buffer,
+        tipo: 'docx'
     };
 }
 
-async function generarAnexoDesdeRespuesta(responses, responseId, db) {
+// Función para generar archivo TXT
+async function generarDocumentoTxt(responses, responseId, db) {
     try {
-        console.log("=== VERIFICANDO BD EN generarAnexoDesdeRespuesta ===");
-        console.log("db recibida:", !!db);
-        console.log("db tiene collection?:", db && typeof db.collection === 'function');
+        console.log("=== GENERANDO DOCUMENTO TXT ===");
+        
+        let contenidoTxt = "FORMULARIO - RESPUESTAS\n";
+        contenidoTxt += "========================\n\n";
+        
+        // Ordenar preguntas y respuestas
+        Object.keys(responses).forEach((pregunta, index) => {
+            const respuesta = responses[pregunta];
+            
+            contenidoTxt += `${index + 1}. ${pregunta}\n`;
+            
+            if (Array.isArray(respuesta)) {
+                contenidoTxt += `   - ${respuesta.join('\n   - ')}\n\n`;
+            } else if (respuesta && typeof respuesta === 'object') {
+                contenidoTxt += `   ${JSON.stringify(respuesta, null, 2)}\n\n`;
+            } else {
+                contenidoTxt += `   ${respuesta || 'Sin respuesta'}\n\n`;
+            }
+        });
+        
+        contenidoTxt += `\nGenerado el: ${new Date().toLocaleString()}`;
+        
+        const buffer = Buffer.from(contenidoTxt, 'utf8');
+        const IDdoc = `FORMULARIO_${responseId}_${Date.now()}.txt`;
+        
+        // Guardar en la misma colección docxs
+        await db.collection('docxs').insertOne({
+            IDdoc: IDdoc,
+            docxFile: buffer,
+            responseId: responseId,
+            tipo: 'txt', // TIPO TXT
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+        
+        console.log("✅ TXT guardado en BD exitosamente");
+        
+        return {
+            IDdoc: IDdoc,
+            buffer: buffer,
+            tipo: 'txt'
+        };
+        
+    } catch (error) {
+        console.error('Error generando TXT:', error);
+        throw error;
+    }
+}
 
-        const datos = mapearDatosFormulario(responses);
-        const resultado = await generarAnexo(datos, responseId, db);
-        return resultado;
+// Función principal modificada para aceptar section
+async function generarAnexoDesdeRespuesta(responses, responseId, db, section) {
+    try {
+        console.log("=== DETECTANDO TIPO DE FORMULARIO ===");
+        console.log("Section recibida:", section);
+        
+        // Usar el section para decidir el tipo de documento
+        const esAnexo = section === "Anexos";
+        
+        if (esAnexo) {
+            console.log("Generando DOCX para anexo...");
+            const datos = mapearDatosFormulario(responses);
+            return await generarAnexo(datos, responseId, db);
+        } else {
+            console.log("Generando TXT para formulario regular...");
+            return await generarDocumentoTxt(responses, responseId, db);
+        }
     } catch (error) {
         console.error('Error en generarAnexoDesdeRespuesta:', error);
         throw error;
     }
 }
 
-module.exports = { generarAnexo, generarAnexoDesdeRespuesta };
+module.exports = { 
+    generarAnexo, 
+    generarAnexoDesdeRespuesta,
+    generarDocumentoTxt  // Exportar la nueva función
+};

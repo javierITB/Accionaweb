@@ -78,6 +78,11 @@ const QuestionEditor = ({
 
     const newOptions = [...localOptions, newOption];
     saveChanges({}, newOptions);
+
+    requestAnimationFrame(() => {
+        window.scrollTo(0, currentScroll);
+      });
+
   }, [localOptions, saveChanges]);
 
   const removeOption = useCallback((index) => {

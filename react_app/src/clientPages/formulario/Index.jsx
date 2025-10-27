@@ -17,7 +17,7 @@ const DashboardHome = () => {
       primaryColor: '#3B82F6',
       secondaryColor: '#F3F4F6',
       questions: [],
-      status: 'draft',
+      status: 'borrador',
       section: '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -43,7 +43,7 @@ const DashboardHome = () => {
             primaryColor: data.primaryColor || '#3B82F6',
             secondaryColor: data.secondaryColor || '#F3F4F6',
             questions: data.questions || [],
-            status: data.status || 'draft',
+            status: data.status || 'borrador',
             section: data.section || '',
             createdAt: data.createdAt || new Date().toISOString(),
             updatedAt: data.updatedAt || new Date().toISOString()

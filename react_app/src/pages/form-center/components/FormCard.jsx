@@ -3,26 +3,12 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const FormCard = ({ form, onSelect, className = '' }) => {
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high':
-        return 'text-error bg-error/10 border-error/20';
-      case 'medium':
-        return 'text-warning bg-warning/10 border-warning/20';
-      case 'low':
-        return 'text-success bg-success/10 border-success/20';
-      default:
-        return 'text-muted-foreground bg-muted border-border';
-    }
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'available':
+      case 'borrador':
         return 'text-success';
-      case 'draft':
-        return 'text-warning';
-      case 'submitted':
+      case 'publicado':
         return 'text-primary';
       default:
         return 'text-muted-foreground';
@@ -77,9 +63,9 @@ const FormCard = ({ form, onSelect, className = '' }) => {
           </div>
         </div>
 
-        {form?.priority && (
-          <span className={`px-2 py-1 text-xs font-medium rounded-full border flex-shrink-0 ml-2 ${getPriorityColor(form?.priority)}`}>
-            {form?.priority}
+        {form?.status && (
+          <span className={`px-2 py-1 text-xs font-medium rounded-full border flex-shrink-0 ml-2 ${getStatusColor(form?.status)}`}>
+            {form?.status}
           </span>
         )}
       </div>
@@ -133,19 +119,11 @@ const FormCard = ({ form, onSelect, className = '' }) => {
           )}
         </div>
 
-        <div className={`flex items-center space-x-1 text-xs font-medium ${getStatusColor(form?.status)}`}>
-          <Icon
-            name={form?.status === 'available' ? 'CheckCircle' :
-              form?.status === 'draft' ? 'Edit' : 'Send'}
-            size={14}
-          />
-          <span className="capitalize">{form?.status}</span>
-        </div>
       </div>
 
       {form?.lastModified && (
         <div className="text-xs text-muted-foreground mb-4">
-          Last modified: {form?.lastModified}
+          última actualización: {form?.lastModified}
         </div>
       )}
 
@@ -162,14 +140,14 @@ const FormCard = ({ form, onSelect, className = '' }) => {
         </div>
 
         <Button
-          variant={form?.status === 'draft' ? 'outline' : 'default'}
+          variant={form?.status === 'borrador' ? 'outline' : 'default'}
           size="sm"
           onClick={() => window.location.href = `/form-builder?id=${form?.id}`}
-          iconName={form?.status === 'draft' ? 'Edit' : 'ArrowRight'}
+          iconName={form?.status === 'borrador' ? 'Edit' : 'ArrowRight'}
           iconPosition="right"
           iconSize={16}
         >
-          {form?.status === 'draft' ? 'Continuar' : 'Editar'}
+          {form?.status === 'borrador' ? 'Continuar' : 'Editar'}
         </Button>
       </div>
     </div>

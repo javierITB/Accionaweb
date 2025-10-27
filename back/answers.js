@@ -174,7 +174,7 @@ router.put("/public/:id", async (req, res) => {
       { _id: new ObjectId(req.params.id) },
       {
         $set: {
-          status: "published",
+          status: "publicado",
           updatedAt: new Date()
         }
       },

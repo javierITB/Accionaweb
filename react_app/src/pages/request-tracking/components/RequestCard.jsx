@@ -13,7 +13,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
         return 'bg-accent text-accent-foreground';
       case 'rejected':
         return 'bg-error text-error-foreground';
-      case 'draft':
+      case 'borrador':
         return 'bg-muted text-muted-foreground';
       default:
         return 'bg-muted text-muted-foreground';
@@ -30,7 +30,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
         return 'Eye';
       case 'rejected':
         return 'XCircle';
-      case 'draft':
+      case 'borrador':
         return 'FileText';
       default:
         return 'Circle';

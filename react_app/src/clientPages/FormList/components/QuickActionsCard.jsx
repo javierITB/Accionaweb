@@ -42,7 +42,7 @@ const QuickActionsCard = ({ section }) => {
           description: f.description || '',
           category: f.category || 'general',
           icon: f.icon || 'FileText',
-          status: f.status || 'draft',
+          status: f.status || 'borrador',
           priority: f.priority || 'medium',
           estimatedTime: f.responseTime || '1-5 min',
           fields: f.questions ? f.questions.length : 0,

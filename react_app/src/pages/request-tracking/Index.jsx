@@ -85,7 +85,7 @@ const RequestTracking = () => {
       title: "Actualización de Datos Personales",
       description: "Cambio de dirección y número de teléfono en el sistema de RR.HH.",
       category: "hr_general",
-      status: "draft",
+      status: "borrador",
       priority: "low",
       submittedBy: "Roberto Silva",
       submittedDate: "2025-01-20T15:45:00Z",

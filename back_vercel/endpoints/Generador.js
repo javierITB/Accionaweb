@@ -13,7 +13,7 @@ router.get("/docxs", async (req, res) => {
   }
 });
 
-// Endpoint para descargar DOCX
+// Endpoint para descargar documento (DOCX o TXT)
 router.get("/download/:IDdoc", async (req, res) => {
     try {
         const { IDdoc } = req.params;
@@ -28,41 +28,73 @@ router.get("/download/:IDdoc", async (req, res) => {
         }
 
         console.log("Documento encontrado");
-        console.log("Tipo de docxFile:", typeof documento.docxFile);
-        console.log("Tiene buffer?:", !!documento.docxFile.buffer);
-        console.log("Es función length?:", typeof documento.docxFile.length === 'function');
+        console.log("Tipo de documento:", documento.tipo || 'docx');
         
         // OBTENER EL BUFFER CORRECTAMENTE
-        const docxBuffer = documento.docxFile.buffer;
-        const bufferLength = docxBuffer.length;
+        const fileBuffer = documento.docxFile.buffer || documento.docxFile;
+        const bufferLength = fileBuffer.length;
 
-        // Actualizar estado en respuestas
-        await req.db.collection("respuestas").updateOne(
-            { _id: new ObjectId(documento.responseId) },
-            { 
-                $set: { 
-                    status: "en_revision",
-                    reviewedAt: new Date()
-                } 
-            }
-        );
+        // Actualizar estado en respuestas (solo si es un documento relacionado con una respuesta)
+        if (documento.responseId) {
+            await req.db.collection("respuestas").updateOne(
+                { _id: new ObjectId(documento.responseId) },
+                { 
+                    $set: { 
+                        status: "en_revision",
+                        reviewedAt: new Date()
+                    } 
+                }
+            );
+        }
 
-        // Configurar headers para descarga
-        res.set({
-            'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'Content-Disposition': `attachment; filename="${IDdoc}.docx"`,
-            'Content-Length': bufferLength
-        });
-
-        console.log("Enviando documento al cliente, tamaño:", bufferLength);
+        // CONFIGURAR HEADERS SEGÚN EL TIPO DE DOCUMENTO
+        if (documento.tipo === 'txt') {
+            // Para archivos TXT
+            res.set({
+                'Content-Type': 'text/plain',
+                'Content-Disposition': `attachment; filename="${IDdoc}.txt"`,
+                'Content-Length': bufferLength
+            });
+            console.log("Enviando archivo TXT, tamaño:", bufferLength);
+        } else {
+            // Para archivos DOCX (por defecto)
+            res.set({
+                'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'Content-Disposition': `attachment; filename="${IDdoc}.docx"`,
+                'Content-Length': bufferLength
+            });
+            console.log("Enviando archivo DOCX, tamaño:", bufferLength);
+        }
         
-        // ENVIAR EL BUFFER CORRECTAMENTE
-        res.send(docxBuffer);
+        // ENVIAR EL BUFFER
+        res.send(fileBuffer);
 
     } catch (err) {
-        console.error("Error descargando DOCX:", err);
+        console.error("Error descargando documento:", err);
         console.error("Detalles del error:", err.message);
         res.status(500).json({ error: "Error descargando el documento: " + err.message });
+    }
+});
+
+// Nuevo endpoint para obtener información del documento (útil para el frontend)
+router.get("/info/:IDdoc", async (req, res) => {
+    try {
+        const { IDdoc } = req.params;
+        const documento = await req.db.collection('docxs').findOne({ IDdoc: IDdoc });
+        
+        if (!documento) {
+            return res.status(404).json({ error: "Documento no encontrado" });
+        }
+
+        res.json({
+            IDdoc: documento.IDdoc,
+            tipo: documento.tipo || 'docx',
+            responseId: documento.responseId,
+            createdAt: documento.createdAt
+        });
+    } catch (err) {
+        console.error("Error obteniendo información del documento:", err);
+        res.status(500).json({ error: "Error obteniendo información del documento" });
     }
 });
 

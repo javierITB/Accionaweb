@@ -18,7 +18,7 @@ const FormBuilder = () => {
     primaryColor: '#3B82F6',
     secondaryColor: '#F3F4F6',
     questions: [],
-    status: 'draft',
+    status: 'borrador',
     section: '',
     icon: 'FileText', // ✅ CAMBIADO: Valor por defecto en lugar de vacío
     companies: [], // ✅ AGREGADO: Campo companies que usa FormProperties
@@ -83,7 +83,7 @@ const FormBuilder = () => {
           primaryColor: data.primaryColor || '#3B82F6',
           secondaryColor: data.secondaryColor || '#F3F4F6',
           questions: data.questions || [],
-          status: data.status || 'draft',
+          status: data.status || 'borrador',
           section: data.section || '',
           icon: data.icon || 'FileText', // ✅ CAMBIADO: Valor por defecto
           companies: data.companies || [], // ✅ AGREGADO
@@ -201,7 +201,7 @@ const FormBuilder = () => {
     }));
   };
 
-  // Save form as draft - FUNCIÓN CORREGIDA
+  // Save form as borrador - FUNCIÓN CORREGIDA
   const saveForm = async () => {
     if (!formData?.title?.trim()) {
       alert("Por favor ingresa un título para el formulario");
@@ -290,11 +290,11 @@ const FormBuilder = () => {
       const response = await fetch(`https://accionaapi.vercel.app/api/forms/public/${formData._id || formData.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, status: "published" }),
+        body: JSON.stringify({ ...formData, status: "publicado" }),
       });
 
       const updatedForm = await response.json();
-      setFormData(prev => ({ ...prev, status: "published" }));
+      setFormData(prev => ({ ...prev, status: "publicado" }));
 
       alert("¡Formulario publicado exitosamente!");
     } catch (error) {
@@ -382,11 +382,11 @@ const FormBuilder = () => {
 
             <div className="flex items-center space-x-3">
               {/* Status Badge */}
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === 'published'
+              <div className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === 'publicado'
                 ? 'bg-green-100 text-green-700'
                 : 'bg-yellow-100 text-yellow-700'
                 }`}>
-                {formData?.status === 'published' ? 'Publicado' : 'Borrador'}
+                {formData?.status === 'publicado' ? 'Publicado' : 'Borrador'}
               </div>
 
               {/* Action Buttons */}

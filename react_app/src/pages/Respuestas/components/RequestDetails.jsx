@@ -173,7 +173,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
       case 'rejected':
       case 'rechazado':
         return 'bg-error text-error-foreground';
-      case 'draft':
+      case 'borrador':
       case 'borrador':
         return 'bg-muted text-muted-foreground';
       default:
@@ -195,7 +195,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
       case 'rejected':
       case 'rechazado':
         return 'XCircle';
-      case 'draft':
+      case 'borrador':
       case 'borrador':
         return 'FileText';
       default:

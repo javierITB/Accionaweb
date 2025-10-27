@@ -82,7 +82,7 @@ router.post("/", async (req, res) => {
 
     // === GENERAR DOCX (opcional) ===
     try {
-      await generarAnexoDesdeRespuesta(responses, result.insertedId.toString(), req.db);
+      await generarAnexoDesdeRespuesta(responses, result.insertedId.toString(), req.db, form.section);
       console.log("DOCX generado automáticamente para respuesta:", result.insertedId);
     } catch (error) {
       console.error("Error generando DOCX:", error.message);
@@ -175,7 +175,7 @@ router.put("/public/:id", async (req, res) => {
       { _id: new ObjectId(req.params.id) },
       {
         $set: {
-          status: "published",
+          status: "publicado",
           updatedAt: new Date()
         }
       },
