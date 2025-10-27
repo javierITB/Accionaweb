@@ -13,9 +13,10 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = '' }) => {
   const [isLoading, setIsLoading] = useState(true);
   
   // Obtener datos del usuario (asumiendo que 'user' es un JSON string o similar)
-  const userDataString = sessionStorage.getItem("user");
-  const userData = userDataString ? JSON.parse(userDataString) : {};
-  const { mail, token, cargo } = userData; // Asumiendo que estos campos están en el objeto de usuario
+  const user = sessionStorage.getItem("user");
+  const mail = sessionStorage.getItem("email");
+  const token = sessionStorage.getItem("token");
+  const cargo = sessionStorage.getItem("cargo");
 
   const handleNavigation = (path) => navigate(path);
 
@@ -33,7 +34,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = '' }) => {
     const fetchMenu = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/menu/filter`, {
+        const response = await fetch(`https://accionaapi.vercel.app/api/menu/filter`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -69,7 +70,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = '' }) => {
     { name: 'Soporte de TI', icon: 'Monitor', path: '/support-portal?category=it' },
   ];
 
-  if (loading) {
+  if (isLoading) {
     return (
       <aside
         className={`fixed left-0 top-16 bottom-0 z-40 bg-card border-r border-border flex items-center justify-center ${
