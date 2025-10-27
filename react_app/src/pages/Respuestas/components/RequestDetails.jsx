@@ -27,6 +27,31 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
     }
   };
 
+  // Función para descargar archivos adjuntos
+  const handleDownloadAdjunto = async (responseId, index) => {
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const adjunto = request.adjuntos[index];
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = adjunto.fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        alert('Error al descargar el archivo');
+      }
+    } catch (error) {
+      console.error('Error descargando adjunto:', error);
+      alert('Error al descargar el archivo');
+    }
+  };
+
   const handleUploadCorrection = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -72,6 +97,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
       alert('Error al eliminar la corrección');
     }
   };
+
   const handleApprove = async () => {
     if (!correctedFile) {
       alert('Debes subir un documento corregido antes de aprobar');
@@ -208,6 +234,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
     return request?.submittedAt;
   };
 
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 KB';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / 1048576).toFixed(2) + ' MB';
+  };
+
   const getFileIcon = (type) => {
     switch (type?.toLowerCase()) {
       case 'pdf':
@@ -221,6 +254,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
       default:
         return 'File';
     }
+  };
+
+  const getMimeTypeIcon = (mimeType) => {
+    if (mimeType?.includes('pdf')) return 'FileText';
+    if (mimeType?.includes('word') || mimeType?.includes('document')) return 'FileText';
+    if (mimeType?.includes('excel') || mimeType?.includes('spreadsheet')) return 'FileSpreadsheet';
+    if (mimeType?.includes('image')) return 'Image';
+    if (mimeType?.includes('text')) return 'FileText';
+    return 'File';
   };
 
   const realAttachments = getRealAttachments();
@@ -304,6 +346,38 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {request?.form?.description}
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* NUEVA SECCIÓN: ADJUNTOS */}
+          {request?.adjuntos && request.adjuntos.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Archivos Adjuntos</h3>
+              <div className="space-y-2">
+                {request.adjuntos.map((adjunto, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      iconName="Download"
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={() => handleDownloadAdjunto(request._id, index)}
+                    >
+                      Descargar
+                    </Button>
+                  </div>
+                ))}
               </div>
             </div>
           )}

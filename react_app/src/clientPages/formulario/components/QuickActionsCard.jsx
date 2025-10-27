@@ -162,6 +162,15 @@ const FormPreview = ({ formData }) => {
     return errors;
   };
 
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const mapAnswersToTitles = (questions, answers, mappedAnswers = {}) => {
     questions.forEach((question) => {
       const questionTitle = getQuestionTitle(question);
@@ -525,9 +534,47 @@ const FormPreview = ({ formData }) => {
 
     try {
       const answersWithTitles = mapAnswersToTitles(formData?.questions || [], answers);
+      
+      const adjuntos = [];
+      const processedAnswers = { ...answersWithTitles };
+
+      const processFiles = async (questions) => {
+        for (const question of questions) {
+          if (question.type === 'file' && answers[question.id] instanceof FileList) {
+            const fileList = answers[question.id];
+            const questionTitle = getQuestionTitle(question);
+            
+            processedAnswers[questionTitle] = Array.from(fileList).map(file => file.name);
+            
+            for (const file of fileList) {
+              try {
+                const fileData = await fileToBase64(file);
+                adjuntos.push({
+                  pregunta: questionTitle,
+                  fileName: file.name,
+                  fileData: fileData,
+                  mimeType: file.type,
+                  size: file.size,
+                  uploadedAt: new Date().toISOString()
+                });
+              } catch (error) {
+                console.error('Error procesando archivo:', error);
+              }
+            }
+          }
+
+          (question?.options || []).forEach((option) => {
+            if (typeof option === 'object' && option.hasSubform && option.subformQuestions) {
+              processFiles(option.subformQuestions);
+            }
+          });
+        }
+      };
+
+      await processFiles(formData?.questions || []);
 
       const cleanAnswers = Object.fromEntries(
-        Object.entries(answersWithTitles).filter(([_, value]) =>
+        Object.entries(processedAnswers).filter(([_, value]) =>
           value !== '' &&
           value !== null &&
           value !== undefined &&
@@ -539,6 +586,7 @@ const FormPreview = ({ formData }) => {
         formId: formData?.id,
         formTitle: formData?.title,
         responses: cleanAnswers,
+        adjuntos: adjuntos,
         mail: respaldo,
         submittedAt: new Date().toISOString(),
         user: user
