@@ -9,7 +9,7 @@ const answersRoutes = require("./endpoints/answers");
 const mailRoutes = require("./endpoints/mail");
 const gen = require("./endpoints/Generador");
 const noti = require("./endpoints/notificaciones");
-const noti = require("./endpoints/web");
+const menu = require("./endpoints/web");
 
 const app = express();
 //actualizando
