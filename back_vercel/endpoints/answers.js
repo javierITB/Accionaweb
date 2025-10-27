@@ -61,7 +61,7 @@ router.post("/", async (req, res) => {
 
     // === NOTIFICACIONES ===
     await addNotification(req.db, {
-      filtro: { rol: "admin" },
+      filtro: { cargo: "RRHH" },
       titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondido el formulario ${formTitle}`,
       descripcion: "Puedes revisar los detalles en el panel de respuestas.",
       prioridad: 2,
@@ -271,7 +271,7 @@ router.post("/chat", async (req, res) => {
 
     if (respuesta?.user?.nombre === autor) {
       await addNotification(req.db, {
-        filtro: { rol: "admin" },
+        filtro: { cargo: "RRHH" },
         titulo: "Nuevo mensaje en tu formulario",
         descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
         icono: "chat",
