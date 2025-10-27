@@ -3,11 +3,11 @@ const cors = require("cors");
 const { MongoClient } = require("mongodb");
 
 // Importar rutas
-const authRoutes = require("./auth");
-const formRoutes = require("./forms");
+const authRoutes = require("./endpoints/auth");
+const formRoutes = require("./endpoints/forms");
 const answersRoutes = require("./answers");
-const mailRoutes = require("./mail");
-const gen = require("./Generador");
+const mailRoutes = require("./endpoints/mail");
+const gen = require("./endpoints/Generador");
 const noti = require("./notificaciones");
 
 const app = express();

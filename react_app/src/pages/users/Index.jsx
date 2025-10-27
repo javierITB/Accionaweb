@@ -89,7 +89,7 @@ const FormReg = () => {
   };
 
   const handleRegister = async () => {
-    if (!formData.nombre || !formData.apellido || !formData.mail || !formData.empresa || !formData.cargo) {
+    if (!formData.nombre || !formData.apellido || !formData.mail || !formData.empresa || !formData.cargo || !formData.rol) {
       alert('Por favor completa todos los campos obligatorios');
       return;
     }
