@@ -6,18 +6,61 @@ import { useLocation, useNavigate } from 'react-router-dom';
 const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = '' }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const user = sessionStorage.getItem("user");
+  
+  // 1. Estados para la navegación dinámica y el estado de carga
+  const [navigationItems, setNavigationItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Obtener datos del usuario (asumiendo que 'user' es un JSON string o similar)
+  const userDataString = sessionStorage.getItem("user");
+  const userData = userDataString ? JSON.parse(userDataString) : {};
+  const { mail, token, cargo } = userData; // Asumiendo que estos campos están en el objeto de usuario
 
-  const navigationItems = [
-    { name: 'Dashboard', path: '/dashboard-home', icon: 'LayoutDashboard', description: 'Pagina principal de admin' },
-    { name: 'Formularios', path: '/form-center', icon: 'FileText', description: 'Panel gestion de formularios' },
-    { name: 'Respuestas', path: '/RespuestasForms', icon: 'FileText', description: 'Gestionar respuestas de formularios' },
-    { name: 'Usuarios', path: '/users', icon: 'User', description: 'Gestion de empresas y Admins' },
-    { name: 'Empresas', path: '/empresas', icon: 'LayoutDashboard', description: 'Creacion de nuevos clientes' },
-    { name: 'Seguimiento de Solicitudes', path: '/request-tracking', icon: 'Clock', description: 'Monitorear estado de solicitudes' },
-    { name: 'Soporte', path: '/support-portal', icon: 'HelpCircle', description: 'Conseguir ayuda y recuros' },
-    
-  ];
+  const handleNavigation = (path) => navigate(path);
+
+  // 2. useEffect para la llamada a la API
+  useEffect(() => {
+    // Si no tenemos los datos esenciales, no hacemos la llamada
+    if (!mail || !token || !cargo) {
+        console.error("Datos de usuario insuficientes para filtrar el menú.");
+        setIsLoading(false);
+        // Opcional: Redirigir al login si faltan credenciales críticas
+        // navigate('/login'); 
+        return;
+    }
+
+    const fetchMenu = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/menu/filter`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            mail: mail,
+            token: token,
+            cargo: cargo, // Este es el campo clave para el filtro de la DB
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error en la respuesta del servidor: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        // 3. Almacenar las secciones filtradas
+        setNavigationItems(data);
+      } catch (error) {
+        console.error("Fallo al obtener el menú filtrado:", error);
+        // Opcional: Mostrar un mensaje de error en la UI
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMenu();
+  }, [mail, token, cargo]); // Dependencias: se ejecuta cuando cambian las credenciales
 
   const quickActions = [
     { name: 'Tiempo de respuesta', icon: 'Calendar', path: '/form-center?type=timeoff' },
@@ -25,7 +68,17 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = '' }) => {
     { name: 'Soporte de TI', icon: 'Monitor', path: '/support-portal?category=it' },
   ];
 
-  const handleNavigation = (path) => navigate(path);
+  if (loading) {
+    return (
+      <aside
+        className={`fixed left-0 top-16 bottom-0 z-40 bg-card border-r border-border flex items-center justify-center ${
+          isCollapsed ? "w-16" : "w-64"
+        } ${className}`}
+      >
+        <span className="text-muted-foreground text-sm">Cargando menú...</span>
+      </aside>
+    );
+  }
 
   return (
     <aside className={`fixed left-0 top-16 bottom-0 z-40 bg-card border-r border-border transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} ${className}`}>
