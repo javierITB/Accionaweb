@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { validarToken } = require('../utils/tokenValidator');
+const { validarToken } = require('../utils/validarToken');
 
 router.post("/filter", async (req, res) => {
   try {
@@ -47,7 +47,7 @@ router.post("/filter", async (req, res) => {
     const allowedRoles = [userRole, 'all'];
 
     // Colección 'menu' (AJUSTAR si es necesario)
-    const menuItems = await req.db.collection('menu').find({
+    const menuItems = await req.db.collection('sidebar').find({
         cargo: { $in: allowedRoles }
     }).toArray();
     
