@@ -5,10 +5,11 @@ const { MongoClient } = require("mongodb");
 // Importar rutas
 const authRoutes = require("./endpoints/auth");
 const formRoutes = require("./endpoints/forms");
-const answersRoutes = require("./answers");
+const answersRoutes = require("./endpoints/answers");
 const mailRoutes = require("./endpoints/mail");
 const gen = require("./endpoints/Generador");
-const noti = require("./notificaciones");
+const noti = require("./endpoints/notificaciones");
+const noti = require("./endpoints/web");
 
 const app = express();
 //actualizando
@@ -48,6 +49,8 @@ app.use("/api/respuestas", answersRoutes);
 app.use("/api/mail", mailRoutes);
 app.use("/api/generador", gen);
 app.use("/api/noti", noti);
+app.use("/api/menu", menu);
+
 
 // Ruta base
 app.get("/", (req, res) => {
