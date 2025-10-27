@@ -18,17 +18,10 @@ const Header = ({ className = '' }) => {
   
   const navigationItems = [
     { name: 'Incio', path: '/', icon: 'Home' },
-    { name: 'Dashboard', path: '/dashboard-home', icon: 'LayoutDashboard' },
-    { name: 'Formularios', path: '/form-center', icon: 'FileText' },
-    { name: 'Remuneraciones', path: '/request-tracking', icon: 'Clock' },
-    { name: 'Soporte', path: '/support-portal', icon: 'HelpCircle' },
-  ];
-
-  const moreMenuItems = [
     { name: 'Settings', path: '/settings', icon: 'Settings' },
     { name: 'Help', path: '/help', icon: 'HelpCircle' },
-    { name: 'Admin', path: '/admin', icon: 'Shield' },
   ];
+
 
   const [isNotiOpen, setIsNotiOpen] = useState(false);
   
@@ -128,37 +121,6 @@ const Header = ({ className = '' }) => {
               {item?.name}
             </Button>
           ))}
-          
-          {/* More Menu */}
-          <div className="relative" ref={menuRef}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleMenu}
-              iconName="MoreHorizontal"
-              iconSize={18}
-              className="px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-brand"
-            >
-              Más
-            </Button>
-            
-            {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
-                <div className="py-2">
-                  {moreMenuItems?.map((item) => (
-                    <button
-                      key={item?.path}
-                      onClick={() => handleNavigation(item?.path)}
-                      className="flex items-center w-full px-4 py-2 text-sm text-popover-foreground hover:bg-muted transition-brand"
-                    >
-                      <Icon name={item?.icon} size={16} className="mr-3" />
-                      {item?.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
         </nav>
 
         {/* User Profile & Actions */}
