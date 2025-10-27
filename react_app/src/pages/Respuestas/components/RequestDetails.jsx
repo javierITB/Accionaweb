@@ -27,7 +27,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
     }
   };
 
-  // Función para descargar archivos adjuntos
   const handleDownloadAdjunto = async (responseId, index) => {
     try {
       const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
@@ -81,7 +80,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
       if (response.ok) {
         const result = await response.json();
 
-        // Actualizar el estado local con los datos REALES de la base de datos
         if (onUpdate && result.updatedRequest) {
           onUpdate(result.updatedRequest);
         }
@@ -165,20 +163,33 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
     const cleanFormTitle = cleanText(formTitle);
     const cleanUserName = cleanText(userName);
 
-    return `${cleanFormTitle}_${cleanUserName}_${datePart}.docx`;
+    let extension = 'docx';
+    
+    if (request?.form?.section && request.form.section !== "Anexos") {
+      extension = 'txt';
+    }
+    
+    if (!request?.form?.section && request?.formTitle) {
+      if (!request.formTitle.toLowerCase().includes('anexo')) {
+        extension = 'txt';
+      }
+    }
+
+    return `${cleanFormTitle}_${cleanUserName}_${datePart}.${extension}`;
   };
 
   const getRealAttachments = () => {
     if (!request) return [];
 
     const fileName = formatFileName();
+    const extension = fileName.split('.').pop() || 'docx';
 
     return [
       {
         id: request?._id || 1,
         name: fileName,
         size: "Calculando...",
-        type: "docx",
+        type: extension,
         uploadedAt: request?.submittedAt || request?.createdAt,
         downloadUrl: `/api/documents/download/${request?._id}`
       }
@@ -246,6 +257,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
       case 'pdf':
         return 'FileText';
       case 'docx': case 'doc':
+        return 'FileText';
+      case 'txt':
         return 'FileText';
       case 'xlsx': case 'xls':
         return 'FileSpreadsheet';
@@ -350,7 +363,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
             </div>
           )}
 
-          {/* NUEVA SECCIÓN: ADJUNTOS */}
           {request?.adjuntos && request.adjuntos.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">Archivos Adjuntos</h3>

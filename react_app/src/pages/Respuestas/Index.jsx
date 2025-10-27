@@ -107,6 +107,7 @@ const RequestTracking = () => {
             formId: r.formId,
             title: r.title || r.formTitle || (matchedForm ? matchedForm.title : ''),
             responses: r.responses || {},
+            adjuntos: r.adjuntos || [],
             submittedAt: r.submittedAt || r.createdAt || null,
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,

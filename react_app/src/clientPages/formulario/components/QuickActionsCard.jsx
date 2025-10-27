@@ -328,15 +328,15 @@ const FormPreview = ({ formData }) => {
         case 'file':
           const getFileTypesDescription = (acceptString) => {
             if (!acceptString) return 'Todos los tipos de archivo';
-            
+
             const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'];
             const documentExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.csv', '.txt', '.rtf'];
-            
+
             const acceptArray = acceptString.split(',');
-            
+
             const hasImages = acceptArray.some(ext => imageExtensions.includes(ext));
             const hasDocuments = acceptArray.some(ext => documentExtensions.includes(ext));
-            
+
             if (hasImages && hasDocuments) {
               return 'Imágenes y Documentos';
             } else if (hasImages) {
@@ -534,44 +534,71 @@ const FormPreview = ({ formData }) => {
 
     try {
       const answersWithTitles = mapAnswersToTitles(formData?.questions || [], answers);
-      
+
       const adjuntos = [];
       const processedAnswers = { ...answersWithTitles };
 
       const processFiles = async (questions) => {
-        for (const question of questions) {
+        const processQuestion = async (question) => {
+          console.log('Procesando pregunta:', question);
+
           if (question.type === 'file' && answers[question.id] instanceof FileList) {
+            console.log('Encontré archivos en pregunta:', question.id, answers[question.id]);
             const fileList = answers[question.id];
             const questionTitle = getQuestionTitle(question);
-            
+
             processedAnswers[questionTitle] = Array.from(fileList).map(file => file.name);
-            
-            for (const file of fileList) {
+
+            // Procesar todos los archivos de esta pregunta
+            const filePromises = Array.from(fileList).map(async (file) => {
               try {
+                console.log('Procesando archivo:', file.name, file.size);
                 const fileData = await fileToBase64(file);
-                adjuntos.push({
+                return {
                   pregunta: questionTitle,
                   fileName: file.name,
                   fileData: fileData,
                   mimeType: file.type,
                   size: file.size,
                   uploadedAt: new Date().toISOString()
-                });
+                };
               } catch (error) {
                 console.error('Error procesando archivo:', error);
+                return null;
+              }
+            });
+
+            const processedFiles = await Promise.all(filePromises);
+            adjuntos.push(...processedFiles.filter(file => file !== null));
+          }
+
+          // Procesar subsecciones
+          if (question?.options) {
+            for (const option of question.options) {
+              if (typeof option === 'object' && option.hasSubform && option.subformQuestions) {
+                await processFiles(option.subformQuestions);
               }
             }
           }
+        };
 
-          (question?.options || []).forEach((option) => {
-            if (typeof option === 'object' && option.hasSubform && option.subformQuestions) {
-              processFiles(option.subformQuestions);
-            }
-          });
+        // Procesar todas las preguntas en serie
+        for (const question of questions) {
+          await processQuestion(question);
         }
       };
 
-      await processFiles(formData?.questions || []);
+      try {
+        await processFiles(formData?.questions || []);
+      } catch (error) {
+        console.error('Error en processFiles:', error);
+      }
+
+      console.log('Total de adjuntos procesados:', adjuntos.length);
+      console.log('Adjuntos:', adjuntos);
+
+      console.log('Total de adjuntos procesados:', adjuntos.length); // DEBUG
+      console.log('Adjuntos:', adjuntos); // DEBUG
 
       const cleanAnswers = Object.fromEntries(
         Object.entries(processedAnswers).filter(([_, value]) =>
@@ -592,6 +619,8 @@ const FormPreview = ({ formData }) => {
         user: user
       };
 
+      console.log('Payload a enviar:', payload); // DEBUG
+
       const res = await fetch(`https://accionaapi.vercel.app/api/respuestas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -601,8 +630,8 @@ const FormPreview = ({ formData }) => {
       if (!res.ok) throw new Error('Error al enviar respuestas');
 
       const data = await res.json();
+      console.log('Respuesta del servidor:', data); // DEBUG
       alert('Respuestas enviadas con éxito');
-      console.log('Respuestas guardadas:', data);
 
       setAnswers({});
       setRespaldo("");
