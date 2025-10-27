@@ -121,12 +121,27 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
     }
   };
 
+  // Obtener el nombre del trabajador desde las respuestas
+  const getTrabajadorName = () => {
+    return request?.responses?.["Nombre del trabajador:"] || 
+           request?.responses?.["Nombre del trabajador"] ||
+           'ninguno';
+  };
+
+  // Obtener el título combinado
+  const getCombinedTitle = () => {
+    const formTitle = request?.formTitle || request?.form?.title || request?.title || 'Formulario';
+    const trabajadorName = getTrabajadorName();
+    
+    return `${formTitle} - ${trabajadorName}`;
+  };
+
   return (
     <div className="bg-card border border-border rounded-lg p-6 hover:shadow-brand-hover transition-brand">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
-            <h3 className="text-lg font-semibold text-foreground">{request?.formTitle || request?.form?.title || request?.title}</h3>
+            <h3 className="text-lg font-semibold text-foreground">{getCombinedTitle()}</h3>
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request?.status)}`}>
               <Icon name={getStatusIcon(request?.status)} size={12} className="mr-1" />
               {formatStatusText(request?.status)}

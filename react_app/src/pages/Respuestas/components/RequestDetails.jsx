@@ -30,7 +30,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
   const handleDownloadAdjunto = async (responseId, index) => {
     try {
       const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
-      
+
       if (response.ok) {
         const blob = await response.blob();
         const adjunto = request.adjuntos[index];
@@ -140,7 +140,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
 
   const formatFileName = () => {
     const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
-    const userName = request?.submittedBy || request?.user?.nombre || 'Usuario';
+
+    // Obtener el nombre del trabajador desde las respuestas
+    const nombreTrabajador = request?.responses?.["Nombre del trabajador:"] ||
+      request?.responses?.["Nombre del trabajador"] ||
+      'Trabajador';
+
     const submitDate = request?.submittedAt || request?.createdAt;
 
     const formatDateForFileName = (dateString) => {
@@ -161,21 +166,21 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
     };
 
     const cleanFormTitle = cleanText(formTitle);
-    const cleanUserName = cleanText(userName);
+    const cleanTrabajador = cleanText(nombreTrabajador);
 
     let extension = 'docx';
-    
+
     if (request?.form?.section && request.form.section !== "Anexos") {
       extension = 'txt';
     }
-    
+
     if (!request?.form?.section && request?.formTitle) {
       if (!request.formTitle.toLowerCase().includes('anexo')) {
         extension = 'txt';
       }
     }
 
-    return `${cleanFormTitle}_${cleanUserName}_${datePart}.${extension}`;
+    return `${cleanFormTitle}_${cleanTrabajador}_${datePart}.${extension}`;
   };
 
   const getRealAttachments = () => {
