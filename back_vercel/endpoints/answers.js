@@ -24,7 +24,7 @@ const upload = multer({
 
 router.post("/", async (req, res) => {
   try {
-    const {formId, user, responses, formTitle } = req.body;
+    const { formId, user, responses, formTitle, adjuntos = [] } = req.body;
     const usuario = user?.nombre;
     const empresa = user?.empresa;
     const userId = user?.uid;
@@ -52,9 +52,10 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // === INSERTAR RESPUESTA ===
+    // === INSERTAR RESPUESTA CON ADJUNTOS ===
     const result = await req.db.collection("respuestas").insertOne({
       ...req.body,
+      adjuntos: adjuntos,
       status: "pendiente",
       createdAt: new Date(),
     });
@@ -63,7 +64,9 @@ router.post("/", async (req, res) => {
     await addNotification(req.db, {
       filtro: { cargo: "RRHH" },
       titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondido el formulario ${formTitle}`,
-      descripcion: "Puedes revisar los detalles en el panel de respuestas.",
+      descripcion: adjuntos.length > 0 
+        ? `Incluye ${adjuntos.length} archivo(s) adjunto(s)` 
+        : "Puedes revisar los detalles en el panel de respuestas.",
       prioridad: 2,
       color: "#fb8924",
       icono: "form",
@@ -80,19 +83,82 @@ router.post("/", async (req, res) => {
       actionUrl: `/?id=${result.insertedId}`,
     });
 
-    // === GENERAR DOCX (opcional) ===
+    // === GENERAR DOCUMENTO SEGÚN TIPO DE FORMULARIO ===
     try {
       await generarAnexoDesdeRespuesta(responses, result.insertedId.toString(), req.db, form.section);
-      console.log("DOCX generado automáticamente para respuesta:", result.insertedId);
+      console.log("Documento generado automáticamente:", result.insertedId);
     } catch (error) {
-      console.error("Error generando DOCX:", error.message);
+      console.error("Error generando documento:", error.message);
     }
 
-    res.json({ _id: result.insertedId, ...req.body });
+    res.json({ 
+      _id: result.insertedId, 
+      ...req.body,
+      adjuntosCount: adjuntos.length
+    });
 
   } catch (err) {
     console.error("Error general al guardar respuesta:", err);
     res.status(500).json({ error: "Error al guardar respuesta: " + err.message });
+  }
+});
+
+// Endpoint para descargar archivos adjuntos
+router.get("/:id/adjuntos/:index", async (req, res) => {
+  try {
+    const { id, index } = req.params;
+    
+    const respuesta = await req.db
+      .collection("respuestas")
+      .findOne({ _id: new ObjectId(id) });
+
+    if (!respuesta) {
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
+    if (!respuesta.adjuntos || !respuesta.adjuntos[index]) {
+      return res.status(404).json({ error: "Archivo no encontrado" });
+    }
+
+    const adjunto = respuesta.adjuntos[index];
+    
+    // Convertir base64 a buffer
+    const base64Data = adjunto.fileData.replace(/^data:[^;]+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    // Configurar headers para descarga
+    res.set({
+      'Content-Type': adjunto.mimeType,
+      'Content-Disposition': `attachment; filename="${adjunto.fileName}"`,
+      'Content-Length': buffer.length
+    });
+
+    res.send(buffer);
+
+  } catch (err) {
+    console.error("Error descargando archivo:", err);
+    res.status(500).json({ error: "Error descargando archivo" });
+  }
+});
+
+// Endpoint para obtener información de adjuntos
+router.get("/:id/adjuntos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const respuesta = await req.db
+      .collection("respuestas")
+      .findOne({ _id: new ObjectId(id) }, { projection: { adjuntos: 1 } });
+
+    if (!respuesta) {
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
+    res.json(respuesta.adjuntos || []);
+
+  } catch (err) {
+    console.error("Error obteniendo adjuntos:", err);
+    res.status(500).json({ error: "Error obteniendo adjuntos" });
   }
 });
 

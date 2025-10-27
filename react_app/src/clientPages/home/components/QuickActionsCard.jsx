@@ -35,14 +35,6 @@ const QuickActionsCard = () => {
       icon: 'FileText',
       color: 'bg-purple-500',
       path: '/otras'
-    },
-    {
-      id: 6,
-      title: 'Consulta RRHH',
-      description: 'Contacta con recursos humanos',
-      icon: 'MessageCircle',
-      color: 'bg-red-500',
-      path: '/support-portal?category=hr'
     }
   ];
 
