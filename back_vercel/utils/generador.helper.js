@@ -613,7 +613,7 @@ async function generarDocumentoTxt(responses, responseId, db) {
         contenidoTxt += `\nGenerado el: ${new Date().toLocaleString()}`;
         
         const buffer = Buffer.from(contenidoTxt, 'utf8');
-        const IDdoc = `FORMULARIO_${responseId}_${Date.now()}.txt`;
+        const IDdoc = `FORMULARIO_${responseId}_${Date.now()}`;
         
         // Guardar en la misma colección docxs
         await db.collection('docxs').insertOne({
