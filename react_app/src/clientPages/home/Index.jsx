@@ -11,6 +11,7 @@ const DashboardHome = () => {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  // 💡 Obteniendo el estado de usuario para el control de visibilidad
   const user = sessionStorage.getItem("user");
   const mail = sessionStorage.getItem("email");
   
@@ -47,6 +48,10 @@ const DashboardHome = () => {
     window.location.href = '/support-portal?section=help';
   };
 
+  const handleLoginRedirect = () => {
+    window.location.href = '/login';
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -68,12 +73,34 @@ const DashboardHome = () => {
             {/* Columna Principal: Ocupa 100% en móvil, 8/12 en tablet, 9/12 en desktop */}
             <div className="md:col-span-8 lg:col-span-9 space-y-6"> 
               
+              {!user && (
+                <div className="bg-card border border-border rounded-xl shadow-brand p-6 text-center space-y-4">
+                  <Icon name="LogIn" size={48} className="mx-auto text-muted-foreground opacity-70" />
+                  <h3 className="text-xl font-semibold text-foreground">Inicie sesión para utilizar la plataforma.</h3>
+                  <p className="text-muted-foreground">
+                    Acceda a su cuenta para ver la actividad reciente, formularios personalizados y notificaciones.
+                  </p>
+                  <Button
+                    variant="default"
+                    onClick={handleLoginRedirect}
+                    iconName="LogIn"
+                    iconPosition="left"
+                    size="default"
+                  >
+                    Iniciar Sesión
+                  </Button>
+                </div>
+              )}
+
               {/* Quick Actions */}
               <QuickActionsCard />
               
 
-              {/* Recent Activity */}
-              <RecentActivityCard />
+
+              {/* 🔄 Renderizado Condicional de Actividad Reciente */}
+              {user && (
+                <RecentActivityCard />
+              )}
 
               {/* Stats Overview */}
               {/* Si la añades, puedes darle un ancho completo aquí */}
