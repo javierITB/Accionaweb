@@ -642,10 +642,10 @@ const FormPreview = ({ formData }) => {
           <Icon name="Eye" size={24} className="text-gray-400" />
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Vista previa no disponible
+          Formulario no disponible
         </h3>
         <p className="text-gray-600">
-          Completa las propiedades del formulario y agrega preguntas para ver la vista previa
+          Parece que este formulario no existe o fue eliminado, pruebe a responder algun otro
         </p>
       </div>
     );
