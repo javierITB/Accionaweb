@@ -396,6 +396,9 @@ const FormPreview = ({ formData }) => {
               {(question?.options || []).map((option, idx) => {
                 const optionText = typeof option === 'object' ? option.text : option;
                 const optionValue = typeof option === 'object' ? option.text : option;
+                const isChecked = value === optionValue;
+                const hasSubform = typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0;
+                const shouldShowSubsection = hasSubform && isChecked;
 
                 return (
                   <div key={idx} className="space-y-2">
@@ -404,12 +407,19 @@ const FormPreview = ({ formData }) => {
                         type="radio"
                         name={questionPath}
                         value={optionValue}
-                        checked={value === optionValue}
+                        checked={isChecked}
                         onChange={(e) => handleRadioChange(question.id, getQuestionTitle(question), e.target.value)}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-base text-black">{optionText}</span>
                     </label>
+                    {shouldShowSubsection && (
+                      <div className="ml-6 space-y-4 border-l-2 border-gray-200 pl-4">
+                        {option.subformQuestions.map((subQuestion, subIndex) =>
+                          renderQuestion(subQuestion, subIndex, false, `${questionPath}-${optionValue}`)
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -428,6 +438,8 @@ const FormPreview = ({ formData }) => {
               {(question?.options || []).map((option, idx) => {
                 const optionText = typeof option === 'object' ? option.text : option;
                 const isChecked = Array.isArray(value) && value.includes(optionText);
+                const hasSubform = typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0;
+                const shouldShowSubsection = hasSubform && isChecked;
 
                 return (
                   <div key={idx} className="space-y-2">
@@ -440,6 +452,13 @@ const FormPreview = ({ formData }) => {
                       />
                       <span className="text-base text-black">{optionText}</span>
                     </label>
+                    {shouldShowSubsection && (
+                      <div className="ml-6 space-y-4 border-l-2 border-gray-200 pl-4">
+                        {option.subformQuestions.map((subQuestion, subIndex) =>
+                          renderQuestion(subQuestion, subIndex, false, `${questionPath}-${optionText}`)
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -498,30 +517,6 @@ const FormPreview = ({ formData }) => {
             {renderInput()}
           </div>
         </div>
-
-        {(question?.options || []).map((option, optionIndex) => {
-          if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
-            const optionText = option.text || `Opción ${optionIndex + 1}`;
-
-            const shouldShowSubsection =
-              question.type === 'single_choice'
-                ? answers[question.id] === optionText
-                : question.type === 'multiple_choice'
-                  ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
-                  : false;
-
-            if (shouldShowSubsection) {
-              return (
-                <div key={`${questionPath}-${optionIndex}`} className="space-y-4 ml-8 border-l-2 border-gray-200 pl-4">
-                  {option.subformQuestions.map((subQuestion, subIndex) =>
-                    renderQuestion(subQuestion, subIndex, false, questionPath)
-                  )}
-                </div>
-              );
-            }
-          }
-          return null;
-        })}
       </div>
     );
   };
@@ -549,7 +544,6 @@ const FormPreview = ({ formData }) => {
 
             processedAnswers[questionTitle] = Array.from(fileList).map(file => file.name);
 
-            // Procesar todos los archivos de esta pregunta
             const filePromises = Array.from(fileList).map(async (file) => {
               try {
                 console.log('Procesando archivo:', file.name, file.size);
@@ -572,7 +566,6 @@ const FormPreview = ({ formData }) => {
             adjuntos.push(...processedFiles.filter(file => file !== null));
           }
 
-          // Procesar subsecciones
           if (question?.options) {
             for (const option of question.options) {
               if (typeof option === 'object' && option.hasSubform && option.subformQuestions) {
@@ -582,7 +575,6 @@ const FormPreview = ({ formData }) => {
           }
         };
 
-        // Procesar todas las preguntas en serie
         for (const question of questions) {
           await processQuestion(question);
         }
@@ -597,8 +589,8 @@ const FormPreview = ({ formData }) => {
       console.log('Total de adjuntos procesados:', adjuntos.length);
       console.log('Adjuntos:', adjuntos);
 
-      console.log('Total de adjuntos procesados:', adjuntos.length); // DEBUG
-      console.log('Adjuntos:', adjuntos); // DEBUG
+      console.log('Total de adjuntos procesados:', adjuntos.length);
+      console.log('Adjuntos:', adjuntos);
 
       const cleanAnswers = Object.fromEntries(
         Object.entries(processedAnswers).filter(([_, value]) =>
@@ -619,7 +611,7 @@ const FormPreview = ({ formData }) => {
         user: user
       };
 
-      console.log('Payload a enviar:', payload); // DEBUG
+      console.log('Payload a enviar:', payload);
 
       const res = await fetch(`https://accionaapi.vercel.app/api/respuestas`, {
         method: 'POST',
@@ -630,7 +622,7 @@ const FormPreview = ({ formData }) => {
       if (!res.ok) throw new Error('Error al enviar respuestas');
 
       const data = await res.json();
-      console.log('Respuesta del servidor:', data); // DEBUG
+      console.log('Respuesta del servidor:', data);
       alert('Respuestas enviadas con éxito');
 
       setAnswers({});
