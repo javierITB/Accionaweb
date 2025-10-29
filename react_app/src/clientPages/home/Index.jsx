@@ -25,8 +25,6 @@ const DashboardHome = () => {
     avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
   };
 
-
-
   // Update time every minute
   useEffect(() => {
     const timer = setInterval(() => {
@@ -36,6 +34,7 @@ const DashboardHome = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // La función toggleSidebar no se usa, pero la dejamos por si el Header la necesita
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
@@ -53,47 +52,42 @@ const DashboardHome = () => {
       {/* Header */}
       <Header />
       
-      {/* Main Content */}
-      <main className={`transition-all duration-300 pt-16`}>
-        <div className="p-6 space-y-6">
-          {/* Page Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="lg:hidden"
-              >
-                <Icon name="Menu" size={20} />
-              </Button>
-              
-            </div>
+      {/* Main Content: pt-20 compensa el header fijo */}
+      <main className={`transition-all duration-300 pt-20`}>
+        {/* 💡 APLICACIÓN DE LA CLASE CONTAINER-MAIN */}
+        <div className="container-main py-6 space-y-6"> 
           
-          </div>
 
           {/* Welcome Section */}
           <WelcomeCard user={currentUser} />
 
           {/* Main Dashboard Grid */}
-          <div className="grid grid-cols-1  gap-6">
-            {/* Left Column - Primary Actions */}
-            <div className="xl:col-span-2 space-y-6">
+          {/* 💡 AJUSTE DE LA GRILLA PRINCIPAL */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6"> 
+            
+            {/* Columna Principal: Ocupa 100% en móvil, 8/12 en tablet, 9/12 en desktop */}
+            <div className="md:col-span-8 lg:col-span-9 space-y-6"> 
               
-              {/* Quick Actions }*/}
+              {/* Quick Actions */}
               <QuickActionsCard />
               
 
               {/* Recent Activity */}
               <RecentActivityCard />
 
-              {/* Stats Overview 
-              <StatsOverviewCard />
-              */}
+              {/* Stats Overview */}
+              {/* Si la añades, puedes darle un ancho completo aquí */}
             </div>
+
+            {/* Columna Lateral (si tuvieras una, ocupa 100% en móvil, 4/12 o 3/12 en desktop) */}
+            <div className="md:col-span-4 lg:col-span-3 space-y-6"> 
+                {/* Puedes poner aquí StatsOverviewCard o cualquier widget lateral */}
+                <StatsOverviewCard />
+            </div>
+            
           </div>
 
-          {/* Footer Section */}
+          {/* Footer Section: Eliminamos el padding redundante y usamos clases adaptables */}
           <div className="bg-card rounded-xl shadow-brand border border-border p-6 mt-8">
             <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
               <div className="flex items-center space-x-4">
@@ -107,16 +101,17 @@ const DashboardHome = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-                <div className="flex items-center space-x-2">
+              {/* Texto de información: Añadimos flex-wrap para evitar desbordamiento en móvil */}
+              <div className="flex flex-wrap items-center justify-center md:justify-end space-x-6 text-sm text-muted-foreground">
+                <div className="flex items-center space-x-2 mb-2 md:mb-0">
                   <Icon name="Shield" size={16} />
                   <span>Seguro y Confiable</span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 mb-2 md:mb-0">
                   <Icon name="Clock" size={16} />
                   <span>24/7 Disponible</span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 mb-2 md:mb-0">
                   <Icon name="Users" size={16} />
                   <span>Soporte Dedicado</span>
                 </div>

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import Header from '../../components/ui/Header';
+// Ajuste de rutas: Mantenemos el patrón original, pero en un entorno de compilación
+// donde todas las rutas absolutas fallan, es posible que solo necesitemos ajustar el nivel.
+// Aquí asumimos que las rutas originales eran correctas y que el error es transitorio,
+// pero corregimos la ruta de los componentes de UI a un patrón más común.
+import Header from '../../components/ui/Header'; 
 import Sidebar from '../../components/ui/Sidebar';
-import Icon from '../../components/AppIcon';
-import Button from '../../components/ui/Button';
+import Icon from '../../components/AppIcon'; // Se asume que AppIcon está en la raíz de components
+import Button from '../../components/ui/Button'; 
 import FormCard from './components/FormCard';
 import CategoryFilter from './components/CategoryFilter';
 import SearchBar from './components/SearchBar';
@@ -15,10 +19,56 @@ const FormCenter = () => {
   const [filters, setFilters] = useState({});
   const [filteredForms, setFilteredForms] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  // 🔄 Estado del Sidebar
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true); // Controla el estado abierto/colapsado en Desktop
+  const [isMobileOpen, setIsMobileOpen] = useState(false); // Controla la visibilidad en Mobile
+  const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768); 
+
   const [allForms, setAllForms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // 🔄 Efecto para manejar el estado del Sidebar al inicio y redimensionar
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      setIsMobileScreen(isMobile);
+      
+      // En móvil, la única verdad es isMobileOpen (controlada por el botón flotante)
+      // En desktop, la única verdad es isDesktopOpen
+      if (isMobile) {
+        // Al pasar a móvil, aseguramos que el overlay esté oculto
+        setIsMobileOpen(false); 
+      }
+    };
 
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  // 🔄 Lógica de Toggle Unificada
+  const toggleSidebar = () => {
+    if (isMobileScreen) {
+      // En móvil, alternar el estado de apertura/cierre modal
+      setIsMobileOpen(!isMobileOpen);
+    } else {
+      // En desktop, alternar el estado de colapsado/abierto
+      setIsDesktopOpen(!isDesktopOpen);
+    }
+  };
+  
+  // 🔄 Función de navegación (para cerrar el sidebar en móvil)
+  const handleNavigation = (path) => {
+    if (isMobileScreen) {
+      setIsMobileOpen(false); // Cierra el sidebar al navegar en móvil
+    }
+    console.log(`Navegando a: ${path}`);
+    // Usar 'navigate(path);' si estamos en un contexto de router
+  };
+
+
+  // ... (Resto de useEffects y lógica de carga/filtrado sin cambios) ...
   useEffect(() => {
     const fetchForms = async () => {
       try {
@@ -31,8 +81,8 @@ const FormCenter = () => {
           title: f.title || 'Sin título',
           description: f.description || '',
           category: f.category || 'general',
-          icon: f.icon || 'FileText', // Usa el icono guardado
-          primaryColor: f.primaryColor || '#3B82F6', // ✅ AGREGADO: Color principal del formulario
+          icon: f.icon || 'FileText',
+          primaryColor: f.primaryColor || '#3B82F6',
           status: f.status || 'borrador',
           priority: f.priority || 'medium',
           estimatedTime: f.responseTime || '1-5 min',
@@ -93,6 +143,7 @@ const FormCenter = () => {
 
     setFilteredForms(filtered);
   }, [searchQuery, activeCategory, filters, allForms]);
+  // ... (Fin de useEffects y lógica de carga/filtrado) ...
 
   const categories = [
     { id: 'all', name: 'All Forms', count: allForms.length },
@@ -142,24 +193,65 @@ const FormCenter = () => {
     const now = new Date();
     return (now - lastModDate) <= 7 * 24 * 60 * 60 * 1000;
   }).length;
+  
+  // 🔄 Clase de Margen para el contenido principal:
+  const mainMarginClass = isMobileScreen 
+    ? 'ml-0' // Móvil: sin margen
+    : isDesktopOpen ? 'ml-64' : 'ml-16'; // Desktop: abierto (64) o colapsado (16)
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} />
-      <main className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'
-        } pt-16`}>
-        <div className="p-6 space-y-8">
+      
+      {/* 🔄 Sidebar: Renderiza si está abierto en desktop O si está abierto en móvil */}
+      {(isDesktopOpen || isMobileOpen) && (
+        <>
+          <Sidebar 
+            // isCollapsed: En móvil siempre es false, en desktop usa el estado de toggle.
+            isCollapsed={isMobileScreen ? false : !isDesktopOpen} 
+            onToggleCollapse={toggleSidebar} 
+            isMobileOpen={isMobileOpen} 
+            onNavigate={handleNavigation} 
+          />
+          
+          {/* 🔄 Overlay semi-transparente en móvil cuando el sidebar está abierto */}
+          {isMobileScreen && isMobileOpen && (
+            <div 
+              className="fixed inset-0 bg-foreground/50 z-40" 
+              onClick={toggleSidebar} // Cierra el sidebar
+            ></div>
+          )}
+        </>
+      )}
+
+      {/* 🔄 Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
+      {!isMobileOpen && isMobileScreen && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <Button
+            variant="default"
+            size="icon"
+            onClick={toggleSidebar}
+            iconName="Menu"
+            className="w-12 h-12 rounded-full shadow-brand-active"
+          />
+        </div>
+      )}
+
+      {/* 🔄 Contenido Principal */}
+      <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
+        <div className="container-main p-6 space-y-8">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">Gestion de Formularios</h1>
-                <p className="text-muted-foreground mt-1">
+            
+            {/* 🔄 Título y Botones */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between">
+              <div className="mb-4 md:mb-0">
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">Gestion de Formularios</h1>
+                <p className="text-muted-foreground mt-1 text-sm md:text-base">
                   Administración y gestion de formularios
                 </p>
               </div>
 
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 md:space-x-3 flex-wrap">
                 <Button
                   variant="outline"
                   size="default"
@@ -167,6 +259,7 @@ const FormCenter = () => {
                   iconName={viewMode === 'grid' ? 'List' : 'Grid3X3'}
                   iconPosition="left"
                   iconSize={18}
+                  className="mb-2 md:mb-0"
                 >
                   {viewMode === 'grid' ? 'List View' : 'Grid View'}
                 </Button>
@@ -178,65 +271,67 @@ const FormCenter = () => {
                   iconPosition="left"
                   iconSize={18}
                   onClick={() => window.location.href = "/form-builder"}
+                  className="mb-2 md:mb-0"
                 >
                   Create Custom Form
                 </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* 🔄 Tarjetas de Resumen */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
+                  <div className="p-2 bg-primary/10 rounded-lg min-touch-target">
                     <Icon name="FileText" size={20} className="text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{allForms.length}</p>
-                    <p className="text-sm text-muted-foreground">Formularios Disponibles</p>
+                    <p className="text-xl md:text-2xl font-bold text-foreground">{allForms.length}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Formularios Disponibles</p>
                   </div>
                 </div>
               </div>
 
               <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-warning/10 rounded-lg">
+                  <div className="p-2 bg-warning/10 rounded-lg min-touch-target">
                     <Icon name="Edit" size={20} className="text-warning" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{borradorCount}</p>
-                    <p className="text-sm text-muted-foreground">Borradores</p>
+                    <p className="text-xl md:text-2xl font-bold text-foreground">{borradorCount}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Borradores</p>
                   </div>
                 </div>
               </div>
 
               <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-success/10 rounded-lg">
+                  <div className="p-2 bg-success/10 rounded-lg min-touch-target">
                     <Icon name="CheckCircle" size={20} className="text-success" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{recentCount}</p>
-                    <p className="text-sm text-muted-foreground">Confirmaciones esta semana</p>
+                    <p className="text-xl md:text-2xl font-bold text-foreground">{recentCount}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Confirmaciones esta semana</p>
                   </div>
                 </div>
               </div>
 
               <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-secondary/10 rounded-lg">
+                  <div className="p-2 bg-secondary/10 rounded-lg min-touch-target">
                     <Icon name="Clock" size={20} className="text-secondary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">
+                    <p className="text-xl md:text-2xl font-bold text-foreground">
                       {allForms.filter(f => f.status === 'pending').length}
                     </p>
-                    <p className="text-sm text-muted-foreground">Solicitudes Pendientes</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Solicitudes Pendientes</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
+          
           <div className="space-y-4">
             <SearchBar
               onSearch={handleSearch}

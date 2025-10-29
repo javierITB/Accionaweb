@@ -18,6 +18,49 @@ const FormReg = () => {
   });
   const [activeTab, setActiveTab] = useState('properties');
 
+  // 🔄 ESTADOS AÑADIDOS PARA LA ADAPTABILIDAD
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true); // Controla el colapso en Desktop
+  const [isMobileOpen, setIsMobileOpen] = useState(false); // Controla la apertura total en Mobile
+  const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
+
+
+  // 🔄 FUNCIÓN AÑADIDA: Toggle Unificado para Desktop y Móvil
+  const toggleSidebar = () => {
+    if (isMobileScreen) {
+      // En móvil, alternar el estado de apertura/cierre
+      setIsMobileOpen(!isMobileOpen);
+    } else {
+      // En desktop, alternar el estado de abierto/colapsado
+      setIsDesktopOpen(!isDesktopOpen);
+    }
+  };
+  
+  // 🔄 FUNCIÓN AÑADIDA: Lógica de navegación para cerrar el Sidebar en móvil
+  const handleNavigation = () => {
+    if (isMobileScreen) {
+      setIsMobileOpen(false); // Cierra el sidebar al navegar
+    }
+  };
+
+  // 🔄 EFECTO AÑADIDO: Manejo de Redimensionamiento
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      setIsMobileScreen(isMobile);
+      
+      // Si pasa a móvil, forzar cerrado. Si pasa a desktop, forzar abierto (por defecto).
+      if (isMobile) {
+        setIsMobileOpen(false); 
+      } else {
+        setIsDesktopOpen(true); 
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Cargar empresas desde MongoDB
   useEffect(() => {
     const fetchEmpresas = async () => {
@@ -73,7 +116,7 @@ const FormReg = () => {
         setUsers(data);
       } catch (err) {
         console.error('Error cargando los usuarios:', err);
-        alert('No se pudo cargar la lista de usuarios');
+        console.error('No se pudo cargar la lista de usuarios');
       }
     };
 
@@ -196,13 +239,52 @@ const FormReg = () => {
         return null;
     }
   };
+  
+  // 🔄 CLASE DE MARGEN: Definir el margen para <main>
+  const mainMarginClass = isMobileScreen 
+    ? 'ml-0' 
+    : isDesktopOpen ? 'ml-64' : 'ml-16';
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Sidebar />
-      <main className="ml-64 pt-16">
-        <div className="p-6 space-y-6">
+      
+      {/* 🔄 Sidebar: Renderiza si está abierto en desktop O si está abierto en móvil */}
+      {(isDesktopOpen || isMobileOpen) && (
+        <>
+          <Sidebar 
+            isCollapsed={isMobileScreen ? false : !isDesktopOpen} 
+            onToggleCollapse={toggleSidebar} 
+            isMobileOpen={isMobileOpen} 
+            onNavigate={handleNavigation} 
+          />
+          
+          {/* 🔄 Overlay semi-transparente en móvil cuando el sidebar está abierto */}
+          {isMobileScreen && isMobileOpen && (
+            <div 
+              className="fixed inset-0 bg-foreground/50 z-40" 
+              onClick={toggleSidebar} // Cierra el sidebar al hacer clic en el overlay
+            ></div>
+          )}
+        </>
+      )}
+      
+      {/* 🔄 Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
+      {!isMobileOpen && isMobileScreen && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <button
+            onClick={toggleSidebar}
+            className="w-12 h-12 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors min-touch-target"
+          >
+            {/* Ícono de menú */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+          </button>
+        </div>
+      )}
+
+      {/* 🔄 Contenido Principal: Aplicar margen adaptable */}
+      <main className={`transition-all duration-300 ${mainMarginClass} pt-16`}>
+        <div className="p-6 space-y-6 container-main"> {/* Usar container-main para padding lateral */}
           <div className="bg-card border border-border rounded-lg">
             <div className="p-6">{getTabContent()}</div>
           </div>
@@ -230,12 +312,12 @@ const FormReg = () => {
                   <tbody>
                     {users.map((u) => (
                       <tr key={u.id} className="border-t hover:bg-muted/30 transition">
-                        <td className="px-4 py-2">{u._id}</td>
-                        <td className="px-4 py-2">{u.nombre || '—'}</td>
-                        <td className="px-4 py-2">{u.empresa || '—'}</td>
-                        <td className="px-4 py-2">{u.mail || '—'}</td>
-                        <td className="px-4 py-2">{u.cargo || '—'}</td>
-                        <td className="px-4 py-2">{u.rol || '—'}</td>
+                        <td className="px-4 py-2 text-xs">{u._id}</td>
+                        <td className="px-4 py-2 text-sm">{u.nombre || '—'}</td>
+                        <td className="px-4 py-2 text-sm">{u.empresa || '—'}</td>
+                        <td className="px-4 py-2 text-sm">{u.mail || '—'}</td>
+                        <td className="px-4 py-2 text-sm">{u.cargo || '—'}</td>
+                        <td className="px-4 py-2 text-sm">{u.rol || '—'}</td>
                         <td className="px-4 py-2">
                           <span className={`px-2 py-1 text-xs rounded-full ${
                             u.estado === 'pendiente' 
@@ -249,7 +331,7 @@ const FormReg = () => {
                              'Inactivo'}
                           </span>
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-4 py-2 text-sm">
                           {u.createdAt
                             ? new Date(u.createdAt).toLocaleDateString()
                             : '—'}

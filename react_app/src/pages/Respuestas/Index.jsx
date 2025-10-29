@@ -14,7 +14,12 @@ const RequestTracking = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const formId = urlParams?.get('id');
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // 🔄 ESTADOS DEL SIDEBAR
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true); // Controla el ml-64/ml-16 en desktop
+  const [isMobileOpen, setIsMobileOpen] = useState(false); // Controla la visibilidad total en móvil
+  const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
+  
+  // Estados de la Aplicación
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [forms, setAllForms] = useState([]);
@@ -40,6 +45,47 @@ const RequestTracking = () => {
     company: '',
     submittedBy: ''
   });
+
+  // 🔄 EFECTO DE RESIZE (Controla isMobileScreen y apertura/cierre)
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      setIsMobileScreen(isMobile);
+      
+      // En móvil, forzar cerrado por defecto
+      if (isMobile) {
+        setIsMobileOpen(false); 
+      } else {
+        // En desktop, mantener el estado de abierto/cerrado actual
+        // No forzamos setIsDesktopOpen(true) para que mantenga la preferencia del usuario si colapsó
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // 🔄 LÓGICA DE TOGGLE UNIFICADA
+  const toggleSidebar = () => {
+    if (isMobileScreen) {
+      // En móvil, alternar el estado de apertura total
+      setIsMobileOpen(!isMobileOpen);
+    } else {
+      // En desktop, alternar el estado de colapsado (ml-64 vs ml-16)
+      setIsDesktopOpen(!isDesktopOpen);
+    }
+  };
+
+  // 🔄 Lógica de navegación (para cerrar el Sidebar en móvil)
+  // Necesaria para pasar al Sidebar si tiene links que cierran la vista móvil.
+  const handleNavigation = (path) => {
+    if (isMobileScreen) {
+      setIsMobileOpen(false); // Cierra el sidebar al navegar
+    }
+    // Lógica real de navegación (ej: window.location.href = path;)
+    console.log(`Navegando a: ${path}`);
+  };
 
   const updateRequest = (updatedRequest) => {
     setResp(prevResp =>
@@ -326,26 +372,70 @@ const RequestTracking = () => {
     { value: 'status', label: 'Estado' }
   ];
 
+  // 🔄 Clase de Margen para el contenido principal:
+  // Si está en móvil: ml-0
+  // Si está en desktop y sidebar abierto: ml-64
+  // Si está en desktop y sidebar colapsado: ml-16
+  const mainMarginClass = isMobileScreen 
+    ? 'ml-0' 
+    : isDesktopOpen ? 'ml-64' : 'ml-16';
+
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} />
-      <main className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'} pt-16`}>
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
+      
+      {/* 🔄 Sidebar: Solo renderiza si está abierto en desktop O si está abierto en móvil */}
+      {(isDesktopOpen || isMobileOpen) && (
+        <>
+          <Sidebar 
+            isCollapsed={!isDesktopOpen} // Desktop: Colapsado si isDesktopOpen es false
+            onToggleCollapse={toggleSidebar} 
+            isMobileOpen={isMobileOpen} // Prop para el Sidebar en vista móvil
+            onNavigate={handleNavigation} // Pasamos la función de navegación (cierra en móvil)
+          />
+          
+          {/* 🔄 Overlay semi-transparente en móvil cuando el sidebar está abierto */}
+          {isMobileScreen && isMobileOpen && (
+            <div 
+              className="fixed inset-0 bg-foreground/50 z-40" 
+              onClick={toggleSidebar} // Cierra el sidebar
+            ></div>
+          )}
+        </>
+      )}
+
+      {/* 🔄 Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
+      {!isMobileOpen && isMobileScreen && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <Button
+            variant="default"
+            size="icon"
+            onClick={toggleSidebar}
+            iconName="Menu"
+            className="w-12 h-12 rounded-full shadow-brand-active"
+          />
+        </div>
+      )}
+
+      <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
+        {/* 💡 CONTENEDOR PRINCIPAL: Aplicamos la clase container-main para márgenes responsivos */}
+        <div className="container-main p-6 space-y-6"> 
+          <div className="flex flex-col md:flex-row items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Seguimiento de Solicitudes</h1>
-              <p className="text-muted-foreground mt-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Seguimiento de Solicitudes</h1>
+              <p className="text-muted-foreground mt-1 text-sm md:text-base">
                 Monitorea el estado de todas tus solicitudes con cronología detallada
               </p>
             </div>
 
-            <div className="flex items-center space-x-3">
+            {/* Botón de toggle del sidebar: visible solo en desktop */}
+            <div className="hidden md:flex items-center space-x-3">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                iconName={sidebarCollapsed ? "PanelLeftOpen" : "PanelLeftClose"}
+                onClick={toggleSidebar}
+                iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
                 iconSize={20}
               />
             </div>
@@ -361,8 +451,10 @@ const RequestTracking = () => {
             onToggle={() => setShowFilters(!showFilters)}
           />
 
-          <div className="flex items-center justify-between bg-card border border-border rounded-lg p-4">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-card border border-border rounded-lg p-4 space-y-4 md:space-y-0">
+            {/* Controles de Vista y Ordenamiento */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+              {/* Controles de Vista */}
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">Vista:</span>
                 <div className="flex items-center border border-border rounded-lg">
@@ -385,12 +477,13 @@ const RequestTracking = () => {
                 </div>
               </div>
 
+              {/* Controles de Ordenamiento */}
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">Ordenar por:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e?.target?.value)}
-                  className="px-3 py-1 border border-border rounded-md text-sm bg-input text-foreground"
+                  className="px-3 py-1 border border-border rounded-md text-sm bg-input text-foreground min-touch-target"
                 >
                   {sortOptions?.map(option => (
                     <option key={option?.value} value={option?.value}>
@@ -408,15 +501,17 @@ const RequestTracking = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            {/* Contador de Solicitudes */}
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-3 md:mt-0">
               <Icon name="FileText" size={16} />
               <span>{filteredRequests?.length} solicitudes encontradas</span>
             </div>
           </div>
 
+          {/* Listado de Solicitudes */}
           <div className={
             viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' // Ajustamos la grilla para mejor adaptabilidad
               : 'space-y-4'
           }>
             {filteredRequests?.length > 0 ? (
