@@ -65,13 +65,6 @@ const DashboardHome = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  const handleEmergencyContact = () => {
-    window.location.href = '/support-portal?category=emergency';
-  };
-
-  const handleQuickHelp = () => {
-    window.location.href = '/support-portal?section=help';
-  };
 
   return (
     <div className="min-h-screen bg-background">

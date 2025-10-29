@@ -7,20 +7,14 @@ const CategoryFilter = ({ categories, activeCategory, onCategoryChange, classNam
     switch (category) {
       case 'all':
         return 'Grid3X3';
-      case 'timeoff':
-        return 'Calendar';
-      case 'expense':
+      case 'Remuneraciones':
         return 'Receipt';
-      case 'hr':
-        return 'Users';
-      case 'payroll':
+      case 'Anexos':
+        return 'Calendar';
+      case 'Finiquitos':
         return 'CreditCard';
-      case 'benefits':
-        return 'Heart';
-      case 'training':
-        return 'GraduationCap';
-      case 'it':
-        return 'Monitor';
+      case 'otros':
+        return 'FileText';
       default:
         return 'FileText';
     }
@@ -30,20 +24,18 @@ const CategoryFilter = ({ categories, activeCategory, onCategoryChange, classNam
     if (!isActive) return 'text-muted-foreground';
     
     switch (category) {
-      case 'timeoff':
+      case 'all':
         return 'text-primary';
-      case 'expense':
+      case 'Remuneraciones':
         return 'text-secondary';
-      case 'hr':
+      case 'Anexos':
         return 'text-accent';
-      case 'payroll':
+      case 'Finiquitos':
         return 'text-success';
       case 'benefits':
         return 'text-error';
-      case 'training':
+      case 'otros':
         return 'text-warning';
-      case 'it':
-        return 'text-brand-indigo';
       default:
         return 'text-foreground';
     }

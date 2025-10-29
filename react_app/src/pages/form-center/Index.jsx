@@ -35,9 +35,8 @@ const FormCenter = () => {
       setIsMobileScreen(isMobile);
       
       // En móvil, la única verdad es isMobileOpen (controlada por el botón flotante)
-      // En desktop, la única verdad es isDesktopOpen
+      // Al pasar a móvil, aseguramos que el overlay esté oculto
       if (isMobile) {
-        // Al pasar a móvil, aseguramos que el overlay esté oculto
         setIsMobileOpen(false); 
       }
     };
@@ -90,7 +89,8 @@ const FormCenter = () => {
           documentsRequired: f.documentsRequired ?? false,
           tags: f.tags || [],
           companies: f.companies || [],
-          lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null
+          lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null,
+          section: f.section // Aseguramos que la sección se cargue para el filtro
         }));
 
         setAllForms(normalizedForms);
@@ -113,7 +113,8 @@ const FormCenter = () => {
     let filtered = [...allForms];
 
     if (activeCategory !== 'all') {
-      filtered = filtered.filter(form => form.category === activeCategory);
+      // 💡 CORRECCIÓN: Filtrar por 'section' en lugar de 'category'
+      filtered = filtered.filter(form => form.section === activeCategory); 
     }
 
     if (searchQuery) {
@@ -146,14 +147,11 @@ const FormCenter = () => {
   // ... (Fin de useEffects y lógica de carga/filtrado) ...
 
   const categories = [
-    { id: 'all', name: 'All Forms', count: allForms.length },
-    { id: 'timeoff', name: 'Time Off', count: allForms.filter(f => f.category === 'timeoff').length },
-    { id: 'expense', name: 'Expenses', count: allForms.filter(f => f.category === 'expense').length },
-    { id: 'hr', name: 'HR Services', count: allForms.filter(f => f.category === 'hr').length },
-    { id: 'payroll', name: 'Payroll', count: allForms.filter(f => f.category === 'payroll').length },
-    { id: 'benefits', name: 'Benefits', count: allForms.filter(f => f.category === 'benefits').length },
-    { id: 'training', name: 'Training', count: allForms.filter(f => f.category === 'training').length },
-    { id: 'it', name: 'IT Support', count: allForms.filter(f => f.category === 'it').length }
+    { id: 'all', name: 'Todos', count: allForms.length },
+    { id: 'Remuneraciones', name: 'Remuneraciones', count: allForms.filter(f => f.section === 'Remuneraciones').length },
+    { id: 'Anexos', name: 'Anexos', count: allForms.filter(f => f.section === 'Anexos').length },
+    { id: 'Finiquitos', name: 'Finiquitos', count: allForms.filter(f => f.section === 'Finiquitos').length },
+    { id: 'Otras', name: 'Otras', count: allForms.filter(f => f.section === 'Otras').length }
   ];
 
   const handleFormSelect = (form) => {
@@ -306,29 +304,31 @@ const FormCenter = () => {
 
               <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-success/10 rounded-lg min-touch-target">
-                    <Icon name="CheckCircle" size={20} className="text-success" />
+                  <div className="p-2 bg-secondary/10 rounded-lg min-touch-target">
+                    <Icon name="Clock" size={20} className="text-secondary" />
                   </div>
                   <div>
-                    <p className="text-xl md:text-2xl font-bold text-foreground">{recentCount}</p>
-                    <p className="text-xs md:text-sm text-muted-foreground">Confirmaciones esta semana</p>
+                    <p className="text-xl md:text-2xl font-bold text-foreground">
+                      {allForms.filter(f => f.status === 'publicado').length}
+                    </p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Formularios publicados</p>
                   </div>
                 </div>
               </div>
 
               <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-secondary/10 rounded-lg min-touch-target">
-                    <Icon name="Clock" size={20} className="text-secondary" />
+                  <div className="p-2 bg-success/10 rounded-lg min-touch-target">
+                    <Icon name="CheckCircle" size={20} className="text-success" />
                   </div>
                   <div>
-                    <p className="text-xl md:text-2xl font-bold text-foreground">
-                      {allForms.filter(f => f.status === 'pending').length}
-                    </p>
-                    <p className="text-xs md:text-sm text-muted-foreground">Solicitudes Pendientes</p>
+                    <p className="text-xl md:text-2xl font-bold text-foreground">{recentCount}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Modificaciones esta semana</p>
                   </div>
                 </div>
               </div>
+
+              
             </div>
           </div>
           
