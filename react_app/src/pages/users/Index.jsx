@@ -97,7 +97,7 @@ const FormReg = () => {
   }, []);
 
   const cargos = [
-    { value: 'Admin', label: 'Administrador' },
+    { value: 'admin', label: 'Administrador' },
     { value: 'RRHH', label: 'Recursos Humanos' },
     { value: 'Cliente', label: 'Cliente' },
   ];
@@ -187,7 +187,6 @@ const FormReg = () => {
               <ul>
                 <li><strong>Empresa:</strong> ${formData.empresa}</li>
                 <li><strong>Cargo:</strong> ${formData.cargo}</li>
-                <li><strong>Rol:</strong> ${formData.rol}</li>
               </ul>
               <p style="color: #666; font-size: 12px;">Si no solicitaste este registro, por favor ignora este correo.</p>
             </div>
