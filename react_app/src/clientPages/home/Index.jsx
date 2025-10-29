@@ -63,8 +63,8 @@ const DashboardHome = () => {
 
           {/* Main Dashboard Grid */}
           {/* 💡 AJUSTE DE LA GRILLA PRINCIPAL */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6"> 
-            
+          <div > 
+          
             {/* Columna Principal: Ocupa 100% en móvil, 8/12 en tablet, 9/12 en desktop */}
             <div className="md:col-span-8 lg:col-span-9 space-y-6"> 
               
@@ -79,12 +79,6 @@ const DashboardHome = () => {
               {/* Si la añades, puedes darle un ancho completo aquí */}
             </div>
 
-            {/* Columna Lateral (si tuvieras una, ocupa 100% en móvil, 4/12 o 3/12 en desktop) */}
-            <div className="md:col-span-4 lg:col-span-3 space-y-6"> 
-                {/* Puedes poner aquí StatsOverviewCard o cualquier widget lateral */}
-                <StatsOverviewCard />
-            </div>
-            
           </div>
 
           {/* Footer Section: Eliminamos el padding redundante y usamos clases adaptables */}
