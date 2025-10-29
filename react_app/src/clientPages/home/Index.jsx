@@ -14,7 +14,7 @@ const DashboardHome = () => {
   // 💡 Obteniendo el estado de usuario para el control de visibilidad
   const user = sessionStorage.getItem("user");
   const mail = sessionStorage.getItem("email");
-  
+
   // Mock user data
   const currentUser = {
     id: 1,
@@ -56,23 +56,23 @@ const DashboardHome = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <Header />
-      
+
       {/* Main Content: pt-20 compensa el header fijo */}
       <main className={`transition-all duration-300 pt-20`}>
         {/* 💡 APLICACIÓN DE LA CLASE CONTAINER-MAIN */}
-        <div className="container-main py-6 space-y-6"> 
-          
+        <div className="container-main py-6 space-y-6">
+
 
           {/* Welcome Section */}
           <WelcomeCard user={currentUser} />
 
           {/* Main Dashboard Grid */}
           {/* 💡 AJUSTE DE LA GRILLA PRINCIPAL */}
-          <div > 
-          
+          <div >
+
             {/* Columna Principal: Ocupa 100% en móvil, 8/12 en tablet, 9/12 en desktop */}
-            <div className="md:col-span-8 lg:col-span-9 space-y-6"> 
-              
+            <div className="md:col-span-8 lg:col-span-9 space-y-6">
+
               {!user && (
                 <div className="bg-card border border-border rounded-xl shadow-brand p-6 text-center space-y-4">
                   <Icon name="LogIn" size={48} className="mx-auto text-muted-foreground opacity-70" />
@@ -90,16 +90,15 @@ const DashboardHome = () => {
                     Iniciar Sesión
                   </Button>
                 </div>
+
               )}
-
-              {/* Quick Actions */}
-              <QuickActionsCard />
-              
-
 
               {/* 🔄 Renderizado Condicional de Actividad Reciente */}
               {user && (
-                <RecentActivityCard />
+                <div>
+                  <QuickActionsCard />
+                  <RecentActivityCard />
+                </div>
               )}
 
               {/* Stats Overview */}
@@ -140,7 +139,7 @@ const DashboardHome = () => {
             </div>
             <div className="mt-4 pt-4 border-t border-border text-center">
               <p className="text-xs text-muted-foreground">
-                © {new Date()?.getFullYear()} Acciona. Todos los derechos reservados. 
+                © {new Date()?.getFullYear()} Acciona. Todos los derechos reservados.
                 Portal desarrollado para mejorar tu experiencia laboral.
               </p>
             </div>

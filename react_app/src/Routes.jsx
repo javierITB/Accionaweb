@@ -33,13 +33,14 @@ const Routes = () => {
           <Route path="/Finiquitos" element = {<FormList section={"Finiquitos"} />}/>
           <Route path="/Anexos" element = {<FormList section={"Anexos"} />}/>
           <Route path="/Otras" element = {<FormList section={"Otras"} />}/>
-          <Route path="/form-builder" element={<FormBuilder />} />
+          
           <Route path="/form-renderer" element={<FormRenderer />} />
           <Route path="/forms" element={<Form />} />
           <Route path="/set-password" element={<SetPassword />} />
           <Route path="/support-portal" element={ <SupportPortal />}/>
 
           {/* Rutas protegidas */}
+          <Route path="/form-builder" element={<ProtectedRoute><FormBuilder /></ProtectedRoute>}/>
           <Route path="/form-center" element={<ProtectedRoute><FormCenter /></ProtectedRoute>}/>
           <Route path="/RespuestasForms" element={<ProtectedRoute><RespuestasForms /></ProtectedRoute>}/>
           
