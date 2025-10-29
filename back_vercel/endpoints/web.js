@@ -44,7 +44,7 @@ router.post("/filter", async (req, res) => {
     // --- PASO 3: Filtrar las Secciones del Menú con el Rol ---
     // =========================================================
     
-    const allowedRoles = [userRole, 'all'];
+    const allowedRoles = [userRole, 'Todas'];
 
     // Colección 'menu' (AJUSTAR si es necesario)
     const menuItems = await req.db.collection('sidebar').find({
