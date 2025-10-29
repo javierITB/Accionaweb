@@ -45,7 +45,7 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ error: "Formulario no encontrado" });
     }
 
-    const empresaAutorizada = form.companies?.includes(empresa);
+    const empresaAutorizada = form.companies?.includes(empresa) || form.companies?.includes("Todas");
     if (!empresaAutorizada) {
       return res.status(403).json({
         error: `La empresa ${empresa} no está autorizada para responder este formulario.`,
