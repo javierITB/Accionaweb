@@ -203,13 +203,25 @@ const FormBuilder = () => {
 
   // Save form as borrador - FUNCIÓN CORREGIDA
   const saveForm = async () => {
-    if (!formData?.title?.trim()) {
+    // 💡 Paso 1: Definir la actualización del estado que queremos enviar
+    const newStatus = "borrador";
+    const newUpdatedAt = new Date().toISOString();
+
+    // 💡 Paso 2: Usar el estado actual (o una versión mejorada) para enviar los datos correctos
+    // Creamos el objeto de datos que vamos a enviar al backend
+    const dataToSend = {
+      ...formData,
+      status: newStatus,
+      updatedAt: newUpdatedAt
+    };
+
+    if (!dataToSend?.title?.trim()) { // 💡 Usar dataToSend
       alert("Por favor ingresa un título para el formulario");
       return;
     }
 
-    // Validación adicional de títulos de preguntas
-    const hasLongQuestionTitles = formData.questions.some(
+    // Validación adicional de títulos de preguntas (Usar dataToSend)
+    const hasLongQuestionTitles = dataToSend.questions.some(
       q => (q.title?.length || 0) > 50
     );
 
@@ -223,7 +235,8 @@ const FormBuilder = () => {
       const response = await fetch("https://accionaapi.vercel.app/api/forms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        // 💡 ¡CORRECCIÓN! Enviamos el objeto dataToSend que ya tiene el nuevo status
+        body: JSON.stringify(dataToSend), 
       });
 
       if (!response.ok) {
@@ -231,8 +244,9 @@ const FormBuilder = () => {
       }
 
       const savedForm = await response.json();
-
-      // Actualizar el estado preservando los datos locales
+      
+      // 💡 Paso 3: Actualizar el estado DE FORMA ASÍNCRONA DESPUÉS del fetch
+      // Ahora, la actualización de React incluye el resultado del servidor
       setFormData(prev => ({
         ...prev,
         ...savedForm,
@@ -241,8 +255,9 @@ const FormBuilder = () => {
         section: savedForm.section || prev.section,
         category: savedForm.category || prev.category,
         questions: savedForm.questions || prev.questions,
-        status: savedForm.status || prev.status,
-        updatedAt: savedForm.updatedAt || new Date().toISOString()
+        // Usar los valores guardados (que deberían ser "borrador") o los nuevos
+        status: savedForm.status || newStatus, 
+        updatedAt: savedForm.updatedAt || newUpdatedAt 
       }));
 
       alert("Formulario guardado como borrador exitosamente");
@@ -258,7 +273,7 @@ const FormBuilder = () => {
     } finally {
       setIsSaving(false);
     }
-  };
+};
 
   const deleteForm = async () => {
     try {

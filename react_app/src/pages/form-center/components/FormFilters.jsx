@@ -14,7 +14,7 @@ const FormFilters = ({ onFiltersChange, className = '' }) => {
 
   const filterOptions = {
     status: [
-      { id: 'available', label: 'Available', count: 24 },
+      { id: 'Publicado', label: 'Publicado', count: 24 },
       { id: 'borrador', label: 'borrador', count: 3 },
       { id: 'submitted', label: 'Submitted', count: 8 }
     ],
