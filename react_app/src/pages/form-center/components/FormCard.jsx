@@ -8,9 +8,9 @@ const FormCard = ({ form, onSelect, className = '' }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'borrador':
-        return 'text-success';
-      case 'publicado':
         return 'text-primary';
+      case 'publicado':
+        return 'text-success';
       default:
         return 'text-muted-foreground';
     }
