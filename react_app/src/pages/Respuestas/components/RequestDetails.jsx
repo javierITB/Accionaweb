@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) => {
+const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSendMessage}) => {
   const [correctedFile, setCorrectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -483,15 +483,37 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
               />
             </div>
           </div>
+          {false && (
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado</h3>
 
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3">Comentarios Internos</h3>
-            <div className="bg-muted/50 rounded-lg p-4">
-              <p className="text-sm text-muted-foreground italic text-right">
-                hay x mensajes nuevos
-              </p>
+              <div className="space-y-2">
+                {realAttachments?.map((file) => (
+                  <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{file?.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {file?.size} • Generado el {formatDate(file?.uploadedAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      iconName="Download"
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={handleDownload}
+                    >
+                      Descargar
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="sticky bottom-0 bg-card border-t border-border p-6">
@@ -505,6 +527,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview }) =>
                 variant="outline"
                 iconName="MessageSquare"
                 iconPosition="left"
+                onClick={() => onSendMessage(request)}
                 iconSize={16}
               >
                 Enviar Mensaje

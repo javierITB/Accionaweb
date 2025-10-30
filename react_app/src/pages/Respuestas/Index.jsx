@@ -441,7 +441,7 @@ const RequestTracking = () => {
             </div>
           </div>
 
-          <StatsOverview stats={mockStats} />
+          <StatsOverview stats={mockStats} allForms={resp} />
 
           <FilterPanel
             filters={filters}
@@ -554,6 +554,7 @@ const RequestTracking = () => {
           setPreviewDocId(IDdoc);
           setShowPreview(true);
         }}
+        onSendMessage={handleSendMessage}
       />
       <DocxPreview
         IDdoc={previewDocId}
