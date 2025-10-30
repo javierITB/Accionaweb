@@ -1,9 +1,70 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
+  const [hasSignedPdf, setHasSignedPdf] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState('');
+
   if (!isVisible || !request) return null;
+
+  // Verificar si ya existe PDF firmado
+  useEffect(() => {
+    const checkSignedPdf = async () => {
+      if (request?._id && request?.status === 'aprobado') {
+        try {
+          const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+          const data = await response.json();
+          setHasSignedPdf(data.exists);
+        } catch (error) {
+          console.error('Error verificando PDF firmado:', error);
+        }
+      }
+    };
+
+    checkSignedPdf();
+  }, [request]);
+
+  // Función para subir PDF firmado
+  const handleUploadSignedPdf = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      setUploadMessage('Error: Solo se permiten archivos PDF');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadMessage('');
+
+    const formData = new FormData();
+    formData.append('signedPdf', file);
+
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/upload-client-signature`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setHasSignedPdf(true);
+        setUploadMessage('PDF firmado subido exitosamente');
+        // Limpiar el input file
+        event.target.value = '';
+      } else {
+        setUploadMessage('Error: ' + (data.error || 'Error al subir el PDF'));
+      }
+    } catch (error) {
+      console.error('Error subiendo PDF firmado:', error);
+      setUploadMessage('Error de conexión al subir el PDF');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Función para descargar PDF aprobado
   const handleDownloadApprovedPDF = async (responseId) => {
@@ -15,16 +76,12 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
         throw new Error(errorData.error || 'Error al descargar el PDF');
       }
 
-      // Convertir la respuesta a blob
       const blob = await response.blob();
-
-      // Crear URL temporal para descargar
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
 
-      // Obtener el nombre del archivo del header
       const contentDisposition = response.headers.get('Content-Disposition');
       let fileName = 'documento_aprobado.pdf';
 
@@ -37,7 +94,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
       document.body.appendChild(a);
       a.click();
 
-      // Limpiar
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
@@ -47,57 +103,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
     }
   };
 
-  // Función para formatear el nombre del archivo
-  const formatFileName = () => {
-    const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
-    const userName = request?.submittedBy || request?.user?.nombre || 'Usuario';
-    const submitDate = request?.submittedAt || request?.createdAt;
-
-    // Formatear fecha para el nombre del archivo (sin caracteres especiales)
-    const formatDateForFileName = (dateString) => {
-      if (!dateString) return 'fecha-desconocida';
-      const date = new Date(dateString);
-      return date.toISOString().split('T')[0]; // YYYY-MM-DD
-    };
-
-    const datePart = formatDateForFileName(submitDate);
-
-    // Limpiar caracteres especiales y espacios
-    const cleanText = (text) => {
-      return text
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // quitar acentos
-        .replace(/[^a-zA-Z0-9]/g, '_')   // reemplazar caracteres especiales con _
-        .replace(/_+/g, '_')             // reemplazar múltiples _ por uno solo
-        .toLowerCase();
-    };
-
-    const cleanFormTitle = cleanText(formTitle);
-    const cleanUserName = cleanText(userName);
-
-    return `${cleanFormTitle}_${cleanUserName}_${datePart}.docx`;
-  };
-
-  // Función para obtener archivos reales desde la BD
-  const getRealAttachments = () => {
-    if (!request) return [];
-
-    const fileName = formatFileName();
-
-    // Aquí deberías obtener esta información real de tu base de datos
-    // Por ahora simulamos con los datos que tienes en el request
-    return [
-      {
-        id: request?._id || 1,
-        name: fileName,
-        size: "Calculando...", // Esto deberías obtenerlo del archivo real
-        type: "docx",
-        uploadedAt: request?.submittedAt || request?.createdAt,
-        downloadUrl: `/api/documents/download/${request?._id}` // Endpoint para descargar
-      }
-    ];
-  };
-
+  // Resto de las funciones existentes (formatFileName, getStatusColor, etc.)
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
@@ -150,24 +156,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
       minute: '2-digit'
     });
   };
-
-  const getFileIcon = (type) => {
-    switch (type?.toLowerCase()) {
-      case 'pdf':
-        return 'FileText';
-      case 'docx': case 'doc':
-        return 'FileText';
-      case 'xlsx': case 'xls':
-        return 'FileSpreadsheet';
-      case 'jpg': case 'jpeg': case 'png':
-        return 'Image';
-      default:
-        return 'File';
-    }
-  };
-
-  // Obtener archivos reales
-  const realAttachments = getRealAttachments();
 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -247,22 +235,12 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
             </div>
           </div>
 
-          {/* Description */}
-          {request?.form?.description && (
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">Descripción</h3>
-              <div className="bg-muted/50 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {request?.form?.description}
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* NUEVA SECCIÓN: Documento Aprobado */}
           {request?.status === 'aprobado' && (
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">Documento Aprobado</h3>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Documento Aprobado</h3>
+              
+              {/* Documento PDF Aprobado para descargar */}
               <div className="bg-success/10 border border-success/20 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -270,7 +248,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
                     <div>
                       <p className="text-sm font-medium text-foreground">Documento PDF Aprobado</p>
                       <p className="text-xs text-muted-foreground">
-                        Tu formulario ha sido aprobado. Descarga el documento final.
+                        Descarga el documento aprobado para firmarlo.
                       </p>
                     </div>
                   </div>
@@ -286,6 +264,73 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
                     Descargar PDF
                   </Button>
                 </div>
+              </div>
+
+              {/* Subir PDF Firmado */}
+              <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Icon name="FileSignature" size={20} className="text-accent" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Subir PDF Firmado</p>
+                      <p className="text-xs text-muted-foreground">
+                        {hasSignedPdf 
+                          ? 'Ya has subido el PDF firmado.' 
+                          : 'Sube el PDF con tu firma una vez descargado y firmado.'}
+                      </p>
+                      {uploadMessage && (
+                        <p className={`text-xs ${uploadMessage.includes('Error') ? 'text-error' : 'text-success'}`}>
+                          {uploadMessage}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end space-y-2">
+                    {!hasSignedPdf ? (
+                      <>
+                        <input
+                          type="file"
+                          id="signedPdf"
+                          accept=".pdf"
+                          onChange={handleUploadSignedPdf}
+                          disabled={isUploading}
+                          className="hidden"
+                        />
+                        <label htmlFor="signedPdf">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            iconName="Upload"
+                            iconPosition="left"
+                            iconSize={16}
+                            disabled={isUploading}
+                            className="bg-accent hover:bg-accent/90"
+                            as="span"
+                          >
+                            {isUploading ? 'Subiendo...' : 'Subir PDF Firmado'}
+                          </Button>
+                        </label>
+                      </>
+                    ) : (
+                      <div className="flex items-center space-x-2 text-success">
+                        <Icon name="CheckCircle" size={16} />
+                        <span className="text-sm font-medium">PDF Firmado Subido</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Description */}
+          {request?.form?.description && (
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Descripción</h3>
+              <div className="bg-muted/50 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {request?.form?.description}
+                </p>
               </div>
             </div>
           )}
