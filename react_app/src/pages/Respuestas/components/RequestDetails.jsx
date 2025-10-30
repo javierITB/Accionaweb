@@ -4,6 +4,7 @@ import Button from '../../../components/ui/Button';
 
 const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSendMessage}) => {
   const [correctedFile, setCorrectedFile] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -19,9 +20,28 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
 
   if (!isVisible || !request) return null;
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (request?.IDdoc) {
-      window.open(`https://accionaapi.vercel.app/api/generador/download/${request.IDdoc}`, '_blank');
+      setIsDownloading(true);
+      try {
+        // Primero abrir la descarga
+        window.open(`https://accionaapi.vercel.app/api/generador/download/${request.IDdoc}`, '_blank');
+        
+        // Luego actualizar el estado localmente sin esperar respuesta del servidor
+        if (onUpdate) {
+          const updatedRequest = {
+            ...request,
+            status: 'en_revision'
+          };
+          onUpdate(updatedRequest);
+        }
+        
+      } catch (error) {
+        console.error('Error en descarga:', error);
+        alert('Error al descargar el documento');
+      } finally {
+        setIsDownloading(false);
+      }
     } else {
       alert('No hay documento disponible para descargar');
     }
@@ -141,7 +161,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
   const formatFileName = () => {
     const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
 
-    // Obtener el nombre del trabajador desde las respuestas
     const nombreTrabajador = request?.responses?.["Nombre del trabajador:"] ||
       request?.responses?.["Nombre del trabajador"] ||
       'Trabajador';
@@ -421,8 +440,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
                       iconPosition="left"
                       iconSize={16}
                       onClick={handleDownload}
+                      disabled={isDownloading}
                     >
-                      Descargar
+                      {isDownloading ? 'Descargando...' : 'Descargar'}
                     </Button>
                   </div>
                 ))}
