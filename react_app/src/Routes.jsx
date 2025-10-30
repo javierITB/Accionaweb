@@ -6,12 +6,13 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 import NotFound from "./pages/NotFound";
 import FormCenter from './pages/form-center/Index.jsx';
+import FormBuilder from './pages/form-builder/Index.jsx';
+import TemplateBuilder from './pages/template-builder/Index.jsx';
 import Login from './pages/login/Index.jsx';
 import SupportPortal from './pages/support-portal/Index.jsx';
 import DashboardHome from './pages/dashboard-home/Index.jsx';
 import RequestTracking from './pages/request-tracking/Index.jsx';
 import RespuestasForms from './pages/Respuestas/Index.jsx';
-import FormBuilder from './pages/form-builder/Index.jsx';
 import FormRenderer from './pages/form-renderer/Index.jsx';
 import Users from './pages/users/Index.jsx';
 import Empresas from './pages/empresas/Index.jsx';
@@ -41,6 +42,7 @@ const Routes = () => {
 
           {/* Rutas protegidas */}
           <Route path="/form-builder" element={<ProtectedRoute><FormBuilder /></ProtectedRoute>}/>
+          <Route path="/template-builder" element={<ProtectedRoute><TemplateBuilder /></ProtectedRoute>}/>
           <Route path="/form-center" element={<ProtectedRoute><FormCenter /></ProtectedRoute>}/>
           <Route path="/RespuestasForms" element={<ProtectedRoute><RespuestasForms /></ProtectedRoute>}/>
           
