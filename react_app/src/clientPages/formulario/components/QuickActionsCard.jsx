@@ -171,41 +171,63 @@ const FormPreview = ({ formData }) => {
     });
   };
 
-  const mapAnswersToTitles = (questions, answers, mappedAnswers = {}) => {
-    questions.forEach((question) => {
-      const questionTitle = getQuestionTitle(question);
-      const answer = answers[question.id];
+  const mapAnswersToTitles = (questions, answers, mappedAnswers = {}, contexto = {}) => {
+    const processedQuestions = new Set();
 
-      if (answer !== undefined && answer !== null && answer !== '') {
-        if (!(Array.isArray(answer) && answer.length === 0)) {
+    const processQuestionTree = (questionList, level = 0, currentContext = '') => {
+      questionList.forEach((question, index) => {
+        const questionKey = `${level}-${index}-${question.id}`;
+        if (processedQuestions.has(questionKey)) return;
+        processedQuestions.add(questionKey);
+
+        const questionTitle = getQuestionTitle(question);
+        const answer = answers[question.id];
+
+        const hasValidAnswer = answer !== undefined && answer !== null &&
+          answer !== '' && !(Array.isArray(answer) && answer.length === 0);
+
+        if (hasValidAnswer) {
+          // PARA TXT Y VISUALIZACIÓN: mantener nombres originales (puede haber sobrescritura)
           if (question.type === 'file' && answer instanceof FileList) {
-            const fileNames = Array.from(answer).map(file => file.name).join(', ');
-            mappedAnswers[questionTitle] = fileNames;
+            mappedAnswers[questionTitle] = Array.from(answer).map(file => file.name).join(', ');
           } else {
             mappedAnswers[questionTitle] = answer;
           }
-        }
-      }
 
-      (question?.options || []).forEach((option) => {
-        if (typeof option === 'object' && option.hasSubform && option.subformQuestions && option.subformQuestions.length > 0) {
-          const optionText = option.text || 'Opción';
-
-          const shouldProcessSubsection =
-            question.type === 'single_choice'
-              ? answers[question.id] === optionText
-              : question.type === 'multiple_choice'
-                ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
-                : false;
-
-          if (shouldProcessSubsection) {
-            mapAnswersToTitles(option.subformQuestions, answers, mappedAnswers);
+          // PARA DOCX: guardar contexto para campos duplicados
+          if (currentContext) {
+            if (!contexto.camposContextuales) contexto.camposContextuales = {};
+            if (!contexto.camposContextuales[currentContext]) {
+              contexto.camposContextuales[currentContext] = {};
+            }
+            contexto.camposContextuales[currentContext][questionTitle] = answer;
           }
         }
-      });
-    });
 
-    return mappedAnswers;
+        // Procesar subformularios
+        (question?.options || []).forEach((option, optionIndex) => {
+          if (typeof option === 'object' && option.hasSubform && option.subformQuestions) {
+            const optionText = option.text || 'Opción';
+            const isOptionSelected =
+              question.type === 'single_choice' ? answers[question.id] === optionText :
+                question.type === 'multiple_choice' ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText) : false;
+
+            if (isOptionSelected) {
+              const subContext = currentContext ? `${currentContext}|${optionText}` : optionText;
+              processQuestionTree(option.subformQuestions, level + 1, subContext);
+            }
+          }
+        });
+      });
+    };
+
+    processQuestionTree(questions);
+
+    // Combinar mappedAnswers normal con el contexto
+    return {
+      ...mappedAnswers,
+      _contexto: contexto.camposContextuales || {}
+    };
   };
 
   const validateForm = () => {
