@@ -3,7 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 
-const SearchBar = ({ onSearch, onFilterToggle, showFilters, className = '' }) => {
+const SearchBar = ({ onSearch, className = '' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -94,18 +94,6 @@ const SearchBar = ({ onSearch, onFilterToggle, showFilters, className = '' }) =>
             </div>
           )}
         </div>
-        
-        <Button
-          variant={showFilters ? 'default' : 'outline'}
-          size="default"
-          onClick={onFilterToggle}
-          iconName="Filter"
-          iconPosition="left"
-          iconSize={18}
-          className="min-w-[100px]"
-        >
-          Filters
-        </Button>
       </div>
       {searchQuery && (
         <div className="mt-2 text-sm text-muted-foreground">

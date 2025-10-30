@@ -27,12 +27,12 @@ const CompanyReg = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('register');
 
-  // 🔄 ESTADOS PARA LA ADAPTABILIDAD
+  // ESTADOS PARA LA ADAPTABILIDAD
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
 
-  // 🔄 FUNCIÓN AÑADIDA: Toggle Unificado para Desktop y Móvil
+  // FUNCIÓN AÑADIDA: Toggle Unificado para Desktop y Móvil
   const toggleSidebar = () => {
     if (isMobileScreen) {
       setIsMobileOpen(!isMobileOpen);
@@ -41,14 +41,14 @@ const CompanyReg = () => {
     }
   };
 
-  // 🔄 FUNCIÓN AÑADIDA: Lógica de navegación para cerrar el Sidebar en móvil
+  // FUNCIÓN AÑADIDA: Lógica de navegación para cerrar el Sidebar en móvil
   const handleNavigation = () => {
     if (isMobileScreen) {
       setIsMobileOpen(false);
     }
   };
 
-  // 🔄 EFECTO AÑADIDO: Manejo de Redimensionamiento
+  // EFECTO AÑADIDO: Manejo de Redimensionamiento
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
@@ -84,7 +84,7 @@ const CompanyReg = () => {
     }
   };
 
-  // 🔄 FUNCIÓN: GET Empresa por ID y prepara el formulario para la edición
+  // FUNCIÓN: GET Empresa por ID y prepara el formulario para la edición
   const handleEditEmpresa = async (empresaId) => {
     setIsLoading(true);
     setActiveTab('register');
@@ -154,7 +154,7 @@ const CompanyReg = () => {
     }
   };
 
-  // 🔄 EFECTO AÑADIDO: Detectar ID en la URL al cargar
+  // EFECTO AÑADIDO: Detectar ID en la URL al cargar
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const empresaId = urlParams.get('id');
@@ -202,7 +202,7 @@ const CompanyReg = () => {
     }));
   };
 
-  // 🔄 FUNCIÓN: Maneja POST (Registro) o PUT (Actualización)
+  // FUNCIÓN: Maneja POST (Registro) o PUT (Actualización)
   const handleRegisterEmpresa = async () => {
     // Validaciones básicas
     if (!formData.nombre || !formData.rut) {
@@ -357,7 +357,7 @@ const CompanyReg = () => {
     }
   };
 
-  // 🔄 CLASE DE MARGEN: Definir el margen para <main>
+  // CLASE DE MARGEN: Definir el margen para <main>
   const mainMarginClass = isMobileScreen
     ? 'ml-0'
     : isDesktopOpen ? 'ml-64' : 'ml-16';
@@ -366,7 +366,7 @@ const CompanyReg = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* 🔄 Sidebar: Renderiza si está abierto en desktop O si está abierto en móvil */}
+      {/* Sidebar: Renderiza si está abierto en desktop O si está abierto en móvil */}
       {(isDesktopOpen || isMobileOpen) && (
         <>
           <Sidebar
@@ -376,7 +376,7 @@ const CompanyReg = () => {
             onNavigate={handleNavigation}
           />
 
-          {/* 🔄 Overlay semi-transparente en móvil cuando el sidebar está abierto */}
+          {/* Overlay semi-transparente en móvil cuando el sidebar está abierto */}
           {isMobileScreen && isMobileOpen && (
             <div
               className="fixed inset-0 bg-foreground/50 z-40"
@@ -386,7 +386,7 @@ const CompanyReg = () => {
         </>
       )}
 
-      {/* 🔄 Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
+      {/* Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
           <Button
@@ -398,7 +398,7 @@ const CompanyReg = () => {
         </div>
       )}
 
-      {/* 🔄 Contenido Principal: Aplicar margen adaptable */}
+      {/* Contenido Principal: Aplicar margen adaptable */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
         <div className="p-6 space-y-6 container-main"> {/* Usar container-main para padding lateral */}
           {/* Header de la página */}

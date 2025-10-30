@@ -14,7 +14,7 @@ const RequestTracking = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const formId = urlParams?.get('id');
 
-  // 🔄 ESTADOS DEL SIDEBAR
+  // ESTADOS DEL SIDEBAR
   const [isDesktopOpen, setIsDesktopOpen] = useState(true); // Controla el ml-64/ml-16 en desktop
   const [isMobileOpen, setIsMobileOpen] = useState(false); // Controla la visibilidad total en móvil
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
@@ -46,7 +46,7 @@ const RequestTracking = () => {
     submittedBy: ''
   });
 
-  // 🔄 EFECTO DE RESIZE (Controla isMobileScreen y apertura/cierre)
+  // EFECTO DE RESIZE (Controla isMobileScreen y apertura/cierre)
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
@@ -66,7 +66,7 @@ const RequestTracking = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 🔄 LÓGICA DE TOGGLE UNIFICADA
+  // LÓGICA DE TOGGLE UNIFICADA
   const toggleSidebar = () => {
     if (isMobileScreen) {
       // En móvil, alternar el estado de apertura total
@@ -77,7 +77,7 @@ const RequestTracking = () => {
     }
   };
 
-  // 🔄 Lógica de navegación (para cerrar el Sidebar en móvil)
+  // Lógica de navegación (para cerrar el Sidebar en móvil)
   // Necesaria para pasar al Sidebar si tiene links que cierran la vista móvil.
   const handleNavigation = (path) => {
     if (isMobileScreen) {
@@ -372,7 +372,7 @@ const RequestTracking = () => {
     { value: 'status', label: 'Estado' }
   ];
 
-  // 🔄 Clase de Margen para el contenido principal:
+  // Clase de Margen para el contenido principal:
   // Si está en móvil: ml-0
   // Si está en desktop y sidebar abierto: ml-64
   // Si está en desktop y sidebar colapsado: ml-16
@@ -385,7 +385,7 @@ const RequestTracking = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* 🔄 Sidebar: Solo renderiza si está abierto en desktop O si está abierto en móvil */}
+      {/* Sidebar: Solo renderiza si está abierto en desktop O si está abierto en móvil */}
       {(isDesktopOpen || isMobileOpen) && (
         <>
           <Sidebar 
@@ -395,7 +395,7 @@ const RequestTracking = () => {
             onNavigate={handleNavigation} // Pasamos la función de navegación (cierra en móvil)
           />
           
-          {/* 🔄 Overlay semi-transparente en móvil cuando el sidebar está abierto */}
+          {/* Overlay semi-transparente en móvil cuando el sidebar está abierto */}
           {isMobileScreen && isMobileOpen && (
             <div 
               className="fixed inset-0 bg-foreground/50 z-40" 
@@ -405,7 +405,7 @@ const RequestTracking = () => {
         </>
       )}
 
-      {/* 🔄 Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
+      {/* Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
           <Button

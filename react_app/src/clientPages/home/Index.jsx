@@ -93,7 +93,7 @@ const DashboardHome = () => {
 
               )}
 
-              {/* 🔄 Renderizado Condicional de Actividad Reciente */}
+              {/* Renderizado Condicional de Actividad Reciente */}
               {user && (
                 <div>
                   <QuickActionsCard />

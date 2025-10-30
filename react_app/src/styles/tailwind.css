@@ -259,7 +259,7 @@
     text-wrap: balance;
   }
   
-  /* 🔄 AJUSTE: Grid-auto-fit para adaptabilidad móvil */
+  /* AJUSTE: Grid-auto-fit para adaptabilidad móvil */
   .grid-auto-fit {
     /* Por defecto (móvil < 640px), una sola columna para evitar desbordamiento */
     grid-template-columns: 1fr; 

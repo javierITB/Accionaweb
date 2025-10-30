@@ -56,7 +56,7 @@ const CategoryFilter = ({ categories, activeCategory, onCategoryChange, classNam
             iconSize={16}
             className={`${isActive ? 'shadow-brand' : 'hover:shadow-brand-hover'} transition-brand`}
           >
-            <span className={getCategoryColor(category?.id, isActive)}>
+            <span className={getCategoryColor(category?.id, isActive) + 'text-primary'}>
               {category?.name}
             </span>
             {category?.count > 0 && (

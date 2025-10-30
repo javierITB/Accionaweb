@@ -10,17 +10,16 @@ import Button from '../../components/ui/Button';
 import FormCard from './components/FormCard';
 import CategoryFilter from './components/CategoryFilter';
 import SearchBar from './components/SearchBar';
-import FormFilters from './components/FormFilters';
+
 
 const FormCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
-  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({});
   const [filteredForms, setFilteredForms] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
   
-  // 🔄 Estado del Sidebar
+  // Estado del Sidebar
   const [isDesktopOpen, setIsDesktopOpen] = useState(true); // Controla el estado abierto/colapsado en Desktop
   const [isMobileOpen, setIsMobileOpen] = useState(false); // Controla la visibilidad en Mobile
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768); 
@@ -28,7 +27,7 @@ const FormCenter = () => {
   const [allForms, setAllForms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // 🔄 Efecto para manejar el estado del Sidebar al inicio y redimensionar
+  // Efecto para manejar el estado del Sidebar al inicio y redimensionar
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
@@ -46,7 +45,7 @@ const FormCenter = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  // 🔄 Lógica de Toggle Unificada
+  // Lógica de Toggle Unificada
   const toggleSidebar = () => {
     if (isMobileScreen) {
       // En móvil, alternar el estado de apertura/cierre modal
@@ -57,7 +56,7 @@ const FormCenter = () => {
     }
   };
   
-  // 🔄 Función de navegación (para cerrar el sidebar en móvil)
+  // Función de navegación (para cerrar el sidebar en móvil)
   const handleNavigation = (path) => {
     if (isMobileScreen) {
       setIsMobileOpen(false); // Cierra el sidebar al navegar en móvil
@@ -125,10 +124,23 @@ const FormCenter = () => {
         form.tags?.some(tag => tag?.toLowerCase()?.includes(searchQuery?.toLowerCase()))
       );
     }
-
+    
+    // 💡 Lógica de Filtro por Estado (ya existente y funcional)
     if (filters.status && filters.status.length > 0) {
       filtered = filtered.filter(form => filters.status.includes(form.status));
     }
+    
+    // 💡 NUEVA LÓGICA DE FILTRO: Modificaciones Recientes
+    if (filters.isRecent) {
+        filtered = filtered.filter(form => {
+            if (!form.lastModified) return false;
+            const lastModDate = new Date(form.lastModified);
+            const now = new Date();
+            // Filtra si la modificación fue hace menos de 7 días
+            return (now - lastModDate) <= 7 * 24 * 60 * 60 * 1000;
+        });
+    }
+
 
     if (filters.priority && filters.priority.length > 0) {
       filtered = filtered.filter(form => filters.priority.includes(form.priority));
@@ -159,10 +171,6 @@ const FormCenter = () => {
     alert(`Opening form: ${form.title}`);
   };
 
-  const handleQuickAction = (action) => {
-    console.log('Quick action selected:', action);
-    alert(`Starting quick action: ${action.title}`);
-  };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -171,20 +179,45 @@ const FormCenter = () => {
   const handleCategoryChange = (categoryId) => {
     setActiveCategory(categoryId);
   };
-
-  const handleFiltersChange = (newFilters) => {
-    setFilters(newFilters);
+  
+  // 💡 FUNCIÓN CORREGIDA: Manejar el filtro de estado como un toggle
+  const handleStatusFilter = (statusValue) => {
+    setFilters(prevFilters => {
+      const currentStatus = prevFilters.status || [];
+      const isAlreadyActive = currentStatus.includes(statusValue);
+      
+      const newStatus = isAlreadyActive ? [] : [statusValue]; // Toggle on/off
+      
+      // Limpiamos los otros filtros al hacer clic en una tarjeta de estado
+      return {
+        ...prevFilters,
+        status: newStatus,
+        search: '',
+        activeCategory: 'all',
+        isRecent: false // Desactivar filtro reciente
+      };
+    });
+  };
+  
+  // 💡 NUEVA FUNCIÓN: Manejar el filtro de modificados recientemente
+  const handleRecentFilter = () => {
+      setFilters(prevFilters => ({
+          ...prevFilters,
+          isRecent: !prevFilters.isRecent, // Alternar valor booleano
+          status: [], // Limpiar filtro de estado
+          search: '',
+          activeCategory: 'all'
+      }));
   };
 
-  const toggleFilters = () => {
-    setShowFilters(!showFilters);
-  };
 
   const toggleViewMode = () => {
     setViewMode(viewMode === 'grid' ? 'list' : 'grid');
   };
 
   const borradorCount = allForms.filter(f => f.status === 'borrador').length;
+  const publicadoCount = allForms.filter(f => f.status === 'publicado').length;
+  
   const recentCount = allForms.filter(f => {
     if (!f.lastModified) return false;
     const lastModDate = new Date(f.lastModified);
@@ -192,16 +225,19 @@ const FormCenter = () => {
     return (now - lastModDate) <= 7 * 24 * 60 * 60 * 1000;
   }).length;
   
-  // 🔄 Clase de Margen para el contenido principal:
+  // Clase de Margen para el contenido principal:
   const mainMarginClass = isMobileScreen 
     ? 'ml-0' // Móvil: sin margen
     : isDesktopOpen ? 'ml-64' : 'ml-16'; // Desktop: abierto (64) o colapsado (16)
+  
+  // Helper para verificar si el botón está activo (para estilos visuales)
+  const isStatusFilterActive = (statusValue) => filters.status && filters.status.includes(statusValue);
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* 🔄 Sidebar: Renderiza si está abierto en desktop O si está abierto en móvil */}
+      {/* Sidebar: Renderiza si está abierto en desktop O si está abierto en móvil */}
       {(isDesktopOpen || isMobileOpen) && (
         <>
           <Sidebar 
@@ -212,7 +248,7 @@ const FormCenter = () => {
             onNavigate={handleNavigation} 
           />
           
-          {/* 🔄 Overlay semi-transparente en móvil cuando el sidebar está abierto */}
+          {/* Overlay semi-transparente en móvil cuando el sidebar está abierto */}
           {isMobileScreen && isMobileOpen && (
             <div 
               className="fixed inset-0 bg-foreground/50 z-40" 
@@ -222,7 +258,7 @@ const FormCenter = () => {
         </>
       )}
 
-      {/* 🔄 Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
+      {/* Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
           <Button
@@ -235,12 +271,12 @@ const FormCenter = () => {
         </div>
       )}
 
-      {/* 🔄 Contenido Principal */}
+      {/* Contenido Principal */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
         <div className="container-main p-6 space-y-8">
           <div className="space-y-4">
             
-            {/* 🔄 Título y Botones */}
+            {/* Título y Botones */}
             <div className="flex flex-col md:flex-row md:items-center justify-between">
               <div className="mb-4 md:mb-0">
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground">Gestion de Formularios</h1>
@@ -259,7 +295,7 @@ const FormCenter = () => {
                   iconSize={18}
                   className="mb-2 md:mb-0"
                 >
-                  {viewMode === 'grid' ? 'List View' : 'Grid View'}
+                  {viewMode === 'grid' ? 'Lista' : 'Tabla'}
                 </Button>
 
                 <Button
@@ -271,14 +307,18 @@ const FormCenter = () => {
                   onClick={() => window.location.href = "/form-builder"}
                   className="mb-2 md:mb-0"
                 >
-                  Create Custom Form
+                  Crear Formulario
                 </Button>
               </div>
             </div>
 
-            {/* 🔄 Tarjetas de Resumen */}
+            {/* Tarjetas de Resumen */}
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-card border border-border rounded-lg p-4">
+              
+              {/* Tarjeta 1: Todos los Formularios (Limpiar Filtros) */}
+              <div className={`bg-card border rounded-lg p-4 cursor-pointer transition-all duration-300
+                            ${!isStatusFilterActive('borrador') && !isStatusFilterActive('publicado') && !filters.isRecent ? 'border-primary shadow-lg' : 'border-border hover:shadow-md'}`}
+                   onClick={() => setFilters({ status: [] })}>
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-primary/10 rounded-lg min-touch-target">
                     <Icon name="FileText" size={20} className="text-primary" />
@@ -290,7 +330,10 @@ const FormCenter = () => {
                 </div>
               </div>
 
-              <div className="bg-card border border-border rounded-lg p-4">
+              {/* Tarjeta 2: Borradores */}
+              <div className={`bg-card border rounded-lg p-4 cursor-pointer transition-all duration-300
+                            ${isStatusFilterActive('borrador') ? 'border-warning shadow-lg' : 'border-border hover:shadow-md'}`}
+                   onClick={() => handleStatusFilter("borrador")}>
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-warning/10 rounded-lg min-touch-target">
                     <Icon name="Edit" size={20} className="text-warning" />
@@ -302,21 +345,27 @@ const FormCenter = () => {
                 </div>
               </div>
 
-              <div className="bg-card border border-border rounded-lg p-4">
+              {/* Tarjeta 3: Publicados */}
+              <div className={`bg-card border rounded-lg p-4 cursor-pointer transition-all duration-300
+                            ${isStatusFilterActive('publicado') ? 'border-secondary shadow-lg' : 'border-border hover:shadow-md'}`}
+                   onClick={() => handleStatusFilter("publicado")}>
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-secondary/10 rounded-lg min-touch-target">
                     <Icon name="Clock" size={20} className="text-secondary" />
                   </div>
                   <div>
                     <p className="text-xl md:text-2xl font-bold text-foreground">
-                      {allForms.filter(f => f.status === 'publicado').length}
+                      {publicadoCount}
                     </p>
                     <p className="text-xs md:text-sm text-muted-foreground">Formularios publicados</p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-card border border-border rounded-lg p-4">
+              {/* Tarjeta 4: Modificaciones Recientes (Filtro por Fecha) */}
+              <div className={`bg-card border rounded-lg p-4 cursor-pointer transition-all duration-300
+                            ${filters.isRecent ? 'border-success shadow-lg' : 'border-border hover:shadow-md'}`}
+                   onClick={handleRecentFilter}>
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-success/10 rounded-lg min-touch-target">
                     <Icon name="CheckCircle" size={20} className="text-success" />
@@ -335,8 +384,6 @@ const FormCenter = () => {
           <div className="space-y-4">
             <SearchBar
               onSearch={handleSearch}
-              onFilterToggle={toggleFilters}
-              showFilters={showFilters}
             />
 
             <CategoryFilter
@@ -347,13 +394,9 @@ const FormCenter = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {showFilters && (
-              <div className="lg:col-span-1">
-                <FormFilters onFiltersChange={handleFiltersChange} />
-              </div>
-            )}
+            
 
-            <div className={showFilters ? 'lg:col-span-3' : 'lg:col-span-4'}>
+            <div className='lg:col-span-4'>
               <div className="space-y-6">
                 {isLoading ? (
                   <div className="text-center py-12">

@@ -18,13 +18,13 @@ const FormReg = () => {
   });
   const [activeTab, setActiveTab] = useState('properties');
 
-  // 🔄 ESTADOS AÑADIDOS PARA LA ADAPTABILIDAD
+  // ESTADOS AÑADIDOS PARA LA ADAPTABILIDAD
   const [isDesktopOpen, setIsDesktopOpen] = useState(true); // Controla el colapso en Desktop
   const [isMobileOpen, setIsMobileOpen] = useState(false); // Controla la apertura total en Mobile
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
 
 
-  // 🔄 FUNCIÓN AÑADIDA: Toggle Unificado para Desktop y Móvil
+  // FUNCIÓN AÑADIDA: Toggle Unificado para Desktop y Móvil
   const toggleSidebar = () => {
     if (isMobileScreen) {
       // En móvil, alternar el estado de apertura/cierre
@@ -35,14 +35,14 @@ const FormReg = () => {
     }
   };
   
-  // 🔄 FUNCIÓN AÑADIDA: Lógica de navegación para cerrar el Sidebar en móvil
+  // FUNCIÓN AÑADIDA: Lógica de navegación para cerrar el Sidebar en móvil
   const handleNavigation = () => {
     if (isMobileScreen) {
       setIsMobileOpen(false); // Cierra el sidebar al navegar
     }
   };
 
-  // 🔄 EFECTO AÑADIDO: Manejo de Redimensionamiento
+  // EFECTO AÑADIDO: Manejo de Redimensionamiento
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
@@ -239,7 +239,7 @@ const FormReg = () => {
     }
   };
   
-  // 🔄 CLASE DE MARGEN: Definir el margen para <main>
+  // CLASE DE MARGEN: Definir el margen para <main>
   const mainMarginClass = isMobileScreen 
     ? 'ml-0' 
     : isDesktopOpen ? 'ml-64' : 'ml-16';
@@ -248,7 +248,7 @@ const FormReg = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* 🔄 Sidebar: Renderiza si está abierto en desktop O si está abierto en móvil */}
+      {/* Sidebar: Renderiza si está abierto en desktop O si está abierto en móvil */}
       {(isDesktopOpen || isMobileOpen) && (
         <>
           <Sidebar 
@@ -258,7 +258,7 @@ const FormReg = () => {
             onNavigate={handleNavigation} 
           />
           
-          {/* 🔄 Overlay semi-transparente en móvil cuando el sidebar está abierto */}
+          {/* Overlay semi-transparente en móvil cuando el sidebar está abierto */}
           {isMobileScreen && isMobileOpen && (
             <div 
               className="fixed inset-0 bg-foreground/50 z-40" 
@@ -268,7 +268,7 @@ const FormReg = () => {
         </>
       )}
       
-      {/* 🔄 Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
+      {/* Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
           <button
@@ -281,7 +281,7 @@ const FormReg = () => {
         </div>
       )}
 
-      {/* 🔄 Contenido Principal: Aplicar margen adaptable */}
+      {/* Contenido Principal: Aplicar margen adaptable */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-16`}>
         <div className="p-6 space-y-6 container-main"> {/* Usar container-main para padding lateral */}
           <div className="bg-card border border-border rounded-lg">

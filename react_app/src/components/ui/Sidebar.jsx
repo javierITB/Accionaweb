@@ -1,6 +1,6 @@
 import React from 'react';
 import Icon from '../AppIcon'; // Se mantiene la ruta a '../AppIcon'
-import Button from './Button'; // 🔄 CORRECCIÓN: Se ajusta la ruta a './Button' (asumiendo que es un componente hermano en 'ui')
+import Button from './Button'; // CORRECCIÓN: Se ajusta la ruta a './Button' (asumiendo que es un componente hermano en 'ui')
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -25,7 +25,7 @@ const Sidebar = ({
   const token = sessionStorage.getItem("token");
   const cargo = sessionStorage.getItem("cargo");
 
-  // 🔄 CORRECCIÓN CRÍTICA: La navegación real siempre usa navigate(path). 
+  // CORRECCIÓN CRÍTICA: La navegación real siempre usa navigate(path). 
   // onNavigate (si se pasa) solo se usa para el efecto secundario (cerrar el menú).
   const handleNavigation = (path) => {
     // 1. 🟢 ASEGURAMOS LA REDIRECCIÓN DE REACT ROUTER SIEMPRE
@@ -82,7 +82,7 @@ const Sidebar = ({
     { name: 'Soporte de TI', icon: 'Monitor', path: '/support-portal?category=it' },
   ];
 
-  // 🔄 Lógica de Clases Condicionales (Desktop vs Mobile)
+  // Lógica de Clases Condicionales (Desktop vs Mobile)
   
   // 1. Visibilidad y posición: En móvil abierto, debe ser fixed y z-60.
   const mobileOpenClasses = isMobileOpen 
