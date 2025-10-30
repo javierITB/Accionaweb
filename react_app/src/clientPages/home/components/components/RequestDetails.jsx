@@ -2,14 +2,14 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestDetails = ({ request, isVisible, onClose }) => {
+const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
   if (!isVisible || !request) return null;
 
   // Función para descargar PDF aprobado
   const handleDownloadApprovedPDF = async (responseId) => {
     try {
       const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/download-approved-pdf/${responseId}`);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Error al descargar el PDF');
@@ -17,26 +17,26 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
 
       // Convertir la respuesta a blob
       const blob = await response.blob();
-      
+
       // Crear URL temporal para descargar
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      
+
       // Obtener el nombre del archivo del header
       const contentDisposition = response.headers.get('Content-Disposition');
       let fileName = 'documento_aprobado.pdf';
-      
+
       if (contentDisposition) {
         const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
         if (fileNameMatch) fileName = fileNameMatch[1];
       }
-      
+
       a.download = fileName;
       document.body.appendChild(a);
       a.click();
-      
+
       // Limpiar
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
@@ -52,7 +52,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
     const userName = request?.submittedBy || request?.user?.nombre || 'Usuario';
     const submitDate = request?.submittedAt || request?.createdAt;
-    
+
     // Formatear fecha para el nombre del archivo (sin caracteres especiales)
     const formatDateForFileName = (dateString) => {
       if (!dateString) return 'fecha-desconocida';
@@ -61,7 +61,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     };
 
     const datePart = formatDateForFileName(submitDate);
-    
+
     // Limpiar caracteres especiales y espacios
     const cleanText = (text) => {
       return text
@@ -83,7 +83,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
     if (!request) return [];
 
     const fileName = formatFileName();
-    
+
     // Aquí deberías obtener esta información real de tu base de datos
     // Por ahora simulamos con los datos que tienes en el request
     return [
@@ -170,7 +170,7 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
   const realAttachments = getRealAttachments();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
@@ -216,10 +216,9 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Prioridad:</span>
-                    <span className={`text-sm font-medium ${
-                      request?.priority === 'high' ? 'text-error' :
-                      request?.priority === 'medium' ? 'text-warning' : 'text-success'
-                    }`}>
+                    <span className={`text-sm font-medium ${request?.priority === 'high' ? 'text-error' :
+                        request?.priority === 'medium' ? 'text-warning' : 'text-success'
+                      }`}>
                       {request?.priority?.toUpperCase()}
                     </span>
                   </div>
@@ -314,17 +313,10 @@ const RequestDetails = ({ request, isVisible, onClose }) => {
                 variant="outline"
                 iconName="MessageSquare"
                 iconPosition="left"
+                onClick={() => onSendMessage(request)}
                 iconSize={16}
               >
                 Enviar Mensaje
-              </Button>
-              <Button
-                variant="outline"
-                iconName="Download"
-                iconPosition="left"
-                iconSize={16}
-              >
-                Descargar DOCX
               </Button>
               <Button
                 variant="default"

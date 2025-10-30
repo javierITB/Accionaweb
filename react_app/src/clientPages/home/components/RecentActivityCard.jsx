@@ -385,6 +385,7 @@ const RequestTracking = () => {
         request={selectedRequest}
         isVisible={showRequestDetails}
         onClose={() => setShowRequestDetails(false)}
+        onSendMessage={handleSendMessage}
       />
     </div>
   );
