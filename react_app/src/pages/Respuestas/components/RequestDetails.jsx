@@ -5,7 +5,31 @@ import Button from '../../../components/ui/Button';
 const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSendMessage}) => {
   const [correctedFile, setCorrectedFile] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [clientSignature, setClientSignature] = useState(null);
   const fileInputRef = useRef(null);
+
+  const checkClientSignature = async () => {
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.exists) {
+          setClientSignature(data.signature);
+        } else {
+          setClientSignature(null);
+        }
+      } else {
+        setClientSignature(null);
+      }
+    } catch (error) {
+      console.error('Error verificando firma del cliente:', error);
+      setClientSignature(null);
+    }
+  };
+
+  const refreshClientSignature = async () => {
+    await checkClientSignature();
+  };
 
   useEffect(() => {
     if (request?.correctedFile) {
@@ -16,18 +40,20 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
     } else {
       setCorrectedFile(null);
     }
+
+    if (request?._id) {
+      checkClientSignature();
+    }
   }, [request]);
 
   if (!isVisible || !request) return null;
-//Arreglo
+
   const handleDownload = async () => {
     if (request?.IDdoc) {
       setIsDownloading(true);
       try {
-        // Primero abrir la descarga
         window.open(`https://accionaapi.vercel.app/api/generador/download/${request.IDdoc}`, '_blank');
         
-        // Luego actualizar el estado localmente sin esperar respuesta del servidor
         if (onUpdate) {
           const updatedRequest = {
             ...request,
@@ -68,6 +94,58 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
     } catch (error) {
       console.error('Error descargando adjunto:', error);
       alert('Error al descargar el archivo');
+    }
+  };
+
+  const handleDownloadClientSignature = async (responseId) => {
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/client-signature`);
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `documento_firmado_cliente_${responseId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error descargando el documento firmado');
+      }
+    } catch (error) {
+      console.error('Error descargando firma del cliente:', error);
+      alert('Error descargando el documento firmado');
+    }
+  };
+
+  const handleDeleteClientSignature = async (responseId) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar el documento firmado por el cliente?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/client-signature`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setClientSignature(null);
+        alert('Documento firmado eliminado exitosamente');
+        if (onUpdate) {
+          const updatedResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
+          const updatedRequest = await updatedResponse.json();
+          onUpdate(updatedRequest);
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error eliminando documento firmado');
+      }
+    } catch (error) {
+      console.error('Error eliminando firma del cliente:', error);
+      alert('Error eliminando documento firmado');
     }
   };
 
@@ -266,7 +344,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Fecha no disponible';
-    return request?.submittedAt;
+    return new Date(dateString)?.toLocaleDateString('es-CL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const formatFileSize = (bytes) => {
@@ -503,10 +587,75 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
               />
             </div>
           </div>
+
+          {request?.status === 'aprobado' && (
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado por Cliente</h3>
+              {clientSignature ? (
+                <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Icon name="FileSignature" size={20} className="text-success" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{clientSignature.fileName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Subido el {formatDate(clientSignature.uploadedAt)} • {formatFileSize(clientSignature.fileSize)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        iconName="Download"
+                        iconPosition="left"
+                        iconSize={16}
+                        onClick={() => handleDownloadClientSignature(request._id)}
+                      >
+                        Descargar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteClientSignature(request._id)}
+                        className="text-error hover:bg-error/10"
+                      >
+                        <Icon name="Trash2" size={16} />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Icon name="Clock" size={20} className="text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">El cliente aún no ha subido su documento firmado</p>
+                        <p className="text-xs text-muted-foreground">
+                          Esperando que el cliente descargue, firme y suba el documento
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      iconName="RefreshCw"
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={refreshClientSignature}
+                    >
+                      Actualizar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {false && (
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado</h3>
-
               <div className="space-y-2">
                 {realAttachments?.map((file) => (
                   <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
