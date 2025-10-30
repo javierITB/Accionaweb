@@ -19,7 +19,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
   }, [request]);
 
   if (!isVisible || !request) return null;
-
+//Arreglo
   const handleDownload = async () => {
     if (request?.IDdoc) {
       setIsDownloading(true);
