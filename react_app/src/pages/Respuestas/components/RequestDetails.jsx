@@ -1,12 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import CleanDocumentPreview from './CleanDocumentPreview';
 
 const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }) => {
   const [correctedFile, setCorrectedFile] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [clientSignature, setClientSignature] = useState(null);
+  const [isApproving, setIsApproving] = useState(false);
   const fileInputRef = useRef(null);
+
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState(null);
 
   const checkClientSignature = async () => {
     try {
@@ -47,6 +52,68 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   }, [request]);
 
   if (!isVisible || !request) return null;
+
+  const handlePreviewDocument = (documentUrl, documentType) => {
+    if (!documentUrl) {
+      alert('No hay documento disponible para vista previa');
+      return;
+    }
+
+    setPreviewDocument({
+      url: documentUrl,
+      type: documentType
+    });
+    setShowPreview(true);
+  };
+
+  const handlePreviewGenerated = () => {
+    if (!request?.IDdoc) {
+      alert('No hay documento disponible para vista previa');
+      return;
+    }
+
+    const documentUrl = `https://accionaapi.vercel.app/api/generador/download/${request.IDdoc}`;
+
+    const fileName = formatFileName();
+    const extension = fileName.split('.').pop()?.toLowerCase() || 'docx';
+
+    handlePreviewDocument(documentUrl, extension);
+  };
+
+  const handlePreviewCorrected = () => {
+    // Verificar si hay archivo en el estado local O en el request del servidor
+    if (!correctedFile && !request?.correctedFile) {
+      alert('No hay documento corregido para vista previa');
+      return;
+    }
+
+    let documentUrl;
+
+    // Si hay archivo en estado local (recién subido)
+    if (correctedFile && correctedFile instanceof File) {
+      documentUrl = URL.createObjectURL(correctedFile);
+    }
+    // Si hay archivo en el servidor (después de recargar)
+    else if (request?.correctedFile) {
+      documentUrl = `https://accionaapi.vercel.app/api/respuestas/${request._id}/corrected-file`;
+    } else {
+      alert('No hay documento corregido disponible');
+      return;
+    }
+
+    console.log('🔗 URL del PDF corregido:', documentUrl); // Para debug
+    handlePreviewDocument(documentUrl, 'pdf');
+  };
+
+  const handlePreviewClientSignature = () => {
+    if (!clientSignature) {
+      alert('No hay documento firmado para vista previa');
+      return;
+    }
+
+    const documentUrl = `https://accionaapi.vercel.app/api/respuestas/${request._id}/client-signature`;
+    handlePreviewDocument(documentUrl, 'pdf');
+  };
 
   const handleDownload = async () => {
     if (request?.IDdoc) {
@@ -200,6 +267,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       return;
     }
 
+    setIsApproving(true); // <- ACTIVAR LOADING
+
     try {
       const formData = new FormData();
       formData.append('correctedFile', correctedFile);
@@ -233,31 +302,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     } catch (error) {
       console.error('Error:', error);
       alert('Error al aprobar el formulario: ' + error.message);
-    }
-  };
-
-  const handlePreviewGenerated = () => {
-    if (request?.IDdoc) {
-      window.open(`https://accionaapi.vercel.app/api/generador/preview/${request.IDdoc}`, '_blank');
-    } else {
-      alert('No hay documento disponible para vista previa');
-    }
-  };
-
-  const handlePreviewCorrected = () => {
-    if (correctedFile) {
-      const url = URL.createObjectURL(correctedFile);
-      window.open(url, '_blank');
-    } else {
-      alert('No hay documento corregido para vista previa');
-    }
-  };
-
-  const handlePreviewSigned = () => {
-    if (clientSignature) {
-      window.open(`https://accionaapi.vercel.app/api/respuestas/${request._id}/preview-client-signature`, '_blank');
-    } else {
-      alert('No hay documento firmado para vista previa');
+    } finally {
+      setIsApproving(false); // <- DESACTIVAR LOADING
     }
   };
 
@@ -546,16 +592,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       <Button
                         variant="outline"
                         size="sm"
-                        iconName="Eye"
-                        iconPosition="left"
-                        iconSize={16}
-                        onClick={handlePreviewGenerated}
-                      >
-                        Vista Previa
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
                         iconName="Download"
                         iconPosition="left"
                         iconSize={16}
@@ -563,6 +599,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         disabled={isDownloading}
                       >
                         {isDownloading ? 'Descargando...' : 'Descargar'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handlePreviewGenerated}
+                        iconName="Eye"
+                        iconPosition="left"
+                        iconSize={16}
+                      >
+                        Vista Previa
                       </Button>
                     </div>
                   </div>
@@ -592,12 +638,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
+                      onClick={handlePreviewCorrected}
                       iconName="Eye"
                       iconPosition="left"
                       iconSize={16}
-                      onClick={handlePreviewCorrected}
                     >
                       Vista Previa
                     </Button>
@@ -654,22 +700,22 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       <Button
                         variant="outline"
                         size="sm"
-                        iconName="Eye"
-                        iconPosition="left"
-                        iconSize={16}
-                        onClick={handlePreviewSigned}
-                      >
-                        Vista Previa
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
                         iconName="Download"
                         iconPosition="left"
                         iconSize={16}
                         onClick={() => handleDownloadClientSignature(request._id)}
                       >
                         Descargar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handlePreviewClientSignature}
+                        iconName="Eye"
+                        iconPosition="left"
+                        iconSize={16}
+                      >
+                        Vista Previa
                       </Button>
                       <Button
                         variant="ghost"
@@ -733,9 +779,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 iconPosition="left"
                 iconSize={16}
                 onClick={handleApprove}
-                disabled={!correctedFile}
+                disabled={!correctedFile || isApproving} // <- DESHABILITAR MIENTRAS CARGA
               >
-                Aprobar
+                {isApproving ? 'Aprobando...' : 'Aprobar'}
               </Button>
               <Button
                 variant="default"
@@ -747,6 +793,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           </div>
         </div>
       </div>
+
+      <CleanDocumentPreview
+        isVisible={showPreview}
+        onClose={() => setShowPreview(false)}
+        documentUrl={previewDocument?.url}
+        documentType={previewDocument?.type}
+      />
     </div>
   );
 };
