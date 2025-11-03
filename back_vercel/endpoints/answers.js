@@ -30,13 +30,11 @@ router.post("/", async (req, res) => {
     const userId = user?.uid;
     const token = user?.token;
 
-    // === VALIDAR TOKEN ===
     const tokenValido = await validarToken(req.db, token);
     if (!tokenValido.ok) {
       return res.status(401).json({ error: tokenValido.reason });
     }
 
-    // === VERIFICAR QUE LA EMPRESA ESTÉ AUTORIZADA PARA ESTE FORMULARIO ===
     const form = await req.db
       .collection("forms")
       .findOne({ _id: new ObjectId(formId) });
@@ -52,7 +50,6 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // === INSERTAR RESPUESTA CON ADJUNTOS ===
     const result = await req.db.collection("respuestas").insertOne({
       ...req.body,
       adjuntos: adjuntos,
@@ -60,12 +57,11 @@ router.post("/", async (req, res) => {
       createdAt: new Date(),
     });
 
-    // === NOTIFICACIONES ===
     await addNotification(req.db, {
       filtro: { cargo: "RRHH" },
-      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondido el formulario ${formTitle}`,
-      descripcion: adjuntos.length > 0 
-        ? `Incluye ${adjuntos.length} archivo(s) adjunto(s)` 
+      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondedido el formulario ${formTitle}`,
+      descripcion: adjuntos.length > 0
+        ? `Incluye ${adjuntos.length} archivo(s) adjunto(s)`
         : "Puedes revisar los detalles en el panel de respuestas.",
       prioridad: 2,
       color: "#fb8924",
@@ -83,16 +79,19 @@ router.post("/", async (req, res) => {
       actionUrl: `/?id=${result.insertedId}`,
     });
 
-    // === GENERAR DOCUMENTO SEGÚN TIPO DE FORMULARIO ===
     try {
-      await generarAnexoDesdeRespuesta(responses, result.insertedId.toString(), req.db, form.section);
+      await generarAnexoDesdeRespuesta(responses, result.insertedId.toString(), req.db, form.section, {
+        nombre: usuario,
+        empresa: empresa,
+        uid: userId
+      });
       console.log("Documento generado automáticamente:", result.insertedId);
     } catch (error) {
       console.error("Error generando documento:", error.message);
     }
 
-    res.json({ 
-      _id: result.insertedId, 
+    res.json({
+      _id: result.insertedId,
       ...req.body,
       adjuntosCount: adjuntos.length
     });
@@ -107,7 +106,7 @@ router.post("/", async (req, res) => {
 router.get("/:id/adjuntos/:index", async (req, res) => {
   try {
     const { id, index } = req.params;
-    
+
     const respuesta = await req.db
       .collection("respuestas")
       .findOne({ _id: new ObjectId(id) });
@@ -121,12 +120,10 @@ router.get("/:id/adjuntos/:index", async (req, res) => {
     }
 
     const adjunto = respuesta.adjuntos[index];
-    
-    // Convertir base64 a buffer
+
     const base64Data = adjunto.fileData.replace(/^data:[^;]+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
-    // Configurar headers para descarga
     res.set({
       'Content-Type': adjunto.mimeType,
       'Content-Disposition': `attachment; filename="${adjunto.fileName}"`,
@@ -145,7 +142,7 @@ router.get("/:id/adjuntos/:index", async (req, res) => {
 router.get("/:id/adjuntos", async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const respuesta = await req.db
       .collection("respuestas")
       .findOne({ _id: new ObjectId(id) }, { projection: { adjuntos: 1 } });
@@ -385,7 +382,7 @@ router.put("/chat/marcar-leidos", async (req, res) => {
 router.post("/:id/upload-correction", upload.single('correctedFile'), async (req, res) => {
   try {
     console.log("Debug: Iniciando upload-correction para ID:", req.params.id);
-    
+
     if (!req.file) {
       console.log("Debug: No se subió ningún archivo");
       return res.status(400).json({ error: "No se subió ningún archivo" });
@@ -395,6 +392,7 @@ router.post("/:id/upload-correction", upload.single('correctedFile'), async (req
 
     const correctionData = {
       fileName: req.file.originalname,
+      tipo: 'pdf',
       fileData: req.file.buffer,
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
@@ -488,20 +486,18 @@ router.delete("/:id/remove-correction", async (req, res) => {
     console.log("Debug: Iniciando remove-correction para ID:", req.params.id);
     console.log("Debug: ID recibido:", req.params.id);
 
-    // 1. Eliminar de la colección "aprobados"
     const deleteResult = await req.db.collection("aprobados").deleteOne({
       responseId: req.params.id
     });
 
     console.log("Debug: Resultado de la eliminación en aprobados:", deleteResult);
 
-    // 2. ACTUALIZAR EL ESTADO EN LA BASE DE DATOS "respuestas" - ESTO ES LO CRÍTICO
     const updateResult = await req.db.collection("respuestas").updateOne(
       { _id: new ObjectId(req.params.id) },
       {
         $set: {
-          status: "en_revision",  // Cambiar de "aprobado" a "en_revision"
-          correctedFile: null,    // Eliminar el archivo corregido
+          status: "en_revision",
+          correctedFile: null,
           updatedAt: new Date()
         }
       }
@@ -516,12 +512,11 @@ router.delete("/:id/remove-correction", async (req, res) => {
 
     console.log("Debug: Estado actualizado a 'en_revision' en la base de datos para ID:", req.params.id);
 
-    // Obtener la respuesta actualizada de la base de datos
     const updatedResponse = await req.db.collection("respuestas").findOne({
       _id: new ObjectId(req.params.id)
     });
 
-    res.json({ 
+    res.json({
       message: "Corrección eliminada exitosamente",
       updatedRequest: updatedResponse
     });
@@ -536,7 +531,6 @@ router.get("/download-approved-pdf/:responseId", async (req, res) => {
   try {
     console.log("Debug: Solicitando descarga de PDF aprobado para responseId:", req.params.responseId);
 
-    // Buscar en la colección "aprobados" por responseId
     const approvedDoc = await req.db.collection("aprobados").findOne({
       responseId: req.params.responseId
     });
@@ -553,17 +547,171 @@ router.get("/download-approved-pdf/:responseId", async (req, res) => {
 
     console.log("Debug: Enviando PDF:", approvedDoc.correctedFile.fileName);
 
-    // Configurar headers para descarga
     res.setHeader('Content-Type', approvedDoc.correctedFile.mimeType || 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${approvedDoc.correctedFile.fileName}"`);
     res.setHeader('Content-Length', approvedDoc.correctedFile.fileSize);
 
-    // Enviar el buffer directamente - igual que con DOCX
     res.send(approvedDoc.correctedFile.fileData.buffer);
 
   } catch (err) {
     console.error("Error descargando PDF aprobado:", err);
     res.status(500).json({ error: "Error descargando PDF aprobado" });
+  }
+});
+
+// Subir PDF firmado por cliente a colección firmados
+router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), async (req, res) => {
+  try {
+    const { responseId } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No se subió ningún archivo" });
+    }
+
+    const respuesta = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(responseId)
+    });
+
+    if (!respuesta) {
+      return res.status(404).json({ error: "Formulario no encontrado" });
+    }
+
+    if (respuesta.status !== 'aprobado') {
+      return res.status(400).json({ error: "El formulario debe estar aprobado para subir la firma" });
+    }
+
+    const existingSignature = await req.db.collection("firmados").findOne({
+      responseId: responseId
+    });
+
+    if (existingSignature) {
+      return res.status(400).json({ error: "Ya existe un documento firmado para este formulario" });
+    }
+
+    const signatureData = {
+      fileName: req.file.originalname,
+      fileData: req.file.buffer,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype,
+      uploadedAt: new Date(),
+      signedBy: "client",
+      clientName: respuesta.submittedBy || respuesta.user?.nombre,
+      clientEmail: respuesta.userEmail || respuesta.user?.mail
+    };
+
+    const result = await req.db.collection("firmados").insertOne({
+      responseId: responseId,
+      formId: respuesta.formId,
+      formTitle: respuesta.formTitle,
+      clientSignedPdf: signatureData,
+      status: "uploaded",
+      uploadedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      company: respuesta.company
+    });
+
+    res.json({
+      success: true,
+      message: "Documento firmado subido exitosamente",
+      signatureId: result.insertedId
+    });
+
+  } catch (err) {
+    console.error("Error subiendo firma del cliente:", err);
+    res.status(500).json({ error: "Error subiendo firma del cliente" });
+  }
+});
+
+// Obtener PDF firmado por cliente - CORREGIDO
+router.get("/:responseId/client-signature", async (req, res) => {
+  try {
+    const { responseId } = req.params;
+
+    const signature = await req.db.collection("firmados").findOne({
+      responseId: responseId
+    });
+
+    if (!signature) {
+      return res.status(404).json({ error: "Documento firmado no encontrado" });
+    }
+
+    const pdfData = signature.clientSignedPdf;
+
+    if (!pdfData || !pdfData.fileData) {
+      return res.status(404).json({ error: "Archivo PDF no disponible" });
+    }
+
+    res.setHeader('Content-Type', pdfData.mimeType || 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${pdfData.fileName}"`);
+    res.setHeader('Content-Length', pdfData.fileSize);
+
+    // CORRECCIÓN: Usar .buffer igual que en download-approved-pdf
+    res.send(pdfData.fileData.buffer);  // ← AÑADIR .buffer
+
+  } catch (err) {
+    console.error("Error descargando firma del cliente:", err);
+    res.status(500).json({ error: "Error descargando firma del cliente" });
+  }
+});
+
+// Eliminar PDF firmado por cliente
+router.delete("/:responseId/client-signature", async (req, res) => {
+  try {
+    const { responseId } = req.params;
+
+    const deleteResult = await req.db.collection("firmados").deleteOne({
+      responseId: responseId
+    });
+
+    if (deleteResult.deletedCount === 0) {
+      return res.status(404).json({ error: "Documento firmado no encontrado" });
+    }
+
+    res.json({
+      success: true,
+      message: "Documento firmado eliminado exitosamente"
+    });
+
+  } catch (err) {
+    console.error("Error eliminando firma del cliente:", err);
+    res.status(500).json({ error: "Error eliminando firma del cliente" });
+  }
+});
+
+// Verificar si existe PDF firmado para una respuesta específica
+router.get("/:responseId/has-client-signature", async (req, res) => {
+  try {
+    const { responseId } = req.params;
+
+    const signature = await req.db.collection("firmados").findOne({
+      responseId: responseId
+    }, {
+      projection: {
+        "clientSignedPdf.fileName": 1,
+        "clientSignedPdf.uploadedAt": 1,
+        "clientSignedPdf.fileSize": 1,
+        status: 1
+      }
+    });
+
+    if (!signature) {
+      return res.json({ exists: false });
+    }
+
+    res.json({
+      exists: true,
+      signature: {
+        fileName: signature.clientSignedPdf.fileName,
+        uploadedAt: signature.clientSignedPdf.uploadedAt,
+        fileSize: signature.clientSignedPdf.fileSize,
+        status: signature.status
+      }
+    });
+
+  } catch (err) {
+    console.error("Error verificando firma del cliente:", err);
+    res.status(500).json({ error: "Error verificando documento firmado" });
   }
 });
 

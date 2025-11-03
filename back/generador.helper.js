@@ -2,188 +2,188 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const docx = require("docx");
-const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType } = docx;
+const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, ImageRun, BorderStyle } = docx;
 
-// Función auxiliar para formatear fecha
 function formatearFechaEspanol(fechaIso) {
     const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-    const d = new Date(fechaIso);
+
+    // Manejar tanto fechas ISO como fechas en formato YYYY-MM-DD
+    let d;
+    if (fechaIso.includes('T')) {
+        d = new Date(fechaIso);
+    } else {
+        // Para formato YYYY-MM-DD
+        const [year, month, day] = fechaIso.split('-');
+        d = new Date(year, month - 1, day);
+    }
+
+    // Validar que la fecha sea válida
+    if (isNaN(d.getTime())) {
+        console.error('Fecha inválida:', fechaIso);
+        return fechaIso; // Devolver original si no se puede formatear
+    }
+
     return `${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
-// Diccionario de ordinales
-const ORDINALES = ["", "PRIMERO:", "SEGUNDO:", "TERCERO:", "CUARTO:", "QUINTO:", "SEXTO:", "SÉPTIMO:", "OCTAVO:", "NOVENO:", "DÉCIMO:"];
+const ORDINALES = [
+    "", "PRIMERO:", "SEGUNDO:", "TERCERO:", "CUARTO:", "QUINTO:",
+    "SEXTO:", "SÉPTIMO:", "OCTAVO:", "NOVENO:", "DÉCIMO:",
+    "UNDÉCIMO:", "DUODÉCIMO:", "DÉCIMO TERCERO:", "DÉCIMO CUARTO:",
+    "DÉCIMO QUINTO:", "DÉCIMO SEXTO:", "DÉCIMO SÉPTIMO:",
+    "DÉCIMO OCTAVO:", "DÉCIMO NOVENO:", "VIGÉSIMO:"
+];
 
-// Diccionarios de empresas
-const rutEmpresas = {
-    "AGUAS": "65.110.913-2",
-    "CORDERO": "77.039.974-2",
-    "MCC": "76.887.205-8",
-    "YIREHPAL": "76.422.314-4",
-    "AZOCAR": "76.084.474-8",
-    "DINSIDE": "76.697.693-K",
-    "FERDINAND": "77.577.628-5",
-    "GREEN BUSINESS": "77.123.226-4",
-    "GROW": "76.875.644-9",
-    "AGUSTIN": "77.328.293-5",
-    "SANTA MARIA": "76.397.289-5",
-    "PLAN D": "76.155.283-K",
-    "ODONTOLOGIA": "77.570.852-2",
-    "YINET": "76.993.230-5",
-    "RYS": "77.315.309-4",
-    "EMBRY": "78.330.870-3",
-    "SANDOVAL": "77.420.334-6",
-    "SIENTEVITAL": "77.489.147-1",
-    "SOCOTEC": "76.373.078-6",
-    "SYNIXTOR": "76.696.743-4",
-    "ALTO LOS ANDES": "77.680.543-2",
-    "MVP": "76.974.777-K",
-    "ICEGCLINIC": "77.126.237-6",
-    "LSOFT": "76.815.534-8",
-    "RANIA": "77.919.204-0",
-    "PIDA": "77.851.576-8",
-    "KAMI": "77.947.515-8",
-    "BRUTAL": "77.975.744-7",
-    "GREENACTION": "77.894.212-7",
-    "AZUCCA": "77.933.997-1",
-    "HOME": "77.292.823-8",
-    "SANTA ELOISA": "78.144.149-K"
-};
+async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
+    try {
+        console.log("=== BUSCANDO EMPRESA EN BD ===");
+        console.log("Nombre empresa buscado:", nombreEmpresa);
 
-const nombreEmpresa = {
-    "77.975.065-5": "F & M ODONTOLOGIC MEDICAL SPA",
-    "77.947.515-8": "MINIMRKET KAMI 2024 SPA",
-    "77.975.744-7": "BRUTAL STUDIO CHILE SPA",
-    "77.397.128-5": "PRESTACIONES MÉDICAS CASTRO & SELMA LIMITADA",
-    "77.933.997-1": "AZZUCA SPA",
-    "78.055.137-2": "JANUSNET SPA",
-    "78.083.288-6": "FLIPPKO SPA",
-    "78.153.281-9": "GCU ATENCIONES SPA",
-    "78.144.149-K": "SANTA ELOISA SPA",
-    "77.924.401-6": "IMPORTADORA OUSTO COSMETIC CHILE SPA",
-    "76.373.078-6": "SOCIEDAD COMERCIAL TECNOLOGICA LIMITADA",
-    "76.778.293-4": "ACCIONA CENTRO DE NEGOCIOS SPA",
-    "76.687.921-7": "JMCIA CONSTRUCCIONES SPA",
-    "76.678.453-4": "BORDADOS AMG SPA",
-    "76.867.785-9": "DH HILOS SPA",
-    "76.887.205-8": "ARIDOS MCC SPA",
-    "76.275.709-5": "SERVICIOS Y ASESORIAS DE ATENCION INTEGRAL LIMITAD",
-    "76.974.777-K": "CORPORACIÓN MVP SPA",
-    "78.330.870-3": "SERVICIO DE MANTENCION DE VEHICULOS EMBRY LIMITADA",
-    "76.993.230-5": "PELUQUERÍA YINET DÍAZ E.I.R.L.",
-    "76.493.699-K": "OPENZ EXPERIENCIA CONSULTORES SPA",
-    "77.039.974-2": "SOCIEDAD ARIDOS CORDERO SPA",
-    "76.875.644-9": "GROW GREEN CHILE SPA",
-    "76.084.474-8": "COMERCIAL YIREHPAL LIMITADA",
-    "76.926.747-6": "CENTRO CLINICO EDUCATIVO CRECE SPA",
-    "77.032.053-4": "COMERCIALIZADORA Y DISTRIBUIDORA LOOK & GLOW SPA",
-    "76.697.693-K": "DINSIDE SPA",
-    "76.155.283-K": "INVERSIONES Y ASESORIAS PLAN D SPA",
-    "76.084.487-K": "TRANSPORTE YIREHPAL LIMITADA",
-    "77.123.226-4": "GREEN BUSINESS CHILE SPA",
-    "76.743.599-1": "SOCIEDAD DE INVERSIONES COMERCIALIZADORA R Y V SPA",
-    "77.292.823-8": "HOME STYLE SPA",
-    "77.197.781-2": "DISTRIBUIDORA V Y R SPA",
-    "77.413.001-2": "COMERCIALIZADORA JKA SPA",
-    "76.397.289-5": "INVERSIONES SANTA MARIA SPA",
-    "77.328.293-5": "INVERSIONES SAN AGUSTÍN SPA",
-    "77.489.147-1": "SIENTE VITAL SPA",
-    "77.515.709-7": "IRON WORLD SERVICES INGENIERIA SPA",
-    "76.746.098-8": "COMERCIALIZADORA LD SPA",
-    "77.570.852-2": "J & P MEDICAL SPA",
-    "77.420.334-6": "SERVICIOS PROFESIONALES DE SALUD CAROLINA SANDOVAL SALINAS E.I.R.L.",
-    "76.815.534-8": "LSOFT SERVICIOS INFORMÁTICOS SPA",
-    "77.625.197-6": "GOLD GREEN SPA",
-    "77.577.628-5": "FERDINAND CLAUSEN & ASOCIADOS SPA",
-    "77.315.309-4": "RYS SEGURIDAD Y VIGILANCIA CHILE SPA",
-    "77.680.543-2": "CLINICA DENTAL ALTO LOS ANDES SPA",
-    "76.696.743-4": "SYNIXTOR CHILE SPA",
-    "77.126.237-6": "ICEGCLINIC SPA",
-    "77.851.576-8": "PIDA 2024 SPA",
-    "77.894.212-7": "GREENACTIO ENVIRO SPA",
-    "77.926.019-4": "COMERCIALIZADORA DYM",
-    "77.919.204-0": "VENTA DE PRODUCTOS Y MINIMARKET RANIA ZEIDAN ABDUL E.I.R.L.",
-    "77.879.121-8": "SERVICIOS DE MARKETING LABIFY SPA",
-    "65.110.913-2": "AGUAS PARA SANIDAD"
-};
+        if (!db || typeof db.collection !== 'function') {
+            throw new Error("Base de datos no disponible");
+        }
 
-// Función para mapear datos del formulario según las etiquetas exactas
-function mapearDatosFormulario(responses) {
+        const empresa = await db.collection('empresas').findOne({
+            nombre: { $regex: new RegExp(nombreEmpresa, 'i') }
+        });
+
+        console.log("Empresa encontrada en BD:", empresa);
+
+        if (empresa) {
+            return {
+                nombre: empresa.nombre,
+                rut: empresa.rut,
+                logo: empresa.logo
+            };
+        }
+
+        const palabras = nombreEmpresa.toUpperCase().split(' ');
+        for (const palabra of palabras) {
+            if (palabra.length > 3) {
+                const empresaPorPalabra = await db.collection('empresas').findOne({
+                    nombre: { $regex: new RegExp(palabra, 'i') }
+                });
+
+                if (empresaPorPalabra) {
+                    console.log("Empresa encontrada por palabra clave:", empresaPorPalabra);
+                    return {
+                        nombre: empresaPorPalabra.nombre,
+                        rut: empresaPorPalabra.rut,
+                        logo: empresaPorPalabra.logo
+                    };
+                }
+            }
+        }
+
+        console.log("No se encontró empresa en BD");
+        return null;
+
+    } catch (error) {
+        console.error('Error buscando empresa en BD:', error);
+        return null;
+    }
+}
+
+function crearLogoImagen(logoData) {
+    if (!logoData || !logoData.fileData) {
+        return null;
+    }
+
+    try {
+        return new ImageRun({
+            data: logoData.fileData.buffer,
+            transformation: {
+                width: 100,
+                height: 100,
+            },
+            floating: {
+                horizontalPosition: {
+                    offset: 201440,
+                },
+                verticalPosition: {
+                    offset: 201440,
+                },
+            }
+        });
+    } catch (error) {
+        console.error('Error creando imagen del logo:', error);
+        return null;
+    }
+}
+
+function mapearDatosFormulario(responses, userData) {
     console.log("=== CAMPOS DISPONIBLES EN RESPONSES ===");
     Object.keys(responses).forEach(key => {
         console.log(`"${key}":`, responses[key]);
     });
 
-    // MAPEO CORREGIDO - usa los nombres EXACTOS de tu formulario
+    console.log("=== USER DATA ===");
+    console.log("User data recibido:", userData);
+
+    const empresaUsuario = userData?.empresa || "[EMPRESA NO ESPECIFICADA]";
+    const nombreUsuario = userData?.nombre || "[NOMBRE NO ESPECIFICADO]";
+
     const datosMapeados = {
-        // EMPRESA - múltiples alternativas
-        empresa: responses["Nombre de la Empresa solicitante:"] ||
-            responses["Nombre del responsable de la empresa:"] ||
-            "[EMPRESA NO ESPECIFICADA]",
+        empresa: empresaUsuario,
+        responsable: nombreUsuario,
 
-        // TRABAJADOR
-        trabajador: responses["Nombre del trabajador:"] || "[TRABAJADOR NO ESPECIFICADO]",
-        rut_trabajador: responses["Rut del trabajador:"] || "",
+        trabajador: responses["Nombre del trabajador"] || "[TRABAJADOR NO ESPECIFICADO]",
+        rut_trabajador: responses["Rut del trabajador"] || "",
 
-        // FECHAS
-        fecha_inicio: responses["Fecha de inicio de modificación:"] || "",
-        fecha_contrato: responses["Fecha del contrato vigente:"] || "",
+        fecha_inicio: responses["Fecha de inicio de modificación"] || "",
+        fecha_contrato: responses["Fecha del contrato vigente"] || "",
         termino_contrato: responses["FECHA DE TÉRMINO DEL CONTRATADO FIJO:"] || "",
 
-        // TIPO DE CONTRATO Y CARGO
-        tipo_contrato: Array.isArray(responses["Tipo de Anexo:"]) ?
-            responses["Tipo de Anexo:"] :
-            [responses["Tipo de Anexo:"]].filter(Boolean),
-        nuevo_cargo: responses["NUEVO CARGO DEL TRABAJADOR"] || "",
+        tipo_contrato: Array.isArray(responses["Tipo de Anexo"]) ?
+            responses["Tipo de Anexo"] :
+            [responses["Tipo de Anexo"]].filter(Boolean),
+        nuevo_cargo: responses["NUEVO CARGO TRABAJADOR:"] || "",
 
-        // REMUNERACIONES
         sueldo: responses["MONTO DEL NUEVO SUELDO:"] || "",
         colacion: responses["MONTO DE NUEVA ASIGNACIÓN DE COLACIÓN:"] || "",
         movilizacion: responses["MONTO DE NUEVA ASIGNACIÓN DE MOVILIZACIÓN:"] || "",
 
-        // HORARIOS
         hora_ingreso: responses["HORA DE INGRESO DE JORNADA LABORAL:"] || "",
         hora_salida: responses["HORA DE SALIDA DE JORNADA LABORAL:"] || "",
         hora_ingreso_colacion: responses["HORA DE INGRESO COLACIÓN:"] || "",
         hora_salida_colacion: responses["HORA DE SALIDA COLACIÓN:"] || "",
 
-        // BONOS
-        bonos: responses["PERIODO:"] || "",
         nombre_bono: responses["NOMBRE DEL BONO:"] || "",
-        monto: responses["MONTO DEL BONO:"] || "",
+        monto_bono: responses["MONTO DEL BONO:"] || "",
+        periodo_bono: responses["PLAZO BONO"] || "",
         condiciado: responses["CONDICIONADO:"] || "",
 
-        // DOMICILIO Y CONTACTO
         local: responses["CAMBIO DE DOMICILIO LABORAL DEL TRABAJADOR:"] || "",
         nuevo_domicilio: responses["NUEVO DOMICILIO TRABAJADOR:"] || "",
         telefono: responses["NUEVO NÚMERO DE TELÉFONO TRABAJADOR:"] || "",
         correo: responses["NUEVO CORREO TRABAJADOR:"] || "",
 
-        // TURNOS
         doble_turno: responses["DOBLE TURNO:"] || "",
-        segundo_turno: responses["SEGUNDO TURNO:"] || "",
-        primer_turno: responses["PRIMER TURNO:"] || "",
-        un_solo_turno: responses["UN SOLO TURNO:"] || "",
+        comentarios_turno: responses["COMENTARIOS"] || "", // ← NUEVO CAMPO
 
-        // COMPENSACIONES
-        compensacion: Array.isArray(responses["DÍA DE COMPENSACIÓN"]) ?
-            responses["DÍA DE COMPENSACIÓN"] :
-            [responses["DÍA DE COMPENSACIÓN"]].filter(Boolean),
-        desde: Array.isArray(responses["DESDE"]) ?
-            responses["DESDE"] :
-            [responses["DESDE"]].filter(Boolean),
-        hasta: Array.isArray(responses["HASTA"]) ?
-            responses["HASTA"] :
-            [responses["HASTA"]].filter(Boolean)
+        // Campos para cuando DOBLE TURNO = "NO"
+        un_solo_turno: Array.isArray(responses["UN SOLO TURNO"]) ?
+            responses["UN SOLO TURNO"].join(", ") :
+            responses["UN SOLO TURNO"] || "",
+        horario_entrada_unico: responses["HORARIO DE ENTRADA:"] || "",
+        horario_salida_unico: responses["HORARIO DE SALIDA:"] || "",
+        dia_compensacion_unico: responses["DÍA DE COMPENSACIÓN:"] || "",
+        horario_compensacion_entrada_unico: responses["HORARIO DE ENTRADA (COMPENSACIÓN):"] || "",
+        horario_compensacion_salida_unico: responses["HORARIO DE SALIDA (COMPENSACIÓN):"] || "",
+
+        desde_colacion: responses["DESDE:"] || "",
+        hasta_colacion: responses["HASTA:"] || ""
     };
 
-    console.log("=== DATOS MAPEADOS ===");
+    console.log("=== DATOS MAPEADOS ACTUALIZADOS ===");
+    console.log("Empresa final:", datosMapeados.empresa);
+    console.log("Responsable final:", datosMapeados.responsable);
+    console.log("Comentarios turno:", datosMapeados.comentarios_turno);
     console.log(JSON.stringify(datosMapeados, null, 2));
 
     return datosMapeados;
 }
 
-// Array de secciones condicionales en orden
 function generarClausulasCondicionales(datos) {
     return [
         {
@@ -191,7 +191,7 @@ function generarClausulasCondicionales(datos) {
             contenido: (agregarModificacion) => {
                 agregarModificacion([
                     "Por mutuo acuerdo de las partes involucradas, desde el ",
-                    { text: datos.fecha_inicio, bold: true },
+                    { text: formatearFechaEspanol(datos.fecha_inicio), bold: true },
                     " ejercerá funciones en local de ",
                     { text: datos.local, bold: true },
                     "."
@@ -203,7 +203,7 @@ function generarClausulasCondicionales(datos) {
             contenido: (agregarModificacion) => {
                 agregarModificacion([
                     "A contar del ",
-                    { text: datos.fecha_inicio, bold: true },
+                    { text: formatearFechaEspanol(datos.fecha_inicio), bold: true },
                     ", su dirección particular es modificada a ",
                     { text: datos.nuevo_domicilio, bold: true },
                     "."
@@ -216,6 +216,16 @@ function generarClausulasCondicionales(datos) {
                 agregarModificacion([
                     "Número telefónico de contacto actualizado a: ",
                     { text: datos.telefono, bold: true },
+                    "."
+                ]);
+            }
+        },
+        {
+            condicion: () => datos.correo && datos.correo.trim() !== "",
+            contenido: (agregarModificacion) => {
+                agregarModificacion([
+                    "Correo electrónico de contacto actualizado a: ",
+                    { text: datos.correo, bold: true },
                     "."
                 ]);
             }
@@ -240,7 +250,7 @@ function generarClausulasCondicionales(datos) {
             contenido: (agregarModificacion) => {
                 agregarModificacion([
                     "Desde el ",
-                    { text: datos.fecha_inicio, bold: true },
+                    { text: formatearFechaEspanol(datos.fecha_inicio), bold: true },
                     ", la duración del contrato se modifica a INDEFINIDO."
                 ]);
             }
@@ -255,7 +265,7 @@ function generarClausulasCondicionales(datos) {
             contenido: (agregarModificacion) => {
                 agregarModificacion([
                     "Desde el ",
-                    { text: datos.fecha_inicio, bold: true },
+                    { text: formatearFechaEspanol(datos.fecha_inicio), bold: true },
                     ", el contrato se renueva hasta el ",
                     { text: formatearFechaEspanol(datos.termino_contrato), bold: true },
                     "."
@@ -267,7 +277,7 @@ function generarClausulasCondicionales(datos) {
             contenido: (agregarModificacion) => {
                 agregarModificacion([
                     "Desde el ",
-                    { text: datos.fecha_inicio, bold: true },
+                    { text: formatearFechaEspanol(datos.fecha_inicio), bold: true },
                     " el nuevo cargo es: ",
                     { text: datos.nuevo_cargo, bold: true },
                     "."
@@ -290,7 +300,7 @@ function generarClausulasCondicionales(datos) {
                 agregarModificacion([
                     "El empleador pagará al trabajador una asignación mensual de movilización equivalente a la suma de $",
                     { text: datos.movilizacion, bold: true },
-                    ", destinada a cubrir gastos de alimentación derivados de la prestación de servicios. El pago de esta asignación será efectuado conjuntamente con las remuneraciones mensuales, sin que su otorgamiento se encuentre condicionado a la realización de tareas específicas o al cumplimiento de obligaciones distintas a las propias del contrato de trabajo."
+                    ", destinada a cubrir gastos de transporte derivados de la prestación de servicios. El pago de esta asignación será efectuado conjuntamente con las remuneraciones mensuales, sin que su otorgamiento se encuentre condicionado a la realización de tareas específicas o al cumplimiento de obligaciones distintas a las propias del contrato de trabajo."
                 ]);
             }
         },
@@ -300,7 +310,7 @@ function generarClausulasCondicionales(datos) {
             contenido: (agregarModificacion) => {
                 const textos = [
                     "A contar del ",
-                    { text: datos.fecha_inicio, bold: true },
+                    { text: formatearFechaEspanol(datos.fecha_inicio), bold: true },
                     " Horario de trabajo modificado: Desde "
                 ];
 
@@ -322,15 +332,42 @@ function generarClausulasCondicionales(datos) {
             }
         },
         {
-            condicion: () => datos.bonos && datos.bonos.trim() !== "",
+            condicion: () => (datos.hora_ingreso_colacion && datos.hora_ingreso_colacion.trim() !== "") ||
+                (datos.hora_salida_colacion && datos.hora_salida_colacion.trim() !== ""),
+            contenido: (agregarModificacion) => {
+                const textos = [
+                    "A contar del ",
+                    { text: formatearFechaEspanol(datos.fecha_inicio), bold: true },
+                    " Horario de colación modificado Desde "
+                ];
+
+                if (datos.hora_ingreso_colacion) {
+                    textos.push({ text: `${datos.hora_ingreso_colacion} hrs.`, bold: true });
+                } else {
+                    textos.push("horario ingreso colacion actual");
+                }
+
+                textos.push(" hasta ");
+
+                if (datos.hora_salida_colacion) {
+                    textos.push({ text: `${datos.hora_salida_colacion} hrs.`, bold: true });
+                } else {
+                    textos.push("horario salida colacion actual.");
+                }
+
+                agregarModificacion(textos);
+            }
+        },
+        {
+            condicion: () => datos.nombre_bono && datos.nombre_bono.trim() !== "",
             contenido: (agregarModificacion) => {
                 const textos = [
                     "El empleador pagará al trabajador un bono ",
-                    { text: datos.nombre_bono || "", bold: true },
+                    { text: datos.nombre_bono, bold: true },
                     " con temporalidad: ",
-                    { text: datos.bonos, bold: true },
+                    { text: datos.periodo_bono || "", bold: true },
                     " con un valor de $",
-                    { text: datos.monto || "", bold: true },
+                    { text: datos.monto_bono || "", bold: true },
                     "."
                 ];
 
@@ -342,72 +379,71 @@ function generarClausulasCondicionales(datos) {
             }
         },
         {
-            condicion: () => datos.doble_turno && datos.doble_turno.toUpperCase() === "SI",
+            condicion: () => datos.desde_colacion && datos.hasta_colacion,
+            contenido: (agregarModificacion) => {
+                agregarModificacion([
+                    "A contar del ",
+                    { text: formatearFechaEspanol(datos.fecha_inicio), bold: true },
+                    " el horario de colación se modifica desde ",
+                    { text: datos.desde_colacion, bold: true },
+                    " hasta ",
+                    { text: datos.hasta_colacion, bold: true },
+                    "."
+                ]);
+            }
+        },
+        {
+            condicion: () => datos.doble_turno && datos.doble_turno.toUpperCase() === "SI" && datos.comentarios_turno,
+            contenido: (agregarModificacion) => {
+                agregarModificacion([
+                    "Se establece cambio de turno del trabajador según los siguientes detalles: ",
+                    { text: datos.comentarios_turno, bold: true }
+                ]);
+            }
+        },
+        {
+            condicion: () => datos.doble_turno && datos.doble_turno.toUpperCase() === "NO",
             contenido: (agregarModificacion) => {
                 const textos = [];
 
-                if (datos.primer_turno) {
+                if (datos.un_solo_turno) {
                     textos.push(
-                        "Se define como día trabajado para el turno de la primera semana los días: ",
-                        { text: datos.primer_turno, bold: true },
+                        "Se define como día trabajado para el turno único los días: ",
+                        { text: datos.un_solo_turno, bold: true },
                         " en horario de ",
-                        { text: datos.desde[0] || "", bold: true },
+                        { text: datos.horario_entrada_unico || "", bold: true },
                         " a ",
-                        { text: datos.hasta[0] || "", bold: true },
-                        " mientras que se define el día de compensación para el turno de la primera semana el día ",
-                        datos.compensacion[0] || "",
-                        " En el horario de ",
-                        datos.compensacion[1] || "",
-                        "."
+                        { text: datos.horario_salida_unico || "", bold: true },
+                        ". "
                     );
                 }
 
-                if (datos.segundo_turno) {
+                if (datos.dia_compensacion_unico) {
                     textos.push(
-                        "Se define como día trabajado para el turno de la segunda semana los días: ",
-                        { text: datos.segundo_turno, bold: true },
-                        " en horario de ",
-                        { text: datos.desde[1] || "", bold: true },
-                        " a ",
-                        { text: datos.hasta[1] || "", bold: true },
-                        " mientras que se define el día de compensación para el turno de la segunda semana el día ",
-                        datos.compensacion[2] || "",
-                        " En el horario de ",
-                        datos.compensacion[3] || "",
-                        "."
+                        "Se define el día de compensación el día ",
+                        { text: datos.dia_compensacion_unico, bold: true }
                     );
+
+                    if (datos.horario_compensacion_entrada_unico || datos.horario_compensacion_salida_unico) {
+                        textos.push(
+                            " en el horario de ",
+                            { text: datos.horario_compensacion_entrada_unico || "", bold: true },
+                            " a ",
+                            { text: datos.horario_compensacion_salida_unico || "", bold: true }
+                        );
+                    }
+                    textos.push(". ");
                 }
 
                 if (textos.length > 0) {
                     agregarModificacion(textos);
                 }
             }
-        },
-        {
-            condicion: () => datos.un_solo_turno && datos.un_solo_turno.trim() !== "",
-            contenido: (agregarModificacion) => {
-                agregarModificacion([
-                    "Se define como día trabajado para el turno de la primera semana los días: ",
-                    { text: datos.un_solo_turno, bold: true },
-                    " en horario de ",
-                    { text: datos.desde[0] || "", bold: true },
-                    " a ",
-                    { text: datos.hasta[0] || "", bold: true },
-                    " mientras que se define el día de compensación para el turno de la primera semana el día ",
-                    datos.compensacion[0] || "",
-                    " En el horario de ",
-                    datos.compensacion[1] || "",
-                    "."
-                ]);
-            }
         }
     ];
 }
 
-// Genera docx desde datos y lo guarda en MongoDB colección docxs
-// Genera docx desde datos y lo guarda en MongoDB colección docxs
 async function generarAnexo(datos, responseId, db) {
-    // VERIFICACIÓN DE CONEXIÓN A BD
     console.log("=== VERIFICANDO CONEXIÓN BD EN generarAnexo ===");
     console.log("db disponible:", !!db);
     console.log("db tipo:", typeof db);
@@ -420,29 +456,43 @@ async function generarAnexo(datos, responseId, db) {
         throw new Error("db.collection no es una función - conexión inválida");
     }
 
-    // CONFIGURACIÓN DE VARIABLES (mantener igual)
     const ciudad = "PROVIDENCIA";
     const hoy = formatearFechaEspanol(new Date().toISOString().split("T")[0]);
     const trabajador = datos.trabajador || "[NOMBRE DEL TRABAJADOR]";
-    let empresa = datos.empresa || "[EMPRESA]";
+    const empresa = datos.empresa || "[EMPRESA]";
+    const responsable = datos.responsable || "[RESPONSABLE]";
 
-    let rut = "";
-    for (const [palabraClave, rutEmpresa] of Object.entries(rutEmpresas)) {
-        if (empresa.toUpperCase().includes(palabraClave) || palabraClave.includes(empresa.toUpperCase())) {
-            rut = rutEmpresa;
-            for (const [rutEmpresaKey, razonSocial] of Object.entries(nombreEmpresa)) {
-                if (rut === rutEmpresaKey) {
-                    empresa = razonSocial;
-                    break;
-                }
-            }
-            break;
-        }
+    let rutEmpresa = "";
+    try {
+        const empresaInfo = await db.collection('empresas').findOne({
+            nombre: empresa
+        });
+        rutEmpresa = empresaInfo ? empresaInfo.rut : "";
+        console.log("RUT empresa encontrado:", rutEmpresa);
+    } catch (error) {
+        console.error('Error buscando RUT de empresa:', error);
     }
 
-    // PREPARAR TODOS LOS PÁRRAFOS PRIMERO
+    let empresaInfo = await obtenerEmpresaDesdeBD(empresa, db);
+    let logo = empresaInfo ? empresaInfo.logo : null;
+
+    console.log("=== INFORMACIÓN DE EMPRESA FINAL ===");
+    console.log("Empresa:", empresa);
+    console.log("Responsable:", responsable);
+    console.log("RUT:", rutEmpresa);
+    console.log("Logo disponible:", !!logo);
+
     const children = [];
 
+    if (logo) {
+        const logoImagen = crearLogoImagen(logo);
+        if (logoImagen) {
+            children.push(new Paragraph({
+                children: [logoImagen]
+            }));
+            children.push(new Paragraph({ text: "" }));
+        }
+    }
 
     children.push(new Paragraph({
         alignment: AlignmentType.CENTER,
@@ -450,7 +500,7 @@ async function generarAnexo(datos, responseId, db) {
             new TextRun({
                 text: "ANEXO DE MODIFICACIÓN Y ACTUALIZACIÓN DE CONTRATO INDIVIDUAL DE TRABAJO",
                 bold: true,
-                size: 28 // o el tamaño que prefieras
+                size: 28
             })
         ]
     }));
@@ -460,12 +510,13 @@ async function generarAnexo(datos, responseId, db) {
     children.push(new Paragraph({ text: "" }));
     children.push(new Paragraph({ text: "" }));
 
-    // 1. ENCABEZADO
     children.push(new Paragraph({
         alignment: AlignmentType.JUSTIFIED,
         children: [
             new TextRun(`En ${ciudad} a ${hoy}, entre `),
-            new TextRun({ text: `${empresa.toUpperCase()} `, bold: true }),
+            new TextRun({ text: `${empresa} `, bold: true }),
+            new TextRun("representada por "),
+            new TextRun({ text: `${responsable} `, bold: true }),
             new TextRun("y Don(ña) "),
             new TextRun({ text: `${trabajador.toUpperCase()}`, bold: true }),
             new TextRun(`, se conviene modificar el Contrato de Trabajo vigente de fecha ${formatearFechaEspanol(datos.fecha_contrato)} y sus posteriores ANEXOS.`)
@@ -475,25 +526,25 @@ async function generarAnexo(datos, responseId, db) {
     children.push(new Paragraph({ text: "" }));
     children.push(new Paragraph({ text: "" }));
 
-
-    // 2. TÍTULO "MODIFICACIÓN"
     children.push(new Paragraph({
         children: [new TextRun({ text: "MODIFICACIÓN", bold: true })]
     }));
 
     children.push(new Paragraph({ text: "" }));
 
-    // 3. CLAUSULAS CONDICIONALES
     let modificacionNum = 1;
     function agregarModificacion(textos = []) {
         const ordinal = ORDINALES[modificacionNum] || `${modificacionNum}°`;
         modificacionNum++;
 
-        const paragraphChildren = [
-            new TextRun({ text: ordinal, bold: true }),
-            new TextRun({ text: "\n" }) // Solo el salto de línea
-        ];
+        children.push(new Paragraph({
+            alignment: AlignmentType.JUSTIFIED,
+            children: [
+                new TextRun({ text: ordinal, bold: true })
+            ]
+        }));
 
+        const paragraphChildren = [];
         textos.forEach(t => {
             if (typeof t === "string") {
                 paragraphChildren.push(new TextRun(t));
@@ -506,6 +557,8 @@ async function generarAnexo(datos, responseId, db) {
             alignment: AlignmentType.JUSTIFIED,
             children: paragraphChildren
         }));
+
+        children.push(new Paragraph({ text: "" }));
     }
 
     const clausulasCondicionales = generarClausulasCondicionales(datos);
@@ -515,9 +568,6 @@ async function generarAnexo(datos, responseId, db) {
         }
     });
 
-    children.push(new Paragraph({ text: "" }));
-
-    // 4. CLAUSULAS FIJAS
     agregarModificacion([
         "Queda Expresamente convenido que las cláusulas existentes en el contrato de trabajo celebrado por las partes el día ",
         { text: formatearFechaEspanol(datos.fecha_contrato), bold: true },
@@ -526,53 +576,87 @@ async function generarAnexo(datos, responseId, db) {
 
     agregarModificacion([
         "En expresa conformidad con lo precedentemente estipulado las partes firman el presente anexo en dos ejemplares de idéntico tenor y fecha, declarando el trabajador haber recibido uno de ellos en este acto. El otro queda en los archivos de ",
-        { text: empresa.toUpperCase(), bold: true },
+        { text: empresa, bold: true },
         "."
     ]);
 
-    children.push(new Paragraph({ text: "" }));
+    // REEMPLAZA completamente la sección de la tabla de firmas con esto:
+
     children.push(new Paragraph({ text: "" }));
     children.push(new Paragraph({ text: "" }));
     children.push(new Paragraph({ text: "" }));
 
-    // 5. TABLA DE FIRMAS
+    // SOLUCIÓN CON TABLA MEJORADA
     children.push(new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
+        columnWidths: [4000, 4000], // 2 columnas explícitas
+        borders: {
+            top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+            bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+            left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+            right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+            insideHorizontal: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+            insideVertical: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }
+        },
         rows: [
+            // Fila 1: Líneas de firma
             new TableRow({
                 children: [
                     new TableCell({
-                        children: [
-                            new Paragraph({ text: "_____________________________", alignment: AlignmentType.CENTER }),
-                            new Paragraph({ text: "Empleador / Representante Legal", alignment: AlignmentType.CENTER }),
-                            new Paragraph({ text: `RUT: ${rut}`, alignment: AlignmentType.CENTER }),
-                            new Paragraph({ text: empresa.toUpperCase(), alignment: AlignmentType.CENTER })
-                        ]
+                        children: [new Paragraph({ text: "_____________________________", alignment: AlignmentType.CENTER })]
                     }),
                     new TableCell({
-                        children: [
-                            new Paragraph({ text: "_____________________________", alignment: AlignmentType.CENTER }),
-                            new Paragraph({ text: "Trabajador", alignment: AlignmentType.CENTER }),
-                            new Paragraph({ text: `RUT: ${datos.rut_trabajador}`, alignment: AlignmentType.CENTER }),
-                            new Paragraph({ text: trabajador.toUpperCase(), alignment: AlignmentType.CENTER })
-                        ]
+                        children: [new Paragraph({ text: "_____________________________", alignment: AlignmentType.CENTER })]
                     })
                 ]
-            })
+            }),
+            // Fila 2: Títulos
+            new TableRow({
+                children: [
+                    new TableCell({
+                        children: [new Paragraph({ text: "Empleador / Representante Legal", alignment: AlignmentType.CENTER })]
+                    }),
+                    new TableCell({
+                        children: [new Paragraph({ text: "Trabajador", alignment: AlignmentType.CENTER })]
+                    })
+                ]
+            }),
+            // Fila 3: RUTs
+            new TableRow({
+                children: [
+                    new TableCell({
+                        children: [new Paragraph({ text: `RUT: ${rutEmpresa}`, alignment: AlignmentType.CENTER })]
+                    }),
+                    new TableCell({
+                        children: [new Paragraph({ text: `RUT: ${datos.rut_trabajador}`, alignment: AlignmentType.CENTER })]
+                    })
+                ]
+            }),
+            // Fila 4: Nombres
+            new TableRow({
+                children: [
+                    new TableCell({
+                        children: [new Paragraph({ text: empresa, alignment: AlignmentType.CENTER })]
+                    }),
+                    new TableCell({
+                        children: [new Paragraph({ text: trabajador.toUpperCase(), alignment: AlignmentType.CENTER })]
+                    })
+                ]
+            }),
+            // Fila 5: Representante (solo columna izquierda)
+            
         ]
     }));
 
-    // CREAR DOCUMENTO CON TODOS LOS ELEMENTOS (CORRECTO SEGÚN DOCUMENTACIÓN)
     const doc = new Document({
         sections: [
             {
                 properties: {},
-                children: children // ← TODOS los elementos aquí
+                children: children
             }
         ]
     });
 
-    // RESTANTE DEL CÓDIGO IGUAL (generar buffer y guardar en BD)
     const buffer = await Packer.toBuffer(doc);
 
     const IDdoc = `ANEXO_${trabajador.replace(/\s+/g, '_').toUpperCase()}_${Date.now()}`;
@@ -585,32 +669,114 @@ async function generarAnexo(datos, responseId, db) {
         IDdoc: IDdoc,
         docxFile: buffer,
         responseId: responseId,
+        tipo: 'docx',
         createdAt: new Date(),
         updatedAt: new Date()
     });
 
-    console.log("✅ DOCX guardado en BD exitosamente");
+    console.log("DOCX guardado en BD exitosamente");
 
     return {
         IDdoc: IDdoc,
         buffer: buffer,
+        tipo: 'docx'
     };
 }
 
-async function generarAnexoDesdeRespuesta(responses, responseId, db) {
+async function generarDocumentoTxt(responses, responseId, db) {
     try {
-        // LOG DE VERIFICACIÓN DE BD
-        console.log("=== VERIFICANDO BD EN generarAnexoDesdeRespuesta ===");
-        console.log("db recibida:", !!db);
-        console.log("db tiene collection?:", db && typeof db.collection === 'function');
+        console.log("=== GENERANDO DOCUMENTO TXT MEJORADO ===");
 
-        const datos = mapearDatosFormulario(responses);
-        const resultado = await generarAnexo(datos, responseId, db);
-        return resultado;
+        let contenidoTxt = "FORMULARIO - RESPUESTAS\n";
+        contenidoTxt += "========================\n\n";
+
+        // Procesar respuestas normales
+        let index = 1;
+        Object.keys(responses).forEach((pregunta) => {
+            // Saltar el campo _contexto
+            if (pregunta === '_contexto') return;
+
+            const respuesta = responses[pregunta];
+
+            contenidoTxt += `${index}. ${pregunta}\n`;
+
+            if (Array.isArray(respuesta)) {
+                contenidoTxt += `   - ${respuesta.join('\n   - ')}\n\n`;
+            } else if (respuesta && typeof respuesta === 'object') {
+                contenidoTxt += `   ${JSON.stringify(respuesta, null, 2)}\n\n`;
+            } else {
+                contenidoTxt += `   ${respuesta || 'Sin respuesta'}\n\n`;
+            }
+            index++;
+        });
+
+        // PROCESAR CAMPOS CONTEXTUALES (DUPLICADOS)
+        if (responses._contexto) {
+            contenidoTxt += "\n--- INFORMACIÓN DE TURNOS DETALLADA ---\n\n";
+
+            Object.keys(responses._contexto).forEach(contexto => {
+                contenidoTxt += `TURNO: ${contexto}\n`;
+
+                Object.keys(responses._contexto[contexto]).forEach(pregunta => {
+                    const respuesta = responses._contexto[contexto][pregunta];
+                    contenidoTxt += `   ${pregunta}: ${respuesta}\n`;
+                });
+                contenidoTxt += "\n";
+            });
+        }
+
+        contenidoTxt += `\nGenerado el: ${new Date().toLocaleString()}`;
+
+        const buffer = Buffer.from(contenidoTxt, 'utf8');
+        const IDdoc = `FORMULARIO_${responseId}_${Date.now()}`;
+
+        await db.collection('docxs').insertOne({
+            IDdoc: IDdoc,
+            docxFile: buffer,
+            responseId: responseId,
+            tipo: 'txt',
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+
+        console.log("TXT MEJORADO guardado en BD exitosamente");
+
+        return {
+            IDdoc: IDdoc,
+            buffer: buffer,
+            tipo: 'txt'
+        };
+
+    } catch (error) {
+        console.error('Error generando TXT mejorado:', error);
+        throw error;
+    }
+}
+
+async function generarAnexoDesdeRespuesta(responses, responseId, db, section, userData) {
+    try {
+        console.log("=== DETECTANDO TIPO DE FORMULARIO ===");
+        console.log("Section recibida:", section);
+        console.log("User data from response:", userData);
+
+        const esAnexo = section === "Anexos";
+
+        if (esAnexo) {
+            console.log("Generando DOCX para anexo...");
+            const datos = mapearDatosFormulario(responses, userData);
+            return await generarAnexo(datos, responseId, db);
+        } else {
+            console.log("Generando TXT para formulario regular...");
+            return await generarDocumentoTxt(responses, responseId, db);
+        }
     } catch (error) {
         console.error('Error en generarAnexoDesdeRespuesta:', error);
         throw error;
     }
 }
 
-module.exports = { generarAnexo, generarAnexoDesdeRespuesta };
+module.exports = {
+    generarAnexo,
+    generarAnexoDesdeRespuesta,
+    generarDocumentoTxt
+};
