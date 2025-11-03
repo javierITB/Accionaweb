@@ -1,39 +1,41 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-// Usaremos Input simple en lugar de importar un componente externo para simplificar el ejemplo
-const Input = (props) => <input {...props} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />;
-const Textarea = (props) => <textarea {...props} className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />;
+
+const Input = React.forwardRef((props, ref) => (
+  <input 
+    ref={ref}
+    {...props} 
+    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" 
+  />
+));
+
+const Textarea = React.forwardRef(({ className = '', ...props }, ref) => (
+  <textarea 
+    ref={ref}
+    {...props} 
+    className={`flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y ${className}`}
+  />
+));
 
 const generateVarTag = (title) => {
   if (!title) return '';
 
-  // 1. Convertir a mayúsculas
   let tag = title.toUpperCase();
-
-  // 2. Reemplazar caracteres no alfanuméricos (incluyendo espacios, tildes, ñ) por guion bajo
-  // Se eliminan primero los acentos para que se traten bien como letras
   tag = tag.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-  // 3. Reemplazar cualquier cosa que no sea letra, número o guion bajo por un guion bajo
   tag = tag.replace(/[^A-Z0-9]+/g, '_');
-
-  // 4. Eliminar guiones bajos al inicio o al final, y asegurar que no haya dobles guiones bajos
   tag = tag.replace(/^_+|_+$/g, '').replace(/__+/g, '_');
-
-  // 5. Envolver en el formato {{VARIABLE}}
   return `{{${tag}}}`;
 };
-const VariableItem = ({ variable, copyVariable, isChild = false }) => {
+
+const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const hasSubVariables = (variable.options && variable.options.length > 0) || (variable.subformQuestions && variable.subformQuestions.length > 0);
 
-  // Renderizado de variable simple (botón)
   const renderSimpleVariable = (v) => (
     <button
       key={generateVarTag(v.title || v.text)}
       onClick={() => copyVariable(generateVarTag(v.title || v.text))}
-      // 💡 AJUSTE DE CLASES PARA EL MODO OSCURO
       className={`w-full flex flex-col items-start px-3 py-2 rounded-md text-xs transition-brand cursor-pointer text-left font-mono hover:shadow-md border border-transparent bg-white-50 hover:bg-gray-100 dark:hover:bg-slate-600 dark:text-foreground ${v.color || ''} 
                   ${isChild
           ? 'bg-white-50 hover:bg-gray-100 dark:hover:bg-slate-600 dark:text-foreground'
@@ -53,12 +55,10 @@ const VariableItem = ({ variable, copyVariable, isChild = false }) => {
     return renderSimpleVariable(variable.subformQuestions[0]);
   }
 
-  // Renderizado de variable anidada (desplegable)
   return (
     <div className={`w-full border border-border rounded-lg ${isOpen ? 'bg-primary/5 dark:bg-primary/10' : 'bg-card dark:bg-card'}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        // 💡 AJUSTE DE HOVER Y FONDO EN OSCURO
         className="w-full flex items-center justify-between px-3 py-2 cursor-pointer text-left font-semibold text-sm hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
       >
         <div className="flex flex-col items-start">
@@ -69,11 +69,8 @@ const VariableItem = ({ variable, copyVariable, isChild = false }) => {
       </button>
 
       {isOpen && (
-        // 💡 AJUSTE DEL BORDE SUPERIOR EN OSCURO
         <div className="p-2 space-y-1 border-t border-border dark:border-slate-700">
-
           {variable.options && (variable.options)?.map((subVar) => (
-            // Renderiza la sub-variable como un botón de copia (Recursividad)
             <VariableItem
               key={subVar.title}
               variable={subVar}
@@ -82,7 +79,6 @@ const VariableItem = ({ variable, copyVariable, isChild = false }) => {
             />
           ))}
           {!variable.options && (variable.subformQuestions)?.map((subVar) => (
-            // Renderiza la sub-variable como un botón de copia (Recursividad)
             <VariableItem
               key={subVar.title}
               variable={subVar}
@@ -94,35 +90,104 @@ const VariableItem = ({ variable, copyVariable, isChild = false }) => {
       )}
     </div>
   );
-};
+});
+
+const ParagraphEditor = React.memo(({ paragraph, index, total, onUpdate, onDelete, onMove }) => {
+  const textareaRef = useRef(null);
+
+  const handleContentChange = useCallback((e) => {
+    onUpdate(paragraph.id, e.target.value);
+  }, [paragraph.id, onUpdate]);
+
+  const handleMoveUp = useCallback(() => {
+    onMove(paragraph.id, 'up');
+  }, [paragraph.id, onMove]);
+
+  const handleMoveDown = useCallback(() => {
+    onMove(paragraph.id, 'down');
+  }, [paragraph.id, onMove]);
+
+  const handleDelete = useCallback(() => {
+    onDelete(paragraph.id);
+  }, [paragraph.id, onDelete]);
+
+  return (
+    <div className="bg-gray border border-border rounded-lg p-4 shadow-sm space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold text-muted-foreground">
+          Párrafo {index + 1}
+        </h4>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleMoveUp}
+            disabled={index === 0}
+            className="h-8 w-8"
+            type="button"
+          >
+            <Icon name="ChevronUp" size={14} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleMoveDown}
+            disabled={index === total - 1}
+            className="h-8 w-8"
+            type="button"
+          >
+            <Icon name="ChevronDown" size={14} />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleDelete}
+            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            type="button"
+          >
+            <Icon name="Trash2" size={14} />
+          </Button>
+        </div>
+      </div>
+
+      <Textarea
+        ref={textareaRef}
+        value={paragraph.content}
+        onChange={handleContentChange}
+        rows={5}
+        placeholder="Escribe el contenido del párrafo. Pega las variables copiadas aquí."
+        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
+      />
+    </div>
+  );
+});
 
 const DocumentTemplateEditor = ({ availableVariables = [] }) => {
-  // 💡 ELIMINAR: Ya no necesitamos MOCK_VARIABLES ni la línea de asignación
-  // const MOCK_VARIABLES  = availableVariables 
-
+  // Estado unificado - eliminar estado duplicado
   const [templateData, setTemplateData] = useState({
     title: 'Contrato de Trabajo - {{NOMBRE_DEL_TRABAJADOR}}',
     paragraphs: [
       { id: 'p1', content: 'Mediante el presente documento se establece que la empresa {{NOMBRE_EMPRESA}}, RUT {{RUT_EMPRESA}}, contrata a {{NOMBRE_DEL_TRABAJADOR}}, RUT {{RUT_DEL_TRABAJADOR}}, a partir de la fecha {{FECHA_DE_INICIO_DE_MODIFICACION}}.' },
-
     ],
     signatureText: 'Declaro haber leído y aceptado los términos de este contrato.',
   });
 
-  const [lastId, setLastId] = useState(2); // Para generar IDs únicos
+  const [lastId, setLastId] = useState(2);
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- Lógica del Array Dinámico de Párrafos ---
-
+  // Callbacks estables usando useCallback
   const handleUpdateTemplate = useCallback((field, value) => {
     setTemplateData(prev => ({ ...prev, [field]: value }));
   }, []);
 
   const handleAddParagraph = useCallback(() => {
     const newId = `p${lastId + 1}`;
+    const newParagraph = { id: newId, content: '' };
+    
     setTemplateData(prev => ({
       ...prev,
-      paragraphs: [...prev.paragraphs, { id: newId, content: '' }]
+      paragraphs: [...prev.paragraphs, newParagraph]
     }));
     setLastId(prev => prev + 1);
   }, [lastId]);
@@ -146,32 +211,29 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
   }, [templateData.paragraphs.length]);
 
   const handleMoveParagraph = useCallback((id, direction) => {
-    const paragraphs = templateData.paragraphs;
+    const paragraphs = [...templateData.paragraphs];
     const index = paragraphs.findIndex(p => p.id === id);
     const newIndex = direction === 'up' ? index - 1 : index + 1;
 
     if (newIndex >= 0 && newIndex < paragraphs.length) {
       const newParagraphs = [...paragraphs];
       [newParagraphs[index], newParagraphs[newIndex]] = [newParagraphs[newIndex], newParagraphs[index]];
+      
       setTemplateData(prev => ({ ...prev, paragraphs: newParagraphs }));
     }
   }, [templateData.paragraphs]);
 
-  // --- Manejo del Copiado de Variables ---
-
-  const copyVariable = (tag) => {
-    // ... (logic for copying to clipboard)
-    // Usamos document.execCommand('copy') como fallback para entornos sandboxed
-    const tempInput = document.createElement('textarea');
-    tempInput.value = tag;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    document.execCommand('copy');
-    document.body.removeChild(tempInput);
-
-  };
-
-  // --- Simulación de Guardado ---
+  const copyVariable = useCallback((tag) => {
+    navigator.clipboard.writeText(tag).catch(() => {
+      // Fallback para navegadores antiguos
+      const tempInput = document.createElement('textarea');
+      tempInput.value = tag;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+    });
+  }, []);
 
   const handleSaveTemplate = async () => {
     if (!templateData.title || templateData.paragraphs.some(p => !p.content.trim())) {
@@ -182,74 +244,30 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
     setIsSaving(true);
     console.log("Guardando Plantilla:", templateData);
 
-    // Simulación de llamada API PUT/POST para guardar la plantilla
     await new Promise(resolve => setTimeout(resolve, 1500));
-
     setIsSaving(false);
     alert('¡Plantilla de contrato guardada exitosamente!');
   };
 
-
-  // --- Renderizado del Párrafo ---
-
-  const ParagraphEditor = ({ paragraph, index, total }) => (
-    <div className="bg-gray border border-border rounded-lg p-4 shadow-sm space-y-3">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-muted-foreground">
-          Párrafo {index + 1}
-        </h4>
-        <div className="flex items-center space-x-2">
-          {/* Botones de Mover */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleMoveParagraph(paragraph.id, 'up')}
-            disabled={index === 0}
-            className="h-8 w-8"
-          >
-            <Icon name="ChevronUp" size={14} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleMoveParagraph(paragraph.id, 'down')}
-            disabled={index === total - 1}
-            className="h-8 w-8"
-          >
-            <Icon name="ChevronDown" size={14} />
-          </Button>
-
-          {/* Botón Eliminar */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleDeleteParagraph(paragraph.id)}
-            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <Icon name="Trash2" size={14} />
-          </Button>
-        </div>
-      </div>
-
-      {/* Editor de Contenido del Párrafo */}
-      <Textarea
-        value={paragraph.content}
-        onChange={(e) => handleUpdateParagraph(paragraph.id, e.target.value)}
-        rows={5}
-        placeholder="Escribe el contenido del párrafo. Pega las variables copiadas aquí."
-        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
+  // Memoizar la lista de ParagraphEditors
+  const paragraphEditors = useMemo(() => 
+    templateData.paragraphs.map((paragraph, index) => (
+      <ParagraphEditor
+        key={paragraph.id}
+        paragraph={paragraph}
+        index={index}
+        total={templateData.paragraphs.length}
+        onUpdate={handleUpdateParagraph}
+        onDelete={handleDeleteParagraph}
+        onMove={handleMoveParagraph}
       />
-    </div>
+    )), 
+    [templateData.paragraphs, handleUpdateParagraph, handleDeleteParagraph, handleMoveParagraph]
   );
-
 
   return (
     <div className="p-6 space-y-6">
-
-      {/* 📐 ESTRUCTURA DE LA GRILLA (1/4 y 3/4) */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-
-        {/* COLUMNA IZQUIERDA: VARIABLES DISPONIBLES (lg:col-span-1) */}
         <div className="lg:col-span-1">
           <div className="bg-card border border-border rounded-lg p-4 sticky top-6 shadow-brand dark:bg-gray">
             <h3 className="font-semibold text-foreground mb-4">
@@ -258,10 +276,7 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
             <p className="text-xs text-muted-foreground mb-4">
               Haz clic para copiar la variable al portapapeles y pegarla en tu párrafo.
             </p>
-            <div className="space-y-2  ">
-              {/* ******************************************************** */}
-              {/* 💡 CAMBIO: Usar la prop 'availableVariables' aquí */}
-              {/* ******************************************************** */}
+            <div className="space-y-2">
               {availableVariables.map((variable) => (
                 <VariableItem
                   variable={variable}
@@ -273,10 +288,7 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: EDITOR DE ESTRUCTURA (lg:col-span-3) */}
         <div className="lg:col-span-3 space-y-6">
-
-          {/* 1. TÍTULO DEL DOCUMENTO */}
           <div className="bg-card border border-border rounded-lg p-6 shadow-brand">
             <h3 className="text-lg font-semibold text-foreground mb-3">
               Título del Documento
@@ -290,22 +302,13 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
             />
           </div>
 
-          {/* 2. PÁRRAFOS DINÁMICOS */}
           <h3 className="text-lg font-semibold text-foreground">
             Contenido y Párrafos ({templateData.paragraphs?.length || 0})
           </h3>
           <div className="space-y-4">
-            {templateData.paragraphs?.map((paragraph, index) => (
-              <ParagraphEditor
-                key={paragraph.id}
-                paragraph={paragraph}
-                index={index}
-                total={templateData.paragraphs.length}
-              />
-            ))}
+            {paragraphEditors}
           </div>
 
-          {/* Clic para añadir el primer párrafo */}
           {templateData.paragraphs.length === 0 && (
             <div className="text-center py-12 bg-card border border-border rounded-lg">
               <Icon name="FileText" size={48} className="mx-auto mb-4 text-muted-foreground" />
@@ -317,13 +320,13 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
                 iconName="Plus"
                 iconPosition="left"
                 variant="default"
+                type="button"
               >
                 Agregar Primer Párrafo
               </Button>
             </div>
           )}
 
-          {/* Botón de adición rápida de párrafos (después de la lista) */}
           {templateData.paragraphs.length > 0 && (
             <div className="flex justify-center pt-2">
               <Button
@@ -333,13 +336,13 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
                 iconPosition="left"
                 disabled={isSaving}
                 size="sm"
+                type="button"
               >
                 Añadir otro Párrafo
               </Button>
             </div>
           )}
 
-          {/* 3. ZONA DE FIRMA */}
           <div className="bg-card border border-border rounded-lg p-6 shadow-brand">
             <h3 className="text-lg font-semibold text-foreground mb-3">
               Zona de Firma (Instrucciones o Mensaje)
@@ -354,6 +357,20 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
             <p className="text-xs text-muted-foreground mt-2">
               Este texto aparecerá antes del bloque de firma digital.
             </p>
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <Button
+              onClick={handleSaveTemplate}
+              variant="default"
+              iconName="Save"
+              iconPosition="left"
+              disabled={isSaving}
+              size="lg"
+              type="button"
+            >
+              {isSaving ? 'Guardando...' : 'Guardar Plantilla'}
+            </Button>
           </div>
         </div>
       </div>
