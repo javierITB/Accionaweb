@@ -318,7 +318,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
       case 'rejected':
       case 'rechazado':
         return 'bg-error text-error-foreground';
-      case 'borrador':
+      case 'draft':
       case 'borrador':
         return 'bg-muted text-muted-foreground';
       default:
