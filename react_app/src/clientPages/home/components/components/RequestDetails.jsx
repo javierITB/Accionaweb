@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
@@ -6,13 +6,13 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
   const [hasSignedPdf, setHasSignedPdf] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
+  const fileInputRef = useRef(null); // Añadir useRef
 
-  if (!isVisible || !request) return null;
-
-  // Verificar si ya existe PDF firmado
+  // useEffect DEBE estar siempre en el nivel superior, sin condiciones
   useEffect(() => {
-    const checkSignedPdf = async () => {
-      if (request?._id && request?.status === 'aprobado') {
+    // La condición va DENTRO del useEffect, no fuera
+    if (isVisible && request?._id && request?.status === 'aprobado') {
+      const checkSignedPdf = async () => {
         try {
           const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/has-client-signature`);
           const data = await response.json();
@@ -20,11 +20,18 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
         } catch (error) {
           console.error('Error verificando PDF firmado:', error);
         }
-      }
-    };
+      };
+      checkSignedPdf();
+    }
+  }, [request, isVisible]);
 
-    checkSignedPdf();
-  }, [request]);
+  // El return condicional va DESPUÉS de todos los Hooks
+  if (!isVisible || !request) return null;
+
+  // Función para manejar el clic en el botón de subir
+  const handleUploadButtonClick = () => {
+    fileInputRef.current?.click();
+  };
 
   // Función para subir PDF firmado
   const handleUploadSignedPdf = async (event) => {
@@ -66,7 +73,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
     }
   };
 
-  // Función para descargar PDF aprobado
+  // Resto de las funciones permanecen igual...
   const handleDownloadApprovedPDF = async (responseId) => {
     try {
       const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/download-approved-pdf/${responseId}`);
@@ -103,7 +110,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
     }
   };
 
-  // Resto de las funciones existentes (formatFileName, getStatusColor, etc.)
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
@@ -160,7 +166,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -186,9 +191,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
@@ -235,12 +238,10 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
             </div>
           </div>
 
-          {/* NUEVA SECCIÓN: Documento Aprobado */}
           {request?.status === 'aprobado' && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">Documento Aprobado</h3>
               
-              {/* Documento PDF Aprobado para descargar */}
               <div className="bg-success/10 border border-success/20 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -266,7 +267,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
                 </div>
               </div>
 
-              {/* Subir PDF Firmado */}
               <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -287,30 +287,28 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
                   </div>
                   <div className="flex flex-col items-end space-y-2">
                     {!hasSignedPdf ? (
-                      <>
+                      <div className="flex items-center space-x-2">
                         <input
                           type="file"
-                          id="signedPdf"
+                          ref={fileInputRef}
                           accept=".pdf"
                           onChange={handleUploadSignedPdf}
                           disabled={isUploading}
                           className="hidden"
                         />
-                        <label htmlFor="signedPdf">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            iconName="Upload"
-                            iconPosition="left"
-                            iconSize={16}
-                            disabled={isUploading}
-                            className="bg-accent hover:bg-accent/90"
-                            as="span"
-                          >
-                            {isUploading ? 'Subiendo...' : 'Subir PDF Firmado'}
-                          </Button>
-                        </label>
-                      </>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          iconName="Upload"
+                          iconPosition="left"
+                          iconSize={16}
+                          disabled={isUploading}
+                          onClick={handleUploadButtonClick}
+                          className="bg-accent hover:bg-accent/90"
+                        >
+                          {isUploading ? 'Subiendo...' : 'Subir PDF Firmado'}
+                        </Button>
+                      </div>
                     ) : (
                       <div className="flex items-center space-x-2 text-success">
                         <Icon name="CheckCircle" size={16} />
@@ -323,7 +321,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
             </div>
           )}
 
-          {/* Description */}
           {request?.form?.description && (
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">Descripción</h3>
@@ -335,7 +332,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
             </div>
           )}
 
-          {/* Comments/Notes */}
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Comentarios Internos</h3>
             <div className="bg-muted/50 rounded-lg p-4">
@@ -346,7 +342,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
           </div>
         </div>
 
-        {/* Footer Actions */}
         <div className="sticky bottom-0 bg-card border-t border-border p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
