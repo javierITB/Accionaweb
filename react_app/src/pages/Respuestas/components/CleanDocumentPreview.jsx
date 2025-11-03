@@ -144,8 +144,8 @@ const CleanDocumentPreview = ({
 
             case 'txt':
                 return (
-                    <div className="h-full overflow-auto bg-white">
-                        <pre className="p-4 md:p-6 font-mono text-sm whitespace-pre-wrap bg-white max-w-4xl lg:max-w-6xl mx-auto">
+                    <div className="h-full overflow-auto bg-white dark:bg-black">
+                        <pre className="dark:bg-black p-4 md:p-6 font-mono text-sm whitespace-pre-wrap bg-white max-w-4xl lg:max-w-6xl mx-auto">
                             {content}
                         </pre>
                     </div>
@@ -181,7 +181,7 @@ const CleanDocumentPreview = ({
             )}
 
             {isVisible && (
-                <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-xl shadow-xl flex flex-col w-[95vw] max-w-6xl h-[90vh] mx-4 overflow-hidden">
+                <div className="dark:bg-black fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-xl shadow-xl flex flex-col w-[95vw] max-w-6xl h-[90vh] mx-4 overflow-hidden">
                     <div className="flex justify-end p-2 border-b">
                         <button
                             onClick={onClose}
@@ -194,7 +194,7 @@ const CleanDocumentPreview = ({
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-auto bg-gray-50">
+                    <div className="flex-1 overflow-auto bg-gray-50 dark:bg-black">
                         {renderContent()}
                     </div>
                 </div>
