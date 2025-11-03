@@ -20,7 +20,7 @@ router.post("/", async (req, res) => {
         { $set: { ...req.body, updatedAt: new Date() } },
         { returnDocument: "after" }
       );
-      if (!result.value) return res.status(404).json({ error: "Formulario no encontrado" });
+      if (!result) return res.status(404).json({ error: "Formulario no encontrado" });
     }
     res.status(201).json(result);
   } catch (err) {
@@ -57,27 +57,34 @@ router.get("/section/:section/:mail", async (req, res) => {
   try {
     const { section, mail } = req.params;
 
-    // Buscar la empresa asociada al usuario
+    // 1. Buscar la empresa asociada al usuario
     const user = await req.db.collection("usuarios").findOne({ mail });
     if (!user || !user.empresa) {
       return res.status(404).json({ error: "Usuario o empresa no encontrados" });
     }
 
-    const empresaUsuario = user.empresa;
+    const empresaUsuario = user.empresa; // Ejemplo: "acciona"
 
-    // Buscar formularios que cumplan ambas condiciones:
-    // 1. Que pertenezcan a la sección indicada
-    // 2. Que la empresa del usuario esté dentro del array "companies"
+    // 2. Definir la consulta de filtrado
+    const query = {
+      // Condición estricta: debe pertenecer a la sección indicada
+      section: section, 
+      status: "publicado", // Condición estricta: debe estar publicado
+
+      // Condición OR: el campo 'companies' debe coincidir con la empresa O con "Todas"
+      $or: [
+        { companies: empresaUsuario }, // Condición A: La empresa coincide exactamente
+        { companies: "Todas" }         // Condición B: Es un formulario público
+      ],
+    };
+
+    // 3. Buscar formularios que cumplan todas las condiciones
     const forms = await req.db
       .collection("forms")
-      .find({
-        section,
-        companies: empresaUsuario,
-        status: "publicado",
-      })
+      .find(query)
       .toArray();
 
-    if (!forms) {
+    if (!forms || forms.length === 0) { // Importante: Verificar si el array está vacío
       return res.status(404).json({
         error: `No se encontraron formularios para la sección "${section}" y la empresa "${empresaUsuario}"`,
       });

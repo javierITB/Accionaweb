@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
-const { addNotification } = require("./notificaciones.helper");
+const { addNotification } = require("../utils/notificaciones.helper");
 
 // Crear una notificación (para 1 usuario o grupo)
 router.post("/", async (req, res) => {
