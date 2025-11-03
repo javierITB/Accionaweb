@@ -8,15 +8,14 @@ import FilterPanel from './components/FilterPanel';
 import MessageModal from './components/MessageModal';
 import RequestDetails from './components/RequestDetails';
 import StatsOverview from './components/StatsOverview';
-import DocxPreview from './components/DocsPreview'
 
 const RequestTracking = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const formId = urlParams?.get('id');
 
   // ESTADOS DEL SIDEBAR
-  const [isDesktopOpen, setIsDesktopOpen] = useState(true); // Controla el ml-64/ml-16 en desktop
-  const [isMobileOpen, setIsMobileOpen] = useState(false); // Controla la visibilidad total en móvil
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
   
   // Estados de la Aplicación
@@ -26,10 +25,6 @@ const RequestTracking = () => {
   const [resp, setResp] = useState([]);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showRequestDetails, setShowRequestDetails] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewDocId, setPreviewDocId] = useState(null);
-
-
   const [messageRequest, setMessageRequest] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('date');
@@ -46,18 +41,14 @@ const RequestTracking = () => {
     submittedBy: ''
   });
 
-  // EFECTO DE RESIZE (Controla isMobileScreen y apertura/cierre)
+  // EFECTO DE RESIZE
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
       setIsMobileScreen(isMobile);
       
-      // En móvil, forzar cerrado por defecto
       if (isMobile) {
         setIsMobileOpen(false); 
-      } else {
-        // En desktop, mantener el estado de abierto/cerrado actual
-        // No forzamos setIsDesktopOpen(true) para que mantenga la preferencia del usuario si colapsó
       }
     };
 
@@ -66,24 +57,18 @@ const RequestTracking = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // LÓGICA DE TOGGLE UNIFICADA
   const toggleSidebar = () => {
     if (isMobileScreen) {
-      // En móvil, alternar el estado de apertura total
       setIsMobileOpen(!isMobileOpen);
     } else {
-      // En desktop, alternar el estado de colapsado (ml-64 vs ml-16)
       setIsDesktopOpen(!isDesktopOpen);
     }
   };
 
-  // Lógica de navegación (para cerrar el Sidebar en móvil)
-  // Necesaria para pasar al Sidebar si tiene links que cierran la vista móvil.
   const handleNavigation = (path) => {
     if (isMobileScreen) {
-      setIsMobileOpen(false); // Cierra el sidebar al navegar
+      setIsMobileOpen(false);
     }
-    // Lógica real de navegación (ej: window.location.href = path;)
     console.log(`Navegando a: ${path}`);
   };
 
@@ -372,40 +357,32 @@ const RequestTracking = () => {
     { value: 'status', label: 'Estado' }
   ];
 
-  // Clase de Margen para el contenido principal:
-  // Si está en móvil: ml-0
-  // Si está en desktop y sidebar abierto: ml-64
-  // Si está en desktop y sidebar colapsado: ml-16
   const mainMarginClass = isMobileScreen 
     ? 'ml-0' 
     : isDesktopOpen ? 'ml-64' : 'ml-16';
-
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Sidebar: Solo renderiza si está abierto en desktop O si está abierto en móvil */}
       {(isDesktopOpen || isMobileOpen) && (
         <>
           <Sidebar 
-            isCollapsed={!isDesktopOpen} // Desktop: Colapsado si isDesktopOpen es false
+            isCollapsed={!isDesktopOpen}
             onToggleCollapse={toggleSidebar} 
-            isMobileOpen={isMobileOpen} // Prop para el Sidebar en vista móvil
-            onNavigate={handleNavigation} // Pasamos la función de navegación (cierra en móvil)
+            isMobileOpen={isMobileOpen}
+            onNavigate={handleNavigation}
           />
           
-          {/* Overlay semi-transparente en móvil cuando el sidebar está abierto */}
           {isMobileScreen && isMobileOpen && (
             <div 
               className="fixed inset-0 bg-foreground/50 z-40" 
-              onClick={toggleSidebar} // Cierra el sidebar
+              onClick={toggleSidebar}
             ></div>
           )}
         </>
       )}
 
-      {/* Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
           <Button
@@ -419,7 +396,6 @@ const RequestTracking = () => {
       )}
 
       <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
-        {/* 💡 CONTENEDOR PRINCIPAL: Aplicamos la clase container-main para márgenes responsivos */}
         <div className="container-main p-6 space-y-6"> 
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div>
@@ -429,7 +405,6 @@ const RequestTracking = () => {
               </p>
             </div>
 
-            {/* Botón de toggle del sidebar: visible solo en desktop */}
             <div className="hidden md:flex items-center space-x-3">
               <Button
                 variant="ghost"
@@ -452,9 +427,7 @@ const RequestTracking = () => {
           />
 
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-card border border-border rounded-lg p-4 space-y-4 md:space-y-0">
-            {/* Controles de Vista y Ordenamiento */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-              {/* Controles de Vista */}
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">Vista:</span>
                 <div className="flex items-center border border-border rounded-lg">
@@ -477,7 +450,6 @@ const RequestTracking = () => {
                 </div>
               </div>
 
-              {/* Controles de Ordenamiento */}
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">Ordenar por:</span>
                 <select
@@ -501,17 +473,15 @@ const RequestTracking = () => {
               </div>
             </div>
 
-            {/* Contador de Solicitudes */}
             <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-3 md:mt-0">
               <Icon name="FileText" size={16} />
               <span>{filteredRequests?.length} solicitudes encontradas</span>
             </div>
           </div>
 
-          {/* Listado de Solicitudes */}
           <div className={
             viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' // Ajustamos la grilla para mejor adaptabilidad
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
               : 'space-y-4'
           }>
             {filteredRequests?.length > 0 ? (
@@ -550,16 +520,7 @@ const RequestTracking = () => {
         isVisible={showRequestDetails}
         onClose={() => setShowRequestDetails(false)}
         onUpdate={updateRequest}
-        onPreview={(IDdoc) => {
-          setPreviewDocId(IDdoc);
-          setShowPreview(true);
-        }}
         onSendMessage={handleSendMessage}
-      />
-      <DocxPreview
-        IDdoc={previewDocId}
-        isVisible={showPreview}
-        onClose={() => setShowPreview(false)}
       />
     </div>
   );

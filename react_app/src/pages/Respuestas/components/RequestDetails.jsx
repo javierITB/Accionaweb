@@ -2,16 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-import FilePreviewModal from './DocsPreview';
-
-const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSendMessage }) => {
+const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }) => {
   const [correctedFile, setCorrectedFile] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [clientSignature, setClientSignature] = useState(null);
   const fileInputRef = useRef(null);
-
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [previewDoc, setPreviewDoc] = useState({ IDdoc: null, fileType: null, data: null});
 
   const checkClientSignature = async () => {
     try {
@@ -41,7 +36,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
       setCorrectedFile({
         name: request.correctedFile.fileName,
         size: request.correctedFile.fileSize,
-
       });
     } else {
       setCorrectedFile(null);
@@ -392,17 +386,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
     return 'File';
   };
 
-   const handlePreview = (IDdoc, fileType, data) => {
-    setPreviewDoc({ IDdoc, fileType, data});
-
-    setIsPreviewModalOpen(true);
-  };
-
-  const handleClosePreview = () => {
-    setIsPreviewModalOpen(false);
-    setPreviewDoc({ IDdoc: null, fileType: null });
-  };
-
   const realAttachments = getRealAttachments();
 
   return (
@@ -534,32 +517,19 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
                         </p>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      iconName="Download"
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={handleDownload}
-                      disabled={isDownloading}
-                    >
-                      {isDownloading ? 'Descargando...' : 'Descargar'}
-                    </Button>
-
-                    {/* 2. Botón de Vista Previa (Nuevo) */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      // Llama a la función onPreview con el ID del documento y su tipo
-                      onClick={() => handlePreview(file?.id, file?.type, request.correctedFile?.fileData)}
-                      iconName="Eye"
-                      iconPosition="left"
-                      iconSize={16}
-                      // Solo activa si el tipo es 'docx' o 'pdf' (o 'txt' si lo deseas)
-                      disabled={!['docx', 'pdf', 'txt'].includes(file?.type?.toLowerCase())}
-                    >
-                      Vista Previa
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        iconName="Download"
+                        iconPosition="left"
+                        iconSize={16}
+                        onClick={handleDownload}
+                        disabled={isDownloading}
+                      >
+                        {isDownloading ? 'Descargando...' : 'Descargar'}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -684,49 +654,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
               )}
             </div>
           )}
-
-          {false && (
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado</h3>
-              <div className="space-y-2">
-                {realAttachments?.map((file) => (
-                  <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{file?.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {file?.size} • Generado el {formatDate(file?.uploadedAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      iconName="Download"
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={handleDownload}
-                    >
-                      Descargar
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      // Usamos la función handlePreview local
-                      onClick={() => handlePreview(file?.id, file?.type)}
-                      iconName="Eye"
-                      iconPosition="left"
-                      iconSize={16}
-                      disabled={!['docx', 'pdf', 'txt'].includes(file?.type?.toLowerCase())}
-                    >
-                      Vista Previa
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="sticky bottom-0 bg-card border-t border-border p-6">
@@ -744,16 +671,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
                 iconSize={16}
               >
                 Enviar Mensaje
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onPreview(request.IDdoc)}
-                iconName="Eye"
-                iconPosition="left"
-                iconSize={16}
-              >
-                Vista Previa
               </Button>
               <Button
                 variant="default"
@@ -775,13 +692,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
           </div>
         </div>
       </div>
-      <FilePreviewModal
-        IDdoc={previewDoc.IDdoc}
-        isVisible={isPreviewModalOpen}
-        onClose={handleClosePreview}
-        fileType={previewDoc.fileType}
-        data = {previewDoc.data}
-      />
     </div>
   );
 };
