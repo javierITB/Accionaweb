@@ -236,6 +236,31 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
+  const handlePreviewGenerated = () => {
+    if (request?.IDdoc) {
+      window.open(`https://accionaapi.vercel.app/api/generador/preview/${request.IDdoc}`, '_blank');
+    } else {
+      alert('No hay documento disponible para vista previa');
+    }
+  };
+
+  const handlePreviewCorrected = () => {
+    if (correctedFile) {
+      const url = URL.createObjectURL(correctedFile);
+      window.open(url, '_blank');
+    } else {
+      alert('No hay documento corregido para vista previa');
+    }
+  };
+
+  const handlePreviewSigned = () => {
+    if (clientSignature) {
+      window.open(`https://accionaapi.vercel.app/api/respuestas/${request._id}/preview-client-signature`, '_blank');
+    } else {
+      alert('No hay documento firmado para vista previa');
+    }
+  };
+
   const formatFileName = () => {
     const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
 
@@ -521,6 +546,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       <Button
                         variant="outline"
                         size="sm"
+                        iconName="Eye"
+                        iconPosition="left"
+                        iconSize={16}
+                        onClick={handlePreviewGenerated}
+                      >
+                        Vista Previa
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         iconName="Download"
                         iconPosition="left"
                         iconSize={16}
@@ -556,6 +591,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      iconName="Eye"
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={handlePreviewCorrected}
+                    >
+                      Vista Previa
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -606,6 +651,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        iconName="Eye"
+                        iconPosition="left"
+                        iconSize={16}
+                        onClick={handlePreviewSigned}
+                      >
+                        Vista Previa
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
