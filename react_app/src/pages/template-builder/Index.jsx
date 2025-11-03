@@ -6,6 +6,15 @@ import Button from '../../components/ui/Button';
 import TemplateList from './components/FormProperties'; // 💡 CORRECCIÓN: Renombrada a TemplateList
 import QuestionBuilder from './components/TemplateBuilder';
 
+
+const generateVarTag = (title) => {
+    if (!title) return '';
+    // Limpiar acentos, reemplazar no alfanuméricos por guion bajo y convertir a mayúsculas
+    const cleanTitle = title.normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+    const snakeCase = cleanTitle.trim().toUpperCase().replace(/[^A-Z0-9\s]/g, '').replace(/\s+/g, '_');
+    return `{{${snakeCase}}}`;
+};
+
 const FormBuilder = () => {
   const [formData, setFormData] = useState({
     id: null,
@@ -22,43 +31,17 @@ const FormBuilder = () => {
     icon: 'FileText',
     companies: [],
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+
+    documentTitle: '', // Se usa para el documento generado
+    paragraphs: [],
+    signatureText: 'Firma del Empleador y Empleado.',
+    formId: null,
   });
 
   const [activeTab, setActiveTab] = useState('properties');
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-
-  // Question types available
-  const questionTypes = [
-    { value: 'text', label: 'Texto', icon: 'Type' },
-    { value: 'number', label: 'Número', icon: 'Hash' },
-    { value: 'date', label: 'Fecha', icon: 'Calendar' },
-    { value: 'time', label: 'Hora', icon: 'Clock' },
-    { value: 'email', label: 'Email', icon: 'Mail' },
-    { value: 'file', label: 'Archivo', icon: 'Paperclip' },
-    { value: 'single_choice', label: 'Selección Única', icon: 'CheckCircle' },
-    { value: 'multiple_choice', label: 'Selección Múltiple', icon: 'CheckSquare' }
-  ];
-
-  // Categories available
-  const categories = [
-    { value: 'hr', label: 'Recursos Humanos' },
-    { value: 'it', label: 'Tecnología' },
-    { value: 'finance', label: 'Finanzas' },
-    { value: 'operations', label: 'Operaciones' },
-    { value: 'training', label: 'Capacitación' },
-    { value: 'feedback', label: 'Retroalimentación' },
-    { value: 'survey', label: 'Encuesta' },
-    { value: 'evaluation', label: 'Evaluación' }
-  ];
-
-  const sections = [
-    { value: 'Remuneraciones', label: 'Remuneraciones' },
-    { value: 'Anexos', label: 'Anexos' },
-    { value: 'Finiquitos', label: 'Finiquitos' },
-    { value: 'Otras', label: 'Otras' }
-  ];
 
   // Load form from localStorage if editing
   useEffect(() => {
@@ -102,7 +85,58 @@ const FormBuilder = () => {
     }
   }, []);
 
-  // Update form data
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const templateId = urlParams?.get('id');
+
+    // 💡 FUNCIÓN RESTAURADA: Fetch para cargar la plantilla existente
+    const fetchForm = async () => {
+      try {
+        // Asumimos que la API de plantillas usa un endpoint similar a /plantillas/:id
+        const res = await fetch(`https://accionaapi.vercel.app/api/plantillas/${templateId}`);
+        if (!res.ok) throw new Error('Plantilla no encontrada');
+        const data = await res.json();
+
+        // Normalización para el estado de la aplicación
+        const normalizedTemplate = {
+          id: data._id || data.id || null,
+          title: data.title || '',
+          section: data.section || '',
+          primaryColor: data.primaryColor || '#3B82F6',
+          secondaryColor: data.secondaryColor || '#F3F4F6',
+          status: data.status || 'borrador',
+          companies: data.companies || [],
+          
+          // Datos específicos de la plantilla
+          documentTitle: data.documentTitle || data.title || '',
+          paragraphs: data.paragraphs || [],
+          signatureText: data.signatureText || 'Firma del Empleador y Empleado.',
+          formId: data.formId || null, // ID del formulario asociado
+          
+          createdAt: data.createdAt || new Date().toISOString(),
+          updatedAt: data.updatedAt || new Date().toISOString()
+          // No necesitamos cargar 'questions' aquí, ya que se cargan al seleccionar la base.
+        };
+
+        setFormData(normalizedTemplate);
+        
+        // Si cargamos una plantilla por ID, ir directamente al editor
+        if (normalizedTemplate.formId) {
+            setActiveTab('document');
+        }
+
+      } catch (err) {
+        console.error('Error cargando la plantilla:', err);
+        alert('No se pudo cargar la plantilla');
+      }
+    };
+
+    if (templateId) {
+      fetchForm();
+    }
+  }, []);
+
+
   const updateFormData = (field, value) => {
     // Validación específica para el título
     if (field === 'title' && value.length > 50) {
@@ -120,6 +154,7 @@ const FormBuilder = () => {
   // 💡 FUNCIÓN DE SELECCIÓN DE PLANTILLA BASE
   // (Llamada desde TemplateList.jsx)
   const handleTemplateSelect = (selectedTemplateData) => {
+    
     setFormData(prev => ({
       ...prev,
       // Reemplaza los campos esenciales del formulario actual con la plantilla seleccionada
@@ -127,7 +162,7 @@ const FormBuilder = () => {
       section: selectedTemplateData.section || prev.section,
       questions: selectedTemplateData.questions || prev.questions,
       // Mantiene el ID si ya está editando un borrador, sino lo deja en null para un nuevo POST
-      id: prev.id,
+      id: selectedTemplateData.id,
       // Mueve a la pestaña del documento para edición
       documentTitle: selectedTemplateData.title, // Usar el título del formulario como título del documento
       activeTab: 'document'
@@ -136,93 +171,7 @@ const FormBuilder = () => {
     console.log('Datos de plantilla cargados.');
   };
 
-
-  // Add new question (Mutado a DocumentBuilder, pero mantenido para compatibilidad)
-  const addQuestion = () => {
-    const newQuestion = {
-      id: Date.now().toString(),
-      type: 'text',
-      title: '',
-      description: '',
-      required: false,
-      options: []
-    };
-
-    setFormData(prev => ({
-      ...prev,
-      questions: [...prev.questions, newQuestion],
-      updatedAt: new Date().toISOString()
-    }));
-
-    // Switch to questions tab if not already there
-    if (activeTab !== 'questions') {
-      setActiveTab('questions');
-    }
-
-    // AGREGAR ESTA LÍNEA PARA RETORNAR LA NUEVA PREGUNTA
-    return newQuestion;
-  };
-
-  // Update question
-  const updateQuestion = (questionId, updatesOrField, value) => {
-    setFormData(prev => {
-      let updatedQuestions;
-
-      // Si se pasan 3 argumentos (id, field, value)
-      if (value !== undefined && typeof updatesOrField === 'string') {
-        updatedQuestions = prev.questions.map(q =>
-          q.id === questionId ? { ...q, [updatesOrField]: value } : q
-        );
-      }
-      // Si se pasan 2 argumentos (id, updates)
-      else if (typeof updatesOrField === 'object') {
-        updatedQuestions = prev.questions.map(q =>
-          q.id === questionId ? { ...q, ...updatesOrField } : q
-        );
-      }
-      // Fallback por seguridad
-      else {
-        console.warn('Formato inválido en updateQuestion:', { questionId, updatesOrField, value });
-        return prev;
-      }
-
-      return {
-        ...prev,
-        questions: updatedQuestions,
-        updatedAt: new Date().toISOString()
-      };
-    });
-  };
-
-  // Delete question
-  const deleteQuestion = (questionId) => {
-    setFormData(prev => ({
-      ...prev,
-      questions: prev.questions.filter(q => q.id !== questionId),
-      updatedAt: new Date().toISOString()
-    }));
-  };
-
-  // Move question up/down
-  const moveQuestion = (questionId, direction) => {
-    const currentIndex = formData.questions.findIndex(q => q.id === questionId);
-    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-
-    if (newIndex < 0 || newIndex >= formData.questions.length) return;
-
-    const newQuestions = [...formData.questions];
-    [newQuestions[currentIndex], newQuestions[newIndex]] = [newQuestions[newIndex], newQuestions[currentIndex]];
-
-    setFormData(prev => ({
-      ...prev,
-      questions: newQuestions,
-      updatedAt: new Date().toISOString()
-    }));
-  };
-
-  // Save form as borrador - FUNCIÓN CORREGIDA
   const saveForm = async () => {
-    // 💡 Paso 1: Definir la actualización del estado que queremos enviar
     const newStatus = "borrador";
     const newUpdatedAt = new Date().toISOString();
 
@@ -264,8 +213,7 @@ const FormBuilder = () => {
 
       const savedForm = await response.json();
 
-      // 💡 Paso 3: Actualizar el estado DE FORMA ASÍNCRONA DESPUÉS del fetch
-      // Ahora, la actualización de React incluye el resultado del servidor
+
       setFormData(prev => ({
         ...prev,
         ...savedForm,
@@ -294,92 +242,27 @@ const FormBuilder = () => {
     }
   };
 
-  const deleteForm = async () => {
-    try {
-      const response = await fetch(`https://accionaapi.vercel.app/api/forms/${formData.id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        cache: "no-cache",
-      });
 
-      if (!response.ok) throw new Error("No se pudo eliminar el formulario");
-
-      alert("Formulario borrado exitosamente");
-      window.location.href = "/form-center";
-    } catch (error) {
-      console.error(error);
-      alert("Error al eliminar el formulario");
-    }
-  };
-
-  // Publish form
-  const publishForm = async () => {
-    if (!formData?.id) {
-      alert("Primero guarda el borrador");
-      return;
-    }
-
-    setIsPublishing(true);
-    try {
-      const response = await fetch(`https://accionaapi.vercel.app/api/forms/public/${formData._id || formData.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, status: "publicado" }),
-      });
-
-      const updatedForm = await response.json();
-      setFormData(prev => ({ ...prev, status: "publicado" }));
-
-      alert("¡Formulario publicado exitosamente!");
-    } catch (error) {
-      console.error(error);
-      alert("Error al publicar el formulario");
-    } finally {
-      setIsPublishing(false);
-    }
-  };
-
-  const generateVarTag = (title) => {
-    if (!title) return '';
-
-    // 1. Convertir a mayúsculas
-    let tag = title.toUpperCase();
-
-    // 2. Reemplazar caracteres no alfanuméricos (incluyendo espacios, tildes, ñ) por guion bajo
-    // Se eliminan primero los acentos para que se traten bien como letras
-    tag = tag.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-    // 3. Reemplazar cualquier cosa que no sea letra, número o guion bajo por un guion bajo
-    tag = tag.replace(/[^A-Z0-9]+/g, '_');
-
-    // 4. Eliminar guiones bajos al inicio o al final, y asegurar que no haya dobles guiones bajos
-    tag = tag.replace(/^_+|_+$/g, '').replace(/__+/g, '_');
-
-    // 5. Envolver en el formato {{VARIABLE}}
-    return `{{${tag}}}`;
-  };
 
   // Navigation tabs
   const tabs = [
     { id: 'properties', label: 'Seleccionar Plantilla', icon: 'Settings' }, // 💡 CAMBIADO LABEL
-    { id: 'document', label: 'Documento', icon: 'FileText', count: formData?.questions?.length }, // 💡 CAMBIADO ID Y LABEL
+    { id: 'document', label: 'Documento', icon: 'FileText' }, // 💡 CAMBIADO ID Y LABEL
 
   ];
   //actualizacion
   const getTabContent = () => {
     // 💡 CALCULAR VARIABLES DINÁMICAS
     const dynamicVariables = formData.questions
-      .filter(q => q.title && q.title.trim() !== '') // Asegurarse de que el título exista
-      .map(q => ({
-        name: q.title,
-        var: generateVarTag(q.title)
-      }));
+      .filter(q => (q.title && q.title.trim() !== '') || q.text && q.text.trim() !== '') // Asegurarse de que el título exista
 
     // 💡 AÑADIR VARIABLES ESTÁTICAS DE METADATOS (opcional, pero útil)
     const staticVariables = [
-      { name: "Fecha Actual (DD/MM/YYYY)", var: "{{FECHA_ACTUAL}}" },
-      { name: "Hora Actual (HH:MM)", var: "{{HORA_ACTUAL}}" },
-      { name: "Nombre del Autor", var: "{{AUTOR_NOMBRE}}" },
+      { title: "Fecha Actual (DD/MM/YYYY)", var: "{{FECHA_ACTUAL}}" },
+      { title: "Hora Actual (HH:MM)", var: "{{HORA_ACTUAL}}" },
+      { title: "Nombre del Autor", var: "{{AUTOR_NOMBRE}}" },
+      { title: "Nombre de la empresa", var: "{{NOMBRE_EMPRESA}}" },
+      { title: "Rut de la EmpresaRut", var: "{{RUT_EMPRESA}}" },
     ];
 
     // 💡 COMBINAR LAS VARIABLES
@@ -409,6 +292,75 @@ const FormBuilder = () => {
     }
   };
 
+  const handleSaveTemplate = async () => {
+    const dataToSend = {
+      // Metadatos de la plantilla
+      id: formData.id, // ID para la actualización (PUT)
+      title: formData.title || formData.documentTitle, 
+      section: formData.section || 'General',
+      companies: formData.companies,
+      
+      // Contenido del documento
+      documentTitle: formData.documentTitle,
+      paragraphs: formData.paragraphs,
+      signatureText: formData.signatureText,
+      
+      // Asociación al formulario original
+      formId: formData.formId, // ID del formulario base
+      
+      status: 'publicado', 
+      updatedAt: new Date().toISOString(),
+    };
+    
+    if (!dataToSend.title || !dataToSend.formId || dataToSend.paragraphs.length === 0) {
+      alert("Debe seleccionar un formulario base, ingresar un título y al menos un párrafo.");
+      return;
+    }
+
+    setIsSaving(true);
+    
+    // Definir el método y URL
+    const isUpdating = !!formData.id;
+    const url = isUpdating 
+        ? `https://accionaapi.vercel.app/api/plantillas` 
+        : "https://accionaapi.vercel.app/api/plantillas"; 
+    const method = "POST"; // POST para crear o POST para actualizar (según su endpoint de MongoDB)
+    
+    try {
+      const response = await fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToSend),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar la plantilla');
+      }
+
+      const savedData = await response.json();
+      
+      setFormData(prev => ({
+        ...prev,
+        // Actualizar el ID si fue un POST exitoso
+        id: savedData._id || savedData.id || prev.id, 
+        status: savedData.status || 'publicado',
+      }));
+
+      alert(`Plantilla guardada exitosamente.`);
+
+      // Actualizar URL si es nuevo
+      if (!formData.id && savedData._id) {
+        window.history.replaceState({}, "", `?id=${savedData._id}`);
+      }
+
+    } catch (error) {
+      console.error(error);
+      alert("Error al guardar la plantilla: " + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -422,7 +374,7 @@ const FormBuilder = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => window.location.href = '/form-center'}
+                  onClick={() => window.location.href = '/template-builder'}
                   iconName="ArrowLeft"
                   iconPosition="left"
                 >
@@ -444,38 +396,20 @@ const FormBuilder = () => {
             </div>
 
             <div className="flex items-center space-x-3">
-              {/* Status Badge */}
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === 'publicado'
-                ? 'bg-green-100 text-green-700'
-                : 'bg-yellow-100 text-yellow-700'
-                }`}>
-                {formData?.status === 'publicado' ? 'Publicado' : 'Borrador'}
-              </div>
-
-              {/* Action Buttons */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={saveForm}
-                loading={isSaving}
-                iconName="Save"
-                iconPosition="left"
-                disabled={isPublishing}
-              >
-                Guardar Borrador
-              </Button>
-
               <Button
                 type="button"
                 variant="default"
-                onClick={publishForm}
-                loading={isPublishing}
+                // 💡 LLAMADA A LA FUNCIÓN DE GUARDADO DE PLANTILLA
+                onClick={() => handleSaveTemplate('publicado')} 
+                loading={isSaving}
                 iconName="Send"
                 iconPosition="left"
-                disabled={isSaving}
+                disabled={!formData.id || isSaving} // Deshabilitar si no hay formulario asociado
               >
-                Publicar Formulario
+                Guardar Plantilla
               </Button>
+
+              
             </div>
           </div>
 
@@ -504,18 +438,7 @@ const FormBuilder = () => {
                     )}
                   </button>
                 ))}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    if (window.confirm('¿Estás seguro de que quieres eliminar este Formulario?')) {
-                      deleteForm();
-                    }
-                  }}
-                  className="mt-3 h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <Icon name="Trash2" size={14} />
-                </Button>
+                
               </nav>
             </div>
 

@@ -5,19 +5,106 @@ import Button from '../../../components/ui/Button';
 const Input = (props) => <input {...props} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />;
 const Textarea = (props) => <textarea {...props} className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />;
 
-// ********************************************************
-// 💡 CAMBIO PRINCIPAL: Recibir 'availableVariables' por props
-// ********************************************************
+const generateVarTag = (title) => {
+  if (!title) return '';
+
+  // 1. Convertir a mayúsculas
+  let tag = title.toUpperCase();
+
+  // 2. Reemplazar caracteres no alfanuméricos (incluyendo espacios, tildes, ñ) por guion bajo
+  // Se eliminan primero los acentos para que se traten bien como letras
+  tag = tag.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // 3. Reemplazar cualquier cosa que no sea letra, número o guion bajo por un guion bajo
+  tag = tag.replace(/[^A-Z0-9]+/g, '_');
+
+  // 4. Eliminar guiones bajos al inicio o al final, y asegurar que no haya dobles guiones bajos
+  tag = tag.replace(/^_+|_+$/g, '').replace(/__+/g, '_');
+
+  // 5. Envolver en el formato {{VARIABLE}}
+  return `{{${tag}}}`;
+};
+const VariableItem = ({ variable, copyVariable, isChild = false }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const hasSubVariables = (variable.options && variable.options.length > 0) || (variable.subformQuestions && variable.subformQuestions.length > 0);
+
+  // Renderizado de variable simple (botón)
+  const renderSimpleVariable = (v) => (
+    <button
+      key={generateVarTag(v.title || v.text)}
+      onClick={() => copyVariable(generateVarTag(v.title || v.text))}
+      // 💡 AJUSTE DE CLASES PARA EL MODO OSCURO
+      className={`w-full flex flex-col items-start px-3 py-2 rounded-md text-xs transition-brand cursor-pointer text-left font-mono hover:shadow-md border border-transparent bg-white-50 hover:bg-gray-100 dark:hover:bg-slate-600 dark:text-foreground ${v.color || ''} 
+                  ${isChild
+          ? 'bg-white-50 hover:bg-gray-100 dark:hover:bg-slate-600 dark:text-foreground'
+          : ''}
+                `}
+    >
+      <span className={`font-semibold ${isChild ? 'text-xs' : 'text-sm'}`}>{v.title || v.text}</span>
+      <span className={`text-xs opacity-80 ${isChild ? 'ml-1' : ''}`}>{generateVarTag(v.title || v.text)}</span>
+    </button>
+  );
+
+  if (!hasSubVariables) {
+    return renderSimpleVariable(variable);
+  }
+
+  if (variable.subformQuestions?.length === 1) {
+    return renderSimpleVariable(variable.subformQuestions[0]);
+  }
+
+  // Renderizado de variable anidada (desplegable)
+  return (
+    <div className={`w-full border border-border rounded-lg ${isOpen ? 'bg-primary/5 dark:bg-primary/10' : 'bg-card dark:bg-card'}`}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        // 💡 AJUSTE DE HOVER Y FONDO EN OSCURO
+        className="w-full flex items-center justify-between px-3 py-2 cursor-pointer text-left font-semibold text-sm hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
+      >
+        <div className="flex flex-col items-start">
+          <span className="font-semibold text-sm">{variable.title || variable.text}</span>
+          <span className="text-xs opacity-80 text-primary">{generateVarTag(variable.title || variable.text)}</span>
+        </div>
+        <Icon name={isOpen ? "ChevronUp" : "ChevronDown"} size={14} className="text-primary" />
+      </button>
+
+      {isOpen && (
+        // 💡 AJUSTE DEL BORDE SUPERIOR EN OSCURO
+        <div className="p-2 space-y-1 border-t border-border dark:border-slate-700">
+
+          {variable.options && (variable.options)?.map((subVar) => (
+            // Renderiza la sub-variable como un botón de copia (Recursividad)
+            <VariableItem
+              key={subVar.title}
+              variable={subVar}
+              copyVariable={copyVariable}
+              isChild={true}
+            />
+          ))}
+          {!variable.options && (variable.subformQuestions)?.map((subVar) => (
+            // Renderiza la sub-variable como un botón de copia (Recursividad)
+            <VariableItem
+              key={subVar.title}
+              variable={subVar}
+              copyVariable={copyVariable}
+              isChild={true}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const DocumentTemplateEditor = ({ availableVariables = [] }) => {
   // 💡 ELIMINAR: Ya no necesitamos MOCK_VARIABLES ni la línea de asignación
   // const MOCK_VARIABLES  = availableVariables 
 
   const [templateData, setTemplateData] = useState({
-    title: 'Contrato de Trabajo - {{EMPLEADO_NOMBRE}}',
+    title: 'Contrato de Trabajo - {{NOMBRE_DEL_TRABAJADOR}}',
     paragraphs: [
-      { id: 'p1', content: 'Mediante el presente documento se establece que la empresa {{COMPANIA_NOMBRE}}, RUT {{COMPANIA_RUT}}, contrata a {{EMPLEADO_NOMBRE}}, RUT {{EMPLEADO_RUT}}, a partir de la fecha {{FECHA_INICIO}}.' },
-      { id: 'p2', content: 'El empleado desempeñará el cargo de {{CARGO_CONTRATADO}} con un salario base de {{SALARIO_BASE}}.' },
+      { id: 'p1', content: 'Mediante el presente documento se establece que la empresa {{NOMBRE_EMPRESA}}, RUT {{RUT_EMPRESA}}, contrata a {{NOMBRE_DEL_TRABAJADOR}}, RUT {{RUT_DEL_TRABAJADOR}}, a partir de la fecha {{FECHA_DE_INICIO_DE_MODIFICACION}}.' },
+
     ],
     signatureText: 'Declaro haber leído y aceptado los términos de este contrato.',
   });
@@ -73,6 +160,7 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
   // --- Manejo del Copiado de Variables ---
 
   const copyVariable = (tag) => {
+    // ... (logic for copying to clipboard)
     // Usamos document.execCommand('copy') como fallback para entornos sandboxed
     const tempInput = document.createElement('textarea');
     tempInput.value = tag;
@@ -80,33 +168,32 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
     tempInput.select();
     document.execCommand('copy');
     document.body.removeChild(tempInput);
-    
-    alert(`Variable ${tag} copiada al portapapeles.`);
-  };
-  
-  // --- Simulación de Guardado ---
-  
-  const handleSaveTemplate = async () => {
-      if (!templateData.title || templateData.paragraphs.some(p => !p.content.trim())) {
-          alert('El título y todos los párrafos deben tener contenido.');
-          return;
-      }
-      
-      setIsSaving(true);
-      console.log("Guardando Plantilla:", templateData);
 
-      // Simulación de llamada API PUT/POST para guardar la plantilla
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
-      
-      setIsSaving(false);
-      alert('¡Plantilla de contrato guardada exitosamente!');
+  };
+
+  // --- Simulación de Guardado ---
+
+  const handleSaveTemplate = async () => {
+    if (!templateData.title || templateData.paragraphs.some(p => !p.content.trim())) {
+      alert('El título y todos los párrafos deben tener contenido.');
+      return;
+    }
+
+    setIsSaving(true);
+    console.log("Guardando Plantilla:", templateData);
+
+    // Simulación de llamada API PUT/POST para guardar la plantilla
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    setIsSaving(false);
+    alert('¡Plantilla de contrato guardada exitosamente!');
   };
 
 
   // --- Renderizado del Párrafo ---
 
   const ParagraphEditor = ({ paragraph, index, total }) => (
-    <div className="bg-white border border-border rounded-lg p-4 shadow-sm space-y-3">
+    <div className="bg-gray border border-border rounded-lg p-4 shadow-sm space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-muted-foreground">
           Párrafo {index + 1}
@@ -143,7 +230,7 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
           </Button>
         </div>
       </div>
-      
+
       {/* Editor de Contenido del Párrafo */}
       <Textarea
         value={paragraph.content}
@@ -156,44 +243,31 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
   );
 
 
-  // -----------------------------------------------------
-  // RENDERIZADO PRINCIPAL
-  // -----------------------------------------------------
-
   return (
     <div className="p-6 space-y-6">
-    
+
       {/* 📐 ESTRUCTURA DE LA GRILLA (1/4 y 3/4) */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        
+
         {/* COLUMNA IZQUIERDA: VARIABLES DISPONIBLES (lg:col-span-1) */}
         <div className="lg:col-span-1">
-          <div className="bg-card border border-border rounded-lg p-4 sticky top-6 shadow-brand">
+          <div className="bg-card border border-border rounded-lg p-4 sticky top-6 shadow-brand dark:bg-gray">
             <h3 className="font-semibold text-foreground mb-4">
               Variables Disponibles
             </h3>
             <p className="text-xs text-muted-foreground mb-4">
-                Haz clic para copiar la variable al portapapeles y pegarla en tu párrafo.
+              Haz clic para copiar la variable al portapapeles y pegarla en tu párrafo.
             </p>
-            <div className="space-y-2">
+            <div className="space-y-2  ">
               {/* ******************************************************** */}
               {/* 💡 CAMBIO: Usar la prop 'availableVariables' aquí */}
               {/* ******************************************************** */}
               {availableVariables.map((variable) => (
-                <button
-                  key={variable.var} // 💡 Usar 'var' como key, ya que es el campo de la variable en el padre
-                  onClick={() => copyVariable(variable.var)} // 💡 Usar 'var' para el valor a copiar
-                  // ********************************************************
-                  // Nota: Si quieres mantener el color, el objeto variable del padre
-                  // debe incluir el campo `color`. Si no lo incluye, `variable.color`
-                  // resultará en una clase vacía o `undefined`. Lo he dejado como
-                  // estaba en el mock original por si lo añades.
-                  // ********************************************************
-                  className={`w-full flex flex-col items-start px-3 py-2 rounded-md text-xs transition-brand cursor-pointer text-left font-mono ${variable.color || ''} hover:shadow-md border border-transparent hover:border-primary/50`}
-                >
-                  <span className="font-semibold text-sm">{variable.name}</span>
-                  <span className="text-xs opacity-80">{variable.var}</span> {/* 💡 Usar 'var' para mostrar el tag */}
-                </button>
+                <VariableItem
+                  variable={variable}
+                  key={variable.title}
+                  copyVariable={copyVariable}
+                />
               ))}
             </div>
           </div>
@@ -201,7 +275,7 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
 
         {/* COLUMNA DERECHA: EDITOR DE ESTRUCTURA (lg:col-span-3) */}
         <div className="lg:col-span-3 space-y-6">
-          
+
           {/* 1. TÍTULO DEL DOCUMENTO */}
           <div className="bg-card border border-border rounded-lg p-6 shadow-brand">
             <h3 className="text-lg font-semibold text-foreground mb-3">
@@ -218,10 +292,10 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
 
           {/* 2. PÁRRAFOS DINÁMICOS */}
           <h3 className="text-lg font-semibold text-foreground">
-            Contenido y Párrafos ({templateData.paragraphs.length})
+            Contenido y Párrafos ({templateData.paragraphs?.length || 0})
           </h3>
           <div className="space-y-4">
-            {templateData.paragraphs.map((paragraph, index) => (
+            {templateData.paragraphs?.map((paragraph, index) => (
               <ParagraphEditor
                 key={paragraph.id}
                 paragraph={paragraph}
@@ -230,38 +304,38 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
               />
             ))}
           </div>
-          
+
           {/* Clic para añadir el primer párrafo */}
           {templateData.paragraphs.length === 0 && (
-             <div className="text-center py-12 bg-card border border-border rounded-lg">
-                <Icon name="FileText" size={48} className="mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium text-foreground mb-4">
-                    Comienza a crear la plantilla
-                </h3>
-                <Button
-                    onClick={handleAddParagraph}
-                    iconName="Plus"
-                    iconPosition="left"
-                    variant="default"
-                >
-                    Agregar Primer Párrafo
-                </Button>
+            <div className="text-center py-12 bg-card border border-border rounded-lg">
+              <Icon name="FileText" size={48} className="mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-medium text-foreground mb-4">
+                Comienza a crear la plantilla
+              </h3>
+              <Button
+                onClick={handleAddParagraph}
+                iconName="Plus"
+                iconPosition="left"
+                variant="default"
+              >
+                Agregar Primer Párrafo
+              </Button>
             </div>
           )}
 
           {/* Botón de adición rápida de párrafos (después de la lista) */}
           {templateData.paragraphs.length > 0 && (
-            <div className="flex justify-end pt-2">
-                <Button 
-                    onClick={handleAddParagraph} 
-                    variant="outline" 
-                    iconName="Plus" 
-                    iconPosition="left"
-                    disabled={isSaving}
-                    size="sm"
-                >
-                    Añadir otro Párrafo
-                </Button>
+            <div className="flex justify-center pt-2">
+              <Button
+                onClick={handleAddParagraph}
+                variant="outline"
+                iconName="Plus"
+                iconPosition="left"
+                disabled={isSaving}
+                size="sm"
+              >
+                Añadir otro Párrafo
+              </Button>
             </div>
           )}
 
@@ -277,8 +351,8 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
               placeholder="Ej: Acepto los términos y condiciones de este documento."
               className="w-full"
             />
-             <p className="text-xs text-muted-foreground mt-2">
-                Este texto aparecerá antes del bloque de firma digital.
+            <p className="text-xs text-muted-foreground mt-2">
+              Este texto aparecerá antes del bloque de firma digital.
             </p>
           </div>
         </div>
