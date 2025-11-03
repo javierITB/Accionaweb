@@ -2,11 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSendMessage}) => {
+import FilePreviewModal from './DocsPreview';
+
+const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSendMessage }) => {
   const [correctedFile, setCorrectedFile] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [clientSignature, setClientSignature] = useState(null);
   const fileInputRef = useRef(null);
+
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState({ IDdoc: null, fileType: null, data: null});
 
   const checkClientSignature = async () => {
     try {
@@ -35,7 +40,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
     if (request?.correctedFile) {
       setCorrectedFile({
         name: request.correctedFile.fileName,
-        size: request.correctedFile.fileSize
+        size: request.correctedFile.fileSize,
+
       });
     } else {
       setCorrectedFile(null);
@@ -53,7 +59,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
       setIsDownloading(true);
       try {
         window.open(`https://accionaapi.vercel.app/api/generador/download/${request.IDdoc}`, '_blank');
-        
+
         if (onUpdate) {
           const updatedRequest = {
             ...request,
@@ -61,7 +67,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
           };
           onUpdate(updatedRequest);
         }
-        
+
       } catch (error) {
         console.error('Error en descarga:', error);
         alert('Error al descargar el documento');
@@ -100,7 +106,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
   const handleDownloadClientSignature = async (responseId) => {
     try {
       const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/client-signature`);
-      
+
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -386,6 +392,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
     return 'File';
   };
 
+   const handlePreview = (IDdoc, fileType, data) => {
+    setPreviewDoc({ IDdoc, fileType, data});
+
+    setIsPreviewModalOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewModalOpen(false);
+    setPreviewDoc({ IDdoc: null, fileType: null });
+  };
+
   const realAttachments = getRealAttachments();
 
   return (
@@ -527,6 +544,21 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
                       disabled={isDownloading}
                     >
                       {isDownloading ? 'Descargando...' : 'Descargar'}
+                    </Button>
+
+                    {/* 2. Botón de Vista Previa (Nuevo) */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      // Llama a la función onPreview con el ID del documento y su tipo
+                      onClick={() => handlePreview(file?.id, file?.type, request.correctedFile?.fileData)}
+                      iconName="Eye"
+                      iconPosition="left"
+                      iconSize={16}
+                      // Solo activa si el tipo es 'docx' o 'pdf' (o 'txt' si lo deseas)
+                      disabled={!['docx', 'pdf', 'txt'].includes(file?.type?.toLowerCase())}
+                    >
+                      Vista Previa
                     </Button>
                   </div>
                 ))}
@@ -678,6 +710,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
                     >
                       Descargar
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      // Usamos la función handlePreview local
+                      onClick={() => handlePreview(file?.id, file?.type)}
+                      iconName="Eye"
+                      iconPosition="left"
+                      iconSize={16}
+                      disabled={!['docx', 'pdf', 'txt'].includes(file?.type?.toLowerCase())}
+                    >
+                      Vista Previa
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -731,6 +775,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onPreview, onSe
           </div>
         </div>
       </div>
+      <FilePreviewModal
+        IDdoc={previewDoc.IDdoc}
+        isVisible={isPreviewModalOpen}
+        onClose={handleClosePreview}
+        fileType={previewDoc.fileType}
+        data = {previewDoc.data}
+      />
     </div>
   );
 };
