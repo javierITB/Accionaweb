@@ -97,12 +97,20 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
   );
 });
 
+// 💡 COMPONENTE MODIFICADO: Añade el campo condicional
 const ParagraphEditor = React.memo(({ paragraph, index, total, onUpdate, onDelete, onMove }) => {
   const textareaRef = useRef(null);
 
+  // CRÍTICO: Ahora onUpdate debe enviar el nombre del campo
   const handleContentChange = useCallback((e) => {
-    onUpdate(paragraph.id, e.target.value);
+    onUpdate(paragraph.id, 'content', e.target.value); // <-- Envía el campo 'content'
   }, [paragraph.id, onUpdate]);
+
+  // 💡 NUEVO HANDLER PARA LA VARIABLE CONDICIONAL
+  const handleConditionalVarChange = useCallback((e) => {
+    onUpdate(paragraph.id, 'conditionalVar', e.target.value); // <--- Actualiza el campo 'conditionalVar'
+  }, [paragraph.id, onUpdate]);
+
 
   const handleMoveUp = useCallback(() => {
     onMove(paragraph.id, 'up');
@@ -123,6 +131,7 @@ const ParagraphEditor = React.memo(({ paragraph, index, total, onUpdate, onDelet
           Párrafo {index + 1}
         </h4>
         <div className="flex items-center space-x-2">
+          {/* Botones de movimiento y eliminación */}
           <Button
             variant="ghost"
             size="icon"
@@ -156,6 +165,19 @@ const ParagraphEditor = React.memo(({ paragraph, index, total, onUpdate, onDelet
         </div>
       </div>
 
+      {/* 💡 NUEVO CAMPO CONDICIONAL */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">
+          Variable Condicional (Opcional)
+        </label>
+        <Input
+          type="text"
+          placeholder="Ej: {{CAMPOS_OCUPACION}} (El párrafo se renderiza solo si esta variable tiene valor)"
+          value={paragraph.conditionalVar || ''}
+          onChange={handleConditionalVarChange}
+        />
+      </div>
+
       <Textarea
         ref={textareaRef}
         value={paragraph.content}
@@ -168,19 +190,20 @@ const ParagraphEditor = React.memo(({ paragraph, index, total, onUpdate, onDelet
   );
 });
 
-// Ahora (usando todas las props relevantes):
+
 const DocumentTemplateEditor = ({
   availableVariables = [],
-  templateData, // <-- Recibe los datos del padre
-  onUpdateTemplateData, // <-- Recibe el callback de actualización
-  onAddParagraph, // <-- Usado en el editor
-  onUpdateParagraph, // <-- Usado en el editor
-  onDeleteParagraph, // <-- Usado en el editor
-  onMoveParagraph // <-- Usado en el editor
+  templateData,
+  onUpdateTemplateData,
+  onAddParagraph,
+  onUpdateParagraph, // Ahora espera (id, field, value)
+  onDeleteParagraph,
+  onMoveParagraph
 }) => {
+
   const copyVariable = useCallback((tag) => {
+    // ... (Lógica de copiar variable)
     navigator.clipboard.writeText(tag).catch(() => {
-      // Fallback para navegadores antiguos
       const tempInput = document.createElement('textarea');
       tempInput.value = tag;
       document.body.appendChild(tempInput);
@@ -190,7 +213,6 @@ const DocumentTemplateEditor = ({
     });
   }, []);
 
-
   // Memoizar la lista de ParagraphEditors
   const paragraphEditors = useMemo(() =>
     templateData.paragraphs.map((paragraph, index) => (
@@ -199,18 +221,17 @@ const DocumentTemplateEditor = ({
         paragraph={paragraph}
         index={index}
         total={templateData.paragraphs.length}
-        // CRÍTICO: Usar las props del padre
-        onUpdate={onUpdateParagraph}  // <--- ¡CORREGIDO! Usar la prop
-        onDelete={onDeleteParagraph}  // <--- ¡CORREGIDO! Usar la prop
-        onMove={onMoveParagraph}      // <--- ¡CORREGIDO! Usar la prop
+        // Se mantiene la llamada, pero el callback del padre (FormBuilder) ahora recibe 3 argumentos
+        onUpdate={onUpdateParagraph}
+        onDelete={onDeleteParagraph}
+        onMove={onMoveParagraph}
       />
     )),
-    // CRÍTICO: Las dependencias deben ser las props, no las funciones locales eliminadas
     [
-      templateData.paragraphs, 
-      onUpdateParagraph, 
-      onDeleteParagraph, 
-      onMoveParagraph // <- Dependencias limpias
+      templateData.paragraphs,
+      onUpdateParagraph,
+      onDeleteParagraph,
+      onMoveParagraph
     ]
   );
 
@@ -265,7 +286,7 @@ const DocumentTemplateEditor = ({
                 Comienza a crear la plantilla
               </h3>
               <Button
-                onClick={handleAddParagraph}
+                onClick={onAddParagraph}
                 iconName="Plus"
                 iconPosition="left"
                 variant="default"
@@ -291,20 +312,46 @@ const DocumentTemplateEditor = ({
             </div>
           )}
 
+          {/* Zona de Firmas (Doble Firma) - Sin cambios */}
           <div className="bg-card border border-border rounded-lg p-6 shadow-brand">
-            <h3 className="text-lg font-semibold text-foreground mb-3">
-              Zona de Firma (Instrucciones o Mensaje)
+            <h3 className="text-lg font-semibold text-foreground mb-4">
+              Zona de Firmas
             </h3>
-            <Textarea
-              value={templateData.signatureText}
-              onChange={(e) => onUpdateTemplateData('signatureText', e.target.value)}
-              rows={3}
-              placeholder="Ej: Acepto los términos y condiciones de este documento."
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Este texto aparecerá antes del bloque de firma digital.
+            <p className="text-sm text-muted-foreground mb-4">
+              Define el texto (ej. Nombre/Cargo) para cada una de las dos secciones de firma.
             </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* FIRMA 1: EMISOR/EMPLEADOR */}
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Firma 1 (Emisor/Empresa)</h4>
+                <Textarea
+                  value={templateData.signature1Text}
+                  onChange={(e) => onUpdateTemplateData('signature1Text', e.target.value)}
+                  rows={3}
+                  placeholder="Ej: Nombre del Representante Legal.&#10;Rut: {{RUT_EMPRESA}}"
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Este texto aparecerá bajo la línea de firma izquierda.
+                </p>
+              </div>
+
+              {/* FIRMA 2: RECEPTOR/EMPLEADO */}
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Firma 2 (Receptor/Empleado)</h4>
+                <Textarea
+                  value={templateData.signature2Text}
+                  onChange={(e) => onUpdateTemplateData('signature2Text', e.target.value)}
+                  rows={3}
+                  placeholder="Ej: Nombre Completo del Empleado.&#10;Rut: {{RUT_DEL_EMPLEADO}}"
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Este texto aparecerá bajo la línea de firma derecha.
+                </p>
+              </div>
+            </div>
           </div>
 
         </div>

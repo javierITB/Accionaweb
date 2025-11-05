@@ -35,8 +35,13 @@ const FormBuilder = () => {
 
     // 💡 CAMPOS DE LA PLANTILLA DOCX
     documentTitle: '', // Se usa para el documento generado
-    paragraphs: [],
-    signatureText: 'Firma del Empleador y Empleado.',
+    paragraphs: [{
+      id: 'p1',
+      content: 'Primera cláusula del contrato - {{FECHA_ACTUAL}}.',
+      conditionalVar: '', // 💡 NUEVO CAMPO: Variable condicional (vacío por defecto)
+    }],
+    signature1Text: 'Firma del Empleador (Emisor).',
+    signature2Text: 'Firma del Empleado (Receptor).',
     formId: null, // ID del formulario asociado
   });
 
@@ -159,8 +164,10 @@ const FormBuilder = () => {
       title: existingTemplateData.title,
       documentTitle: existingTemplateData.documentTitle,
       paragraphs: existingTemplateData.paragraphs,
-      signatureText: existingTemplateData.signatureText,
-      questions: selectedTemplateData.questions || [], // Siempre se actualizan las preguntas del formulario base
+      // 💥 Cargar las firmas existentes
+      signature1Text: existingTemplateData.signature1Text,
+      signature2Text: existingTemplateData.signature2Text,
+      questions: selectedTemplateData.questions || [],
       status: existingTemplateData.status,
     } : {
       // Inicializar datos para una plantilla NUEVA
@@ -170,7 +177,8 @@ const FormBuilder = () => {
       documentTitle: selectedTemplateData.title, // Título del documento
       questions: selectedTemplateData.questions || [],
       paragraphs: [{ id: 'p1', content: 'Primera cláusula del contrato - {{FECHA_ACTUAL}}.' }],
-      signatureText: 'Firma del Empleador y Empleado.',
+      signature1Text: 'Firma del Empleador (Emisor).',
+      signature2Text: 'Firma del Empleado (Receptor).',
       status: 'borrador',
     };
 
@@ -185,16 +193,18 @@ const FormBuilder = () => {
 
   // 💡 LÓGICA DE MANEJO DE PÁRRAFOS (Necesarios para el editor)
   const handleAddParagraph = () => {
-    const newParagraph = { id: Date.now().toString(), content: 'Nuevo párrafo de contenido.' };
-    setFormData(prev => ({ ...prev, paragraphs: [...prev.paragraphs, newParagraph] }));
+    const newParagraph = { id: Date.now().toString(), content: 'Nuevo párrafo de contenido.', conditionalVar: ''};
+    setFormData(prev => ({ ...prev, paragraphs: [...prev.paragraphs, newParagraph] } ));
   };
 
-  const handleUpdateParagraph = (paragraphId, newContent) => {
+const handleUpdateParagraph = (paragraphId, field, value) => { // <-- Ahora espera 'field'
     setFormData(prev => ({
-      ...prev,
-      paragraphs: prev.paragraphs.map(p => p.id === paragraphId ? { ...p, content: newContent } : p)
+        ...prev,
+        paragraphs: prev.paragraphs.map(p => 
+            p.id === paragraphId ? { ...p, [field]: value } : p 
+        )
     }));
-  };
+};
 
   const handleDeleteParagraph = (paragraphId) => {
     setFormData(prev => ({
