@@ -40,33 +40,37 @@ const CustomMultiSelect = ({ options, value = [], onChange, placeholder = "Selec
     <div className="relative" ref={dropdownRef}>
       {/* Input que muestra las opciones seleccionadas */}
       <div
-        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
+        className="flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="flex flex-wrap gap-1 flex-1">
+        <div className="flex flex-wrap gap-1 flex-1 overflow-hidden">
           {selectedLabels.length > 0 ? (
             selectedLabels.map((label, index) => (
               <span
                 key={index}
-                className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded"
+                className="inline-flex items-center bg-primary text-primary-foreground text-xs px-2 py-1 rounded max-w-full truncate"
+                style={{ maxWidth: '200px' }}
               >
                 {label}
               </span>
             ))
           ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="text-muted-foreground self-center">{placeholder}</span>
           )}
         </div>
         <Icon
           name={isOpen ? "ChevronUp" : "ChevronDown"}
           size={16}
-          className="text-muted-foreground ml-2"
+          className="text-muted-foreground ml-2 self-center flex-shrink-0"
         />
       </div>
 
       {/* Dropdown CON SCROLLBAR MEJORADO */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-background border border-input rounded-md shadow-lg max-h-60 overflow-hidden">
+        <div 
+          className="absolute z-50 w-full mt-1 bg-background border border-input rounded-md shadow-lg max-h-60 overflow-hidden"
+          style={{ top: '100%' }}
+        >
           {/* Barra de búsqueda */}
           <div className="p-2 border-b border-input">
             <input
@@ -76,6 +80,7 @@ const CustomMultiSelect = ({ options, value = [], onChange, placeholder = "Selec
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
               onClick={(e) => e.stopPropagation()}
+              autoFocus
             />
           </div>
 
@@ -94,7 +99,7 @@ const CustomMultiSelect = ({ options, value = [], onChange, placeholder = "Selec
                     onChange={() => { }}
                     className="w-4 h-4 text-primary rounded focus:ring-primary border-input"
                   />
-                  <span className="ml-2 text-sm text-foreground">
+                  <span className="ml-2 text-sm text-foreground truncate">
                     {option.label}
                   </span>
                 </div>
@@ -130,8 +135,8 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
         const empresasData = await response.json();
 
         const options = empresasData.map(empresa => ({
-          value: empresa.nombre,  // ← Usar nombre como valor
-          label: empresa.nombre   // ← Nombre como etiqueta
+          value: empresa.nombre,
+          label: empresa.nombre
         }));
 
         setCompanyOptions(options);
