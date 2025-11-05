@@ -62,24 +62,17 @@ const FormPreview = ({ formData }) => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
-      // Validar formato
-      if (question.accept) {
-        const allowedFormats = question.accept.split(',').map(format => format.trim().toLowerCase());
-        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-
-        if (!allowedFormats.includes(fileExtension)) {
-          errors.push(`Formato no permitido: ${file.name}. Formatos aceptados: ${allowedFormats.join(', ')}`);
-          continue;
-        }
+      // Validar formato - solo PDF
+      if (file.type !== 'application/pdf') {
+        errors.push(`Formato no permitido: ${file.name}. Solo se permiten archivos PDF`);
+        continue;
       }
 
-      // Validar tamaño
-      if (question.maxSize) {
-        const maxSizeBytes = question.maxSize * 1024 * 1024; // Convertir MB a bytes
-        if (file.size > maxSizeBytes) {
-          const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-          errors.push(`Archivo demasiado grande: ${file.name} (${fileSizeMB} MB). Tamaño máximo: ${question.maxSize} MB`);
-        }
+      // Validar tamaño - máximo 500KB
+      const maxSizeBytes = 500 * 1024; // 500KB en bytes
+      if (file.size > maxSizeBytes) {
+        const fileSizeKB = (file.size / 1024).toFixed(2);
+        errors.push(`Archivo demasiado grande: ${file.name} (${fileSizeKB} KB). Tamaño máximo: 500 KB`);
       }
     }
 
@@ -332,32 +325,8 @@ const FormPreview = ({ formData }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const getFileTypesDescription = (acceptString) => {
-    if (!acceptString) return 'Todos los tipos de archivo';
-
-    const formatCategories = {
-      'Documentos': ['.pdf', '.doc', '.docx', '.txt', '.rtf'],
-      'Imágenes': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'],
-      'Hojas de cálculo': ['.xls', '.xlsx', '.csv'],
-      'Presentaciones': ['.ppt', '.pptx'],
-      'Archivos comprimidos': ['.zip', '.rar', '.7z']
-    };
-
-    const acceptArray = acceptString.split(',').map(format => format.trim());
-
-    const activeCategories = Object.entries(formatCategories)
-      .filter(([category, formats]) =>
-        formats.some(format => acceptArray.includes(format))
-      )
-      .map(([category]) => category);
-
-    if (activeCategories.length === 0) {
-      return `Formatos: ${acceptString}`;
-    } else if (activeCategories.length === 1) {
-      return activeCategories[0];
-    } else {
-      return activeCategories.join(', ');
-    }
+  const getFileTypesDescription = () => {
+    return 'PDF solamente';
   };
 
   const renderQuestion = (question, index, showNumber = true, parentPath = '') => {
@@ -470,7 +439,7 @@ const FormPreview = ({ formData }) => {
           );
 
         case 'file':
-          const fileTypesDescription = getFileTypesDescription(question.accept);
+          const fileTypesDescription = getFileTypesDescription();
           const hasFileErrors = fileErrorList.length > 0;
 
           return (
@@ -479,25 +448,21 @@ const FormPreview = ({ formData }) => {
                 type="file"
                 className={`${baseInputClass} ${error || hasFileErrors ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                 multiple={question.multiple || false}
-                accept={question.accept || ''}
+                accept=".pdf,application/pdf"
                 onChange={(e) => handleFileChange(question.id, getQuestionTitle(question), e.target.files)}
               />
               <div className="mt-2 space-y-1">
-                {question.accept && (
-                  <p className="text-xs text-gray-500">
-                    <strong>Formatos permitidos:</strong> {fileTypesDescription}
-                  </p>
-                )}
+                <p className="text-xs text-gray-500">
+                  <strong>Formatos permitidos:</strong> {fileTypesDescription}
+                </p>
                 {question.multiple && (
                   <p className="text-xs text-gray-500">
                     <strong>Múltiples archivos:</strong> Permitido
                   </p>
                 )}
-                {question.maxSize && (
-                  <p className="text-xs text-gray-500">
-                    <strong>Tamaño máximo:</strong> {question.maxSize} MB por archivo
-                  </p>
-                )}
+                <p className="text-xs text-gray-500">
+                  <strong>Tamaño máximo:</strong> 500 KB por archivo
+                </p>
                 {value instanceof FileList && value.length > 0 && !hasFileErrors && (
                   <p className="text-xs text-green-600">
                     <strong>Archivos seleccionados:</strong> {value.length} archivo(s)

@@ -1,55 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, X } from 'lucide-react';
 
-// Configuración de formatos permitidos
-const FILE_FORMAT_CATEGORIES = [
-  {
-    id: 'documents',
-    name: 'Documentos',
-    formats: ['.pdf', '.doc', '.docx', '.txt'],
-    icon: 'FileText',
-    description: 'PDF, Word, Texto'
-  },
-  {
-    id: 'images',
-    name: 'Imágenes',
-    formats: ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'],
-    icon: 'Image',
-    description: 'JPG, PNG, GIF, WebP'
-  },
-  {
-    id: 'spreadsheets',
-    name: 'Hojas de cálculo',
-    formats: ['.xls', '.xlsx', '.csv'],
-    icon: 'Table',
-    description: 'Excel, CSV'
-  },
-  {
-    id: 'presentations',
-    name: 'Presentaciones',
-    formats: ['.ppt', '.pptx'],
-    icon: 'Presentation',
-    description: 'PowerPoint'
-  },
-  {
-    id: 'archives',
-    name: 'Archivos comprimidos',
-    formats: ['.zip', '.rar', '.7z'],
-    icon: 'Archive',
-    description: 'ZIP, RAR, 7Z'
-  }
-];
-
-const FILE_SIZE_OPTIONS = [
-  { value: 1, label: '1 MB' },
-  { value: 5, label: '5 MB' },
-  { value: 10, label: '10 MB' },
-  { value: 25, label: '25 MB' },
-  { value: 50, label: '50 MB' },
-  { value: 100, label: '100 MB' },
-  { value: 'custom', label: 'Personalizado' }
-];
-
 const QuestionEditor = ({
   question,
   isSelected,
@@ -62,16 +13,10 @@ const QuestionEditor = ({
 }) => {
   const [localQuestion, setLocalQuestion] = useState({ ...question });
   const [localOptions, setLocalOptions] = useState([...question?.options || []]);
-  const [showCustomSize, setShowCustomSize] = useState(false);
 
   useEffect(() => {
     setLocalQuestion({ ...question });
     setLocalOptions([...question?.options || []]);
-    
-    // Mostrar input personalizado si el tamaño no está en las opciones predefinidas
-    if (question?.maxSize && !FILE_SIZE_OPTIONS.find(opt => opt.value === question.maxSize)) {
-      setShowCustomSize(true);
-    }
   }, [question]);
 
   const saveChanges = useCallback((questionUpdates = {}, optionsUpdates = null) => {
@@ -89,44 +34,6 @@ const QuestionEditor = ({
     });
   }, [localQuestion, localOptions, onUpdate]);
 
-  // Función para manejar la selección de categorías de formatos
-  const handleFormatCategoryToggle = useCallback((categoryId) => {
-    const currentAccept = localQuestion.accept ? localQuestion.accept.split(',') : [];
-    const category = FILE_FORMAT_CATEGORIES.find(cat => cat.id === categoryId);
-    
-    let newAccept;
-    if (currentAccept.some(format => category.formats.includes(format))) {
-      // Remover formatos de la categoría
-      newAccept = currentAccept.filter(format => !category.formats.includes(format));
-    } else {
-      // Agregar formatos de la categoría
-      newAccept = [...currentAccept, ...category.formats];
-    }
-    
-    // Filtrar duplicados y vacíos
-    newAccept = newAccept.filter((format, index, self) => 
-      format && self.indexOf(format) === index
-    );
-    
-    handleFieldChange('accept', newAccept.join(','));
-  }, [localQuestion.accept]);
-
-  // Función para verificar si una categoría está completamente seleccionada
-  const isCategorySelected = useCallback((category) => {
-    if (!localQuestion.accept) return false;
-    const currentAccept = localQuestion.accept.split(',');
-    return category.formats.every(format => currentAccept.includes(format));
-  }, [localQuestion.accept]);
-
-  // Función para verificar si alguna categoría está parcialmente seleccionada
-  const isCategoryPartial = useCallback((category) => {
-    if (!localQuestion.accept) return false;
-    const currentAccept = localQuestion.accept.split(',');
-    const hasSome = category.formats.some(format => currentAccept.includes(format));
-    const hasAll = category.formats.every(format => currentAccept.includes(format));
-    return hasSome && !hasAll;
-  }, [localQuestion.accept]);
-
   const handleTitleChange = useCallback((value) => {
     if (value.length <= 50) {
       const updatedQuestion = { ...localQuestion, title: value };
@@ -138,16 +45,6 @@ const QuestionEditor = ({
     const updatedQuestion = { ...localQuestion, [field]: value };
     setLocalQuestion(updatedQuestion);
   }, [localQuestion]);
-
-  const handleSizeChange = useCallback((value) => {
-    if (value === 'custom') {
-      setShowCustomSize(true);
-      handleFieldChange('maxSize', '');
-    } else {
-      setShowCustomSize(false);
-      handleFieldChange('maxSize', value);
-    }
-  }, [handleFieldChange]);
 
   const handleOptionChange = useCallback((index, value) => {
     const newOptions = [...localOptions];
@@ -339,116 +236,34 @@ const QuestionEditor = ({
           <span className="text-sm font-medium text-gray-700">Permitir múltiples archivos</span>
         </div>
         
-        {/* Selector de formatos por categorías */}
         <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">
-            Tipos de archivo permitidos
+            Configuración de archivos
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {FILE_FORMAT_CATEGORIES.map((category) => {
-              const isSelected = isCategorySelected(category);
-              const isPartial = isCategoryPartial(category);
-              
-              return (
-                <label
-                  key={category.id}
-                  className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all ${
-                    isSelected 
-                      ? 'bg-blue-50 border-blue-300' 
-                      : isPartial
-                      ? 'bg-blue-25 border-blue-200'
-                      : 'bg-white border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isSelected || isPartial}
-                    onChange={() => handleFormatCategoryToggle(category.id)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="ml-3 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">
-                        {category.name}
-                      </span>
-                      {isPartial && (
-                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                          Parcial
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {category.description}
-                    </p>
-                  </div>
-                </label>
-              );
-            })}
-          </div>
-          
-          {/* Vista previa de formatos seleccionados */}
-          {localQuestion.accept && (
-            <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">
-                Formatos seleccionados:
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {localQuestion.accept.split(',').map((format, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
-                  >
-                    {format}
-                  </span>
-                ))}
+          <div className="p-3 bg-white border border-gray-200 rounded-lg">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Tipo de archivo:</span>
+                <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">PDF solamente</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Tamaño máximo:</span>
+                <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">500 KB</span>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Selector de tamaño máximo */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Tamaño máximo por archivo
-          </label>
-          <select
-            value={showCustomSize ? 'custom' : (localQuestion.maxSize || '')}
-            onChange={(e) => handleSizeChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Selecciona tamaño máximo</option>
-            {FILE_SIZE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          
-          {showCustomSize && (
-            <div className="flex items-center space-x-2">
-              <input
-                type="number"
-                value={localQuestion.maxSize || ''}
-                onChange={(e) => handleFieldChange('maxSize', e.target.value)}
-                placeholder="Tamaño en MB"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <span className="text-sm text-gray-500 whitespace-nowrap">MB</span>
-            </div>
-          )}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            <strong>Configuración fija:</strong> Los archivos están limitados a PDF de máximo 500KB
+          </p>
         </div>
       </div>
     );
   }, [
     localQuestion.multiple,
-    localQuestion.accept,
-    localQuestion.maxSize,
-    handleFieldChange,
-    isCategorySelected,
-    isCategoryPartial,
-    handleFormatCategoryToggle,
-    showCustomSize,
-    handleSizeChange
+    handleFieldChange
   ]);
 
   const renderQuestionInput = useCallback(() => {
@@ -511,7 +326,7 @@ const QuestionEditor = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={!isSelected}
               multiple={localQuestion.multiple || false}
-              accept={localQuestion.accept || ''}
+              accept=".pdf,application/pdf"
             />
             {isSelected && renderFileConfig()}
           </div>
