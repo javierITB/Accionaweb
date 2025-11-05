@@ -42,7 +42,6 @@ const FormBuilder = () => {
 
   const [activeTab, setActiveTab] = useState('properties');
   const [isSaving, setIsSaving] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     if (formData.formId && formData.questions.length === 0) {
@@ -182,9 +181,6 @@ const FormBuilder = () => {
 
     setActiveTab('document'); // Redirige a la pestaña de edición
 
-    // 💡 NOTA: DEBES ASEGURARTE DE QUE TU API TIENE UN ENDPOINT
-    // PARA BUSCAR PLANTILLAS POR ID DE FORMULARIO:
-    // GET https://accionaapi.vercel.app/api/plantillas/byFormId/:formId
   };
 
   // 💡 LÓGICA DE MANEJO DE PÁRRAFOS (Necesarios para el editor)
@@ -315,11 +311,11 @@ const FormBuilder = () => {
 
     // 💡 AÑADIR VARIABLES ESTÁTICAS
     const staticVariables = [
-      { name: "Fecha Actual (DD/MM/YYYY)", var: "{{FECHA_ACTUAL}}" },
-      { name: "Hora Actual (HH:MM)", var: "{{HORA_ACTUAL}}" },
-      { name: "Nombre del Autor", var: "{{AUTOR_NOMBRE}}" },
-      { name: "Nombre de la empresa", var: "{{NOMBRE_EMPRESA}}" },
-      { name: "Rut de la Empresa", var: "{{RUT_EMPRESA}}" },
+      { type: "Date", title: "FECHA ACTUAL" },
+      { type: "time", title: "HORA ACTUAL" },
+      { type: "text", title: "AUTOR NOMBRE" },
+      { type: "text", title: "NOMBRE EMPRESA" },
+      { type: "text", title: "RUT EMPRESA" },
     ];
 
     // 💡 COMBINAR LAS VARIABLES

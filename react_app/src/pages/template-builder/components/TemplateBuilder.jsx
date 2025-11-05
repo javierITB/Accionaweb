@@ -178,17 +178,6 @@ const DocumentTemplateEditor = ({
   onDeleteParagraph, // <-- Usado en el editor
   onMoveParagraph // <-- Usado en el editor
 }) => {
-
-  
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Callbacks estables usando useCallback
-  const handleUpdateTemplate = useCallback((field, value) => {
-    onUpdateTemplateData(field, value);
-  }, [onUpdateTemplateData]);
-
-
-
   const copyVariable = useCallback((tag) => {
     navigator.clipboard.writeText(tag).catch(() => {
       // Fallback para navegadores antiguos
