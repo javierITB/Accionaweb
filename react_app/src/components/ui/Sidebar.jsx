@@ -123,16 +123,10 @@ const Sidebar = ({
           </Button>
         )}
 
-        {/* Header */}
-        {!(isCollapsed && !isMobileOpen) && (
-          <div className="p-4 border-b border-border pt-2">
-            <h2 className="text-sm font-semibold text-foreground">Navegación</h2>
-            <p className="text-xs text-muted-foreground">Acceso a herramientas</p>
-          </div>
-        )}
+        
 
         {/* Main navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 mt-4 p-4 space-y-2 overflow-y-auto">
           {navigationItems.map((item) => {
             const isActive = location.pathname === item.path;
             const isTextVisible = !(isCollapsed && !isMobileOpen); // Es visible si no está colapsado Y no está en móvil

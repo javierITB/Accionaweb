@@ -395,8 +395,8 @@ const RequestTracking = () => {
         </div>
       )}
 
-      <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
-        <div className="container-main p-6 space-y-6"> 
+      <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-24`}>
+        <div className=" p-6 space-y-6"> 
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">Seguimiento de Solicitudes</h1>
@@ -481,7 +481,7 @@ const RequestTracking = () => {
 
           <div className={
             viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+              ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'
               : 'space-y-4'
           }>
             {filteredRequests?.length > 0 ? (
