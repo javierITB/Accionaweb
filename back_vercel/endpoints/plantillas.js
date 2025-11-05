@@ -61,7 +61,7 @@ router.get("/:id", async (req, res) => {
   try {
     const plantilla = await req.db
       .collection("plantillas")
-      .findOne({ _id: new ObjectId(req.params.id) });
+      .findOne({ formId: req.params.id });
 
     if (!plantilla) return res.status(404).json({ error: "Plantilla no encontrada" });
     res.json(plantilla);
