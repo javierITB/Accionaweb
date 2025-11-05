@@ -8,11 +8,11 @@ import DocumentTemplateEditor from './components/TemplateBuilder'; // Renombrado
 
 // 💡 FUNCIÓN UTILITARIA: Convierte un título de pregunta en un tag de variable {{SNAKE_CASE}}
 const generateVarTag = (title) => {
-    if (!title) return '';
-    // Limpiar acentos, reemplazar no alfanuméricos por guion bajo y convertir a mayúsculas
-    const cleanTitle = title.normalize("NFD").replace(/[\u0300-\u036f]/g, '');
-    const snakeCase = cleanTitle.trim().toUpperCase().replace(/[^A-Z0-9\s]/g, '').replace(/\s+/g, '_');
-    return `{{${snakeCase}}}`;
+  if (!title) return '';
+  // Limpiar acentos, reemplazar no alfanuméricos por guion bajo y convertir a mayúsculas
+  const cleanTitle = title.normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+  const snakeCase = cleanTitle.trim().toUpperCase().replace(/[^A-Z0-9\s]/g, '').replace(/\s+/g, '_');
+  return `{{${snakeCase}}}`;
 };
 
 const FormBuilder = () => {
@@ -32,7 +32,7 @@ const FormBuilder = () => {
     companies: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    
+
     // 💡 CAMPOS DE LA PLANTILLA DOCX
     documentTitle: '', // Se usa para el documento generado
     paragraphs: [],
@@ -43,6 +43,28 @@ const FormBuilder = () => {
   const [activeTab, setActiveTab] = useState('properties');
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  useEffect(() => {
+    if (formData.formId && formData.questions.length === 0) {
+      const fetchBaseFormQuestions = async () => {
+        try {
+          const res = await fetch(`https://accionaapi.vercel.app/api/forms/${formData.formId}`);
+          if (!res.ok) throw new Error('Formulario base no encontrado');
+          const data = await res.json();
+
+          setFormData(prev => ({
+            ...prev,
+            questions: data.questions || [],
+          }));
+
+        } catch (err) {
+          console.error('Error cargando preguntas del formulario base:', err);
+        }
+      };
+
+      fetchBaseFormQuestions();
+    }
+  }, [formData.formId, formData.questions.length]);
 
   // Load form/template from API if editing
   useEffect(() => {
@@ -66,23 +88,23 @@ const FormBuilder = () => {
           secondaryColor: data.secondaryColor || '#F3F4F6',
           status: data.status || 'borrador',
           companies: data.companies || [],
-          
+
           // Datos específicos de la plantilla
           documentTitle: data.documentTitle || data.title || '',
           paragraphs: data.paragraphs || [],
           signatureText: data.signatureText || 'Firma del Empleador y Empleado.',
           formId: data.formId || null, // ID del formulario asociado
-          
+
           createdAt: data.createdAt || new Date().toISOString(),
           updatedAt: data.updatedAt || new Date().toISOString()
           // No necesitamos cargar 'questions' aquí, ya que se cargan al seleccionar la base.
         };
 
         setFormData(normalizedTemplate);
-        
+
         // Si cargamos una plantilla por ID, ir directamente al editor
         if (normalizedTemplate.formId) {
-            setActiveTab('document');
+          setActiveTab('document');
         }
 
       } catch (err) {
@@ -111,21 +133,60 @@ const FormBuilder = () => {
   };
 
   // 💡 FUNCIÓN DE SELECCIÓN DE PLANTILLA BASE
-  const handleTemplateSelect = (selectedTemplateData) => {
+  const handleTemplateSelect = async (selectedTemplateData) => {
+
+    // 1. Obtener el ID del formulario base
+    const selectedFormId = selectedTemplateData.id;
+
+    // 2. Intentar buscar una plantilla DOCX que ya esté asociada a este formId
+    let existingTemplateData = null;
+    try {
+      const url = `https://accionaapi.vercel.app/api/plantillas/${selectedFormId}`;
+      const res = await fetch(url);
+
+      if (res.ok) {
+        existingTemplateData = await res.json();
+        console.log("Plantilla existente encontrada por formId:", existingTemplateData);
+      }
+    } catch (err) {
+      console.warn("No se encontró plantilla existente para este formId. Creando una nueva.");
+    }
+
+    // 3. Definir el estado final (usando la existente o creando una nueva)
+    const newTemplateState = existingTemplateData ? {
+      // Cargar datos de la plantilla EXISTENTE
+      id: existingTemplateData._id || existingTemplateData.id,
+      formId: selectedFormId,
+      title: existingTemplateData.title,
+      documentTitle: existingTemplateData.documentTitle,
+      paragraphs: existingTemplateData.paragraphs,
+      signatureText: existingTemplateData.signatureText,
+      questions: selectedTemplateData.questions || [], // Siempre se actualizan las preguntas del formulario base
+      status: existingTemplateData.status,
+    } : {
+      // Inicializar datos para una plantilla NUEVA
+      id: null,
+      formId: selectedFormId,
+      title: selectedTemplateData.title, // Título interno
+      documentTitle: selectedTemplateData.title, // Título del documento
+      questions: selectedTemplateData.questions || [],
+      paragraphs: [{ id: 'p1', content: 'Primera cláusula del contrato - {{FECHA_ACTUAL}}.' }],
+      signatureText: 'Firma del Empleador y Empleado.',
+      status: 'borrador',
+    };
+
     setFormData(prev => ({
       ...prev,
-      // Almacenamos el ID del formulario base
-      formId: selectedTemplateData.id, 
-      // Usamos el título del formulario como título de la plantilla DOCX
-      documentTitle: selectedTemplateData.title, 
-      questions: selectedTemplateData.questions || [],
-      // Inicializamos el contenido de la plantilla DOCX si no existe
-      paragraphs: [{ id: 'p1', content: 'Primera cláusula del contrato...' }],
-      signatureText: 'Firma del Empleador y Empleado.',
+      ...newTemplateState, // Sobrescribir los campos de plantilla
     }));
+
     setActiveTab('document'); // Redirige a la pestaña de edición
+
+    // 💡 NOTA: DEBES ASEGURARTE DE QUE TU API TIENE UN ENDPOINT
+    // PARA BUSCAR PLANTILLAS POR ID DE FORMULARIO:
+    // GET https://accionaapi.vercel.app/api/plantillas/byFormId/:formId
   };
-  
+
   // 💡 LÓGICA DE MANEJO DE PÁRRAFOS (Necesarios para el editor)
   const handleAddParagraph = () => {
     const newParagraph = { id: Date.now().toString(), content: 'Nuevo párrafo de contenido.' };
@@ -162,35 +223,35 @@ const FormBuilder = () => {
   const handleSaveTemplate = async (newStatus = 'publicado') => {
     const dataToSend = {
       // ID para la actualización (PUT)
-      id: formData.id, 
-      title: formData.title || formData.documentTitle, 
+      id: formData.id,
+      title: formData.title || formData.documentTitle,
       section: formData.section || 'General',
       companies: formData.companies,
-      
+
       // Contenido del documento
       documentTitle: formData.documentTitle,
       paragraphs: formData.paragraphs,
       signatureText: formData.signatureText,
-      
+
       // Asociación al formulario original
-      formId: formData.formId, 
-      
+      formId: formData.formId,
+
       status: newStatus, // Usamos el status pasado por el botón
       updatedAt: new Date().toISOString(),
     };
-    
-    // ❌ CORRECCIÓN CRÍTICA DE VALIDACIÓN
+
+    // CORRECCIÓN CRÍTICA DE VALIDACIÓN
     if (!dataToSend.formId) {
       alert("ERROR: Debe seleccionar un Formulario Base primero.");
       return;
     }
     if (!dataToSend.title?.trim()) {
-        alert("ERROR: Debe ingresar un Título para la Plantilla (interno).");
-        return;
+      alert("ERROR: Debe ingresar un Título para la Plantilla (interno).");
+      return;
     }
     if (!dataToSend.documentTitle?.trim()) {
-        alert("ERROR: Debe ingresar un Título para el Documento (DOCX).");
-        return;
+      alert("ERROR: Debe ingresar un Título para el Documento (DOCX).");
+      return;
     }
     if (dataToSend.paragraphs.length === 0) {
       alert("ERROR: La plantilla debe contener al menos un párrafo.");
@@ -198,12 +259,12 @@ const FormBuilder = () => {
     }
 
     setIsSaving(true);
-    
+
     // Definir el método y URL
     const isUpdating = !!formData.id;
-    const url = "https://accionaapi.vercel.app/api/plantillas"; 
+    const url = "https://accionaapi.vercel.app/api/plantillas";
     const method = "POST"; // POST para crear o POST para actualizar (según su endpoint de MongoDB)
-    
+
     try {
       const response = await fetch(url, {
         method: method,
@@ -216,11 +277,11 @@ const FormBuilder = () => {
       }
 
       const savedData = await response.json();
-      
+
       setFormData(prev => ({
         ...prev,
         // Actualizar el ID si fue un POST exitoso
-        id: savedData._id || savedData.id || prev.id, 
+        id: savedData._id || savedData.id || prev.id,
         status: savedData.status || newStatus,
       }));
 
@@ -242,15 +303,15 @@ const FormBuilder = () => {
 
   // Navigation tabs
   const tabs = [
-    { id: 'properties', label: 'Seleccionar Formulario', icon: 'Settings' }, 
-    { id: 'document', label: 'Editar Plantilla', icon: 'FileText', count: formData.paragraphs?.length }, 
+    { id: 'properties', label: 'Seleccionar Formulario', icon: 'Settings' },
+    { id: 'document', label: 'Editar Plantilla', icon: 'FileText', count: formData.paragraphs?.length },
 
   ];
   //actualizacion
   const getTabContent = () => {
     // 💡 CALCULAR VARIABLES DINÁMICAS
     const dynamicVariables = formData.questions
-      .filter(q => q.title && q.title.trim() !== '') ;
+      .filter(q => q.title && q.title.trim() !== '');
 
     // 💡 AÑADIR VARIABLES ESTÁTICAS
     const staticVariables = [
@@ -260,40 +321,41 @@ const FormBuilder = () => {
       { name: "Nombre de la empresa", var: "{{NOMBRE_EMPRESA}}" },
       { name: "Rut de la Empresa", var: "{{RUT_EMPRESA}}" },
     ];
-    
+
     // 💡 COMBINAR LAS VARIABLES
     const availableVariables = [...dynamicVariables, ...staticVariables];
 
 
     switch (activeTab) {
-      case 'properties': 
+      case 'properties':
         return (
           <TemplateList
-            onUpdateFormData={handleTemplateSelect} 
+            onUpdateFormData={handleTemplateSelect}
           />
         );
-      case 'document': 
+      case 'document':
         if (!formData.formId) {
-            return (
-                <div className="text-center py-12 bg-muted/50 rounded-lg">
-                    <Icon name="AlertTriangle" size={48} className="mx-auto mb-4 text-warning" />
-                    <h3 className="text-lg font-medium text-foreground mb-4">
-                        Por favor, selecciona un formulario base primero
-                    </h3>
-                    <Button onClick={() => setActiveTab('properties')}>
-                        Ir a Selección de Formulario
-                    </Button>
-                </div>
-            );
+          return (
+            <div className="text-center py-12 bg-muted/50 rounded-lg">
+              <Icon name="AlertTriangle" size={48} className="mx-auto mb-4 text-warning" />
+              <h3 className="text-lg font-medium text-foreground mb-4">
+                Por favor, selecciona un formulario base primero
+              </h3>
+              <Button onClick={() => setActiveTab('properties')}>
+                Ir a Selección de Formulario
+              </Button>
+            </div>
+          );
         }
         return (
           <DocumentTemplateEditor
             templateData={{
-                title: formData.documentTitle,
-                paragraphs: formData.paragraphs,
-                signatureText: formData.signatureText,
+              title: formData.documentTitle, // <- Aquí está el campo
+              paragraphs: formData.paragraphs,
+              signatureText: formData.signatureText,
+              id: formData.plantillaId
             }}
-            onUpdateTemplateData={updateFormData} 
+            onUpdateTemplateData={updateFormData}
             availableVariables={availableVariables}
             onAddParagraph={handleAddParagraph}
             onUpdateParagraph={handleUpdateParagraph}
@@ -346,12 +408,12 @@ const FormBuilder = () => {
                 type="button"
                 variant="default"
                 // 💡 LLAMADA A LA FUNCIÓN DE GUARDADO DE PLANTILLA
-                onClick={() => handleSaveTemplate('publicado')} 
+                onClick={() => handleSaveTemplate('publicado')}
                 loading={isSaving}
                 iconName="Send"
                 iconPosition="left"
                 // 💡 CORRECCIÓN: Usar isSaving en lugar de isPublishing para el loading
-                disabled={!formData.formId || isSaving || !formData.documentTitle || formData.paragraphs.length === 0} 
+                disabled={!formData.formId || isSaving || !formData.documentTitle || formData.paragraphs.length === 0}
               >
                 {isSaving ? 'Guardando...' : 'Guardar Plantilla'}
               </Button>
@@ -370,8 +432,8 @@ const FormBuilder = () => {
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
                       }`}
-                      // Deshabilitar la pestaña "Documento" si no se ha seleccionado una base
-                      disabled={tab.id === 'document' && !formData.formId} 
+                    // Deshabilitar la pestaña "Documento" si no se ha seleccionado una base
+                    disabled={tab.id === 'document' && !formData.formId}
                   >
                     <Icon name={tab?.icon} size={16} />
                     <span>{tab?.label}</span>
@@ -385,7 +447,7 @@ const FormBuilder = () => {
                     )}
                   </button>
                 ))}
-                
+
               </nav>
             </div>
 

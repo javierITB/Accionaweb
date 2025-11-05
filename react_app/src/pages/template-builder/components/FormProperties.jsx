@@ -62,17 +62,13 @@ const TemplateList = ({ onUpdateFormData }) => {
     fetchForms();
   }, []);
   
+  
   // Función placeholder para manejar la selección de una plantilla
   const handleTemplateSelect = (form) => {
-      // 💡 Esta función es crítica: Aquí se debería pasar el ID/data 
-      // de la plantilla seleccionada al componente FormBuilder.jsx (padre)
-      // para que pueda cargarla para edición o vinculación.
+      // Pasa el objeto completo del formulario (incluyendo preguntas) al componente padre
+      onUpdateFormData(form); 
       
-      // Ejemplo de acción: Cambiar el título de la plantilla padre
-      onUpdateFormData(form);
-      
-      console.log('Plantilla seleccionada:', form);
-      alert(`Seleccionaste ${form.title}. Ahora puedes vincularla.`);
+      console.log('Formulario seleccionado como base:', form.id);
   };
 
   return (

@@ -3,17 +3,17 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const Input = React.forwardRef((props, ref) => (
-  <input 
+  <input
     ref={ref}
-    {...props} 
-    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" 
+    {...props}
+    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
   />
 ));
 
 const Textarea = React.forwardRef(({ className = '', ...props }, ref) => (
-  <textarea 
+  <textarea
     ref={ref}
-    {...props} 
+    {...props}
     className={`flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y ${className}`}
   />
 ));
@@ -32,7 +32,7 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
   const [isOpen, setIsOpen] = useState(false);
   const hasSubVariables = (variable.options && variable.options.length > 0) || (variable.subformQuestions && variable.subformQuestions.length > 0);
 
-  const renderSimpleVariable = (v) => (
+  const renderSimpleVariable = (v) => v.type && (
     <button
       key={generateVarTag(v.title || v.text)}
       onClick={() => copyVariable(generateVarTag(v.title || v.text))}
@@ -42,8 +42,8 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
           : ''}
                 `}
     >
-      <span className={`font-semibold ${isChild ? 'text-xs' : 'text-sm'}`}>{v.title || v.text}</span>
-      <span className={`text-xs opacity-80 ${isChild ? 'ml-1' : ''}`}>{generateVarTag(v.title || v.text)}</span>
+      <span className={`font-semibold ${isChild ? 'text-xs' : 'text-sm'}`}>{generateVarTag(v.title || v.text)} </span>
+      <span className={`text-xs opacity-80 ${isChild ? 'ml-1' : ''}`}>{v.title || v.text} {v.type && (" (" + v.type + ")")}</span>
     </button>
   );
 
@@ -55,6 +55,10 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
     return renderSimpleVariable(variable.subformQuestions[0]);
   }
 
+  if (variable.options?.length === 1) {
+    return renderSimpleVariable(variable.options[0]);
+  }
+
   return (
     <div className={`w-full border border-border rounded-lg ${isOpen ? 'bg-primary/5 dark:bg-primary/10' : 'bg-card dark:bg-card'}`}>
       <button
@@ -63,13 +67,14 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
       >
         <div className="flex flex-col items-start">
           <span className="font-semibold text-sm">{variable.title || variable.text}</span>
-          <span className="text-xs opacity-80 text-primary">{generateVarTag(variable.title || variable.text)}</span>
+          <span className="text-xs opacity-80 text-primary">{variable.title || variable.text} {variable.type && (" (" + variable.type + ")")}</span>
         </div>
         <Icon name={isOpen ? "ChevronUp" : "ChevronDown"} size={14} className="text-primary" />
       </button>
 
       {isOpen && (
         <div className="p-2 space-y-1 border-t border-border dark:border-slate-700">
+          {renderSimpleVariable(variable)}
           {variable.options && (variable.options)?.map((subVar) => (
             <VariableItem
               key={subVar.title}
@@ -163,65 +168,26 @@ const ParagraphEditor = React.memo(({ paragraph, index, total, onUpdate, onDelet
   );
 });
 
-const DocumentTemplateEditor = ({ availableVariables = [] }) => {
-  // Estado unificado - eliminar estado duplicado
-  const [templateData, setTemplateData] = useState({
-    title: 'Contrato de Trabajo - {{NOMBRE_DEL_TRABAJADOR}}',
-    paragraphs: [
-      { id: 'p1', content: 'Mediante el presente documento se establece que la empresa {{NOMBRE_EMPRESA}}, RUT {{RUT_EMPRESA}}, contrata a {{NOMBRE_DEL_TRABAJADOR}}, RUT {{RUT_DEL_TRABAJADOR}}, a partir de la fecha {{FECHA_DE_INICIO_DE_MODIFICACION}}.' },
-    ],
-    signatureText: 'Declaro haber leído y aceptado los términos de este contrato.',
-  });
+// Ahora (usando todas las props relevantes):
+const DocumentTemplateEditor = ({
+  availableVariables = [],
+  templateData, // <-- Recibe los datos del padre
+  onUpdateTemplateData, // <-- Recibe el callback de actualización
+  onAddParagraph, // <-- Usado en el editor
+  onUpdateParagraph, // <-- Usado en el editor
+  onDeleteParagraph, // <-- Usado en el editor
+  onMoveParagraph // <-- Usado en el editor
+}) => {
 
-  const [lastId, setLastId] = useState(2);
+  
   const [isSaving, setIsSaving] = useState(false);
 
   // Callbacks estables usando useCallback
   const handleUpdateTemplate = useCallback((field, value) => {
-    setTemplateData(prev => ({ ...prev, [field]: value }));
-  }, []);
+    onUpdateTemplateData(field, value);
+  }, [onUpdateTemplateData]);
 
-  const handleAddParagraph = useCallback(() => {
-    const newId = `p${lastId + 1}`;
-    const newParagraph = { id: newId, content: '' };
-    
-    setTemplateData(prev => ({
-      ...prev,
-      paragraphs: [...prev.paragraphs, newParagraph]
-    }));
-    setLastId(prev => prev + 1);
-  }, [lastId]);
 
-  const handleUpdateParagraph = useCallback((id, content) => {
-    setTemplateData(prev => ({
-      ...prev,
-      paragraphs: prev.paragraphs.map(p => p.id === id ? { ...p, content } : p)
-    }));
-  }, []);
-
-  const handleDeleteParagraph = useCallback((id) => {
-    if (templateData.paragraphs.length <= 1) {
-      alert("La plantilla debe tener al menos un párrafo.");
-      return;
-    }
-    setTemplateData(prev => ({
-      ...prev,
-      paragraphs: prev.paragraphs.filter(p => p.id !== id)
-    }));
-  }, [templateData.paragraphs.length]);
-
-  const handleMoveParagraph = useCallback((id, direction) => {
-    const paragraphs = [...templateData.paragraphs];
-    const index = paragraphs.findIndex(p => p.id === id);
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-
-    if (newIndex >= 0 && newIndex < paragraphs.length) {
-      const newParagraphs = [...paragraphs];
-      [newParagraphs[index], newParagraphs[newIndex]] = [newParagraphs[newIndex], newParagraphs[index]];
-      
-      setTemplateData(prev => ({ ...prev, paragraphs: newParagraphs }));
-    }
-  }, [templateData.paragraphs]);
 
   const copyVariable = useCallback((tag) => {
     navigator.clipboard.writeText(tag).catch(() => {
@@ -235,34 +201,28 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
     });
   }, []);
 
-  const handleSaveTemplate = async () => {
-    if (!templateData.title || templateData.paragraphs.some(p => !p.content.trim())) {
-      alert('El título y todos los párrafos deben tener contenido.');
-      return;
-    }
-
-    setIsSaving(true);
-    console.log("Guardando Plantilla:", templateData);
-
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSaving(false);
-    alert('¡Plantilla de contrato guardada exitosamente!');
-  };
 
   // Memoizar la lista de ParagraphEditors
-  const paragraphEditors = useMemo(() => 
+  const paragraphEditors = useMemo(() =>
     templateData.paragraphs.map((paragraph, index) => (
       <ParagraphEditor
         key={paragraph.id}
         paragraph={paragraph}
         index={index}
         total={templateData.paragraphs.length}
-        onUpdate={handleUpdateParagraph}
-        onDelete={handleDeleteParagraph}
-        onMove={handleMoveParagraph}
+        // CRÍTICO: Usar las props del padre
+        onUpdate={onUpdateParagraph}  // <--- ¡CORREGIDO! Usar la prop
+        onDelete={onDeleteParagraph}  // <--- ¡CORREGIDO! Usar la prop
+        onMove={onMoveParagraph}      // <--- ¡CORREGIDO! Usar la prop
       />
-    )), 
-    [templateData.paragraphs, handleUpdateParagraph, handleDeleteParagraph, handleMoveParagraph]
+    )),
+    // CRÍTICO: Las dependencias deben ser las props, no las funciones locales eliminadas
+    [
+      templateData.paragraphs, 
+      onUpdateParagraph, 
+      onDeleteParagraph, 
+      onMoveParagraph // <- Dependencias limpias
+    ]
   );
 
   return (
@@ -297,7 +257,7 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
               type="text"
               placeholder="Ej: Contrato de {{EMPLEADO_NOMBRE}}"
               value={templateData.title}
-              onChange={(e) => handleUpdateTemplate('title', e.target.value)}
+              onChange={(e) => onUpdateTemplateData('documentTitle', e.target.value)}
               className="w-full text-xl font-bold"
             />
           </div>
@@ -330,11 +290,10 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
           {templateData.paragraphs.length > 0 && (
             <div className="flex justify-center pt-2">
               <Button
-                onClick={handleAddParagraph}
+                onClick={onAddParagraph}
                 variant="outline"
                 iconName="Plus"
                 iconPosition="left"
-                disabled={isSaving}
                 size="sm"
                 type="button"
               >
@@ -349,7 +308,7 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
             </h3>
             <Textarea
               value={templateData.signatureText}
-              onChange={(e) => handleUpdateTemplate('signatureText', e.target.value)}
+              onChange={(e) => onUpdateTemplateData('signatureText', e.target.value)}
               rows={3}
               placeholder="Ej: Acepto los términos y condiciones de este documento."
               className="w-full"
@@ -359,19 +318,6 @@ const DocumentTemplateEditor = ({ availableVariables = [] }) => {
             </p>
           </div>
 
-          <div className="flex justify-end pt-4">
-            <Button
-              onClick={handleSaveTemplate}
-              variant="default"
-              iconName="Save"
-              iconPosition="left"
-              disabled={isSaving}
-              size="lg"
-              type="button"
-            >
-              {isSaving ? 'Guardando...' : 'Guardar Plantilla'}
-            </Button>
-          </div>
         </div>
       </div>
     </div>
