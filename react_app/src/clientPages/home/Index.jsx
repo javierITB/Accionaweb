@@ -3,7 +3,6 @@ import Header from '../components/ui/Header';
 import WelcomeCard from './components/WelcomeCard';
 import QuickActionsCard from './components/QuickActionsCard';
 import RecentActivityCard from './components/RecentActivityCard';
-import StatsOverviewCard from './components/StatsOverviewCard';
 import Icon from '../components/AppIcon';
 import Button from '../components/ui/Button';
 
@@ -60,7 +59,7 @@ const DashboardHome = () => {
       {/* Main Content: pt-20 compensa el header fijo */}
       <main className={`transition-all duration-300 pt-20`}>
         {/* 💡 APLICACIÓN DE LA CLASE CONTAINER-MAIN */}
-        <div className="container-main py-6 space-y-6">
+        <div className="px-20 py-6 space-y-6">
 
 
           {/* Welcome Section */}

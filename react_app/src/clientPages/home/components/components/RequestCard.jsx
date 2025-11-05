@@ -2,7 +2,7 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
+const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
@@ -60,7 +60,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
       'borrador': 'BORRADOR',
       'borrador': 'BORRADOR'
     };
-    
+
     return statusMap[status?.toLowerCase()] || status?.replace('_', ' ')?.toUpperCase() || 'DESCONOCIDO';
   };
 
@@ -121,15 +121,29 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
     }
   };
 
+  // Obtener el nombre del trabajador desde las respuestas
+  const getTrabajadorName = () => {
+    return request?.responses?.["Nombre del trabajador:"] ||
+      request?.responses?.["Nombre del trabajador"] ||
+      'ninguno';
+  };
+
+  // Obtener el título combinado
+  const getCombinedTitle = () => {
+    const formTitle = request?.formTitle || request?.form?.title || request?.title || 'Formulario';
+    const trabajadorName = getTrabajadorName();
+
+    return `${formTitle} - ${trabajadorName}`;
+  };
+
   return (
     <div className="bg-card border border-border rounded-lg p-6 hover:shadow-brand-hover transition-brand">
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
-            <h3 className="text-lg font-semibold text-foreground">{request?.title}</h3>
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request?.status)}`}>
-              <Icon name={getStatusIcon(request?.status)} size={12} className="mr-1" />
-              {formatStatusText(request?.status)}
+            <h3 className="text-lg font-semibold text-foreground">{getCombinedTitle()}</h3>
+            <span className="text-xs text-muted-foreground">
+              {getRelativeTime(request?.submittedAt)}
             </span>
           </div>
           <p className="text-sm text-muted-foreground mb-3">{request?.description}</p>
@@ -159,9 +173,11 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-secondary rounded-full"></span>
             </div>
           )}
-          <span className="text-xs text-muted-foreground">
-            {getRelativeTime(request?.submittedAt)}
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request?.status)}`}>
+            <Icon name={getStatusIcon(request?.status)} size={12} className="mr-1" />
+            {formatStatusText(request?.status)}
           </span>
+
         </div>
       </div>
       <div className="flex items-center justify-between">
@@ -175,6 +191,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
         </div>
 
         <div className="flex items-center space-x-2">
+
           <Button
             variant="outline"
             size="sm"
@@ -183,19 +200,20 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
             iconPosition="left"
             iconSize={16}
           >
-            Mensaje
           </Button>
 
           <Button
-            variant="default"
+            variant="ghost"
             size="sm"
             onClick={() => onViewDetails(request)}
-            iconName="Eye"
+            iconName="Info"
             iconPosition="left"
             iconSize={16}
           >
-            Ver Detalles
+
           </Button>
+
+
         </div>
       </div>
     </div>

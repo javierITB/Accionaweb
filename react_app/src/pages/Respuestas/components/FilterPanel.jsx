@@ -17,6 +17,7 @@ const FilterPanel = ({
     { value: 'pendiente', label: 'Pendiente' },
     { value: 'en_revision', label: 'En Revisión' },
     { value: 'aprobado', label: 'Aprobado' },
+    { value: 'firmado', label: 'Firmado' },
   ];
 
   // Opciones de categoría basadas en los formularios existentes
@@ -101,7 +102,7 @@ const FilterPanel = ({
           </div>
 
           {/* Filter Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             <Select
               label="Estado"
               options={statusOptions}
@@ -109,12 +110,6 @@ const FilterPanel = ({
               onChange={(value) => handleInputChange('status', value)}
             />
 
-            <Select
-              label="Categoría"
-              options={categoryOptions}
-              value={filters?.category || ''}
-              onChange={(value) => handleInputChange('category', value)}
-            />
 
             <Select
               label="Período"

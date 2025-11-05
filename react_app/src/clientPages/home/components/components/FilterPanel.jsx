@@ -11,31 +11,16 @@ const FilterPanel = ({
   isVisible, 
   onToggle 
 }) => {
+  // Opciones de estado basadas en los estados reales del sistema
   const statusOptions = [
     { value: '', label: 'Todos los Estados' },
-    { value: 'borrador', label: 'Borrador' },
-    { value: 'pending', label: 'Pendiente' },
-    { value: 'in_review', label: 'En Revisión' },
-    { value: 'approved', label: 'Aprobado' },
-    { value: 'rejected', label: 'Rechazado' }
+    { value: 'pendiente', label: 'Pendiente' },
+    { value: 'en_revision', label: 'En Revisión' },
+    { value: 'aprobado', label: 'Aprobado' },
+    { value: 'firmado', label: 'Firmado' },
   ];
 
-  const categoryOptions = [
-    { value: '', label: 'Todas las Categorías' },
-    { value: 'time_off', label: 'Tiempo Libre' },
-    { value: 'expense', label: 'Gastos' },
-    { value: 'it_support', label: 'Soporte TI' },
-    { value: 'hr_general', label: 'RR.HH. General' },
-    { value: 'payroll', label: 'Nómina' },
-    { value: 'benefits', label: 'Beneficios' }
-  ];
 
-  const priorityOptions = [
-    { value: '', label: 'Todas las Prioridades' },
-    { value: 'high', label: 'Alta' },
-    { value: 'medium', label: 'Media' },
-    { value: 'low', label: 'Baja' }
-  ];
 
   const dateRangeOptions = [
     { value: '', label: 'Cualquier Fecha' },
@@ -98,7 +83,7 @@ const FilterPanel = ({
             <Input
               label="Buscar Solicitudes"
               type="search"
-              placeholder="Buscar por título, descripción o ID..."
+              placeholder="Buscar por título, empresa o usuario..."
               value={filters?.search || ''}
               onChange={(e) => handleInputChange('search', e?.target?.value)}
               className="w-full"
@@ -106,7 +91,7 @@ const FilterPanel = ({
           </div>
 
           {/* Filter Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 bg y lg:grid-cols-2 gap-4">
             <Select
               label="Estado"
               options={statusOptions}
@@ -114,19 +99,6 @@ const FilterPanel = ({
               onChange={(value) => handleInputChange('status', value)}
             />
 
-            <Select
-              label="Categoría"
-              options={categoryOptions}
-              value={filters?.category || ''}
-              onChange={(value) => handleInputChange('category', value)}
-            />
-
-            <Select
-              label="Prioridad"
-              options={priorityOptions}
-              value={filters?.priority || ''}
-              onChange={(value) => handleInputChange('priority', value)}
-            />
 
             <Select
               label="Período"
@@ -157,17 +129,17 @@ const FilterPanel = ({
           <div className="pt-4 border-t border-border">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Asignado a"
+                label="Empresa"
                 type="text"
-                placeholder="Nombre del asignado..."
-                value={filters?.assignedTo || ''}
-                onChange={(e) => handleInputChange('assignedTo', e?.target?.value)}
+                placeholder="Filtrar por empresa..."
+                value={filters?.company || ''}
+                onChange={(e) => handleInputChange('company', e?.target?.value)}
               />
 
               <Input
                 label="Enviado por"
                 type="text"
-                placeholder="Nombre del remitente..."
+                placeholder="Nombre del usuario..."
                 value={filters?.submittedBy || ''}
                 onChange={(e) => handleInputChange('submittedBy', e?.target?.value)}
               />

@@ -32,7 +32,8 @@ const RequestTracking = () => {
     startDate: '',
     endDate: '',
     assignedTo: '',
-    submittedBy: ''
+    submittedBy: '',
+    description: ''
   });
 
   //buscar id de respuesta que se busca abrir
@@ -182,30 +183,7 @@ const RequestTracking = () => {
     }
   });
 
-  const handleRemove = async (request) => {
-    const requestId = request?._id
-    if (!requestId) return alert("ID no válido para eliminar.");
 
-    const confirmDelete = window.confirm("¿Seguro que deseas eliminar esta solicitud?");
-    if (!confirmDelete) return;
-
-    try {
-      setIsLoading(true);
-      const res = await fetch(`https://accionaapi.vercel.app/api/respuestas/${requestId}`, {
-        method: 'DELETE',
-      });
-
-      if (!res.ok) throw new Error('Error al eliminar la solicitud.');
-
-      setResp((prev) => prev.filter((r) => r._id !== requestId));
-
-    } catch (err) {
-      console.error(err);
-      alert("No se pudo eliminar la solicitud.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleViewDetails = (request) => {
     setSelectedRequest(request);
@@ -245,7 +223,7 @@ const RequestTracking = () => {
   ];
 
   return (
-    <div className="bg-card rounded-xl shadow-brand border border-border">
+    <div className="bg-card rounded-xl shadow-brand border border-border mt-8">
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
