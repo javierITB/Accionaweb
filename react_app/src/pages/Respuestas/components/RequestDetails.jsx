@@ -13,6 +13,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const [showPreview, setShowPreview] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [documentInfo, setDocumentInfo] = useState(null);
 
   const checkClientSignature = async () => {
     try {
@@ -30,6 +31,21 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     } catch (error) {
       console.error('Error verificando firma del cliente:', error);
       setClientSignature(null);
+    }
+  };
+
+  const getDocumentInfo = async (responseId) => {
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/generador/info-by-response/${responseId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDocumentInfo(data);
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error obteniendo información del documento:', error);
+      return null;
     }
   };
 
@@ -51,6 +67,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
     if (request?._id) {
       checkClientSignature();
+      getDocumentInfo(request._id);
     }
   }, [request]);
 
@@ -108,20 +125,27 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     setShowPreview(true);
   };
 
-  const handlePreviewGenerated = () => {
-    const documentId = request?.IDdoc || request?._id;
-    
-    if (!documentId) {
-      alert('No hay documento disponible para vista previa');
-      return;
+  const handlePreviewGenerated = async () => {
+    try {
+      setIsLoadingPreview(true);
+      
+      const info = documentInfo || await getDocumentInfo(request._id);
+      
+      if (!info || !info.IDdoc) {
+        alert('No hay documento generado disponible para vista previa');
+        return;
+      }
+
+      const documentUrl = `https://accionaapi.vercel.app/api/generador/download/${info.IDdoc}`;
+      const extension = info.tipo || 'docx';
+
+      handlePreviewDocument(documentUrl, extension);
+    } catch (error) {
+      console.error('Error en vista previa del documento generado:', error);
+      alert('Error al cargar la vista previa del documento generado: ' + error.message);
+    } finally {
+      setIsLoadingPreview(false);
     }
-
-    const documentUrl = `https://accionaapi.vercel.app/api/generador/download/${documentId}`;
-
-    const fileName = formatFileName();
-    const extension = fileName.split('.').pop()?.toLowerCase() || 'docx';
-
-    handlePreviewDocument(documentUrl, extension);
   };
 
   const handlePreviewCorrected = async () => {
@@ -192,29 +216,31 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleDownload = async () => {
-    const documentId = request?.IDdoc || request?._id;
-    
-    if (documentId) {
+    try {
       setIsDownloading(true);
-      try {
-        window.open(`https://accionaapi.vercel.app/api/generador/download/${documentId}`, '_blank');
-
-        if (onUpdate) {
-          const updatedRequest = {
-            ...request,
-            status: 'en_revision'
-          };
-          onUpdate(updatedRequest);
-        }
-
-      } catch (error) {
-        console.error('Error en descarga:', error);
-        alert('Error al descargar el documento');
-      } finally {
-        setIsDownloading(false);
+      
+      const info = documentInfo || await getDocumentInfo(request._id);
+      
+      if (!info || !info.IDdoc) {
+        alert('No hay documento disponible para descargar');
+        return;
       }
-    } else {
-      alert('No hay documento disponible para descargar');
+
+      window.open(`https://accionaapi.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
+
+      if (onUpdate) {
+        const updatedRequest = {
+          ...request,
+          status: 'en_revision'
+        };
+        onUpdate(updatedRequest);
+      }
+
+    } catch (error) {
+      console.error('Error en descarga:', error);
+      alert('Error al descargar el documento');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -707,11 +733,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         variant="ghost"
                         size="sm"
                         onClick={handlePreviewGenerated}
-                        iconName="Eye"
+                        iconName={isLoadingPreview ? "Loader" : "Eye"}
                         iconPosition="left"
                         iconSize={16}
+                        disabled={isLoadingPreview}
                       >
-                        Vista Previa
+                        {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
                       </Button>
                     </div>
                   </div>
