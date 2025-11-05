@@ -12,6 +12,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const [showPreview, setShowPreview] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   const checkClientSignature = async () => {
     try {
@@ -41,6 +42,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       setCorrectedFile({
         name: request.correctedFile.fileName,
         size: request.correctedFile.fileSize,
+        url: `https://accionaapi.vercel.app/api/respuestas/${request._id}/corrected-file`,
+        isServerFile: true
       });
     } else {
       setCorrectedFile(null);
@@ -50,6 +53,45 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       checkClientSignature();
     }
   }, [request]);
+
+  const downloadPdfForPreview = async (url) => {
+    try {
+      setIsLoadingPreview(true);
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+
+      if (blob.type !== 'application/pdf') {
+        throw new Error('El archivo no es un PDF válido');
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
+      return blobUrl;
+    } catch (error) {
+      console.error('Error descargando PDF para vista previa:', error);
+      throw error;
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const cleanupPreviewUrl = (url) => {
+    if (url && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (previewDocument?.url && previewDocument?.type === 'pdf') {
+        cleanupPreviewUrl(previewDocument.url);
+      }
+    };
+  }, [previewDocument]);
 
   if (!isVisible || !request) return null;
 
@@ -67,12 +109,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handlePreviewGenerated = () => {
-    if (!request?.IDdoc) {
+    const documentId = request?.IDdoc || request?._id;
+    
+    if (!documentId) {
       alert('No hay documento disponible para vista previa');
       return;
     }
 
-    const documentUrl = `https://accionaapi.vercel.app/api/generador/download/${request.IDdoc}`;
+    const documentUrl = `https://accionaapi.vercel.app/api/generador/download/${documentId}`;
 
     const fileName = formatFileName();
     const extension = fileName.split('.').pop()?.toLowerCase() || 'docx';
@@ -80,46 +124,80 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     handlePreviewDocument(documentUrl, extension);
   };
 
-  const handlePreviewCorrected = () => {
-    // Verificar si hay archivo en el estado local O en el request del servidor
+  const handlePreviewCorrected = async () => {
     if (!correctedFile && !request?.correctedFile) {
       alert('No hay documento corregido para vista previa');
       return;
     }
 
-    let documentUrl;
+    try {
+      let documentUrl;
 
-    // Si hay archivo en estado local (recién subido)
-    if (correctedFile && correctedFile instanceof File) {
-      documentUrl = URL.createObjectURL(correctedFile);
-    }
-    // Si hay archivo en el servidor (después de recargar)
-    else if (request?.correctedFile) {
-      documentUrl = `https://accionaapi.vercel.app/api/respuestas/${request._id}/corrected-file`;
-    } else {
-      alert('No hay documento corregido disponible');
-      return;
-    }
+      if (correctedFile && correctedFile instanceof File) {
+        documentUrl = URL.createObjectURL(correctedFile);
+      }
+      else if (request?.status === 'aprobado') {
+        const pdfUrl = `https://accionaapi.vercel.app/api/respuestas/download-approved-pdf/${request._id}`;
+        documentUrl = await downloadPdfForPreview(pdfUrl);
+      }
+      else if (request?.correctedFile) {
+        alert('El documento corregido está en proceso de revisión. Una vez aprobado podrás ver la vista previa.');
+        return;
+      } else {
+        alert('No hay documento corregido disponible');
+        return;
+      }
 
-    console.log('🔗 URL del PDF corregido:', documentUrl); // Para debug
-    handlePreviewDocument(documentUrl, 'pdf');
+      handlePreviewDocument(documentUrl, 'pdf');
+      
+    } catch (error) {
+      console.error('Error en vista previa de documento corregido:', error);
+      alert('Error al cargar la vista previa del documento corregido: ' + error.message);
+    }
   };
 
-  const handlePreviewClientSignature = () => {
+  const handlePreviewClientSignature = async () => {
     if (!clientSignature) {
       alert('No hay documento firmado para vista previa');
       return;
     }
 
-    const documentUrl = `https://accionaapi.vercel.app/api/respuestas/${request._id}/client-signature`;
-    handlePreviewDocument(documentUrl, 'pdf');
+    try {
+      const pdfUrl = `https://accionaapi.vercel.app/api/respuestas/${request._id}/client-signature`;
+      const documentUrl = await downloadPdfForPreview(pdfUrl);
+      handlePreviewDocument(documentUrl, 'pdf');
+    } catch (error) {
+      console.error('Error en vista previa de firma del cliente:', error);
+      alert('Error al cargar la vista previa del documento firmado: ' + error.message);
+    }
+  };
+
+  const handlePreviewAdjunto = async (responseId, index) => {
+    try {
+      const adjunto = request.adjuntos[index];
+
+      if (adjunto.mimeType !== 'application/pdf') {
+        alert('La vista previa solo está disponible para archivos PDF');
+        return;
+      }
+
+      const pdfUrl = `https://accionaapi.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`;
+      const documentUrl = await downloadPdfForPreview(pdfUrl);
+      handlePreviewDocument(documentUrl, 'pdf');
+
+    } catch (error) {
+      console.error('Error abriendo vista previa del adjunto:', error);
+      alert('Error al abrir la vista previa del archivo: ' + error.message);
+    }
   };
 
   const handleDownload = async () => {
-    if (request?.IDdoc) {
+    const documentId = request?.IDdoc || request?._id;
+    
+    if (documentId) {
       setIsDownloading(true);
       try {
-        window.open(`https://accionaapi.vercel.app/api/generador/download/${request.IDdoc}`, '_blank');
+        window.open(`https://accionaapi.vercel.app/api/generador/download/${documentId}`, '_blank');
 
         if (onUpdate) {
           const updatedRequest = {
@@ -267,7 +345,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       return;
     }
 
-    setIsApproving(true); // <- ACTIVAR LOADING
+    setIsApproving(true);
 
     try {
       const formData = new FormData();
@@ -303,7 +381,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       console.error('Error:', error);
       alert('Error al aprobar el formulario: ' + error.message);
     } finally {
-      setIsApproving(false); // <- DESACTIVAR LOADING
+      setIsApproving(false);
     }
   };
 
@@ -356,6 +434,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
     const fileName = formatFileName();
     const extension = fileName.split('.').pop() || 'docx';
+
+    const shouldShowDocument = request?.submittedAt && request?.responses;
+
+    if (!shouldShowDocument) {
+      return [];
+    }
 
     return [
       {
@@ -455,6 +539,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     if (mimeType?.includes('image')) return 'Image';
     if (mimeType?.includes('text')) return 'FileText';
     return 'File';
+  };
+
+  const canPreviewAdjunto = (mimeType) => {
+    return mimeType === 'application/pdf';
   };
 
   const realAttachments = getRealAttachments();
@@ -557,16 +645,31 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         </p>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      iconName="Download"
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={() => handleDownloadAdjunto(request._id, index)}
-                    >
-                      Descargar
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        iconName="Download"
+                        iconPosition="left"
+                        iconSize={16}
+                        onClick={() => handleDownloadAdjunto(request._id, index)}
+                      >
+                        Descargar
+                      </Button>
+                      {canPreviewAdjunto(adjunto.mimeType) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName={isLoadingPreview ? "Loader" : "Eye"}
+                          iconPosition="left"
+                          iconSize={16}
+                          onClick={() => handlePreviewAdjunto(request._id, index)}
+                          disabled={isLoadingPreview}
+                        >
+                          {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -625,14 +728,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Documento Corregido</h3>
             <div className="bg-muted/50 rounded-lg p-4">
-              {correctedFile ? (
+              {correctedFile || request?.correctedFile ? (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <Icon name="FileText" size={20} className="text-accent" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">{correctedFile.name}</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {correctedFile?.name || request?.correctedFile?.fileName}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {(correctedFile.size / 1024 / 1024).toFixed(2)} MB
+                        {correctedFile?.size ? `${(correctedFile.size / 1024 / 1024).toFixed(2)} MB` :
+                          request?.correctedFile?.fileSize ? formatFileSize(request.correctedFile.fileSize) : 'Tamaño no disponible'}
                       </p>
                     </div>
                   </div>
@@ -641,11 +747,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       variant="ghost"
                       size="sm"
                       onClick={handlePreviewCorrected}
-                      iconName="Eye"
+                      iconName={isLoadingPreview ? "Loader" : "Eye"}
                       iconPosition="left"
                       iconSize={16}
+                      disabled={isLoadingPreview}
                     >
-                      Vista Previa
+                      {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
                     </Button>
                     <Button
                       variant="ghost"
@@ -711,11 +818,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         variant="ghost"
                         size="sm"
                         onClick={handlePreviewClientSignature}
-                        iconName="Eye"
+                        iconName={isLoadingPreview ? "Loader" : "Eye"}
                         iconPosition="left"
                         iconSize={16}
+                        disabled={isLoadingPreview}
                       >
-                        Vista Previa
+                        {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
                       </Button>
                       <Button
                         variant="ghost"
@@ -779,7 +887,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 iconPosition="left"
                 iconSize={16}
                 onClick={handleApprove}
-                disabled={!correctedFile || isApproving} // <- DESHABILITAR MIENTRAS CARGA
+                disabled={!correctedFile || isApproving}
               >
                 {isApproving ? 'Aprobando...' : 'Aprobar'}
               </Button>
@@ -796,7 +904,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
       <CleanDocumentPreview
         isVisible={showPreview}
-        onClose={() => setShowPreview(false)}
+        onClose={() => {
+          if (previewDocument?.url && previewDocument?.type === 'pdf') {
+            cleanupPreviewUrl(previewDocument.url);
+          }
+          setShowPreview(false);
+        }}
         documentUrl={previewDocument?.url}
         documentType={previewDocument?.type}
       />
