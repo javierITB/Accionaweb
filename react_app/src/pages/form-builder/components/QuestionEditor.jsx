@@ -223,6 +223,49 @@ const QuestionEditor = ({
     addOption
   ]);
 
+  const renderFileConfig = useCallback(() => {
+    return (
+      <div className="mt-3 space-y-4 p-4 bg-gray-50 rounded-lg border">
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={localQuestion.multiple || false}
+            onChange={(e) => handleFieldChange('multiple', e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-sm font-medium text-gray-700">Permitir múltiples archivos</span>
+        </div>
+        
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-700">
+            Configuración de archivos
+          </label>
+          <div className="p-3 bg-white border border-gray-200 rounded-lg">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Tipo de archivo:</span>
+                <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">PDF solamente</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Tamaño máximo:</span>
+                <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">500 KB</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            <strong>Configuración fija:</strong> Los archivos están limitados a PDF de máximo 500KB
+          </p>
+        </div>
+      </div>
+    );
+  }, [
+    localQuestion.multiple,
+    handleFieldChange
+  ]);
+
   const renderQuestionInput = useCallback(() => {
     const normalizedType = getNormalizedType();
 
@@ -283,50 +326,9 @@ const QuestionEditor = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={!isSelected}
               multiple={localQuestion.multiple || false}
-              accept={localQuestion.accept || ''}
+              accept=".pdf,application/pdf"
             />
-            {isSelected && (
-              <div className="mt-3 space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={localQuestion.multiple || false}
-                    onChange={(e) => handleFieldChange('multiple', e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Permitir múltiples archivos</span>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Tipos de archivo permitidos
-                  </label>
-                  <input
-                    type="text"
-                    value={localQuestion.accept || ''}
-                    onChange={(e) => handleFieldChange('accept', e.target.value)}
-                    placeholder=".pdf,.doc,.docx,.jpg,.png"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Separar extensiones con comas: .pdf, .doc, .jpg
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Tamaño máximo (MB)
-                  </label>
-                  <input
-                    type="number"
-                    value={localQuestion.maxSize || ''}
-                    onChange={(e) => handleFieldChange('maxSize', e.target.value)}
-                    placeholder="10"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-            )}
+            {isSelected && renderFileConfig()}
           </div>
         );
 
@@ -407,14 +409,14 @@ const QuestionEditor = ({
     isSelected,
     localOptions,
     renderOptions,
+    renderFileConfig,
     getOptionText,
     getOptionHasSubform,
     handleOptionChange,
     handleOptionBlur,
     handleToggleSubform,
     removeOption,
-    addOption,
-    handleFieldChange
+    addOption
   ]);
 
   const getContainerClass = useCallback(() => {

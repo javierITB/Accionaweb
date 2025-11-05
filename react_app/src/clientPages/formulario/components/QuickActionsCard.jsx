@@ -6,6 +6,7 @@ const FormPreview = ({ formData }) => {
   const [respaldo, setRespaldo] = useState("");
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [fileErrors, setFileErrors] = useState({});
   const [user, setUser] = useState({
     uid: '',
     nombre: '',
@@ -43,6 +44,41 @@ const FormPreview = ({ formData }) => {
     return question.title || 'Pregunta sin título';
   };
 
+  // Función para validar archivos
+  const validateFiles = (files, question) => {
+    const errors = [];
+
+    if (!files || files.length === 0) {
+      return errors;
+    }
+
+    // Validar cantidad de archivos
+    if (!question.multiple && files.length > 1) {
+      errors.push('Solo se permite un archivo');
+      return errors;
+    }
+
+    // Validar cada archivo
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+
+      // Validar formato - solo PDF
+      if (file.type !== 'application/pdf') {
+        errors.push(`Formato no permitido: ${file.name}. Solo se permiten archivos PDF`);
+        continue;
+      }
+
+      // Validar tamaño - máximo 500KB
+      const maxSizeBytes = 500 * 1024; // 500KB en bytes
+      if (file.size > maxSizeBytes) {
+        const fileSizeKB = (file.size / 1024).toFixed(2);
+        errors.push(`Archivo demasiado grande: ${file.name} (${fileSizeKB} KB). Tamaño máximo: 500 KB`);
+      }
+    }
+
+    return errors;
+  };
+
   const handleInputChange = (questionId, questionTitle, value) => {
     setAnswers((prev) => ({
       ...prev,
@@ -58,6 +94,31 @@ const FormPreview = ({ formData }) => {
   };
 
   const handleFileChange = (questionId, questionTitle, files) => {
+    const question = findQuestionById(formData?.questions || [], questionId);
+
+    if (question && question.type === 'file') {
+      // Validar archivos
+      const validationErrors = validateFiles(files, question);
+
+      if (validationErrors.length > 0) {
+        setFileErrors(prev => ({
+          ...prev,
+          [questionId]: validationErrors
+        }));
+        // Limpiar archivos inválidos
+        setAnswers(prev => ({
+          ...prev,
+          [questionId]: null
+        }));
+        return;
+      } else {
+        setFileErrors(prev => ({
+          ...prev,
+          [questionId]: []
+        }));
+      }
+    }
+
     setAnswers((prev) => ({
       ...prev,
       [questionId]: files,
@@ -69,6 +130,23 @@ const FormPreview = ({ formData }) => {
         [questionId]: ''
       }));
     }
+  };
+
+  // Función auxiliar para buscar pregunta por ID
+  const findQuestionById = (questions, id) => {
+    for (const question of questions) {
+      if (question.id === id) return question;
+
+      if (question.options) {
+        for (const option of question.options) {
+          if (typeof option === 'object' && option.subformQuestions) {
+            const found = findQuestionById(option.subformQuestions, id);
+            if (found) return found;
+          }
+        }
+      }
+    }
+    return null;
   };
 
   const handleInputBlur = (questionId, value, isRequired) => {
@@ -137,6 +215,14 @@ const FormPreview = ({ formData }) => {
           (Array.isArray(answer) && answer.length === 0) ||
           answer === '') {
           errors[question.id] = 'Este campo es obligatorio';
+        }
+      }
+
+      // Validar archivos específicamente
+      if (question.type === 'file' && answers[question.id] instanceof FileList) {
+        const fileErrors = validateFiles(answers[question.id], question);
+        if (fileErrors.length > 0) {
+          errors[question.id] = 'Error en los archivos seleccionados';
         }
       }
 
@@ -239,6 +325,10 @@ const FormPreview = ({ formData }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const getFileTypesDescription = () => {
+    return 'PDF solamente';
+  };
+
   const renderQuestion = (question, index, showNumber = true, parentPath = '') => {
     const questionPath = parentPath ? `${parentPath}.${question.id}` : question.id;
     const questionTitle = question.title || `Pregunta ${index + 1}`;
@@ -246,6 +336,7 @@ const FormPreview = ({ formData }) => {
     const value = answers[question.id] || '';
     const error = errors[question.id];
     const isTouched = touched[question.id];
+    const fileErrorList = fileErrors[question.id] || [];
 
     const renderInput = () => {
       switch (question?.type) {
@@ -348,62 +439,50 @@ const FormPreview = ({ formData }) => {
           );
 
         case 'file':
-          const getFileTypesDescription = (acceptString) => {
-            if (!acceptString) return 'Todos los tipos de archivo';
-
-            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'];
-            const documentExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.csv', '.txt', '.rtf'];
-
-            const acceptArray = acceptString.split(',');
-
-            const hasImages = acceptArray.some(ext => imageExtensions.includes(ext));
-            const hasDocuments = acceptArray.some(ext => documentExtensions.includes(ext));
-
-            if (hasImages && hasDocuments) {
-              return 'Imágenes y Documentos';
-            } else if (hasImages) {
-              return 'Imágenes (PNG, JPG, GIF, etc.)';
-            } else if (hasDocuments) {
-              return 'Documentos (PDF, Word, Excel, PowerPoint, etc.)';
-            } else {
-              return `Formatos: ${acceptString}`;
-            }
-          };
-
-          const fileTypesDescription = getFileTypesDescription(question.accept);
+          const fileTypesDescription = getFileTypesDescription();
+          const hasFileErrors = fileErrorList.length > 0;
 
           return (
             <div>
               <input
                 type="file"
-                className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
+                className={`${baseInputClass} ${error || hasFileErrors ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                 multiple={question.multiple || false}
-                accept={question.accept || ''}
+                accept=".pdf,application/pdf"
                 onChange={(e) => handleFileChange(question.id, getQuestionTitle(question), e.target.files)}
               />
               <div className="mt-2 space-y-1">
-                {question.accept && (
-                  <p className="text-xs text-gray-500">
-                    {fileTypesDescription}
-                  </p>
-                )}
+                <p className="text-xs text-gray-500">
+                  <strong>Formatos permitidos:</strong> {fileTypesDescription}
+                </p>
                 {question.multiple && (
                   <p className="text-xs text-gray-500">
-                    Se permiten múltiples archivos
+                    <strong>Múltiples archivos:</strong> Permitido
                   </p>
                 )}
-                {question.maxSize && (
-                  <p className="text-xs text-gray-500">
-                    Tamaño máximo: {question.maxSize} MB
-                  </p>
-                )}
-                {value instanceof FileList && value.length > 0 && (
+                <p className="text-xs text-gray-500">
+                  <strong>Tamaño máximo:</strong> 500 KB por archivo
+                </p>
+                {value instanceof FileList && value.length > 0 && !hasFileErrors && (
                   <p className="text-xs text-green-600">
-                    {value.length} archivo(s) seleccionado(s)
+                    <strong>Archivos seleccionados:</strong> {value.length} archivo(s)
                   </p>
                 )}
               </div>
-              {error && (
+
+              {/* Mostrar errores de archivos */}
+              {hasFileErrors && (
+                <div className="mt-2 space-y-1">
+                  {fileErrorList.map((errorMsg, idx) => (
+                    <p key={idx} className="text-red-600 text-sm flex items-center">
+                      <Icon name="AlertCircle" size={14} className="mr-1 flex-shrink-0" />
+                      {errorMsg}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {error && !hasFileErrors && (
                 <p className="text-red-600 text-sm mt-1 flex items-center">
                   <Icon name="AlertCircle" size={14} className="mr-1" />
                   {error}
@@ -470,7 +549,7 @@ const FormPreview = ({ formData }) => {
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => handleCheckboxChange(question.id, getQuestionTitle(question), optionText)}
-                        className="h-4 w-4 rounded border-2 border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2"
+                        className="h-4 w-4 rounded-full border-1 border-black-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2"
                       />
                       <span className="text-base text-black">{optionText}</span>
                     </label>
@@ -490,13 +569,6 @@ const FormPreview = ({ formData }) => {
                   {error}
                 </p>
               )}
-            </div>
-          );
-
-        default:
-          return (
-            <div className="text-center py-4 text-gray-500">
-              Tipo de pregunta no soportado
             </div>
           );
       }
@@ -545,7 +617,7 @@ const FormPreview = ({ formData }) => {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      alert('Por favor completa todos los campos obligatorios');
+      alert('Por favor completa todos los campos obligatorios y corrige los errores en los archivos');
       return;
     }
 
@@ -651,6 +723,7 @@ const FormPreview = ({ formData }) => {
       setRespaldo("");
       setErrors({});
       setTouched({});
+      setFileErrors({});
     } catch (err) {
       console.error(err);
       alert('No se pudieron enviar las respuestas');
@@ -776,6 +849,7 @@ const FormPreview = ({ formData }) => {
                       setRespaldo("");
                       setErrors({});
                       setTouched({});
+                      setFileErrors({});
                     }}
                   >
                     Cancelar
