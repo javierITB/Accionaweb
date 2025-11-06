@@ -26,7 +26,7 @@ router.post("/", async (req, res) => {
 
       // 2. VINCULACIÓN CRÍTICA: Actualizar el formulario con el ID de la plantilla
       await req.db.collection("forms").updateOne(
-        { _id: new ObjectId(formId) },
+        { formId: formId },
         { $set: { plantillaId: newPlantillaId } }
       );
       
@@ -38,10 +38,7 @@ router.post("/", async (req, res) => {
         { _id: new ObjectId(data.id) },
         { $set: { 
             ...req.body, 
-            updatedAt: new Date(),
-            // Aseguramos que formId no se pueda cambiar en el update sin lógica extra
-            // Solo actualizamos los campos que no son el ID
-            _id: new ObjectId(data.id),
+            updatedAt: new Date()
         } },
         { returnDocument: "after" }
       );

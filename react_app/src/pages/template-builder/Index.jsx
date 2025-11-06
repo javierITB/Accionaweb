@@ -23,13 +23,10 @@ const FormBuilder = () => {
     category: '',
     responseTime: '',
     author: 'Admin',
-    primaryColor: '#3B82F6',
-    secondaryColor: '#F3F4F6',
     questions: [], // Preguntas del formulario base
     status: 'borrador',
     section: '',
     icon: 'FileText',
-    companies: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
 
@@ -88,8 +85,6 @@ const FormBuilder = () => {
           id: data._id || data.id || null,
           title: data.title || '',
           section: data.section || '',
-          primaryColor: data.primaryColor || '#3B82F6',
-          secondaryColor: data.secondaryColor || '#F3F4F6',
           status: data.status || 'borrador',
           companies: data.companies || [],
 
@@ -99,12 +94,18 @@ const FormBuilder = () => {
           signatureText: data.signatureText || 'Firma del Empleador y Empleado.',
           formId: data.formId || null, // ID del formulario asociado
 
+          signature1Text: signature1Text || 'Firma del Empleador (Emisor).',
+          signature2Text: signature2Text || 'Firma del Empleado (Receptor).',
+
           createdAt: data.createdAt || new Date().toISOString(),
           updatedAt: data.updatedAt || new Date().toISOString()
           // No necesitamos cargar 'questions' aquí, ya que se cargan al seleccionar la base.
         };
 
-        setFormData(normalizedTemplate);
+        setFormData(prev => ({
+          ...prev,
+          normalizedTemplate
+        }));
 
         // Si cargamos una plantilla por ID, ir directamente al editor
         if (normalizedTemplate.formId) {
@@ -164,11 +165,10 @@ const FormBuilder = () => {
       title: existingTemplateData.title,
       documentTitle: existingTemplateData.documentTitle,
       paragraphs: existingTemplateData.paragraphs,
-      // 💥 Cargar las firmas existentes
+      // Cargar las firmas existentes
       signature1Text: existingTemplateData.signature1Text,
       signature2Text: existingTemplateData.signature2Text,
       questions: selectedTemplateData.questions || [],
-      status: existingTemplateData.status,
     } : {
       // Inicializar datos para una plantilla NUEVA
       id: null,
@@ -179,7 +179,6 @@ const FormBuilder = () => {
       paragraphs: [{ id: 'p1', content: 'Primera cláusula del contrato - {{FECHA_ACTUAL}}.' }],
       signature1Text: 'Firma del Empleador (Emisor).',
       signature2Text: 'Firma del Empleado (Receptor).',
-      status: 'borrador',
     };
 
     setFormData(prev => ({
@@ -193,18 +192,18 @@ const FormBuilder = () => {
 
   // 💡 LÓGICA DE MANEJO DE PÁRRAFOS (Necesarios para el editor)
   const handleAddParagraph = () => {
-    const newParagraph = { id: Date.now().toString(), content: 'Nuevo párrafo de contenido.', conditionalVar: ''};
-    setFormData(prev => ({ ...prev, paragraphs: [...prev.paragraphs, newParagraph] } ));
+    const newParagraph = { id: Date.now().toString(), content: 'Nuevo párrafo de contenido.', conditionalVar: '' };
+    setFormData(prev => ({ ...prev, paragraphs: [...prev.paragraphs, newParagraph] }));
   };
 
-const handleUpdateParagraph = (paragraphId, field, value) => { // <-- Ahora espera 'field'
+  const handleUpdateParagraph = (paragraphId, field, value) => { // <-- Ahora espera 'field'
     setFormData(prev => ({
-        ...prev,
-        paragraphs: prev.paragraphs.map(p => 
-            p.id === paragraphId ? { ...p, [field]: value } : p 
-        )
+      ...prev,
+      paragraphs: prev.paragraphs.map(p =>
+        p.id === paragraphId ? { ...p, [field]: value } : p
+      )
     }));
-};
+  };
 
   const handleDeleteParagraph = (paragraphId) => {
     setFormData(prev => ({
@@ -237,8 +236,8 @@ const handleUpdateParagraph = (paragraphId, field, value) => { // <-- Ahora espe
       // Contenido del documento
       documentTitle: formData.documentTitle,
       paragraphs: formData.paragraphs,
-      signatureText: formData.signatureText,
-
+      signature1Text: formData.signature1Text || "zona firma 1",
+      signature2Text: formData.signature2Text || "zona firma 2",
       // Asociación al formulario original
       formId: formData.formId,
 
@@ -326,6 +325,7 @@ const handleUpdateParagraph = (paragraphId, field, value) => { // <-- Ahora espe
       { type: "text", title: "AUTOR NOMBRE" },
       { type: "text", title: "NOMBRE EMPRESA" },
       { type: "text", title: "RUT EMPRESA" },
+      { type: "text", title: "ENCARGADO EMPRESA" },
     ];
 
     // 💡 COMBINAR LAS VARIABLES
@@ -355,12 +355,7 @@ const handleUpdateParagraph = (paragraphId, field, value) => { // <-- Ahora espe
         }
         return (
           <DocumentTemplateEditor
-            templateData={{
-              title: formData.documentTitle, // <- Aquí está el campo
-              paragraphs: formData.paragraphs,
-              signatureText: formData.signatureText,
-              id: formData.plantillaId
-            }}
+            templateData={formData}
             onUpdateTemplateData={updateFormData}
             availableVariables={availableVariables}
             onAddParagraph={handleAddParagraph}

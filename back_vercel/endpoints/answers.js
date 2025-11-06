@@ -215,7 +215,7 @@ router.get("/section/:section", async (req, res) => {
   }
 });
 
-
+//actualizar respuesta
 router.put("/:id", async (req, res) => {
   try {
     const result = await req.db.collection("respuestas").findOneAndUpdate(
@@ -255,7 +255,7 @@ router.put("/public/:id", async (req, res) => {
   }
 });
 
-
+//eliminar respuesta
 router.delete("/:id", async (req, res) => {
   try {
     const result = await req.db
