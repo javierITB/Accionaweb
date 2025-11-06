@@ -128,9 +128,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handlePreviewGenerated = async () => {
     try {
       setIsLoadingPreview(true);
-      
+
       const info = documentInfo || await getDocumentInfo(request._id);
-      
+
       if (!info || !info.IDdoc) {
         alert('No hay documento generado disponible para vista previa');
         return;
@@ -173,7 +173,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       }
 
       handlePreviewDocument(documentUrl, 'pdf');
-      
+
     } catch (error) {
       console.error('Error en vista previa de documento corregido:', error);
       alert('Error al cargar la vista previa del documento corregido: ' + error.message);
@@ -218,9 +218,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handleDownload = async () => {
     try {
       setIsDownloading(true);
-      
+
       const info = documentInfo || await getDocumentInfo(request._id);
-      
+
       if (!info || !info.IDdoc) {
         alert('No hay documento disponible para descargar');
         return;
@@ -366,8 +366,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleApprove = async () => {
-    if (!correctedFile) {
-      alert('Debes subir un documento corregido antes de aprobar');
+    // Verificaciones de seguridad
+    if (!correctedFile || isApproving || request?.status === 'aprobado') {
+      return;
+    }
+
+    if (!confirm('¿Estás seguro de que quieres aprobar este formulario? Esta acción no se puede deshacer.')) {
       return;
     }
 
@@ -377,27 +381,20 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       const formData = new FormData();
       formData.append('correctedFile', correctedFile);
 
-      const uploadResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/upload-correction`, {
+      const approveResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/approve`, {
         method: 'POST',
         body: formData,
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error('Error subiendo corrección');
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const approveResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/approve`, {
-        method: 'POST',
-      });
-
       if (approveResponse.ok) {
+        const result = await approveResponse.json();
+
         if (onUpdate) {
           const updatedResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
+
         alert('Formulario aprobado correctamente');
       } else {
         const errorData = await approveResponse.json();
@@ -767,6 +764,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         {correctedFile?.size ? `${(correctedFile.size / 1024 / 1024).toFixed(2)} MB` :
                           request?.correctedFile?.fileSize ? formatFileSize(request.correctedFile.fileSize) : 'Tamaño no disponible'}
                       </p>
+                      {request?.status === 'aprobado' && (
+                        <p className="text-xs text-success font-medium mt-1">
+                          ✓ Formulario aprobado
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -781,6 +783,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                     >
                       {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
                     </Button>
+                    {/* Botón Eliminar SIEMPRE visible */}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -814,6 +817,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
               />
             </div>
           </div>
+
 
           {request?.status === 'aprobado' && (
             <div>
@@ -908,16 +912,21 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
               >
                 Enviar Mensaje
               </Button>
-              <Button
-                variant="default"
-                iconName="CheckCircle"
-                iconPosition="left"
-                iconSize={16}
-                onClick={handleApprove}
-                disabled={!correctedFile || isApproving}
-              >
-                {isApproving ? 'Aprobando...' : 'Aprobar'}
-              </Button>
+
+              {/* Botón Aprobar - SOLO visible cuando NO está aprobado */}
+              {request?.status !== 'aprobado' && (
+                <Button
+                  variant="default"
+                  iconName="CheckCircle"
+                  iconPosition="left"
+                  iconSize={16}
+                  onClick={handleApprove}
+                  disabled={!correctedFile || isApproving}
+                >
+                  {isApproving ? 'Aprobando...' : 'Aprobar'}
+                </Button>
+              )}
+
               <Button
                 variant="default"
                 onClick={onClose}
