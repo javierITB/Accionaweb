@@ -262,8 +262,8 @@ router.delete("/:id", async (req, res) => {
       .collection("respuestas")
       .deleteOne({ _id: new ObjectId(req.params.id) });
 
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ error: "Formulario no encontrado" });
+    if (result.deletedCount === 1) {
+      return res.status(404).json({ error: "Respuesta no encontrada" });
     }
 
     res.status(200).json({ message: "Formulario eliminado" });

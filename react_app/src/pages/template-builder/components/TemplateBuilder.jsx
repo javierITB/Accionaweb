@@ -50,13 +50,35 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
   if (!hasSubVariables) {
     return renderSimpleVariable(variable);
   }
-
-  if (variable.subformQuestions?.length === 1) {
+  
+  if (variable.subformQuestions?.length === 1 && !variable.subformQuestions[0].options.length> 0 ) {
     return renderSimpleVariable(variable.subformQuestions[0]);
   }
 
-  if (variable.options?.length === 1) {
+  if (variable.options?.length === 1 && !variable.options[0].hasSubVariables && variable.options[0].options.length === 0) {
     return renderSimpleVariable(variable.options[0]);
+  }
+
+  if (variable.options && variable.options.length > 0) {
+    
+    // Asumimos inicialmente que las opciones son planas (no tienen sub-variables)
+    let areOptionsFlat = true;
+
+    // Recorrer las opciones
+    for (const option of variable.options) {
+      const optionHasSubVars = (option.hasSubform && option.subformQuestions.length > 0);
+      
+      if (optionHasSubVars) {
+        areOptionsFlat = false; // Una opción compleja anula la simplificación
+        break; 
+      }
+    }
+
+    if (areOptionsFlat) {
+      // Si el array de opciones no tiene sub-variables anidadas, renderiza la variable principal de forma simple.
+      // NOTA: Esto hará que solo se muestre el botón del padre y no los botones de las opciones.
+      return renderSimpleVariable(variable);
+    }
   }
 
   return (
@@ -83,7 +105,7 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
               isChild={true}
             />
           ))}
-          {!variable.options && (variable.subformQuestions)?.map((subVar) => (
+          {variable.subformQuestions && (variable.subformQuestions)?.map((subVar) => (
             <VariableItem
               key={subVar.title}
               variable={subVar}
@@ -239,7 +261,7 @@ const DocumentTemplateEditor = ({
     <div className="p-6 space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
-          <div className="bg-card border border-border rounded-lg p-4 sticky top-6 shadow-brand dark:bg-gray">
+          <div className="bg-card border border-border rounded-lg p-4 sticky top-6 shadow-brand dark:bg-gray max-h-[calc(90vh-10rem)] overflow-y-auto">
             <h3 className="font-semibold text-foreground mb-4">
               Variables Disponibles
             </h3>
@@ -258,7 +280,7 @@ const DocumentTemplateEditor = ({
           </div>
         </div>
 
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-3 space-y-6 max-h-[calc(90vh-10rem)] overflow-y-auto">
           <div className="bg-card border border-border rounded-lg p-6 shadow-brand">
             <h3 className="text-lg font-semibold text-foreground mb-3">
               Título del Documento
