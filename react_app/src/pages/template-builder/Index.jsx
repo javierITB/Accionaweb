@@ -6,19 +6,10 @@ import Button from '../../components/ui/Button';
 import TemplateList from './components/FormProperties'; // 💡 CORRECCIÓN: Renombrada a TemplateList
 import DocumentTemplateEditor from './components/TemplateBuilder'; // Renombrado de QuestionBuilder
 
-// 💡 FUNCIÓN UTILITARIA: Convierte un título de pregunta en un tag de variable {{SNAKE_CASE}}
-const generateVarTag = (title) => {
-  if (!title) return '';
-  // Limpiar acentos, reemplazar no alfanuméricos por guion bajo y convertir a mayúsculas
-  const cleanTitle = title.normalize("NFD").replace(/[\u0300-\u036f]/g, '');
-  const snakeCase = cleanTitle.trim().toUpperCase().replace(/[^A-Z0-9\s]/g, '').replace(/\s+/g, '_');
-  return `{{${snakeCase}}}`;
-};
 
 const FormBuilder = () => {
   const [formData, setFormData] = useState({
     id: null,
-    title: '',
     description: '',
     category: '',
     responseTime: '',
@@ -83,13 +74,12 @@ const FormBuilder = () => {
         // Normalización para el estado de la aplicación
         const normalizedTemplate = {
           id: data._id || data.id || null,
-          title: data.title || '',
           section: data.section || '',
           status: data.status || 'borrador',
           companies: data.companies || [],
 
           // Datos específicos de la plantilla
-          documentTitle: data.documentTitle || data.title || '',
+          documentTitle: data.documentTitle || '',
           paragraphs: data.paragraphs || [],
           signatureText: data.signatureText || 'Firma del Empleador y Empleado.',
           formId: data.formId || null, // ID del formulario asociado
@@ -162,7 +152,6 @@ const FormBuilder = () => {
       // Cargar datos de la plantilla EXISTENTE
       id: existingTemplateData._id || existingTemplateData.id,
       formId: selectedFormId,
-      title: existingTemplateData.title,
       documentTitle: existingTemplateData.documentTitle,
       paragraphs: existingTemplateData.paragraphs,
       // Cargar las firmas existentes
@@ -173,8 +162,7 @@ const FormBuilder = () => {
       // Inicializar datos para una plantilla NUEVA
       id: null,
       formId: selectedFormId,
-      title: selectedTemplateData.title, // Título interno
-      documentTitle: selectedTemplateData.title, // Título del documento
+      documentTitle: selectedTemplateData.documentTitle, // Título del documento
       questions: selectedTemplateData.questions || [],
       paragraphs: [{ id: 'p1', content: 'Primera cláusula del contrato - {{FECHA_ACTUAL}}.' }],
       signature1Text: 'Firma del Empleador (Emisor).',
@@ -229,7 +217,6 @@ const FormBuilder = () => {
     const dataToSend = {
       // ID para la actualización (PUT)
       id: formData.id,
-      title: formData.title || formData.documentTitle,
       section: formData.section || 'General',
       companies: formData.companies,
 
@@ -237,7 +224,7 @@ const FormBuilder = () => {
       documentTitle: formData.documentTitle,
       paragraphs: formData.paragraphs,
       signature1Text: formData.signature1Text || "zona firma 1",
-      signature2Text: formData.signature2Text || "zona firma 2",
+      signature2Text: formData.signature2Text || "zona firma 1",
       // Asociación al formulario original
       formId: formData.formId,
 
@@ -248,10 +235,6 @@ const FormBuilder = () => {
     // CORRECCIÓN CRÍTICA DE VALIDACIÓN
     if (!dataToSend.formId) {
       alert("ERROR: Debe seleccionar un Formulario Base primero.");
-      return;
-    }
-    if (!dataToSend.title?.trim()) {
-      alert("ERROR: Debe ingresar un Título para la Plantilla (interno).");
       return;
     }
     if (!dataToSend.documentTitle?.trim()) {

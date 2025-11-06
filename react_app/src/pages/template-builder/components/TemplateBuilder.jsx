@@ -266,7 +266,7 @@ const DocumentTemplateEditor = ({
             <Input
               type="text"
               placeholder="Ej: Contrato de {{EMPLEADO_NOMBRE}}"
-              value={templateData.title}
+              value={templateData.documentTitle}
               onChange={(e) => onUpdateTemplateData('documentTitle', e.target.value)}
               className="w-full text-xl font-bold"
             />
