@@ -429,8 +429,8 @@ router.post("/:id/upload-correction", upload.single('correctedFile'), async (req
   }
 });
 
-// Aprobar formulario y guardar en aprobados
-router.post("/:id/approve", async (req, res) => {
+// Aprobar formulario y guardar en aprobados (con upload incluido)
+router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => {
   try {
     console.log("Debug: Iniciando approve para ID:", req.params.id);
 
@@ -441,13 +441,46 @@ router.post("/:id/approve", async (req, res) => {
       return res.status(404).json({ error: "Respuesta no encontrada" });
     }
 
-    if (!respuesta.correctedFile) {
+    // Si no hay correctedFile en la respuesta Y no se subió un archivo
+    if (!respuesta.correctedFile && !req.file) {
       console.log("Debug: No hay corrección subida para ID:", req.params.id);
       return res.status(400).json({ error: "No hay corrección subida para aprobar" });
     }
 
-    console.log("Debug: Aprobando respuesta con corrección:", respuesta.correctedFile.fileName);
+    let correctedFileData;
 
+    // Si se subió un archivo en este request, usarlo
+    if (req.file) {
+      console.log("Debug: Subiendo nuevo archivo de corrección:", req.file.originalname);
+
+      correctedFileData = {
+        fileName: req.file.originalname,
+        tipo: 'pdf',
+        fileData: req.file.buffer,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+        uploadedAt: new Date()
+      };
+
+      // Actualizar correctedFile en la respuesta
+      await req.db.collection("respuestas").updateOne(
+        { _id: new ObjectId(req.params.id) },
+        {
+          $set: {
+            correctedFile: correctedFileData,
+            updatedAt: new Date()
+          }
+        }
+      );
+    } else {
+      // Usar el correctedFile existente
+      correctedFileData = respuesta.correctedFile;
+      console.log("Debug: Usando corrección existente:", correctedFileData.fileName);
+    }
+
+    console.log("Debug: Aprobando respuesta con corrección:", correctedFileData.fileName);
+
+    // Actualizar estado a "aprobado"
     const updateResult = await req.db.collection("respuestas").updateOne(
       { _id: new ObjectId(req.params.id) },
       {
@@ -460,9 +493,10 @@ router.post("/:id/approve", async (req, res) => {
 
     console.log("Debug: Resultado de actualización de estado:", updateResult);
 
+    // Guardar en colección aprobados
     const insertResult = await req.db.collection("aprobados").insertOne({
       responseId: req.params.id,
-      correctedFile: respuesta.correctedFile,
+      correctedFile: correctedFileData,
       approvedAt: new Date(),
       approvedBy: req.user?.id,
       createdAt: new Date(),
@@ -473,7 +507,11 @@ router.post("/:id/approve", async (req, res) => {
 
     console.log("Debug: Resultado de inserción en aprobados:", insertResult);
 
-    res.json({ message: "Formulario aprobado correctamente" });
+    res.json({
+      message: "Formulario aprobado correctamente",
+      approved: true
+    });
+
   } catch (err) {
     console.error("Error aprobando formulario:", err);
     res.status(500).json({ error: "Error aprobando formulario" });
@@ -551,7 +589,7 @@ router.get("/download-approved-pdf/:responseId", async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${approvedDoc.correctedFile.fileName}"`);
     res.setHeader('Content-Length', approvedDoc.correctedFile.fileSize);
 
-    res.send(approvedDoc.correctedFile.fileData.buffer);
+    res.send(approvedDoc.correctedFile.fileData.buffer || approvedDoc.correctedFile.fileData);
 
   } catch (err) {
     console.error("Error descargando PDF aprobado:", err);
@@ -647,7 +685,7 @@ router.get("/:responseId/client-signature", async (req, res) => {
     res.setHeader('Content-Length', pdfData.fileSize);
 
     // CORRECCIÓN: Usar .buffer igual que en download-approved-pdf
-    res.send(pdfData.fileData.buffer);  // ← AÑADIR .buffer
+    res.send(pdfData.fileData.buffer || pdfData.fileData);
 
   } catch (err) {
     console.error("Error descargando firma del cliente:", err);

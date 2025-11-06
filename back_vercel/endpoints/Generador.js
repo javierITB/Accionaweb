@@ -2,15 +2,37 @@ const express = require("express");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
 
+// Nuevo endpoint para obtener información del documento por responseId
+router.get("/info-by-response/:responseId", async (req, res) => {
+    try {
+        const { responseId } = req.params;
+        const documento = await req.db.collection('docxs').findOne({ responseId: responseId });
+
+        if (!documento) {
+            return res.status(404).json({ error: "Documento no encontrado" });
+        }
+
+        res.json({
+            IDdoc: documento.IDdoc,
+            tipo: documento.tipo || 'docx',
+            responseId: documento.responseId,
+            createdAt: documento.createdAt
+        });
+    } catch (err) {
+        console.error("Error obteniendo información del documento:", err);
+        res.status(500).json({ error: "Error obteniendo información del documento" });
+    }
+});
+
 // Endpoint para obtener todos los documentos
 router.get("/docxs", async (req, res) => {
-  try {
-    const docxs = await req.db.collection('docxs').find().toArray();
-    res.json(docxs);
-  } catch (err) {
-    console.error("Error obteniendo documentos:", err);
-    res.status(500).json({ error: "Error obteniendo documentos" });
-  }
+    try {
+        const docxs = await req.db.collection('docxs').find().toArray();
+        res.json(docxs);
+    } catch (err) {
+        console.error("Error obteniendo documentos:", err);
+        res.status(500).json({ error: "Error obteniendo documentos" });
+    }
 });
 
 // Endpoint para descargar documento (DOCX o TXT)
@@ -21,7 +43,7 @@ router.get("/download/:IDdoc", async (req, res) => {
         console.log("Buscando documento con IDdoc:", IDdoc);
 
         const documento = await req.db.collection('docxs').findOne({ IDdoc: IDdoc });
-        
+
         if (!documento) {
             console.log("Documento no encontrado para IDdoc:", IDdoc);
             return res.status(404).json({ error: "Documento no encontrado" });
@@ -29,7 +51,7 @@ router.get("/download/:IDdoc", async (req, res) => {
 
         console.log("Documento encontrado");
         console.log("Tipo de documento:", documento.tipo || 'docx');
-        
+
         // OBTENER EL BUFFER CORRECTAMENTE
         const fileBuffer = documento.docxFile.buffer || documento.docxFile;
         const bufferLength = fileBuffer.length;
@@ -38,11 +60,11 @@ router.get("/download/:IDdoc", async (req, res) => {
         if (documento.responseId) {
             await req.db.collection("respuestas").updateOne(
                 { _id: new ObjectId(documento.responseId) },
-                { 
-                    $set: { 
+                {
+                    $set: {
                         status: "en_revision",
                         reviewedAt: new Date()
-                    } 
+                    }
                 }
             );
         }
@@ -65,7 +87,7 @@ router.get("/download/:IDdoc", async (req, res) => {
             });
             console.log("Enviando archivo DOCX, tamaño:", bufferLength);
         }
-        
+
         // ENVIAR EL BUFFER
         res.send(fileBuffer);
 
@@ -81,7 +103,7 @@ router.get("/info/:IDdoc", async (req, res) => {
     try {
         const { IDdoc } = req.params;
         const documento = await req.db.collection('docxs').findOne({ IDdoc: IDdoc });
-        
+
         if (!documento) {
             return res.status(404).json({ error: "Documento no encontrado" });
         }
