@@ -196,6 +196,61 @@ router.post("/register", async (req, res) => {
 });
 
 
+// PUT - Actualizar usuario por ID
+router.put("/users/:id", async (req, res) => {
+  try {
+    const { nombre, apellido, mail, empresa, cargo, rol, estado } = req.body;
+    const userId = req.params.id;
+
+    if (!nombre || !apellido || !mail || !empresa || !cargo || !rol) {
+      return res.status(400).json({ error: "Todos los campos son obligatorios" });
+    }
+    
+    // El email solo puede ser cambiado si no existe en otro usuario (excluyendo el actual)
+    const existingUser = await req.db.collection("usuarios").findOne({ 
+      mail: mail, 
+      _id: { $ne: new ObjectId(userId) } 
+    });
+    if (existingUser) {
+      return res.status(400).json({ error: "El email ya está en uso por otro usuario" });
+    }
+
+    const updateData = {
+      nombre,
+      apellido,
+      mail,
+      empresa,
+      cargo,
+      rol,
+      estado,
+      updatedAt: new Date().toISOString()
+    };
+
+    const result = await req.db.collection("usuarios").updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: updateData }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.json({
+      success: true,
+      message: "Usuario actualizado exitosamente",
+      updatedFields: updateData
+    });
+
+  } catch (err) {
+    console.error("Error actualizando usuario:", err);
+    if (err.message.includes("ObjectId")) {
+      return res.status(400).json({ error: "ID de usuario inválido" });
+    }
+    res.status(500).json({ error: "Error interno al actualizar usuario" });
+  }
+});
+
+
 router.post("/set-password", async (req, res) => {
   try {
     const { userId, password } = req.body;
