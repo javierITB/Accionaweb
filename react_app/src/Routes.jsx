@@ -21,6 +21,7 @@ import SetPassword from './pages/users/components/SetPassword.jsx';
 import Home from './clientPages/home/Index.jsx';
 import FormList from './clientPages/FormList/Index.jsx';
 import Form from './clientPages/formulario/Index.jsx';
+import Profile from './clientPages/profile/Index.jsx';
 
 const Routes = () => {
   return (
@@ -35,9 +36,11 @@ const Routes = () => {
           <Route path="/Anexos" element = {<FormList section={"Anexos"} />}/>
           <Route path="/Otras" element = {<FormList section={"Otras"} />}/>
           
+          
           <Route path="/form-renderer" element={<FormRenderer />} />
           <Route path="/forms" element={<Form />} />
           <Route path="/set-password" element={<SetPassword />} />
+          <Route path="/profile" element = {<Profile />}/>
           <Route path="/support-portal" element={ <SupportPortal />}/>
 
           {/* Rutas protegidas */}
