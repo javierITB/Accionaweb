@@ -36,11 +36,11 @@ router.get("/:mail", async (req, res) => {
   try {
     const usr = await req.db
       .collection("usuarios")
-      .findOne({ mail: req.params.mail});
+      .findOne({ mail: req.params.mail });
 
     if (!usr) return res.status(404).json({ error: "Usuario no encontrado" });
-    
-    res.json({id: usr._id, empresa: usr.empresa, cargo: usr.cargo});
+
+    res.json({ id: usr._id, empresa: usr.empresa, cargo: usr.cargo });
   } catch (err) {
     res.status(500).json({ error: "Error al obtener Usuario" });
   }
@@ -181,8 +181,8 @@ router.post("/register", async (req, res) => {
       updatedAt: new Date().toISOString()
     };
     const result = await req.db.collection("usuarios").insertOne(newUser);
-    const createdUser = await req.db.collection("usuarios").findOne({ 
-      _id: result.insertedId 
+    const createdUser = await req.db.collection("usuarios").findOne({
+      _id: result.insertedId
     });
     res.status(201).json({
       success: true,
@@ -205,11 +205,11 @@ router.put("/users/:id", async (req, res) => {
     if (!nombre || !apellido || !mail || !empresa || !cargo || !rol) {
       return res.status(400).json({ error: "Todos los campos son obligatorios" });
     }
-    
+
     // El email solo puede ser cambiado si no existe en otro usuario (excluyendo el actual)
-    const existingUser = await req.db.collection("usuarios").findOne({ 
-      mail: mail, 
-      _id: { $ne: new ObjectId(userId) } 
+    const existingUser = await req.db.collection("usuarios").findOne({
+      mail: mail,
+      _id: { $ne: new ObjectId(userId) }
     });
     if (existingUser) {
       return res.status(400).json({ error: "El email ya está en uso por otro usuario" });
@@ -260,38 +260,38 @@ router.post("/set-password", async (req, res) => {
     if (password.length < 4) {
       return res.status(400).json({ error: "La contraseña debe tener al menos 4 caracteres" });
     }
-    const existingUser = await req.db.collection("usuarios").findOne({ 
-      _id: new ObjectId(userId) 
+    const existingUser = await req.db.collection("usuarios").findOne({
+      _id: new ObjectId(userId)
     });
     if (!existingUser) {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
     if (existingUser.estado !== "pendiente") {
-      return res.status(400).json({ 
-        error: "La contraseña ya fue establecida anteriormente. Si necesitas cambiarla, contacta al administrador." 
+      return res.status(400).json({
+        error: "La contraseña ya fue establecida anteriormente. Si necesitas cambiarla, contacta al administrador."
       });
     }
     const result = await req.db.collection("usuarios").updateOne(
-      { 
+      {
         _id: new ObjectId(userId),
         estado: "pendiente"
       },
-      { 
-        $set: { 
+      {
+        $set: {
           pass: password,
           estado: "activo",
           updatedAt: new Date().toISOString()
-        } 
+        }
       }
     );
     if (result.matchedCount === 0) {
-      return res.status(400).json({ 
-        error: "No se puede establecer la contraseña. Ya fue configurada anteriormente o el enlace expiró." 
+      return res.status(400).json({
+        error: "No se puede establecer la contraseña. Ya fue configurada anteriormente o el enlace expiró."
       });
     }
-    res.json({ 
-      success: true, 
-      message: "Contraseña establecida exitosamente" 
+    res.json({
+      success: true,
+      message: "Contraseña establecida exitosamente"
     });
 
   } catch (error) {
@@ -319,8 +319,8 @@ router.get("/empresas/todas", async (req, res) => {
 // GET - Obtener empresa por ID
 router.get("/empresas/:id", async (req, res) => {
   try {
-    const empresa = await req.db.collection("empresas").findOne({ 
-      _id: new ObjectId(req.params.id) 
+    const empresa = await req.db.collection("empresas").findOne({
+      _id: new ObjectId(req.params.id)
     });
 
     if (!empresa) {
@@ -340,7 +340,7 @@ router.post("/empresas/register", upload.single('logo'), async (req, res) => {
     console.log("Debug: Iniciando registro de empresa");
     console.log("Debug: Datos recibidos:", req.body);
 
-    const { nombre, rut, direccion, encargado } = req.body;
+    const { nombre, rut, direccion, encargado, rut_encargado } = req.body;
 
     if (!nombre || !rut) {
       return res.status(400).json({ error: "Nombre y RUT son obligatorios" });
@@ -355,8 +355,8 @@ router.post("/empresas/register", upload.single('logo'), async (req, res) => {
 
     if (empresaExistente) {
       const campoDuplicado = empresaExistente.nombre === nombre.trim() ? 'nombre' : 'RUT';
-      return res.status(400).json({ 
-        error: `Ya existe una empresa con el mismo ${campoDuplicado}` 
+      return res.status(400).json({
+        error: `Ya existe una empresa con el mismo ${campoDuplicado}`
       });
     }
 
@@ -365,6 +365,7 @@ router.post("/empresas/register", upload.single('logo'), async (req, res) => {
       rut: rut.trim(),
       direccion: direccion ? direccion.trim() : '',
       encargado: encargado ? encargado.trim() : '',
+      rut_encargado: rut_encargado ? rut_encargado.trim() : '',
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -394,11 +395,11 @@ router.post("/empresas/register", upload.single('logo'), async (req, res) => {
 
   } catch (err) {
     console.error("Error registrando empresa:", err);
-    
+
     if (err.code === 11000) {
       return res.status(400).json({ error: "Empresa duplicada" });
     }
-    
+
     res.status(500).json({ error: "Error al registrar empresa: " + err.message });
   }
 });
@@ -406,13 +407,14 @@ router.post("/empresas/register", upload.single('logo'), async (req, res) => {
 // PUT - Actualizar empresa
 router.put("/empresas/:id", upload.single('logo'), async (req, res) => {
   try {
-    const { nombre, rut, direccion, encargado } = req.body;
+    const { nombre, rut, direccion, encargado, rut_encargado } = req.body;
 
     const updateData = {
       nombre: nombre.trim(),
       rut: rut.trim(),
       direccion: direccion ? direccion.trim() : '',
       encargado: encargado ? encargado.trim() : '',
+      rut_encargado: rut_encargado ? rut_encargado.trim() : '',
       updatedAt: new Date()
     };
 
@@ -424,6 +426,8 @@ router.put("/empresas/:id", upload.single('logo'), async (req, res) => {
         mimeType: req.file.mimetype,
         uploadedAt: new Date()
       };
+    } else if (req.body.logo === 'DELETE_LOGO') {
+      updateData.logo = null;
     }
 
     const result = await req.db.collection("empresas").updateOne(

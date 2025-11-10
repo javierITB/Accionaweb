@@ -83,8 +83,8 @@ router.post("/", async (req, res) => {
       await generarAnexoDesdeRespuesta(responses, result.insertedId.toString(), req.db, form.section, {
         nombre: usuario,
         empresa: empresa,
-        uid: userId
-      });
+        uid: userId,
+      }, formId, formTitle);
       console.log("Documento generado automáticamente:", result.insertedId);
     } catch (error) {
       console.error("Error generando documento:", error.message);

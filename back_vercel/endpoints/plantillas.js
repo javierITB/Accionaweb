@@ -26,7 +26,7 @@ router.post("/", async (req, res) => {
 
       // 2. VINCULACIÓN CRÍTICA: Actualizar el formulario con el ID de la plantilla
       await req.db.collection("forms").updateOne(
-        { formId: formId },
+        { _id: new ObjectId(formId) },
         { $set: { plantillaId: newPlantillaId } }
       );
       
@@ -43,9 +43,9 @@ router.post("/", async (req, res) => {
         { returnDocument: "after" }
       );
       
-      if (!result.value) return res.status(404).json({ error: "Plantilla no encontrada" });
+      if (!result) return res.status(404).json({ error: "Plantilla no encontrada" });
 
-      res.status(200).json(result.value);
+      res.status(200).json(result);
     }
   } catch (err) {
     console.error("Error al crear/actualizar plantilla:", err);

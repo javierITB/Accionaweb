@@ -56,7 +56,7 @@ router.get("/download/:IDdoc", async (req, res) => {
         const fileBuffer = documento.docxFile.buffer || documento.docxFile;
         const bufferLength = fileBuffer.length;
 
-        // Actualizar estado en respuestas (solo si es un documento relacionado con una respuesta)
+        // Actualizar estado en respuestas
         if (documento.responseId) {
             await req.db.collection("respuestas").updateOne(
                 { _id: new ObjectId(documento.responseId) },
@@ -69,23 +69,26 @@ router.get("/download/:IDdoc", async (req, res) => {
             );
         }
 
+        // USAR EL fileName GUARDADO EN LUGAR DEL IDdoc
+        const fileName = documento.fileName || IDdoc;
+        const extension = documento.tipo === 'txt' ? 'txt' : 'docx';
+
         // CONFIGURAR HEADERS SEGÚN EL TIPO DE DOCUMENTO
         if (documento.tipo === 'txt') {
-            // Para archivos TXT
             res.set({
                 'Content-Type': 'text/plain',
-                'Content-Disposition': `attachment; filename="${IDdoc}.txt"`,
+                'Content-Disposition': `attachment; filename="${fileName}.${extension}"`,
                 'Content-Length': bufferLength
             });
-            console.log("Enviando archivo TXT, tamaño:", bufferLength);
+            console.log("Enviando archivo TXT:", fileName);
         } else {
             // Para archivos DOCX (por defecto)
             res.set({
                 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'Content-Disposition': `attachment; filename="${IDdoc}.docx"`,
+                'Content-Disposition': `attachment; filename="${fileName}.${extension}"`,
                 'Content-Length': bufferLength
             });
-            console.log("Enviando archivo DOCX, tamaño:", bufferLength);
+            console.log("Enviando archivo DOCX:", fileName);
         }
 
         // ENVIAR EL BUFFER
