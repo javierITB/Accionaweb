@@ -18,7 +18,6 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
       case 'rechazado':
         return 'bg-error text-error-foreground';
       case 'borrador':
-      case 'borrador':
         return 'bg-muted text-muted-foreground';
       default:
         return 'bg-muted text-muted-foreground';
@@ -40,7 +39,6 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
       case 'rechazado':
         return 'XCircle';
       case 'borrador':
-      case 'borrador':
         return 'FileText';
       default:
         return 'Circle';
@@ -57,7 +55,6 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
       'en_revision': 'EN REVISIÓN',
       'rejected': 'RECHAZADO',
       'rechazado': 'RECHAZADO',
-      'borrador': 'BORRADOR',
       'borrador': 'BORRADOR'
     };
 

@@ -16,9 +16,9 @@ const TemplateList = ({ onUpdateFormData }) => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'borrador':
-        return 'bg-warning/20 text-warning-foreground';
+        return 'bg-warning text-warning-foreground';
       case 'publicado':
-        return 'bg-success/20 text-success-foreground';
+        return 'bg-success text-success-foreground';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -30,14 +30,14 @@ const TemplateList = ({ onUpdateFormData }) => {
       try {
         setIsLoading(true);
         // Usamos la URL de forms para listar las plantillas disponibles
-        const res = await fetch('https://accionaapi.vercel.app/api/forms'); 
-        
+        const res = await fetch('https://accionaapi.vercel.app/api/forms');
+
         if (!res.ok) {
-            throw new Error('Error al obtener la lista de formularios');
+          throw new Error('Error al obtener la lista de formularios');
         }
-        
+
         const data = await res.json();
-        
+
         // Normalización básica de la fecha
         const normalizedForms = data.map(f => ({
           id: f._id,
@@ -48,6 +48,7 @@ const TemplateList = ({ onUpdateFormData }) => {
           // Incluye otros datos necesarios para la tabla
           questionsCount: f.questions?.length || 0,
           questions: f.questions || [],
+          formId: f.plantillaId
         }));
 
         setAllForms(normalizedForms);
@@ -61,14 +62,14 @@ const TemplateList = ({ onUpdateFormData }) => {
 
     fetchForms();
   }, []);
-  
-  
+
+
   // Función placeholder para manejar la selección de una plantilla
   const handleTemplateSelect = (form) => {
-      // Pasa el objeto completo del formulario (incluyendo preguntas) al componente padre
-      onUpdateFormData(form); 
-      
-      console.log('Formulario seleccionado como base:', form.id);
+    // Pasa el objeto completo del formulario (incluyendo preguntas) al componente padre
+    onUpdateFormData(form);
+
+    console.log('Formulario seleccionado como base:', form.id);
   };
 
   return (
@@ -89,21 +90,22 @@ const TemplateList = ({ onUpdateFormData }) => {
       </div>
 
       {isLoading ? (
-          <div className="text-center py-10">
-              <Icon name="Loader" size={32} className="animate-spin text-primary" />
-              <p className="text-muted-foreground mt-2">Cargando formularios existentes...</p>
-          </div>
+        <div className="text-center py-10">
+          <Icon name="Loader" size={32} className="animate-spin text-primary" />
+          <p className="text-muted-foreground mt-2">Cargando formularios existentes...</p>
+        </div>
       ) : allForms.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-border rounded-lg">
-              <Icon name="Frown" size={32} className="text-muted-foreground" />
-              <p className="text-muted-foreground mt-2">No se encontraron formularios disponibles.</p>
-          </div>
+        <div className="text-center py-10 border border-dashed border-border rounded-lg">
+          <Icon name="Frown" size={32} className="text-muted-foreground" />
+          <p className="text-muted-foreground mt-2">No se encontraron formularios disponibles.</p>
+        </div>
       ) : (
         /* 2. Tabla de Formularios */
         <div className="overflow-x-auto bg-card border border-border rounded-lg">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted text-sm text-muted-foreground">
               <tr>
+                <th className="px-4 py-2 text-left">Vinculado</th>
                 <th className="px-4 py-2 text-left">Título</th>
                 <th className="px-4 py-2 text-left">Sección</th>
                 <th className="px-4 py-2 text-left">Preguntas</th>
@@ -115,25 +117,46 @@ const TemplateList = ({ onUpdateFormData }) => {
             <tbody className="divide-y divide-border">
               {allForms.map((form) => (
                 <tr key={form.id} className="hover:bg-muted/50 transition">
+                  {form.formId ? (
+                    <td className="px-4 py-3 font-medium text-foreground text-sm">
+                      <Icon name="CheckCircle" size={16} className="text-green-600 dark:text-green-300" />
+                    </td>
+                  ) : (
+                    <td className="px-4 py-3 font-medium text-foreground text-sm">
+                      <Icon name="HelpCircle" size={16} className="text-gray-500 dark:text-gray-300" />
+                    </td>
+                  )}
                   <td className="px-4 py-3 font-medium text-foreground text-sm">{form.title}</td>
                   <td className="px-4 py-3 text-muted-foreground text-sm">{form.section}</td>
                   <td className="px-4 py-3 text-muted-foreground text-sm">{form.questionsCount}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusColor(form.status)}`}>
-                        {form.status}
+                      {form.status}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground text-sm">{form.updatedAt}</td>
                   <td className="px-4 py-3 text-center">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleTemplateSelect(form)}
-                      iconName="Check"
-                      iconPosition="left"
-                    >
-                      Seleccionar
-                    </Button>
+                    {form.formId ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTemplateSelect(form)}
+                        iconName="Pen"
+                        iconPosition="left"
+                      >
+                        Editar Plantilla
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTemplateSelect(form)}
+                        iconName="Dock"
+                        iconPosition="left"
+                      >
+                        Crear Plantilla
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}

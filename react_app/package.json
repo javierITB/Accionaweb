@@ -39,6 +39,7 @@
     "vite-tsconfig-paths": "^3.6.0"
   },
   "devDependencies": {
+    "@dhiwise/component-tagger": "^1.0.10",
     "@eslint/js": "^9.36.0",
     "@tailwindcss/postcss": "^4.1.13",
     "@types/react": "^19.1.13",

@@ -308,7 +308,9 @@ const FormBuilder = () => {
       { type: "text", title: "AUTOR NOMBRE" },
       { type: "text", title: "NOMBRE EMPRESA" },
       { type: "text", title: "RUT EMPRESA" },
+      { type: "text", title: "DIRECCION EMPRESA" },
       { type: "text", title: "ENCARGADO EMPRESA" },
+      { type: "text", title: "RUT ECARGADO EMPRESA" },
     ];
 
     // 💡 COMBINAR LAS VARIABLES
