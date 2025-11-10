@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RegisterForm = ({ formData, onUpdateFormData, onRegister, isLoading }) => {
+const RegisterForm = ({ formData, onUpdateFormData, onRegister, isLoading, isEditing, onCancelEdit }) => {
   const [logoPreview, setLogoPreview] = useState(null);
 
   // Manejar upload de logo
@@ -29,6 +29,13 @@ const RegisterForm = ({ formData, onUpdateFormData, onRegister, isLoading }) => 
     onUpdateFormData('logo', null);
   };
 
+  // Efecto para cargar logo preview cuando se está editando
+  useEffect(() => {
+    if (formData?.logoUrl) {
+      setLogoPreview(formData.logoUrl);
+    }
+  }, [formData?.logoUrl]);
+
   return (
     <div className="space-y-8">
       {/* Basic Information */}
@@ -39,10 +46,13 @@ const RegisterForm = ({ formData, onUpdateFormData, onRegister, isLoading }) => 
           </div>
           <div>
             <h3 className="text-lg font-semibold text-foreground">
-              Registrar Empresa
+              {isEditing ? 'Editar Empresa' : 'Registrar Empresa'}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Añadir empresa para asociar al sistema de usuarios
+              {isEditing 
+                ? 'Modificar información de la empresa existente' 
+                : 'Añadir empresa para asociar al sistema de usuarios'
+              }
             </p>
           </div>
         </div>
@@ -75,10 +85,10 @@ const RegisterForm = ({ formData, onUpdateFormData, onRegister, isLoading }) => 
             )}
           </div>
           
-          {/* RUT */}
+          {/* RUT EMPRESA */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              RUT<span className="text-destructive">*</span>
+              RUT Empresa<span className="text-destructive">*</span>
             </label>
             <input
               type="text"
@@ -103,10 +113,10 @@ const RegisterForm = ({ formData, onUpdateFormData, onRegister, isLoading }) => 
             />
           </div>
 
-          {/* ENCARGADO - AHORA COMO TEXTO LIBRE */}
+          {/* ENCARGADO */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              Encargado
+              Nombre Encargado
             </label>
             <input
               type="text"
@@ -116,12 +126,29 @@ const RegisterForm = ({ formData, onUpdateFormData, onRegister, isLoading }) => 
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
             <p className="text-xs text-muted-foreground">
-              Nombre de la persona responsable (opcional)
+              Nombre de la persona responsable
+            </p>
+          </div>
+
+          {/* RUT ENCARGADO - NUEVO CAMPO */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              RUT Encargado
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: 12.345.678-9"
+              value={formData?.rut_encargado || ''}
+              onChange={(e) => onUpdateFormData('rut_encargado', e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            />
+            <p className="text-xs text-muted-foreground">
+              RUT del encargado responsable
             </p>
           </div>
 
           {/* LOGO */}
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <label className="text-sm font-medium text-foreground">
               Logo de la Empresa
             </label>
@@ -168,16 +195,29 @@ const RegisterForm = ({ formData, onUpdateFormData, onRegister, isLoading }) => 
           </div>
         </div>
 
-        {/* BOTÓN DE REGISTRO */}
-        <div className="flex justify-end pt-4">
+        {/* BOTONES DE ACCIÓN */}
+        <div className="flex justify-end space-x-3 pt-4">
+          {isEditing && (
+            <Button
+              onClick={onCancelEdit}
+              variant="outline"
+              disabled={isLoading}
+              className="border-border hover:bg-muted"
+            >
+              Cancelar
+            </Button>
+          )}
           <Button
             onClick={onRegister}
             disabled={isLoading || !formData?.nombre || !formData?.rut}
             className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            iconName="Building2"
+            iconName={isEditing ? "Save" : "Building2"}
             iconPosition="left"
           >
-            {isLoading ? 'Registrando...' : 'Registrar Empresa'}
+            {isLoading 
+              ? (isEditing ? 'Guardando...' : 'Registrando...') 
+              : (isEditing ? 'Guardar Cambios' : 'Registrar Empresa')
+            }
           </Button>
         </div>
       </div>
