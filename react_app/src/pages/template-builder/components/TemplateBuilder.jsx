@@ -36,10 +36,10 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
     <button
       key={generateVarTag(v.title || v.text)}
       onClick={() => copyVariable(generateVarTag(v.title || v.text))}
-      className={`w-full flex flex-col items-start px-3 py-2 rounded-md text-xs transition-brand cursor-pointer text-left font-mono hover:shadow-md border border-transparent bg-white-50 hover:bg-gray-100 dark:hover:bg-slate-600 dark:text-foreground ${v.color || ''} 
+      className={`w-full flex flex-col items-start px-3 py-2 rounded-md text-xs transition-brand cursor-pointer text-left font-mono border border-transparent bg-white-50 hover:bg-gray-100 dark:hover:bg-primary dark:text-foreground hover:bg-primary${v.color || ''} 
                   ${isChild
-          ? 'bg-white-50 hover:bg-gray-100 dark:hover:bg-slate-600 dark:text-foreground'
-          : ''}
+          ? 'bg-white-50 hover:bg-gray-100 dark:hover:bg-secondary dark:text-foreground'
+          : 'hover:bg-primary'}
                 `}
     >
       <span className={`font-semibold ${isChild ? 'text-xs' : 'text-sm'}`}>{generateVarTag(v.title || v.text)} </span>
@@ -95,7 +95,7 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
       </button>
 
       {isOpen && (
-        <div className="p-2 space-y-1 border-t border-border dark:border-slate-700">
+        <div className="p-2 space-y-1 border-t border-border dark:border-slate-700 ">
           {renderSimpleVariable(variable)}
           {variable.options && (variable.options)?.map((subVar) => (
             <VariableItem
