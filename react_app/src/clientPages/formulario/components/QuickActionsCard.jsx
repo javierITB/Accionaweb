@@ -44,53 +44,7 @@ const FormPreview = ({ formData }) => {
     return question.title || 'Pregunta sin título';
   };
 
-  const extraerRutTrabajador = (questions, answers) => {
-    console.log("=== EXTRAYENDO RUT DEL TRABAJADOR ===");
-
-    const buscarRutEnPreguntas = (questionList) => {
-      for (const question of questionList) {
-        const questionTitle = question.title?.toUpperCase() || '';
-        const questionDescription = question.description?.toUpperCase() || '';
-
-        const patronesRut = [
-          questionTitle.includes('RUT') && questionTitle.includes('TRABAJADOR'),
-          questionTitle.includes('RUT') && questionTitle.includes('EMPLEADO'),
-          questionTitle.includes('DOCUMENTO') && questionTitle.includes('IDENTIDAD'),
-          questionTitle.includes('RUT'),
-          questionDescription.includes('RUT') && questionDescription.includes('TRABAJADOR')
-        ];
-
-        if (patronesRut.some(patron => patron)) {
-          const answer = answers[question.id];
-          if (answer && answer.trim() !== '') {
-            console.log("RUT del trabajador encontrado en pregunta:", questionTitle, "Valor:", answer);
-            return answer;
-          }
-        }
-
-        if (question.options) {
-          for (const option of question.options) {
-            if (typeof option === 'object' && option.subformQuestions) {
-              const rutEnSubpreguntas = buscarRutEnPreguntas(option.subformQuestions);
-              if (rutEnSubpreguntas) return rutEnSubpreguntas;
-            }
-          }
-        }
-      }
-      return null;
-    };
-
-    const rutTrabajador = buscarRutEnPreguntas(questions);
-
-    if (!rutTrabajador) {
-      console.log("No se encontro RUT del trabajador en las respuestas");
-      console.log("Preguntas disponibles:", questions.map(q => q.title));
-      console.log("Respuestas disponibles:", Object.keys(answers));
-    }
-
-    return rutTrabajador;
-  };
-
+  // Función para validar archivos
   const validateFiles = (files, question) => {
     const errors = [];
 
@@ -98,20 +52,24 @@ const FormPreview = ({ formData }) => {
       return errors;
     }
 
+    // Validar cantidad de archivos
     if (!question.multiple && files.length > 1) {
       errors.push('Solo se permite un archivo');
       return errors;
     }
 
+    // Validar cada archivo
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
+      // Validar formato - solo PDF
       if (file.type !== 'application/pdf') {
         errors.push(`Formato no permitido: ${file.name}. Solo se permiten archivos PDF`);
         continue;
       }
 
-      const maxSizeBytes = 500 * 1024;
+      // Validar tamaño - máximo 500KB
+      const maxSizeBytes = 500 * 1024; // 500KB en bytes
       if (file.size > maxSizeBytes) {
         const fileSizeKB = (file.size / 1024).toFixed(2);
         errors.push(`Archivo demasiado grande: ${file.name} (${fileSizeKB} KB). Tamaño máximo: 500 KB`);
@@ -139,6 +97,7 @@ const FormPreview = ({ formData }) => {
     const question = findQuestionById(formData?.questions || [], questionId);
 
     if (question && question.type === 'file') {
+      // Validar archivos
       const validationErrors = validateFiles(files, question);
 
       if (validationErrors.length > 0) {
@@ -146,6 +105,7 @@ const FormPreview = ({ formData }) => {
           ...prev,
           [questionId]: validationErrors
         }));
+        // Limpiar archivos inválidos
         setAnswers(prev => ({
           ...prev,
           [questionId]: null
@@ -172,6 +132,7 @@ const FormPreview = ({ formData }) => {
     }
   };
 
+  // Función auxiliar para buscar pregunta por ID
   const findQuestionById = (questions, id) => {
     for (const question of questions) {
       if (question.id === id) return question;
@@ -257,6 +218,7 @@ const FormPreview = ({ formData }) => {
         }
       }
 
+      // Validar archivos específicamente
       if (question.type === 'file' && answers[question.id] instanceof FileList) {
         const fileErrors = validateFiles(answers[question.id], question);
         if (fileErrors.length > 0) {
@@ -311,12 +273,14 @@ const FormPreview = ({ formData }) => {
           answer !== '' && !(Array.isArray(answer) && answer.length === 0);
 
         if (hasValidAnswer) {
+          // PARA TXT Y VISUALIZACIÓN: mantener nombres originales (puede haber sobrescritura)
           if (question.type === 'file' && answer instanceof FileList) {
             mappedAnswers[questionTitle] = Array.from(answer).map(file => file.name).join(', ');
           } else {
             mappedAnswers[questionTitle] = answer;
           }
 
+          // PARA DOCX: guardar contexto para campos duplicados
           if (currentContext) {
             if (!contexto.camposContextuales) contexto.camposContextuales = {};
             if (!contexto.camposContextuales[currentContext]) {
@@ -326,6 +290,7 @@ const FormPreview = ({ formData }) => {
           }
         }
 
+        // Procesar subformularios
         (question?.options || []).forEach((option, optionIndex) => {
           if (typeof option === 'object' && option.hasSubform && option.subformQuestions) {
             const optionText = option.text || 'Opción';
@@ -344,6 +309,7 @@ const FormPreview = ({ formData }) => {
 
     processQuestionTree(questions);
 
+    // Combinar mappedAnswers normal con el contexto
     return {
       ...mappedAnswers,
       _contexto: contexto.camposContextuales || {}
@@ -504,6 +470,7 @@ const FormPreview = ({ formData }) => {
                 )}
               </div>
 
+              {/* Mostrar errores de archivos */}
               {hasFileErrors && (
                 <div className="mt-2 space-y-1">
                   {fileErrorList.map((errorMsg, idx) => (
@@ -657,8 +624,6 @@ const FormPreview = ({ formData }) => {
     try {
       const answersWithTitles = mapAnswersToTitles(formData?.questions || [], answers);
 
-      const rutTrabajador = extraerRutTrabajador(formData?.questions || [], answers);
-
       const adjuntos = [];
       const processedAnswers = { ...answersWithTitles };
 
@@ -737,8 +702,7 @@ const FormPreview = ({ formData }) => {
         adjuntos: adjuntos,
         mail: respaldo,
         submittedAt: new Date().toISOString(),
-        user: user,
-        detalles: rutTrabajador || null
+        user: user
       };
 
       console.log('Payload a enviar:', payload);
