@@ -55,7 +55,6 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
       'en_revision': 'EN REVISIÓN',
       'rejected': 'RECHAZADO',
       'rechazado': 'RECHAZADO',
-      'borrador': 'BORRADOR',
       'borrador': 'BORRADOR'
     };
 
