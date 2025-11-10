@@ -2,7 +2,17 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RegisterForm = ({ formData, empresas, cargos, roles, onUpdateFormData, onRegister }) => {
+const RegisterForm = ({ 
+  formData, 
+  empresas, 
+  cargos, 
+  roles, 
+  onUpdateFormData, 
+  onRegister,
+  isLoading,      // Nuevo
+  isEditing,      // Nuevo
+  onCancelEdit    // Nuevo
+}) => {
   return (
     <div className="space-y-8">
       {/* Basic Information */}
@@ -13,10 +23,12 @@ const RegisterForm = ({ formData, empresas, cargos, roles, onUpdateFormData, onR
           </div>
           <div>
             <h3 className="text-lg font-semibold text-foreground">
-              Registrar Usuario
+              {isEditing ? 'Editar Usuario' : 'Registrar Usuario'}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Añadir usuario para permitir ingresar al sistema
+              {isEditing 
+                ? 'Modificar datos de la cuenta existente, incluyendo el estado.' 
+                : 'Añadir nuevo usuario y enviar invitación de registro.'}
             </p>
           </div>
         </div>
@@ -85,12 +97,15 @@ const RegisterForm = ({ formData, empresas, cargos, roles, onUpdateFormData, onR
               type="email"
               placeholder="Ej: usuario@empresa.com"
               value={formData?.mail || ''}
+              // El email siempre se permite editar, pero solo se valida en el backend
               onChange={(e) => onUpdateFormData('mail', e.target.value)}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
-            <p className="text-sm text-muted-foreground">
-              Se enviará un correo para establecer la contraseña
-            </p>
+            {!isEditing && ( // Mostrar solo en modo REGISTRO
+              <p className="text-sm text-muted-foreground">
+                Se enviará un correo para establecer la contraseña
+              </p>
+            )}
           </div>
           
           {/* EMPRESA */}
@@ -151,17 +166,50 @@ const RegisterForm = ({ formData, empresas, cargos, roles, onUpdateFormData, onR
               Define los permisos del usuario en el sistema
             </p>
           </div>
+
+          {isEditing && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Estado <span className="text-destructive">*</span>
+              </label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={formData?.estado || 'pendiente'} // Usamos el campo 'estado'
+                onChange={(e) => onUpdateFormData('estado', e.target.value)}
+              >
+                <option value="pendiente">Pendiente</option>
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+              </select>
+              <p className="text-sm text-muted-foreground">
+                Controla si el usuario puede ingresar al sistema.
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* BOTÓN DE REGISTRO */}
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end space-x-3 pt-4">
+          {isEditing && (
+            <Button
+              onClick={onCancelEdit}
+              variant="outline"
+              disabled={isLoading}
+              className="border-border hover:bg-muted"
+            >
+              Cancelar
+            </Button>
+          )}
           <Button
             onClick={onRegister}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-            iconName="UserPlus"
+            disabled={isLoading || !formData.nombre || !formData.mail}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            iconName={isEditing ? "Save" : "UserPlus"} // Cambia el ícono
             iconPosition="left"
           >
-            Registrar Usuario
+            {isLoading 
+              ? (isEditing ? 'Guardando...' : 'Registrando...') 
+              : (isEditing ? 'Guardar Cambios' : 'Registrar Usuario')
+            }
           </Button>
         </div>
       </div>
