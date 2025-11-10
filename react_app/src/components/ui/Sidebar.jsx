@@ -108,10 +108,10 @@ const Sidebar = ({
   }
 
   return (
-    <aside className={finalClasses}>
-      <div className="flex flex-col h-full">
+    <aside className={finalClasses} >
+      <div className="flex flex-col h-full ">
 
-        {/* ❌ Botón de Cierre para Móvil (cuando está isMobileOpen) */}
+        {/* Botón de Cierre para Móvil (cuando está isMobileOpen) */}
         {isMobileOpen && (
           <Button 
             variant="ghost" 
@@ -126,9 +126,10 @@ const Sidebar = ({
         
 
         {/* Main navigation */}
-        <nav className="flex-1 mt-4 p-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 mt-4 p-4 space-y-2 overflow-y-auto overflow-x-hidden">
           {navigationItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path || (location.pathname == "/form-builder" && item.path== "/form-center");
+            
             const isTextVisible = !(isCollapsed && !isMobileOpen); // Es visible si no está colapsado Y no está en móvil
             
             return (

@@ -193,6 +193,7 @@ const RequestTracking = () => {
         request?.submittedBy?.toLowerCase()?.includes(searchTerm) ||
         request?.userEmail?.toLowerCase()?.includes(searchTerm) ||
         request?._id?.toLowerCase()?.includes(searchTerm) ||
+        request?.detalles?.toLowerCase()?.includes(searchTerm) ||
         request?.searchData?.includes(searchTerm);
 
       if (!matchesSearch) return false;
@@ -365,15 +366,17 @@ const RequestTracking = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      {(isDesktopOpen || isMobileOpen) && (
+      {(isMobileOpen || !isMobileScreen) && (
         <>
           <Sidebar 
-            isCollapsed={!isDesktopOpen}
+            // isCollapsed ahora se basa SOLO en isDesktopOpen
+            isCollapsed={!isDesktopOpen} 
             onToggleCollapse={toggleSidebar} 
             isMobileOpen={isMobileOpen}
             onNavigate={handleNavigation}
           />
           
+          {/* El Overlay solo debe aparecer en Móvil cuando está abierto */}
           {isMobileScreen && isMobileOpen && (
             <div 
               className="fixed inset-0 bg-foreground/50 z-40" 

@@ -314,7 +314,25 @@ const FormRenderer = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Sidebar />
+      {(isMobileOpen || !isMobileScreen) && (
+        <>
+          <Sidebar 
+            // isCollapsed ahora se basa SOLO en isDesktopOpen
+            isCollapsed={!isDesktopOpen} 
+            onToggleCollapse={toggleSidebar} 
+            isMobileOpen={isMobileOpen}
+            onNavigate={handleNavigation}
+          />
+          
+          {/* El Overlay solo debe aparecer en Móvil cuando está abierto */}
+          {isMobileScreen && isMobileOpen && (
+            <div 
+              className="fixed inset-0 bg-foreground/50 z-40" 
+              onClick={toggleSidebar}
+            ></div>
+          )}
+        </>
+      )}
       <main className="ml-64 pt-16">
         <div className="p-6">
           <div className="max-w-4xl mx-auto">

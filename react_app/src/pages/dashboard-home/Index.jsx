@@ -50,8 +50,25 @@ const DashboardHome = () => {
       {/* Header */}
       <Header />
       {/* Sidebar */}
-      <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)
-        } />
+      {(isMobileOpen || !isMobileScreen) && (
+        <>
+          <Sidebar 
+            // isCollapsed ahora se basa SOLO en isDesktopOpen
+            isCollapsed={!isDesktopOpen} 
+            onToggleCollapse={toggleSidebar} 
+            isMobileOpen={isMobileOpen}
+            onNavigate={handleNavigation}
+          />
+          
+          {/* El Overlay solo debe aparecer en Móvil cuando está abierto */}
+          {isMobileScreen && isMobileOpen && (
+            <div 
+              className="fixed inset-0 bg-foreground/50 z-40" 
+              onClick={toggleSidebar}
+            ></div>
+          )}
+        </>
+      )}
       {/* Main Content */}
       <main className={`transition-all duration-300 ${
         sidebarCollapsed ? 'ml-16' : 'ml-64'
