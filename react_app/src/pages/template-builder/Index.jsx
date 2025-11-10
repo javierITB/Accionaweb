@@ -310,7 +310,7 @@ const FormBuilder = () => {
       { type: "text", title: "RUT EMPRESA" },
       { type: "text", title: "DIRECCION EMPRESA" },
       { type: "text", title: "ENCARGADO EMPRESA" },
-      { type: "text", title: "RUT ECARGADO EMPRESA" },
+      { type: "text", title: "RUT ENCARGADO EMPRESA" },
     ];
 
     // 💡 COMBINAR LAS VARIABLES
