@@ -1,31 +1,130 @@
-import React, { useState } from 'react';
-import Icon from '../../../components/AppIcon';
-import Image from '../../../components/AppImage';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import Select from '../../../components/ui/Select';
+import React, { useState, useEffect } from 'react';
+// Ajuste de rutas: Asumiendo que el componente se encuentra a 1 o 2 niveles de la carpeta 'components'.
+// Si ProfileSection está en src/pages/profile/ProfileSection.jsx, y AppIcon está en src/components/AppIcon.jsx
+// La ruta correcta podría ser:
+import Icon from '../../components/AppIcon'; 
+import Image from '../../components/AppImage'; 
+import Button from '../../components/ui/Button'; 
+import Input from '../../components/ui/Input'; 
+import Select from '../../components/ui/Select'; 
+
+// Función para obtener el email de sesión de sessionStorage
+const getSessionEmail = () => {
+  try {
+    // Asumo que la sesión se guarda en una clave 'userSession' y contiene el 'email'
+    const sessionData = sessionStorage.getItem('userSession');
+    if (sessionData) {
+      const user = JSON.parse(sessionData);
+      // Se necesita la estructura: { email: 'user@domain.com', ... }
+      return user.email || user.mail || null;
+    }
+  } catch (e) {
+    console.error("Error reading session storage:", e);
+  }
+  return null;
+};
+
+// Obtenemos el email, si no existe, usamos el mock de administrador como fallback.
+const MOCK_SESSION_EMAIL = getSessionEmail() || "mail@mail.com"; 
 
 const ProfileSection = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Estado para guardar el ID de MongoDB (necesario para la actualización PUT)
+  const [userId, setUserId] = useState(null); 
+  
   const [profileData, setProfileData] = useState({
-    firstName: "María",
-    lastName: "González",
-    email: "maria.gonzalez@empresa.com",
-    position: "Supervisora de Recursos Humanos",
-    employeeId: "EMP-2024-001",
-    profileImage: "https://images.unsplash.com/photo-1628595556262-4cffd053a4bf"
+    firstName: "",
+    lastName: "",
+    email: "",
+    position: "", // Mapeado a 'cargo'
+    employeeId: "", // Mapeado a '_id'
+    department: "", // Mapeado a 'empresa'
+    profileImage: "https://placehold.co/128x128/3B82F6/FFFFFF?text=A", // Placeholder por defecto
+    rol: 'user', // Asumo valor por defecto
+    estado: 'activo' // Asumo valor por defecto
   });
 
   const [formData, setFormData] = useState(profileData);
   const [errors, setErrors] = useState({});
 
   const departmentOptions = [
-  { value: 'hr', label: 'Recursos Humanos' },
-  { value: 'accounting', label: 'Contabilidad' },
-  { value: 'sales', label: 'Ventas' },
-  { value: 'operations', label: 'Operaciones' },
-  { value: 'it', label: 'Tecnología' }];
+    { value: 'Recursos Humanos', label: 'Recursos Humanos' },
+    { value: 'Contabilidad', label: 'Contabilidad' },
+    { value: 'Ventas', label: 'Ventas' },
+    { value: 'Operaciones', label: 'Operaciones' },
+    { value: 'Tecnología', label: 'Tecnología' },
+    // **Importante:** Si 'empresa' es Acciona Centro de Negocios Spa., debe estar aquí:
+    { value: 'Acciona Centro de Negocios Spa.', label: 'Acciona Centro de Negocios Spa.' },
+  ];
 
+  // --- Lógica de Carga Inicial ---
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const userEmail = getSessionEmail() || MOCK_SESSION_EMAIL;
+      
+      if (!userEmail) {
+        setIsLoading(false);
+        alert('No se pudo encontrar el email de sesión. Intente iniciar sesión.');
+        return;
+      }
+      
+      try {
+        setIsLoading(true);
+        // Usamos el email obtenido dinámicamente o el mock
+        const response = await fetch(`https://accionaapi.vercel.app/api/auth/full/${userEmail}`);
+
+        if (!response.ok) {
+          throw new Error('Error al cargar el perfil. Usuario no encontrado o API caída.');
+        }
+
+        const user = await response.json();
+        
+        // Mapeo basado en la estructura de tu objeto de usuario
+        const initialData = {
+          firstName: user.nombre || '',
+          lastName: user.apellido || '',
+          email: user.mail || '',
+          position: user.cargo || user.rol || '', // 'position' será 'Empleado'
+          employeeId: user._id || '', 
+          department: user.empresa || '', // 'department' será 'Acciona Centro de Negocios Spa.'
+          profileImage: profileData.profileImage,
+          rol: user.rol || 'user',
+          estado: user.estado || 'activo'
+        };
+        
+        setUserId(user._id);
+        setProfileData(initialData);
+        setFormData(initialData);
+
+      } catch (error) {
+        console.error("Error al cargar perfil:", error);
+        alert("Error al cargar el perfil: " + error.message);
+        
+        // Carga de datos de ejemplo si falla la API (usando la estructura real)
+        const fallbackData = {
+          firstName: "",
+          lastName: "",
+          email: "",
+          position: "Empleado",
+          employeeId: "",
+          department: ".",
+          rol: '',
+          estado: 'activo',
+          profileImage: profileData.profileImage
+        };
+        setProfileData(fallbackData);
+        setFormData(fallbackData);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []); // Se ejecuta una sola vez al montar
+
+  // --- Lógica de Interacción del Formulario ---
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -33,7 +132,6 @@ const ProfileSection = () => {
       [field]: value
     }));
 
-    // Clear error when user starts typing
     if (errors?.[field]) {
       setErrors((prev) => ({
         ...prev,
@@ -55,7 +153,7 @@ const ProfileSection = () => {
 
     if (!formData?.email?.trim()) {
       newErrors.email = 'El email es obligatorio';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/?.test(formData?.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+\.[^\s@]+$/.test(formData?.email)) {
       newErrors.email = 'Formato de email inválido';
     }
 
@@ -63,10 +161,48 @@ const ProfileSection = () => {
     return Object.keys(newErrors)?.length === 0;
   };
 
-  const handleSave = () => {
-    if (validateForm()) {
-      setProfileData(formData);
+  const handleSave = async () => {
+    if (!validateForm()) return;
+    if (!userId) return alert('Error: ID de usuario no disponible para actualizar.');
+    
+    setIsLoading(true);
+
+    // Mapeo inverso de campos de vuelta a la estructura de la API (PUT /users/:id)
+    const updateBody = {
+      nombre: formData.firstName,
+      apellido: formData.lastName,
+      mail: formData.email,
+      empresa: formData.department, // Mapeado a 'empresa'
+      cargo: formData.position,
+      rol: profileData.rol, 
+      estado: profileData.estado 
+    };
+    
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/auth/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          // Aquí iría el token de autenticación: 'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updateBody)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al actualizar el perfil.');
+      }
+      
+      // La API respondió OK, actualizamos los datos locales y salimos de edición
+      setProfileData({ ...formData, rol: profileData.rol, estado: profileData.estado });
       setIsEditing(false);
+      alert('Perfil actualizado exitosamente.');
+      
+    } catch (error) {
+      console.error("Error guardando perfil:", error);
+      alert("Error al guardar el perfil: " + error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,7 +215,6 @@ const ProfileSection = () => {
   const handleImageUpload = (event) => {
     const file = event?.target?.files?.[0];
     if (file) {
-      // Mock image upload - in real app would upload to server
       const reader = new FileReader();
       reader.onload = (e) => {
         setFormData((prev) => ({
@@ -90,6 +225,15 @@ const ProfileSection = () => {
       reader?.readAsDataURL(file);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="bg-card rounded-lg border border-border shadow-subtle p-12 text-center text-muted-foreground">
+        <Icon name="Loader" size={24} className="animate-spin mx-auto mb-3 text-primary" />
+        Cargando datos del perfil...
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card rounded-lg border border-border shadow-subtle">
@@ -112,7 +256,8 @@ const ProfileSection = () => {
           <div className="flex items-center space-x-2">
               <Button
               variant="ghost"
-              onClick={handleCancel}>
+              onClick={handleCancel}
+              disabled={isLoading}>
 
                 Cancelar
               </Button>
@@ -120,9 +265,10 @@ const ProfileSection = () => {
               variant="default"
               onClick={handleSave}
               iconName="Save"
-              iconPosition="left">
+              iconPosition="left"
+              disabled={isLoading}>
 
-                Guardar
+                {isLoading ? 'Guardando...' : 'Guardar'}
               </Button>
             </div>
           }
@@ -137,7 +283,7 @@ const ProfileSection = () => {
                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-border">
                   <Image
                     src={formData?.profileImage}
-                    alt="Foto de perfil de María González, supervisora con cabello castaño y sonrisa profesional"
+                    alt={`Foto de perfil de ${formData.firstName}`}
                     className="w-full h-full object-cover" />
 
                 </div>
@@ -160,6 +306,7 @@ const ProfileSection = () => {
                 </h3>
                 <p className="text-sm text-muted-foreground">{formData?.position}</p>
                 <p className="text-xs text-muted-foreground mt-1">ID: {formData?.employeeId}</p>
+                <p className="text-sm text-muted-foreground mt-1 font-semibold">{formData?.department}</p>
               </div>
 
               {isEditing &&
@@ -216,30 +363,32 @@ const ProfileSection = () => {
                 label="Cargo"
                 type="text"
                 value={formData?.position}
-                disabled
+                onChange={(e) => handleInputChange('position', e?.target?.value)}
+                disabled={!isEditing}
                 placeholder="Cargo actual" />
 
 
               <Select
-                label="Departamento Principal"
+                label="Empresa / Departamento"
                 options={departmentOptions}
-                value="hr"
-                disabled
-                placeholder="Seleccionar departamento"
+                value={formData?.department}
+                onChange={(e) => handleInputChange('department', e?.target?.value)}
+                disabled={!isEditing}
+                placeholder="Seleccionar empresa/departamento"
                 className="md:col-span-2" />
 
             </div>
 
-            {/* Department Assignments */}
+            {/* Department Assignments - Usamos los datos cargados */}
             <div className="mt-6">
-              <h4 className="text-sm font-medium text-foreground mb-3">Asignaciones de Departamento</h4>
+              <h4 className="text-sm font-medium text-foreground mb-3">Asignaciones de Cuenta</h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div className="flex items-center space-x-3">
                     <Icon name="Building2" size={16} className="text-primary" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">Recursos Humanos</p>
-                      <p className="text-xs text-muted-foreground">Supervisora - Acceso completo</p>
+                      <p className="text-sm font-medium text-foreground">{profileData.department || 'Sin Empresa Asignada'}</p>
+                      <p className="text-xs text-muted-foreground">{profileData.position || 'N/A'} - {profileData.rol || 'Cliente'}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -249,20 +398,24 @@ const ProfileSection = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <Icon name="Building2" size={16} className="text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Operaciones</p>
-                      <p className="text-xs text-muted-foreground">Colaboradora - Solo lectura</p>
+                {/* El bloque secundario se puede mantener como ejemplo mock si no tienes más datos de asignación */}
+                {profileData.rol === 'admin' && (
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Icon name="Lock" size={16} className="text-red-600" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Rol de Administración</p>
+                        <p className="text-xs text-muted-foreground">Acceso de superusuario (Global)</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                        {profileData.rol.toUpperCase()}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                      Secundario
-                    </span>
-                  </div>
-                </div>
+                )}
+
               </div>
             </div>
           </div>

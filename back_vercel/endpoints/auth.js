@@ -46,6 +46,22 @@ router.get("/:mail", async (req, res) => {
   }
 });
 
+router.get("/full/:mail", async (req, res) => {
+  try {
+    const usr = await req.db
+      .collection("usuarios")
+      .findOne({ mail: req.params.mail });
+
+    if (!usr) return res.status(404).json({ error: "Usuario no encontrado" });
+
+    // IMPORTANTE: Devolver el objeto completo para llenar el perfil
+    res.json(usr); 
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener Usuario completo" });
+  }
+});
+
+
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
