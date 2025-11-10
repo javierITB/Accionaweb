@@ -46,12 +46,12 @@ const FormPreview = ({ formData }) => {
 
   const extraerRutTrabajador = (questions, answers) => {
     console.log("=== EXTRAYENDO RUT DEL TRABAJADOR ===");
-    
+
     const buscarRutEnPreguntas = (questionList) => {
       for (const question of questionList) {
         const questionTitle = question.title?.toUpperCase() || '';
         const questionDescription = question.description?.toUpperCase() || '';
-        
+
         const patronesRut = [
           questionTitle.includes('RUT') && questionTitle.includes('TRABAJADOR'),
           questionTitle.includes('RUT') && questionTitle.includes('EMPLEADO'),
@@ -59,7 +59,7 @@ const FormPreview = ({ formData }) => {
           questionTitle.includes('RUT'),
           questionDescription.includes('RUT') && questionDescription.includes('TRABAJADOR')
         ];
-        
+
         if (patronesRut.some(patron => patron)) {
           const answer = answers[question.id];
           if (answer && answer.trim() !== '') {
@@ -67,7 +67,7 @@ const FormPreview = ({ formData }) => {
             return answer;
           }
         }
-        
+
         if (question.options) {
           for (const option of question.options) {
             if (typeof option === 'object' && option.subformQuestions) {
@@ -79,15 +79,15 @@ const FormPreview = ({ formData }) => {
       }
       return null;
     };
-    
+
     const rutTrabajador = buscarRutEnPreguntas(questions);
-    
+
     if (!rutTrabajador) {
       console.log("No se encontro RUT del trabajador en las respuestas");
       console.log("Preguntas disponibles:", questions.map(q => q.title));
       console.log("Respuestas disponibles:", Object.keys(answers));
     }
-    
+
     return rutTrabajador;
   };
 
@@ -656,9 +656,9 @@ const FormPreview = ({ formData }) => {
 
     try {
       const answersWithTitles = mapAnswersToTitles(formData?.questions || [], answers);
-      
+
       const rutTrabajador = extraerRutTrabajador(formData?.questions || [], answers);
-      
+
       const adjuntos = [];
       const processedAnswers = { ...answersWithTitles };
 
@@ -738,11 +738,7 @@ const FormPreview = ({ formData }) => {
         mail: respaldo,
         submittedAt: new Date().toISOString(),
         user: user,
-        detalles: {
-          rutTrabajador: rutTrabajador || null,
-          fechaEnvio: new Date().toISOString(),
-          empresa: user?.empresa || null
-        }
+        detalles: rutTrabajador || null
       };
 
       console.log('Payload a enviar:', payload);
