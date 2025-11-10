@@ -513,7 +513,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       case 'rechazado':
         return 'XCircle';
       case 'borrador':
-      case 'borrador':
         return 'FileText';
       default:
         return 'Circle';
