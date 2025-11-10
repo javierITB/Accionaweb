@@ -36,22 +36,25 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
     <button
       key={generateVarTag(v.title || v.text)}
       onClick={() => copyVariable(generateVarTag(v.title || v.text))}
-      className={`w-full flex flex-col items-start px-3 py-2 rounded-md text-xs transition-brand cursor-pointer text-left font-mono border border-transparent bg-white-50 hover:bg-gray-100 dark:hover:bg-primary dark:text-foreground hover:bg-primary${v.color || ''} 
-                  ${isChild
-          ? 'bg-white-50 hover:bg-gray-100 dark:hover:bg-secondary dark:text-foreground'
-          : 'hover:bg-primary'}
-                `}
+      className={`w-full flex flex-col items-start px-3 py-2 rounded-md text-xs transition-brand cursor-pointer text-left font-mono border border-transparent bg-white-50 hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white dark:text-foreground ${isChild
+        ? 'bg-white-50 hover:bg-gray-100 dark:hover:bg-secondary dark:text-foreground'
+        : 'hover:bg-primary'
+        }`}
     >
-      <span className={`font-semibold ${isChild ? 'text-xs' : 'text-sm'}`}>{generateVarTag(v.title || v.text)} </span>
-      <span className={`text-xs opacity-80 ${isChild ? 'ml-1' : ''}`}>{v.title || v.text} {v.type && (" (" + v.type + ")")}</span>
+      <span className={`font-semibold ${isChild ? 'text-xs' : 'text-sm'}`}>
+        {generateVarTag(v.title || v.text)}
+      </span>
+      <span className={`text-xs opacity-80 ${isChild ? 'ml-1' : ''}`}>
+        {v.title || v.text} {v.type && (" (" + v.type + ")")}
+      </span>
     </button>
   );
 
   if (!hasSubVariables) {
     return renderSimpleVariable(variable);
   }
-  
-  if (variable.subformQuestions?.length === 1 && !variable.subformQuestions[0].options.length> 0 ) {
+
+  if (variable.subformQuestions?.length === 1 && !variable.subformQuestions[0].options.length > 0) {
     return renderSimpleVariable(variable.subformQuestions[0]);
   }
 
@@ -60,23 +63,19 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
   }
 
   if (variable.options && variable.options.length > 0) {
-    
-    // Asumimos inicialmente que las opciones son planas (no tienen sub-variables)
+
     let areOptionsFlat = true;
 
-    // Recorrer las opciones
     for (const option of variable.options) {
       const optionHasSubVars = (option.hasSubform && option.subformQuestions.length > 0);
-      
+
       if (optionHasSubVars) {
-        areOptionsFlat = false; // Una opción compleja anula la simplificación
-        break; 
+        areOptionsFlat = false;
+        break;
       }
     }
 
     if (areOptionsFlat) {
-      // Si el array de opciones no tiene sub-variables anidadas, renderiza la variable principal de forma simple.
-      // NOTA: Esto hará que solo se muestre el botón del padre y no los botones de las opciones.
       return renderSimpleVariable(variable);
     }
   }
@@ -119,20 +118,16 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
   );
 });
 
-// 💡 COMPONENTE MODIFICADO: Añade el campo condicional
 const ParagraphEditor = React.memo(({ paragraph, index, total, onUpdate, onDelete, onMove }) => {
   const textareaRef = useRef(null);
 
-  // CRÍTICO: Ahora onUpdate debe enviar el nombre del campo
   const handleContentChange = useCallback((e) => {
-    onUpdate(paragraph.id, 'content', e.target.value); // <-- Envía el campo 'content'
+    onUpdate(paragraph.id, 'content', e.target.value);
   }, [paragraph.id, onUpdate]);
 
-  // 💡 NUEVO HANDLER PARA LA VARIABLE CONDICIONAL
   const handleConditionalVarChange = useCallback((e) => {
-    onUpdate(paragraph.id, 'conditionalVar', e.target.value); // <--- Actualiza el campo 'conditionalVar'
+    onUpdate(paragraph.id, 'conditionalVar', e.target.value);
   }, [paragraph.id, onUpdate]);
-
 
   const handleMoveUp = useCallback(() => {
     onMove(paragraph.id, 'up');
@@ -153,7 +148,6 @@ const ParagraphEditor = React.memo(({ paragraph, index, total, onUpdate, onDelet
           Párrafo {index + 1}
         </h4>
         <div className="flex items-center space-x-2">
-          {/* Botones de movimiento y eliminación */}
           <Button
             variant="ghost"
             size="icon"
@@ -187,7 +181,6 @@ const ParagraphEditor = React.memo(({ paragraph, index, total, onUpdate, onDelet
         </div>
       </div>
 
-      {/* 💡 NUEVO CAMPO CONDICIONAL */}
       <div className="space-y-1">
         <label className="text-xs font-medium text-muted-foreground">
           Variable Condicional (Opcional)
@@ -212,19 +205,18 @@ const ParagraphEditor = React.memo(({ paragraph, index, total, onUpdate, onDelet
   );
 });
 
-
 const DocumentTemplateEditor = ({
-  availableVariables = [],
+  dynamicVariables = [],
+  staticVariables = [],
   templateData,
   onUpdateTemplateData,
   onAddParagraph,
-  onUpdateParagraph, // Ahora espera (id, field, value)
+  onUpdateParagraph,
   onDeleteParagraph,
   onMoveParagraph
 }) => {
 
   const copyVariable = useCallback((tag) => {
-    // ... (Lógica de copiar variable)
     navigator.clipboard.writeText(tag).catch(() => {
       const tempInput = document.createElement('textarea');
       tempInput.value = tag;
@@ -235,7 +227,8 @@ const DocumentTemplateEditor = ({
     });
   }, []);
 
-  // Memoizar la lista de ParagraphEditors
+  const [staticVarsExpanded, setStaticVarsExpanded] = useState(true);
+
   const paragraphEditors = useMemo(() =>
     templateData.paragraphs.map((paragraph, index) => (
       <ParagraphEditor
@@ -243,7 +236,6 @@ const DocumentTemplateEditor = ({
         paragraph={paragraph}
         index={index}
         total={templateData.paragraphs.length}
-        // Se mantiene la llamada, pero el callback del padre (FormBuilder) ahora recibe 3 argumentos
         onUpdate={onUpdateParagraph}
         onDelete={onDeleteParagraph}
         onMove={onMoveParagraph}
@@ -268,15 +260,66 @@ const DocumentTemplateEditor = ({
             <p className="text-xs text-muted-foreground mb-4">
               Haz clic para copiar la variable al portapapeles y pegarla en tu párrafo.
             </p>
-            <div className="space-y-2">
-              {availableVariables.map((variable) => (
-                <VariableItem
-                  variable={variable}
-                  key={variable.title}
-                  copyVariable={copyVariable}
-                />
-              ))}
-            </div>
+
+            {dynamicVariables.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-semibold text-foreground mb-2">
+                  Variables del Formulario ({dynamicVariables.length})
+                </h4>
+                <div className="space-y-2">
+                  {dynamicVariables.map((variable) => (
+                    <VariableItem
+                      variable={variable}
+                      key={variable.title || variable.id}
+                      copyVariable={copyVariable}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {dynamicVariables.length > 0 && staticVariables.length > 0 && (
+              <div className="border-t border-border my-4"></div>
+            )}
+
+            {staticVariables.length > 0 && (
+              <div>
+                <button
+                  onClick={() => setStaticVarsExpanded(!staticVarsExpanded)}
+                  className="w-full flex items-center justify-between text-sm font-semibold text-foreground mb-2 hover:text-primary transition-colors p-2 rounded-md hover:bg-primary/5"
+                >
+                  <span>Variables Generales ({staticVariables.length})</span>
+                  <Icon
+                    name={staticVarsExpanded ? "ChevronUp" : "ChevronDown"}
+                    size={14}
+                    className="text-muted-foreground"
+                  />
+                </button>
+
+                {staticVarsExpanded && (
+                  <div className="space-y-2 bg-primary/5 rounded-lg p-2 dark:bg-primary/10">
+                    {staticVariables.map((variable) => (
+                      <button
+                        key={variable.title}
+                        onClick={() => copyVariable(generateVarTag(variable.title))}
+                        className="w-full flex flex-col items-start px-3 py-2 rounded-md text-xs transition-brand cursor-pointer text-left font-mono border border-transparent bg-white-50 hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white dark:text-foreground"
+                      >
+                        <span className="font-semibold text-sm">
+                          {generateVarTag(variable.title)}
+                        </span>
+                        <span className="text-xs opacity-80">
+                          {variable.title} {variable.type && `(${variable.type})`}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground mt-2">
+                  Disponibles en todas las plantillas
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -334,7 +377,6 @@ const DocumentTemplateEditor = ({
             </div>
           )}
 
-          {/* Zona de Firmas (Doble Firma) - Sin cambios */}
           <div className="bg-card border border-border rounded-lg p-6 shadow-brand">
             <h3 className="text-lg font-semibold text-foreground mb-4">
               Zona de Firmas
@@ -344,7 +386,6 @@ const DocumentTemplateEditor = ({
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* FIRMA 1: EMISOR/EMPLEADOR */}
               <div>
                 <h4 className="font-semibold text-sm mb-2">Firma 1 (Emisor/Empresa)</h4>
                 <Textarea
@@ -359,7 +400,6 @@ const DocumentTemplateEditor = ({
                 </p>
               </div>
 
-              {/* FIRMA 2: RECEPTOR/EMPLEADO */}
               <div>
                 <h4 className="font-semibold text-sm mb-2">Firma 2 (Receptor/Empleado)</h4>
                 <Textarea
