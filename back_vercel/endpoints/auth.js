@@ -3,6 +3,8 @@ const router = express.Router();
 const crypto = require("crypto");
 const { ObjectId } = require('mongodb');
 const multer = require('multer');
+const { addNotification } = require("../utils/notificaciones.helper");
+const useragent = require('useragent');
 
 const TOKEN_EXPIRATION = 12 * 1000 * 60 * 60;
 
@@ -54,7 +56,7 @@ router.get("/full/:mail", async (req, res) => {
     if (!usr) return res.status(404).json({ error: "Usuario no encontrado" });
 
     // IMPORTANTE: Devolver el objeto completo para llenar el perfil
-    res.json(usr); 
+    res.json(usr);
   } catch (err) {
     res.status(500).json({ error: "Error al obtener Usuario completo" });
   }
@@ -68,19 +70,29 @@ router.post("/login", async (req, res) => {
     const user = await req.db.collection("usuarios").findOne({ mail: email });
     if (!user) return res.status(401).json({ success: false, message: "Credenciales inválidas" });
 
-    // ... (rest of existing validation logic) ...
+    if (user.estado === "pendiente")
+      return res.status(401).json({
+        success: false,
+        message: "Usuario pendiente de activación. Revisa tu correo para establecer tu contraseña."
+      });
+
+    if (user.estado === "inactivo")
+      return res.status(401).json({
+        success: false,
+        message: "Usuario inactivo. Contacta al administrador."
+      });
 
     if (user.pass !== password)
       return res.status(401).json({ success: false, message: "Credenciales inválidas" });
-      
-    const ipAddress = req.ip || req.connection.remoteAddress; 
-    
-    const userAgentString = req.headers['user-agent'] || 'Desconocido';
+
+    const ipAddress = req.ip || req.connection.remoteAddress;
+
+    const userAgentString = req.headers['User-Agent'] || 'Desconocido';
     const agent = useragent.parse(userAgentString);
 
     const os = agent.os.toString();
-    const browser = agent.to  
-    
+    const browser = agent.toAgent()
+
 
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
@@ -96,7 +108,7 @@ router.post("/login", async (req, res) => {
     });
 
     await addNotification(req.db, {
-      userId: user.id,
+      userId: user._id.toString(),
       titulo: `Nuevo inicio de sesión detectado`,
       descripcion: `Se realizó un inicio de sesión a las ${new Date().toLocaleString()}. 
         IP: **${ipAddress}**.
@@ -104,7 +116,7 @@ router.post("/login", async (req, res) => {
         Navegador: **${browser}**.`, // Agregamos la info aquí
       prioridad: 2,
       color: "#fb8924",
-      icono: "form",
+      icono: "user",
     });
 
     return res.json({ success: true, token, usr });
