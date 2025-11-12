@@ -14,9 +14,9 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
       case 'in_review':
       case 'en_revision':
         return 'bg-accent text-accent-foreground';
-      case 'rejected':
-      case 'rechazado':
-        return 'bg-error text-error-foreground';
+      case 'signed':
+      case 'firmado':
+        return 'bg-blue-500 text-white';
       case 'borrador':
         return 'bg-muted text-muted-foreground';
       default:
@@ -42,6 +42,9 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
         return 'FileText';
       default:
         return 'Circle';
+      case 'signed':
+      case 'firmado':
+        return 'CheckSquare';
     }
   };
 
@@ -55,7 +58,9 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
       'en_revision': 'EN REVISIÓN',
       'rejected': 'RECHAZADO',
       'rechazado': 'RECHAZADO',
-      'borrador': 'BORRADOR'
+      'borrador': 'BORRADOR',
+      'signed': 'FIRMADO',
+      'firmado': 'FIRMADO'
     };
 
     return statusMap[status?.toLowerCase()] || status?.replace('_', ' ')?.toUpperCase() || 'DESCONOCIDO';
