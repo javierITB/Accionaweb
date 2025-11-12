@@ -27,8 +27,20 @@ const UserProfileSettings = () => {
       label: 'Seguridad',
       icon: 'Shield',
       description: 'Contraseña y autenticación'
-    }
+    },
+    {
+      id: 'logout',
+      label: 'Logout',
+      icon: 'LogOut',
+      description: 'Cerrar sesión'
+    },
+
   ];
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    window.location.href = '/';
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -36,6 +48,8 @@ const UserProfileSettings = () => {
         return <ProfileSection />;
       case 'security':
         return <SecuritySettings />;
+      case 'logout':  
+        handleLogout();
       default:
         return <ProfileSection />;
     }

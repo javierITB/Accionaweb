@@ -135,10 +135,10 @@ const Header = ({ className = '' }) => {
           </div>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold text-foreground leading-tight">
-              Acciona HR Portal
+              Acciona RRHH Portal
             </h1>
             <span className="text-xs text-muted-foreground font-mono">
-              Employee Experience Platform
+              Panel de administración y gestión
             </span>
           </div>
         </div>
@@ -200,7 +200,7 @@ const Header = ({ className = '' }) => {
           {/* User Profile (sin cambios) */}
           <div className="flex items-center space-x-3 pl-3 border-l border-border">
             {user && (
-              <div className="hidden md:block text-right">
+              <div className="hidden md:block text-right" >
                 <p className="text-sm font-medium text-foreground">{user}</p>
                 <p className="text-xs text-muted-foreground">{cargo}</p>
               </div>
@@ -209,7 +209,7 @@ const Header = ({ className = '' }) => {
             {/* User Avatar with Dropdown (sin cambios) */}
             <div className="relative" ref={userMenuRef}>
               <button
-                onClick={toggleUserMenu}
+                onClick={() => {window.location.href = "/profile"}}
                 className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
               >
                 {user ? (
@@ -220,28 +220,6 @@ const Header = ({ className = '' }) => {
                   <Icon name="User" size={16} className="text-white" />
                 )}
               </button>
-
-              {/* User Dropdown Menu - SOLO CERRAR SESIÓN (sin cambios) */}
-              {isUserMenuOpen && user && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
-                  <div className="py-2">
-                    {/* Información del usuario */}
-                    <div className="px-4 py-2 border-b border-border">
-                      <p className="text-sm font-medium text-popover-foreground">{user}</p>
-                      <p className="text-xs text-muted-foreground">Sesión activa</p>
-                    </div>
-
-                    {/* Solo opción de Cerrar Sesión */}
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center w-full px-4 py-2 text-sm text-popover-foreground hover:bg-muted transition-brand"
-                    >
-                      <Icon name="LogOut" size={16} className="mr-3" />
-                      Cerrar Sesión
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -257,35 +235,6 @@ const Header = ({ className = '' }) => {
         </div>
       </div>
 
-      {/* Mobile Navigation Menu (sin cambios, excepto que quité el loop de moreMenuItems) */}
-      {isMenuOpen && (
-        <div className="lg:hidden bg-card border-t border-border animate-slide-up">
-          <nav className="px-6 py-4 space-y-2">
-            {navigationItems?.map((item) => (
-              <button
-                key={item?.path}
-                onClick={() => handleNavigation(item?.path)}
-                className="flex items-center w-full px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-brand"
-              >
-                <Icon name={item?.icon} size={18} className="mr-3" />
-                {item?.name}
-              </button>
-            ))}
-
-            <div className="border-t border-border pt-2 mt-4">
-              {/* Opción de Modo Oscuro en el menú móvil */}
-              <button
-                onClick={toggleTheme}
-                className="flex items-center w-full px-4 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-brand"
-              >
-                <Icon name={theme === 'dark' ? "Sun" : "Moon"} size={18} className="mr-3" />
-                {theme === 'dark' ? "Modo Claro" : "Modo Oscuro"}
-              </button>
-              {/* Nota: Quité el loop de moreMenuItems ya que no estaba definido. */}
-            </div>
-          </nav>
-        </div>
-      )}
     </header>
   );
 };

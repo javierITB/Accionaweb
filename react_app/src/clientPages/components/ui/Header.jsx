@@ -112,7 +112,7 @@ const Header = ({ className = '' }) => {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-brand ${className}`}>
+    <header className={`fixed top-0 left-0 right-0 bg-card border-b border-border shadow-brand ${className}`}>
       <div className="flex items-center justify-between h-20 px-6 bg-warning">
         {/* Logo Section */}
         <div className="flex items-center space-x-3">
@@ -228,7 +228,7 @@ const Header = ({ className = '' }) => {
             {/* User Avatar with Dropdown */}
             <div className="relative" ref={userMenuRef}>
               <button
-                onClick={toggleUserMenu}
+                onClick={() => {window.location.href = "/profile"}}
                 className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
               >
                 {user ? (
@@ -239,48 +239,6 @@ const Header = ({ className = '' }) => {
                   <Icon name="User" size={16} className="text-white" />
                 )}
               </button>
-
-              {/* User Dropdown Menu */}
-              {isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
-                  <div className="py-2">
-                    {user ? (
-                      // Menu cuando el usuario está logueado
-                      <>
-                        <div className="px-4 py-2 border-b border-border">
-                          <p className="text-sm font-medium text-popover-foreground">{user}</p>
-                          <p className="text-xs text-muted-foreground">Sesión activa</p>
-                        </div>
-                        <button
-                          onClick={handleLogout}
-                          className="flex items-center w-full px-4 py-2 text-sm text-popover-foreground hover:bg-muted transition-brand"
-                        >
-                          <Icon name="LogOut" size={16} className="mr-3" />
-                          Cerrar Sesión
-                        </button>
-                      </>
-                    ) : (
-                      // Menu cuando el usuario NO está logueado
-                      <>
-                        <div className="px-4 py-2 border-b border-border">
-                          <p className="text-sm font-medium text-popover-foreground">Invitado</p>
-                          <p className="text-xs text-muted-foreground">No has iniciado sesión</p>
-                        </div>
-                        {userMenuItems?.map((item) => (
-                          <button
-                            key={item?.path}
-                            onClick={() => handleNavigation(item?.path)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-popover-foreground hover:bg-muted transition-brand"
-                          >
-                            <Icon name={item?.icon} size={16} className="mr-3" />
-                            {item?.name}
-                          </button>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -296,39 +254,6 @@ const Header = ({ className = '' }) => {
         </div>
       </div>
 
-      {/* 🛠️ Mobile Navigation Menu CORREGIDO */}
-      {isMenuOpen && (
-        <div 
-          // 💡 CLASES CORREGIDAS: Fijo, debajo del header (top-20), z-index alto
-          className="lg:hidden bg-card border-t border-border animate-slide-up fixed inset-x-0 top-20 z-40 shadow-lg"
-        >
-          <nav className="px-6 py-4 space-y-2">
-            {navigationItems?.map((item) => (
-              <button
-                key={item?.path}
-                onClick={() => handleNavigation(item?.path)}
-                className="flex items-center w-full px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-brand"
-              >
-                <Icon name={item?.icon} size={18} className="mr-3" />
-                {item?.name}
-              </button>
-            ))}
-
-            <div className="border-t border-border pt-2 mt-4">
-              {moreMenuItems?.map((item) => (
-                <button
-                  key={item?.path}
-                  onClick={() => handleNavigation(item?.path)}
-                  className="flex items-center w-full px-4 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-brand"
-                >
-                  <Icon name={item?.icon} size={18} className="mr-3" />
-                  {item?.name}
-                </button>
-              ))}
-            </div>
-          </nav>
-        </div>
-      )}
     </header>
   );
 };

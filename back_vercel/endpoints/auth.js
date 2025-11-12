@@ -226,7 +226,7 @@ router.post("/register", async (req, res) => {
       titulo: `Registro Exitoso!`,
       descripcion: `Bienvenid@ a nuestra plataforma Virtual Acciona!`, // Agregamos la info aquí
       prioridad: 2,
-      color: "#4",
+      color: "#7afb24ff",
       icono: "User",
     });
 
