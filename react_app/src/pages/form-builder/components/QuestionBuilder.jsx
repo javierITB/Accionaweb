@@ -619,7 +619,7 @@ const QuestionBuilder = ({
                 onClick={toggleQuestionExpansion}
                 className="h-8 w-8"
               >
-                <Icon name={isExpanded ? "ChevronUp" : "ChevronDown"} size={14} />
+                <Icon name={isExpanded ? "Minimize2" : "Maximize2"} size={14} />
               </Button>
 
               <Button
