@@ -214,7 +214,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
                     notification?.priority
                   )}`}
                 >
-                  <Icon name={getNotificationIcon(notification?.type)} size={16} />
+                  <Icon name={notification?.icon} size={16} />
                 </div>
 
                 <div className="flex-1 min-w-0">
