@@ -87,7 +87,7 @@ router.post("/login", async (req, res) => {
 
     const ipAddress = req.ip || req.connection.remoteAddress;
 
-    const userAgentString = req.headers['User-Agent'] || 'Desconocido';
+    const userAgentString = req.headers['user-agent'] || 'Desconocido';
     const agent = useragent.parse(userAgentString);
 
     const os = agent.os.toString();
@@ -220,6 +220,16 @@ router.post("/register", async (req, res) => {
     const createdUser = await req.db.collection("usuarios").findOne({
       _id: result.insertedId
     });
+
+    await addNotification(req.db, {
+      userId: user._id.toString(),
+      titulo: `Registro Exitoso!`,
+      descripcion: `Bienvenid@ a nuestra plataforma Virtual Acciona!`, // Agregamos la info aquí
+      prioridad: 2,
+      color: "#fb8924",
+      icono: "user",
+    });
+
     res.status(201).json({
       success: true,
       message: "Usuario registrado exitosamente",

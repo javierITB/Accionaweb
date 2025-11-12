@@ -59,7 +59,7 @@ router.post("/", async (req, res) => {
 
     await addNotification(req.db, {
       filtro: { cargo: "RRHH" },
-      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondedido el formulario ${formTitle}`,
+      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondido el formulario ${formTitle}`,
       descripcion: adjuntos.length > 0
         ? `Incluye ${adjuntos.length} archivo(s) adjunto(s)`
         : "Puedes revisar los detalles en el panel de respuestas.",
@@ -262,7 +262,7 @@ router.delete("/:id", async (req, res) => {
       .collection("respuestas")
       .deleteOne({ _id: new ObjectId(req.params.id) });
 
-    if (result.deletedCount === 1) {
+    if (!result){
       return res.status(404).json({ error: "Respuesta no encontrada" });
     }
 
@@ -491,6 +491,16 @@ router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => 
       }
     );
 
+    await addNotification(req.db, {
+      userId: respuesta.user?.uid,
+      titulo: "Documento Generado",
+      descripcion: `Se ha generado el documento asociado al formulario ${respuesta.formTitle}`,
+      prioridad: 2,
+      icono: 'file-text',
+      color: '#47db34ff',
+      actionUrl: `/?id=${respuesta.responseId}`,
+    });
+
     console.log("Debug: Resultado de actualización de estado:", updateResult);
 
     // Guardar en colección aprobados
@@ -647,6 +657,16 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       createdAt: new Date(),
       updatedAt: new Date(),
       company: respuesta.company
+    });
+
+    await addNotification(req.db, {
+      filtro: { cargo: "RRHH" },
+      titulo: `Documento ${respuesta.formTitle} Firmado`,
+      descripcion: `se ha recibido el Documento Firmado asociado al Formulario ${respuesta.formTitle} ${respuesta.responses['Nombre del trabajador']}`,
+      prioridad: 2,
+      icono: 'Pen',
+      color: '#dbca34ff',
+      actionUrl: `/RespuestasForms?id=${respuesta.responseId}`,
     });
 
     res.json({
