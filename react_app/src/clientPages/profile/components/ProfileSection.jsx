@@ -12,11 +12,10 @@ import Select from '../../components/ui/Select';
 const getSessionEmail = () => {
   try {
     // Asumo que la sesión se guarda en una clave 'userSession' y contiene el 'email'
-    const sessionData = sessionStorage.getItem('userSession');
+    const sessionData = sessionStorage.getItem('email');
     if (sessionData) {
-      const user = JSON.parse(sessionData);
       // Se necesita la estructura: { email: 'user@domain.com', ... }
-      return user.email || user.mail || null;
+      return sessionData || null;
     }
   } catch (e) {
     console.error("Error reading session storage:", e);
@@ -100,7 +99,6 @@ const ProfileSection = () => {
 
       } catch (error) {
         console.error("Error al cargar perfil:", error);
-        alert("Error al cargar el perfil: " + error.message);
         
         // Carga de datos de ejemplo si falla la API (usando la estructura real)
         const fallbackData = {
@@ -364,16 +362,15 @@ const ProfileSection = () => {
                 type="text"
                 value={formData?.position}
                 onChange={(e) => handleInputChange('position', e?.target?.value)}
-                disabled={!isEditing}
+                disabled
                 placeholder="Cargo actual" />
 
 
-              <Select
+              <Input
                 label="Empresa / Departamento"
                 options={departmentOptions}
                 value={formData?.department}
-                onChange={(e) => handleInputChange('department', e?.target?.value)}
-                disabled={!isEditing}
+                disabled
                 placeholder="Seleccionar empresa/departamento"
                 className="md:col-span-2" />
 

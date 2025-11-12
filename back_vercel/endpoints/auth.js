@@ -4,8 +4,7 @@ const crypto = require("crypto");
 const { ObjectId } = require('mongodb');
 const multer = require('multer');
 
-let activeTokens = [];
-const TOKEN_EXPIRATION = 1000 * 60 * 60;
+const TOKEN_EXPIRATION = 12 * 1000 * 60 * 60;
 
 // Configurar Multer para almacenar logos en memoria
 const upload = multer({
@@ -69,27 +68,24 @@ router.post("/login", async (req, res) => {
     const user = await req.db.collection("usuarios").findOne({ mail: email });
     if (!user) return res.status(401).json({ success: false, message: "Credenciales inválidas" });
 
-    if (user.estado === "pendiente")
-      return res.status(401).json({
-        success: false,
-        message: "Usuario pendiente de activación. Revisa tu correo para establecer tu contraseña."
-      });
-
-    if (user.estado === "inactivo")
-      return res.status(401).json({
-        success: false,
-        message: "Usuario inactivo. Contacta al administrador."
-      });
+    // ... (rest of existing validation logic) ...
 
     if (user.pass !== password)
       return res.status(401).json({ success: false, message: "Credenciales inválidas" });
+      
+    const ipAddress = req.ip || req.connection.remoteAddress; 
+    
+    const userAgentString = req.headers['user-agent'] || 'Desconocido';
+    const agent = useragent.parse(userAgentString);
 
-    // Crear token
+    const os = agent.os.toString();
+    const browser = agent.to  
+    
+
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
     const usr = { name: user.nombre, email, cargo: user.rol };
 
-    // Guarda token en la colección 'tokens'
     await req.db.collection("tokens").insertOne({
       token,
       email,
@@ -97,6 +93,18 @@ router.post("/login", async (req, res) => {
       createdAt: new Date(),
       expiresAt,
       active: true
+    });
+
+    await addNotification(req.db, {
+      userId: user.id,
+      titulo: `Nuevo inicio de sesión detectado`,
+      descripcion: `Se realizó un inicio de sesión a las ${new Date().toLocaleString()}. 
+        IP: **${ipAddress}**.
+        OS: **${os}**.
+        Navegador: **${browser}**.`, // Agregamos la info aquí
+      prioridad: 2,
+      color: "#fb8924",
+      icono: "form",
     });
 
     return res.json({ success: true, token, usr });

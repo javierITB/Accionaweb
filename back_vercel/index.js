@@ -18,8 +18,8 @@ const app = express();
 //actualizando
 // Configuración CORS
 app.use(cors());
-
 app.use(express.json());
+app.set('trust proxy', true);
 
 // Configurar conexión a MongoDB (desde variable de entorno)
 const client = new MongoClient(process.env.MONGO_URI);
