@@ -116,7 +116,7 @@ router.post("/login", async (req, res) => {
         Navegador: **${browser}**.`, // Agregamos la info aquí
       prioridad: 2,
       color: "#fb8924",
-      icono: "user",
+      icono: "User",
     });
 
     return res.json({ success: true, token, usr });
@@ -227,7 +227,7 @@ router.post("/register", async (req, res) => {
       descripcion: `Bienvenid@ a nuestra plataforma Virtual Acciona!`, // Agregamos la info aquí
       prioridad: 2,
       color: "#fb8924",
-      icono: "user",
+      icono: "User",
     });
 
     res.status(201).json({

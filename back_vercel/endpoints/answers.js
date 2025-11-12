@@ -337,7 +337,7 @@ router.post("/chat", async (req, res) => {
         filtro: { cargo: "RRHH" },
         titulo: "Nuevo mensaje en tu formulario",
         descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
-        icono: "chat",
+        icono: "Edit",
         actionUrl: `/RespuestasForms/${respuesta._id}`,
       });
     } else {
@@ -345,7 +345,7 @@ router.post("/chat", async (req, res) => {
         userId: respuesta.user.uid,
         titulo: "Nuevo mensaje recibido",
         descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
-        icono: "chat",
+        icono: "MessageCircle",
         actionUrl: `/?id=${result.insertedId}`,
       });
     }
