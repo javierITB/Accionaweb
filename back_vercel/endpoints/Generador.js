@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
+const { addNotification } = require("../utils/notificaciones.helper");
 
 // Nuevo endpoint para obtener información del documento por responseId
 router.get("/info-by-response/:responseId", async (req, res) => {
@@ -56,6 +57,20 @@ router.get("/download/:IDdoc", async (req, res) => {
         const fileBuffer = documento.docxFile.buffer || documento.docxFile;
         const bufferLength = fileBuffer.length;
 
+        const anser = await req.db.collection('respuestas').findOne({ _id: new ObjectId(documento.responseId) });
+
+        if (anser.status !== 'pendiente') {
+            await addNotification(req.db, {
+                userId: anser?.user?.uid,
+                titulo: "Respuestas En Revisión",
+                descripcion: `Formulario ${documento.fileName} a cambiado su estado a En Revisión.`,
+                prioridad: 2,
+                icono: 'file-text',
+                color: '#34d5dbff',
+                actionUrl: `/?id=${documento.responseId}`,
+            });
+        }
+        
         // Actualizar estado en respuestas
         if (documento.responseId) {
             await req.db.collection("respuestas").updateOne(
@@ -68,6 +83,8 @@ router.get("/download/:IDdoc", async (req, res) => {
                 }
             );
         }
+
+
 
         // USAR EL fileName GUARDADO EN LUGAR DEL IDdoc
         const fileName = documento.fileName || IDdoc;

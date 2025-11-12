@@ -277,7 +277,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `documento_firmado_cliente_${responseId}.pdf`;
+        a.download = clientSignature.fileName;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -822,12 +822,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado por Cliente</h3>
               {clientSignature ? (
-                <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+                <div className="bg-success/10 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Icon name="FileSignature" size={20} className="text-success" />
                       <div>
-                        <p className="text-sm font-medium text-foreground">{clientSignature.fileName}</p>
+                        <p className="text-sm font-medium text-foreground">{clientSignature.fileName+'.pdf'}</p>
                         <p className="text-xs text-muted-foreground">
                           Subido el {formatDate(clientSignature.uploadedAt)} • {formatFileSize(clientSignature.fileSize)}
                         </p>
@@ -867,7 +867,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                   </div>
                 </div>
               ) : (
-                <div className="bg-muted/50 rounded-lg p-4">
+                <div className="bg-muted/50 rounded-lg p-4"> {/* ✅ Ya no tiene borde */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Icon name="Clock" size={20} className="text-muted-foreground" />
