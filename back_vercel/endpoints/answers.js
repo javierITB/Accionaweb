@@ -607,7 +607,7 @@ router.get("/download-approved-pdf/:responseId", async (req, res) => {
   }
 });
 
-// Subir PDF firmado por cliente a colección firmados
+// Subir PDF firmado por cliente a colección firmados y cambiar estado de respuesta a 'firmado'
 router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), async (req, res) => {
   try {
     const { responseId } = req.params;
@@ -658,6 +658,16 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       updatedAt: new Date(),
       company: respuesta.company
     });
+
+    const updateResult = await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      {
+        $set: {
+          status: "firmado",
+          approvedAt: new Date()
+        }
+      }
+    );
 
     await addNotification(req.db, {
       filtro: { cargo: "RRHH" },
@@ -713,7 +723,7 @@ router.get("/:responseId/client-signature", async (req, res) => {
   }
 });
 
-// Eliminar PDF firmado por cliente
+// Eliminar PDF firmado por cliente y volver al estado 'aprobado'
 router.delete("/:responseId/client-signature", async (req, res) => {
   try {
     const { responseId } = req.params;
@@ -725,6 +735,17 @@ router.delete("/:responseId/client-signature", async (req, res) => {
     if (deleteResult.deletedCount === 0) {
       return res.status(404).json({ error: "Documento firmado no encontrado" });
     }
+
+    const updateResult = await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      {
+        $set: {
+          status: "aprobado",
+          correctedFile: null,
+          updatedAt: new Date()
+        }
+      }
+    );
 
     res.json({
       success: true,
