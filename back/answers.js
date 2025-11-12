@@ -65,7 +65,7 @@ router.post("/", async (req, res) => {
         : "Puedes revisar los detalles en el panel de respuestas.",
       prioridad: 2,
       color: "#fb8924",
-      icono: "form",
+      icono: "Edit",
       actionUrl: `/RespuestasForms?id=${result.insertedId}`,
     });
 
@@ -337,7 +337,7 @@ router.post("/chat", async (req, res) => {
         filtro: { cargo: "RRHH" },
         titulo: "Nuevo mensaje en tu formulario",
         descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
-        icono: "chat",
+        icono: "MessageCircle",
         actionUrl: `/RespuestasForms/${respuesta._id}`,
       });
     } else {
@@ -345,7 +345,7 @@ router.post("/chat", async (req, res) => {
         userId: respuesta.user.uid,
         titulo: "Nuevo mensaje recibido",
         descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
-        icono: "chat",
+        icono: "MessageCircle",
         actionUrl: `/?id=${result.insertedId}`,
       });
     }
