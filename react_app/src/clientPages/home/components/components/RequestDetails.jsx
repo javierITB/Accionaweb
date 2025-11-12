@@ -86,11 +86,11 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.style.display = 'none';
+      a.style.display = 'none'; 
       a.href = url;
 
       const contentDisposition = response.headers.get('Content-Disposition');
-      let fileName = 'documento_aprobado.pdf';
+      let fileName = request?.correctedFile.fileName;
 
       if (contentDisposition) {
         const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
