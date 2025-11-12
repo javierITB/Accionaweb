@@ -487,10 +487,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       case 'in_review':
       case 'en_revision':
         return 'bg-accent text-accent-foreground';
-      case 'rejected':
-      case 'rechazado':
-        return 'bg-error text-error-foreground';
-      case 'draft':
+      case 'signed':
+      case 'firmado':
+        return 'bg-blue-500 text-white';
       case 'borrador':
         return 'bg-muted text-muted-foreground';
       default:
@@ -516,6 +515,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         return 'FileText';
       default:
         return 'Circle';
+      case 'signed':
+      case 'firmado':
+        return 'CheckSquare';
     }
   };
 
@@ -827,7 +829,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                     <div className="flex items-center space-x-3">
                       <Icon name="FileSignature" size={20} className="text-success" />
                       <div>
-                        <p className="text-sm font-medium text-foreground">{clientSignature.fileName+'.pdf'}</p>
+                        <p className="text-sm font-medium text-foreground">{clientSignature.fileName + '.pdf'}</p>
                         <p className="text-xs text-muted-foreground">
                           Subido el {formatDate(clientSignature.uploadedAt)} • {formatFileSize(clientSignature.fileSize)}
                         </p>
