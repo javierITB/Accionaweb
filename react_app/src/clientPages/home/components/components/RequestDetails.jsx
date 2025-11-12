@@ -86,7 +86,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.style.display = 'none'; 
+      a.style.display = 'none';
       a.href = url;
 
       const contentDisposition = response.headers.get('Content-Disposition');
@@ -121,9 +121,9 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
       case 'in_review':
       case 'en_revision':
         return 'bg-accent text-accent-foreground';
-      case 'rejected':
-      case 'rechazado':
-        return 'bg-error text-error-foreground';
+      case 'signed':
+      case 'firmado':
+        return 'bg-blue-500 text-white';
       case 'borrador':
         return 'bg-muted text-muted-foreground';
       default:
@@ -149,6 +149,9 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
         return 'FileText';
       default:
         return 'Circle';
+      case 'signed':
+      case 'firmado':
+        return 'CheckSquare';
     }
   };
 
@@ -208,7 +211,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Prioridad:</span>
                     <span className={`text-sm font-medium ${request?.priority === 'high' ? 'text-error' :
-                        request?.priority === 'medium' ? 'text-warning' : 'text-success'
+                      request?.priority === 'medium' ? 'text-warning' : 'text-success'
                       }`}>
                       {request?.priority?.toUpperCase()}
                     </span>
@@ -241,7 +244,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
           {request?.status === 'aprobado' && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">Documento Aprobado</h3>
-              
+
               <div className="bg-success/10 border border-success/20 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -274,8 +277,8 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
                     <div>
                       <p className="text-sm font-medium text-foreground">Subir PDF Firmado</p>
                       <p className="text-xs text-muted-foreground">
-                        {hasSignedPdf 
-                          ? 'Ya has subido el PDF firmado.' 
+                        {hasSignedPdf
+                          ? 'Ya has subido el PDF firmado.'
                           : 'Sube el PDF con tu firma una vez descargado y firmado.'}
                       </p>
                       {uploadMessage && (
