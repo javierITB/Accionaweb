@@ -13,7 +13,6 @@ import SupportPortal from './pages/support-portal/Index.jsx';
 import DashboardHome from './pages/dashboard-home/Index.jsx';
 import RequestTracking from './pages/request-tracking/Index.jsx';
 import RespuestasForms from './pages/Respuestas/Index.jsx';
-import FormRenderer from './pages/form-renderer/Index.jsx';
 import Users from './pages/users/Index.jsx';
 import Empresas from './pages/empresas/Index.jsx';
 import SetPassword from './pages/users/components/SetPassword.jsx'; 
@@ -37,7 +36,6 @@ const Routes = () => {
           <Route path="/Otras" element = {<FormList section={"Otras"} />}/>
           
           
-          <Route path="/form-renderer" element={<FormRenderer />} />
           <Route path="/forms" element={<Form />} />
           <Route path="/set-password" element={<SetPassword />} />
           <Route path="/profile" element = {<Profile />}/>

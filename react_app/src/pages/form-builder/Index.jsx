@@ -8,12 +8,9 @@ import QuestionBuilder from './components/QuestionBuilder';
 import FormPreview from './components/FormPreview';
 
 const FormBuilder = () => {
-  // Estados para el sidebar
-  const [sidebarState, setSidebarState] = useState({
-    isMobileOpen: false,
-    isDesktopOpen: true
-  });
-
+  // Estados para el sidebar - ACTUALIZADOS
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
 
   const [formData, setFormData] = useState({
@@ -38,29 +35,40 @@ const FormBuilder = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  // Detectar cambios en el tamaño de pantalla
+  // Detectar cambios en el tamaño de pantalla - ACTUALIZADO
   useEffect(() => {
     const handleResize = () => {
-      setIsMobileScreen(window.innerWidth < 768);
+      const isMobile = window.innerWidth < 768;
+      setIsMobileScreen(isMobile);
+      
+      if (isMobile) {
+        setIsMobileOpen(false); 
+      }
     };
 
     window.addEventListener('resize', handleResize);
+    handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const toggleSidebar = () => {
-    setSidebarState(prev => ({
-      ...prev,
-      isMobileOpen: isMobileScreen ? !prev.isMobileOpen : prev.isMobileOpen,
-      isDesktopOpen: !isMobileScreen ? !prev.isDesktopOpen : prev.isDesktopOpen
-    }));
+    if (isMobileScreen) {
+      setIsMobileOpen(!isMobileOpen);
+    } else {
+      setIsDesktopOpen(!isDesktopOpen);
+    }
   };
 
   const handleNavigation = () => {
     if (isMobileScreen) {
-      setSidebarState(prev => ({ ...prev, isMobileOpen: false }));
+      setIsMobileOpen(false);
     }
   };
+
+  // Variable para el margen principal - AGREGADA
+  const mainMarginClass = isMobileScreen 
+    ? 'ml-0' 
+    : isDesktopOpen ? 'ml-64' : 'ml-16';
 
   // Question types available
   const questionTypes = [
@@ -380,16 +388,17 @@ const FormBuilder = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      {(sidebarState.isMobileOpen || !isMobileScreen) && (
+      
+      {(isMobileOpen || !isMobileScreen) && (
         <>
           <Sidebar 
-            isCollapsed={!sidebarState.isDesktopOpen} 
+            isCollapsed={!isDesktopOpen} 
             onToggleCollapse={toggleSidebar} 
-            isMobileOpen={sidebarState.isMobileOpen}
+            isMobileOpen={isMobileOpen}
             onNavigate={handleNavigation}
           />
           
-          {isMobileScreen && sidebarState.isMobileOpen && (
+          {isMobileScreen && isMobileOpen && (
             <div 
               className="fixed inset-0 bg-foreground/50 z-40" 
               onClick={toggleSidebar}
@@ -397,9 +406,21 @@ const FormBuilder = () => {
           )}
         </>
       )}
-      <main className={`pt-16 ${!isMobileScreen && sidebarState.isDesktopOpen ? 'ml-64' : ''}`}>
+
+      {!isMobileOpen && isMobileScreen && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <Button
+            variant="default"
+            size="icon"
+            onClick={toggleSidebar}
+            iconName="Menu"
+            className="w-12 h-12 rounded-full shadow-brand-active"
+          />
+        </div>
+      )}
+
+      <main className={`transition-all duration-300 ${mainMarginClass} pt-16`}>
         <div className="p-6 space-y-6">
-          {/* Header Section */}
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
@@ -428,6 +449,16 @@ const FormBuilder = () => {
             </div>
 
             <div className="flex items-center space-x-3">
+              <div className="hidden md:flex items-center space-x-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleSidebar}
+                  iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
+                  iconSize={20}
+                />
+              </div>
+
               <div className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === 'publicado'
                 ? 'bg-green-100 text-green-700'
                 : 'bg-yellow-100 text-yellow-700'
@@ -461,7 +492,6 @@ const FormBuilder = () => {
             </div>
           </div>
 
-          {/* Form Info Bar */}
           <div className="bg-card border border-border rounded-lg p-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-1">
@@ -497,7 +527,6 @@ const FormBuilder = () => {
             </div>
           </div>
 
-          {/* Navigation Tabs */}
           <div className="bg-card border border-border rounded-lg">
             <div className="border-b border-border">
               <nav className="flex space-x-8 px-6">
@@ -537,7 +566,6 @@ const FormBuilder = () => {
               </nav>
             </div>
 
-            {/* Tab Content */}
             <div className="p-6">
               {getTabContent()}
             </div>

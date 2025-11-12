@@ -7,6 +7,11 @@ import TemplateList from './components/FormProperties';
 import DocumentTemplateEditor from './components/TemplateBuilder';
 
 const FormBuilder = () => {
+  // ESTADOS DEL SIDEBAR - AGREGADOS
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
+
   const [formData, setFormData] = useState({
     id: null,
     description: '',
@@ -33,6 +38,41 @@ const FormBuilder = () => {
 
   const [activeTab, setActiveTab] = useState('properties');
   const [isSaving, setIsSaving] = useState(false);
+
+  // EFECTO PARA MANEJAR REDIMENSIONAMIENTO - AGREGADO
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      setIsMobileScreen(isMobile);
+      
+      if (isMobile) {
+        setIsMobileOpen(false); 
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const toggleSidebar = () => {
+    if (isMobileScreen) {
+      setIsMobileOpen(!isMobileOpen);
+    } else {
+      setIsDesktopOpen(!isDesktopOpen);
+    }
+  };
+
+  const handleNavigation = () => {
+    if (isMobileScreen) {
+      setIsMobileOpen(false);
+    }
+  };
+
+  // CLASE DE MARGEN - AGREGADA
+  const mainMarginClass = isMobileScreen 
+    ? 'ml-0' 
+    : isDesktopOpen ? 'ml-64' : 'ml-16';
 
   useEffect(() => {
     if (formData.formId && formData.questions.length === 0) {
@@ -77,8 +117,8 @@ const FormBuilder = () => {
           signatureText: data.signatureText || 'Firma del Empleador y Empleado.',
           formId: data.formId || null,
 
-          signature1Text: signature1Text || 'Firma del Empleador (Emisor).',
-          signature2Text: signature2Text || 'Firma del Empleado (Receptor).',
+          signature1Text: data.signature1Text || 'Firma del Empleador (Emisor).',
+          signature2Text: data.signature2Text || 'Firma del Empleado (Receptor).',
 
           createdAt: data.createdAt || new Date().toISOString(),
           updatedAt: data.updatedAt || new Date().toISOString()
@@ -86,7 +126,7 @@ const FormBuilder = () => {
 
         setFormData(prev => ({
           ...prev,
-          normalizedTemplate
+          ...normalizedTemplate
         }));
 
         if (normalizedTemplate.formId) {
@@ -320,9 +360,42 @@ const FormBuilder = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Sidebar />
-      <main className="ml-64 pt-16">
+      
+      {/* IMPLEMENTACIÓN UNIFICADA DEL SIDEBAR - AGREGADA */}
+      {(isMobileOpen || !isMobileScreen) && (
+        <>
+          <Sidebar 
+            isCollapsed={!isDesktopOpen}
+            onToggleCollapse={toggleSidebar} 
+            isMobileOpen={isMobileOpen}
+            onNavigate={handleNavigation}
+          />
+          
+          {isMobileScreen && isMobileOpen && (
+            <div 
+              className="fixed inset-0 bg-foreground/50 z-40" 
+              onClick={toggleSidebar}
+            ></div>
+          )}
+        </>
+      )}
+
+      {!isMobileOpen && isMobileScreen && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <Button
+            variant="default"
+            size="icon"
+            onClick={toggleSidebar}
+            iconName="Menu"
+            className="w-12 h-12 rounded-full shadow-brand-active"
+          />
+        </div>
+      )}
+
+      {/* CONTENIDO PRINCIPAL - ACTUALIZADO */}
+      <main className={`transition-all duration-300 ${mainMarginClass} pt-16`}>
         <div className="p-6 space-y-6">
+          {/* HEADER CON BOTÓN DE TOGGLE - AGREGADO */}
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
@@ -351,6 +424,17 @@ const FormBuilder = () => {
             </div>
 
             <div className="flex items-center space-x-3">
+              {/* BOTÓN DE TOGGLE DEL SIDEBAR - AGREGADO */}
+              <div className="hidden md:flex items-center space-x-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleSidebar}
+                  iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
+                  iconSize={20}
+                />
+              </div>
+
               <Button
                 type="button"
                 variant="default"
@@ -390,7 +474,6 @@ const FormBuilder = () => {
                     )}
                   </button>
                 ))}
-
               </nav>
             </div>
 
