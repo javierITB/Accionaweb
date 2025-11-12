@@ -8,6 +8,11 @@ import QuestionBuilder from './components/QuestionBuilder';
 import FormPreview from './components/FormPreview';
 
 const FormBuilder = () => {
+  // Estados para el sidebar - ACTUALIZADOS
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
+
   const [formData, setFormData] = useState({
     id: null,
     title: '',
@@ -20,8 +25,8 @@ const FormBuilder = () => {
     questions: [],
     status: 'borrador',
     section: '',
-    icon: 'FileText', // ✅ CAMBIADO: Valor por defecto en lugar de vacío
-    companies: [], // ✅ AGREGADO: Campo companies que usa FormProperties
+    icon: 'FileText',
+    companies: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
@@ -29,6 +34,41 @@ const FormBuilder = () => {
   const [activeTab, setActiveTab] = useState('properties');
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  // Detectar cambios en el tamaño de pantalla - ACTUALIZADO
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      setIsMobileScreen(isMobile);
+      
+      if (isMobile) {
+        setIsMobileOpen(false); 
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const toggleSidebar = () => {
+    if (isMobileScreen) {
+      setIsMobileOpen(!isMobileOpen);
+    } else {
+      setIsDesktopOpen(!isDesktopOpen);
+    }
+  };
+
+  const handleNavigation = () => {
+    if (isMobileScreen) {
+      setIsMobileOpen(false);
+    }
+  };
+
+  // Variable para el margen principal - AGREGADA
+  const mainMarginClass = isMobileScreen 
+    ? 'ml-0' 
+    : isDesktopOpen ? 'ml-64' : 'ml-16';
 
   // Question types available
   const questionTypes = [
@@ -72,7 +112,6 @@ const FormBuilder = () => {
         if (!res.ok) throw new Error('Formulario no encontrado');
         const data = await res.json();
 
-        // Normalización corregida - incluyendo section
         const normalizedForm = {
           id: data._id || data.id || null,
           title: data.title || '',
@@ -85,8 +124,8 @@ const FormBuilder = () => {
           questions: data.questions || [],
           status: data.status || 'borrador',
           section: data.section || '',
-          icon: data.icon || 'FileText', // ✅ CAMBIADO: Valor por defecto
-          companies: data.companies || [], // ✅ AGREGADO
+          icon: data.icon || 'FileText',
+          companies: data.companies || [],
           createdAt: data.createdAt || new Date().toISOString(),
           updatedAt: data.updatedAt || new Date().toISOString()
         };
@@ -105,7 +144,6 @@ const FormBuilder = () => {
 
   // Update form data
   const updateFormData = (field, value) => {
-    // Validación específica para el título
     if (field === 'title' && value.length > 50) {
       alert('El título no puede tener más de 50 caracteres');
       return;
@@ -135,12 +173,10 @@ const FormBuilder = () => {
       updatedAt: new Date().toISOString()
     }));
 
-    // Switch to questions tab if not already there
     if (activeTab !== 'questions') {
       setActiveTab('questions');
     }
 
-    // AGREGAR ESTA LÍNEA PARA RETORNAR LA NUEVA PREGUNTA
     return newQuestion;
   };
 
@@ -149,19 +185,16 @@ const FormBuilder = () => {
     setFormData(prev => {
       let updatedQuestions;
 
-      // Si se pasan 3 argumentos (id, field, value)
       if (value !== undefined && typeof updatesOrField === 'string') {
         updatedQuestions = prev.questions.map(q =>
           q.id === questionId ? { ...q, [updatesOrField]: value } : q
         );
       }
-      // Si se pasan 2 argumentos (id, updates)
       else if (typeof updatesOrField === 'object') {
         updatedQuestions = prev.questions.map(q =>
           q.id === questionId ? { ...q, ...updatesOrField } : q
         );
       }
-      // Fallback por seguridad
       else {
         console.warn('Formato inválido en updateQuestion:', { questionId, updatesOrField, value });
         return prev;
@@ -201,26 +234,22 @@ const FormBuilder = () => {
     }));
   };
 
-  // Save form as borrador - FUNCIÓN CORREGIDA
+  // Save form as borrador
   const saveForm = async () => {
-    // 💡 Paso 1: Definir la actualización del estado que queremos enviar
     const newStatus = "borrador";
     const newUpdatedAt = new Date().toISOString();
 
-    // 💡 Paso 2: Usar el estado actual (o una versión mejorada) para enviar los datos correctos
-    // Creamos el objeto de datos que vamos a enviar al backend
     const dataToSend = {
       ...formData,
       status: newStatus,
       updatedAt: newUpdatedAt
     };
 
-    if (!dataToSend?.title?.trim()) { // 💡 Usar dataToSend
+    if (!dataToSend?.title?.trim()) {
       alert("Por favor ingresa un título para el formulario");
       return;
     }
 
-    // Validación adicional de títulos de preguntas (Usar dataToSend)
     const hasLongQuestionTitles = dataToSend.questions.some(
       q => (q.title?.length || 0) > 50
     );
@@ -235,7 +264,6 @@ const FormBuilder = () => {
       const response = await fetch("https://accionaapi.vercel.app/api/forms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // 💡 ¡CORRECCIÓN! Enviamos el objeto dataToSend que ya tiene el nuevo status
         body: JSON.stringify(dataToSend), 
       });
 
@@ -245,8 +273,6 @@ const FormBuilder = () => {
 
       const savedForm = await response.json();
       
-      // 💡 Paso 3: Actualizar el estado DE FORMA ASÍNCRONA DESPUÉS del fetch
-      // Ahora, la actualización de React incluye el resultado del servidor
       setFormData(prev => ({
         ...prev,
         ...savedForm,
@@ -255,14 +281,12 @@ const FormBuilder = () => {
         section: savedForm.section || prev.section,
         category: savedForm.category || prev.category,
         questions: savedForm.questions || prev.questions,
-        // Usar los valores guardados (que deberían ser "borrador") o los nuevos
         status: savedForm.status || newStatus, 
         updatedAt: savedForm.updatedAt || newUpdatedAt 
       }));
 
       alert("Formulario guardado como borrador exitosamente");
 
-      // Actualizar URL si es nuevo
       if (!formData?.id) {
         window.history.replaceState({}, "", `?id=${savedForm.insertedId || savedForm._Id || savedForm.id}`);
       }
@@ -273,7 +297,7 @@ const FormBuilder = () => {
     } finally {
       setIsSaving(false);
     }
-};
+  };
 
   const deleteForm = async () => {
     try {
@@ -326,7 +350,7 @@ const FormBuilder = () => {
     { id: 'questions', label: 'Preguntas', icon: 'HelpCircle', count: formData?.questions?.length },
     { id: 'preview', label: 'Vista Previa', icon: 'Eye' }
   ];
-//actualizacion
+
   const getTabContent = () => {
     switch (activeTab) {
       case 'properties':
@@ -364,17 +388,16 @@ const FormBuilder = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      
       {(isMobileOpen || !isMobileScreen) && (
         <>
           <Sidebar 
-            // isCollapsed ahora se basa SOLO en isDesktopOpen
             isCollapsed={!isDesktopOpen} 
             onToggleCollapse={toggleSidebar} 
             isMobileOpen={isMobileOpen}
             onNavigate={handleNavigation}
           />
           
-          {/* El Overlay solo debe aparecer en Móvil cuando está abierto */}
           {isMobileScreen && isMobileOpen && (
             <div 
               className="fixed inset-0 bg-foreground/50 z-40" 
@@ -383,9 +406,21 @@ const FormBuilder = () => {
           )}
         </>
       )}
-      <main className="ml-64 pt-16">
+
+      {!isMobileOpen && isMobileScreen && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <Button
+            variant="default"
+            size="icon"
+            onClick={toggleSidebar}
+            iconName="Menu"
+            className="w-12 h-12 rounded-full shadow-brand-active"
+          />
+        </div>
+      )}
+
+      <main className={`transition-all duration-300 ${mainMarginClass} pt-16`}>
         <div className="p-6 space-y-6">
-          {/* Header Section */}
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
@@ -414,7 +449,16 @@ const FormBuilder = () => {
             </div>
 
             <div className="flex items-center space-x-3">
-              {/* Status Badge */}
+              <div className="hidden md:flex items-center space-x-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleSidebar}
+                  iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
+                  iconSize={20}
+                />
+              </div>
+
               <div className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === 'publicado'
                 ? 'bg-green-100 text-green-700'
                 : 'bg-yellow-100 text-yellow-700'
@@ -422,7 +466,6 @@ const FormBuilder = () => {
                 {formData?.status === 'publicado' ? 'Publicado' : 'Borrador'}
               </div>
 
-              {/* Action Buttons */}
               <Button
                 type="button"
                 variant="outline"
@@ -449,7 +492,6 @@ const FormBuilder = () => {
             </div>
           </div>
 
-          {/* Form Info Bar */}
           <div className="bg-card border border-border rounded-lg p-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-1">
@@ -485,7 +527,6 @@ const FormBuilder = () => {
             </div>
           </div>
 
-          {/* Navigation Tabs */}
           <div className="bg-card border border-border rounded-lg">
             <div className="border-b border-border">
               <nav className="flex space-x-8 px-6">
@@ -525,7 +566,6 @@ const FormBuilder = () => {
               </nav>
             </div>
 
-            {/* Tab Content */}
             <div className="p-6">
               {getTabContent()}
             </div>

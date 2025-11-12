@@ -19,42 +19,21 @@ const FormReg = () => {
   });
   const [activeTab, setActiveTab] = useState('properties');
 
-  // ESTADOS AÑADIDOS PARA LA ADAPTABILIDAD
-  const [isDesktopOpen, setIsDesktopOpen] = useState(true); // Controla el colapso en Desktop
-  const [isMobileOpen, setIsMobileOpen] = useState(false); // Controla la apertura total en Mobile
+  // ESTADOS DEL SIDEBAR - ACTUALIZADOS
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
 
   const [editingUser, setEditingUser] = useState(null);
 
-  // FUNCIÓN AÑADIDA: Toggle Unificado para Desktop y Móvil
-  const toggleSidebar = () => {
-    if (isMobileScreen) {
-      // En móvil, alternar el estado de apertura/cierre
-      setIsMobileOpen(!isMobileOpen);
-    } else {
-      // En desktop, alternar el estado de abierto/colapsado
-      setIsDesktopOpen(!isDesktopOpen);
-    }
-  };
-
-  // FUNCIÓN AÑADIDA: Lógica de navegación para cerrar el Sidebar en móvil
-  const handleNavigation = () => {
-    if (isMobileScreen) {
-      setIsMobileOpen(false); // Cierra el sidebar al navegar
-    }
-  };
-
-  // EFECTO AÑADIDO: Manejo de Redimensionamiento
+  // EFECTO PARA MANEJAR REDIMENSIONAMIENTO - ACTUALIZADO
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
       setIsMobileScreen(isMobile);
-
-      // Si pasa a móvil, forzar cerrado. Si pasa a desktop, forzar abierto (por defecto).
+      
       if (isMobile) {
-        setIsMobileOpen(false);
-      } else {
-        setIsDesktopOpen(true);
+        setIsMobileOpen(false); 
       }
     };
 
@@ -62,6 +41,20 @@ const FormReg = () => {
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const toggleSidebar = () => {
+    if (isMobileScreen) {
+      setIsMobileOpen(!isMobileOpen);
+    } else {
+      setIsDesktopOpen(!isDesktopOpen);
+    }
+  };
+
+  const handleNavigation = () => {
+    if (isMobileScreen) {
+      setIsMobileOpen(false);
+    }
+  };
 
   // Cargar empresas desde MongoDB
   useEffect(() => {
@@ -84,7 +77,6 @@ const FormReg = () => {
         setEmpresas(empresasOptions);
       } catch (error) {
         console.error('Error cargando empresas:', error);
-        // Fallback con empresas de ejemplo
         setEmpresas([
           { value: 'Acciona', label: 'Acciona' },
           { value: 'Empresa Ejemplo 1', label: 'Empresa Ejemplo 1' },
@@ -121,7 +113,7 @@ const FormReg = () => {
     }
   };
 
-  useEffect(() => { // Reemplaza el useEffect anterior de carga de usuarios
+  useEffect(() => {
     fetchUsers();
   }, []);
 
@@ -133,7 +125,6 @@ const FormReg = () => {
       empresa: '',
       cargo: '',
       rol: 'Cliente',
-      // Estado no se incluye aquí ya que se maneja en edición, no en registro
     });
     setEditingUser(null);
   };
@@ -148,7 +139,6 @@ const FormReg = () => {
   const handleSave = async () => {
     const isUpdating = !!editingUser;
 
-    // 1. Validaciones básicas
     if (!formData.nombre || !formData.apellido || !formData.mail || !formData.empresa || !formData.cargo || !formData.rol) {
       alert('Por favor completa todos los campos obligatorios');
       return;
@@ -158,26 +148,21 @@ const FormReg = () => {
       return;
     }
 
-    // 2. Definir URL y Método
     const method = isUpdating ? 'PUT' : 'POST';
     const url = isUpdating
-      ? `https://accionaapi.vercel.app/api/auth/users/${editingUser._id}` // URL para Actualizar (PUT)
-      : 'https://accionaapi.vercel.app/api/auth/register'; // URL para Registrar (POST)
+      ? `https://accionaapi.vercel.app/api/auth/users/${editingUser._id}`
+      : 'https://accionaapi.vercel.app/api/auth/register';
 
-    // 3. Preparar el cuerpo del request
     let bodyData = {
       ...formData,
     };
 
     if (isUpdating) {
-      // Si estamos actualizando, necesitamos el estado del usuario.
-      // La contraseña (pass) NO se envía en la edición estándar.
       bodyData = {
         ...formData,
         estado: formData.estado,
       };
     } else {
-      // Si estamos registrando, añadimos los campos iniciales de registro.
       bodyData.pass = "";
       bodyData.estado = "pendiente";
     }
@@ -200,7 +185,6 @@ const FormReg = () => {
 
       const saved = await response.json();
 
-      // Si es registro, maneja el envío de correo. Si es edición, no.
       if (!isUpdating) {
         const savedUser = saved?.user;
 
@@ -223,7 +207,6 @@ const FormReg = () => {
         alert('Usuario actualizado exitosamente.');
       }
 
-      // Limpiar formulario y actualizar tabla
       clearForm();
       await fetchUsers();
 
@@ -236,10 +219,8 @@ const FormReg = () => {
   };
 
   const handleEditUser = (user) => {
-    // 1. Establecer el usuario que se está editando
     setEditingUser(user);
 
-    // 2. Llenar el formData con los datos del usuario, incluyendo el estado
     setFormData({
       nombre: user.nombre || '',
       apellido: user.apellido || '',
@@ -247,7 +228,7 @@ const FormReg = () => {
       empresa: user.empresa || '',
       cargo: user.cargo || '',
       rol: user.rol || 'Cliente',
-      estado: user.estado || 'pendiente' // Añadimos 'estado' aquí para edición
+      estado: user.estado || 'pendiente'
     });
   };
 
@@ -261,10 +242,10 @@ const FormReg = () => {
             cargos={cargos}
             roles={roles}
             onUpdateFormData={updateFormData}
-            onRegister={handleSave} // Cambiar a handleSave
-            isLoading={isLoading} // Nuevo
-            isEditing={!!editingUser} // Nuevo
-            onCancelEdit={clearForm} // Nuevo
+            onRegister={handleSave}
+            isLoading={isLoading}
+            isEditing={!!editingUser}
+            onCancelEdit={clearForm}
           />
         );
       default:
@@ -272,7 +253,7 @@ const FormReg = () => {
     }
   };
 
-  // CLASE DE MARGEN: Definir el margen para <main>
+  // CLASE DE MARGEN - ACTUALIZADA
   const mainMarginClass = isMobileScreen
     ? 'ml-0'
     : isDesktopOpen ? 'ml-64' : 'ml-16';
@@ -281,42 +262,60 @@ const FormReg = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Sidebar: Renderiza si está abierto en desktop O si está abierto en móvil */}
-      {(isDesktopOpen || isMobileOpen) && (
+      {/* IMPLEMENTACIÓN UNIFICADA DEL SIDEBAR - ACTUALIZADA */}
+      {(isMobileOpen || !isMobileScreen) && (
         <>
           <Sidebar
-            isCollapsed={isMobileScreen ? false : !isDesktopOpen}
+            isCollapsed={!isDesktopOpen}
             onToggleCollapse={toggleSidebar}
             isMobileOpen={isMobileOpen}
             onNavigate={handleNavigation}
           />
 
-          {/* Overlay semi-transparente en móvil cuando el sidebar está abierto */}
           {isMobileScreen && isMobileOpen && (
             <div
               className="fixed inset-0 bg-foreground/50 z-40"
-              onClick={toggleSidebar} // Cierra el sidebar al hacer clic en el overlay
+              onClick={toggleSidebar}
             ></div>
           )}
         </>
       )}
 
-      {/* Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
-          <button
+          <Button
+            variant="default"
+            size="icon"
             onClick={toggleSidebar}
-            className="w-12 h-12 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors min-touch-target"
-          >
-            {/* Ícono de menú */}
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" /></svg>
-          </button>
+            iconName="Menu"
+            className="w-12 h-12 rounded-full shadow-brand-active"
+          />
         </div>
       )}
 
-      {/* Contenido Principal: Aplicar margen adaptable */}
+      {/* CONTENIDO PRINCIPAL - ACTUALIZADO */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-16`}>
-        <div className="p-6 space-y-6 container-main"> {/* Usar container-main para padding lateral */}
+        <div className="p-6 space-y-6 container-main">
+          {/* HEADER CON BOTÓN DE TOGGLE - AGREGADO */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Gestión de Usuarios</h1>
+              <p className="text-muted-foreground">
+                Administra y gestiona los usuarios del sistema
+              </p>
+            </div>
+
+            <div className="hidden md:flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
+                iconSize={20}
+              />
+            </div>
+          </div>
+
           <div className="bg-card border border-border rounded-lg">
             <div className="p-6">{getTabContent()}</div>
           </div>
@@ -372,7 +371,7 @@ const FormReg = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleEditUser(u)} // <-- Llama a la nueva función
+                            onClick={() => handleEditUser(u)}
                             iconName="Edit"
                             iconSize={16}
                             className="text-primary hover:bg-primary/10"

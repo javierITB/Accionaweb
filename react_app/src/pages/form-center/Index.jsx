@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
-// Ajuste de rutas: Mantenemos el patrón original, pero en un entorno de compilación
-// donde todas las rutas absolutas fallan, es posible que solo necesitemos ajustar el nivel.
-// Aquí asumimos que las rutas originales eran correctas y que el error es transitorio,
-// pero corregimos la ruta de los componentes de UI a un patrón más común.
 import Header from '../../components/ui/Header'; 
 import Sidebar from '../../components/ui/Sidebar';
-import Icon from '../../components/AppIcon'; // Se asume que AppIcon está en la raíz de components
+import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button'; 
 import FormCard from './components/FormCard';
 import CategoryFilter from './components/CategoryFilter';
 import SearchBar from './components/SearchBar';
-
 
 const FormCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,22 +14,20 @@ const FormCenter = () => {
   const [filteredForms, setFilteredForms] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
   
-  // Estado del Sidebar
-  const [isDesktopOpen, setIsDesktopOpen] = useState(true); // Controla el estado abierto/colapsado en Desktop
-  const [isMobileOpen, setIsMobileOpen] = useState(false); // Controla la visibilidad en Mobile
-  const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768); 
+  // Estado del Sidebar - ACTUALIZADO
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
 
   const [allForms, setAllForms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Efecto para manejar el estado del Sidebar al inicio y redimensionar
+  // Efecto para manejar el estado del Sidebar - ACTUALIZADO
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
       setIsMobileScreen(isMobile);
       
-      // En móvil, la única verdad es isMobileOpen (controlada por el botón flotante)
-      // Al pasar a móvil, aseguramos que el overlay esté oculto
       if (isMobile) {
         setIsMobileOpen(false); 
       }
@@ -45,28 +38,23 @@ const FormCenter = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  // Lógica de Toggle Unificada
+  // Lógica de Toggle Unificada - ACTUALIZADA
   const toggleSidebar = () => {
     if (isMobileScreen) {
-      // En móvil, alternar el estado de apertura/cierre modal
       setIsMobileOpen(!isMobileOpen);
     } else {
-      // En desktop, alternar el estado de colapsado/abierto
       setIsDesktopOpen(!isDesktopOpen);
     }
   };
   
-  // Función de navegación (para cerrar el sidebar en móvil)
+  // Función de navegación
   const handleNavigation = (path) => {
     if (isMobileScreen) {
-      setIsMobileOpen(false); // Cierra el sidebar al navegar en móvil
+      setIsMobileOpen(false);
     }
     console.log(`Navegando a: ${path}`);
-    // Usar 'navigate(path);' si estamos en un contexto de router
   };
 
-
-  // ... (Resto de useEffects y lógica de carga/filtrado sin cambios) ...
   useEffect(() => {
     const fetchForms = async () => {
       try {
@@ -89,7 +77,7 @@ const FormCenter = () => {
           tags: f.tags || [],
           companies: f.companies || [],
           lastModified: f.updatedAt ? f.updatedAt.split("T")[0] : null,
-          section: f.section // Aseguramos que la sección se cargue para el filtro
+          section: f.section
         }));
 
         setAllForms(normalizedForms);
@@ -112,7 +100,6 @@ const FormCenter = () => {
     let filtered = [...allForms];
 
     if (activeCategory !== 'all') {
-      // 💡 CORRECCIÓN: Filtrar por 'section' en lugar de 'category'
       filtered = filtered.filter(form => form.section === activeCategory); 
     }
 
@@ -125,22 +112,18 @@ const FormCenter = () => {
       );
     }
     
-    // 💡 Lógica de Filtro por Estado (ya existente y funcional)
     if (filters.status && filters.status.length > 0) {
       filtered = filtered.filter(form => filters.status.includes(form.status));
     }
     
-    // 💡 NUEVA LÓGICA DE FILTRO: Modificaciones Recientes
     if (filters.isRecent) {
         filtered = filtered.filter(form => {
             if (!form.lastModified) return false;
             const lastModDate = new Date(form.lastModified);
             const now = new Date();
-            // Filtra si la modificación fue hace menos de 7 días
             return (now - lastModDate) <= 7 * 24 * 60 * 60 * 1000;
         });
     }
-
 
     if (filters.priority && filters.priority.length > 0) {
       filtered = filtered.filter(form => filters.priority.includes(form.priority));
@@ -156,7 +139,6 @@ const FormCenter = () => {
 
     setFilteredForms(filtered);
   }, [searchQuery, activeCategory, filters, allForms]);
-  // ... (Fin de useEffects y lógica de carga/filtrado) ...
 
   const categories = [
     { id: 'all', name: 'Todos', count: allForms.length },
@@ -171,7 +153,6 @@ const FormCenter = () => {
     alert(`Opening form: ${form.title}`);
   };
 
-
   const handleSearch = (query) => {
     setSearchQuery(query);
   };
@@ -180,36 +161,32 @@ const FormCenter = () => {
     setActiveCategory(categoryId);
   };
   
-  // 💡 FUNCIÓN CORREGIDA: Manejar el filtro de estado como un toggle
   const handleStatusFilter = (statusValue) => {
     setFilters(prevFilters => {
       const currentStatus = prevFilters.status || [];
       const isAlreadyActive = currentStatus.includes(statusValue);
       
-      const newStatus = isAlreadyActive ? [] : [statusValue]; // Toggle on/off
+      const newStatus = isAlreadyActive ? [] : [statusValue];
       
-      // Limpiamos los otros filtros al hacer clic en una tarjeta de estado
       return {
         ...prevFilters,
         status: newStatus,
         search: '',
         activeCategory: 'all',
-        isRecent: false // Desactivar filtro reciente
+        isRecent: false
       };
     });
   };
   
-  // 💡 NUEVA FUNCIÓN: Manejar el filtro de modificados recientemente
   const handleRecentFilter = () => {
       setFilters(prevFilters => ({
           ...prevFilters,
-          isRecent: !prevFilters.isRecent, // Alternar valor booleano
-          status: [], // Limpiar filtro de estado
+          isRecent: !prevFilters.isRecent,
+          status: [],
           search: '',
           activeCategory: 'all'
       }));
   };
-
 
   const toggleViewMode = () => {
     setViewMode(viewMode === 'grid' ? 'list' : 'grid');
@@ -225,40 +202,36 @@ const FormCenter = () => {
     return (now - lastModDate) <= 7 * 24 * 60 * 60 * 1000;
   }).length;
   
-  // Clase de Margen para el contenido principal:
+  // Clase de Margen para el contenido principal - ACTUALIZADA
   const mainMarginClass = isMobileScreen 
-    ? 'ml-0' // Móvil: sin margen
-    : isDesktopOpen ? 'ml-64' : 'ml-16'; // Desktop: abierto (64) o colapsado (16)
+    ? 'ml-0'
+    : isDesktopOpen ? 'ml-64' : 'ml-16';
   
-  // Helper para verificar si el botón está activo (para estilos visuales)
   const isStatusFilterActive = (statusValue) => filters.status && filters.status.includes(statusValue);
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Sidebar: Renderiza si está abierto en desktop O si está abierto en móvil */}
-      {(isDesktopOpen || isMobileOpen) && (
+      {/* IMPLEMENTACIÓN UNIFICADA DEL SIDEBAR - ACTUALIZADA */}
+      {(isMobileOpen || !isMobileScreen) && (
         <>
           <Sidebar 
-            // isCollapsed: En móvil siempre es false, en desktop usa el estado de toggle.
-            isCollapsed={isMobileScreen ? false : !isDesktopOpen} 
+            isCollapsed={!isDesktopOpen}
             onToggleCollapse={toggleSidebar} 
-            isMobileOpen={isMobileOpen} 
-            onNavigate={handleNavigation} 
+            isMobileOpen={isMobileOpen}
+            onNavigate={handleNavigation}
           />
           
-          {/* Overlay semi-transparente en móvil cuando el sidebar está abierto */}
           {isMobileScreen && isMobileOpen && (
             <div 
               className="fixed inset-0 bg-foreground/50 z-40" 
-              onClick={toggleSidebar} // Cierra el sidebar
+              onClick={toggleSidebar}
             ></div>
           )}
         </>
       )}
 
-      {/* Botón Flotante para Abrir el Sidebar (Visible solo en móvil cuando está cerrado) */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
           <Button
@@ -271,12 +244,12 @@ const FormCenter = () => {
         </div>
       )}
 
-      {/* Contenido Principal */}
+      {/* Contenido Principal - ACTUALIZADO */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
         <div className="container-main p-6 space-y-8">
           <div className="space-y-4">
             
-            {/* Título y Botones */}
+            {/* Título y Botones - CON BOTÓN DE TOGGLE AGREGADO */}
             <div className="flex flex-col md:flex-row md:items-center justify-between">
               <div className="mb-4 md:mb-0">
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground">Gestion de Formularios</h1>
@@ -286,6 +259,17 @@ const FormCenter = () => {
               </div>
 
               <div className="flex items-center space-x-2 md:space-x-3 flex-wrap">
+                {/* Botón de toggle del sidebar en desktop - AGREGADO */}
+                <div className="hidden md:flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleSidebar}
+                    iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
+                    iconSize={20}
+                  />
+                </div>
+
                 <Button
                   variant="outline"
                   size="default"
@@ -376,8 +360,6 @@ const FormCenter = () => {
                   </div>
                 </div>
               </div>
-
-              
             </div>
           </div>
           
@@ -394,8 +376,6 @@ const FormCenter = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            
-
             <div className='lg:col-span-4'>
               <div className="space-y-6">
                 {isLoading ? (

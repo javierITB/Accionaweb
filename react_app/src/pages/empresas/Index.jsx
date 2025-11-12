@@ -27,9 +27,26 @@ const CompanyReg = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('register');
 
+  // ESTADOS DEL SIDEBAR - ACTUALIZADOS
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
+
+  // EFECTO PARA MANEJAR REDIMENSIONAMIENTO - ACTUALIZADO
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      setIsMobileScreen(isMobile);
+      
+      if (isMobile) {
+        setIsMobileOpen(false); 
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const toggleSidebar = () => {
     if (isMobileScreen) {
@@ -44,23 +61,6 @@ const CompanyReg = () => {
       setIsMobileOpen(false);
     }
   };
-
-  useEffect(() => {
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      setIsMobileScreen(isMobile);
-
-      if (isMobile) {
-        setIsMobileOpen(false);
-      } else {
-        setIsDesktopOpen(true);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    handleResize();
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const clearForm = () => {
     setFormData({
@@ -333,6 +333,7 @@ const CompanyReg = () => {
     }
   };
 
+  // CLASE DE MARGEN - ACTUALIZADA
   const mainMarginClass = isMobileScreen
     ? 'ml-0'
     : isDesktopOpen ? 'ml-64' : 'ml-16';
@@ -341,10 +342,11 @@ const CompanyReg = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {(isDesktopOpen || isMobileOpen) && (
+      {/* IMPLEMENTACIÓN UNIFICADA DEL SIDEBAR - ACTUALIZADA */}
+      {(isMobileOpen || !isMobileScreen) && (
         <>
           <Sidebar
-            isCollapsed={isMobileScreen ? false : !isDesktopOpen}
+            isCollapsed={!isDesktopOpen}
             onToggleCollapse={toggleSidebar}
             isMobileOpen={isMobileOpen}
             onNavigate={handleNavigation}
@@ -362,16 +364,19 @@ const CompanyReg = () => {
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
           <Button
+            variant="default"
+            size="icon"
             onClick={toggleSidebar}
-            className="w-12 h-12 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors min-touch-target"
             iconName="Menu"
-            iconSize={24}
+            className="w-12 h-12 rounded-full shadow-brand-active"
           />
         </div>
       )}
 
+      {/* CONTENIDO PRINCIPAL - ACTUALIZADO */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
         <div className="p-6 space-y-6 container-main">
+          {/* HEADER CON BOTÓN DE TOGGLE - AGREGADO */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
             <div className="mb-4 md:mb-0">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">Gestión de Empresas</h1>
@@ -380,15 +385,28 @@ const CompanyReg = () => {
               </p>
             </div>
 
-            {editingEmpresa && (
-              <Button
-                variant="ghost"
-                onClick={clearForm}
-                iconName="Plus"
-              >
-                Registrar Nueva Empresa
-              </Button>
-            )}
+            <div className="flex items-center space-x-3">
+              {/* BOTÓN DE TOGGLE DEL SIDEBAR - AGREGADO */}
+              <div className="hidden md:flex items-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleSidebar}
+                  iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
+                  iconSize={20}
+                />
+              </div>
+
+              {editingEmpresa && (
+                <Button
+                  variant="ghost"
+                  onClick={clearForm}
+                  iconName="Plus"
+                >
+                  Registrar Nueva Empresa
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="bg-card border border-border rounded-lg">
