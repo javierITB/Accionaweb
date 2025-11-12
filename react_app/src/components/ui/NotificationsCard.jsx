@@ -209,10 +209,8 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
             >
               <div className="flex items-start space-x-4">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getNotificationColor(
-                    notification?.type,
-                    notification?.priority
-                  )}`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0`}
+                  style={{ backgroundColor: notification?.color }}
                 >
                   <Icon name={notification?.icon} size={16} />
                 </div>

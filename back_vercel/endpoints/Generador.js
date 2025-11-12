@@ -66,7 +66,7 @@ router.get("/download/:IDdoc", async (req, res) => {
                 descripcion: `Formulario ${documento.fileName} a cambiado su estado a En Revisión.`,
                 prioridad: 2,
                 icono: 'FileText',
-                color: '#34d5dbff',
+                color: '#00c6f8ff',
                 actionUrl: `/?id=${documento.responseId}`,
             });
         }

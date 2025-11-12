@@ -64,7 +64,7 @@ router.post("/", async (req, res) => {
         ? `Incluye ${adjuntos.length} archivo(s) adjunto(s)`
         : "Puedes revisar los detalles en el panel de respuestas.",
       prioridad: 2,
-      color: "#fb8924",
+      color: "#bb8900ff",
       icono: "form",
       actionUrl: `/RespuestasForms?id=${result.insertedId}`,
     });
@@ -75,7 +75,7 @@ router.post("/", async (req, res) => {
       descripcion: `El formulario ${formTitle} fue completado correctamente.`,
       prioridad: 2,
       icono: "CheckCircle",
-      color: "#3B82F6",
+      color: "#006e13ff",
       actionUrl: `/?id=${result.insertedId}`,
     });
 
@@ -338,6 +338,7 @@ router.post("/chat", async (req, res) => {
         titulo: "Nuevo mensaje en tu formulario",
         descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
         icono: "Edit",
+        color: "#45577eff",
         actionUrl: `/RespuestasForms/${respuesta._id}`,
       });
     } else {
@@ -346,6 +347,7 @@ router.post("/chat", async (req, res) => {
         titulo: "Nuevo mensaje recibido",
         descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
         icono: "MessageCircle",
+        color: "#45577eff",
         actionUrl: `/?id=${result.insertedId}`,
       });
     }
