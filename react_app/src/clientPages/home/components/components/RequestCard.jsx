@@ -1,8 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
+const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate }) => {
+  const [currentRequest, setCurrentRequest] = useState(request);
+
+  useEffect(() => {
+    setCurrentRequest(request);
+  }, [request]);
+
+  useEffect(() => {
+    if (!currentRequest?._id) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${currentRequest._id}`);
+        if (response.ok) {
+          const updatedRequest = await response.json();
+          
+          if (updatedRequest.status !== currentRequest.status) {
+            setCurrentRequest(updatedRequest);
+            if (onUpdate) {
+              onUpdate(updatedRequest);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error verificando actualización del request:', error);
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [currentRequest?._id, currentRequest?.status, onUpdate]);
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
@@ -123,16 +153,14 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
     }
   };
 
-  // Obtener el nombre del trabajador desde las respuestas
   const getTrabajadorName = () => {
-    return request?.responses?.["Nombre del trabajador:"] ||
-      request?.responses?.["Nombre del trabajador"] ||
+    return currentRequest?.responses?.["Nombre del trabajador:"] ||
+      currentRequest?.responses?.["Nombre del trabajador"] ||
       'ninguno';
   };
 
-  // Obtener el título combinado
   const getCombinedTitle = () => {
-    const formTitle = request?.formTitle || request?.form?.title || request?.title || 'Formulario';
+    const formTitle = currentRequest?.formTitle || currentRequest?.form?.title || currentRequest?.title || 'Formulario';
     const trabajadorName = getTrabajadorName();
 
     return `${formTitle} - ${trabajadorName}`;
@@ -145,39 +173,39 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
           <div className="flex items-center space-x-3 mb-2">
             <h3 className="text-lg font-semibold text-foreground">{getCombinedTitle()}</h3>
             <span className="text-xs text-muted-foreground">
-              {getRelativeTime(request?.submittedAt)}
+              {getRelativeTime(currentRequest?.submittedAt)}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground mb-3">{request?.description}</p>
+          <p className="text-sm text-muted-foreground mb-3">{currentRequest?.description}</p>
 
           <div className="flex items-center space-x-4 text-xs text-muted-foreground">
             <div className="flex items-center space-x-1">
               <Icon name="Briefcase" size={14} />
-              <span>Empresa: {request?.company}</span>
+              <span>Empresa: {currentRequest?.company}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Icon name="User" size={14} />
-              <span>Por: {request?.submittedBy}</span>
+              <span>Por: {currentRequest?.submittedBy}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Icon name="Tag" size={14} />
-              <span className={getPriorityColor(request?.priority)}>
-                {request?.form?.section?.toUpperCase()}
+              <span className={getPriorityColor(currentRequest?.priority)}>
+                {currentRequest?.form?.section?.toUpperCase()}
               </span>
             </div>
           </div>
         </div>
 
         <div className="flex items-center space-x-2 ml-4">
-          {request?.hasMessages && (
+          {currentRequest?.hasMessages && (
             <div className="relative">
               <Icon name="MessageCircle" size={16} className="text-accent" />
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-secondary rounded-full"></span>
             </div>
           )}
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request?.status)}`}>
-            <Icon name={getStatusIcon(request?.status)} size={12} className="mr-1" />
-            {formatStatusText(request?.status)}
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(currentRequest?.status)}`}>
+            <Icon name={getStatusIcon(currentRequest?.status)} size={12} className="mr-1" />
+            {formatStatusText(currentRequest?.status)}
           </span>
 
         </div>
@@ -186,7 +214,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
         <div className="flex items-center space-x-4">
           <div className="text-sm">
           </div>
-          {request?.assignedTo && (
+          {currentRequest?.assignedTo && (
             <div className="text-sm">
             </div>
           )}
@@ -197,7 +225,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onSendMessage(request)}
+            onClick={() => onSendMessage(currentRequest)}
             iconName="MessageSquare"
             iconPosition="left"
             iconSize={16}
@@ -207,7 +235,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onViewDetails(request)}
+            onClick={() => onViewDetails(currentRequest)}
             iconName="Info"
             iconPosition="left"
             iconSize={16}

@@ -103,6 +103,31 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   useEffect(() => {
+    if (!isVisible || !request?._id) return;
+
+    // Verificar cambios en el request cada 5 segundos cuando está visible
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
+        if (response.ok) {
+          const updatedRequest = await response.json();
+
+          // Solo actualizar si el status cambió
+          if (updatedRequest.status !== request.status) {
+            if (onUpdate) {
+              onUpdate(updatedRequest);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error verificando actualización del request:', error);
+      }
+    }, 5000); // Verificar cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, [isVisible, request?._id, request?.status, onUpdate]);
+
+  useEffect(() => {
     return () => {
       if (previewDocument?.url && previewDocument?.type === 'pdf') {
         cleanupPreviewUrl(previewDocument.url);
@@ -160,7 +185,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       if (correctedFile && correctedFile instanceof File) {
         documentUrl = URL.createObjectURL(correctedFile);
       }
-      else if (request?.status === 'aprobado') {
+      else if (request?.status === 'aprobado' || request?.status === 'firmado') {
         const pdfUrl = `https://accionaapi.vercel.app/api/respuestas/download-approved-pdf/${request._id}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
       }
@@ -366,8 +391,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleApprove = async () => {
-    // Verificaciones de seguridad
-    if (!correctedFile || isApproving || request?.status === 'aprobado') {
+    if (!correctedFile || isApproving || request?.status === 'aprobado' || request?.status === 'firmado') {
       return;
     }
 
@@ -765,7 +789,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         {correctedFile?.size ? `${(correctedFile.size / 1024 / 1024).toFixed(2)} MB` :
                           request?.correctedFile?.fileSize ? formatFileSize(request.correctedFile.fileSize) : 'Tamaño no disponible'}
                       </p>
-                      {request?.status === 'aprobado' && (
+                      {(request?.status === 'aprobado' || request?.status === 'firmado') && (
                         <p className="text-xs text-success font-medium mt-1">
                           ✓ Formulario aprobado
                         </p>
@@ -784,7 +808,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                     >
                       {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
                     </Button>
-                    {/* Botón Eliminar SIEMPRE visible */}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -819,8 +842,37 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             </div>
           </div>
 
+          {(request?.status === 'aprobado' || request?.status === 'firmado') && (
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Documento Aprobado</h3>
+              <div className="bg-success/10 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Icon name="FileText" size={20} className="text-success" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Documento PDF Aprobado</p>
+                      <p className="text-xs text-muted-foreground">
+                        Documento final aprobado listo para ser firmado por el cliente.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    iconName="Download"
+                    iconPosition="left"
+                    iconSize={16}
+                    onClick={() => window.open(`https://accionaapi.vercel.app/api/respuestas/download-approved-pdf/${request._id}`, '_blank')}
+                    className="bg-success hover:bg-success/90"
+                  >
+                    Descargar PDF
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
-          {request?.status === 'aprobado' && (
+          {(request?.status === 'aprobado' || request?.status === 'firmado') && (
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado por Cliente</h3>
               {clientSignature ? (
@@ -869,7 +921,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                   </div>
                 </div>
               ) : (
-                <div className="bg-muted/50 rounded-lg p-4"> {/* ✅ Ya no tiene borde */}
+                <div className="bg-muted/50 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Icon name="Clock" size={20} className="text-muted-foreground" />
@@ -914,8 +966,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 Enviar Mensaje
               </Button>
 
-              {/* Botón Aprobar - SOLO visible cuando NO está aprobado */}
-              {request?.status !== 'aprobado' && (
+              {request?.status !== 'aprobado' && request?.status !== 'firmado' && (
                 <Button
                   variant="default"
                   iconName="CheckCircle"
