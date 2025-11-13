@@ -8,6 +8,38 @@ const SetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState('');
+
+  // Función para validar la fortaleza de la contraseña
+  const validatePassword = (pass) => {
+    if (pass.length === 0) {
+      setPasswordStrength('');
+      return true;
+    }
+    
+    if (pass.length < 8) {
+      setPasswordStrength('La contraseña debe tener al menos 8 caracteres');
+      return false;
+    }
+    
+    // Validar que tenga al menos una letra y un número
+    const hasLetter = /[a-zA-Z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    
+    if (!hasLetter || !hasNumber) {
+      setPasswordStrength('La contraseña debe incluir letras y números');
+      return false;
+    }
+    
+    setPasswordStrength('Contraseña segura');
+    return true;
+  };
+
+  const handlePasswordChange = (e) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    validatePassword(newPassword);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,13 +50,15 @@ const SetPassword = () => {
       return;
     }
 
+    // Validar que las contraseñas coincidan
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden');
       return;
     }
 
-    if (password.length < 4) {
-      setError('La contraseña debe tener al menos 4 caracteres');
+    // Validar fortaleza de la contraseña
+    if (!validatePassword(password)) {
+      setError('La contraseña no cumple con los requisitos de seguridad');
       return;
     }
 
@@ -66,6 +100,13 @@ const SetPassword = () => {
     }
   };
 
+  // Función para determinar el color del indicador de fortaleza
+  const getStrengthColor = () => {
+    if (!passwordStrength) return 'text-gray-400';
+    if (passwordStrength === 'Contraseña segura') return 'text-green-500';
+    return 'text-red-500';
+  };
+
   if (!userId) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -105,11 +146,19 @@ const SetPassword = () => {
             type="password" 
             className="w-full border p-2 rounded" 
             value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
+            onChange={handlePasswordChange} 
             placeholder="Ingresa tu contraseña"
             required 
             disabled={isLoading}
           />
+          {passwordStrength && (
+            <p className={`text-sm mt-1 ${getStrengthColor()}`}>
+              {passwordStrength}
+            </p>
+          )}
+          <p className="text-xs text-gray-500 mt-1">
+            Mínimo 8 caracteres, debe incluir letras y números
+          </p>
         </div>
         
         <div className="mb-6">
@@ -123,12 +172,17 @@ const SetPassword = () => {
             required 
             disabled={isLoading}
           />
+          {confirmPassword && password !== confirmPassword && (
+            <p className="text-red-500 text-sm mt-1">
+              Las contraseñas no coinciden
+            </p>
+          )}
         </div>
         
         <button 
           type="submit" 
           className="w-full bg-[#f97316] text-white py-2 rounded font-bold hover:bg-orange-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isLoading}
+          disabled={isLoading || passwordStrength !== 'Contraseña segura' || password !== confirmPassword}
         >
           {isLoading ? 'Guardando...' : 'Guardar Contraseña'}
         </button>
