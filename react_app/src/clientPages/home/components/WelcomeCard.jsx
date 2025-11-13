@@ -126,7 +126,7 @@ const WelcomeCard = ({ user }) => {
             Bienvenido a Portal Acciona. Aquí puedes gestionar todas tus solicitudes y documentos de manera eficiente.
           </p>
           <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-xs sm:text-sm">
-            <div className="flex items-center space-x-2 text-black">
+            <div className="flex items-center space-x-2 text-white">
               <Icon name="Calendar" size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
               <span className="break-words">
                 {new Date()?.toLocaleDateString('es-ES', { 
@@ -137,7 +137,7 @@ const WelcomeCard = ({ user }) => {
                 })}
               </span>
             </div>
-            <div className="flex items-center space-x-2 text-black">
+            <div className="flex items-center space-x-2 text-white">
               <div className="w-2 h-2 bg-success rounded-full flex-shrink-0"></div>
               <span>Sistema activo</span>
             </div>

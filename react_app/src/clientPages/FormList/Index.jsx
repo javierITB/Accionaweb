@@ -37,23 +37,8 @@ const DashboardHome = ( {section} ) => {
       {/* Main Content */}
       <main className={`transition-all duration-300 pt-16 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto">
-          {/* Page Header - MEJORADO PARA MÓVIL */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 lg:space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="lg:hidden w-10 h-10"
-              >
-                <Icon name="Menu" size={20} />
-              </Button>
-              {/* Puedes agregar título de sección aquí si lo necesitas */}
-            </div>
-          </div>
-
           {/* Main Dashboard Grid */}
-          <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
+          <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full my-4">
             {/* Left Column - Primary Actions */}
             <div className="xl:col-span-2 space-y-6 lg:space-y-12 w-full">
               {/* Quick Actions */}
