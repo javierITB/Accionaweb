@@ -84,42 +84,84 @@ router.post("/login", async (req, res) => {
 
     if (user.pass !== password)
       return res.status(401).json({ success: false, message: "Credenciales inválidas" });
+      
+    // ----------------------------------------------------------------
+    // 🔍 LÓGICA DE BÚSQUEDA Y VALIDACIÓN DE TOKEN EXISTENTE
+    // ----------------------------------------------------------------
+    
+    const now = new Date();
+    let finalToken = null;
+    let expiresAt = null;
+    
+    // 1. Buscar un token activo para este usuario
+    const existingTokenRecord = await req.db.collection("tokens").findOne({ 
+      email: email, 
+      active: true 
+    });
 
+    if (existingTokenRecord) {
+      const existingExpiresAt = new Date(existingTokenRecord.expiresAt);
+      const isExpired = existingExpiresAt < now;
+
+      if (isExpired) {
+        // 2a. Si existe y está expirado, lo revocamos
+        await req.db.collection("tokens").updateOne(
+          { _id: existingTokenRecord._id },
+          { $set: { active: false, revokedAt: now } }
+        );
+        // El token final se generará en el paso 3
+      } else {
+        // 2b. Si existe y es válido, lo reutilizamos
+        finalToken = existingTokenRecord.token;
+        expiresAt = existingExpiresAt;
+      }
+    }
+
+    // 3. Si no hay un token válido (ya sea porque no existía o fue revocado)
+    if (!finalToken) {
+      // Generar un token nuevo
+      finalToken = crypto.randomBytes(32).toString("hex");
+      expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
+      
+      // Insertar el nuevo token
+      await req.db.collection("tokens").insertOne({
+        token: finalToken,
+        email,
+        rol: user.rol,
+        createdAt: now,
+        expiresAt,
+        active: true
+      });
+    }
+
+    // ----------------------------------------------------------------
+    // 🚀 RESPUESTA FINAL
+    // ----------------------------------------------------------------
+    
+    // Recopilar datos para notificación
     const ipAddress = req.ip || req.connection.remoteAddress;
-
     const userAgentString = req.headers['user-agent'] || 'Desconocido';
     const agent = useragent.parse(userAgentString);
-
     const os = agent.os.toString();
     const browser = agent.toAgent()
 
-
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
     const usr = { name: user.nombre, email, cargo: user.rol };
 
-    await req.db.collection("tokens").insertOne({
-      token,
-      email,
-      rol: user.rol,
-      createdAt: new Date(),
-      expiresAt,
-      active: true
-    });
-
+    // Envío de Notificación
     await addNotification(req.db, {
       userId: user._id.toString(),
       titulo: `Nuevo inicio de sesión detectado`,
-      descripcion: `Se realizó un inicio de sesión a las ${new Date().toLocaleString()}. 
+      descripcion: `Se realizó un inicio de sesión a las ${now.toLocaleString()}. 
         IP: **${ipAddress}**.
         OS: **${os}**.
-        Navegador: **${browser}**.`, // Agregamos la info aquí
+        Navegador: **${browser}**.`,
       prioridad: 2,
       color: "#d42a00ff",
       icono: "User",
     });
 
-    return res.json({ success: true, token, usr });
+    // Retornar el token reutilizado o el recién generado
+    return res.json({ success: true, token: finalToken, usr });
   } catch (err) {
     console.error("Error en login:", err);
     return res.status(500).json({ error: "Error interno en login" });
@@ -151,14 +193,16 @@ router.post("/validate", async (req, res) => {
       createdAt.getMonth() === now.getMonth() &&
       createdAt.getDate() === now.getDate();
 
-    if (expired || !isSameDay) {
+    if (expired) {
       // 🔹 Eliminar token viejo o expirado para no acumular
-      await req.db.collection("tokens").deleteOne({ token });
+      await req.db.collection("tokens").updateOne(
+        { token },
+        { $set: { active: false, revokedAt: new Date() } }
+      );
       return res.status(401).json({
         valid: false,
         message: expired
-          ? "Token expirado. Inicia sesión nuevamente."
-          : "El token ya no es válido porque pertenece a otro día."
+          && "Token expirado. Inicia sesión nuevamente."
       });
     }
 
