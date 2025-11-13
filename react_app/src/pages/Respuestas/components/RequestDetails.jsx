@@ -362,28 +362,44 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleRemoveCorrection = async () => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta corrección y volver a revisión?')) {
-      return;
-    }
-
+    // Primero verificar si existe documento firmado
     try {
+      const signatureCheck = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      const signatureData = await signatureCheck.json();
+
+      const hasSignature = signatureData.exists;
+
+      let warningMessage = '¿Estás seguro de que quieres eliminar esta corrección y volver a revisión?';
+
+      if (hasSignature) {
+        warningMessage = 'ADVERTENCIA: Existe un documento firmado por el cliente. \n\nAl eliminar la corrección, el estado volverá a "en revisión", pero el documento firmado se mantendrá. Cuando vuelvas a subir una corrección, el estado pasará directamente a "firmado". \n\n¿Continuar?';
+      }
+
+      if (!confirm(warningMessage)) {
+        return;
+      }
+
       const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/remove-correction`, {
         method: 'DELETE',
       });
 
-      if (response.ok) {
-        const result = await response.json();
+      const result = await response.json();
 
+      if (response.ok) {
         if (onUpdate && result.updatedRequest) {
           onUpdate(result.updatedRequest);
         }
-
         setCorrectedFile(null);
-        alert('Corrección eliminada, formulario vuelve a estado "en revisión"');
 
+        if (result.hasExistingSignature) {
+          alert('Corrección eliminada. El documento firmado se mantiene. Al subir nueva corrección, el estado pasará directamente a "firmado".');
+        } else {
+          alert('Corrección eliminada, formulario vuelve a estado "en revisión"');
+        }
       } else {
-        alert('Error al eliminar la corrección');
+        alert(result.error || 'Error al eliminar la corrección');
       }
+
     } catch (error) {
       console.error('Error:', error);
       alert('Error al eliminar la corrección');
@@ -841,36 +857,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
               />
             </div>
           </div>
-
-          {(request?.status === 'aprobado' || request?.status === 'firmado') && (
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">Documento Aprobado</h3>
-              <div className="bg-success/10 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Icon name="FileText" size={20} className="text-success" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Documento PDF Aprobado</p>
-                      <p className="text-xs text-muted-foreground">
-                        Documento final aprobado listo para ser firmado por el cliente.
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    iconName="Download"
-                    iconPosition="left"
-                    iconSize={16}
-                    onClick={() => window.open(`https://accionaapi.vercel.app/api/respuestas/download-approved-pdf/${request._id}`, '_blank')}
-                    className="bg-success hover:bg-success/90"
-                  >
-                    Descargar PDF
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {(request?.status === 'aprobado' || request?.status === 'firmado') && (
             <div>
