@@ -238,17 +238,33 @@ const Header = ({ className = '' }) => {
             )}
 
             {/* User Avatar with Dropdown (sin cambios) */}
-            <div className="relative" ref={userMenuRef}>
+            {user && (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => { window.location.href = "/profile" }}
+                  className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  {user ? (
+                    <span className="text-sm font-semibold text-white">
+                      {user.charAt(0).toUpperCase()}
+                    </span>
+                  ) : (
+                    <Icon name="User" size={16} className="text-white" />
+                  )}
+                </button>
+              </div>
+            )
+            }
+            < div className="relative" ref={userMenuRef}>
               <button
-                onClick={() => {window.location.href = "/profile"}}
-                className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+                onClick={() => { user ? handleLogout() : window.location.href = "/login" }}
+                className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+                title={user ? "Cerrar sesión" : "Log In"}
               >
                 {user ? (
-                  <span className="text-sm font-semibold text-white">
-                    {user.charAt(0).toUpperCase()}
-                  </span>
+                  <Icon name="LogOut" size={16} className="text-white" />
                 ) : (
-                  <Icon name="User" size={16} className="text-white" />
+                  <Icon name="LogIn" size={16} className="text-white" />
                 )}
               </button>
             </div>

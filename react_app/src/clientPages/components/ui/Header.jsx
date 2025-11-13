@@ -237,7 +237,6 @@ const Header = ({ className = '' }) => {
 
             {/* User Avatar with Dropdown */}
             {user && (
-
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => { window.location.href = "/profile" }}
