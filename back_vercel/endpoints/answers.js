@@ -4,6 +4,7 @@ const { ObjectId } = require("mongodb");
 const multer = require('multer');
 const { addNotification } = require("../utils/notificaciones.helper");
 const { generarAnexoDesdeRespuesta } = require("../utils/generador.helper");
+const { enviarCorreoRespaldo } = require("../utils/mailrespaldo.helper");
 const { validarToken } = require("../utils/validarToken.js");
 
 // Configurar Multer para almacenar en memoria (buffer)
@@ -24,7 +25,7 @@ const upload = multer({
 
 router.post("/", async (req, res) => {
   try {
-    const { formId, user, responses, formTitle, adjuntos = [] } = req.body;
+    const { formId, user, responses, formTitle, adjuntos = [], mail: correoRespaldo } = req.body;
     const usuario = user?.nombre;
     const empresa = user?.empresa;
     const userId = user?.uid;
@@ -56,6 +57,18 @@ router.post("/", async (req, res) => {
       status: "pendiente",
       createdAt: new Date(),
     });
+
+    // ENVÍO DE CORREO DE RESPALDO (separado en helper)
+    let resultadoCorreo = { enviado: false };
+    if (correoRespaldo && correoRespaldo.trim() !== '') {
+      resultadoCorreo = await enviarCorreoRespaldo(
+        correoRespaldo,
+        formTitle,
+        user,
+        responses,
+        form.questions
+      );
+    }
 
     await addNotification(req.db, {
       filtro: { cargo: "RRHH" },
@@ -93,7 +106,8 @@ router.post("/", async (req, res) => {
     res.json({
       _id: result.insertedId,
       ...req.body,
-      adjuntosCount: adjuntos.length
+      adjuntosCount: adjuntos.length,
+      correoRespaldo: resultadoCorreo
     });
 
   } catch (err) {
@@ -262,7 +276,7 @@ router.delete("/:id", async (req, res) => {
       .collection("respuestas")
       .deleteOne({ _id: new ObjectId(req.params.id) });
 
-    if (!result){
+    if (!result) {
       return res.status(404).json({ error: "Respuesta no encontrada" });
     }
 
@@ -482,12 +496,23 @@ router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => 
 
     console.log("Debug: Aprobando respuesta con corrección:", correctedFileData.fileName);
 
-    // Actualizar estado a "aprobado"
+    // VERIFICAR SI EXISTE DOCUMENTO FIRMADO
+    const existingSignature = await req.db.collection("firmados").findOne({
+      responseId: req.params.id
+    });
+
+    let nuevoEstado = "aprobado";
+    if (existingSignature) {
+      console.log("Debug: Existe documento firmado, saltando directamente a estado 'firmado'");
+      nuevoEstado = "firmado";
+    }
+
+    // Actualizar estado (aprobado o firmado según corresponda)
     const updateResult = await req.db.collection("respuestas").updateOne(
       { _id: new ObjectId(req.params.id) },
       {
         $set: {
-          status: "aprobado",
+          status: nuevoEstado,
           approvedAt: new Date()
         }
       }
@@ -520,8 +545,12 @@ router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => 
     console.log("Debug: Resultado de inserción en aprobados:", insertResult);
 
     res.json({
-      message: "Formulario aprobado correctamente",
-      approved: true
+      message: existingSignature
+        ? "Formulario aprobado y restaurado a estado firmado (existía firma previa)"
+        : "Formulario aprobado correctamente",
+      approved: true,
+      status: nuevoEstado,
+      hadExistingSignature: !!existingSignature
     });
 
   } catch (err) {
@@ -535,6 +564,15 @@ router.delete("/:id/remove-correction", async (req, res) => {
   try {
     console.log("Debug: Iniciando remove-correction para ID:", req.params.id);
     console.log("Debug: ID recibido:", req.params.id);
+
+    // Verificar si existe documento firmado solo para logging
+    const existingSignature = await req.db.collection("firmados").findOne({
+      responseId: req.params.id
+    });
+
+    if (existingSignature) {
+      console.log("Debug: Existe documento firmado, procediendo con eliminación de aprobado");
+    }
 
     const deleteResult = await req.db.collection("aprobados").deleteOne({
       responseId: req.params.id
@@ -568,7 +606,8 @@ router.delete("/:id/remove-correction", async (req, res) => {
 
     res.json({
       message: "Corrección eliminada exitosamente",
-      updatedRequest: updatedResponse
+      updatedRequest: updatedResponse,
+      hasExistingSignature: !!existingSignature // Informar si había firma
     });
 
   } catch (err) {
@@ -626,9 +665,7 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       return res.status(404).json({ error: "Formulario no encontrado" });
     }
 
-    if (respuesta.status !== 'aprobado') {
-      return res.status(400).json({ error: "El formulario debe estar aprobado para subir la firma" });
-    }
+
 
     const existingSignature = await req.db.collection("firmados").findOne({
       responseId: responseId
@@ -644,7 +681,7 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
       uploadedAt: new Date(),
-      signedBy: "client",
+      signedBy: respuesta.responses['Nombre del trabajador'],
       clientName: respuesta.submittedBy || respuesta.user?.nombre,
       clientEmail: respuesta.userEmail || respuesta.user?.mail
     };
@@ -662,11 +699,11 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
     });
 
     const updateResult = await req.db.collection("respuestas").updateOne(
-      { _id: new ObjectId(req.params.id) },
+      { _id: new ObjectId(responseId) },
       {
         $set: {
           status: "firmado",
-          approvedAt: new Date()
+          signedAt: new Date()
         }
       }
     );
@@ -739,11 +776,10 @@ router.delete("/:responseId/client-signature", async (req, res) => {
     }
 
     const updateResult = await req.db.collection("respuestas").updateOne(
-      { _id: new ObjectId(req.params.id) },
+      { _id: new ObjectId(responseId) },
       {
         $set: {
           status: "aprobado",
-          correctedFile: null,
           updatedAt: new Date()
         }
       }

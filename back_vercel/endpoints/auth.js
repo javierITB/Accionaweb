@@ -222,7 +222,7 @@ router.post("/register", async (req, res) => {
     });
 
     await addNotification(req.db, {
-      userId: user._id.toString(),
+      userId: result.insertedId.toString(),
       titulo: `Registro Exitoso!`,
       descripcion: `Bienvenid@ a nuestra plataforma Virtual Acciona!`, // Agregamos la info aquí
       prioridad: 2,
