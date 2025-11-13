@@ -78,63 +78,73 @@ const PendingTasksCard = () => {
   };
 
   return (
-    <div className="bg-card rounded-xl shadow-brand border border-border">
-      <div className="p-6 border-b border-border">
+    <div className="bg-card rounded-xl shadow-brand border border-border w-full">
+      {/* Header - RESPONSIVE */}
+      <div className="p-4 sm:p-6 border-b border-border">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">Tareas Pendientes</h2>
-            <p className="text-sm text-muted-foreground mt-1">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg sm:text-xl font-semibold text-foreground">Tareas Pendientes</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               {pendingTasks?.length} elementos requieren tu atención
             </p>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-error/10 rounded-full flex items-center justify-center">
+          <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-error/10 rounded-full flex items-center justify-center">
               <span className="text-sm font-semibold text-error">{pendingTasks?.length}</span>
             </div>
-            <Icon name="AlertCircle" size={20} className="text-error" />
+            <Icon name="AlertCircle" size={18} className="text-error sm:w-5 sm:h-5" />
           </div>
         </div>
       </div>
-      <div className="p-6">
-        <div className="space-y-4">
+      
+      {/* Tasks List - RESPONSIVE */}
+      <div className="p-4 sm:p-6">
+        <div className="space-y-3 sm:space-y-4">
           {pendingTasks?.map((task) => (
             <div
               key={task?.id}
-              className="border border-border rounded-lg p-4 hover:border-primary hover:shadow-brand-hover transition-brand cursor-pointer group"
+              className="border border-border rounded-lg p-3 sm:p-4 hover:border-primary hover:shadow-brand-hover transition-brand cursor-pointer group"
               onClick={() => handleTaskClick(task)}
             >
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
+                <div className="flex-1 min-w-0">
+                  {/* Title and Priority - RESPONSIVE */}
+                  <div className="flex flex-col xs:flex-row xs:items-start xs:space-x-3 space-y-2 xs:space-y-0 mb-2">
+                    <h3 className="font-medium text-foreground group-hover:text-primary transition-colors text-sm sm:text-base break-words flex-1">
                       {task?.title}
                     </h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task?.priority)}`}>
-                      <Icon name={getPriorityIcon(task?.priority)} size={12} className="inline mr-1" />
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task?.priority)} whitespace-nowrap self-start`}>
+                      <Icon name={getPriorityIcon(task?.priority)} size={10} className="inline mr-1 sm:w-3 sm:h-3" />
                       {task?.priority === 'high' ? 'Alta' : task?.priority === 'medium' ? 'Media' : 'Baja'}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3">
+                  
+                  {/* Description */}
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-3 leading-relaxed">
                     {task?.description}
                   </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+                  
+                  {/* Meta Info - RESPONSIVE */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                    <div className="flex flex-col xs:flex-row xs:items-center space-y-1 xs:space-y-0 xs:space-x-3 text-xs text-muted-foreground">
                       <div className="flex items-center space-x-1">
-                        <Icon name="Calendar" size={12} />
+                        <Icon name="Calendar" size={10} className="flex-shrink-0 sm:w-3 sm:h-3" />
                         <span>Vence: {formatDate(task?.dueDate)}</span>
                       </div>
                       <div className="flex items-center space-x-1">
-                        <Icon name="BarChart3" size={12} />
+                        <Icon name="BarChart3" size={10} className="flex-shrink-0 sm:w-3 sm:h-3" />
                         <span>Progreso: {task?.progress}%</span>
                       </div>
                     </div>
-                    <Icon name="ChevronRight" size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                    <Icon name="ChevronRight" size={14} className="text-muted-foreground group-hover:text-primary transition-colors self-end sm:self-auto sm:w-4 sm:h-4" />
                   </div>
+                  
+                  {/* Progress Bar */}
                   {task?.progress > 0 && (
-                    <div className="mt-3">
-                      <div className="w-full bg-muted rounded-full h-2">
+                    <div className="mt-2 sm:mt-3">
+                      <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
                         <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300"
+                          className="bg-primary h-1.5 sm:h-2 rounded-full transition-all duration-300"
                           style={{ width: `${task?.progress}%` }}
                         ></div>
                       </div>
@@ -145,13 +155,17 @@ const PendingTasksCard = () => {
             </div>
           ))}
         </div>
-        <div className="mt-6 pt-4 border-t border-border">
+        
+        {/* View All Button - RESPONSIVE */}
+        <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border">
           <Button
             variant="outline"
             fullWidth
             iconName="Eye"
             iconPosition="left"
             onClick={() => window.location.href = '/request-tracking'}
+            size="sm"
+            className="text-sm"
           >
             Ver Todas las Tareas
           </Button>

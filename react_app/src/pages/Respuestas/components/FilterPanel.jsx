@@ -52,11 +52,11 @@ const FilterPanel = ({
 
   return (
     <div className="bg-card border border-border rounded-lg">
-      {/* Filter Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      {/* Filter Header - RESPONSIVE */}
+      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
         <div className="flex items-center space-x-2">
-          <Icon name="Filter" size={20} className="text-accent" />
-          <h3 className="text-lg font-semibold text-foreground">Filtros</h3>
+          <Icon name="Filter" size={18} className="text-accent sm:w-5 sm:h-5" />
+          <h3 className="text-base sm:text-lg font-semibold text-foreground">Filtros</h3>
           {getActiveFilterCount() > 0 && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-accent text-accent-foreground">
               {getActiveFilterCount()}
@@ -64,7 +64,7 @@ const FilterPanel = ({
           )}
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
           {getActiveFilterCount() > 0 && (
             <Button
               variant="ghost"
@@ -72,7 +72,8 @@ const FilterPanel = ({
               onClick={onClearFilters}
               iconName="X"
               iconPosition="left"
-              iconSize={16}
+              iconSize={14}
+              className="text-xs sm:text-sm"
             >
               Limpiar
             </Button>
@@ -83,12 +84,14 @@ const FilterPanel = ({
             onClick={onToggle}
             iconName={isVisible ? "ChevronUp" : "ChevronDown"}
             iconSize={16}
+            className="w-8 h-8 sm:w-9 sm:h-9"
           />
         </div>
       </div>
-      {/* Filter Content */}
+
+      {/* Filter Content - RESPONSIVE */}
       {isVisible && (
-        <div className="p-4 space-y-4">
+        <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
           {/* Search */}
           <div>
             <Input
@@ -101,15 +104,14 @@ const FilterPanel = ({
             />
           </div>
 
-          {/* Filter Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+          {/* Filter Grid - RESPONSIVE */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Select
               label="Estado"
               options={statusOptions}
               value={filters?.status || ''}
               onChange={(value) => handleInputChange('status', value)}
             />
-
 
             <Select
               label="Período"
@@ -119,8 +121,8 @@ const FilterPanel = ({
             />
           </div>
 
-          {/* Date Range Inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Date Range Inputs - RESPONSIVE */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Input
               label="Fecha Desde"
               type="date"
@@ -136,9 +138,9 @@ const FilterPanel = ({
             />
           </div>
 
-          {/* Advanced Filters */}
-          <div className="pt-4 border-t border-border">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Advanced Filters - RESPONSIVE */}
+          <div className="pt-3 sm:pt-4 border-t border-border">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <Input
                 label="Empresa"
                 type="text"

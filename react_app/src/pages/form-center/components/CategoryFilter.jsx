@@ -1,5 +1,4 @@
 import React from 'react';
-
 import Button from '../../../components/ui/Button';
 
 const CategoryFilter = ({ categories, activeCategory, onCategoryChange, className = '' }) => {
@@ -13,7 +12,7 @@ const CategoryFilter = ({ categories, activeCategory, onCategoryChange, classNam
         return 'Calendar';
       case 'Finiquitos':
         return 'CreditCard';
-      case 'otros':
+      case 'Otras':
         return 'FileText';
       default:
         return 'FileText';
@@ -32,9 +31,7 @@ const CategoryFilter = ({ categories, activeCategory, onCategoryChange, classNam
         return 'text-accent';
       case 'Finiquitos':
         return 'text-success';
-      case 'benefits':
-        return 'text-error';
-      case 'otros':
+      case 'Otras':
         return 'text-warning';
       default:
         return 'text-foreground';
@@ -53,21 +50,26 @@ const CategoryFilter = ({ categories, activeCategory, onCategoryChange, classNam
             onClick={() => onCategoryChange(category?.id)}
             iconName={getCategoryIcon(category?.id)}
             iconPosition="left"
-            iconSize={16}
-            className={`${isActive ? 'shadow-brand' : 'hover:shadow-brand-hover'} transition-brand`}
+            iconSize={14}
+            className={`${
+              isActive ? 'shadow-brand' : 'hover:shadow-brand-hover'
+            } transition-brand min-h-8 sm:min-h-9 text-xs sm:text-sm`}
           >
-            <span className={getCategoryColor(category?.id, isActive) + 'text-primary'}>
-              {category?.name}
-            </span>
-            {category?.count > 0 && (
-              <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
-                isActive 
-                  ? 'bg-primary-foreground/20 text-primary-foreground' 
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                {category?.count}
+            {/* Texto del botón - RESPONSIVE */}
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <span className={`${getCategoryColor(category?.id, isActive)} whitespace-nowrap`}>
+                {category?.name}
               </span>
-            )}
+              {category?.count > 0 && (
+                <span className={`px-1.5 sm:px-2 py-0.5 text-xs rounded-full ${
+                  isActive 
+                    ? 'bg-primary-foreground/20 text-primary-foreground' 
+                    : 'bg-muted text-muted-foreground'
+                } whitespace-nowrap`}>
+                  {category?.count}
+                </span>
+              )}
+            </div>
           </Button>
         );
       })}
