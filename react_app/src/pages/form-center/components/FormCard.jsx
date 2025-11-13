@@ -35,10 +35,10 @@ const FormCard = ({ form, onSelect, className = '' }) => {
 
   return (
     <div className={`bg-card border border-border rounded-lg p-3 sm:p-4 hover:shadow-brand-hover transition-brand group ${className}`}>
-      {/* Header - RESPONSIVE */}
+      {/* Header - Solo padding responsive */}
       <div className="flex items-start justify-between mb-3 sm:mb-4">
         <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-          {/* ✅ ICONO CON COLOR DINÁMICO - RESPONSIVE */}
+          {/* ✅ ICONO CON COLOR DINÁMICO - Tamaño responsive */}
           <div
             className="p-1.5 sm:p-2 rounded-lg flex-shrink-0"
             style={{
@@ -52,12 +52,14 @@ const FormCard = ({ form, onSelect, className = '' }) => {
             />
           </div>
           <div className="flex-1 min-w-0 overflow-hidden">
+            {/* Título responsive */}
             <h3
               className="font-semibold text-foreground group-hover:text-primary transition-brand truncate overflow-hidden whitespace-nowrap text-ellipsis text-sm sm:text-base"
               title={form?.title}
             >
               {truncateText(form?.title, window.innerWidth < 640 ? 25 : 30)}
             </h3>
+            {/* Descripción responsive */}
             <p className="text-xs sm:text-sm text-muted-foreground truncate overflow-hidden whitespace-nowrap text-ellipsis">
               {form?.category}, modificado: {form?.lastModified}
             </p>
@@ -71,7 +73,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
         )}
       </div>
 
-      {/* SECCIÓN: EMPRESAS - MEJORADA Y RESPONSIVE */}
+      {/* SECCIÓN: EMPRESAS - Solo truncado responsive */}
       {form?.companies && form.companies.length > 0 && (
         <div className="mb-3 sm:mb-4">
           <span className="text-xs text-muted-foreground">
@@ -96,9 +98,10 @@ const FormCard = ({ form, onSelect, className = '' }) => {
         </div>
       )}
 
-      {/* Footer - RESPONSIVE */}
-      <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between space-y-2 xs:space-y-0">
+      {/* Footer - MANTIENE DISEÑO ORIGINAL con mejoras responsive mínimas */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2 sm:space-x-4 text-xs text-muted-foreground">
+          {/* Iconos más pequeños en móvil */}
           <div className="flex items-center space-x-1">
             <Icon name="Clock" size={12} className="sm:w-3.5 sm:h-3.5" />
             <span className="whitespace-nowrap">{form?.estimatedTime}</span>
@@ -115,6 +118,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
           )}
         </div>
 
+        {/* BOTÓN - MANTIENE TAMAÑO PEQUEÑO ORIGINAL EN TODAS LAS PANTALLAS */}
         <Button
           variant={form?.status === 'borrador' ? 'outline' : 'default'}
           size="sm"
@@ -122,7 +126,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
           iconName={form?.status === 'borrador' ? 'Edit' : 'ArrowRight'}
           iconPosition="right"
           iconSize={14}
-          className="w-full xs:w-auto justify-center mt-1 xs:mt-0 text-xs sm:text-sm"
+          className="flex-shrink-0 text-xs sm:text-sm"
         >
           {form?.status === 'borrador' ? 'Continuar' : 'Editar'}
         </Button>
