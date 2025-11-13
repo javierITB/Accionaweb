@@ -88,7 +88,7 @@ const ProfileSection = () => {
           position: user.cargo || user.rol || '', // 'position' será 'Empleado'
           employeeId: user._id || '', 
           department: user.empresa || '', // 'department' será 'Acciona Centro de Negocios Spa.'
-          profileImage: profileData.profileImage,
+          profileImage: `https://placehold.co/128x128/3B82F6/FFFFFF?text=${user.nombre[0].toUpperCase()}`,
           rol: user.rol || 'user',
           estado: user.estado || 'activo'
         };
@@ -151,7 +151,7 @@ const ProfileSection = () => {
 
     if (!formData?.email?.trim()) {
       newErrors.email = 'El email es obligatorio';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+\.[^\s@]+$/.test(formData?.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData?.email)) {
       newErrors.email = 'Formato de email inválido';
     }
 

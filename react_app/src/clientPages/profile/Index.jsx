@@ -7,13 +7,6 @@ import SecuritySettings from './components/SecuritySettings';
 
 const UserProfileSettings = () => {
   const [activeTab, setActiveTab] = useState('profile');
-  const [currentLanguage, setCurrentLanguage] = useState('es');
-
-  // Check for saved language preference on component mount
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem('language') || 'es';
-    setCurrentLanguage(savedLanguage);
-  }, []);
 
   const tabs = [
     {
@@ -32,7 +25,8 @@ const UserProfileSettings = () => {
       id: 'logout',
       label: 'Cerrar Sesión',
       icon: 'LogOut',
-      description: 'Cerrar sesión'
+      description: 'Cerrar sesión',
+      color: "#ffae00"
     },
 
   ];
@@ -48,7 +42,7 @@ const UserProfileSettings = () => {
         return <ProfileSection />;
       case 'security':
         return <SecuritySettings />;
-      case 'logout':  
+      case 'logout':
         handleLogout();
       default:
         return <ProfileSection />;
@@ -104,47 +98,43 @@ const UserProfileSettings = () => {
                   <h2 className="text-lg font-semibold text-foreground mb-4">Configuración</h2>
 
                   <nav className="space-y-2">
+                    
                     {tabs?.map((tab) => (
+                      <div className="">
+                      
                       <button
                         key={tab?.id}
                         onClick={() => handleTabChange(tab?.id)}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-150 ${activeTab === tab?.id
-                            ? 'bg-primary text-primary-foreground shadow-subtle'
-                            : 'hover:bg-muted text-foreground'
-                          }`}
+                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-150 hover:bg-muted color-popover-foreground`}
+                        style={
+                          tab?.color
+                            ? {
+                              backgroundColor: tab.color // O el color de texto que desees para el fondo oscuro
+                            }
+                            : {} // No aplicar estilo si no está activo
+                        }
                       >
                         <Icon
                           name={tab?.icon}
                           size={18}
-                          className={activeTab === tab?.id ? 'text-primary-foreground' : 'text-muted-foreground'}
+                          className={'text-muted-foreground'}
+                          
                         />
                         <div className="flex-1">
-                          <div className={`text-sm font-medium ${activeTab === tab?.id ? 'text-primary-foreground' : 'text-foreground'
+                          <div className={`text-sm font-medium 'text-foreground'
                             }`}>
                             {tab?.label}
                           </div>
-                          <div className={`text-xs ${activeTab === tab?.id ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                          <div className={`text-xs 'text-muted-foreground'
                             }`}>
                             {tab?.description}
                           </div>
                         </div>
+                        {activeTab == tab.id && "o"}
                       </button>
+                      </div>
                     ))}
                   </nav>
-                </div>
-
-                {/* User Summary Card */}
-                <div className="p-6 border-t border-border">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-                      <Icon name="User" size={20} color="white" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-foreground">María González</h3>
-                      <p className="text-xs text-muted-foreground">Supervisora de RRHH</p>
-                      <p className="text-xs text-muted-foreground">Última actividad: Hace 5 min</p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
