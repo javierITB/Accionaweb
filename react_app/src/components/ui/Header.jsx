@@ -10,6 +10,7 @@ const Header = ({ className = '' }) => {
   const user = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userRole, setUserRole] = useState(cargo || 'Usuario'); // Estado para el rol dinámico
 
   // 1. 🌙 Estado del Tema
   // Inicializar el estado del tema leyendo la clase 'dark' del <html> o el localStorage
@@ -30,9 +31,39 @@ const Header = ({ className = '' }) => {
     { name: 'Help', path: '/help', icon: 'HelpCircle' },
   ];
 
-  // (Nota: el array moreMenuItems no está definido en el código original, lo he quitado del Mobile Navigation para evitar un error)
-
   const [isNotiOpen, setIsNotiOpen] = useState(false);
+
+  // Obtener el rol del usuario desde la base de datos
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        if (!userMail) return;
+
+        // Opción 1: Usar el endpoint que devuelve el usuario completo
+        const response = await fetch(`https://accionaapi.vercel.app/api/auth/full/${userMail}`);
+        if (response.ok) {
+          const userData = await response.json();
+          setUserRole(userData.rol || cargo || 'Usuario');
+          return;
+        }
+
+        // Opción 2: Si el endpoint anterior falla, usar el endpoint básico
+        const responseBasic = await fetch(`https://accionaapi.vercel.app/api/auth/${userMail}`);
+        if (responseBasic.ok) {
+          const userData = await responseBasic.json();
+          // Si el endpoint básico no devuelve el rol, mantener el cargo de sessionStorage
+          setUserRole(cargo || 'Usuario');
+        }
+
+      } catch (error) {
+        console.error('Error obteniendo rol del usuario:', error);
+        // En caso de error, mantener el valor actual
+        setUserRole(cargo || 'Usuario');
+      }
+    };
+
+    fetchUserRole();
+  }, [userMail, cargo]);
 
   // 2. 🌙 Efecto para aplicar y persistir el tema
   useEffect(() => {
@@ -197,12 +228,12 @@ const Header = ({ className = '' }) => {
             )}
           </div>
 
-          {/* User Profile (sin cambios) */}
+          {/* User Profile (MODIFICADO: usa userRole en lugar de cargo hardcodeado) */}
           <div className="flex items-center space-x-3 pl-3 border-l border-border">
             {user && (
               <div className="hidden md:block text-right" >
                 <p className="text-sm font-medium text-foreground">{user}</p>
-                <p className="text-xs text-muted-foreground">{cargo}</p>
+                <p className="text-xs text-muted-foreground">{userRole}</p>
               </div>
             )}
 
