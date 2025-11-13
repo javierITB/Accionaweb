@@ -25,7 +25,7 @@ const Header = ({ className = '' }) => {
   const userMenuRef = useRef(null);
 
   const navigationItems = [
-    { name: 'Incio', path: '/', icon: 'Home' },
+    { name: 'Inicio', path: '/', icon: 'Home' },
     { name: 'Remuneraciones', path: '/remuneraciones', icon: 'LayoutDashboard' },
     { name: 'Anexos', path: '/Anexos', icon: 'FileText' },
     { name: 'Finiquitos', path: '/Finiquitos', icon: 'Clock' },

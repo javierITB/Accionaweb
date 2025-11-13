@@ -26,7 +26,7 @@ const Header = ({ className = '' }) => {
   const userMail = sessionStorage.getItem("email");
 
   const navigationItems = [
-    { name: 'Incio', path: '/', icon: 'Home' },
+    { name: 'Inicio', path: '/', icon: 'Home' },
     { name: 'Settings', path: '/settings', icon: 'Settings' },
     { name: 'Help', path: '/help', icon: 'HelpCircle' },
   ];
@@ -243,6 +243,7 @@ const Header = ({ className = '' }) => {
                 <button
                   onClick={() => { window.location.href = "/profile" }}
                   className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+                  title="perfil"
                 >
                   {user ? (
                     <span className="text-sm font-semibold text-white">
