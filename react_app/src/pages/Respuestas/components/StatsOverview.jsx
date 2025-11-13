@@ -3,47 +3,38 @@ import Icon from '../../../components/AppIcon';
 
 const StatsOverview = ({ stats, allForms }) => {
   const last24hCreateCount = allForms.filter(r => {
-    // Usamos submittedAt o createdAt como base para la fecha
     const dateToCheck = r.createdAt;
     if (!dateToCheck) return false;
 
     const lastUpdateDate = new Date(dateToCheck);
     const now = new Date();
-    // 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
     return (now - lastUpdateDate) <= 24 * 60 * 60 * 1000;
   }).length;
 
   const last24hPendingCount = allForms.filter(r => {
-    // Usamos submittedAt o createdAt como base para la fecha
     const dateToCheck = r.submittedAt;
     if (!dateToCheck) return false;
 
     const lastUpdateDate = new Date(dateToCheck);
     const now = new Date();
-    // 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
     return (now - lastUpdateDate) <= 24 * 60 * 60 * 1000;
   }).length;
 
   const last24hReviewCount = allForms.filter(r => {
-    // Usamos submittedAt o createdAt como base para la fecha
     const dateToCheck = r.reviewedAt;
     if (!dateToCheck) return false;
 
     const lastUpdateDate = new Date(dateToCheck);
     const now = new Date();
-    // 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
     return (now - lastUpdateDate) <= 24 * 60 * 60 * 1000;
   }).length;
 
-  
-const last24happrovedCount = allForms.filter(r => {
-    // Usamos submittedAt o createdAt como base para la fecha
+  const last24happrovedCount = allForms.filter(r => {
     const dateToCheck = r.approvedAt;
     if (!dateToCheck) return false;
 
     const lastUpdateDate = new Date(dateToCheck);
     const now = new Date();
-    // 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
     return (now - lastUpdateDate) <= 24 * 60 * 60 * 1000;
   }).length;
 
@@ -64,7 +55,7 @@ const last24happrovedCount = allForms.filter(r => {
       color: 'text-warning',
       bgColor: 'bg-warning/10',
       change: last24hPendingCount,
-      changeType: !last24hPendingCount==0?'negative':'positive'
+      changeType: last24hPendingCount === 0 ? 'positive' : 'negative'
     },
     {
       title: 'En Revisión',
@@ -73,7 +64,7 @@ const last24happrovedCount = allForms.filter(r => {
       color: 'text-accent',
       bgColor: 'bg-accent/10',
       change: last24hReviewCount,
-      changeType: !last24happrovedCount==0?'negative':'positive'
+      changeType: last24happrovedCount === 0 ? 'positive' : 'negative'
     },
     {
       title: 'Aprobadas',
@@ -82,7 +73,7 @@ const last24happrovedCount = allForms.filter(r => {
       color: 'text-success',
       bgColor: 'bg-success/10',
       change: last24happrovedCount,
-      changeType: !last24happrovedCount==0?'negative':'positive'
+      changeType: last24happrovedCount === 0 ? 'positive' : 'negative'
     },
     {
       title: 'Firmadas',
@@ -105,22 +96,29 @@ const last24happrovedCount = allForms.filter(r => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
       {statCards?.map((stat, index) => (
-        <div key={index} className="bg-card border border-border rounded-lg p-4 hover:shadow-brand-hover transition-brand">
-          <div className="flex items-center justify-between mb-3">
-            <div className={`p-2 rounded-lg ${stat?.bgColor}`}>
-              <Icon name={stat?.icon} size={20} className={stat?.color} />
+        <div key={index} className="bg-card border border-border rounded-lg p-3 sm:p-4 hover:shadow-brand-hover transition-brand">
+          {/* Header - RESPONSIVE */}
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <div className={`p-1.5 sm:p-2 rounded-lg ${stat?.bgColor}`}>
+              <Icon name={stat?.icon} size={16} className={`${stat?.color} sm:w-5 sm:h-5`} />
             </div>
-            <div className={`text-xs font-medium ${stat?.changeType === 'positive' ? 'text-success' : 'text-error'
-              }`}>
+            <div className={`text-xs font-medium ${
+              stat?.changeType === 'positive' ? 'text-success' : 'text-error'
+            } whitespace-nowrap`}>
               {stat?.change}
             </div>
           </div>
 
+          {/* Content - RESPONSIVE */}
           <div>
-            <p className="text-2xl font-bold text-foreground mb-1">{stat?.value}</p>
-            <p className="text-sm text-muted-foreground">{stat?.title}</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground mb-1 leading-tight">
+              {stat?.value}
+            </p>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-tight">
+              {stat?.title}
+            </p>
           </div>
         </div>
       ))}

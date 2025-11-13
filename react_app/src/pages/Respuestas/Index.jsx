@@ -16,7 +16,7 @@ const RequestTracking = () => {
   // ESTADOS DEL SIDEBAR
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
+  const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   
   // Estados de la Aplicación
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -360,32 +360,32 @@ const RequestTracking = () => {
 
   const mainMarginClass = isMobileScreen 
     ? 'ml-0' 
-    : isDesktopOpen ? 'ml-64' : 'ml-16';
+    : isDesktopOpen ? 'lg:ml-64' : 'lg:ml-16';
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
+      {/* SIDEBAR - RESPONSIVE */}
       {(isMobileOpen || !isMobileScreen) && (
         <>
           <Sidebar 
-            // isCollapsed ahora se basa SOLO en isDesktopOpen
-            isCollapsed={!isDesktopOpen} 
+            isCollapsed={!isDesktopOpen}
             onToggleCollapse={toggleSidebar} 
             isMobileOpen={isMobileOpen}
             onNavigate={handleNavigation}
           />
           
-          {/* El Overlay solo debe aparecer en Móvil cuando está abierto */}
           {isMobileScreen && isMobileOpen && (
             <div 
-              className="fixed inset-0 bg-foreground/50 z-40" 
+              className="fixed inset-0 bg-foreground/50 z-40 lg:hidden" 
               onClick={toggleSidebar}
             ></div>
           )}
         </>
       )}
 
+      {/* BOTÓN FLOTANTE MÓVIL - MEJORADO */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
           <Button
@@ -398,17 +398,21 @@ const RequestTracking = () => {
         </div>
       )}
 
-      <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-24`}>
-        <div className=" p-6 space-y-6"> 
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Seguimiento de Solicitudes</h1>
-              <p className="text-muted-foreground mt-1 text-sm md:text-base">
+      {/* CONTENIDO PRINCIPAL - RESPONSIVE */}
+      <main className={`transition-all duration-300 ${mainMarginClass} pt-16 lg:pt-20`}>
+        <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto">
+          
+          {/* HEADER - RESPONSIVE */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div className="min-w-0 flex-1 mb-3 md:mb-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Seguimiento de Solicitudes</h1>
+              <p className="text-muted-foreground mt-1 text-xs sm:text-sm lg:text-base">
                 Monitorea el estado de todas tus solicitudes con cronología detallada
               </p>
             </div>
 
-            <div className="hidden md:flex items-center space-x-3">
+            {/* BOTÓN SIDEBAR DESKTOP - RESPONSIVE */}
+            <div className="hidden lg:flex items-center">
               <Button
                 variant="ghost"
                 size="icon"
@@ -419,8 +423,10 @@ const RequestTracking = () => {
             </div>
           </div>
 
+          {/* STATS OVERVIEW */}
           <StatsOverview stats={mockStats} allForms={resp} />
 
+          {/* FILTER PANEL */}
           <FilterPanel
             filters={filters}
             onFilterChange={setFilters}
@@ -429,36 +435,39 @@ const RequestTracking = () => {
             onToggle={() => setShowFilters(!showFilters)}
           />
 
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-card border border-border rounded-lg p-4 space-y-4 md:space-y-0">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+          {/* CONTROLES - RESPONSIVE */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-card border border-border rounded-lg p-3 sm:p-4 space-y-3 md:space-y-0">
+            <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-3 sm:space-x-4 w-full md:w-auto">
+              {/* VISTA */}
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">Vista:</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
                 <div className="flex items-center border border-border rounded-lg">
                   <Button
                     variant={viewMode === 'grid' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setViewMode('grid')}
                     iconName="Grid3X3"
-                    iconSize={16}
-                    className="rounded-r-none"
+                    iconSize={14}
+                    className="rounded-r-none px-2 sm:px-3"
                   />
                   <Button
                     variant={viewMode === 'list' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setViewMode('list')}
                     iconName="List"
-                    iconSize={16}
-                    className="rounded-l-none border-l"
+                    iconSize={14}
+                    className="rounded-l-none border-l px-2 sm:px-3"
                   />
                 </div>
               </div>
 
+              {/* ORDENAR */}
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">Ordenar por:</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Ordenar por:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e?.target?.value)}
-                  className="px-3 py-1 border border-border rounded-md text-sm bg-input text-foreground min-touch-target"
+                  className="px-2 sm:px-3 py-1 border border-border rounded-md text-xs sm:text-sm bg-input text-foreground min-w-0"
                 >
                   {sortOptions?.map(option => (
                     <option key={option?.value} value={option?.value}>
@@ -471,21 +480,24 @@ const RequestTracking = () => {
                   size="icon"
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   iconName={sortOrder === 'asc' ? "ArrowUp" : "ArrowDown"}
-                  iconSize={16}
+                  iconSize={14}
+                  className="w-7 h-7 sm:w-8 sm:h-8"
                 />
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-3 md:mt-0">
-              <Icon name="FileText" size={16} />
-              <span>{filteredRequests?.length} solicitudes encontradas</span>
+            {/* CONTADOR - RESPONSIVE */}
+            <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground w-full md:w-auto justify-center md:justify-end">
+              <Icon name="FileText" size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="whitespace-nowrap">{filteredRequests?.length} solicitudes encontradas</span>
             </div>
           </div>
 
+          {/* LISTA DE SOLICITUDES - RESPONSIVE */}
           <div className={
             viewMode === 'grid'
-              ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'
-              : 'space-y-4'
+              ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6'
+              : 'space-y-3 lg:space-y-4'
           }>
             {filteredRequests?.length > 0 ? (
               filteredRequests?.map((request) => (
@@ -499,10 +511,10 @@ const RequestTracking = () => {
                 />
               ))
             ) : (
-              <div className="text-center py-12 bg-card border border-border rounded-lg col-span-full">
-                <Icon name="Search" size={48} className="mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
-                <p className="text-muted-foreground mb-4">
+              <div className="text-center py-8 lg:py-12 bg-card border border-border rounded-lg col-span-full">
+                <Icon name="Search" size={32} className="mx-auto mb-3 lg:mb-4 text-muted-foreground opacity-50 sm:w-12 sm:h-12" />
+                <h3 className="text-base lg:text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
+                <p className="text-muted-foreground mb-4 text-sm lg:text-base px-4">
                   Intenta ajustar los filtros o crear una nueva solicitud
                 </p>
               </div>
@@ -511,6 +523,8 @@ const RequestTracking = () => {
 
         </div>
       </main>
+      
+      {/* MODALES */}
       <MessageModal
         isOpen={showMessageModal}
         onClose={() => setShowMessageModal(false)}

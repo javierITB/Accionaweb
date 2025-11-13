@@ -167,28 +167,37 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 hover:shadow-brand-hover transition-brand">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center space-x-3 mb-2">
-            <h3 className="text-lg font-semibold text-foreground">{getCombinedTitle()}</h3>
-            <span className="text-xs text-muted-foreground">
+    <div className="bg-card border border-border rounded-lg p-4 sm:p-6 hover:shadow-brand-hover transition-brand">
+      {/* Header - RESPONSIVE */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
+        <div className="flex-1 min-w-0">
+          {/* Title and Time - RESPONSIVE */}
+          <div className="flex flex-col xs:flex-row xs:items-center xs:space-x-3 space-y-1 xs:space-y-0 mb-2">
+            <h3 className="text-base sm:text-lg font-semibold text-foreground break-words">
+              {getCombinedTitle()}
+            </h3>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
               {getRelativeTime(currentRequest?.submittedAt)}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground mb-3">{currentRequest?.description}</p>
+          
+          {/* Description */}
+          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+            {currentRequest?.description}
+          </p>
 
-          <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+          {/* Meta Info - RESPONSIVE */}
+          <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-3 sm:space-x-4 text-xs text-muted-foreground">
             <div className="flex items-center space-x-1">
-              <Icon name="Briefcase" size={14} />
-              <span>Empresa: {currentRequest?.company}</span>
+              <Icon name="Briefcase" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
+              <span className="truncate">Empresa: {currentRequest?.company}</span>
             </div>
             <div className="flex items-center space-x-1">
-              <Icon name="User" size={14} />
-              <span>Por: {currentRequest?.submittedBy}</span>
+              <Icon name="User" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
+              <span className="truncate">Por: {currentRequest?.submittedBy}</span>
             </div>
             <div className="flex items-center space-x-1">
-              <Icon name="Tag" size={14} />
+              <Icon name="Tag" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
               <span className={getPriorityColor(currentRequest?.priority)}>
                 {currentRequest?.form?.section?.toUpperCase()}
               </span>
@@ -196,62 +205,83 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 ml-4">
+        {/* Status Badge - RESPONSIVE */}
+        <div className="flex items-center space-x-2 self-start sm:self-auto sm:ml-4">
           {currentRequest?.hasMessages && (
             <div className="relative">
-              <Icon name="MessageCircle" size={16} className="text-accent" />
+              <Icon name="MessageCircle" size={14} className="text-accent sm:w-4 sm:h-4" />
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-secondary rounded-full"></span>
             </div>
           )}
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(currentRequest?.status)}`}>
-            <Icon name={getStatusIcon(currentRequest?.status)} size={12} className="mr-1" />
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(currentRequest?.status)} whitespace-nowrap`}>
+            <Icon name={getStatusIcon(currentRequest?.status)} size={10} className="mr-1 sm:w-3 sm:h-3" />
             {formatStatusText(currentRequest?.status)}
           </span>
-
         </div>
       </div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="text-sm">
-          </div>
-          {currentRequest?.assignedTo && (
-            <div className="text-sm">
-            </div>
-          )}
+
+      {/* Actions - RESPONSIVE */}
+      <div className="flex items-center justify-between mt-4 sm:mt-3">
+        <div className="flex-1">
+          {/* Empty space for alignment */}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          {/* Delete Button */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onRemove(currentRequest)}
-            className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="h-7 w-7 sm:h-8 sm:w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
           >
-            <Icon name="Trash2" size={14} />
+            <Icon name="Trash2" size={12} className="sm:w-3.5 sm:h-3.5" />
           </Button>
 
+          {/* Message Button - ICON ONLY ON MOBILE */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => onSendMessage(currentRequest)}
+            className="h-7 w-7 sm:h-8 sm:w-8 sm:!hidden" // Hidden on desktop, icon only on mobile
+          >
+            <Icon name="MessageSquare" size={12} className="sm:w-3.5 sm:h-3.5" />
+          </Button>
+
+          {/* Message Button - WITH TEXT ON DESKTOP */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => onSendMessage(currentRequest)}
             iconName="MessageSquare"
             iconPosition="left"
-            iconSize={16}
+            iconSize={14}
+            className="hidden sm:flex" // Hidden on mobile, shown on desktop
           >
+            Mensaje
           </Button>
 
+          {/* Details Button - ICON ONLY ON MOBILE */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onViewDetails(currentRequest)}
+            className="h-7 w-7 sm:h-8 sm:w-8 sm:!hidden" // Hidden on desktop, icon only on mobile
+          >
+            <Icon name="Info" size={12} className="sm:w-3.5 sm:h-3.5" />
+          </Button>
+
+          {/* Details Button - WITH TEXT ON DESKTOP */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onViewDetails(currentRequest)}
             iconName="Info"
             iconPosition="left"
-            iconSize={16}
+            iconSize={14}
+            className="hidden sm:flex" // Hidden on mobile, shown on desktop
           >
-
+            Detalles
           </Button>
-
-
         </div>
       </div>
     </div>

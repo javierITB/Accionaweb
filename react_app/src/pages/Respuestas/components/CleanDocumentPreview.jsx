@@ -68,31 +68,48 @@ const CleanDocumentPreview = ({
         }
     }, [isVisible]);
 
+    // Cerrar con Escape key
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape' && isVisible) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [isVisible, onClose]);
+
     if (!isVisible) return null;
 
     const renderContent = () => {
         if (isLoading) {
             return (
-                <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <span className="ml-2 text-gray-600">Cargando documento...</span>
+                <div className="flex flex-col sm:flex-row justify-center items-center h-48 sm:h-64 p-4">
+                    <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mb-3 sm:mb-0 sm:mr-3"></div>
+                    <span className="text-sm sm:text-base text-gray-600 text-center sm:text-left">
+                        Cargando documento...
+                    </span>
                 </div>
             );
         }
 
         if (error) {
             return (
-                <div className="flex flex-col items-center justify-center h-64 text-red-600 p-8">
-                    <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-red-600 p-4 sm:p-8">
+                    <svg className="w-12 h-12 sm:w-16 sm:h-16 mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
-                    <p className="text-lg font-medium mb-2">Error</p>
-                    <p className="text-sm text-center mb-4">{error}</p>
+                    <p className="text-base sm:text-lg font-medium mb-1 sm:mb-2 text-center">Error al cargar</p>
+                    <p className="text-xs sm:text-sm text-center mb-3 sm:mb-4 max-w-md">{error}</p>
                     <a
                         href={documentUrl}
                         download
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm sm:text-base"
                     >
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
                         Descargar archivo
                     </a>
                 </div>
@@ -105,16 +122,19 @@ const CleanDocumentPreview = ({
                     <div className="h-full flex flex-col">
                         <div className="flex-1 overflow-auto bg-white">
                             <object
-                                data={`${documentUrl}#toolbar=0&navpanes=0&scrollbar=1`} // scrollbar=1 para scroll interno
+                                data={`${documentUrl}#toolbar=0&navpanes=0&scrollbar=1`}
                                 type="application/pdf"
-                                className="w-full h-full min-h-[800px]" // min-h grande para expandirse
+                                className="w-full h-full min-h-[400px] sm:min-h-[600px] md:min-h-[800px]"
                             >
-                                <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4">
-                                    <p>No se puede mostrar la vista previa del PDF</p>
+                                <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4 text-center">
+                                    <svg className="w-12 h-12 sm:w-16 sm:h-16 mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <p className="text-sm sm:text-base mb-2">No se puede mostrar la vista previa del PDF</p>
                                     <a
                                         href={documentUrl}
                                         download
-                                        className="text-blue-600 hover:underline mt-2"
+                                        className="text-blue-600 hover:underline text-sm sm:text-base"
                                     >
                                         Descargar PDF
                                     </a>
@@ -128,12 +148,12 @@ const CleanDocumentPreview = ({
                 return (
                     <div className="h-full overflow-auto bg-white">
                         <div
-                            className="p-4 md:p-6 max-w-4xl lg:max-w-6xl mx-auto"
+                            className="p-3 sm:p-4 md:p-6 max-w-full lg:max-w-6xl mx-auto"
                             style={{
                                 fontFamily: "'Times New Roman', serif",
                                 lineHeight: '1.6',
                                 color: '#000',
-                                fontSize: '12pt',
+                                fontSize: '11pt sm:12pt',
                                 whiteSpace: 'normal',
                                 wordWrap: 'break-word'
                             }}
@@ -145,7 +165,7 @@ const CleanDocumentPreview = ({
             case 'txt':
                 return (
                     <div className="h-full overflow-auto bg-white dark:bg-black">
-                        <pre className="dark:bg-black p-4 md:p-6 font-mono text-sm whitespace-pre-wrap bg-white max-w-4xl lg:max-w-6xl mx-auto">
+                        <pre className="dark:bg-black p-3 sm:p-4 md:p-6 font-mono text-xs sm:text-sm whitespace-pre-wrap bg-white max-w-full lg:max-w-6xl mx-auto">
                             {content}
                         </pre>
                     </div>
@@ -153,17 +173,22 @@ const CleanDocumentPreview = ({
 
             default:
                 return (
-                    <div className="flex flex-col items-center justify-center h-64 text-gray-500 p-8">
-                        <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-gray-500 p-4 sm:p-8 text-center">
+                        <svg className="w-12 h-12 sm:w-16 sm:h-16 mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        <p className="text-lg font-medium mb-2">Formato no soportado</p>
-                        <p className="text-sm mb-4">La vista previa para .{documentType} no está disponible</p>
+                        <p className="text-base sm:text-lg font-medium mb-1 sm:mb-2">Formato no soportado</p>
+                        <p className="text-xs sm:text-sm mb-3 sm:mb-4 max-w-md">
+                            La vista previa para .{documentType} no está disponible
+                        </p>
                         <a
                             href={documentUrl}
                             download
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm sm:text-base"
                         >
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                             Descargar archivo
                         </a>
                     </div>
@@ -175,27 +200,56 @@ const CleanDocumentPreview = ({
         <>
             {isVisible && (
                 <div
-                    className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[1px]"
+                    className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
                     onClick={onClose}
                 />
             )}
 
             {isVisible && (
-                <div className="dark:bg-black fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-xl shadow-xl flex flex-col w-[95vw] max-w-6xl h-[90vh] mx-4 overflow-hidden">
-                    <div className="flex justify-end p-2 border-b">
+                <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white dark:bg-black rounded-lg sm:rounded-xl shadow-xl flex flex-col w-[98vw] h-[95vh] sm:w-[95vw] sm:h-[90vh] max-w-6xl mx-2 sm:mx-4 overflow-hidden">
+                    {/* Header - Más compacto en móvil */}
+                    <div className="flex justify-between items-center p-2 sm:p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-black">
+                        <div className="flex items-center space-x-2 min-w-0 flex-1">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                                Vista previa - {documentType?.toUpperCase()}
+                            </span>
+                        </div>
                         <button
                             onClick={onClose}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                            className="p-1 sm:p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex-shrink-0"
                             title="Cerrar vista previa"
                         >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <svg width="16" height="16" className="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-auto bg-gray-50 dark:bg-black">
+                    {/* Content Area */}
+                    <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
                         {renderContent()}
+                    </div>
+
+                    {/* Footer con acciones - Solo en móvil para ahorrar espacio */}
+                    <div className="sm:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-700 p-3">
+                        <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500">
+                                {documentType?.toUpperCase()}
+                            </span>
+                            <a
+                                href={documentUrl}
+                                download
+                                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
+                            >
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Descargar
+                            </a>
+                        </div>
                     </div>
                 </div>
             )}
