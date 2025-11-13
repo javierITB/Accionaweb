@@ -2,15 +2,39 @@ import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
+const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }) => {
   const [hasSignedPdf, setHasSignedPdf] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
-  const fileInputRef = useRef(null); // Añadir useRef
+  const fileInputRef = useRef(null);
 
-  // useEffect DEBE estar siempre en el nivel superior, sin condiciones
+  // Polling para verificar cambios de estado cada 5 segundos
   useEffect(() => {
-    // La condición va DENTRO del useEffect, no fuera
+    if (!isVisible || !request?._id) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
+        if (response.ok) {
+          const updatedRequest = await response.json();
+          
+          // Solo actualizar si el status cambió
+          if (updatedRequest.status !== request.status) {
+            if (onUpdate) {
+              onUpdate(updatedRequest);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error verificando actualización del request:', error);
+      }
+    }, 5000); // Verificar cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, [isVisible, request?._id, request?.status, onUpdate]);
+
+  // Verificar PDF firmado
+  useEffect(() => {
     if (isVisible && request?._id && request?.status === 'aprobado') {
       const checkSignedPdf = async () => {
         try {
@@ -25,15 +49,12 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
     }
   }, [request, isVisible]);
 
-  // El return condicional va DESPUÉS de todos los Hooks
   if (!isVisible || !request) return null;
 
-  // Función para manejar el clic en el botón de subir
   const handleUploadButtonClick = () => {
     fileInputRef.current?.click();
   };
 
-  // Función para subir PDF firmado
   const handleUploadSignedPdf = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -60,7 +81,14 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
       if (response.ok) {
         setHasSignedPdf(true);
         setUploadMessage('PDF firmado subido exitosamente');
-        // Limpiar el input file
+        
+        // Actualizar el estado local y notificar al componente padre
+        if (onUpdate) {
+          const updatedResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
+          const updatedRequest = await updatedResponse.json();
+          onUpdate(updatedRequest);
+        }
+        
         event.target.value = '';
       } else {
         setUploadMessage('Error: ' + (data.error || 'Error al subir el PDF'));
@@ -73,7 +101,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
     }
   };
 
-  // Resto de las funciones permanecen igual...
   const handleDownloadApprovedPDF = async (responseId) => {
     try {
       const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/download-approved-pdf/${responseId}`);
@@ -90,7 +117,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
       a.href = url;
 
       const contentDisposition = response.headers.get('Content-Disposition');
-      let fileName = request?.correctedFile.fileName;
+      let fileName = request?.correctedFile?.fileName || 'documento_aprobado.pdf';
 
       if (contentDisposition) {
         const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
@@ -241,7 +268,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
             </div>
           </div>
 
-          {request?.status === 'aprobado' && (
+          {(request?.status === 'aprobado' || request?.status === 'firmado') && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">Documento Aprobado</h3>
 
@@ -270,57 +297,79 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage }) => {
                 </div>
               </div>
 
-              <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Icon name="FileSignature" size={20} className="text-accent" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Subir PDF Firmado</p>
-                      <p className="text-xs text-muted-foreground">
-                        {hasSignedPdf
-                          ? 'Ya has subido el PDF firmado.'
-                          : 'Sube el PDF con tu firma una vez descargado y firmado.'}
-                      </p>
-                      {uploadMessage && (
-                        <p className={`text-xs ${uploadMessage.includes('Error') ? 'text-error' : 'text-success'}`}>
-                          {uploadMessage}
+              {request?.status === 'aprobado' && (
+                <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Icon name="FileSignature" size={20} className="text-accent" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Subir PDF Firmado</p>
+                        <p className="text-xs text-muted-foreground">
+                          {hasSignedPdf
+                            ? 'Ya has subido el PDF firmado.'
+                            : 'Sube el PDF con tu firma una vez descargado y firmado.'}
                         </p>
+                        {uploadMessage && (
+                          <p className={`text-xs ${uploadMessage.includes('Error') ? 'text-error' : 'text-success'}`}>
+                            {uploadMessage}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end space-y-2">
+                      {!hasSignedPdf ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            accept=".pdf"
+                            onChange={handleUploadSignedPdf}
+                            disabled={isUploading}
+                            className="hidden"
+                          />
+                          <Button
+                            variant="default"
+                            size="sm"
+                            iconName="Upload"
+                            iconPosition="left"
+                            iconSize={16}
+                            disabled={isUploading}
+                            onClick={handleUploadButtonClick}
+                            className="bg-accent hover:bg-accent/90"
+                          >
+                            {isUploading ? 'Subiendo...' : 'Subir PDF Firmado'}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-2 text-success">
+                          <Icon name="CheckCircle" size={16} />
+                          <span className="text-sm font-medium">PDF Firmado Subido</span>
+                        </div>
                       )}
                     </div>
                   </div>
-                  <div className="flex flex-col items-end space-y-2">
-                    {!hasSignedPdf ? (
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="file"
-                          ref={fileInputRef}
-                          accept=".pdf"
-                          onChange={handleUploadSignedPdf}
-                          disabled={isUploading}
-                          className="hidden"
-                        />
-                        <Button
-                          variant="default"
-                          size="sm"
-                          iconName="Upload"
-                          iconPosition="left"
-                          iconSize={16}
-                          disabled={isUploading}
-                          onClick={handleUploadButtonClick}
-                          className="bg-accent hover:bg-accent/90"
-                        >
-                          {isUploading ? 'Subiendo...' : 'Subir PDF Firmado'}
-                        </Button>
+                </div>
+              )}
+
+              {request?.status === 'firmado' && (
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Icon name="CheckSquare" size={20} className="text-blue-500" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Documento Firmado Completado</p>
+                        <p className="text-xs text-muted-foreground">
+                          El documento ha sido firmado y completado exitosamente.
+                        </p>
                       </div>
-                    ) : (
-                      <div className="flex items-center space-x-2 text-success">
-                        <Icon name="CheckCircle" size={16} />
-                        <span className="text-sm font-medium">PDF Firmado Subido</span>
-                      </div>
-                    )}
+                    </div>
+                    <div className="flex items-center space-x-2 text-blue-500">
+                      <Icon name="CheckCircle" size={16} />
+                      <span className="text-sm font-medium">Proceso Finalizado</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
