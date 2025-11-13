@@ -183,7 +183,7 @@ const SecuritySettings = () => {
         <div className="p-6 border-b border-border">
           <div className="flex items-center space-x-3">
             <Icon name="Key" size={20} className="text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Cambiar Contraseña</h2>
+            <h2 className="text-lg font-semibold text-foreground">Cambiar Contraseña (panel en desarrollo, estas funciones se habilitarán pronto)</h2>
           </div>
         </div>
 
