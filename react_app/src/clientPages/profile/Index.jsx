@@ -30,7 +30,7 @@ const UserProfileSettings = () => {
     },
     {
       id: 'logout',
-      label: 'Logout',
+      label: 'Cerrar Sesión',
       icon: 'LogOut',
       description: 'Cerrar sesión'
     },
