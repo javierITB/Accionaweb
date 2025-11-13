@@ -19,10 +19,7 @@ const Header = ({ className = '' }) => {
   const cargo = sessionStorage.getItem("cargo");
   const userMail = sessionStorage.getItem("email");
 
-
-
   // Refs para detectar clics fuera
-  // NOTE: menuRef apunta al botón "Más" de desktop y su lógica de cierre estaba en conflicto.
   const menuRef = useRef(null); 
   const notiRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -58,7 +55,6 @@ const Header = ({ className = '' }) => {
     return () => clearInterval(interval);
   }, [user]);
 
-
   // Effect para detectar clics fuera de los menús
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -93,6 +89,11 @@ const Header = ({ className = '' }) => {
     setIsUserMenuOpen(false);
   };
 
+  // 💡 NUEVA FUNCIÓN: Click en el logo para ir al home
+  const handleLogoClick = () => {
+    window.location.href = '/';
+  };
+
   const toggleNoti = () => {
     setIsNotiOpen(!isNotiOpen);
   };
@@ -112,13 +113,23 @@ const Header = ({ className = '' }) => {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 bg-card border-b border-border shadow-brand ${className}`}>
-      <div className="flex items-center justify-between h-20 px-6 bg-warning">
-        {/* Logo Section */}
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden ">
+    <header className={`fixed top-0 left-0 right-0 bg-card border-b border-border shadow-brand z-50 ${className}`}>
+      <div className="flex items-center justify-between h-16 lg:h-20 px-4 sm:px-6 lg:px-8 bg-warning">
+        {/* Logo Section - AHORA CLICKEABLE */}
+        <div 
+          className="flex items-center space-x-3 cursor-pointer group"
+          onClick={handleLogoClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              handleLogoClick();
+            }
+          }}
+        >
+          <div className="flex items-center justify-center w-8 h-8 lg:w-10 lg:h-10 rounded-lg overflow-hidden">
             <img
-              src={logoPath}              // 💡 Usando la ruta string corregida
+              src={logoPath}
               alt="Logo Acciona"
               className="max-w-full max-h-full"
               style={{ objectFit: 'contain' }}
@@ -131,16 +142,14 @@ const Header = ({ className = '' }) => {
           </div>
 
           <div className="flex flex-col">
-            <h1 className="text-lg font-semibold text-foreground leading-tight">
+            <h1 className="text-base lg:text-lg font-semibold text-foreground leading-tight group-hover:text-primary transition-colors">
               Portal Acciona
             </h1>
-            <span className="text-xs text-muted-foreground font-mono">
+            <span className="text-xs text-muted-foreground font-mono xs:block">
               plataforma de asistencia a clientes
             </span>
           </div>
         </div>
-
-
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center space-x-1">
@@ -192,23 +201,24 @@ const Header = ({ className = '' }) => {
         </nav>
 
         {/* User Profile & Actions */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 lg:space-x-3">
           {/* Notifications */}
           <div ref={notiRef}>
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleNoti}
-              className="relative hover:bg-muted transition-brand"
+              className="relative hover:bg-muted transition-brand w-10 h-10 lg:w-12 lg:h-12"
               iconName="Bell"
+              iconSize={18}
             >
-              {unreadCount > 0 && ( // solo si hay sin leer
+              {unreadCount > 0 && (
                 <span className="absolute top-1 -right-1 w-2 h-2 bg-error rounded-full animate-pulse-subtle"></span>
               )}
             </Button>
 
             {isNotiOpen && (
-              <div className="absolute right-0 top-full mt-2 mr-2  bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
+              <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
                 <div className="py-2">
                   <NotificationsCard user={user} onUnreadChange={setUnreadCount} />
                 </div>
@@ -217,7 +227,7 @@ const Header = ({ className = '' }) => {
           </div>
 
           {/* User Profile */}
-          <div className="flex items-center space-x-3 pl-3 border-l border-border">
+          <div className="flex items-center space-x-2 lg:space-x-3 pl-2 lg:pl-3 border-l border-border">
             {user && (
               <div className="hidden md:block text-right">
                 <p className="text-sm font-medium text-foreground">{user}</p>
@@ -229,7 +239,7 @@ const Header = ({ className = '' }) => {
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => {window.location.href = "/profile"}}
-                className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+                className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
               >
                 {user ? (
                   <span className="text-sm font-semibold text-white">
@@ -247,13 +257,42 @@ const Header = ({ className = '' }) => {
             variant="ghost"
             size="icon"
             onClick={toggleMenu}
-            className="lg:hidden hover:bg-muted transition-brand"
+            className="lg:hidden hover:bg-muted transition-brand w-10 h-10"
           >
             <Icon name={isMenuOpen ? "X" : "Menu"} size={20} />
           </Button>
         </div>
       </div>
 
+      {/* Mobile Navigation Menu */}
+      {isMenuOpen && (
+        <div className="lg:hidden bg-card border-b border-border shadow-brand animate-slide-down">
+          <div className="px-4 py-3 space-y-1">
+            {navigationItems?.map((item) => (
+              <button
+                key={item?.path}
+                onClick={() => handleNavigation(item?.path)}
+                className="flex items-center w-full px-4 py-3 text-left text-foreground hover:bg-muted rounded-lg transition-brand"
+              >
+                <Icon name={item?.icon} size={20} className="mr-3" />
+                <span className="font-medium">{item?.name}</span>
+              </button>
+            ))}
+            
+            {/* More items in mobile */}
+            {moreMenuItems?.map((item) => (
+              <button
+                key={item?.path}
+                onClick={() => handleNavigation(item?.path)}
+                className="flex items-center w-full px-4 py-3 text-left text-foreground hover:bg-muted rounded-lg transition-brand"
+              >
+                <Icon name={item?.icon} size={20} className="mr-3" />
+                <span className="font-medium">{item?.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </header>
   );
 };

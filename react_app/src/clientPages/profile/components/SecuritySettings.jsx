@@ -3,7 +3,6 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 
-
 const SecuritySettings = () => {
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -177,18 +176,20 @@ const SecuritySettings = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Password Change Section */}
       <div className="bg-card rounded-lg border border-border shadow-subtle">
-        <div className="p-6 border-b border-border">
+        <div className="p-4 sm:p-6 border-b border-border">
           <div className="flex items-center space-x-3">
-            <Icon name="Key" size={20} className="text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Cambiar Contraseña (panel en desarrollo, estas funciones se habilitarán pronto)</h2>
+            <Icon name="Key" size={18} className="text-primary sm:w-5 sm:h-5" />
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">
+              Cambiar Contraseña (panel en desarrollo, estas funciones se habilitarán pronto)
+            </h2>
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="max-w-md space-y-4">
+        <div className="p-4 sm:p-6">
+          <div className="max-w-md space-y-3 sm:space-y-4">
             <Input
               label="Contraseña Actual"
               type="password"
@@ -225,16 +226,16 @@ const SecuritySettings = () => {
               loading={isChangingPassword}
               iconName="Save"
               iconPosition="left"
-              className="mt-4"
+              className="mt-3 sm:mt-4 w-full sm:w-auto"
             >
               Cambiar Contraseña
             </Button>
           </div>
 
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start space-x-3">
-              <Icon name="Shield" size={16} className="text-blue-600 mt-0.5" />
-              <div>
+              <Icon name="Shield" size={14} className="text-blue-600 mt-0.5 flex-shrink-0 sm:w-4 sm:h-4" />
+              <div className="min-w-0">
                 <h4 className="text-sm font-medium text-blue-900">Consejos de seguridad</h4>
                 <ul className="text-xs text-blue-800 mt-2 space-y-1">
                   <li>• Use al menos 8 caracteres con mayúsculas, minúsculas y números</li>
@@ -246,18 +247,19 @@ const SecuritySettings = () => {
           </div>
         </div>
       </div>
+
       {/* Two-Factor Authentication */}
       <div className="bg-card rounded-lg border border-border shadow-subtle">
-        <div className="p-6 border-b border-border">
+        <div className="p-4 sm:p-6 border-b border-border">
           <div className="flex items-center space-x-3">
-            <Icon name="Smartphone" size={20} className="text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Autenticación de Dos Factores</h2>
+            <Icon name="Smartphone" size={18} className="text-primary sm:w-5 sm:h-5" />
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Autenticación de Dos Factores</h2>
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0 mb-4">
+            <div className="min-w-0">
               <h3 className="text-base font-medium text-foreground">
                 Autenticación 2FA {twoFactorEnabled ? 'Activada' : 'Desactivada'}
               </h3>
@@ -265,15 +267,16 @@ const SecuritySettings = () => {
                 Añade una capa extra de seguridad a tu cuenta
               </p>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 self-start sm:self-auto">
               {twoFactorEnabled && (
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded-full">
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded-full whitespace-nowrap">
                   Activa
                 </span>
               )}
               <Button
                 variant={twoFactorEnabled ? "destructive" : "default"}
                 onClick={handleTwoFactorToggle}
+                size="sm"
               >
                 {twoFactorEnabled ? 'Desactivar' : 'Activar'}
               </Button>
@@ -281,26 +284,26 @@ const SecuritySettings = () => {
           </div>
 
           {showQRCode && (
-            <div className="mt-6 p-4 border border-border rounded-lg">
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 border border-border rounded-lg">
               <h4 className="text-sm font-medium text-foreground mb-3">
                 Configurar Autenticación de Dos Factores
               </h4>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-4">
+              <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground mb-3 sm:mb-4">
                     1. Escanea este código QR con tu aplicación de autenticación
                   </p>
-                  <div className="w-48 h-48 bg-muted border-2 border-dashed border-border rounded-lg flex items-center justify-center">
+                  <div className="w-40 h-40 sm:w-48 sm:h-48 bg-muted border-2 border-dashed border-border rounded-lg flex items-center justify-center mx-auto">
                     <div className="text-center">
-                      <Icon name="QrCode" size={48} className="text-muted-foreground mx-auto mb-2" />
+                      <Icon name="QrCode" size={32} className="text-muted-foreground mx-auto mb-2 sm:w-12 sm:h-12" />
                       <p className="text-xs text-muted-foreground">Código QR</p>
                     </div>
                   </div>
                 </div>
                 
-                <div>
-                  <p className="text-sm text-muted-foreground mb-4">
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground mb-3 sm:mb-4">
                     2. Ingresa el código de 6 dígitos de tu aplicación
                   </p>
                   <Input
@@ -315,7 +318,7 @@ const SecuritySettings = () => {
                     variant="default"
                     onClick={handleTwoFactorVerification}
                     disabled={verificationCode?.length !== 6}
-                    className="mt-4"
+                    className="mt-3 sm:mt-4 w-full sm:w-auto"
                   >
                     Verificar y Activar
                   </Button>
@@ -325,28 +328,29 @@ const SecuritySettings = () => {
           )}
         </div>
       </div>
+
       {/* Active Sessions */}
       <div className="bg-card rounded-lg border border-border shadow-subtle">
-        <div className="p-6 border-b border-border">
+        <div className="p-4 sm:p-6 border-b border-border">
           <div className="flex items-center space-x-3">
-            <Icon name="Monitor" size={20} className="text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Sesiones Activas</h2>
+            <Icon name="Monitor" size={18} className="text-primary sm:w-5 sm:h-5" />
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Sesiones Activas</h2>
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="space-y-4">
+        <div className="p-4 sm:p-6">
+          <div className="space-y-3 sm:space-y-4">
             {activeSessions?.map((session) => (
-              <div key={session?.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-                    <Icon name="Monitor" size={20} className="text-muted-foreground" />
+              <div key={session?.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border border-border rounded-lg space-y-2 sm:space-y-0">
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Icon name="Monitor" size={16} className="text-muted-foreground sm:w-5 sm:h-5" />
                   </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h4 className="text-sm font-medium text-foreground">{session?.device}</h4>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col xs:flex-row xs:items-center xs:space-x-2 space-y-1 xs:space-y-0">
+                      <h4 className="text-sm font-medium text-foreground break-words">{session?.device}</h4>
                       {session?.isCurrent && (
-                        <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded-full">
+                        <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded-full whitespace-nowrap self-start">
                           Actual
                         </span>
                       )}
@@ -355,13 +359,14 @@ const SecuritySettings = () => {
                     <p className="text-xs text-muted-foreground">IP: {session?.ipAddress}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground mb-2">{session?.lastActive}</p>
+                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between sm:justify-end sm:flex-col sm:items-end space-y-1 xs:space-y-0 xs:space-x-2 sm:space-x-0 sm:space-y-2">
+                  <p className="text-xs text-muted-foreground whitespace-nowrap">{session?.lastActive}</p>
                   {!session?.isCurrent && (
                     <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => handleTerminateSession(session?.id)}
+                      className="w-full xs:w-auto sm:w-full"
                     >
                       Terminar
                     </Button>
@@ -372,30 +377,31 @@ const SecuritySettings = () => {
           </div>
         </div>
       </div>
+
       {/* Security Events */}
       <div className="bg-card rounded-lg border border-border shadow-subtle">
-        <div className="p-6 border-b border-border">
+        <div className="p-4 sm:p-6 border-b border-border">
           <div className="flex items-center space-x-3">
-            <Icon name="Activity" size={20} className="text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Actividad de Seguridad</h2>
+            <Icon name="Activity" size={18} className="text-primary sm:w-5 sm:h-5" />
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Actividad de Seguridad</h2>
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="space-y-3">
+        <div className="p-4 sm:p-6">
+          <div className="space-y-2 sm:space-y-3">
             {securityEvents?.map((event) => (
-              <div key={event?.id} className="flex items-center space-x-4 p-3 hover:bg-muted rounded-lg transition-colors">
+              <div key={event?.id} className="flex items-center space-x-3 sm:space-x-4 p-2 sm:p-3 hover:bg-muted rounded-lg transition-colors">
                 <Icon 
                   name={getEventIcon(event?.type)} 
-                  size={16} 
-                  className={getEventColor(event?.status)} 
+                  size={14} 
+                  className={`${getEventColor(event?.status)} flex-shrink-0 sm:w-4 sm:h-4`}
                 />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{event?.description}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground break-words">{event?.description}</p>
                   <p className="text-xs text-muted-foreground">{event?.location}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">{event?.timestamp}</p>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xs text-muted-foreground whitespace-nowrap">{event?.timestamp}</p>
                 </div>
               </div>
             ))}

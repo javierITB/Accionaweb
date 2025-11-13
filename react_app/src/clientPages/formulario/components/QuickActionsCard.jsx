@@ -17,6 +17,7 @@ const FormPreview = ({ formData }) => {
   const cargo = sessionStorage.getItem("cargo");
   const mail = sessionStorage.getItem("email");
   const token = sessionStorage.getItem("token");
+  
   useEffect(() => {
     const fetchForm = async () => {
       try {
@@ -332,7 +333,7 @@ const FormPreview = ({ formData }) => {
   const renderQuestion = (question, index, showNumber = true, parentPath = '') => {
     const questionPath = parentPath ? `${parentPath}.${question.id}` : question.id;
     const questionTitle = question.title || `Pregunta ${index + 1}`;
-    const baseInputClass = 'w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-black text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all';
+    const baseInputClass = 'w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-md bg-white text-black text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all';
     const value = answers[question.id] || '';
     const error = errors[question.id];
     const isTouched = touched[question.id];
@@ -503,19 +504,19 @@ const FormPreview = ({ formData }) => {
 
                 return (
                   <div key={idx} className="space-y-2">
-                    <label className="flex items-center space-x-3 cursor-pointer">
+                    <label className="flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50">
                       <input
                         type="radio"
                         name={questionPath}
                         value={optionValue}
                         checked={isChecked}
                         onChange={(e) => handleRadioChange(question.id, getQuestionTitle(question), e.target.value)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                        className="h-5 w-5 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-base text-black">{optionText}</span>
+                      <span className="text-base text-black flex-1">{optionText}</span>
                     </label>
                     {shouldShowSubsection && (
-                      <div className="ml-6 space-y-4 border-l-2 border-gray-200 pl-4">
+                      <div className="ml-4 sm:ml-6 space-y-4 border-l-2 border-gray-200 pl-3 sm:pl-4">
                         {option.subformQuestions.map((subQuestion, subIndex) =>
                           renderQuestion(subQuestion, subIndex, false, `${questionPath}-${optionValue}`)
                         )}
@@ -544,17 +545,17 @@ const FormPreview = ({ formData }) => {
 
                 return (
                   <div key={idx} className="space-y-2">
-                    <label className="flex items-center space-x-3 cursor-pointer">
+                    <label className="flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50">
                       <input
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => handleCheckboxChange(question.id, getQuestionTitle(question), optionText)}
-                        className="h-4 w-4 rounded-full border-1 border-black-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2"
+                        className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2"
                       />
-                      <span className="text-base text-black">{optionText}</span>
+                      <span className="text-base text-black flex-1">{optionText}</span>
                     </label>
                     {shouldShowSubsection && (
-                      <div className="ml-6 space-y-4 border-l-2 border-gray-200 pl-4">
+                      <div className="ml-4 sm:ml-6 space-y-4 border-l-2 border-gray-200 pl-3 sm:pl-4">
                         {option.subformQuestions.map((subQuestion, subIndex) =>
                           renderQuestion(subQuestion, subIndex, false, `${questionPath}-${optionText}`)
                         )}
@@ -576,12 +577,12 @@ const FormPreview = ({ formData }) => {
 
     return (
       <div key={question?.id} className="space-y-4">
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
           <div className="mb-4">
             <div className="flex items-start space-x-3">
               {showNumber && (
                 <div
-                  className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                  className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm"
                   style={{
                     backgroundColor: formData?.primaryColor || '#3B82F6',
                   }}
@@ -590,8 +591,8 @@ const FormPreview = ({ formData }) => {
                 </div>
               )}
 
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-black mb-1">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base sm:text-lg font-semibold text-black mb-1 break-words">
                   {questionTitle}
                   {question?.required && (
                     <span className="text-red-600 ml-1">*</span>
@@ -599,7 +600,7 @@ const FormPreview = ({ formData }) => {
                 </h3>
 
                 {question?.description && (
-                  <p className="text-gray-600 text-base">
+                  <p className="text-gray-600 text-sm sm:text-base break-words">
                     {question?.description}
                   </p>
                 )}
@@ -607,7 +608,7 @@ const FormPreview = ({ formData }) => {
             </div>
           </div>
 
-          <div className={showNumber ? "ml-11" : ""}>
+          <div className={showNumber ? "ml-0 sm:ml-11" : ""}>
             {renderInput()}
           </div>
         </div>
@@ -683,9 +684,6 @@ const FormPreview = ({ formData }) => {
       console.log('Total de adjuntos procesados:', adjuntos.length);
       console.log('Adjuntos:', adjuntos);
 
-      console.log('Total de adjuntos procesados:', adjuntos.length);
-      console.log('Adjuntos:', adjuntos);
-
       const cleanAnswers = Object.fromEntries(
         Object.entries(processedAnswers).filter(([_, value]) =>
           value !== '' &&
@@ -732,14 +730,14 @@ const FormPreview = ({ formData }) => {
 
   if (!formData?.title && formData?.questions?.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Icon name="Eye" size={24} className="text-gray-400" />
+      <div className="text-center py-8 sm:py-12">
+        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Icon name="Eye" size={20} className="text-gray-400 sm:w-6 sm:h-6" />
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
           Formulario no disponible
         </h3>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm sm:text-base">
           Parece que este formulario no existe o fue eliminado, pruebe a responder algun otro
         </p>
       </div>
@@ -747,44 +745,44 @@ const FormPreview = ({ formData }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-1">
         <div
-          className="rounded-lg p-6 min-h-96"
+          className="rounded-lg p-4 sm:p-6 min-h-96"
           style={{
             backgroundColor: formData?.secondaryColor || '#F3F4F6',
           }}
         >
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-black mb-2">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-black mb-2 break-words">
               {formData?.title || 'Título del Formulario'}
             </h1>
 
-            <div className="flex items-center justify-center space-x-6 text-sm text-gray-600 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center space-y-2 sm:space-y-0 sm:space-x-6 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
               {formData?.category && (
-                <div className="flex items-center space-x-1">
-                  <Icon name="Tag" size={14} />
+                <div className="flex items-center justify-center sm:justify-start space-x-1">
+                  <Icon name="Tag" size={12} className="sm:w-3.5 sm:h-3.5" />
                   <span className="capitalize">{formData?.category}</span>
                 </div>
               )}
 
               {formData?.responseTime && (
-                <div className="flex items-center space-x-1">
-                  <Icon name="Clock" size={14} />
+                <div className="flex items-center justify-center sm:justify-start space-x-1">
+                  <Icon name="Clock" size={12} className="sm:w-3.5 sm:h-3.5" />
                   <span>{formData?.responseTime} minutos</span>
                 </div>
               )}
 
               {formData?.author && (
-                <div className="flex items-center space-x-1">
-                  <Icon name="User" size={14} />
+                <div className="flex items-center justify-center sm:justify-start space-x-1">
+                  <Icon name="User" size={12} className="sm:w-3.5 sm:h-3.5" />
                   <span>{formData?.author}</span>
                 </div>
               )}
             </div>
 
             {formData?.questions?.length > 0 && (
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm sm:text-base">
                 {formData?.questions?.length} pregunta
                 {formData?.questions?.length !== 1 ? 's' : ''} •{' '}
                 {formData?.questions?.filter((q) => q?.required)?.length} obligatoria
@@ -793,17 +791,18 @@ const FormPreview = ({ formData }) => {
             )}
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {formData?.questions?.map((question, index) =>
               renderQuestion(question, index, true)
             )}
 
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+            {/* Respaldo de información */}
+            <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
               <div className="mb-4">
                 <div className="flex items-start space-x-3">
                   {formData?.questions?.length && (
                     <div
-                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                      className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm"
                       style={{
                         backgroundColor: formData?.primaryColor || '#3B82F6',
                       }}
@@ -812,38 +811,39 @@ const FormPreview = ({ formData }) => {
                     </div>
                   )}
 
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-black mb-1">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base sm:text-lg font-semibold text-black mb-1">
                       Respaldo de información
                     </h3>
 
-                    <p className="text-gray-600 text-base">
+                    <p className="text-gray-600 text-sm sm:text-base">
                       mail de envio de respaldo de respuestas (opcional)
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className={"ml-11"}>
+              <div className={"ml-0 sm:ml-11"}>
                 <input
                   type="email"
                   placeholder="Escribe tu mail aquí (opcional)..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-black text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-md bg-white text-black text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                   value={respaldo}
                   onChange={(e) => setRespaldo(e.target.value)}
                 />
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500">
+            {/* Botones de acción - MEJORADOS PARA MÓVIL */}
+            <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                <div className="text-xs sm:text-sm text-gray-500 text-center sm:text-left">
                   * Campos obligatorios
                 </div>
 
-                <div className="flex items-center space-x-3">
+                <div className="flex flex-col xs:flex-row items-stretch xs:items-center space-y-2 xs:space-y-0 xs:space-x-3">
                   <button
-                    className="px-6 py-3 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="px-4 sm:px-6 py-3 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition-colors text-sm sm:text-base"
                     onClick={() => {
                       setAnswers({});
                       setRespaldo("");
@@ -860,7 +860,7 @@ const FormPreview = ({ formData }) => {
                     style={{
                       backgroundColor: formData?.primaryColor || '#3B82F6',
                     }}
-                    className="px-6 py-3 rounded-md font-medium text-white hover:opacity-90 transition-opacity"
+                    className="px-4 sm:px-6 py-3 rounded-md font-medium text-white hover:opacity-90 transition-opacity text-sm sm:text-base"
                   >
                     Enviar Formulario
                   </button>

@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// Ajuste de rutas: Asumiendo que el componente se encuentra a 1 o 2 niveles de la carpeta 'components'.
-// Si ProfileSection está en src/pages/profile/ProfileSection.jsx, y AppIcon está en src/components/AppIcon.jsx
-// La ruta correcta podría ser:
 import Icon from '../../components/AppIcon'; 
 import Image from '../../components/AppImage'; 
 import Button from '../../components/ui/Button'; 
@@ -11,10 +8,8 @@ import Select from '../../components/ui/Select';
 // Función para obtener el email de sesión de sessionStorage
 const getSessionEmail = () => {
   try {
-    // Asumo que la sesión se guarda en una clave 'userSession' y contiene el 'email'
     const sessionData = sessionStorage.getItem('email');
     if (sessionData) {
-      // Se necesita la estructura: { email: 'user@domain.com', ... }
       return sessionData || null;
     }
   } catch (e) {
@@ -23,26 +18,23 @@ const getSessionEmail = () => {
   return null;
 };
 
-// Obtenemos el email, si no existe, usamos el mock de administrador como fallback.
 const MOCK_SESSION_EMAIL = getSessionEmail() || "mail@mail.com"; 
 
 const ProfileSection = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Estado para guardar el ID de MongoDB (necesario para la actualización PUT)
   const [userId, setUserId] = useState(null); 
   
   const [profileData, setProfileData] = useState({
     firstName: "",
     lastName: "",
     email: "",
-    position: "", // Mapeado a 'cargo'
-    employeeId: "", // Mapeado a '_id'
-    department: "", // Mapeado a 'empresa'
-    profileImage: "https://placehold.co/128x128/3B82F6/FFFFFF?text=A", // Placeholder por defecto
-    rol: 'user', // Asumo valor por defecto
-    estado: 'activo' // Asumo valor por defecto
+    position: "",
+    employeeId: "",
+    department: "",
+    profileImage: "https://placehold.co/128x128/3B82F6/FFFFFF?text=A",
+    rol: 'user',
+    estado: 'activo'
   });
 
   const [formData, setFormData] = useState(profileData);
@@ -54,11 +46,9 @@ const ProfileSection = () => {
     { value: 'Ventas', label: 'Ventas' },
     { value: 'Operaciones', label: 'Operaciones' },
     { value: 'Tecnología', label: 'Tecnología' },
-    // **Importante:** Si 'empresa' es Acciona Centro de Negocios Spa., debe estar aquí:
     { value: 'Acciona Centro de Negocios Spa.', label: 'Acciona Centro de Negocios Spa.' },
   ];
 
-  // --- Lógica de Carga Inicial ---
   useEffect(() => {
     const fetchUserProfile = async () => {
       const userEmail = getSessionEmail() || MOCK_SESSION_EMAIL;
@@ -71,7 +61,6 @@ const ProfileSection = () => {
       
       try {
         setIsLoading(true);
-        // Usamos el email obtenido dinámicamente o el mock
         const response = await fetch(`https://accionaapi.vercel.app/api/auth/full/${userEmail}`);
 
         if (!response.ok) {
@@ -80,15 +69,14 @@ const ProfileSection = () => {
 
         const user = await response.json();
         
-        // Mapeo basado en la estructura de tu objeto de usuario
         const initialData = {
           firstName: user.nombre || '',
           lastName: user.apellido || '',
           email: user.mail || '',
-          position: user.cargo || user.rol || '', // 'position' será 'Empleado'
+          position: user.cargo || user.rol || '',
           employeeId: user._id || '', 
-          department: user.empresa || '', // 'department' será 'Acciona Centro de Negocios Spa.'
-          profileImage: `https://placehold.co/128x128/3B82F6/FFFFFF?text=${user.nombre[0].toUpperCase()}`,
+          department: user.empresa || '',
+          profileImage: `https://placehold.co/128x128/3B82F6/FFFFFF?text=${user.nombre?.[0]?.toUpperCase() || 'A'}`,
           rol: user.rol || 'user',
           estado: user.estado || 'activo'
         };
@@ -100,7 +88,6 @@ const ProfileSection = () => {
       } catch (error) {
         console.error("Error al cargar perfil:", error);
         
-        // Carga de datos de ejemplo si falla la API (usando la estructura real)
         const fallbackData = {
           firstName: "",
           lastName: "",
@@ -120,9 +107,7 @@ const ProfileSection = () => {
     };
 
     fetchUserProfile();
-  }, []); // Se ejecuta una sola vez al montar
-
-  // --- Lógica de Interacción del Formulario ---
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -165,12 +150,11 @@ const ProfileSection = () => {
     
     setIsLoading(true);
 
-    // Mapeo inverso de campos de vuelta a la estructura de la API (PUT /users/:id)
     const updateBody = {
       nombre: formData.firstName,
       apellido: formData.lastName,
       mail: formData.email,
-      empresa: formData.department, // Mapeado a 'empresa'
+      empresa: formData.department,
       cargo: formData.position,
       rol: profileData.rol, 
       estado: profileData.estado 
@@ -181,7 +165,6 @@ const ProfileSection = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          // Aquí iría el token de autenticación: 'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(updateBody)
       });
@@ -191,7 +174,6 @@ const ProfileSection = () => {
         throw new Error(errorData.error || 'Error al actualizar el perfil.');
       }
       
-      // La API respondió OK, actualizamos los datos locales y salimos de edición
       setProfileData({ ...formData, rol: profileData.rol, estado: profileData.estado });
       setIsEditing(false);
       alert('Perfil actualizado exitosamente.');
@@ -226,89 +208,102 @@ const ProfileSection = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-card rounded-lg border border-border shadow-subtle p-12 text-center text-muted-foreground">
+      <div className="bg-card rounded-lg border border-border shadow-subtle p-8 sm:p-12 text-center text-muted-foreground">
         <Icon name="Loader" size={24} className="animate-spin mx-auto mb-3 text-primary" />
-        Cargando datos del perfil...
+        <span className="text-sm sm:text-base">Cargando datos del perfil...</span>
       </div>
     );
   }
 
   return (
-    <div className="bg-card rounded-lg border border-border shadow-subtle">
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center justify-between">
+    <div className="bg-card rounded-lg border border-border shadow-subtle w-full">
+      {/* Header - RESPONSIVE */}
+      <div className="p-4 sm:p-6 border-b border-border">
+        <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between space-y-3 xs:space-y-0">
           <div className="flex items-center space-x-3">
-            <Icon name="User" size={20} className="text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Información Personal</h2>
+            <Icon name="User" size={18} className="text-primary sm:w-5 sm:h-5" />
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Información Personal</h2>
           </div>
-          {!isEditing ?
-          <Button
-            variant="outline"
-            onClick={() => setIsEditing(true)}
-            iconName="Edit"
-            iconPosition="left">
-
+          
+          {/* Botones de acción - MEJORADOS PARA MÓVIL */}
+          {!isEditing ? (
+            <Button
+              variant="outline"
+              onClick={() => setIsEditing(true)}
+              iconName="Edit"
+              iconPosition="left"
+              size="sm"
+              className="w-full xs:w-auto justify-center"
+            >
               Editar Perfil
-            </Button> :
-
-          <div className="flex items-center space-x-2">
+            </Button>
+          ) : (
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center space-y-2 xs:space-y-0 xs:space-x-2 w-full xs:w-auto">
               <Button
-              variant="ghost"
-              onClick={handleCancel}
-              disabled={isLoading}>
-
+                variant="ghost"
+                onClick={handleCancel}
+                disabled={isLoading}
+                size="sm"
+                className="w-full xs:w-auto justify-center"
+              >
                 Cancelar
               </Button>
               <Button
-              variant="default"
-              onClick={handleSave}
-              iconName="Save"
-              iconPosition="left"
-              disabled={isLoading}>
-
+                variant="default"
+                onClick={handleSave}
+                iconName="Save"
+                iconPosition="left"
+                disabled={isLoading}
+                size="sm"
+                className="w-full xs:w-auto justify-center"
+              >
                 {isLoading ? 'Guardando...' : 'Guardar'}
               </Button>
             </div>
-          }
+          )}
         </div>
       </div>
-      <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profile Image Section */}
-          <div className="lg:col-span-1">
+
+      {/* Content - RESPONSIVE */}
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Profile Image Section - MEJORADO PARA MÓVIL */}
+          <div className="lg:w-1/3">
             <div className="flex flex-col items-center space-y-4">
               <div className="relative">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-border">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-border">
                   <Image
                     src={formData?.profileImage}
                     alt={`Foto de perfil de ${formData.firstName}`}
-                    className="w-full h-full object-cover" />
-
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                {isEditing &&
-                <label className="absolute bottom-0 right-0 w-10 h-10 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
-                    <Icon name="Camera" size={16} color="white" />
+                {isEditing && (
+                  <label className="absolute bottom-0 right-0 w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
+                    <Icon name="Camera" size={14} color="white" className="sm:w-4 sm:h-4" />
                     <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden" />
-
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
                   </label>
-                }
+                )}
               </div>
               
               <div className="text-center">
-                <h3 className="text-lg font-medium text-foreground">
+                <h3 className="text-base sm:text-lg font-medium text-foreground break-words">
                   {formData?.firstName} {formData?.lastName}
                 </h3>
                 <p className="text-sm text-muted-foreground">{formData?.position}</p>
                 <p className="text-xs text-muted-foreground mt-1">ID: {formData?.employeeId}</p>
-                <p className="text-sm text-muted-foreground mt-1 font-semibold">{formData?.department}</p>
+                <p className="text-sm text-muted-foreground mt-1 font-semibold break-words">
+                  {formData?.department}
+                </p>
               </div>
 
-              {isEditing &&
-              <div className="text-center">
+              {isEditing && (
+                <div className="text-center">
                   <p className="text-xs text-muted-foreground">
                     Formatos soportados: JPG, PNG, GIF
                   </p>
@@ -316,34 +311,36 @@ const ProfileSection = () => {
                     Tamaño máximo: 5MB
                   </p>
                 </div>
-              }
+              )}
             </div>
           </div>
 
-          {/* Form Fields */}
-          <div className="lg:col-span-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Nombre"
-                type="text"
-                value={formData?.firstName}
-                onChange={(e) => handleInputChange('firstName', e?.target?.value)}
-                disabled={!isEditing}
-                error={errors?.firstName}
-                required
-                placeholder="Ingrese su nombre" />
+          {/* Form Fields - MEJORADO PARA MÓVIL */}
+          <div className="lg:w-2/3">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <Input
+                  label="Nombre"
+                  type="text"
+                  value={formData?.firstName}
+                  onChange={(e) => handleInputChange('firstName', e?.target?.value)}
+                  disabled={!isEditing}
+                  error={errors?.firstName}
+                  required
+                  placeholder="Ingrese su nombre"
+                />
 
-
-              <Input
-                label="Apellidos"
-                type="text"
-                value={formData?.lastName}
-                onChange={(e) => handleInputChange('lastName', e?.target?.value)}
-                disabled={!isEditing}
-                error={errors?.lastName}
-                required
-                placeholder="Ingrese sus apellidos" />
-
+                <Input
+                  label="Apellidos"
+                  type="text"
+                  value={formData?.lastName}
+                  onChange={(e) => handleInputChange('lastName', e?.target?.value)}
+                  disabled={!isEditing}
+                  error={errors?.lastName}
+                  required
+                  placeholder="Ingrese sus apellidos"
+                />
+              </div>
 
               <Input
                 label="Correo Electrónico"
@@ -354,72 +351,74 @@ const ProfileSection = () => {
                 error={errors?.email}
                 required
                 placeholder="correo@empresa.com"
-                className="md:col-span-2" />
+              />
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <Input
+                  label="Cargo"
+                  type="text"
+                  value={formData?.position}
+                  onChange={(e) => handleInputChange('position', e?.target?.value)}
+                  disabled
+                  placeholder="Cargo actual"
+                />
 
-              <Input
-                label="Cargo"
-                type="text"
-                value={formData?.position}
-                onChange={(e) => handleInputChange('position', e?.target?.value)}
-                disabled
-                placeholder="Cargo actual" />
-
-
-              <Input
-                label="Empresa / Departamento"
-                options={departmentOptions}
-                value={formData?.department}
-                disabled
-                placeholder="Seleccionar empresa/departamento"
-                className="md:col-span-2" />
-
+                <Input
+                  label="Empresa / Departamento"
+                  options={departmentOptions}
+                  value={formData?.department}
+                  disabled
+                  placeholder="Seleccionar empresa/departamento"
+                />
+              </div>
             </div>
 
-            {/* Department Assignments - Usamos los datos cargados */}
-            <div className="mt-6">
+            {/* Department Assignments - RESPONSIVE */}
+            <div className="mt-4 sm:mt-6">
               <h4 className="text-sm font-medium text-foreground mb-3">Asignaciones de Cuenta</h4>
               <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-muted rounded-lg space-y-2 sm:space-y-0">
                   <div className="flex items-center space-x-3">
-                    <Icon name="Building2" size={16} className="text-primary" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{profileData.department || 'Sin Empresa Asignada'}</p>
-                      <p className="text-xs text-muted-foreground">{profileData.position || 'N/A'} - {profileData.rol || 'Cliente'}</p>
+                    <Icon name="Building2" size={16} className="text-primary flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground break-words">
+                        {profileData.department || 'Sin Empresa Asignada'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {profileData.position || 'N/A'} - {profileData.rol || 'Cliente'}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded-full">
+                  <div className="flex items-center space-x-2 self-start sm:self-auto">
+                    <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded-full whitespace-nowrap">
                       Principal
                     </span>
                   </div>
                 </div>
 
-                {/* El bloque secundario se puede mantener como ejemplo mock si no tienes más datos de asignación */}
                 {profileData.rol === 'admin' && (
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-muted rounded-lg space-y-2 sm:space-y-0">
                     <div className="flex items-center space-x-3">
-                      <Icon name="Lock" size={16} className="text-red-600" />
-                      <div>
+                      <Icon name="Lock" size={16} className="text-red-600 flex-shrink-0" />
+                      <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground">Rol de Administración</p>
                         <p className="text-xs text-muted-foreground">Acceso de superusuario (Global)</p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                    <div className="flex items-center space-x-2 self-start sm:self-auto">
+                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full whitespace-nowrap">
                         {profileData.rol.toUpperCase()}
                       </span>
                     </div>
                   </div>
                 )}
-
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 };
 
 export default ProfileSection;

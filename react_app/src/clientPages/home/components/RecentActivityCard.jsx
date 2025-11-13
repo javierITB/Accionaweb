@@ -183,8 +183,6 @@ const RequestTracking = () => {
     }
   });
 
-
-
   const handleViewDetails = (request) => {
     setSelectedRequest(request);
     setShowRequestDetails(true);
@@ -223,20 +221,22 @@ const RequestTracking = () => {
   ];
 
   return (
-    <div className="bg-card rounded-xl shadow-brand border border-border mt-8">
-      <div className="p-6 border-b border-border">
+    <div className="bg-card rounded-xl shadow-brand border border-border mt-6 lg:mt-8 w-full">
+      {/* Header - Responsive */}
+      <div className="p-4 sm:p-6 border-b border-border">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">Actividad Reciente</h2>
-            <p className="text-sm text-muted-foreground mt-1">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg sm:text-xl font-semibold text-foreground">Actividad Reciente</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Últimas respuestas a forms
             </p>
           </div>
-          <Icon name="Activity" size={24} className="text-accent" />
+          <Icon name="Activity" size={20} className="text-accent flex-shrink-0 ml-4 sm:w-6 sm:h-6" />
         </div>
       </div>
+      
       <main className={``}>
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
 
           {/* Filters */}
           <FilterPanel
@@ -247,37 +247,39 @@ const RequestTracking = () => {
             onToggle={() => setShowFilters(!showFilters)}
           />
 
-          {/* Controls */}
-          <div className="flex items-center justify-between bg-card border border-border rounded-lg p-4">
-            <div className="flex items-center space-x-4">
+          {/* Controls - MEJORADO PARA MÓVIL */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-card border border-border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-0">
+            <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-4">
+              {/* View Mode Toggle */}
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">Vista:</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
                 <div className="flex items-center border border-border rounded-lg">
                   <Button
                     variant={viewMode === 'grid' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setViewMode('grid')}
                     iconName="Grid3X3"
-                    iconSize={16}
-                    className="rounded-r-none"
+                    iconSize={14}
+                    className="rounded-r-none px-2 sm:px-3"
                   />
                   <Button
                     variant={viewMode === 'list' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setViewMode('list')}
                     iconName="List"
-                    iconSize={16}
-                    className="rounded-l-none border-l"
+                    iconSize={14}
+                    className="rounded-l-none border-l px-2 sm:px-3"
                   />
                 </div>
               </div>
 
+              {/* Sort Controls */}
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">Ordenar por:</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Ordenar por:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e?.target?.value)}
-                  className="px-3 py-1 border border-border rounded-md text-sm bg-input text-foreground"
+                  className="px-2 sm:px-3 py-1 border border-border rounded-md text-xs sm:text-sm bg-input text-foreground min-w-0"
                 >
                   {sortOptions?.map(option => (
                     <option key={option?.value} value={option?.value}>
@@ -290,21 +292,23 @@ const RequestTracking = () => {
                   size="icon"
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   iconName={sortOrder === 'asc' ? "ArrowUp" : "ArrowDown"}
-                  iconSize={16}
+                  iconSize={14}
+                  className="w-8 h-8 sm:w-9 sm:h-9"
                 />
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Icon name="FileText" size={16} />
-              <span>{filteredRequests?.length} solicitudes encontradas</span>
+            {/* Results Count */}
+            <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground justify-center sm:justify-end">
+              <Icon name="FileText" size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="whitespace-nowrap">{filteredRequests?.length} solicitudes encontradas</span>
             </div>
           </div>
 
-          {/* Requests List - CORREGIDO */}
+          {/* Requests List - RESPONSIVE GRID */}
           <div className={
             viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+              ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6'
               : 'space-y-4'
           }>
             {filteredRequests?.length > 0 ? (
@@ -314,14 +318,14 @@ const RequestTracking = () => {
                   request={request}
                   onViewDetails={handleViewDetails}
                   onSendMessage={handleSendMessage}
-                  viewMode={viewMode} // Pasar el viewMode al componente
+                  viewMode={viewMode}
                 />
               ))
             ) : (
-              <div className="text-center py-12 bg-card border border-border rounded-lg col-span-full">
-                <Icon name="Search" size={48} className="mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
-                <p className="text-muted-foreground mb-4">
+              <div className="text-center py-8 sm:py-12 bg-card border border-border rounded-lg col-span-full">
+                <Icon name="Search" size={32} className="mx-auto mb-3 sm:mb-4 text-muted-foreground opacity-50 sm:w-12 sm:h-12" />
+                <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-4 px-4">
                   Intenta ajustar los filtros o rellenar un primer formulario
                 </p>
               </div>
@@ -330,20 +334,21 @@ const RequestTracking = () => {
 
           {/* Timeline View */}
           {showTimeline && selectedRequest && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
               <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
+                <div className="sticky top-0 bg-card border-b border-border p-4 sm:p-6 z-10">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-foreground">Cronología de la Solicitud</h2>
-                      <p className="text-sm text-muted-foreground">{selectedRequest?.title}</p>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-lg sm:text-xl font-semibold text-foreground">Cronología de la Solicitud</h2>
+                      <p className="text-sm text-muted-foreground truncate">{selectedRequest?.title}</p>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowTimeline(false)}
                       iconName="X"
-                      iconSize={20}
+                      iconSize={18}
+                      className="flex-shrink-0 ml-4"
                     />
                   </div>
                 </div>
@@ -352,6 +357,7 @@ const RequestTracking = () => {
           )}
         </div>
       </main>
+      
       {/* Modals */}
       <MessageModal
         isOpen={showMessageModal}
