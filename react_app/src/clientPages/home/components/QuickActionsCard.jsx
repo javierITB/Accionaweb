@@ -35,6 +35,14 @@ const QuickActionsCard = () => {
       icon: 'FileText',
       color: 'bg-purple-500',
       path: '/otras'
+    },
+    {
+      id: 4,
+      title: 'Envío de documentos',
+      description: '',
+      icon: 'FileText',
+      color: 'bg-blue-500',
+      path: '/forms?id=6902379d46e3a2e6e0d8a57f'
     }
   ];
 
