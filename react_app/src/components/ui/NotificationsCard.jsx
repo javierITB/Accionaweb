@@ -196,7 +196,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
   const unreadCount = notifications?.filter(n => !n?.isRead)?.length;
 
   return (
-    <div className="bg-card rounded-xl m-4 shadow-brand border border-border">
+    <div className="bg-card z-50 rounded-xl m-4 shadow-brand border border-border">
       <div className="space-y-4 max-h-96 overflow-y-auto">
         {notifications && notifications.length > 0 ? (
           notifications.map((notification) => (
