@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 // 💡 Ruta ajustada: Intenta subir dos niveles para encontrar AppIcon
-import Icon from '../AppIcon'; 
+import Icon from '../AppIcon';
 // 💡 Ruta ajustada: Asume que Button es un componente hermano de la carpeta 'ui' o sube un nivel.
-import Button from './Button'; 
+import Button from './Button';
 // 💡 Ruta ajustada: Asume que NotificationsCard es un componente hermano.
-import NotificationsCard from '../../../components/ui/NotificationsCard'; 
+import NotificationsCard from '../../../components/ui/NotificationsCard';
 
 // 💡 Constante para usar la ruta del logo en JSX
-const logoPath = "/logo2.png"; 
+const logoPath = "/logo2.png";
 
 const Header = ({ className = '' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,7 +20,7 @@ const Header = ({ className = '' }) => {
   const userMail = sessionStorage.getItem("email");
 
   // Refs para detectar clics fuera
-  const menuRef = useRef(null); 
+  const menuRef = useRef(null);
   const notiRef = useRef(null);
   const userMenuRef = useRef(null);
 
@@ -58,7 +58,7 @@ const Header = ({ className = '' }) => {
   // Effect para detectar clics fuera de los menús
   useEffect(() => {
     const handleClickOutside = (event) => {
-      
+
       // Cerrar Notificaciones si se hace clic fuera
       if (notiRef.current && !notiRef.current.contains(event.target)) {
         setIsNotiOpen(false);
@@ -68,11 +68,11 @@ const Header = ({ className = '' }) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
-      
+
       // ✅ CORRECCIÓN PRINCIPAL: Mantenemos la lógica de cierre del menú "Más" de desktop 
       // (que usa isMenuOpen) solo si no estamos en móvil, para que no interfiera.
       if (menuRef.current && !menuRef.current.contains(event.target) && window.innerWidth >= 1024) {
-          setIsMenuOpen(false);
+        setIsMenuOpen(false);
       }
     };
 
@@ -85,7 +85,7 @@ const Header = ({ className = '' }) => {
   const handleNavigation = (path) => {
     window.location.href = path;
     // 💡 Asegurar cierre inmediato.
-    setIsMenuOpen(false); 
+    setIsMenuOpen(false);
     setIsUserMenuOpen(false);
   };
 
@@ -116,7 +116,7 @@ const Header = ({ className = '' }) => {
     <header className={`fixed top-0 left-0 right-0 bg-card border-b border-border shadow-brand z-50 ${className}`}>
       <div className="flex items-center justify-between h-16 lg:h-20 px-4 sm:px-6 lg:px-8 bg-warning">
         {/* Logo Section - AHORA CLICKEABLE */}
-        <div 
+        <div
           className="flex items-center space-x-3 cursor-pointer group"
           onClick={handleLogoClick}
           role="button"
@@ -236,17 +236,34 @@ const Header = ({ className = '' }) => {
             )}
 
             {/* User Avatar with Dropdown */}
-            <div className="relative" ref={userMenuRef}>
+            {user && (
+
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => { window.location.href = "/profile" }}
+                  className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  {user ? (
+                    <span className="text-sm font-semibold text-white">
+                      {user.charAt(0).toUpperCase()}
+                    </span>
+                  ) : (
+                    <Icon name="User" size={16} className="text-white" />
+                  )}
+                </button>
+              </div>
+            )
+            }
+            < div className="relative" ref={userMenuRef}>
               <button
-                onClick={() => {window.location.href = "/profile"}}
+                onClick={() => { user ? handleLogout() : window.location.href = "/login"  }}
                 className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+                title={user?"Cerrar sesión":"Log In"}
               >
                 {user ? (
-                  <span className="text-sm font-semibold text-white">
-                    {user.charAt(0).toUpperCase()}
-                  </span>
+                  <Icon name="LogOut" size={16} className="text-white" />
                 ) : (
-                  <Icon name="User" size={16} className="text-white" />
+                  <Icon name="LogIn" size={16} className="text-white" />
                 )}
               </button>
             </div>
@@ -265,35 +282,37 @@ const Header = ({ className = '' }) => {
       </div>
 
       {/* Mobile Navigation Menu */}
-      {isMenuOpen && (
-        <div className="lg:hidden bg-card border-b border-border shadow-brand animate-slide-down">
-          <div className="px-4 py-3 space-y-1">
-            {navigationItems?.map((item) => (
-              <button
-                key={item?.path}
-                onClick={() => handleNavigation(item?.path)}
-                className="flex items-center w-full px-4 py-3 text-left text-foreground hover:bg-muted rounded-lg transition-brand"
-              >
-                <Icon name={item?.icon} size={20} className="mr-3" />
-                <span className="font-medium">{item?.name}</span>
-              </button>
-            ))}
-            
-            {/* More items in mobile */}
-            {moreMenuItems?.map((item) => (
-              <button
-                key={item?.path}
-                onClick={() => handleNavigation(item?.path)}
-                className="flex items-center w-full px-4 py-3 text-left text-foreground hover:bg-muted rounded-lg transition-brand"
-              >
-                <Icon name={item?.icon} size={20} className="mr-3" />
-                <span className="font-medium">{item?.name}</span>
-              </button>
-            ))}
+      {
+        isMenuOpen && (
+          <div className="lg:hidden bg-card border-b border-border shadow-brand animate-slide-down">
+            <div className="px-4 py-3 space-y-1">
+              {navigationItems?.map((item) => (
+                <button
+                  key={item?.path}
+                  onClick={() => handleNavigation(item?.path)}
+                  className="flex items-center w-full px-4 py-3 text-left text-foreground hover:bg-muted rounded-lg transition-brand"
+                >
+                  <Icon name={item?.icon} size={20} className="mr-3" />
+                  <span className="font-medium">{item?.name}</span>
+                </button>
+              ))}
+
+              {/* More items in mobile */}
+              {moreMenuItems?.map((item) => (
+                <button
+                  key={item?.path}
+                  onClick={() => handleNavigation(item?.path)}
+                  className="flex items-center w-full px-4 py-3 text-left text-foreground hover:bg-muted rounded-lg transition-brand"
+                >
+                  <Icon name={item?.icon} size={20} className="mr-3" />
+                  <span className="font-medium">{item?.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-    </header>
+        )
+      }
+    </header >
   );
 };
 
