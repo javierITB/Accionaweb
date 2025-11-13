@@ -24,7 +24,7 @@ export default function ProtectedRoute({ children }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token, email, cargo }),
         });
-        if (cargo == "Admin"){
+        if (cargo == "Admin" || cargo == "admin"){
           setIsAuth(res.ok);
         } else {
           alert("Requiere elevacion de permisos...")
