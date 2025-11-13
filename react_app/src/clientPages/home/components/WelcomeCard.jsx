@@ -146,7 +146,7 @@ const WelcomeCard = ({ user }) => {
         
         {/* Logo de empresa - CORREGIDO: Siempre visible pero con tamaño responsive */}
         <div className="ml-4 flex-shrink-0">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center overflow-hidden">
             {companyLogo ? (
               <img 
                 src={companyLogo} 
