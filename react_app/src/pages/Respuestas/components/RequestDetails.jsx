@@ -15,10 +15,507 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [documentInfo, setDocumentInfo] = useState(null);
 
-  // ... (mantener todas las funciones existentes checkClientSignature, getDocumentInfo, etc.)
+  const checkClientSignature = async () => {
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.exists) {
+          setClientSignature(data.signature);
+        } else {
+          setClientSignature(null);
+        }
+      } else {
+        setClientSignature(null);
+      }
+    } catch (error) {
+      console.error('Error verificando firma del cliente:', error);
+      setClientSignature(null);
+    }
+  };
+
+  const getDocumentInfo = async (responseId) => {
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/generador/info-by-response/${responseId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDocumentInfo(data);
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error obteniendo información del documento:', error);
+      return null;
+    }
+  };
+
+  const refreshClientSignature = async () => {
+    await checkClientSignature();
+  };
+
+  useEffect(() => {
+    if (request?.correctedFile) {
+      setCorrectedFile({
+        name: request.correctedFile.fileName,
+        size: request.correctedFile.fileSize,
+        url: `https://accionaapi.vercel.app/api/respuestas/${request._id}/corrected-file`,
+        isServerFile: true
+      });
+    } else {
+      setCorrectedFile(null);
+    }
+
+    if (request?._id) {
+      checkClientSignature();
+      getDocumentInfo(request._id);
+    }
+  }, [request]);
+
+  const downloadPdfForPreview = async (url) => {
+    try {
+      setIsLoadingPreview(true);
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+
+      if (blob.type !== 'application/pdf') {
+        throw new Error('El archivo no es un PDF válido');
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
+      return blobUrl;
+    } catch (error) {
+      console.error('Error descargando PDF para vista previa:', error);
+      throw error;
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const cleanupPreviewUrl = (url) => {
+    if (url && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  useEffect(() => {
+    if (!isVisible || !request?._id) return;
+
+    // Verificar cambios en el request cada 5 segundos cuando está visible
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
+        if (response.ok) {
+          const updatedRequest = await response.json();
+
+          // Solo actualizar si el status cambió
+          if (updatedRequest.status !== request.status) {
+            if (onUpdate) {
+              onUpdate(updatedRequest);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error verificando actualización del request:', error);
+      }
+    }, 5000); // Verificar cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, [isVisible, request?._id, request?.status, onUpdate]);
+
+  useEffect(() => {
+    return () => {
+      if (previewDocument?.url && previewDocument?.type === 'pdf') {
+        cleanupPreviewUrl(previewDocument.url);
+      }
+    };
+  }, [previewDocument]);
 
   if (!isVisible || !request) return null;
 
+  const handlePreviewDocument = (documentUrl, documentType) => {
+    if (!documentUrl) {
+      alert('No hay documento disponible para vista previa');
+      return;
+    }
+
+    setPreviewDocument({
+      url: documentUrl,
+      type: documentType
+    });
+    setShowPreview(true);
+  };
+
+  const handlePreviewGenerated = async () => {
+    try {
+      setIsLoadingPreview(true);
+
+      const info = documentInfo || await getDocumentInfo(request._id);
+
+      if (!info || !info.IDdoc) {
+        alert('No hay documento generado disponible para vista previa');
+        return;
+      }
+
+      const documentUrl = `https://accionaapi.vercel.app/api/generador/download/${info.IDdoc}`;
+      const extension = info.tipo || 'docx';
+
+      handlePreviewDocument(documentUrl, extension);
+    } catch (error) {
+      console.error('Error en vista previa del documento generado:', error);
+      alert('Error al cargar la vista previa del documento generado: ' + error.message);
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const handlePreviewCorrected = async () => {
+    if (!correctedFile && !request?.correctedFile) {
+      alert('No hay documento corregido para vista previa');
+      return;
+    }
+
+    try {
+      let documentUrl;
+
+      if (correctedFile && correctedFile instanceof File) {
+        documentUrl = URL.createObjectURL(correctedFile);
+      }
+      else if (request?.status === 'aprobado' || request?.status === 'firmado') {
+        const pdfUrl = `https://accionaapi.vercel.app/api/respuestas/download-approved-pdf/${request._id}`;
+        documentUrl = await downloadPdfForPreview(pdfUrl);
+      }
+      else if (request?.correctedFile) {
+        alert('El documento corregido está en proceso de revisión. Una vez aprobado podrás ver la vista previa.');
+        return;
+      } else {
+        alert('No hay documento corregido disponible');
+        return;
+      }
+
+      handlePreviewDocument(documentUrl, 'pdf');
+
+    } catch (error) {
+      console.error('Error en vista previa de documento corregido:', error);
+      alert('Error al cargar la vista previa del documento corregido: ' + error.message);
+    }
+  };
+
+  const handlePreviewClientSignature = async () => {
+    if (!clientSignature) {
+      alert('No hay documento firmado para vista previa');
+      return;
+    }
+
+    try {
+      const pdfUrl = `https://accionaapi.vercel.app/api/respuestas/${request._id}/client-signature`;
+      const documentUrl = await downloadPdfForPreview(pdfUrl);
+      handlePreviewDocument(documentUrl, 'pdf');
+    } catch (error) {
+      console.error('Error en vista previa de firma del cliente:', error);
+      alert('Error al cargar la vista previa del documento firmado: ' + error.message);
+    }
+  };
+
+  const handlePreviewAdjunto = async (responseId, index) => {
+    try {
+      const adjunto = request.adjuntos[index];
+
+      if (adjunto.mimeType !== 'application/pdf') {
+        alert('La vista previa solo está disponible para archivos PDF');
+        return;
+      }
+
+      const pdfUrl = `https://accionaapi.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`;
+      const documentUrl = await downloadPdfForPreview(pdfUrl);
+      handlePreviewDocument(documentUrl, 'pdf');
+
+    } catch (error) {
+      console.error('Error abriendo vista previa del adjunto:', error);
+      alert('Error al abrir la vista previa del archivo: ' + error.message);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      setIsDownloading(true);
+
+      const info = documentInfo || await getDocumentInfo(request._id);
+
+      if (!info || !info.IDdoc) {
+        alert('No hay documento disponible para descargar');
+        return;
+      }
+
+      window.open(`https://accionaapi.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
+
+      if (onUpdate) {
+        const updatedRequest = {
+          ...request,
+          status: 'en_revision'
+        };
+        onUpdate(updatedRequest);
+      }
+
+    } catch (error) {
+      console.error('Error en descarga:', error);
+      alert('Error al descargar el documento');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadAdjunto = async (responseId, index) => {
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const adjunto = request.adjuntos[index];
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = adjunto.fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        alert('Error al descargar el archivo');
+      }
+    } catch (error) {
+      console.error('Error descargando adjunto:', error);
+      alert('Error al descargar el archivo');
+    }
+  };
+
+  const handleDownloadClientSignature = async (responseId) => {
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/client-signature`);
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = clientSignature.fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error descargando el documento firmado');
+      }
+    } catch (error) {
+      console.error('Error descargando firma del cliente:', error);
+      alert('Error descargando el documento firmado');
+    }
+  };
+
+  const handleDeleteClientSignature = async (responseId) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar el documento firmado por el cliente?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/client-signature`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setClientSignature(null);
+        alert('Documento firmado eliminado exitosamente');
+        if (onUpdate) {
+          const updatedResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
+          const updatedRequest = await updatedResponse.json();
+          onUpdate(updatedRequest);
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error eliminando documento firmado');
+      }
+    } catch (error) {
+      console.error('Error eliminando firma del cliente:', error);
+      alert('Error eliminando documento firmado');
+    }
+  };
+
+  const handleUploadCorrection = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.type === 'application/pdf') {
+        setCorrectedFile(file);
+      } else {
+        alert('Por favor, sube solo archivos PDF');
+        event.target.value = '';
+      }
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleRemoveCorrection = async () => {
+    // Primero verificar si existe documento firmado
+    try {
+      const signatureCheck = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      const signatureData = await signatureCheck.json();
+
+      const hasSignature = signatureData.exists;
+
+      let warningMessage = '¿Estás seguro de que quieres eliminar esta corrección y volver a revisión?';
+
+      if (hasSignature) {
+        warningMessage = 'ADVERTENCIA: Existe un documento firmado por el cliente. \n\nAl eliminar la corrección, el estado volverá a "en revisión", pero el documento firmado se mantendrá. Cuando vuelvas a subir una corrección, el estado pasará directamente a "firmado". \n\n¿Continuar?';
+      }
+
+      if (!confirm(warningMessage)) {
+        return;
+      }
+
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/remove-correction`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        if (onUpdate && result.updatedRequest) {
+          onUpdate(result.updatedRequest);
+        }
+        setCorrectedFile(null);
+
+        if (result.hasExistingSignature) {
+          alert('Corrección eliminada. El documento firmado se mantiene. Al subir nueva corrección, el estado pasará directamente a "firmado".');
+        } else {
+          alert('Corrección eliminada, formulario vuelve a estado "en revisión"');
+        }
+      } else {
+        alert(result.error || 'Error al eliminar la corrección');
+      }
+
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al eliminar la corrección');
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!correctedFile || isApproving || request?.status === 'aprobado' || request?.status === 'firmado') {
+      return;
+    }
+
+    if (!confirm('¿Estás seguro de que quieres aprobar este formulario? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    setIsApproving(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('correctedFile', correctedFile);
+
+      const approveResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/approve`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (approveResponse.ok) {
+        const result = await approveResponse.json();
+
+        if (onUpdate) {
+          const updatedResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
+          const updatedRequest = await updatedResponse.json();
+          onUpdate(updatedRequest);
+        }
+
+        alert('Formulario aprobado correctamente');
+      } else {
+        const errorData = await approveResponse.json();
+        alert(`Error al aprobar el formulario: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al aprobar el formulario: ' + error.message);
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const formatFileName = () => {
+    const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
+
+    const nombreTrabajador = request?.responses?.["Nombre del trabajador:"] ||
+      request?.responses?.["Nombre del trabajador"] ||
+      'Trabajador';
+
+    const submitDate = request?.submittedAt || request?.createdAt;
+
+    const formatDateForFileName = (dateString) => {
+      if (!dateString) return 'fecha-desconocida';
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0];
+    };
+
+    const datePart = formatDateForFileName(submitDate);
+
+    const cleanText = (text) => {
+      return text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .replace(/_+/g, '_')
+        .toLowerCase();
+    };
+
+    const cleanFormTitle = cleanText(formTitle);
+    const cleanTrabajador = cleanText(nombreTrabajador);
+
+    let extension = 'docx';
+
+    if (request?.form?.section && request.form.section !== "Anexos") {
+      extension = 'txt';
+    }
+
+    if (!request?.form?.section && request?.formTitle) {
+      if (!request.formTitle.toLowerCase().includes('anexo')) {
+        extension = 'txt';
+      }
+    }
+
+    return `${cleanFormTitle}_${cleanTrabajador}_${datePart}.${extension}`;
+  };
+
+  const getRealAttachments = () => {
+    if (!request) return [];
+
+    const fileName = formatFileName();
+    const extension = fileName.split('.').pop() || 'docx';
+
+    const shouldShowDocument = request?.submittedAt && request?.responses;
+
+    if (!shouldShowDocument) {
+      return [];
+    }
+
+    return [
+      {
+        id: request?._id || 1,
+        name: fileName,
+        size: "Calculando...",
+        type: extension,
+        uploadedAt: request?.submittedAt || request?.createdAt,
+        downloadUrl: `/api/documents/download/${request?._id}`
+      }
+    ];
+  };
+  
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
