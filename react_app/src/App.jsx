@@ -5,11 +5,9 @@ import { Analytics } from "@vercel/analytics/next"
 
 function App() {
   return (
-    <Analytics>
-      <SpeedInsights>
+    <>
         <Routes />
-      </SpeedInsights>
-    </Analytics>
+    </>
   );
 }
 
