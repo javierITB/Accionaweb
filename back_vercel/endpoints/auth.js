@@ -180,10 +180,10 @@ router.post("/login", async (req, res) => {
 
 router.get("/logins", async (req, res) => {
   try {
-    const tkn = await req.db.collection("tokens").find().toArray();
+    const tkn = await req.db.collection("ingresos").find().toArray();
     res.json(tkn);
   } catch (err) {
-    res.status(500).json({ error: "Error al obtener tokens" });
+    res.status(500).json({ error: "Error al obtener ingresos" });
   }
 });
 
