@@ -22,6 +22,8 @@ const upload = multer({
   }
 });
 
+router.use(express.json({ limit: '4mb' }));
+
 
 router.post("/", async (req, res) => {
   try {
@@ -113,6 +115,53 @@ router.post("/", async (req, res) => {
   } catch (err) {
     console.error("Error general al guardar respuesta:", err);
     res.status(500).json({ error: "Error al guardar respuesta: " + err.message });
+  }
+});
+
+// Nuevo endpoint para agregar archivos a una respuesta existente
+router.post("/:id/archivos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { archivos } = req.body;
+
+    console.log(`Agregando ${archivos.length} archivos a respuesta:`, id);
+
+    if (!archivos || !Array.isArray(archivos)) {
+      return res.status(400).json({ error: "Formato inválido: se esperaba array 'archivos'" });
+    }
+
+    // Verificar que la respuesta existe
+    const respuestaExistente = await req.db.collection("respuestas").findOne({ 
+      _id: new ObjectId(id) 
+    });
+
+    if (!respuestaExistente) {
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
+    // Agregar los archivos al array existente
+    const result = await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(id) },
+      { 
+        $push: { 
+          adjuntos: { $each: archivos } 
+        },
+        $set: { updatedAt: new Date() }
+      }
+    );
+
+    console.log(`${archivos.length} archivos agregados a respuesta ${id}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Archivos agregados exitosamente',
+      archivosCount: archivos.length,
+      totalArchivos: (respuestaExistente.adjuntos?.length || 0) + archivos.length
+    });
+
+  } catch (error) {
+    console.error('Error agregando archivos:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -355,7 +404,7 @@ router.post("/chat", async (req, res) => {
         color: "#45577eff",
         actionUrl: `/RespuestasForms?id=${respuesta._id}`,
       });
-      
+
       await addNotification(req.db, {
         filtro: { cargo: "admin" },
         titulo: "Nuevo mensaje en tu formulario",

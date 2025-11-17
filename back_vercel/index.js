@@ -11,14 +11,19 @@ const gen = require("./endpoints/Generador");
 const noti = require("./endpoints/notificaciones");
 const menu = require("./endpoints/web");
 const plantillas = require("./endpoints/plantillas");
-
-
-
 const app = express();
-//actualizando
+
+app.use(express.json({ limit: '4mb' }));
+app.use(express.urlencoded({ limit: '4mb', extended: true }));
+
 // Configuración CORS
 app.use(cors());
-app.use(express.json());
+
+// CONFIGURACIÓN ACTUALIZADA PARA PLAN GRATUITO DE VERCEL
+// Límites reducidos para evitar PayloadTooLargeError
+app.use(express.json({ limit: '4mb' })); // 4MB máximo (por debajo del límite de 4.5MB de Vercel)
+app.use(express.urlencoded({ limit: '4mb', extended: true }));
+
 app.set('trust proxy', true);
 
 // Configurar conexión a MongoDB (desde variable de entorno)
@@ -54,8 +59,6 @@ app.use("/api/generador", gen);
 app.use("/api/noti", noti);
 app.use("/api/menu", menu);
 app.use("/api/plantillas", plantillas);
-
-
 
 // Ruta base
 app.get("/", (req, res) => {

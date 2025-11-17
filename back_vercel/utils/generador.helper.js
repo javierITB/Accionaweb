@@ -739,7 +739,7 @@ async function generarDocumentoTxt(responses, responseId, db) {
             });
         }
 
-        contenidoTxt += `\nGenerado el: ${new Date().toLocaleString()}`;
+        contenidoTxt += `\nGenerado el: ${new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })}`;
 
         const buffer = Buffer.from(contenidoTxt, 'utf8');
         const IDdoc = generarIdDoc(); // ID corto
@@ -751,8 +751,8 @@ async function generarDocumentoTxt(responses, responseId, db) {
             responseId: responseId,
             tipo: 'txt',
             fileName: fileName,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            createdAt: new Date().toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }),
+            updatedAt: new Date().toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })
         });
 
         console.log("TXT guardado en BD exitosamente");
