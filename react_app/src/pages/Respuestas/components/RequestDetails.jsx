@@ -17,7 +17,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const checkClientSignature = async () => {
     try {
-      const response = await fetch(`https://accionaweb.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       if (response.ok) {
         const data = await response.json();
         if (data.exists) {
@@ -36,7 +36,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const getDocumentInfo = async (responseId) => {
     try {
-      const response = await fetch(`https://accionaweb.vercel.app/api/generador/info-by-response/${responseId}`);
+      const response = await fetch(`https://accionaapi.vercel.app/api/generador/info-by-response/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setDocumentInfo(data);
@@ -58,7 +58,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       setCorrectedFile({
         name: request.correctedFile.fileName,
         size: request.correctedFile.fileSize,
-        url: `https://accionaweb.vercel.app/api/respuestas/${request._id}/corrected-file`,
+        url: `https://accionaapi.vercel.app/api/respuestas/${request._id}/corrected-file`,
         isServerFile: true
       });
     } else {
@@ -108,7 +108,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     // Verificar cambios en el request cada 5 segundos cuando está visible
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`https://accionaweb.vercel.app/api/respuestas/${request._id}`);
+        const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
 
@@ -161,7 +161,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         return;
       }
 
-      const documentUrl = `https://accionaweb.vercel.app/api/generador/download/${info.IDdoc}`;
+      const documentUrl = `https://accionaapi.vercel.app/api/generador/download/${info.IDdoc}`;
       const extension = info.tipo || 'docx';
 
       handlePreviewDocument(documentUrl, extension);
@@ -186,7 +186,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         documentUrl = URL.createObjectURL(correctedFile);
       }
       else if (request?.status === 'aprobado' || request?.status === 'firmado') {
-        const pdfUrl = `https://accionaweb.vercel.app/api/respuestas/download-approved-pdf/${request._id}`;
+        const pdfUrl = `https://accionaapi.vercel.app/api/respuestas/download-approved-pdf/${request._id}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
       }
       else if (request?.correctedFile) {
@@ -212,7 +212,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
 
     try {
-      const pdfUrl = `https://accionaweb.vercel.app/api/respuestas/${request._id}/client-signature`;
+      const pdfUrl = `https://accionaapi.vercel.app/api/respuestas/${request._id}/client-signature`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
@@ -230,7 +230,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         return;
       }
 
-      const pdfUrl = `https://accionaweb.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`;
+      const pdfUrl = `https://accionaapi.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
 
@@ -251,7 +251,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         return;
       }
 
-      window.open(`https://accionaweb.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
+      window.open(`https://accionaapi.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
 
       if (onUpdate) {
         const updatedRequest = {
@@ -271,7 +271,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const handleDownloadAdjunto = async (responseId, index) => {
     try {
-      const response = await fetch(`https://accionaweb.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
 
       if (response.ok) {
         const blob = await response.blob();
@@ -295,7 +295,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const handleDownloadClientSignature = async (responseId) => {
     try {
-      const response = await fetch(`https://accionaweb.vercel.app/api/respuestas/${responseId}/client-signature`);
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/client-signature`);
 
       if (response.ok) {
         const blob = await response.blob();
@@ -323,7 +323,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
 
     try {
-      const response = await fetch(`https://accionaweb.vercel.app/api/respuestas/${responseId}/client-signature`, {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/client-signature`, {
         method: 'DELETE',
       });
 
@@ -331,7 +331,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         setClientSignature(null);
         alert('Documento firmado eliminado exitosamente');
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://accionaweb.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -364,7 +364,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handleRemoveCorrection = async () => {
     // Primero verificar si existe documento firmado
     try {
-      const signatureCheck = await fetch(`https://accionaweb.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      const signatureCheck = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       const signatureData = await signatureCheck.json();
 
       const hasSignature = signatureData.exists;
@@ -379,7 +379,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         return;
       }
 
-      const response = await fetch(`https://accionaweb.vercel.app/api/respuestas/${request._id}/remove-correction`, {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/remove-correction`, {
         method: 'DELETE',
       });
 
@@ -421,7 +421,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       const formData = new FormData();
       formData.append('correctedFile', correctedFile);
 
-      const approveResponse = await fetch(`https://accionaweb.vercel.app/api/respuestas/${request._id}/approve`, {
+      const approveResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/approve`, {
         method: 'POST',
         body: formData,
       });
@@ -430,7 +430,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         const result = await approveResponse.json();
 
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://accionaweb.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }

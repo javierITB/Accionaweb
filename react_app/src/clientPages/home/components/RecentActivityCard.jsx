@@ -58,8 +58,8 @@ const RequestTracking = () => {
 
         // 1) Traer ambas colecciones en paralelo
         const [resResp, resForms] = await Promise.all([
-          fetch(`https://accionaweb.vercel.app/api/respuestas/mail/${mail}`),
-          fetch('https://accionaweb.vercel.app/api/forms/')
+          fetch(`https://accionaapi.vercel.app/api/respuestas/mail/${mail}`),
+          fetch('https://accionaapi.vercel.app/api/forms/')
         ]);
 
         if (!resResp.ok || !resForms.ok) {

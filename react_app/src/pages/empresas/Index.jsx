@@ -85,7 +85,7 @@ const CompanyReg = () => {
     setEditingEmpresa(null);
 
     try {
-      const response = await fetch(`https://accionaweb.vercel.app/api/auth/empresas/${empresaId}`);
+      const response = await fetch(`https://accionaapi.vercel.app/api/auth/empresas/${empresaId}`);
       if (!response.ok) {
         throw new Error('Error al cargar la empresa para editar');
       }
@@ -123,7 +123,7 @@ const CompanyReg = () => {
 
     setIsLoading(true);
     try {
-        const response = await fetch(`https://accionaweb.vercel.app/api/auth/empresas/${empresaId}`, {
+        const response = await fetch(`https://accionaapi.vercel.app/api/auth/empresas/${empresaId}`, {
             method: 'DELETE',
         });
 
@@ -156,7 +156,7 @@ const CompanyReg = () => {
 
   const fetchEmpresas = async () => {
     try {
-      const response = await fetch('https://accionaweb.vercel.app/api/auth/empresas/todas');
+      const response = await fetch('https://accionaapi.vercel.app/api/auth/empresas/todas');
       if (response.ok) {
         const empresasData = await response.json();
 
@@ -211,8 +211,8 @@ const CompanyReg = () => {
       const isUpdating = !!editingEmpresa;
       const method = isUpdating ? 'PUT' : 'POST';
       const url = isUpdating
-        ? `https://accionaweb.vercel.app/api/auth/empresas/${editingEmpresa._id}`
-        : 'https://accionaweb.vercel.app/api/auth/empresas/register';
+        ? `https://accionaapi.vercel.app/api/auth/empresas/${editingEmpresa._id}`
+        : 'https://accionaapi.vercel.app/api/auth/empresas/register';
 
       const response = await fetch(url, {
         method: method,

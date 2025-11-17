@@ -40,7 +40,7 @@ const Header = ({ className = '' }) => {
         if (!userMail) return;
 
         // Opción 1: Usar el endpoint que devuelve el usuario completo
-        const response = await fetch(`https://accionaweb.vercel.app/api/auth/full/${userMail}`);
+        const response = await fetch(`https://accionaapi.vercel.app/api/auth/full/${userMail}`);
         if (response.ok) {
           const userData = await response.json();
           setUserRole(userData.rol || cargo || 'Usuario');
@@ -48,7 +48,7 @@ const Header = ({ className = '' }) => {
         }
 
         // Opción 2: Si el endpoint anterior falla, usar el endpoint básico
-        const responseBasic = await fetch(`https://accionaweb.vercel.app/api/auth/${userMail}`);
+        const responseBasic = await fetch(`https://accionaapi.vercel.app/api/auth/${userMail}`);
         if (responseBasic.ok) {
           const userData = await responseBasic.json();
           // Si el endpoint básico no devuelve el rol, mantener el cargo de sessionStorage
@@ -88,7 +88,7 @@ const Header = ({ className = '' }) => {
   // Resto del código de useEffect para notificaciones (sin cambios)
   useEffect(() => {
     const fetchUnreadCount = async () => {
-      const response = await fetch(`https://accionaweb.vercel.app/api/noti/${userMail}/unread-count`);
+      const response = await fetch(`https://accionaapi.vercel.app/api/noti/${userMail}/unread-count`);
       const data = await response.json();
       console.log("No leídas:", data.unreadCount);
       setUnreadCount(data.unreadCount);
