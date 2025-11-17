@@ -84,19 +84,19 @@ router.post("/login", async (req, res) => {
 
     if (user.pass !== password)
       return res.status(401).json({ success: false, message: "Credenciales inválidas" });
-      
+
     // ----------------------------------------------------------------
     // 🔍 LÓGICA DE BÚSQUEDA Y VALIDACIÓN DE TOKEN EXISTENTE
     // ----------------------------------------------------------------
-    
+
     const now = new Date();
     let finalToken = null;
     let expiresAt = null;
-    
+
     // 1. Buscar un token activo para este usuario
-    const existingTokenRecord = await req.db.collection("tokens").findOne({ 
-      email: email, 
-      active: true 
+    const existingTokenRecord = await req.db.collection("tokens").findOne({
+      email: email,
+      active: true
     });
 
     if (existingTokenRecord) {
@@ -122,7 +122,7 @@ router.post("/login", async (req, res) => {
       // Generar un token nuevo
       finalToken = crypto.randomBytes(32).toString("hex");
       expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
-      
+
       // Insertar el nuevo token
       await req.db.collection("tokens").insertOne({
         token: finalToken,
@@ -137,7 +137,7 @@ router.post("/login", async (req, res) => {
     // ----------------------------------------------------------------
     // 🚀 RESPUESTA FINAL
     // ----------------------------------------------------------------
-    
+
     // Recopilar datos para notificación
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgentString = req.headers['user-agent'] || 'Desconocido';
@@ -347,20 +347,53 @@ router.post("/set-password", async (req, res) => {
     if (!userId || !password) {
       return res.status(400).json({ error: "UserId y contraseña son requeridos" });
     }
-    if (password.length < 4) {
-      return res.status(400).json({ error: "La contraseña debe tener al menos 4 caracteres" });
+
+    // ✅ NUEVA VALIDACIÓN DE CONTRASEÑA EN BACKEND
+    if (password.length < 8) {
+      return res.status(400).json({
+        error: "La contraseña debe tener al menos 8 caracteres"
+      });
     }
+
+    // Validar que tenga letras y números
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+
+    if (!hasLetter || !hasNumber) {
+      return res.status(400).json({
+        error: "La contraseña debe incluir letras y números"
+      });
+    }
+
+    // Validación adicional de seguridad (opcional pero recomendado)
+    if (password.length > 128) {
+      return res.status(400).json({
+        error: "La contraseña es demasiado larga"
+      });
+    }
+
+    // Evitar contraseñas comunes (lista básica)
+    const commonPasswords = ['12345678', 'password', 'contraseña', 'admin123', 'qwerty123'];
+    if (commonPasswords.includes(password.toLowerCase())) {
+      return res.status(400).json({
+        error: "La contraseña es demasiado común. Elige una más segura"
+      });
+    }
+
     const existingUser = await req.db.collection("usuarios").findOne({
       _id: new ObjectId(userId)
     });
+
     if (!existingUser) {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
+
     if (existingUser.estado !== "pendiente") {
       return res.status(400).json({
         error: "La contraseña ya fue establecida anteriormente. Si necesitas cambiarla, contacta al administrador."
       });
     }
+
     const result = await req.db.collection("usuarios").updateOne(
       {
         _id: new ObjectId(userId),
@@ -374,11 +407,13 @@ router.post("/set-password", async (req, res) => {
         }
       }
     );
+
     if (result.matchedCount === 0) {
       return res.status(400).json({
         error: "No se puede establecer la contraseña. Ya fue configurada anteriormente o el enlace expiró."
       });
     }
+
     res.json({
       success: true,
       message: "Contraseña establecida exitosamente"
