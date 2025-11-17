@@ -159,25 +159,6 @@ const Sidebar = ({
           })}
         </nav>
 
-        {/* Quick Actions */}
-        {!(isCollapsed && !isMobileOpen) && (
-          <div className="p-4 border-t border-border">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Actions</h3>
-            <div className="space-y-1 mt-2">
-              {quickActions.map((action) => (
-                <button
-                  key={action.path}
-                  onClick={() => handleNavigation(action.path)}
-                  className="w-full flex items-center px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-all duration-300 min-touch-target"
-                >
-                  <Icon name={action.icon} size={16} className="mr-3" />
-                  {action.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* User Status */}
         <div className="p-4 border-t border-border flex items-center justify-center">
           <div className="w-8 h-8 bg-gradient-to-br from-success to-accent rounded-full flex items-center justify-center">

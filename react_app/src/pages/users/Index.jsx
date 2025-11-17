@@ -396,6 +396,16 @@ return (
                         >
                           Editar
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditUser(u)}
+                          iconName="X"
+                          iconSize={16}
+                          className="text-error hover:bg-primary/10"
+                        >
+                          Borrar
+                        </Button>
                       </td>
                     </tr>
                   ))}
