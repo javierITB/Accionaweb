@@ -89,7 +89,7 @@ router.post("/login", async (req, res) => {
     // 🔍 LÓGICA DE BÚSQUEDA Y VALIDACIÓN DE TOKEN EXISTENTE
     // ----------------------------------------------------------------
 
-    const now = new Date();
+    const now = new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' });
     let finalToken = null;
     let expiresAt = null;
 
@@ -143,7 +143,6 @@ router.post("/login", async (req, res) => {
     const agent = useragent.parse(userAgentString);
     const os = agent.os.toString();
     const browser = agent.toAgent()
-
     const usr = { name: user.nombre, email, cargo: user.rol };
 
     const newLogin = {
@@ -198,7 +197,7 @@ router.post("/validate", async (req, res) => {
     if (!tokenRecord)
       return res.status(401).json({ valid: false, message: "Token inválido o inexistente" });
 
-    const now = new Date();
+    const now = new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' });
     const expiresAt = new Date(tokenRecord.expiresAt);
     const createdAt = new Date(tokenRecord.createdAt);
 
@@ -215,7 +214,7 @@ router.post("/validate", async (req, res) => {
       // 🔹 Eliminar token viejo o expirado para no acumular
       await req.db.collection("tokens").updateOne(
         { token },
-        { $set: { active: false, revokedAt: new Date() } }
+        { $set: { active: false, revokedAt: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' }) } }
       );
       return res.status(401).json({
         valid: false,
@@ -237,7 +236,6 @@ router.post("/validate", async (req, res) => {
   }
 });
 
-
 // LOGOUT - Elimina o desactiva token en DB
 router.post("/logout", async (req, res) => {
   const { token } = req.body;
@@ -246,7 +244,7 @@ router.post("/logout", async (req, res) => {
   try {
     await req.db.collection("tokens").updateOne(
       { token },
-      { $set: { active: false, revokedAt: new Date() } }
+      { $set: { active: false, revokedAt: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' }) } }
     );
     res.json({ success: true, message: "Sesión cerrada" });
   } catch (err) {
@@ -275,8 +273,8 @@ router.post("/register", async (req, res) => {
       rol,
       pass: "",
       estado: estado,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' }).toISOString(),
+      updatedAt: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' }).toISOString()
     };
     const result = await req.db.collection("usuarios").insertOne(newUser);
     const createdUser = await req.db.collection("usuarios").findOne({
@@ -331,7 +329,7 @@ router.put("/users/:id", async (req, res) => {
       cargo,
       rol,
       estado,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' }).toISOString()
     };
 
     const result = await req.db.collection("usuarios").updateOne(
@@ -421,7 +419,7 @@ router.post("/set-password", async (req, res) => {
         $set: {
           pass: password,
           estado: "activo",
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' }).toISOString()
         }
       }
     );
@@ -509,8 +507,8 @@ router.post("/empresas/register", upload.single('logo'), async (req, res) => {
       direccion: direccion ? direccion.trim() : '',
       encargado: encargado ? encargado.trim() : '',
       rut_encargado: rut_encargado ? rut_encargado.trim() : '',
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' }),
+      updatedAt: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })
     };
 
     if (req.file) {
@@ -519,7 +517,7 @@ router.post("/empresas/register", upload.single('logo'), async (req, res) => {
         fileData: req.file.buffer,
         fileSize: req.file.size,
         mimeType: req.file.mimetype,
-        uploadedAt: new Date()
+        uploadedAt: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })
       };
     }
 
@@ -558,7 +556,7 @@ router.put("/empresas/:id", upload.single('logo'), async (req, res) => {
       direccion: direccion ? direccion.trim() : '',
       encargado: encargado ? encargado.trim() : '',
       rut_encargado: rut_encargado ? rut_encargado.trim() : '',
-      updatedAt: new Date()
+      updatedAt: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })
     };
 
     if (req.file) {
@@ -567,7 +565,7 @@ router.put("/empresas/:id", upload.single('logo'), async (req, res) => {
         fileData: req.file.buffer,
         fileSize: req.file.size,
         mimeType: req.file.mimetype,
-        uploadedAt: new Date()
+        uploadedAt: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })
       };
     } else if (req.body.logo === 'DELETE_LOGO') {
       updateData.logo = null;
