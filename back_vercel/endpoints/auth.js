@@ -144,7 +144,6 @@ router.post("/login", async (req, res) => {
     const agent = useragent.parse(userAgentString);
     const os = agent.os.toString();
     const browser = agent.toAgent()
-
     const usr = { name: user.nombre, email, cargo: user.rol };
 
     const newLogin = {
