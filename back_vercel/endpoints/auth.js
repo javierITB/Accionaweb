@@ -238,7 +238,6 @@ router.post("/validate", async (req, res) => {
   }
 });
 
-
 // LOGOUT - Elimina o desactiva token en DB
 router.post("/logout", async (req, res) => {
   const { token } = req.body;
