@@ -355,6 +355,15 @@ router.post("/chat", async (req, res) => {
         color: "#45577eff",
         actionUrl: `/RespuestasForms?id=${respuesta._id}`,
       });
+      
+      await addNotification(req.db, {
+        filtro: { cargo: "admin" },
+        titulo: "Nuevo mensaje en tu formulario",
+        descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
+        icono: "Edit",
+        color: "#45577eff",
+        actionUrl: `/RespuestasForms?id=${respuesta._id}`,
+      });
     } else {
       await addNotification(req.db, {
         userId: respuesta.user.uid,
