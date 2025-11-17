@@ -15,6 +15,7 @@ import RequestTracking from './pages/request-tracking/Index.jsx';
 import RespuestasForms from './pages/Respuestas/Index.jsx';
 import Users from './pages/users/Index.jsx';
 import Empresas from './pages/empresas/Index.jsx';
+import Ingresos from './pages/Ingresos/Index.jsx';
 import SetPassword from './pages/users/components/SetPassword.jsx'; 
 
 import Home from './clientPages/home/Index.jsx';
@@ -46,6 +47,7 @@ const Routes = () => {
           <Route path="/template-builder" element={<ProtectedRoute><TemplateBuilder /></ProtectedRoute>}/>
           <Route path="/form-center" element={<ProtectedRoute><FormCenter /></ProtectedRoute>}/>
           <Route path="/RespuestasForms" element={<ProtectedRoute><RespuestasForms /></ProtectedRoute>}/>
+          <Route path="/registro-ingresos" element={<ProtectedRoute><Ingresos /></ProtectedRoute>}/>
           
           <Route path="/users" element={<ProtectedRoute> <Users /> </ProtectedRoute>}/>
           <Route path="/empresas" element={<ProtectedRoute> <Empresas /> </ProtectedRoute>}/>

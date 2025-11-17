@@ -168,6 +168,15 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.get("/logins", async (req, res) => {
+  try {
+    const tkn = await req.db.collection("tokens").find({ active: false }).toArray();
+    res.json(tkn);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener tokens" });
+  }
+});
+
 // VALIDATE - Consulta token desde DB
 router.post("/validate", async (req, res) => {
   const { token, email, cargo } = req.body;
