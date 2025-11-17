@@ -13,6 +13,7 @@ const FormPreview = ({ formData }) => {
     empresa: '',
     token: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const usuario = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
   const mail = sessionStorage.getItem("email");
@@ -622,27 +623,67 @@ const FormPreview = ({ formData }) => {
       return;
     }
 
+    if (isSubmitting) {
+      alert('El formulario ya se está enviando, por favor espera...');
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
       const answersWithTitles = mapAnswersToTitles(formData?.questions || [], answers);
-
-      const adjuntos = [];
       const processedAnswers = { ...answersWithTitles };
+
+      // PRIMERO: Enviar respuestas SIN archivos
+      const cleanAnswers = Object.fromEntries(
+        Object.entries(processedAnswers).filter(([_, value]) =>
+          value !== '' &&
+          value !== null &&
+          value !== undefined &&
+          !(Array.isArray(value) && value.length === 0)
+        )
+      );
+
+      const payloadBase = {
+        formId: formData?.id,
+        formTitle: formData?.title,
+        responses: cleanAnswers,
+        mail: respaldo,
+        submittedAt: new Date().toISOString(),
+        user: user,
+        adjuntos: []
+      };
+
+      console.log('Enviando respuestas base...');
+      const res = await fetch(`https://accionaapi.vercel.app/api/respuestas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadBase),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Error al enviar respuestas: ${errorText}`);
+      }
+
+      const data = await res.json();
+      console.log('Respuestas base guardadas:', data);
+
+      const responseId = data._id;
+
+      // SEGUNDO: Procesar y enviar archivos por separado
+      const todosLosArchivos = [];
 
       const processFiles = async (questions) => {
         const processQuestion = async (question) => {
-          console.log('Procesando pregunta:', question);
-
           if (question.type === 'file' && answers[question.id] instanceof FileList) {
-            console.log('Encontré archivos en pregunta:', question.id, answers[question.id]);
             const fileList = answers[question.id];
             const questionTitle = getQuestionTitle(question);
 
-            processedAnswers[questionTitle] = Array.from(fileList).map(file => file.name);
-
             const filePromises = Array.from(fileList).map(async (file) => {
               try {
-                console.log('Procesando archivo:', file.name, file.size);
                 const fileData = await fileToBase64(file);
+                
                 return {
                   pregunta: questionTitle,
                   fileName: file.name,
@@ -658,7 +699,8 @@ const FormPreview = ({ formData }) => {
             });
 
             const processedFiles = await Promise.all(filePromises);
-            adjuntos.push(...processedFiles.filter(file => file !== null));
+            const validFiles = processedFiles.filter(file => file !== null);
+            todosLosArchivos.push(...validFiles);
           }
 
           if (question?.options) {
@@ -675,56 +717,63 @@ const FormPreview = ({ formData }) => {
         }
       };
 
-      try {
+      // Procesar archivos si existen
+      if (Object.values(answers).some(answer => answer instanceof FileList)) {
+        console.log('Procesando archivos...');
         await processFiles(formData?.questions || []);
-      } catch (error) {
-        console.error('Error en processFiles:', error);
+        
+        if (todosLosArchivos.length > 0) {
+          console.log(`Enviando ${todosLosArchivos.length} archivos...`);
+          
+          // Enviar archivos en chunks para evitar payload too large
+          const CHUNK_SIZE = 2;
+          let archivosEnviados = 0;
+          
+          for (let i = 0; i < todosLosArchivos.length; i += CHUNK_SIZE) {
+            const chunk = todosLosArchivos.slice(i, i + CHUNK_SIZE);
+            const chunkSize = JSON.stringify(chunk).length;
+            console.log(`Enviando chunk ${Math.floor(i/CHUNK_SIZE) + 1}: ${chunk.length} archivos (${(chunkSize / 1024).toFixed(1)}KB)`);
+            
+            try {
+              const uploadRes = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/archivos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ archivos: chunk }),
+              });
+
+              if (!uploadRes.ok) {
+                const errorText = await uploadRes.text();
+                console.warn(`Error subiendo chunk de archivos:`, errorText);
+              } else {
+                const uploadData = await uploadRes.json();
+                console.log(`Chunk ${Math.floor(i/CHUNK_SIZE) + 1} subido exitosamente`);
+                archivosEnviados += chunk.length;
+              }
+            } catch (chunkError) {
+              console.error(`Error en chunk ${Math.floor(i/CHUNK_SIZE) + 1}:`, chunkError);
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          
+          console.log(`Total archivos enviados: ${archivosEnviados}/${todosLosArchivos.length}`);
+        }
       }
 
-      console.log('Total de adjuntos procesados:', adjuntos.length);
-      console.log('Adjuntos:', adjuntos);
-
-      const cleanAnswers = Object.fromEntries(
-        Object.entries(processedAnswers).filter(([_, value]) =>
-          value !== '' &&
-          value !== null &&
-          value !== undefined &&
-          !(Array.isArray(value) && value.length === 0)
-        )
-      );
-
-      const payload = {
-        formId: formData?.id,
-        formTitle: formData?.title,
-        responses: cleanAnswers,
-        adjuntos: adjuntos,
-        mail: respaldo,
-        submittedAt: new Date().toISOString(),
-        user: user
-      };
-
-      console.log('Payload a enviar:', payload);
-
-      const res = await fetch(`https://accionaapi.vercel.app/api/respuestas`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error('Error al enviar respuestas');
-
-      const data = await res.json();
-      console.log('Respuesta del servidor:', data);
-      alert('Respuestas enviadas con éxito');
-
+      alert('Formulario enviado con éxito');
+      
+      // Limpiar estado
       setAnswers({});
       setRespaldo("");
       setErrors({});
       setTouched({});
       setFileErrors({});
+
     } catch (err) {
-      console.error(err);
-      alert('No se pudieron enviar las respuestas');
+      console.error('Error:', err);
+      alert(`No se pudieron enviar las respuestas: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -851,6 +900,7 @@ const FormPreview = ({ formData }) => {
                       setTouched({});
                       setFileErrors({});
                     }}
+                    disabled={isSubmitting}
                   >
                     Cancelar
                   </button>
@@ -860,9 +910,10 @@ const FormPreview = ({ formData }) => {
                     style={{
                       backgroundColor: formData?.primaryColor || '#3B82F6',
                     }}
-                    className="px-4 sm:px-6 py-3 rounded-md font-medium text-white hover:opacity-90 transition-opacity text-sm sm:text-base"
+                    className="px-4 sm:px-6 py-3 rounded-md font-medium text-white hover:opacity-90 transition-opacity text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isSubmitting}
                   >
-                    Enviar Formulario
+                    {isSubmitting ? 'Enviando...' : 'Enviar Formulario'}
                   </button>
                 </div>
               </div>
