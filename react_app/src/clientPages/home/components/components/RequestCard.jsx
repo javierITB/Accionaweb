@@ -156,6 +156,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate
   const getTrabajadorName = () => {
     return currentRequest?.responses?.["Nombre del trabajador:"] ||
       currentRequest?.responses?.["Nombre del trabajador"] ||
+      currentRequest?.responses?.["NOMBRE DEL TRABAJADOR"] ||
       'ninguno';
   };
 
