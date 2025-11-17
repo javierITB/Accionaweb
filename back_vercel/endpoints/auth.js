@@ -89,7 +89,7 @@ router.post("/login", async (req, res) => {
     // 🔍 LÓGICA DE BÚSQUEDA Y VALIDACIÓN DE TOKEN EXISTENTE
     // ----------------------------------------------------------------
 
-    const now = new Date();
+    const now = new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' });
     let finalToken = null;
     let expiresAt = null;
 
