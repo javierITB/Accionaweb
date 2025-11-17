@@ -178,7 +178,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.get("/logins/", async (req, res) => {
+router.get("/logins/todos", async (req, res) => {
   try {
     const tkn = await req.db.collection("ingresos").find().toArray();
     res.json(tkn);
