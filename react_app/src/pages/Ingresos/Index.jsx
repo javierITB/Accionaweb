@@ -12,8 +12,7 @@ const createDataURL = (logoObj) => {
 };
 
 const CompanyReg = () => {
-  const [empresas, setEmpresas] = useState([]);
-  const [editingEmpresa, setEditingEmpresa] = useState(null);
+  const [Logins, setLogins] = useState([]);
   const [formData, setFormData] = useState({
     nombre: '',
     rut: '',
@@ -65,20 +64,12 @@ const CompanyReg = () => {
     try {
       const response = await fetch('https://accionaapi.vercel.app/api/auth/logins');
       if (response.ok) {
-        const empresasData = await response.json();
-
-        const transformedData = empresasData.map(empresa => ({
-          ...empresa,
-          logo: empresa.logo && typeof empresa.logo === 'object'
-            ? createDataURL(empresa.logo)
-            : empresa.logo
-        }));
-
-        setEmpresas(transformedData);
+        const loginsData = await response.json();
+        setLogins(loginsData);
       }
     } catch (error) {
-      console.error('Error cargando empresas:', error);
-      console.error('No se pudo cargar la lista de empresas');
+      console.error('Error cargando logins:', error);
+      console.error('No se pudo cargar la lista de loginsData');
     }
   };
 
@@ -89,9 +80,9 @@ const CompanyReg = () => {
   const getTabContent = () => {
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Empresas Registradas</h3>
-        {empresas.length === 0 ? (
-          <p className="text-muted-foreground">No hay empresas registradas.</p>
+        <h3 className="text-lg font-semibold text-foreground">Logins registrados</h3>
+        {Logins.length === 0 ? (
+          <p className="text-muted-foreground">No hay Logins registrados.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full border border-border rounded-lg">
@@ -107,7 +98,7 @@ const CompanyReg = () => {
                 </tr>
               </thead>
               <tbody>
-                {empresas.map((empresa) => (
+                {Logins.map((empresa) => (
                   empresa.nombre != "Todas" &&
                   <tr key={empresa._id} className="border-t hover:bg-muted/30 transition">
                     <td className="px-4 py-2">
@@ -189,9 +180,9 @@ const CompanyReg = () => {
           {/* HEADER CON BOTÓN DE TOGGLE - AGREGADO */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
             <div className="mb-4 md:mb-0">
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Gestión de Empresas</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Registro de Logins</h1>
               <p className="text-muted-foreground mt-1 text-sm md:text-base">
-                Administra el registro y información de empresas en la plataforma
+                Verifica el registro e información de Logins en la plataforma
               </p>
             </div>
 
