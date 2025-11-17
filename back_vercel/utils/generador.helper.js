@@ -743,7 +743,7 @@ async function generarDocumentoTxt(responses, responseId, db) {
 
         const buffer = Buffer.from(contenidoTxt, 'utf8');
         const IDdoc = generarIdDoc(); // ID corto
-        const fileName = `FORMULARIO_${responseId}`;
+        const fileName = `${limpiarFileName(nombreFormulario)}_${limpiarFileName(trabajador)}`;
 
         await db.collection('docxs').insertOne({
             IDdoc: IDdoc,
