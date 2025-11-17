@@ -137,7 +137,6 @@ router.post("/login", async (req, res) => {
     // ----------------------------------------------------------------
     // 🚀 RESPUESTA FINAL
     // ----------------------------------------------------------------
-
     // Recopilar datos para notificación
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgentString = req.headers['user-agent'] || 'Desconocido';
