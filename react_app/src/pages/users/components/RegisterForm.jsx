@@ -2,12 +2,12 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RegisterForm = ({ 
-  formData, 
-  empresas, 
-  cargos, 
-  roles, 
-  onUpdateFormData, 
+const RegisterForm = ({
+  formData,
+  empresas,
+  cargos,
+  roles,
+  onUpdateFormData,
   onRegister,
   isLoading,      // Nuevo
   isEditing,      // Nuevo
@@ -26,8 +26,8 @@ const RegisterForm = ({
               {isEditing ? 'Editar Usuario' : 'Registrar Usuario'}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {isEditing 
-                ? 'Modificar datos de la cuenta existente, incluyendo el estado.' 
+              {isEditing
+                ? 'Modificar datos de la cuenta existente, incluyendo el estado.'
                 : 'Añadir nuevo usuario y enviar invitación de registro.'}
             </p>
           </div>
@@ -48,11 +48,10 @@ const RegisterForm = ({
               value={formData?.nombre || ''}
               onChange={(e) => onUpdateFormData('nombre', e.target.value)}
               maxLength={25}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                (formData?.nombre?.length || 0) >= 25
-                  ? 'border-red-500 focus-visible:ring-red-200' 
+              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.nombre?.length || 0) >= 25
+                  ? 'border-red-500 focus-visible:ring-red-200'
                   : 'border-input focus-visible:ring-blue-200'
-              }`}
+                }`}
             />
             {(formData?.nombre?.length || 0) >= 25 && (
               <p className="text-red-500 text-xs">
@@ -75,11 +74,10 @@ const RegisterForm = ({
               value={formData?.apellido || ''}
               onChange={(e) => onUpdateFormData('apellido', e.target.value)}
               maxLength={25}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                (formData?.apellido?.length || 0) >= 25
-                  ? 'border-red-500 focus-visible:ring-red-200' 
+              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.apellido?.length || 0) >= 25
+                  ? 'border-red-500 focus-visible:ring-red-200'
                   : 'border-input focus-visible:ring-blue-200'
-              }`}
+                }`}
             />
             {(formData?.apellido?.length || 0) >= 25 && (
               <p className="text-red-500 text-xs">
@@ -107,7 +105,7 @@ const RegisterForm = ({
               </p>
             )}
           </div>
-          
+
           {/* EMPRESA */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
@@ -189,16 +187,16 @@ const RegisterForm = ({
         </div>
 
         <div className="flex justify-end space-x-3 pt-4">
-          {isEditing && (
-            <Button
-              onClick={onCancelEdit}
-              variant="outline"
-              disabled={isLoading}
-              className="border-border hover:bg-muted"
-            >
-              Cancelar
-            </Button>
-          )}
+          <Button
+            onClick={onCancelEdit}
+            variant="outline"
+            disabled={isLoading}
+            className="border-border hover:bg-muted"
+
+            iconName={isEditing ? "X" : "Trash2"} // Cambia el ícono
+          >
+            {isEditing ? 'Cancelar' : 'Limpiar'}
+          </Button>
           <Button
             onClick={onRegister}
             disabled={isLoading || !formData.nombre || !formData.mail}
@@ -206,8 +204,8 @@ const RegisterForm = ({
             iconName={isEditing ? "Save" : "UserPlus"} // Cambia el ícono
             iconPosition="left"
           >
-            {isLoading 
-              ? (isEditing ? 'Guardando...' : 'Registrando...') 
+            {isLoading
+              ? (isEditing ? 'Guardando...' : 'Registrando...')
               : (isEditing ? 'Guardar Cambios' : 'Registrar Usuario')
             }
           </Button>
