@@ -147,6 +147,16 @@ router.post("/login", async (req, res) => {
 
     const usr = { name: user.nombre, email, cargo: user.rol };
 
+    const newLogin = {
+      usr, 
+      ipAddress, 
+      os, 
+      browser, 
+      now,
+    }
+
+    const result = await req.db.collection("ingresos").insertOne(newLogin);
+
     // Envío de Notificación
     await addNotification(req.db, {
       userId: user._id.toString(),
@@ -170,7 +180,7 @@ router.post("/login", async (req, res) => {
 
 router.get("/logins", async (req, res) => {
   try {
-    const tkn = await req.db.collection("tokens").find({ active: false }).toArray();
+    const tkn = await req.db.collection("tokens").find().toArray();
     res.json(tkn);
   } catch (err) {
     res.status(500).json({ error: "Error al obtener tokens" });
