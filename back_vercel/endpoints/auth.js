@@ -199,7 +199,7 @@ router.post("/validate", async (req, res) => {
     if (!tokenRecord)
       return res.status(401).json({ valid: false, message: "Token inválido o inexistente" });
 
-    const now = new Date();
+    const now = new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' });
     const expiresAt = new Date(tokenRecord.expiresAt);
     const createdAt = new Date(tokenRecord.createdAt);
 
