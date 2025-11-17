@@ -228,7 +228,7 @@ const RequestTracking = () => {
           <div className="min-w-0 flex-1">
             <h2 className="text-lg sm:text-xl font-semibold text-foreground">Actividad Reciente</h2>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Últimas respuestas a forms
+              Últimas respuestas a formularios
             </p>
           </div>
           <Icon name="Activity" size={20} className="text-accent flex-shrink-0 ml-4 sm:w-6 sm:h-6" />

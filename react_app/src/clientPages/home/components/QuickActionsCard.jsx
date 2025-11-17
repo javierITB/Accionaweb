@@ -6,7 +6,7 @@ const QuickActionsCard = () => {
     {
       id: 1,
       title: 'Remuneraciones',
-      description: 'Solicita días libres y vacaciones',
+      description: '',
       icon: 'Receipt',
       color: 'bg-blue-500',
       path: '/remuneraciones'
@@ -14,7 +14,7 @@ const QuickActionsCard = () => {
     {
       id: 2,
       title: 'Anexos',
-      description: 'Envía tus gastos empresariales',
+      description: '',
       icon: 'Calendar',
       color: 'bg-green-500',
       path: '/Anexos'
@@ -22,7 +22,7 @@ const QuickActionsCard = () => {
     {
       id: 3,
       title: 'Finiquitos',
-      description: 'Solicita ayuda con equipos IT',
+      description: '',
       icon: 'FileText',
       color: 'bg-orange-500',
       path: '/Finiquitos'
@@ -30,7 +30,7 @@ const QuickActionsCard = () => {
     {
       id: 4,
       title: 'Otras',
-      description: 'Solicita certificados de trabajo',
+      description: '',
       icon: 'FileText',
       color: 'bg-purple-500',
       path: '/otras'
