@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
 
+router.use(express.json({ limit: '4mb' }));
+
 // Crear un formulario
 router.post("/", async (req, res) => {
   try {

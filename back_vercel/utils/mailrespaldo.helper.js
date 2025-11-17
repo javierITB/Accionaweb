@@ -135,7 +135,7 @@ Fecha y hora: ${fecha}
 ${contenidoRespuestas}
 ---
 Este es un respaldo automático de las respuestas enviadas.
-Generado el: ${new Date().toLocaleString('es-CL')}
+Generado el: ${fecha}
 `;
 
   // Contenido en HTML (manteniendo formato legible)
@@ -162,7 +162,7 @@ ${contenidoRespuestas.replace(/\n/g, '<br>').replace(/  /g, '&nbsp;&nbsp;')}
 
   <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; color: #7f8c8d; font-size: 12px;">
     <em>Este es un respaldo automático de las respuestas enviadas.<br>
-    Generado el: ${new Date().toLocaleString('es-CL')}</em>
+    Generado el: ${fecha}</em>
   </div>
 </div>
 `;
