@@ -362,7 +362,7 @@ router.post("/chat", async (req, res) => {
         descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
         icono: "MessageCircle",
         color: "#45577eff",
-        actionUrl: `/?id=${result.insertedId}`,
+        actionUrl: `/?id=${respuesta.insertedId}`,
       });
     }
 
