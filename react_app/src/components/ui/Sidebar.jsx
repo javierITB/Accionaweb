@@ -48,7 +48,7 @@ const Sidebar = ({
     const fetchMenu = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`https://accionaapi.vercel.app/api/menu/filter`, {
+        const response = await fetch(`https://accionaweb.vercel.app/api/menu/filter`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

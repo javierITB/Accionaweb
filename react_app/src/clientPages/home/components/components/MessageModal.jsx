@@ -15,7 +15,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const fetchMessages = async () => {
     if (!id) return;
     try {
-      const res = await fetch(`https://accionaapi.vercel.app/api/respuestas/${id}/chat`);
+      const res = await fetch(`https://accionaweb.vercel.app/api/respuestas/${id}/chat`);
       if (!res.ok) throw new Error("Error al obtener chat");
       const data = await res.json();
       setMessages(data || []);
@@ -48,7 +48,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
     try {
       const autor = sessionStorage.getItem("user") || "Anónimo";
-      const res = await fetch("https://accionaapi.vercel.app/api/respuestas/chat", {
+      const res = await fetch("https://accionaweb.vercel.app/api/respuestas/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ formId: id, autor, mensaje: message.trim() }),

@@ -44,7 +44,7 @@ const Header = ({ className = '' }) => {
 
   useEffect(() => {
     const fetchUnreadCount = async () => {
-      const response = await fetch(`https://accionaapi.vercel.app/api/noti/${userMail}/unread-count`);
+      const response = await fetch(`https://accionaweb.vercel.app/api/noti/${userMail}/unread-count`);
       const data = await response.json();
       console.log("No leídas:", data.unreadCount);
       setUnreadCount(data.unreadCount);

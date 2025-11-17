@@ -61,7 +61,7 @@ const ProfileSection = () => {
       
       try {
         setIsLoading(true);
-        const response = await fetch(`https://accionaapi.vercel.app/api/auth/full/${userEmail}`);
+        const response = await fetch(`https://accionaweb.vercel.app/api/auth/full/${userEmail}`);
 
         if (!response.ok) {
           throw new Error('Error al cargar el perfil. Usuario no encontrado o API caída.');
@@ -161,7 +161,7 @@ const ProfileSection = () => {
     };
     
     try {
-      const response = await fetch(`https://accionaapi.vercel.app/api/auth/users/${userId}`, {
+      const response = await fetch(`https://accionaweb.vercel.app/api/auth/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

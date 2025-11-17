@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children }) {
       }
 
       try {
-        const res = await fetch("https://accionaapi.vercel.app/api/auth/validate", {
+        const res = await fetch("https://accionaweb.vercel.app/api/auth/validate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
