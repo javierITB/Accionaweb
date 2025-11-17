@@ -353,7 +353,7 @@ router.post("/chat", async (req, res) => {
         descripcion: `${autor} le ha enviado un mensaje respecto a un formulario.`,
         icono: "Edit",
         color: "#45577eff",
-        actionUrl: `/RespuestasForms/${respuesta._id}`,
+        actionUrl: `/RespuestasForms?id=${respuesta._id}`,
       });
     } else {
       await addNotification(req.db, {
