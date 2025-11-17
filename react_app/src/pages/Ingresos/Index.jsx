@@ -81,48 +81,34 @@ const CompanyReg = () => {
     return (
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-foreground">Logins registrados</h3>
-        {Logins.length === 0 ? (
+        {Logins.reverse().length === 0 ? (
           <p className="text-muted-foreground">No hay Logins registrados.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full border border-border rounded-lg">
               <thead className="bg-muted text-sm text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-2 text-left">Logo</th>
                   <th className="px-4 py-2 text-left">Nombre</th>
-                  <th className="px-4 py-2 text-left">RUT</th>
-                  <th className="px-4 py-2 text-left">Dirección</th>
-                  <th className="px-4 py-2 text-left">Encargado</th>
-                  <th className="px-4 py-2 text-left">RUT Encargado</th>
-                  <th className="px-4 py-2 text-left">Fecha Registro</th>
+                  <th className="px-4 py-2 text-left">Email</th>
+                  <th className="px-4 py-2 text-left">Cargo</th>
+                  <th className="px-4 py-2 text-left">IP</th>
+                  <th className="px-4 py-2 text-left">Navegador</th>
+                  <th className="px-4 py-2 text-left">S.O.</th>
+                  <th className="px-4 py-2 text-left">Fecha Igreso</th>
                 </tr>
               </thead>
               <tbody>
                 {Logins.map((empresa) => (
                   empresa.nombre != "Todas" &&
                   <tr key={empresa._id} className="border-t hover:bg-muted/30 transition">
+                    <td className="px-4 py-2 font-medium text-sm">{empresa.usr.name}</td>
+                    <td className="px-4 py-2 text-sm whitespace-nowrap">{empresa.usr.email}</td>
+                    <td className="px-4 py-2 text-sm">{empresa.usr.cargo || '—'}</td>
+                    <td className="px-4 py-2 text-sm">{empresa.ipAddress || '—'}</td>
+                    <td className="px-4 py-2 text-sm">{empresa.browser || '—'}</td>
+                    <td className="px-4 py-2 text-sm">{empresa.os || '—'}</td>
                     <td className="px-4 py-2">
-                      {empresa.logo ? (
-                        <img
-                          src={empresa.logo}
-                          alt={`Logo ${empresa.nombre}`}
-                          className="w-10 h-10 object-contain rounded"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
-                          <Icon name="Building2" size={16} className="text-muted-foreground" />
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 font-medium text-sm">{empresa.nombre}</td>
-                    <td className="px-4 py-2 text-sm whitespace-nowrap">{empresa.rut}</td>
-                    <td className="px-4 py-2 text-sm">{empresa.direccion || '—'}</td>
-                    <td className="px-4 py-2 text-sm">{empresa.encargado || '—'}</td>
-                    <td className="px-4 py-2 text-sm whitespace-nowrap">{empresa.rut_encargado || '—'}</td>
-                    <td className="px-4 py-2">
-                      {empresa.createdAt
-                        ? new Date(empresa.createdAt).toLocaleDateString('es-CL')
-                        : '—'}
+                      {empresa.now.replace("T", " ").split(".")[0] || '—'}
                     </td>
                     
                   </tr>
