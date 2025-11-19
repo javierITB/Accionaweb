@@ -192,7 +192,7 @@ const FormReg = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            accessKey: "MI_CLAVE_SECRETA_AQUI",
+            accessKey: "wBlL283JH9TqdEJRxon1QOBuI0A6jGVEwpUYchnyMGz",
             to: [formData.mail],
             subject: "Completa tu registro en la plataforma",
             html: `
