@@ -59,7 +59,7 @@ router.get("/download/:IDdoc", async (req, res) => {
 
         const anser = await req.db.collection('respuestas').findOne({ _id: new ObjectId(documento.responseId) });
 
-        if (anser.status !== 'pendiente') {
+        if (anser.status === 'en_revision') {
             await addNotification(req.db, {
                 userId: anser?.user?.uid,
                 titulo: "Respuestas En Revisión",
@@ -72,7 +72,7 @@ router.get("/download/:IDdoc", async (req, res) => {
         }
         
         // Actualizar estado en respuestas
-        if (documento.responseId) {
+        if (documento.responseId && anser.status === 'pendiente') {
             await req.db.collection("respuestas").updateOne(
                 { _id: new ObjectId(documento.responseId) },
                 {

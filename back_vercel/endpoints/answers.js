@@ -10,16 +10,16 @@ const { validarToken } = require("../utils/validarToken.js");
 // Función para normalizar nombres de archivos
 const normalizeFilename = (filename) => {
   if (!filename) return 'documento_sin_nombre.pdf';
-  
+
   const extension = filename.split('.').pop() || 'pdf';
   const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
-  
+
   const normalized = nameWithoutExt
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9\s._-]/g, '') // Permitir puntos además de espacios
     .substring(0, 100);
-  
+
   return `${normalized}.${extension}`;
 };
 
@@ -140,118 +140,68 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Endpoint para regenerar documento desde respuestas existentes - CORREGIDO
+// Endpoint para regenerar documento desde respuestas existentes
 router.post("/:id/regenerate-document", async (req, res) => {
   try {
     const { id } = req.params;
 
+    console.log(`Regenerando documento para respuesta: ${id}`);
+
     // Obtener la respuesta existente
-    const respuesta = await req.db.collection("respuestas").findOne({ 
-      _id: new ObjectId(id) 
+    const respuesta = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(id)
     });
 
     if (!respuesta) {
       return res.status(404).json({ error: "Respuesta no encontrada" });
     }
 
-    // Obtener el formulario original para mapear IDs a títulos
-    const formulario = await req.db.collection("forms").findOne({
+    // Obtener el formulario original para tener la estructura
+    const form = await req.db.collection("forms").findOne({
       _id: new ObjectId(respuesta.formId)
     });
 
-    if (!formulario) {
+    if (!form) {
       return res.status(404).json({ error: "Formulario original no encontrado" });
     }
 
-    // Función para mapear respuestas al formato que espera el generador
-    const mapearRespuestasParaGenerador = (respuestas, preguntas) => {
-      const mapeadas = {};
-      const contexto = { camposContextuales: {} };
+    console.log(`Regenerando documento para formulario: ${form.title}`);
 
-      const procesarPregunta = (preguntaLista, nivel = 0, contextoActual = '') => {
-        preguntaLista.forEach((pregunta, index) => {
-          const tituloPregunta = pregunta.title || `Pregunta ${index + 1}`;
-          const respuesta = respuestas[pregunta.id];
+    // Llamar al generador con los datos existentes
+    try {
+      await generarAnexoDesdeRespuesta(
+        respuesta.responses,
+        respuesta._id.toString(),
+        req.db,
+        form.section,
+        {
+          nombre: respuesta.user?.nombre,
+          empresa: respuesta.user?.empresa,
+          uid: respuesta.user?.uid
+        },
+        respuesta.formId,
+        respuesta.formTitle
+      );
 
-          // Si hay respuesta para esta pregunta
-          if (respuesta !== undefined && respuesta !== null && 
-              respuesta !== '' && !(Array.isArray(respuesta) && respuesta.length === 0)) {
-            
-            // Para el generador, usar el título como clave
-            if (pregunta.type === 'file' && respuesta instanceof Array) {
-              mapeadas[tituloPregunta] = respuesta.map(archivo => archivo.fileName).join(', ');
-            } else {
-              mapeadas[tituloPregunta] = respuesta;
-            }
+      console.log(`Documento regenerado exitosamente para respuesta: ${id}`);
 
-            // Guardar en contexto si hay contexto actual
-            if (contextoActual) {
-              if (!contexto.camposContextuales[contextoActual]) {
-                contexto.camposContextuales[contextoActual] = {};
-              }
-              contexto.camposContextuales[contextoActual][tituloPregunta] = respuesta;
-            }
-          }
+      res.json({
+        success: true,
+        message: "Documento regenerado exitosamente",
+        responseId: id,
+        formTitle: respuesta.formTitle
+      });
 
-          // Procesar subformularios
-          (pregunta?.options || []).forEach((opcion, opcionIndex) => {
-            if (typeof opcion === 'object' && opcion.hasSubform && opcion.subformQuestions) {
-              const textoOpcion = opcion.text || 'Opción';
-              const estaSeleccionada = 
-                pregunta.type === 'single_choice' ? respuestas[pregunta.id] === textoOpcion :
-                pregunta.type === 'multiple_choice' ? 
-                  Array.isArray(respuestas[pregunta.id]) && respuestas[pregunta.id].includes(textoOpcion) : 
-                  false;
+    } catch (generationError) {
+      console.error("Error en generación de documento:", generationError);
+      return res.status(500).json({
+        error: "Error regenerando documento: " + generationError.message
+      });
+    }
 
-              if (estaSeleccionada) {
-                const subContexto = contextoActual ? `${contextoActual}|${textoOpcion}` : textoOpcion;
-                procesarPregunta(opcion.subformQuestions, nivel + 1, subContexto);
-              }
-            }
-          });
-        });
-      };
-
-      procesarPregunta(preguntas);
-
-      // Combinar respuestas mapeadas con contexto
-      return {
-        ...mapeadas,
-        _contexto: contexto.camposContextuales
-      };
-    };
-
-    // Mapear las respuestas al formato correcto
-    const respuestasMapeadas = mapearRespuestasParaGenerador(
-      respuesta.responses || {},
-      formulario.questions || []
-    );
-
-    console.log("Respuestas mapeadas para regeneración:", Object.keys(respuestasMapeadas));
-
-    // Regenerar el documento usando el formato correcto
-    await generarAnexoDesdeRespuesta(
-      respuestasMapeadas,  // ← Ahora con formato correcto
-      id,
-      req.db,
-      respuesta.form?.section,
-      {
-        nombre: respuesta.user?.nombre,
-        empresa: respuesta.user?.empresa,
-        uid: respuesta.user?.uid,
-      },
-      respuesta.formId,
-      respuesta.formTitle
-    );
-
-    res.json({
-      success: true,
-      message: "Documento regenerado exitosamente"
-    });
-
-  } catch (err) {
-    console.error("Error regenerando documento:", err);
-    res.status(500).json({ error: "Error regenerando documento: " + err.message });
+  } catch (error) {
+    console.error('Error regenerando documento:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -268,8 +218,8 @@ router.post("/:id/archivos", async (req, res) => {
     }
 
     // Verificar que la respuesta existe
-    const respuestaExistente = await req.db.collection("respuestas").findOne({ 
-      _id: new ObjectId(id) 
+    const respuestaExistente = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(id)
     });
 
     if (!respuestaExistente) {
@@ -285,9 +235,9 @@ router.post("/:id/archivos", async (req, res) => {
     // Agregar los archivos al array existente
     const result = await req.db.collection("respuestas").updateOne(
       { _id: new ObjectId(id) },
-      { 
-        $push: { 
-          adjuntos: { $each: archivosNormalizados } 
+      {
+        $push: {
+          adjuntos: { $each: archivosNormalizados }
         },
         $set: { updatedAt: new Date() }
       }
@@ -295,8 +245,8 @@ router.post("/:id/archivos", async (req, res) => {
 
     console.log(`${archivos.length} archivos agregados a respuesta ${id}`);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Archivos agregados exitosamente',
       archivosCount: archivos.length,
       totalArchivos: (respuestaExistente.adjuntos?.length || 0) + archivos.length
