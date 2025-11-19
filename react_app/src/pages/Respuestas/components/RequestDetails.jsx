@@ -481,72 +481,40 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
-  const formatFileName = () => {
-    const formTitle = request?.formTitle || request?.form?.title || 'Formulario';
-
-    const nombreTrabajador = request?.responses?.["Nombre del trabajador:"] ||
-      request?.responses?.["Nombre del trabajador"] ||
-      'Trabajador';
-
-    const submitDate = request?.submittedAt || request?.createdAt;
-
-    const formatDateForFileName = (dateString) => {
-      if (!dateString) return 'fecha-desconocida';
-      const date = new Date(dateString);
-      return date.toISOString().split('T')[0];
-    };
-
-    const datePart = formatDateForFileName(submitDate);
-
-    const cleanText = (text) => {
-      return text
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z0-9]/g, '_')
-        .replace(/_+/g, '_')
-        .toLowerCase();
-    };
-
-    const cleanFormTitle = cleanText(formTitle);
-    const cleanTrabajador = cleanText(nombreTrabajador);
-
-    let extension = 'docx';
-
-    if (request?.form?.section && request.form.section !== "Anexos") {
-      extension = 'txt';
-    }
-
-    if (!request?.form?.section && request?.formTitle) {
-      if (!request.formTitle.toLowerCase().includes('anexo')) {
-        extension = 'txt';
-      }
-    }
-
-    return `${cleanFormTitle}_${cleanTrabajador}_${datePart}.${extension}`;
-  };
-
   const getRealAttachments = () => {
     if (!request) return [];
 
-    const fileName = formatFileName();
-    const extension = fileName.split('.').pop() || 'docx';
+    // Si tenemos documentInfo con IDdoc, usar esa información
+    if (documentInfo && documentInfo.IDdoc) {
+      let fileName = documentInfo.fileName;
 
-    const shouldShowDocument = request?.submittedAt && request?.responses;
+      if (!fileName) {
+        const formTitle = request?.formTitle || 'Documento';
 
-    if (!shouldShowDocument) {
-      return [];
+        // Buscar el nombre del trabajador en diferentes formatos
+        const nombreTrabajador = request?.responses?.["Nombre del trabajador"] ||
+          request?.responses?.["NOMBRE DEL TRABAJADOR"] ||
+          request?.responses?.["Nombre del trabajador:"] ||
+          'Trabajador';
+
+        fileName = `${formTitle}_${nombreTrabajador}`.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
+      }
+
+      const tipo = documentInfo.tipo || 'docx';
+
+      return [
+        {
+          id: documentInfo.IDdoc,
+          name: `${fileName}.${tipo}`,
+          size: "Calculando...",
+          type: tipo,
+          uploadedAt: documentInfo.createdAt || request?.submittedAt,
+          downloadUrl: `/api/documents/download/${documentInfo.IDdoc}`
+        }
+      ];
     }
 
-    return [
-      {
-        id: request?._id || 1,
-        name: fileName,
-        size: "Calculando...",
-        type: extension,
-        uploadedAt: request?.submittedAt || request?.createdAt,
-        downloadUrl: `/api/documents/download/${request?._id}`
-      }
-    ];
+    return [];
   };
 
   const getStatusColor = (status) => {
