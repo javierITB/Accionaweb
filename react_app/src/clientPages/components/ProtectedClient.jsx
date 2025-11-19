@@ -24,7 +24,7 @@ export default function ProtectedRoute({ children }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token, email, cargo }),
         });
-        if (cargo == "user" || cargo == "cliente"){
+        if (cargo == "user" || cargo == "cliente" || cargo == "Admin"){
           setIsAuth(res.ok);
         } else {
           alert("Sesión inactiva o expirada...")
