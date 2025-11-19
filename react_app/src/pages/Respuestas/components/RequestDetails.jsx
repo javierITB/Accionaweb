@@ -120,7 +120,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       } catch (error) {
         console.error('Error verificando actualización del request:', error);
       }
-    }, 5000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [isVisible, request?._id, request?.status, onUpdate]);

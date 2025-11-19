@@ -28,7 +28,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate
       } catch (error) {
         console.error('Error verificando actualización del request:', error);
       }
-    }, 10000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [currentRequest?._id, currentRequest?.status, onUpdate]);

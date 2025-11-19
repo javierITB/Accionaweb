@@ -28,7 +28,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       } catch (error) {
         console.error('Error verificando actualización del request:', error);
       }
-    }, 5000); // Verificar cada 5 segundos
+    }, 30000); // Verificar cada 30 segundos
 
     return () => clearInterval(interval);
   }, [isVisible, request?._id, request?.status, onUpdate]);
