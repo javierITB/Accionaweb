@@ -9,10 +9,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const [clientSignature, setClientSignature] = useState(null);
   const [isApproving, setIsApproving] = useState(false);
   const fileInputRef = useRef(null);
-
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [isLoadingPreviewGenerated, setIsLoadingPreviewGenerated] = useState(false);
+  const [isLoadingPreviewCorrected, setIsLoadingPreviewCorrected] = useState(false);
+  const [isLoadingPreviewSignature, setIsLoadingPreviewSignature] = useState(false);
+  const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(false);
   const [documentInfo, setDocumentInfo] = useState(null);
 
   const checkClientSignature = async () => {
@@ -73,7 +76,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const downloadPdfForPreview = async (url) => {
     try {
-      setIsLoadingPreview(true);
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -91,8 +93,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     } catch (error) {
       console.error('Error descargando PDF para vista previa:', error);
       throw error;
-    } finally {
-      setIsLoadingPreview(false);
     }
   };
 
@@ -105,14 +105,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   useEffect(() => {
     if (!isVisible || !request?._id) return;
 
-    // Verificar cambios en el request cada 5 segundos cuando está visible
     const interval = setInterval(async () => {
       try {
         const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
 
-          // Solo actualizar si el status cambió
           if (updatedRequest.status !== request.status) {
             if (onUpdate) {
               onUpdate(updatedRequest);
@@ -122,7 +120,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       } catch (error) {
         console.error('Error verificando actualización del request:', error);
       }
-    }, 5000); // Verificar cada 5 segundos
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [isVisible, request?._id, request?.status, onUpdate]);
@@ -152,7 +150,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const handlePreviewGenerated = async () => {
     try {
-      setIsLoadingPreview(true);
+      setIsLoadingPreviewGenerated(true);
 
       const info = documentInfo || await getDocumentInfo(request._id);
 
@@ -169,7 +167,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       console.error('Error en vista previa del documento generado:', error);
       alert('Error al cargar la vista previa del documento generado: ' + error.message);
     } finally {
-      setIsLoadingPreview(false);
+      setIsLoadingPreviewGenerated(false);
     }
   };
 
@@ -180,6 +178,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
 
     try {
+      setIsLoadingPreviewCorrected(true);
       let documentUrl;
 
       if (correctedFile && correctedFile instanceof File) {
@@ -202,6 +201,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     } catch (error) {
       console.error('Error en vista previa de documento corregido:', error);
       alert('Error al cargar la vista previa del documento corregido: ' + error.message);
+    } finally {
+      setIsLoadingPreviewCorrected(false);
     }
   };
 
@@ -212,17 +213,21 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
 
     try {
+      setIsLoadingPreviewSignature(true);
       const pdfUrl = `https://accionaapi.vercel.app/api/respuestas/${request._id}/client-signature`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
       console.error('Error en vista previa de firma del cliente:', error);
       alert('Error al cargar la vista previa del documento firmado: ' + error.message);
+    } finally {
+      setIsLoadingPreviewSignature(false);
     }
   };
 
   const handlePreviewAdjunto = async (responseId, index) => {
     try {
+      setIsLoadingPreviewAdjunto(true);
       const adjunto = request.adjuntos[index];
 
       if (adjunto.mimeType !== 'application/pdf') {
@@ -237,6 +242,35 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     } catch (error) {
       console.error('Error abriendo vista previa del adjunto:', error);
       alert('Error al abrir la vista previa del archivo: ' + error.message);
+    } finally {
+      setIsLoadingPreviewAdjunto(false);
+    }
+  };
+
+  const handleRegenerateDocument = async () => {
+    if (!confirm('¿Estás seguro de que quieres regenerar el documento? Esto generará un nuevo documento basado en las respuestas existentes.')) {
+      return;
+    }
+
+    setIsRegenerating(true);
+
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/regenerate-document`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        await getDocumentInfo(request._id);
+        alert('Documento regenerado exitosamente');
+      } else {
+        const errorData = await response.json();
+        alert('Error regenerando documento: ' + (errorData.error || 'Error desconocido'));
+      }
+    } catch (error) {
+      console.error('Error regenerando documento:', error);
+      alert('Error regenerando documento: ' + error.message);
+    } finally {
+      setIsRegenerating(false);
     }
   };
 
@@ -362,7 +396,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleRemoveCorrection = async () => {
-    // Primero verificar si existe documento firmado
     try {
       const signatureCheck = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       const signatureData = await signatureCheck.json();
@@ -724,13 +757,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         <Button
                           variant="ghost"
                           size="sm"
-                          iconName={isLoadingPreview ? "Loader" : "Eye"}
+                          iconName={isLoadingPreviewAdjunto ? "Loader" : "Eye"}
                           iconPosition="left"
                           iconSize={16}
                           onClick={() => handlePreviewAdjunto(request._id, index)}
-                          disabled={isLoadingPreview}
+                          disabled={isLoadingPreviewAdjunto}
                         >
-                          {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
+                          {isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}
                         </Button>
                       )}
                     </div>
@@ -771,12 +804,23 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         variant="ghost"
                         size="sm"
                         onClick={handlePreviewGenerated}
-                        iconName={isLoadingPreview ? "Loader" : "Eye"}
+                        iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
                         iconPosition="left"
                         iconSize={16}
-                        disabled={isLoadingPreview}
+                        disabled={isLoadingPreviewGenerated}
                       >
-                        {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
+                        {isLoadingPreviewGenerated ? 'Cargando...' : 'Vista Previa'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRegenerateDocument}
+                        iconName={isRegenerating ? "Loader" : "RefreshCw"}
+                        iconPosition="left"
+                        iconSize={16}
+                        disabled={isRegenerating}
+                      >
+                        {isRegenerating ? 'Regenerando...' : 'Regenerar'}
                       </Button>
                     </div>
                   </div>
@@ -817,12 +861,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       variant="ghost"
                       size="sm"
                       onClick={handlePreviewCorrected}
-                      iconName={isLoadingPreview ? "Loader" : "Eye"}
+                      iconName={isLoadingPreviewCorrected ? "Loader" : "Eye"}
                       iconPosition="left"
                       iconSize={16}
-                      disabled={isLoadingPreview}
+                      disabled={isLoadingPreviewCorrected}
                     >
-                      {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
+                      {isLoadingPreviewCorrected ? 'Cargando...' : 'Vista Previa'}
                     </Button>
                     <Button
                       variant="ghost"
@@ -888,12 +932,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         variant="ghost"
                         size="sm"
                         onClick={handlePreviewClientSignature}
-                        iconName={isLoadingPreview ? "Loader" : "Eye"}
+                        iconName={isLoadingPreviewSignature ? "Loader" : "Eye"}
                         iconPosition="left"
                         iconSize={16}
-                        disabled={isLoadingPreview}
+                        disabled={isLoadingPreviewSignature}
                       >
-                        {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
+                        {isLoadingPreviewSignature ? 'Cargando...' : 'Vista Previa'}
                       </Button>
                       <Button
                         variant="ghost"
