@@ -16,7 +16,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     try {
-      const res = await fetch("https://accionaapi.vercel.app/api/auth/login", {
+      const res = await fetch("https://back-acciona.vercel.app/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

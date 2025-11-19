@@ -62,7 +62,7 @@ const CompanyReg = () => {
 
   const fetchLogins = async () => {
     try {
-      const response = await fetch('https://accionaapi.vercel.app/api/auth/logins/todos');
+      const response = await fetch('https://back-acciona.vercel.app/api/auth/logins/todos');
       if (response.ok) {
         const loginsData = await response.json();
         setLogins(loginsData);

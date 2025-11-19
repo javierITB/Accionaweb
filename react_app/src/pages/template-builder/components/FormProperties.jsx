@@ -30,7 +30,7 @@ const TemplateList = ({ onUpdateFormData }) => {
       try {
         setIsLoading(true);
         // Usamos la URL de forms para listar las plantillas disponibles
-        const res = await fetch('https://accionaapi.vercel.app/api/forms');
+        const res = await fetch('https://back-acciona.vercel.app/api/forms');
 
         if (!res.ok) {
           throw new Error('Error al obtener la lista de formularios');

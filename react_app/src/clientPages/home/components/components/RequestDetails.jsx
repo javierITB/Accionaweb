@@ -14,7 +14,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
+        const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
           
@@ -38,7 +38,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
     if (isVisible && request?._id && request?.status === 'aprobado') {
       const checkSignedPdf = async () => {
         try {
-          const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+          const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
           const data = await response.json();
           setHasSignedPdf(data.exists);
         } catch (error) {
@@ -71,7 +71,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
     formData.append('signedPdf', file);
 
     try {
-      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/upload-client-signature`, {
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/upload-client-signature`, {
         method: 'POST',
         body: formData,
       });
@@ -84,7 +84,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
         
         // Actualizar el estado local y notificar al componente padre
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -103,7 +103,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
   const handleDownloadApprovedPDF = async (responseId) => {
     try {
-      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/download-approved-pdf/${responseId}`);
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${responseId}`);
 
       if (!response.ok) {
         const errorData = await response.json();

@@ -22,7 +22,7 @@ const FormPreview = ({ formData }) => {
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const res = await fetch(`https://accionaapi.vercel.app/api/auth/${mail}`);
+        const res = await fetch(`https://back-acciona.vercel.app/api/auth/${mail}`);
         if (!res.ok) throw new Error('Usuario no encontrado');
         const data = await res.json();
 
@@ -655,7 +655,7 @@ const FormPreview = ({ formData }) => {
       };
 
       console.log('Enviando respuestas base...');
-      const res = await fetch(`https://accionaapi.vercel.app/api/respuestas`, {
+      const res = await fetch(`https://back-acciona.vercel.app/api/respuestas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadBase),
@@ -735,7 +735,7 @@ const FormPreview = ({ formData }) => {
             console.log(`Enviando chunk ${Math.floor(i/CHUNK_SIZE) + 1}: ${chunk.length} archivos (${(chunkSize / 1024).toFixed(1)}KB)`);
             
             try {
-              const uploadRes = await fetch(`https://accionaapi.vercel.app/api/respuestas/${responseId}/archivos`, {
+              const uploadRes = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/archivos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ archivos: chunk }),

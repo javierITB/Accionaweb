@@ -55,8 +55,8 @@ const RequestTracking = () => {
 
         // 1) Traer ambas colecciones en paralelo, pasando la señal
         const [resResp, resForms] = await Promise.all([
-          fetch('https://accionaapi.vercel.app/api/respuestas/', { signal }),
-          fetch('https://accionaapi.vercel.app/api/forms/', { signal })
+          fetch('https://back-acciona.vercel.app/api/respuestas/', { signal }),
+          fetch('https://back-acciona.vercel.app/api/forms/', { signal })
         ]);
 
         if (!resResp.ok || !resForms.ok) {
@@ -233,7 +233,7 @@ const RequestTracking = () => {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`https://accionaapi.vercel.app/api/respuestas/${requestId}`, {
+      const res = await fetch(`https://back-acciona.vercel.app/api/respuestas/${requestId}`, {
         method: 'DELETE',
       });
 

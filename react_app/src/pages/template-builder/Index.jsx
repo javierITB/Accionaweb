@@ -78,7 +78,7 @@ const FormBuilder = () => {
     if (formData.formId && formData.questions.length === 0) {
       const fetchBaseFormQuestions = async () => {
         try {
-          const res = await fetch(`https://accionaapi.vercel.app/api/forms/${formData.formId}`);
+          const res = await fetch(`https://back-acciona.vercel.app/api/forms/${formData.formId}`);
           if (!res.ok) throw new Error('Formulario base no encontrado');
           const data = await res.json();
 
@@ -102,7 +102,7 @@ const FormBuilder = () => {
 
     const fetchForm = async () => {
       try {
-        const res = await fetch(`https://accionaapi.vercel.app/api/plantillas/${templateId}`);
+        const res = await fetch(`https://back-acciona.vercel.app/api/plantillas/${templateId}`);
         if (!res.ok) throw new Error('Plantilla no encontrada');
         const data = await res.json();
 
@@ -162,7 +162,7 @@ const FormBuilder = () => {
 
     let existingTemplateData = null;
     try {
-      const url = `https://accionaapi.vercel.app/api/plantillas/${selectedFormId}`;
+      const url = `https://back-acciona.vercel.app/api/plantillas/${selectedFormId}`;
       const res = await fetch(url);
 
       if (res.ok) {
@@ -263,7 +263,7 @@ const FormBuilder = () => {
     setIsSaving(true);
 
     const isUpdating = !!formData.id;
-    const url = "https://accionaapi.vercel.app/api/plantillas";
+    const url = "https://back-acciona.vercel.app/api/plantillas";
     const method = "POST";
 
     try {
