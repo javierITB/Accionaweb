@@ -289,6 +289,34 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
+              Descripción del Formulario <span className="text-destructive">*</span>
+              <span className="text-xs text-muted-foreground ml-2">
+                ({formData?.description?.length || 0}/50 caracteres)
+              </span>
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: Solo para uso interno"
+              value={formData?.description || ''}
+              onChange={(e) => handleDescriptionChange(e.target.value)}
+              maxLength={50}
+              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.title?.length || 0) >= 50
+                ? 'border-red-500 focus-visible:ring-red-200'
+                : 'border-input focus-visible:ring-blue-200'
+                }`}
+            />
+            {(formData?.description?.length || 0) >= 50 && (
+              <p className="text-red-500 text-xs">
+                Límite de 50 caracteres alcanzado
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Esta será la descripción visible del formulario
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
               Tiempo Estimado de Respuesta
             </label>
             <select

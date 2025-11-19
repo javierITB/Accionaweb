@@ -223,16 +223,18 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
     }
 
     variables['FECHA_ACTUAL'] = formatearFechaEspanol(new Date().toISOString().split("T")[0]);
+    variables['HORA_ACTUAL'] = new Date().toLocaleTimeString('es-CL', { timeZone: 'America/Santiago' });
 
     console.log("=== VARIABLES EXTRAÍDAS ===");
     console.log("Total variables:", Object.keys(variables).length);
     console.log("Variables disponibles:", Object.keys(variables).sort());
-
     console.log("VALORES CLAVE:");
     console.log("NOMBRE_DEL_TRABAJADOR:", variables['NOMBRE_DEL_TRABAJADOR']);
     console.log("EMPRESA:", variables[normalizarNombreVariable('Empresa')]);
     console.log("ENCARGADO_EMPRESA:", variables[normalizarNombreVariable('Encargado empresa')]);
     console.log("DIRECCION_EMPRESA:", variables[normalizarNombreVariable('Direccion empresa')]);
+    console.log("FECHA_ACTUAL:", variables['FECHA_ACTUAL']);
+    console.log("HORA_ACTUAL:", variables['HORA_ACTUAL']);
     return variables;
 }
 
