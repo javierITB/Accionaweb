@@ -9,10 +9,12 @@ export default function ProtectedRoute({ children }) {
   useEffect(() => {
     const validarToken = async () => {
       const token = sessionStorage.getItem("token");
+      const email = sessionStorage.getItem("email"); 
+      const cargo = sessionStorage.getItem("cargo");
 
-      if (!token) {
-        setLoading(false);
+      if (!token || !email) {
         setIsAuth(false);
+        setLoading(false);
         return;
       }
 
@@ -20,10 +22,14 @@ export default function ProtectedRoute({ children }) {
         const res = await fetch("https://accionaapi.vercel.app/api/auth/validate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
+          body: JSON.stringify({ token, email, cargo }),
         });
-
-        setIsAuth(res.ok);
+        if (cargo == "user" || cargo == "cliente"){
+          setIsAuth(res.ok);
+        } else {
+          alert("Sesión inactiva o expirada...")
+          setIsAuth(false);
+        }
       } catch (err) {
         setIsAuth(false);
       } finally {

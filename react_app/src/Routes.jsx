@@ -2,7 +2,9 @@ import React from "react";
 import { BrowserRouter, Routes as RouterRoutes, Route } from "react-router-dom";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 import ErrorBoundary from "./components/ErrorBoundary";
+
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import ProtectedClient from "./clientPages/components/ProtectedClient.jsx";
 
 import NotFound from "./pages/NotFound";
 import FormCenter from './pages/form-center/Index.jsx';
@@ -31,15 +33,16 @@ const Routes = () => {
         <RouterRoutes>
           <Route path="/login" element = {<Login />}/>
           <Route path="/" element = {<Home />}/>
-          <Route path="/Remuneraciones" element = {<FormList section={"Remuneraciones"}/>}/>
-          <Route path="/Finiquitos" element = {<FormList section={"Finiquitos"} />}/>
-          <Route path="/Anexos" element = {<FormList section={"Anexos"} />}/>
-          <Route path="/Otras" element = {<FormList section={"Otras"} />}/>
+          
+          <Route path="/Remuneraciones" element={<ProtectedClient><FormList section={"Remuneraciones"} /></ProtectedClient>}/>
+          <Route path="/Finiquitos" element={<ProtectedClient><FormList section={"Finiquitos"} /></ProtectedClient>}/>
+          <Route path="/Anexos" element={<ProtectedClient><FormList section={"Anexos"} /></ProtectedClient>}/>
+          <Route path="/Otras" element={<ProtectedClient><FormList section={"Otras"} /></ProtectedClient>}/>
           
           
-          <Route path="/forms" element={<Form />} />
+          <Route path="/forms" element={<ProtectedClient><Form /></ProtectedClient>}/>
           <Route path="/set-password" element={<SetPassword />} />
-          <Route path="/profile" element = {<Profile />}/>
+          <Route path="/forms" element={<ProtectedClient><Profile /></ProtectedClient>}/>
           <Route path="/support-portal" element={ <SupportPortal />}/>
 
           {/* Rutas protegidas */}
