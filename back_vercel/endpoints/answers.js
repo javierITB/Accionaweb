@@ -140,7 +140,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Endpoint para regenerar documento desde respuestas existentes
+// Endpoint para regenerar documento desde respuestas existentes - CORREGIDO
 router.post("/:id/regenerate-document", async (req, res) => {
   try {
     const { id } = req.params;
@@ -154,9 +154,84 @@ router.post("/:id/regenerate-document", async (req, res) => {
       return res.status(404).json({ error: "Respuesta no encontrada" });
     }
 
-    // Regenerar el documento usando el helper existente
+    // Obtener el formulario original para mapear IDs a títulos
+    const formulario = await req.db.collection("forms").findOne({
+      _id: new ObjectId(respuesta.formId)
+    });
+
+    if (!formulario) {
+      return res.status(404).json({ error: "Formulario original no encontrado" });
+    }
+
+    // Función para mapear respuestas al formato que espera el generador
+    const mapearRespuestasParaGenerador = (respuestas, preguntas) => {
+      const mapeadas = {};
+      const contexto = { camposContextuales: {} };
+
+      const procesarPregunta = (preguntaLista, nivel = 0, contextoActual = '') => {
+        preguntaLista.forEach((pregunta, index) => {
+          const tituloPregunta = pregunta.title || `Pregunta ${index + 1}`;
+          const respuesta = respuestas[pregunta.id];
+
+          // Si hay respuesta para esta pregunta
+          if (respuesta !== undefined && respuesta !== null && 
+              respuesta !== '' && !(Array.isArray(respuesta) && respuesta.length === 0)) {
+            
+            // Para el generador, usar el título como clave
+            if (pregunta.type === 'file' && respuesta instanceof Array) {
+              mapeadas[tituloPregunta] = respuesta.map(archivo => archivo.fileName).join(', ');
+            } else {
+              mapeadas[tituloPregunta] = respuesta;
+            }
+
+            // Guardar en contexto si hay contexto actual
+            if (contextoActual) {
+              if (!contexto.camposContextuales[contextoActual]) {
+                contexto.camposContextuales[contextoActual] = {};
+              }
+              contexto.camposContextuales[contextoActual][tituloPregunta] = respuesta;
+            }
+          }
+
+          // Procesar subformularios
+          (pregunta?.options || []).forEach((opcion, opcionIndex) => {
+            if (typeof opcion === 'object' && opcion.hasSubform && opcion.subformQuestions) {
+              const textoOpcion = opcion.text || 'Opción';
+              const estaSeleccionada = 
+                pregunta.type === 'single_choice' ? respuestas[pregunta.id] === textoOpcion :
+                pregunta.type === 'multiple_choice' ? 
+                  Array.isArray(respuestas[pregunta.id]) && respuestas[pregunta.id].includes(textoOpcion) : 
+                  false;
+
+              if (estaSeleccionada) {
+                const subContexto = contextoActual ? `${contextoActual}|${textoOpcion}` : textoOpcion;
+                procesarPregunta(opcion.subformQuestions, nivel + 1, subContexto);
+              }
+            }
+          });
+        });
+      };
+
+      procesarPregunta(preguntas);
+
+      // Combinar respuestas mapeadas con contexto
+      return {
+        ...mapeadas,
+        _contexto: contexto.camposContextuales
+      };
+    };
+
+    // Mapear las respuestas al formato correcto
+    const respuestasMapeadas = mapearRespuestasParaGenerador(
+      respuesta.responses || {},
+      formulario.questions || []
+    );
+
+    console.log("Respuestas mapeadas para regeneración:", Object.keys(respuestasMapeadas));
+
+    // Regenerar el documento usando el formato correcto
     await generarAnexoDesdeRespuesta(
-      respuesta.responses,
+      respuestasMapeadas,  // ← Ahora con formato correcto
       id,
       req.db,
       respuesta.form?.section,
