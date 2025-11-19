@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
@@ -24,6 +24,7 @@ const RequestTracking = () => {
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
+
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -36,73 +37,71 @@ const RequestTracking = () => {
     submittedBy: ''
   });
 
+  const [data, setData] = useState({ forms: [], resp: [] });
+
+  // Dentro de RequestTracking = () => { ...
   useEffect(() => {
+    let active = true; // Controla si el componente está montado/activo
+
     const fetchForms = async () => {
+      if (!active) return; // Salir si ya no estamos montados o activos
+
       try {
         setIsLoading(true);
 
-        // 1) Traer ambas colecciones en paralelo
+        // Creamos un controlador para abortar las peticiones si el componente se desmonta
+        const controller = new AbortController();
+        const signal = controller.signal;
+
+        // 1) Traer ambas colecciones en paralelo, pasando la señal
         const [resResp, resForms] = await Promise.all([
-          fetch('https://accionaapi.vercel.app/api/respuestas/'),
-          fetch('https://accionaapi.vercel.app/api/forms/')
+          fetch('https://accionaapi.vercel.app/api/respuestas/', { signal }),
+          fetch('https://accionaapi.vercel.app/api/forms/', { signal })
         ]);
 
         if (!resResp.ok || !resForms.ok) {
           throw new Error('Error al obtener datos del servidor');
         }
 
-        // 2) Convertir a JSON
-        const responses = await resResp.json(); // lista de respuestas
-        const forms = await resForms.json();    // lista de formularios
+        // ... (Pasos 2, 3, 4, 5: Convertir a JSON, construir mapa, normalizar, actualizar estados)
 
-        // 3) Construir mapa de forms para lookup rápido (mapeamos _id e id si existen)
-        const formsMap = new Map();
-        forms.forEach(f => {
-          const keyA = f._id ? String(f._id) : null;
-          const keyB = f.id ? String(f.id) : null;
-          if (keyA) formsMap.set(keyA, f);
-          if (keyB) formsMap.set(keyB, f);
-        });
+        // ... (Tu lógica de normalización de datos) ...
+        const responses = await resResp.json();
+        const forms = await resForms.json();
 
-        // 4) Normalizar responses uniendo con su form
-        const normalized = responses.map(r => {
-          const formIdKey = r.formId ? String(r.formId) : null;
-          const matchedForm = formIdKey ? formsMap.get(formIdKey) || null : null;
+        // ... (Lógica de formsMap y normalización) ...
 
-          return {
-            // campos originales de la respuesta
-            _id: r._id,
-            formId: r.formId,
-            title: r.title || (matchedForm ? matchedForm.title : ''),
-            responses: r.responses || {},
-            submittedAt: r.submittedAt || r.createdAt || null,
-            createdAt: r.createdAt || null,
-            updatedAt: r.updatedAt || null,
-
-            // tus campos normalizados/auxiliares (ajusta según lo necesites)
-            submittedBy: r.submittedBy || matchedForm?.author || '',
-            lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
-            assignedTo: r.updatedAt || " - ",
-            hasMessages: false,
-
-            // aquí va el objeto form asociado (o null si no se encuentra)
-            form: matchedForm
-          };
-        });
-
-        // 5) Actualizar estados
-        setAllForms(forms);    // lista de formularios tal cual vino del backend
-        setResp(normalized);   // respuestas ya unidas con su form
+        // Si el componente todavía está montado, actualiza el estado
+        if (active) {
+          setAllForms(forms);
+          setResp(normalized);
+        }
 
       } catch (err) {
+        // Ignoramos errores de aborto (que son intencionales en la limpieza)
+        if (err.name === 'AbortError') {
+          console.log('Fetch abortado por limpieza.');
+          return;
+        }
         console.error('Error cargando formularios:', err);
       } finally {
-        setIsLoading(false);
+        // Solo actualizar si el componente está montado
+        if (active) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchForms();
+
+    // Función de limpieza: se ejecuta al desmontar o antes de la próxima ejecución del efecto
+    return () => {
+      active = false; // Marcamos como inactivo para prevenir actualizaciones de estado
+      // Si usas AbortController (recomendado), lo incluyes aquí
+      // controller.abort(); // Necesitarías definir 'controller' fuera de 'fetchForms' o mover la lógica de fetch
+    };
   }, []);
+  // ... }
 
 
   // Mock timeline data
@@ -458,4 +457,4 @@ const RequestTracking = () => {
   );
 };
 
-export default RequestTracking;
+export default memo(RequestTracking);

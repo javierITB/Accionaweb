@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react'; // <-- Importar memo
 import Icon from '../AppIcon';
 import Button from './Button';
 import NotificationsCard from './NotificationsCard';
@@ -9,11 +9,10 @@ const Header = ({ className = '' }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const user = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [userRole, setUserRole] = useState(cargo || 'Usuario'); // Estado para el rol dinámico
+  const [unreadCount, setUnreadCount] = useState(0); // Estado para el contador del ícono
+  const [userRole, setUserRole] = useState(cargo || 'Usuario'); 
 
   // 1. 🌙 Estado del Tema
-  // Inicializar el estado del tema leyendo la clase 'dark' del <html> o el localStorage
   const [theme, setTheme] = useState(
     localStorage.getItem('theme') ||
     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
@@ -33,13 +32,13 @@ const Header = ({ className = '' }) => {
 
   const [isNotiOpen, setIsNotiOpen] = useState(false);
 
-  // Obtener el rol del usuario desde la base de datos
+  // Efecto 1: Obtener el rol del usuario (Ejecución única)
   useEffect(() => {
     const fetchUserRole = async () => {
+      // ... (Lógica de fetchUserRole - se mantiene igual)
       try {
         if (!userMail) return;
 
-        // Opción 1: Usar el endpoint que devuelve el usuario completo
         const response = await fetch(`https://accionaapi.vercel.app/api/auth/full/${userMail}`);
         if (response.ok) {
           const userData = await response.json();
@@ -47,17 +46,14 @@ const Header = ({ className = '' }) => {
           return;
         }
 
-        // Opción 2: Si el endpoint anterior falla, usar el endpoint básico
         const responseBasic = await fetch(`https://accionaapi.vercel.app/api/auth/${userMail}`);
         if (responseBasic.ok) {
           const userData = await responseBasic.json();
-          // Si el endpoint básico no devuelve el rol, mantener el cargo de sessionStorage
           setUserRole(cargo || 'Usuario');
         }
 
       } catch (error) {
         console.error('Error obteniendo rol del usuario:', error);
-        // En caso de error, mantener el valor actual
         setUserRole(cargo || 'Usuario');
       }
     };
@@ -65,52 +61,26 @@ const Header = ({ className = '' }) => {
     fetchUserRole();
   }, [userMail, cargo]);
 
-  // 2. 🌙 Efecto para aplicar y persistir el tema
+  // Efecto 2: Aplicar tema (Se mantiene igual)
   useEffect(() => {
-    const root = document.documentElement; // Es el elemento <html>
-
-    // Aplicar la clase 'dark' o quitarla
+    const root = document.documentElement; 
     if (theme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
-
-    // Guardar la preferencia en localStorage
     localStorage.setItem('theme', theme);
-  }, [theme]); // Se ejecuta cada vez que 'theme' cambia
+  }, [theme]); 
 
-  // 3. 🌙 Función para cambiar el tema
-  const toggleTheme = () => {
-    setTheme(currentTheme => (currentTheme === 'light' ? 'dark' : 'light'));
-  };
-
-  // Resto del código de useEffect para notificaciones (sin cambios)
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      const response = await fetch(`https://accionaapi.vercel.app/api/noti/${userMail}/unread-count`);
-      const data = await response.json();
-      console.log("No leídas:", data.unreadCount);
-      setUnreadCount(data.unreadCount);
-    };
-
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 10000); // cada 10 segundos
-    return () => clearInterval(interval);
-  }, [userMail]); // Cambiado de 'user' a 'userMail' si es el usado en la API
-
-  // Effect para detectar clics fuera de los menús (sin cambios)
+  // Efecto 3: Manejo de clics fuera (Se mantiene igual)
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // ... lógica de cierre de menús
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false);
       }
-
       if (notiRef.current && !notiRef.current.contains(event.target)) {
         setIsNotiOpen(false);
       }
-
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
@@ -121,6 +91,60 @@ const Header = ({ className = '' }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // 💥 EFECTO 4: POLLING CONDICIONAL DE NO LEÍDAS 💥
+  // Este efecto sólo inicia el intervalo si unreadCount es 0. 
+  // Si unreadCount > 0, el polling se detiene, y solo se reinicia
+  // cuando el usuario interactúa y el NotificationsCard resetea el conteo a 0.
+  useEffect(() => {
+    if (!userMail) return;
+
+    let intervalId;
+    
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch(`https://accionaapi.vercel.app/api/noti/${userMail}/unread-count`);
+        const data = await response.json();
+        
+        const newUnreadCount = data.unreadCount || 0;
+        console.log("No leídas:", newUnreadCount);
+        
+        // Actualizar el estado. Esto causa una re-ejecución del useEffect
+        setUnreadCount(newUnreadCount); 
+      } catch (error) {
+        console.error("Error en polling de no leídas:", error);
+      }
+    };
+    
+    // Lógica Condicional:
+    // Solo si NO hay notificaciones sin leer (unreadCount === 0), iniciamos el polling.
+    if (unreadCount === 0) {
+        // Primera ejecución inmediata
+        fetchUnreadCount(); 
+        // Iniciar el intervalo si el conteo actual es 0
+        intervalId = setInterval(fetchUnreadCount, 10000); 
+    } 
+    // Si unreadCount > 0, no se inicia el intervalo, deteniendo el polling.
+    // Cuando el usuario marque como leído (y setUnreadCount(0) se ejecute), 
+    // el useEffect se re-ejecutará y el polling se reiniciará.
+
+    // Función de limpieza: asegurar que el intervalo se detenga
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+
+  // Dependencias: 
+  // userMail (para iniciar si cambia de usuario) 
+  // unreadCount (para reiniciar y comenzar el polling cuando el conteo pasa a 0).
+  }, [userMail, unreadCount]); 
+
+
+  // ... (Funciones auxiliares se mantienen igual)
+  const toggleTheme = () => {
+    setTheme(currentTheme => (currentTheme === 'light' ? 'dark' : 'light'));
+  };
 
   const toggleNoti = () => {
     setIsNotiOpen(!isNotiOpen);
@@ -173,6 +197,7 @@ const Header = ({ className = '' }) => {
             </span>
           </div>
         </div>
+        
 
         {/* Desktop Navigation (sin cambios) */}
         <nav className="hidden lg:flex items-center space-x-1">
@@ -195,7 +220,7 @@ const Header = ({ className = '' }) => {
         {/* User Profile & Actions */}
         <div className="flex items-center space-x-3">
 
-          {/* 4. 🌙 Botón de Modo Oscuro/Claro */}
+          {/* Botón de Modo Oscuro/Claro */}
           <Button
             variant="ghost"
             size="icon"
@@ -205,7 +230,7 @@ const Header = ({ className = '' }) => {
             iconName={theme === 'dark' ? "Sun" : "Moon"}
           />
 
-          {/* Notifications (sin cambios) */}
+          {/* Notifications (MODIFICADO para usar el estado 'unreadCount' actualizado por la Card) */}
           <div ref={notiRef}>
             <Button
               variant="ghost"
@@ -214,7 +239,7 @@ const Header = ({ className = '' }) => {
               className="relative hover:bg-muted transition-brand"
               iconName="Bell"
             >
-              {unreadCount > 0 && ( // solo si hay sin leer
+              {unreadCount > 0 && ( // usa el estado actualizado por el polling
                 <span className="absolute top-1 -right-1 w-2 h-2 bg-error rounded-full animate-pulse-subtle"></span>
               )}
             </Button>
@@ -222,13 +247,18 @@ const Header = ({ className = '' }) => {
             {isNotiOpen && (
               <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
                 <div className="py-2">
-                  <NotificationsCard user={user} onUnreadChange={setUnreadCount} />
+                  {/* El NotificationsCard tiene su propio polling de 3 segundos
+                  y maneja el conteo cuando está abierto. */}
+                  <NotificationsCard 
+                    user={userMail} // Usar userMail
+                    onUnreadChange={setUnreadCount} 
+                  />
                 </div>
               </div>
             )}
           </div>
-
-          {/* User Profile (MODIFICADO: usa userRole en lugar de cargo hardcodeado) */}
+          
+          {/* User Profile */}
           <div className="flex items-center space-x-3 pl-3 border-l border-border">
             {user && (
               <div className="hidden md:block text-right" >
@@ -237,7 +267,7 @@ const Header = ({ className = '' }) => {
               </div>
             )}
 
-            {/* User Avatar with Dropdown (sin cambios) */}
+            {/* User Avatar with Dropdown */}
             {user && (
               <div className="relative" ref={userMenuRef}>
                 <button
@@ -271,7 +301,7 @@ const Header = ({ className = '' }) => {
             </div>
           </div>
 
-          {/* Mobile Menu Toggle (sin cambios) */}
+          {/* Mobile Menu Toggle */}
           <Button
             variant="ghost"
             size="icon"
@@ -287,4 +317,5 @@ const Header = ({ className = '' }) => {
   );
 };
 
-export default Header;
+// Envolver el Header en memo para evitar re-renderizaciones innecesarias
+export default memo(Header);

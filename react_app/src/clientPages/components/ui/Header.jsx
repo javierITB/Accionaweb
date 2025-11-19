@@ -43,17 +43,49 @@ const Header = ({ className = '' }) => {
   ];
 
   useEffect(() => {
-    const fetchUnreadCount = async () => {
-      const response = await fetch(`https://accionaapi.vercel.app/api/noti/${userMail}/unread-count`);
-      const data = await response.json();
-      console.log("No leídas:", data.unreadCount);
-      setUnreadCount(data.unreadCount);
-    };
-
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 10000); // cada 10 segundos
-    return () => clearInterval(interval);
-  }, [user]);
+      if (!userMail) return;
+  
+      let intervalId;
+      
+      const fetchUnreadCount = async () => {
+        try {
+          const response = await fetch(`https://accionaapi.vercel.app/api/noti/${userMail}/unread-count`);
+          const data = await response.json();
+          
+          const newUnreadCount = data.unreadCount || 0;
+          console.log("No leídas:", newUnreadCount);
+          
+          // Actualizar el estado. Esto causa una re-ejecución del useEffect
+          setUnreadCount(newUnreadCount); 
+        } catch (error) {
+          console.error("Error en polling de no leídas:", error);
+        }
+      };
+      
+      // Lógica Condicional:
+      // Solo si NO hay notificaciones sin leer (unreadCount === 0), iniciamos el polling.
+      if (unreadCount === 0) {
+          // Primera ejecución inmediata
+          fetchUnreadCount(); 
+          // Iniciar el intervalo si el conteo actual es 0
+          intervalId = setInterval(fetchUnreadCount, 10000); 
+      } 
+      // Si unreadCount > 0, no se inicia el intervalo, deteniendo el polling.
+      // Cuando el usuario marque como leído (y setUnreadCount(0) se ejecute), 
+      // el useEffect se re-ejecutará y el polling se reiniciará.
+  
+      // Función de limpieza: asegurar que el intervalo se detenga
+      return () => {
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+      };
+  
+    // Dependencias: 
+    // userMail (para iniciar si cambia de usuario) 
+    // unreadCount (para reiniciar y comenzar el polling cuando el conteo pasa a 0).
+    }, [userMail, unreadCount]); 
+  
 
   // Effect para detectar clics fuera de los menús
   useEffect(() => {

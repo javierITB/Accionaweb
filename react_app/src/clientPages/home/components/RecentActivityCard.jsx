@@ -332,29 +332,7 @@ const RequestTracking = () => {
             )}
           </div>
 
-          {/* Timeline View */}
-          {showTimeline && selectedRequest && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-              <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-card border-b border-border p-4 sm:p-6 z-10">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <h2 className="text-lg sm:text-xl font-semibold text-foreground">Cronología de la Solicitud</h2>
-                      <p className="text-sm text-muted-foreground truncate">{selectedRequest?.title}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowTimeline(false)}
-                      iconName="X"
-                      iconSize={18}
-                      className="flex-shrink-0 ml-4"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          
         </div>
       </main>
       
