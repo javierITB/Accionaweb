@@ -876,6 +876,16 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       actionUrl: `/RespuestasForms?id=${respuesta.responseId}`,
     });
 
+    await addNotification(req.db, {
+      filtro: { cargo: "admin" },
+      titulo: `Documento ${respuesta.formTitle} Firmado`,
+      descripcion: `se ha recibido el Documento Firmado asociado al Formulario ${respuesta.formTitle} ${respuesta.responses['Nombre del trabajador']}`,
+      prioridad: 2,
+      icono: 'Pen',
+      color: '#dbca34ff',
+      actionUrl: `/RespuestasForms?id=${respuesta.responseId}`,
+    });
+
     res.json({
       success: true,
       message: "Documento firmado subido exitosamente",
