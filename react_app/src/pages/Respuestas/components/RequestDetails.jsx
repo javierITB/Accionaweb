@@ -9,7 +9,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const [clientSignature, setClientSignature] = useState(null);
   const [isApproving, setIsApproving] = useState(false);
   const fileInputRef = useRef(null);
-
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
@@ -237,6 +237,34 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     } catch (error) {
       console.error('Error abriendo vista previa del adjunto:', error);
       alert('Error al abrir la vista previa del archivo: ' + error.message);
+    }
+  };
+
+  const handleRegenerateDocument = async () => {
+    if (!confirm('¿Estás seguro de que quieres regenerar el documento? Esto generará un nuevo documento basado en las respuestas existentes.')) {
+      return;
+    }
+
+    setIsRegenerating(true);
+
+    try {
+      const response = await fetch(`https://accionaapi.vercel.app/api/respuestas/${request._id}/regenerate-document`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        // Actualizar la información del documento
+        await getDocumentInfo(request._id);
+        alert('Documento regenerado exitosamente');
+      } else {
+        const errorData = await response.json();
+        alert('Error regenerando documento: ' + (errorData.error || 'Error desconocido'));
+      }
+    } catch (error) {
+      console.error('Error regenerando documento:', error);
+      alert('Error regenerando documento: ' + error.message);
+    } finally {
+      setIsRegenerating(false);
     }
   };
 
@@ -777,6 +805,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         disabled={isLoadingPreview}
                       >
                         {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
+                      </Button>
+                      {/* AGREGAR ESTE BOTÓN */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRegenerateDocument}
+                        iconName={isRegenerating ? "Loader" : "RefreshCw"}
+                        iconPosition="left"
+                        iconSize={16}
+                        disabled={isRegenerating}
+                      >
+                        {isRegenerating ? 'Regenerando...' : 'Regenerar'}
                       </Button>
                     </div>
                   </div>

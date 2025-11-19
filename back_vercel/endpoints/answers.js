@@ -17,9 +17,7 @@ const normalizeFilename = (filename) => {
   const normalized = nameWithoutExt
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9\s_-]/g, '')
-    .replace(/\s+/g, '_')
-    .toLowerCase()
+    .replace(/[^a-zA-Z0-9\s._-]/g, '') // Permitir puntos además de espacios
     .substring(0, 100);
   
   return `${normalized}.${extension}`;
@@ -139,6 +137,46 @@ router.post("/", async (req, res) => {
   } catch (err) {
     console.error("Error general al guardar respuesta:", err);
     res.status(500).json({ error: "Error al guardar respuesta: " + err.message });
+  }
+});
+
+// Endpoint para regenerar documento desde respuestas existentes
+router.post("/:id/regenerate-document", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Obtener la respuesta existente
+    const respuesta = await req.db.collection("respuestas").findOne({ 
+      _id: new ObjectId(id) 
+    });
+
+    if (!respuesta) {
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
+    // Regenerar el documento usando el helper existente
+    await generarAnexoDesdeRespuesta(
+      respuesta.responses,
+      id,
+      req.db,
+      respuesta.form?.section,
+      {
+        nombre: respuesta.user?.nombre,
+        empresa: respuesta.user?.empresa,
+        uid: respuesta.user?.uid,
+      },
+      respuesta.formId,
+      respuesta.formTitle
+    );
+
+    res.json({
+      success: true,
+      message: "Documento regenerado exitosamente"
+    });
+
+  } catch (err) {
+    console.error("Error regenerando documento:", err);
+    res.status(500).json({ error: "Error regenerando documento: " + err.message });
   }
 });
 
