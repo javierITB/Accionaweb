@@ -7,6 +7,24 @@ const { generarAnexoDesdeRespuesta } = require("../utils/generador.helper");
 const { enviarCorreoRespaldo } = require("../utils/mailrespaldo.helper");
 const { validarToken } = require("../utils/validarToken.js");
 
+// Función para normalizar nombres de archivos
+const normalizeFilename = (filename) => {
+  if (!filename) return 'documento_sin_nombre.pdf';
+  
+  const extension = filename.split('.').pop() || 'pdf';
+  const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+  
+  const normalized = nameWithoutExt
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9\s_-]/g, '')
+    .replace(/\s+/g, '_')
+    .toLowerCase()
+    .substring(0, 100);
+  
+  return `${normalized}.${extension}`;
+};
+
 // Configurar Multer para almacenar en memoria (buffer)
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -53,9 +71,15 @@ router.post("/", async (req, res) => {
       });
     }
 
+    // Normalizar nombres de archivos adjuntos
+    const adjuntosNormalizados = adjuntos.map(adjunto => ({
+      ...adjunto,
+      fileName: normalizeFilename(adjunto.fileName)
+    }));
+
     const result = await req.db.collection("respuestas").insertOne({
       ...req.body,
-      adjuntos: adjuntos,
+      adjuntos: adjuntosNormalizados,
       status: "pendiente",
       createdAt: new Date(),
     });
@@ -139,12 +163,18 @@ router.post("/:id/archivos", async (req, res) => {
       return res.status(404).json({ error: "Respuesta no encontrada" });
     }
 
+    // Normalizar nombres de archivos antes de guardar
+    const archivosNormalizados = archivos.map(archivo => ({
+      ...archivo,
+      fileName: normalizeFilename(archivo.fileName)
+    }));
+
     // Agregar los archivos al array existente
     const result = await req.db.collection("respuestas").updateOne(
       { _id: new ObjectId(id) },
       { 
         $push: { 
-          adjuntos: { $each: archivos } 
+          adjuntos: { $each: archivosNormalizados } 
         },
         $set: { updatedAt: new Date() }
       }
@@ -464,8 +494,11 @@ router.post("/:id/upload-correction", upload.single('correctedFile'), async (req
 
     console.log("Debug: Archivo recibido:", req.file.originalname, "Tamaño:", req.file.size);
 
+    // Normalizar nombre del archivo
+    const normalizedFileName = normalizeFilename(req.file.originalname);
+
     const correctionData = {
-      fileName: req.file.originalname,
+      fileName: normalizedFileName,
       tipo: 'pdf',
       fileData: req.file.buffer,
       fileSize: req.file.size,
@@ -527,8 +560,11 @@ router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => 
     if (req.file) {
       console.log("Debug: Subiendo nuevo archivo de corrección:", req.file.originalname);
 
+      // Normalizar nombre del archivo
+      const normalizedFileName = normalizeFilename(req.file.originalname);
+
       correctedFileData = {
-        fileName: req.file.originalname,
+        fileName: normalizedFileName,
         tipo: 'pdf',
         fileData: req.file.buffer,
         fileSize: req.file.size,
@@ -547,7 +583,7 @@ router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => 
         }
       );
     } else {
-      // Usar el correctedFile existente
+      // Usar el correctedFile existente (ya debería estar normalizado)
       correctedFileData = respuesta.correctedFile;
       console.log("Debug: Usando corrección existente:", correctedFileData.fileName);
     }
@@ -665,7 +701,7 @@ router.delete("/:id/remove-correction", async (req, res) => {
     res.json({
       message: "Corrección eliminada exitosamente",
       updatedRequest: updatedResponse,
-      hasExistingSignature: !!existingSignature // Informar si había firma
+      hasExistingSignature: !!existingSignature
     });
 
   } catch (err) {
@@ -723,8 +759,6 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       return res.status(404).json({ error: "Formulario no encontrado" });
     }
 
-
-
     const existingSignature = await req.db.collection("firmados").findOne({
       responseId: responseId
     });
@@ -733,8 +767,11 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       return res.status(400).json({ error: "Ya existe un documento firmado para este formulario" });
     }
 
+    // Normalizar nombre del archivo
+    const normalizedFileName = normalizeFilename(req.file.originalname);
+
     const signatureData = {
-      fileName: req.file.originalname,
+      fileName: normalizedFileName,
       fileData: req.file.buffer,
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
@@ -811,7 +848,6 @@ router.get("/:responseId/client-signature", async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${pdfData.fileName}"`);
     res.setHeader('Content-Length', pdfData.fileSize);
 
-    // CORRECCIÓN: Usar .buffer igual que en download-approved-pdf
     res.send(pdfData.fileData.buffer || pdfData.fileData);
 
   } catch (err) {

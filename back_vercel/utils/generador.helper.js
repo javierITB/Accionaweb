@@ -79,6 +79,7 @@ async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
                 nombre: empresa.nombre,
                 rut: empresa.rut,
                 encargado: empresa.encargado || "", // NUEVO: obtener encargado
+                direccion: empresa.direccion || "",
                 rut_encargado: empresa.rut_encargado || "", // NUEVO: obtener rut encargado
                 logo: empresa.logo
             };
@@ -215,11 +216,13 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
                 variables[normalizarNombreVariable('Rut empresa')] = empresaInfo.rut || '';
                 variables[normalizarNombreVariable('Encargado empresa')] = empresaInfo.encargado || '';
                 variables[normalizarNombreVariable('Rut encargado empresa')] = empresaInfo.rut_encargado || '';
+                variables[normalizarNombreVariable('Direccion empresa')] = empresaInfo.direccion || '';
 
                 console.log("✅ Información empresa obtenida:", {
                     nombre: empresaInfo.nombre,
                     rut: empresaInfo.rut,
                     encargado: empresaInfo.encargado,
+                    direccion: empresaInfo.direccion,
                     rut_encargado: empresaInfo.rut_encargado
                 });
             }
@@ -235,12 +238,11 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
     console.log("Total variables:", Object.keys(variables).length);
     console.log("Variables disponibles:", Object.keys(variables).sort());
 
-    // ⚠️ DEBUG: Verificar valores específicos
     console.log("🔍 VALORES CLAVE:");
     console.log("NOMBRE_DEL_TRABAJADOR:", variables['NOMBRE_DEL_TRABAJADOR']);
     console.log("EMPRESA:", variables[normalizarNombreVariable('Empresa')]);
     console.log("ENCARGADO_EMPRESA:", variables[normalizarNombreVariable('Encargado empresa')]);
-
+    console.log("DIRECCION_EMPRESA:", variables[normalizarNombreVariable('Direccion empresa')]);
     return variables;
 }
 
