@@ -252,7 +252,7 @@ const Header = ({ className = '' }) => {
             {isNotiOpen && (
               <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
                 <div className="py-2">
-                  <NotificationsCard user={user} onUnreadChange={setUnreadCount} />
+                  <NotificationsCard user={userMail} onUnreadChange={setUnreadCount} />
                 </div>
               </div>
             )}

@@ -45,7 +45,7 @@ router.get("/:nombre", async (req, res) => {
   try {
     const usuario = await req.db
       .collection("usuarios")
-      .findOne({ nombre: req.params.nombre }, { projection: { notificaciones: 1 } });
+      .findOne({ mail: req.params.nombre }, { projection: { notificaciones: 1 } });
 
     if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
 

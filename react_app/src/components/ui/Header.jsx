@@ -10,7 +10,7 @@ const Header = ({ className = '' }) => {
   const user = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
   const [unreadCount, setUnreadCount] = useState(0); // Estado para el contador del ícono
-  const [userRole, setUserRole] = useState(cargo || 'Usuario'); 
+  const [userRole, setUserRole] = useState(cargo || 'Usuario');
 
   // 1. 🌙 Estado del Tema
   const [theme, setTheme] = useState(
@@ -63,14 +63,14 @@ const Header = ({ className = '' }) => {
 
   // Efecto 2: Aplicar tema (Se mantiene igual)
   useEffect(() => {
-    const root = document.documentElement; 
+    const root = document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
     localStorage.setItem('theme', theme);
-  }, [theme]); 
+  }, [theme]);
 
   // Efecto 3: Manejo de clics fuera (Se mantiene igual)
   useEffect(() => {
@@ -92,53 +92,41 @@ const Header = ({ className = '' }) => {
     };
   }, []);
 
-  // 💥 EFECTO 4: POLLING CONDICIONAL DE NO LEÍDAS 💥
-  // Este efecto sólo inicia el intervalo si unreadCount es 0. 
-  // Si unreadCount > 0, el polling se detiene, y solo se reinicia
-  // cuando el usuario interactúa y el NotificationsCard resetea el conteo a 0.
   useEffect(() => {
     if (!userMail) return;
 
     let intervalId;
-    
+
     const fetchUnreadCount = async () => {
       try {
         const response = await fetch(`https://accionaapi.vercel.app/api/noti/${userMail}/unread-count`);
         const data = await response.json();
-        
+
         const newUnreadCount = data.unreadCount || 0;
         console.log("No leídas:", newUnreadCount);
-        
+
         // Actualizar el estado. Esto causa una re-ejecución del useEffect
-        setUnreadCount(newUnreadCount); 
+        setUnreadCount(newUnreadCount);
       } catch (error) {
         console.error("Error en polling de no leídas:", error);
       }
     };
-    
+
     // Lógica Condicional:
     // Solo si NO hay notificaciones sin leer (unreadCount === 0), iniciamos el polling.
     if (unreadCount === 0) {
-        // Primera ejecución inmediata
-        fetchUnreadCount(); 
-        // Iniciar el intervalo si el conteo actual es 0
-        intervalId = setInterval(fetchUnreadCount, 10000); 
-    } 
-    // Si unreadCount > 0, no se inicia el intervalo, deteniendo el polling.
-    // Cuando el usuario marque como leído (y setUnreadCount(0) se ejecute), 
-    // el useEffect se re-ejecutará y el polling se reiniciará.
+      // Primera ejecución inmediata
+      fetchUnreadCount();
+      // Iniciar el intervalo si el conteo actual es 0
+      intervalId = setInterval(fetchUnreadCount, 10000);
+    }
 
-    // Función de limpieza: asegurar que el intervalo se detenga
     return () => {
       if (intervalId) {
         clearInterval(intervalId);
       }
     };
-
-  // Dependencias: 
-  // userMail (para iniciar si cambia de usuario) 
-  // unreadCount (para reiniciar y comenzar el polling cuando el conteo pasa a 0).
-  }, [userMail, unreadCount]); 
+  }, [userMail, unreadCount]);
 
 
   // ... (Funciones auxiliares se mantienen igual)
@@ -171,7 +159,7 @@ const Header = ({ className = '' }) => {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-brand ${className}`}>
+    <header className={`fixed top-0 left-0 right-0 z-30 bg-card border-b border-border shadow-brand ${className}`}>
       <div className="flex items-center justify-between h-20 px-6">
         {/* Logo Section (sin cambios) */}
         <div className="flex items-center space-x-3">
@@ -197,7 +185,7 @@ const Header = ({ className = '' }) => {
             </span>
           </div>
         </div>
-        
+
 
         {/* Desktop Navigation (sin cambios) */}
         <nav className="hidden lg:flex items-center space-x-1">
@@ -245,19 +233,14 @@ const Header = ({ className = '' }) => {
             </Button>
 
             {isNotiOpen && (
-              <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in">
+              <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
                 <div className="py-2">
-                  {/* El NotificationsCard tiene su propio polling de 3 segundos
-                  y maneja el conteo cuando está abierto. */}
-                  <NotificationsCard 
-                    user={userMail} // Usar userMail
-                    onUnreadChange={setUnreadCount} 
-                  />
+                  <NotificationsCard user={userMail} onUnreadChange={setUnreadCount} />
                 </div>
               </div>
             )}
           </div>
-          
+
           {/* User Profile */}
           <div className="flex items-center space-x-3 pl-3 border-l border-border">
             {user && (
