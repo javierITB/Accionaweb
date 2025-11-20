@@ -122,6 +122,7 @@ const RequestTracking = () => {
             submittedBy: r.user?.nombre || 'Usuario Desconocido',
             lastUpdated: r.updatedAt || null,
             assignedTo: r.updatedAt || " - ",
+            finalizedAt: finalizedAt,
             hasMessages: false, // Mantener o buscar solo este dato
             company: r.user?.empresa || 'desconocida'
           };
@@ -145,7 +146,7 @@ const RequestTracking = () => {
     inReview: resp?.filter(r => r.status === 'en_revision')?.length || 0,
     approved: resp?.filter(r => r.status === 'aprobado')?.length || 0,
     rejected: resp?.filter(r => r.status === 'rechazado')?.length || 0,
-    avgProcessingTime: 5.2
+    finalized: resp?.filter(r => r.status === 'finalizado')?.length || 0,
   };
 
   const filteredRequests = resp?.filter(request => {

@@ -5,7 +5,7 @@ import CleanDocumentPreview from './CleanDocumentPreview';
 
 const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }) => {
   const [correctedFile, setCorrectedFile] = useState(null);
-  const [isDownloading, setIsDownloading] = useState(false); // Para documento generado
+  const [isDownloading, setIsDownloading] = useState(false);
   const [clientSignature, setClientSignature] = useState(null);
   const [isApproving, setIsApproving] = useState(false);
   const fileInputRef = useRef(null);
@@ -17,9 +17,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const [isLoadingPreviewGenerated, setIsLoadingPreviewGenerated] = useState(false);
   const [isLoadingPreviewCorrected, setIsLoadingPreviewCorrected] = useState(false);
   const [isLoadingPreviewSignature, setIsLoadingPreviewSignature] = useState(false);
-  const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(false); // Global para preview, se podría hacer por índice si se desea
+  const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(false);
   
   const [documentInfo, setDocumentInfo] = useState(null);
+  
+  // --- NUEVO ESTADO PARA DATOS APROBADOS ---
+  const [approvedData, setApprovedData] = useState(null);
+  const [isLoadingApprovedData, setIsLoadingApprovedData] = useState(false);
 
   // Estado principal de datos
   const [fullRequestData, setFullRequestData] = useState({ ...request });
@@ -27,11 +31,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   // Estados de carga de secciones
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
-  const [isCheckingSignature, setIsCheckingSignature] = useState(false); // Nuevo: Carga de firma
+  const [isCheckingSignature, setIsCheckingSignature] = useState(false);
 
-  // Estados de carga para descargas específicas
-  const [downloadingAttachmentIndex, setDownloadingAttachmentIndex] = useState(null); // Nuevo: Cuál adjunto se baja
-  const [isDownloadingSignature, setIsDownloadingSignature] = useState(false); // Nuevo: Bajada de firma
+  const [downloadingAttachmentIndex, setDownloadingAttachmentIndex] = useState(null);
+  const [isDownloadingSignature, setIsDownloadingSignature] = useState(false);
 
   // ---------------------------------------------
   // 1. SINCRONIZACIÓN CON EL PADRE
@@ -47,8 +50,30 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   }, [request]);
 
+  // --- NUEVA FUNCIÓN PARA OBTENER DATOS APROBADOS ---
+  const fetchApprovedData = async (responseId) => {
+    setIsLoadingApprovedData(true);
+    try {
+      // Asumiendo que la ruta base es /api/respuestas igual que las otras
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/data-approved/${responseId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setApprovedData(data);
+      } else {
+        // Si es 404 u otro error, limpiamos el estado
+        setApprovedData(null);
+      }
+    } catch (error) {
+      console.error('Error obteniendo datos de aprobado:', error);
+      setApprovedData(null);
+    } finally {
+      setIsLoadingApprovedData(false);
+    }
+  };
+
   const checkClientSignature = async () => {
-    setIsCheckingSignature(true); // Inicio carga
+    setIsCheckingSignature(true);
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       if (response.ok) {
@@ -65,14 +90,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       console.error('Error verificando firma del cliente:', error);
       setClientSignature(null);
     } finally {
-      setIsCheckingSignature(false); // Fin carga
+      setIsCheckingSignature(false);
     }
   };
 
   const getDocumentInfo = async (responseId) => {
-    // Nota: Generalmente esto corre dentro de fetchFullDetailsAndDocs,
-    // por lo que usamos isDetailLoading para la UI, pero si se llama solo,
-    // es rápido.
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/generador/info-by-response/${responseId}`);
       if (response.ok) {
@@ -92,7 +114,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const fetchAttachments = async (responseId) => {
-    setAttachmentsLoading(true); // Inicio carga adjuntos
+    setAttachmentsLoading(true);
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`);
 
@@ -116,12 +138,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     } catch (error) {
       console.error('Error cargando adjuntos:', error);
     } finally {
-      setAttachmentsLoading(false); // Fin carga adjuntos
+      setAttachmentsLoading(false);
     }
   };
 
   useEffect(() => {
+    // Si estamos subiendo un archivo localmente, lo seteamos en el estado
     if (request?.correctedFile) {
+      // Esto es un fallback por si viene del padre, pero approvedData tendrá prioridad visual si no hay upload local
       setCorrectedFile({
         name: request.correctedFile.fileName,
         size: request.correctedFile.fileSize,
@@ -141,13 +165,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   useEffect(() => {
     if (!isVisible || !request?._id) {
       setDocumentInfo(null);
+      setApprovedData(null); // Limpiamos al cerrar
       return;
     }
 
     const responseId = request._id;
 
     const fetchFullDetailsAndDocs = async () => {
-      setIsDetailLoading(true); // Inicio carga general
+      setIsDetailLoading(true);
       try {
         const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}`);
         if (response.ok) {
@@ -163,13 +188,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       } catch (error) {
         console.error('Error cargando detalles completos:', error);
       } finally {
-        setIsDetailLoading(false); // Fin carga general
+        setIsDetailLoading(false);
       }
     };
 
     fetchFullDetailsAndDocs();
     fetchAttachments(responseId);
     checkClientSignature(responseId);
+    fetchApprovedData(responseId); // <-- LLAMADA AL NUEVO ENDPOINT
 
   }, [isVisible, request?._id]);
 
@@ -220,6 +246,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
               onUpdate(updatedRequest);
             }
             setFullRequestData(prev => ({ ...prev, status: updatedRequest.status }));
+            // Si cambió el estado, quizás se aprobó algo nuevo, refrescamos approvedData
+            fetchApprovedData(request._id);
           }
         }
       } catch (error) {
@@ -277,7 +305,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handlePreviewCorrected = async () => {
-    if (!correctedFile && !request?.correctedFile) {
+    // Verificamos si existe alguno de los 3 orígenes posibles
+    const hasFile = correctedFile || approvedData || fullRequestData?.correctedFile;
+
+    if (!hasFile) {
       alert('No hay documento corregido para vista previa');
       return;
     }
@@ -286,13 +317,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       setIsLoadingPreviewCorrected(true);
       let documentUrl;
 
+      // 1. Archivo local subido en este momento
       if (correctedFile && correctedFile instanceof File) {
         documentUrl = URL.createObjectURL(correctedFile);
       }
-      else if (request?.status === 'aprobado' || request?.status === 'firmado') {
+      // 2. Archivo aprobado en el servidor (ya sea por approvedData o status)
+      else if (approvedData || request?.status === 'aprobado' || request?.status === 'firmado') {
         const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${request._id}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
       }
+      // 3. En proceso de revisión antigua (fullRequestData)
       else if (request?.correctedFile) {
         alert('El documento corregido está en proceso de revisión. Una vez aprobado podrás ver la vista previa.');
         return;
@@ -333,7 +367,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handlePreviewAdjunto = async (responseId, index) => {
     try {
       setIsLoadingPreviewAdjunto(true);
-      // Usamos fullRequestData en lugar de request para acceder a los adjuntos cargados
       const adjunto = fullRequestData.adjuntos[index];
 
       if (adjunto.mimeType !== 'application/pdf') {
@@ -410,13 +443,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleDownloadAdjunto = async (responseId, index) => {
-    setDownloadingAttachmentIndex(index); // Inicia carga para este item
+    setDownloadingAttachmentIndex(index);
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
 
       if (response.ok) {
         const blob = await response.blob();
-        // Usamos fullRequestData
         const adjunto = fullRequestData.adjuntos[index];
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -433,12 +465,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       console.error('Error descargando adjunto:', error);
       alert('Error al descargar el archivo');
     } finally {
-      setDownloadingAttachmentIndex(null); // Fin carga
+      setDownloadingAttachmentIndex(null);
     }
   };
 
   const handleDownloadClientSignature = async (responseId) => {
-    setIsDownloadingSignature(true); // Inicio carga firma
+    setIsDownloadingSignature(true);
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`);
 
@@ -460,7 +492,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       console.error('Error descargando firma del cliente:', error);
       alert('Error descargando el documento firmado');
     } finally {
-      setIsDownloadingSignature(false); // Fin carga firma
+      setIsDownloadingSignature(false);
     }
   };
 
@@ -509,6 +541,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleRemoveCorrection = async () => {
+    // Si es un archivo local que aún no se ha enviado
+    if (correctedFile && correctedFile instanceof File) {
+        setCorrectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+    }
+
     try {
       const signatureCheck = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       const signatureData = await signatureCheck.json();
@@ -535,7 +574,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         if (onUpdate && result.updatedRequest) {
           onUpdate(result.updatedRequest);
         }
+        // Limpiamos estados
         setCorrectedFile(null);
+        setApprovedData(null); // Limpiamos los datos aprobados ya que se eliminó
 
         if (result.hasExistingSignature) {
           alert('Corrección eliminada. El documento firmado se mantiene. Al subir nueva corrección, el estado pasará directamente a "firmado".');
@@ -571,6 +612,45 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         method: 'POST',
         body: formData,
       });
+
+      if (approveResponse.ok) {
+        const result = await approveResponse.json();
+
+        if (onUpdate) {
+          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedRequest = await updatedResponse.json();
+          onUpdate(updatedRequest);
+          // Refrescamos los datos aprobados
+          fetchApprovedData(request._id);
+        }
+
+        setCorrectedFile(null); // Limpiamos el archivo local para que se muestre el aprobado
+        alert('Formulario aprobado correctamente');
+      } else {
+        const errorData = await approveResponse.json();
+        alert(`Error al aprobar el formulario: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al aprobar el formulario: ' + error.message);
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleApprovewithoutFile = async () => {
+    if (isApproving || request?.status === 'aprobado' || request?.status === 'firmado' ||  request?.status === 'finalizado' ) {
+      return;
+    }
+
+    if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) {
+      return;
+    }
+
+    setIsApproving(true);
+
+    try {
+      const approveResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/finalized`);
 
       if (approveResponse.ok) {
         const result = await approveResponse.json();
@@ -630,20 +710,20 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'approved':
-      case 'aprobado':
-        return 'bg-success text-success-foreground';
       case 'pending':
       case 'pendiente':
-        return 'bg-warning text-warning-foreground';
+        return 'bg-error text-error-foreground';
       case 'in_review':
       case 'en_revision':
-        return 'bg-accent text-accent-foreground';
+        return 'bg-secondary text-secondary-foreground';
+      case 'approved':
+      case 'aprobado':
+        return 'bg-warning text-warning-foreground';
       case 'signed':
       case 'firmado':
-        return 'bg-blue-500 text-white';
-      case 'borrador':
-        return 'bg-muted text-muted-foreground';
+        return 'bg-success text-success-foreground'
+      case 'finalizado':
+        return 'bg-accent text-accent-foreground'
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -723,7 +803,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const realAttachments = getRealAttachments();
 
-  // CAMBIO 6: Uso constante de 'fullRequestData' en el renderizado
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -793,10 +872,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             </div>
           </div>
 
-
-          {/* Aquí se renderizan los adjuntos combinados */}
           <div>
-              {/* TITULO CON LOADER DE ADJUNTOS */}
               <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                 Archivos Adjuntos
                 {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
@@ -818,12 +894,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       <Button
                         variant="outline"
                         size="sm"
-                        // CAMBIO: Loader si es este indice especifico
                         iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
                         iconPosition="left"
                         iconSize={16}
                         onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
-                        disabled={downloadingAttachmentIndex !== null} // Deshabilita todos si uno baja, o solo este
+                        disabled={downloadingAttachmentIndex !== null}
                       >
                         {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
                       </Button>
@@ -847,9 +922,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             )}
           </div>
           
-
           <div>
-            {/* TITULO CON LOADER DE GENERADO */}
             <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                 Documento Generado
                 {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
@@ -878,7 +951,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       <Button
                         variant="outline"
                         size="sm"
-                        // CAMBIO: Icono dinámico
                         iconName={isDownloading ? "Loader" : "Download"}
                         iconPosition="left"
                         iconSize={16}
@@ -921,20 +993,36 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             )}
           </div>
 
+          {/* --- SECCIÓN ACTUALIZADA: DOCUMENTO CORREGIDO --- */}
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3">Documento Corregido</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                Documento Corregido
+                {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+            </h3>
             <div className="bg-muted/50 rounded-lg p-4">
-              {correctedFile || fullRequestData?.correctedFile ? (
+              {/* LÓGICA DE VISUALIZACIÓN:
+                  1. Prioridad: Archivo que estoy subiendo ahora mismo (correctedFile - instancia de File)
+                  2. Prioridad: Datos aprobados que vienen de la API (approvedData)
+                  3. Prioridad: Datos antiguos en el request general (fullRequestData.correctedFile)
+              */}
+              {correctedFile || approvedData || fullRequestData?.correctedFile ? (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <Icon name="FileText" size={20} className="text-accent" />
                     <div>
                       <p className="text-sm font-medium text-foreground">
-                        {correctedFile?.name || fullRequestData?.correctedFile?.fileName}
+                        {/* Nombre del archivo: Local > Aprobado > General */}
+                        {correctedFile?.name || approvedData?.fileName || fullRequestData?.correctedFile?.fileName}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {correctedFile?.size ? `${(correctedFile.size / 1024 / 1024).toFixed(2)} MB` :
-                          fullRequestData?.correctedFile?.fileSize ? formatFileSize(fullRequestData.correctedFile.fileSize) : 'Tamaño no disponible'}
+                        {/* Tamaño del archivo: Lógica adaptada para cada origen */}
+                        {correctedFile?.size 
+                            ? `${(correctedFile.size / 1024 / 1024).toFixed(2)} MB` 
+                            : approvedData?.fileSize 
+                                ? formatFileSize(approvedData.fileSize)
+                                : fullRequestData?.correctedFile?.fileSize 
+                                    ? formatFileSize(fullRequestData.correctedFile.fileSize) 
+                                    : 'Tamaño no disponible'}
                       </p>
                       {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
                         <p className="text-xs text-success font-medium mt-1">
@@ -991,7 +1079,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
           {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
             <div>
-              {/* TITULO CON LOADER DE FIRMA */}
               <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                 Documento Firmado por Cliente
                 {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
@@ -1012,7 +1099,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       <Button
                         variant="outline"
                         size="sm"
-                        // CAMBIO: Icono dinámico descarga firma
                         iconName={isDownloadingSignature ? "Loader" : "Download"}
                         iconPosition="left"
                         iconSize={16}
@@ -1090,7 +1176,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 Enviar Mensaje
               </Button>
 
-              {fullRequestData?.status !== 'aprobado' && fullRequestData?.status !== 'firmado' && (
+              {correctedFile && fullRequestData?.status !== 'aprobado' && fullRequestData?.status !== 'firmado' && (
                 <Button
                   variant="default"
                   iconName={isApproving ? "Loader" : "CheckCircle"}
@@ -1100,6 +1186,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                   disabled={!correctedFile || isApproving}
                 >
                   {isApproving ? 'Aprobando...' : 'Aprobar'}
+                </Button>
+              )}
+              {fullRequestData?.status !== 'finalizado' && (
+                <Button
+                  variant="default"
+                  iconName={isApproving ? "Loader" : "CheckCircle"}
+                  iconPosition="left"
+                  iconSize={16}
+                  onClick={handleApprovewithoutFile}
+                >
+                  {isApproving ? 'Finalizando...' : 'Finalizar'}
                 </Button>
               )}
 

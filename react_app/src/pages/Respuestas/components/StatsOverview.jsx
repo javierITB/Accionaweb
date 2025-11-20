@@ -38,6 +38,15 @@ const StatsOverview = ({ stats, allForms }) => {
     return (now - lastUpdateDate) <= 24 * 60 * 60 * 1000;
   }).length;
 
+  const last24hfinalizedCount = allForms.filter(r => {
+    const dateToCheck = r.finalizedAt;
+    if (!dateToCheck) return false;
+
+    const lastUpdateDate = new Date(dateToCheck);
+    const now = new Date();
+    return (now - lastUpdateDate) <= 24 * 60 * 60 * 1000;
+  }).length;
+
   const statCards = [
     {
       title: 'Total de Respuestas',
@@ -52,8 +61,8 @@ const StatsOverview = ({ stats, allForms }) => {
       title: 'Pendientes',
       value: stats?.pending,
       icon: 'Clock',
-      color: 'text-warning',
-      bgColor: 'bg-warning/10',
+      color: 'text-error',
+      bgColor: 'bg-error/10',
       change: last24hPendingCount,
       changeType: last24hPendingCount === 0 ? 'positive' : 'negative'
     },
@@ -61,8 +70,8 @@ const StatsOverview = ({ stats, allForms }) => {
       title: 'En Revisión',
       value: stats?.inReview,
       icon: 'Eye',
-      color: 'text-accent',
-      bgColor: 'bg-accent/10',
+      color: 'text-secondary',
+      bgColor: 'bg-secondary/10',
       change: last24hReviewCount,
       changeType: last24happrovedCount === 0 ? 'positive' : 'negative'
     },
@@ -70,8 +79,8 @@ const StatsOverview = ({ stats, allForms }) => {
       title: 'Aprobadas',
       value: stats?.approved,
       icon: 'CheckCircle',
-      color: 'text-success',
-      bgColor: 'bg-success/10',
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
       change: last24happrovedCount,
       changeType: last24happrovedCount === 0 ? 'positive' : 'negative'
     },
@@ -79,18 +88,18 @@ const StatsOverview = ({ stats, allForms }) => {
       title: 'Firmadas',
       value: stats?.rejected,
       icon: 'CheckSquare',
-      color: 'text-warning',
-      bgColor: 'bg-error/10',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
       change: '+3%',
       changeType: 'positive'
     },
     {
-      title: 'Tiempo Promedio',
-      value: `${stats?.avgProcessingTime} días`,
+      title: 'Finalizados',
+      value: stats?.finalized,
       icon: 'Timer',
       color: 'text-accent',
       bgColor: 'bg-accent/10',
-      change: '-2 días',
+      change: last24hfinalizedCount,
       changeType: 'positive'
     }
   ];

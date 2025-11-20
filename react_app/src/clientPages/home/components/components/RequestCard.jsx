@@ -35,20 +35,20 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate }) => {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'approved':
-      case 'aprobado':
-        return 'bg-success text-success-foreground';
       case 'pending':
       case 'pendiente':
-        return 'bg-warning text-warning-foreground';
+        return 'bg-success text-success-foreground';
       case 'in_review':
       case 'en_revision':
-        return 'bg-accent text-accent-foreground';
+        return 'bg-warning text-warning-foreground';
+      case 'approved':
+      case 'aprobado':
+        return 'bg-secondary text-secondary-foreground';
       case 'signed':
       case 'firmado':
-        return 'bg-blue-500 text-white';
-      case 'borrador':
-        return 'bg-muted text-muted-foreground';
+        return 'bg-success text-success-foreground'
+      case 'finalizado':
+        return 'bg-accent text-accent-foreground'
       default:
         return 'bg-muted text-muted-foreground';
     }
