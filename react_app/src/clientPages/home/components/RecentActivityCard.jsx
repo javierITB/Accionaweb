@@ -93,12 +93,11 @@ const RequestTracking = () => {
             submittedAt: r.submittedAt || r.createdAt || null,
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,
-
             // ESTOS CAMPOS SON CRÍTICOS - INCLUIRLOS
             status: r.status || 'pendiente', // ← ESTE ES EL QUE FALTA
             correctedFile: r.correctedFile, // ← Y ESTE TAMBIÉN
             formTitle: r.formTitle, // ← Y ESTE PARA EL NOMBRE DEL FORMULARIO
-
+            trabajador: r.trabajador,
             // tus campos normalizados/auxiliares
             submittedBy: r.user?.nombre || r.submittedBy || 'Usuario',
             company: r.user?.empresa || 'Empresa',

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate }) => {
+const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
 
   useEffect(() => {
@@ -153,18 +153,11 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate
     }
   };
 
-  const getTrabajadorName = () => {
-    return currentRequest?.responses?.["Nombre del trabajador:"] ||
-      currentRequest?.responses?.["Nombre del trabajador"] ||
-      currentRequest?.responses?.["NOMBRE DEL TRABAJADOR"] ||
-      'ninguno';
-  };
-
   const getCombinedTitle = () => {
     const formTitle = currentRequest?.formTitle || currentRequest?.form?.title || currentRequest?.title || 'Formulario';
-    const trabajadorName = getTrabajadorName();
+    const trabajadorName = request?.trabajador || "";
 
-    return `${formTitle} - ${trabajadorName}`;
+    return `${formTitle} ${trabajadorName}`;
   };
 
   return (

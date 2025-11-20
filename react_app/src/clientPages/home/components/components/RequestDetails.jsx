@@ -117,7 +117,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       a.href = url;
 
       const contentDisposition = response.headers.get('Content-Disposition');
-      let fileName = request?.correctedFile?.fileName || 'documento_aprobado.pdf';
+      let fileName = request?.formTitle + request.trabajador || 'documento_aprobado.pdf';
 
       if (contentDisposition) {
         const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
@@ -235,14 +235,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                     <span className="text-sm text-muted-foreground">Categoría:</span>
                     <span className="text-sm font-medium text-foreground">{request?.form?.section}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Prioridad:</span>
-                    <span className={`text-sm font-medium ${request?.priority === 'high' ? 'text-error' :
-                      request?.priority === 'medium' ? 'text-warning' : 'text-success'
-                      }`}>
-                      {request?.priority?.toUpperCase()}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -253,7 +245,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Enviado por:</span>
-                    <span className="text-sm font-medium text-foreground">{request?.submittedBy}</span>
+                    <span className="text-sm font-medium text-foreground">{request?.submittedBy + ", " + request?.company }</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Fecha de envío:</span>
@@ -383,15 +375,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
               </div>
             </div>
           )}
-
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3">Comentarios Internos</h3>
-            <div className="bg-muted/50 rounded-lg p-4">
-              <p className="text-sm text-muted-foreground italic">
-                No hay comentarios internos para esta solicitud.
-              </p>
-            </div>
-          </div>
         </div>
 
         <div className="sticky bottom-0 bg-card border-t border-border p-6">
