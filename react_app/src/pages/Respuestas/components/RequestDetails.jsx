@@ -17,9 +17,30 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const [isLoadingPreviewSignature, setIsLoadingPreviewSignature] = useState(false);
   const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(false);
   const [documentInfo, setDocumentInfo] = useState(null);
-  const [fullRequestData, setFullRequestData] = useState(request);
-  const [isDetailLoading, setIsDetailLoading] = useState(false); // Asumimos este estado está definido
+  
+  // CAMBIO 1: Inicializamos siempre clonando el request, no solo asignándolo
+  const [fullRequestData, setFullRequestData] = useState({ ...request });
+  
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+
+  // ---------------------------------------------
+  // 1. SINCRONIZACIÓN CON EL PADRE
+  // ---------------------------------------------
+  // Si el prop 'request' cambia desde el padre, actualizamos nuestro estado local
+  // pero mantenemos la estructura para no perder datos previos si cambiamos de item.
+  useEffect(() => {
+    if (request) {
+      setFullRequestData(prev => {
+        // Si cambiamos de ID (usuario abrió otro ítem), reemplazamos base con el nuevo prop
+        if (prev?._id !== request._id) {
+          return { ...request };
+        }
+        // Si es el mismo ID, hacemos un merge suave por si el padre trajo info nueva
+        return { ...prev, ...request };
+      });
+    }
+  }, [request]);
 
   const checkClientSignature = async () => {
     try {
@@ -62,20 +83,27 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`); // <-- ENDPOINT DE ADJUNTOS
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`);
 
       if (response.ok) {
         const data = await response.json();
+        
+        // CAMBIO 2: Lógica robusta para extraer adjuntos basada en tu modelo de datos (Array de docs o objeto)
+        // Tu backend devolvía un array de documentos [{adjuntos: []}], así que tomamos el primero.
+        let extractedAdjuntos = [];
+        if (Array.isArray(data) && data.length > 0 && data[0].adjuntos) {
+            extractedAdjuntos = data[0].adjuntos;
+        } else if (data.adjuntos) {
+            extractedAdjuntos = data.adjuntos; // Por si cambias el backend
+        } else if (Array.isArray(data)) {
+            // Fallback por si el endpoint devuelve directo el array de archivos
+            extractedAdjuntos = data;
+        }
 
-        // Actualizamos SOLAMENTE el campo adjuntos en fullRequestData
-        setFullRequestData(prevData => ({
-          ...prevData,
-          adjuntos: data.adjuntos || [], // Asumiendo que el endpoint devuelve { adjuntos: [...] } o [ adjunto, ... ]
-        }));
-      } else {
-        setFullRequestData(prevData => ({
-          ...prevData,
-          adjuntos: [],
+        // CAMBIO 3: MERGE de adjuntos. No reemplazamos todo el estado, solo actualizamos la propiedad adjuntos
+        setFullRequestData(prev => ({
+          ...prev,
+          adjuntos: extractedAdjuntos
         }));
       }
     } catch (error) {
@@ -105,8 +133,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   useEffect(() => {
     if (!isVisible || !request?._id) {
-      // Limpieza al cerrar el modal o si no hay request
-      setFullRequestData(request); // Reset al estado mínimo inicial
       setDocumentInfo(null);
       return;
     }
@@ -116,50 +142,44 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     const fetchFullDetailsAndDocs = async () => {
       setIsDetailLoading(true);
       try {
-        // --- PASO 2: Consulta extendida de un solo elemento ---
-        // Se asume que este endpoint devuelve TODOS los datos, incluyendo r.responses, r.adjuntos, etc.
         const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}`);
         if (response.ok) {
           const data = await response.json();
-          setFullRequestData(data); // Almacena los datos completos
+          
+          // CAMBIO 4: EL MERGE PRINCIPAL
+          // Tomamos lo que ya teníamos (prev) y le "planchamos" encima lo nuevo (data)
+          // Esto asegura que si 'prev' tenía datos del padre que la API no trajo, se mantengan.
+          setFullRequestData(prev => ({
+            ...prev,
+            ...data
+          }));
 
-          // --- PASO 4: Cargar la info del documento después de los detalles ---
           getDocumentInfo(responseId);
-
-        } else {
-          // Si falla la carga de detalles completos, usamos el objeto request inicial
-          setFullRequestData(request);
         }
+        // Si falla, no hacemos nada, nos quedamos con la info del padre (el estado inicial)
       } catch (error) {
         console.error('Error cargando detalles completos:', error);
-        setFullRequestData(request);
       } finally {
         setIsDetailLoading(false);
       }
     };
 
-    // Condición de carga: Si el request es nuevo O la data actual no está completa
-    if (request._id !== fullRequestData?._id || !fullRequestData?.responses) {
-        fetchFullDetailsAndDocs();
-        fetchAttachments(responseId);
-    } else {
-        // Si ya está cargado (ej. se actualizó), al menos refrescamos la info del documento
-        getDocumentInfo(responseId);
-        fetchAttachments(responseId);
-    }
-
-    // El chequeo de firma se mantiene al abrir el modal (depende solo del ID)
+    // Ejecutamos las cargas. 
+    // Nota: Como hacemos merge, es seguro llamar a esto siempre que se abre el modal
+    // para asegurar tener los datos más frescos.
+    fetchFullDetailsAndDocs();
+    fetchAttachments(responseId);
     checkClientSignature(responseId);
 
-  }, [isVisible, request?._id]); // Dependencia clave: `isVisible` y el ID
+  }, [isVisible, request?._id]); 
 
 
   // ---------------------------------------------
   //           FUNCIONES DE MANEJO
   // ---------------------------------------------
 
-  // Variable de conveniencia para usar los datos completos o los iniciales
-  const requestToRender = fullRequestData || request;
+  // CAMBIO 5: Eliminamos 'requestToRender'.
+  // Ahora 'fullRequestData' es la única fuente de verdad, enriquecida progresivamente.
 
   const downloadPdfForPreview = async (url) => {
     try {
@@ -202,6 +222,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             if (onUpdate) {
               onUpdate(updatedRequest);
             }
+            // Opcional: Actualizar también el estado local si cambia el status
+            setFullRequestData(prev => ({...prev, status: updatedRequest.status}));
           }
         }
       } catch (error) {
@@ -315,7 +337,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handlePreviewAdjunto = async (responseId, index) => {
     try {
       setIsLoadingPreviewAdjunto(true);
-      const adjunto = request.adjuntos[index];
+      // Usamos fullRequestData en lugar de request para acceder a los adjuntos cargados
+      const adjunto = fullRequestData.adjuntos[index];
 
       if (adjunto.mimeType !== 'application/pdf') {
         alert('La vista previa solo está disponible para archivos PDF');
@@ -396,7 +419,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
       if (response.ok) {
         const blob = await response.blob();
-        const adjunto = request.adjuntos[index];
+        // Usamos fullRequestData
+        const adjunto = fullRequestData.adjuntos[index];
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -569,19 +593,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const getRealAttachments = () => {
-    if (!request) return [];
+    if (!fullRequestData) return []; // Cambio request -> fullRequestData
 
     // Si tenemos documentInfo con IDdoc, usar esa información
     if (documentInfo && documentInfo.IDdoc) {
       let fileName = documentInfo.fileName;
 
       if (!fileName) {
-        const formTitle = request?.formTitle || 'Documento';
+        const formTitle = fullRequestData?.formTitle || 'Documento';
 
-        // Buscar el nombre del trabajador en diferentes formatos
-        const nombreTrabajador = request?.responses?.["Nombre del trabajador"] ||
-          request?.responses?.["NOMBRE DEL TRABAJADOR"] ||
-          request?.responses?.["Nombre del trabajador:"] ||
+        const nombreTrabajador = fullRequestData?.responses?.["Nombre del trabajador"] ||
+          fullRequestData?.responses?.["NOMBRE DEL TRABAJADOR"] ||
+          fullRequestData?.responses?.["Nombre del trabajador:"] ||
           'Trabajador';
 
         fileName = `${formTitle}_${nombreTrabajador}`.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
@@ -595,7 +618,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           name: `${fileName}.${tipo}`,
           size: "Calculando...",
           type: tipo,
-          uploadedAt: documentInfo.createdAt || request?.submittedAt,
+          uploadedAt: documentInfo.createdAt || fullRequestData?.submittedAt,
           downloadUrl: `/api/documents/download/${documentInfo.IDdoc}`
         }
       ];
@@ -699,6 +722,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const realAttachments = getRealAttachments();
 
+  // CAMBIO 6: Uso constante de 'fullRequestData' en el renderizado
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -708,13 +732,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
               <div className="flex items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">{requestToRender?.formTitle || requestToRender?.title}</h2>
-                  <p className="text-sm text-muted-foreground">ID: {requestToRender?._id}</p>
+                  <h2 className="text-xl font-semibold text-foreground">{fullRequestData?.formTitle || fullRequestData?.title}</h2>
+                  <p className="text-sm text-muted-foreground">ID: {fullRequestData?._id}</p>
                 </div>
               </div>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(requestToRender?.status)}`}>
-                <Icon name={getStatusIcon(requestToRender?.status)} size={14} className="mr-2" />
-                {requestToRender?.status?.replace('_', ' ')?.toUpperCase()}
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fullRequestData?.status)}`}>
+                <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
+                {fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
               </span>
             </div>
             <Button
@@ -734,17 +758,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 <h3 className="text-lg font-semibold text-foreground mb-3">Información General</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm font-medium text-foreground">{requestToRender?.formTitle}</span>
+                    <span className="text-sm font-medium text-foreground">{fullRequestData?.formTitle}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Categoría:</span>
-                    <span className="text-sm font-medium text-foreground">{requestToRender?.form?.section}</span>
+                    <span className="text-sm font-medium text-foreground">{fullRequestData?.form?.section}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={`text-sm font-medium ${requestToRender?.priority === 'high' ? 'text-error' :
-                      requestToRender?.priority === 'medium' ? 'text-warning' : 'text-success'
+                    <span className={`text-sm font-medium ${fullRequestData?.priority === 'high' ? 'text-error' :
+                      fullRequestData?.priority === 'medium' ? 'text-warning' : 'text-success'
                       }`}>
-                      {requestToRender?.priority?.toUpperCase()}
+                      {fullRequestData?.priority?.toUpperCase()}
                     </span>
                   </div>
                 </div>
@@ -757,36 +781,25 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Enviado por:</span>
-                    <span className="text-sm font-medium text-foreground">{requestToRender?.submittedBy}, {requestToRender?.company}</span>
+                    <span className="text-sm font-medium text-foreground">{fullRequestData?.submittedBy}, {fullRequestData?.company}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Fecha de envío:</span>
-                    <span className="text-sm font-medium text-foreground">{formatDate(requestToRender?.submittedAt)}</span>
+                    <span className="text-sm font-medium text-foreground">{formatDate(fullRequestData?.submittedAt)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium text-foreground">{requestToRender?.user?.nombre}</span>
-                  </div>
+                  
                 </div>
               </div>
             </div>
           </div>
 
-          {requestToRender?.form?.description && (
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">Descripción</h3>
-              <div className="bg-muted/50 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {requestToRender?.form?.description}
-                </p>
-              </div>
-            </div>
-          )}
 
-          {requestToRender?.adjuntos?.length > 0 && (
+          {/* Aquí se renderizan los adjuntos combinados */}
+          {fullRequestData?.adjuntos?.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">Archivos Adjuntos</h3>
               <div className="space-y-2">
-                {requestToRender.adjuntos.map((adjunto, index) => (
+                {fullRequestData.adjuntos.map((adjunto, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
@@ -804,7 +817,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         iconName="Download"
                         iconPosition="left"
                         iconSize={16}
-                        onClick={() => handleDownloadAdjunto(requestToRender._id, index)}
+                        onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
                       >
                         Descargar
                       </Button>
@@ -815,7 +828,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                           iconName={isLoadingPreviewAdjunto ? "Loader" : "Eye"}
                           iconPosition="left"
                           iconSize={16}
-                          onClick={() => handlePreviewAdjunto(requestToRender._id, index)}
+                          onClick={() => handlePreviewAdjunto(fullRequestData._id, index)}
                           disabled={isLoadingPreviewAdjunto}
                         >
                           {isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}
@@ -892,19 +905,19 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Documento Corregido</h3>
             <div className="bg-muted/50 rounded-lg p-4">
-              {correctedFile || request?.correctedFile ? (
+              {correctedFile || fullRequestData?.correctedFile ? (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <Icon name="FileText" size={20} className="text-accent" />
                     <div>
                       <p className="text-sm font-medium text-foreground">
-                        {correctedFile?.name || request?.correctedFile?.fileName}
+                        {correctedFile?.name || fullRequestData?.correctedFile?.fileName}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {correctedFile?.size ? `${(correctedFile.size / 1024 / 1024).toFixed(2)} MB` :
-                          request?.correctedFile?.fileSize ? formatFileSize(request.correctedFile.fileSize) : 'Tamaño no disponible'}
+                          fullRequestData?.correctedFile?.fileSize ? formatFileSize(fullRequestData.correctedFile.fileSize) : 'Tamaño no disponible'}
                       </p>
-                      {(request?.status === 'aprobado' || request?.status === 'firmado') && (
+                      {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
                         <p className="text-xs text-success font-medium mt-1">
                           ✓ Formulario aprobado
                         </p>
@@ -957,7 +970,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             </div>
           </div>
 
-          {(request?.status === 'aprobado' || request?.status === 'firmado') && (
+          {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado por Cliente</h3>
               {clientSignature ? (
@@ -979,7 +992,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         iconName="Download"
                         iconPosition="left"
                         iconSize={16}
-                        onClick={() => handleDownloadClientSignature(request._id)}
+                        onClick={() => handleDownloadClientSignature(fullRequestData._id)}
                       >
                         Descargar
                       </Button>
@@ -997,7 +1010,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDeleteClientSignature(request._id)}
+                        onClick={() => handleDeleteClientSignature(fullRequestData._id)}
                         className="text-error hover:bg-error/10"
                       >
                         <Icon name="Trash2" size={16} />
@@ -1038,20 +1051,20 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Icon name="Clock" size={16} />
-              <span>Última actualización: {formatDate(request?.submittedAt)}</span>
+              <span>Última actualización: {formatDate(fullRequestData?.submittedAt)}</span>
             </div>
             <div className="flex items-center space-x-3">
               <Button
                 variant="outline"
                 iconName="MessageSquare"
                 iconPosition="left"
-                onClick={() => onSendMessage(request)}
+                onClick={() => onSendMessage(fullRequestData)}
                 iconSize={16}
               >
                 Enviar Mensaje
               </Button>
 
-              {request?.status !== 'aprobado' && request?.status !== 'firmado' && (
+              {fullRequestData?.status !== 'aprobado' && fullRequestData?.status !== 'firmado' && (
                 <Button
                   variant="default"
                   iconName="CheckCircle"
