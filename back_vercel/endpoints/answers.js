@@ -7,6 +7,7 @@ const { generarAnexoDesdeRespuesta } = require("../utils/generador.helper");
 const { enviarCorreoRespaldo } = require("../utils/mailrespaldo.helper");
 const { validarToken } = require("../utils/validarToken.js");
 
+
 // Función para normalizar nombres de archivos
 const normalizeFilename = (filename) => {
   if (!filename) return 'documento_sin_nombre.pdf';
@@ -17,7 +18,7 @@ const normalizeFilename = (filename) => {
   const normalized = nameWithoutExt
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9\s._-]/g, '') // Permitir puntos además de espacios
+    .replace(/[^a-zA-Z0-9\s._-]/g, '')
     .substring(0, 100);
 
   return `${normalized}.${extension}`;
@@ -40,7 +41,7 @@ const upload = multer({
 
 router.use(express.json({ limit: '4mb' }));
 
-
+// En el endpoint POST principal (/)
 router.post("/", async (req, res) => {
   try {
     const { formId, user, responses, formTitle, adjuntos = [], mail: correoRespaldo } = req.body;
@@ -69,20 +70,39 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Normalizar nombres de archivos adjuntos
-    const adjuntosNormalizados = adjuntos.map(adjunto => ({
-      ...adjunto,
-      fileName: normalizeFilename(adjunto.fileName)
-    }));
-
+    // Insertar respuesta principal
     const result = await req.db.collection("respuestas").insertOne({
-      ...req.body,
-      adjuntos: adjuntosNormalizados,
+      formId,
+      user,
+      responses,
+      formTitle,
+      mail: correoRespaldo,
       status: "pendiente",
       createdAt: new Date(),
+      adjuntosCount: adjuntos.length
     });
 
-    // ENVÍO DE CORREO DE RESPALDO (separado en helper)
+    // CORRECCIÓN: Guardar adjuntos en el formato coherente
+    if (adjuntos.length > 0) {
+      const adjuntosParaGuardar = adjuntos.map(adjunto => ({
+        responseId: result.insertedId,
+        submittedAt: new Date().toISOString(), // Usar submittedAt como en tu formato objetivo
+        adjuntos: [
+          {
+            pregunta: adjunto.pregunta || "Adjunto sin descripción",
+            fileName: normalizeFilename(adjunto.fileName),
+            fileData: adjunto.fileData,
+            mimeType: adjunto.mimeType || 'application/octet-stream',
+            size: adjunto.size || 0,
+            uploadedAt: new Date().toISOString() // Mantener uploadedAt para cada archivo
+          }
+        ]
+      }));
+
+      await req.db.collection("adjuntos").insertMany(adjuntosParaGuardar);
+    }
+
+    // El resto del código permanece igual...
     let resultadoCorreo = { enviado: false };
     if (correoRespaldo && correoRespaldo.trim() !== '') {
       resultadoCorreo = await enviarCorreoRespaldo(
@@ -129,7 +149,11 @@ router.post("/", async (req, res) => {
 
     res.json({
       _id: result.insertedId,
-      ...req.body,
+      formId,
+      user,
+      responses,
+      formTitle,
+      mail: correoRespaldo,
       adjuntosCount: adjuntos.length,
       correoRespaldo: resultadoCorreo
     });
@@ -140,142 +164,35 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Endpoint para regenerar documento desde respuestas existentes
-router.post("/:id/regenerate-document", async (req, res) => {
+// Obtener adjuntos de una respuesta específica
+router.get("/:id/adjuntos", async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log(`Regenerando documento para respuesta: ${id}`);
+    const adjuntos = await req.db.collection("adjuntos")
+      .findOne({ responseId: new ObjectId(id) });
 
-    // Obtener la respuesta existente
-    const respuesta = await req.db.collection("respuestas").findOne({
-      _id: new ObjectId(id)
-    });
+    res.json(adjuntos);
 
-    if (!respuesta) {
-      return res.status(404).json({ error: "Respuesta no encontrada" });
-    }
-
-    // Obtener el formulario original para tener la estructura
-    const form = await req.db.collection("forms").findOne({
-      _id: new ObjectId(respuesta.formId)
-    });
-
-    if (!form) {
-      return res.status(404).json({ error: "Formulario original no encontrado" });
-    }
-
-    console.log(`Regenerando documento para formulario: ${form.title}`);
-
-    // Llamar al generador con los datos existentes
-    try {
-      await generarAnexoDesdeRespuesta(
-        respuesta.responses,
-        respuesta._id.toString(),
-        req.db,
-        form.section,
-        {
-          nombre: respuesta.user?.nombre,
-          empresa: respuesta.user?.empresa,
-          uid: respuesta.user?.uid
-        },
-        respuesta.formId,
-        respuesta.formTitle
-      );
-
-      console.log(`Documento regenerado exitosamente para respuesta: ${id}`);
-
-      res.json({
-        success: true,
-        message: "Documento regenerado exitosamente",
-        responseId: id,
-        formTitle: respuesta.formTitle
-      });
-
-    } catch (generationError) {
-      console.error("Error en generación de documento:", generationError);
-      return res.status(500).json({
-        error: "Error regenerando documento: " + generationError.message
-      });
-    }
-
-  } catch (error) {
-    console.error('Error regenerando documento:', error);
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    console.error("Error obteniendo adjuntos:", err);
+    res.status(500).json({ error: "Error obteniendo adjuntos" });
   }
 });
 
-// Nuevo endpoint para agregar archivos a una respuesta existente
-router.post("/:id/archivos", async (req, res) => {
+// Descargar adjunto específico
+router.get("/:id/adjuntos/:adjuntoId", async (req, res) => {
   try {
-    const { id } = req.params;
-    const { archivos } = req.body;
+    const { id, adjuntoId } = req.params;
 
-    console.log(`Agregando ${archivos.length} archivos a respuesta:`, id);
-
-    if (!archivos || !Array.isArray(archivos)) {
-      return res.status(400).json({ error: "Formato inválido: se esperaba array 'archivos'" });
-    }
-
-    // Verificar que la respuesta existe
-    const respuestaExistente = await req.db.collection("respuestas").findOne({
-      _id: new ObjectId(id)
+    const adjunto = await req.db.collection("adjuntos").findOne({
+      _id: new ObjectId(adjuntoId),
+      responseId: id
     });
 
-    if (!respuestaExistente) {
-      return res.status(404).json({ error: "Respuesta no encontrada" });
+    if (!adjunto) {
+      return res.status(404).json({ error: "Archivo adjunto no encontrado" });
     }
-
-    // Normalizar nombres de archivos antes de guardar
-    const archivosNormalizados = archivos.map(archivo => ({
-      ...archivo,
-      fileName: normalizeFilename(archivo.fileName)
-    }));
-
-    // Agregar los archivos al array existente
-    const result = await req.db.collection("respuestas").updateOne(
-      { _id: new ObjectId(id) },
-      {
-        $push: {
-          adjuntos: { $each: archivosNormalizados }
-        },
-        $set: { updatedAt: new Date() }
-      }
-    );
-
-    console.log(`${archivos.length} archivos agregados a respuesta ${id}`);
-
-    res.json({
-      success: true,
-      message: 'Archivos agregados exitosamente',
-      archivosCount: archivos.length,
-      totalArchivos: (respuestaExistente.adjuntos?.length || 0) + archivos.length
-    });
-
-  } catch (error) {
-    console.error('Error agregando archivos:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Endpoint para descargar archivos adjuntos
-router.get("/:id/adjuntos/:index", async (req, res) => {
-  try {
-    const { id, index } = req.params;
-
-    const respuesta = await req.db
-      .collection("respuestas")
-      .findOne({ _id: new ObjectId(id) });
-
-    if (!respuesta) {
-      return res.status(404).json({ error: "Respuesta no encontrada" });
-    }
-
-    if (!respuesta.adjuntos || !respuesta.adjuntos[index]) {
-      return res.status(404).json({ error: "Archivo no encontrado" });
-    }
-
-    const adjunto = respuesta.adjuntos[index];
 
     const base64Data = adjunto.fileData.replace(/^data:[^;]+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
@@ -289,38 +206,128 @@ router.get("/:id/adjuntos/:index", async (req, res) => {
     res.send(buffer);
 
   } catch (err) {
-    console.error("Error descargando archivo:", err);
-    res.status(500).json({ error: "Error descargando archivo" });
+    console.error("Error descargando archivo adjunto:", err);
+    res.status(500).json({ error: "Error descargando archivo adjunto" });
   }
 });
 
-// Endpoint para obtener información de adjuntos
-router.get("/:id/adjuntos", async (req, res) => {
+// CORREGIR endpoint para agregar adjuntos
+router.post("/:id/adjuntos", async (req, res) => {
   try {
     const { id } = req.params;
+    const { archivos } = req.body;
 
-    const respuesta = await req.db
-      .collection("respuestas")
-      .findOne({ _id: new ObjectId(id) }, { projection: { adjuntos: 1 } });
+    console.log(`Agregando ${archivos.length} archivos a respuesta:`, id);
 
-    if (!respuesta) {
+    if (!archivos || !Array.isArray(archivos)) {
+      return res.status(400).json({ error: "Formato inválido: se esperaba array 'archivos'" });
+    }
+
+    const respuestaExistente = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(id)
+    });
+
+    if (!respuestaExistente) {
       return res.status(404).json({ error: "Respuesta no encontrada" });
     }
 
-    res.json(respuesta.adjuntos || []);
+    // CORRECCIÓN: Usar el formato coherente
+    const adjuntosParaGuardar = archivos.map(archivo => ({
+      responseId: new ObjectId(id),
+      submittedAt: new Date().toISOString(),
+      adjuntos: [
+        {
+          pregunta: archivo.pregunta || "Adjunto sin descripción",
+          fileName: normalizeFilename(archivo.fileName),
+          fileData: archivo.fileData,
+          mimeType: archivo.mimeType || 'application/octet-stream',
+          size: archivo.size || 0,
+          uploadedAt: new Date().toISOString()
+        }
+      ]
+    }));
 
-  } catch (err) {
-    console.error("Error obteniendo adjuntos:", err);
-    res.status(500).json({ error: "Error obteniendo adjuntos" });
+    const result = await req.db.collection("adjuntos").insertMany(adjuntosParaGuardar);
+
+    await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $inc: { adjuntosCount: archivos.length },
+        $set: { updatedAt: new Date() }
+      }
+    );
+
+    console.log(`${archivos.length} archivos agregados a respuesta ${id}`);
+
+    res.json({
+      success: true,
+      message: 'Archivos agregados exitosamente',
+      archivosCount: archivos.length,
+      totalArchivos: (respuestaExistente.adjuntosCount || 0) + archivos.length
+    });
+
+  } catch (error) {
+    console.error('Error agregando archivos:', error);
+    res.status(500).json({ error: error.message });
   }
 });
-
+//pendiente eliminacion
 
 router.get("/", async (req, res) => {
   try {
     const answers = await req.db.collection("respuestas").find().toArray();
     res.json(answers);
   } catch (err) {
+    res.status(500).json({ error: "Error al obtener formularios" });
+  }
+});
+
+router.get("/mini", async (req, res) => {
+  try {
+    const answers = await req.db.collection("respuestas")
+      .find({})
+      .project({
+        _id: 1,
+        formId: 1,
+        formTitle: 1,
+        "responses": 1, // Incluir todo el objeto responses para procesar después
+        submittedAt: 1,
+        "user.nombre": 1,
+        "user.empresa": 1,
+        status: 1,
+        createdAt: 1,
+        adjuntosCount: 1
+      })
+      .toArray();
+
+    // CORRECCIÓN: Procesar las respuestas en JavaScript
+    const answersProcessed = answers.map(answer => {
+      // Buscar el nombre del trabajador en diferentes formatos
+      let trabajador = "No especificado";
+      
+      if (answer.responses) {
+        trabajador = answer.responses["Nombre del trabajador"] || 
+                    answer.responses["NOMBRE DEL TRABAJADOR"] || 
+                    answer.responses["nombre del trabajador"] || 
+                    "No especificado";
+      }
+
+      return {
+        _id: answer._id,
+        formId: answer.formId,
+        formTitle: answer.formTitle,
+        trabajador: trabajador,
+        submittedAt: answer.submittedAt,
+        user: answer.user,
+        status: answer.status,
+        createdAt: answer.createdAt,
+        adjuntosCount: answer.adjuntosCount || 0
+      };
+    });
+
+    res.json(answersProcessed);
+  } catch (err) {
+    console.error("Error en /mini:", err);
     res.status(500).json({ error: "Error al obtener formularios" });
   }
 });
@@ -339,20 +346,19 @@ router.get("/mail/:mail", async (req, res) => {
   }
 });
 
-
 router.get("/:id", async (req, res) => {
   try {
-    const form = await req.db
-      .collection("respuestas")
+    const form = await req.db.collection("respuestas")
       .findOne({ _id: new ObjectId(req.params.id) });
 
     if (!form) return res.status(404).json({ error: "Formulario no encontrado" });
+
     res.json(form);
+
   } catch (err) {
     res.status(500).json({ error: "Error al obtener formulario" });
   }
 });
-
 
 router.get("/section/:section", async (req, res) => {
   try {
@@ -527,7 +533,6 @@ router.post("/chat", async (req, res) => {
   }
 });
 
-
 router.put("/chat/marcar-leidos", async (req, res) => {
   try {
     const result = await req.db.collection("respuestas").updateMany(
@@ -557,7 +562,6 @@ router.post("/:id/upload-correction", upload.single('correctedFile'), async (req
 
     console.log("Debug: Archivo recibido:", req.file.originalname, "Tamaño:", req.file.size);
 
-    // Normalizar nombre del archivo
     const normalizedFileName = normalizeFilename(req.file.originalname);
 
     const correctionData = {
@@ -573,7 +577,8 @@ router.post("/:id/upload-correction", upload.single('correctedFile'), async (req
       { _id: new ObjectId(req.params.id) },
       {
         $set: {
-          correctedFile: correctionData,
+          hasCorrection: true,  // Solo bandera, no el archivo
+          correctionFileName: normalizedFileName,
           updatedAt: new Date()
         }
       }
@@ -599,7 +604,7 @@ router.post("/:id/upload-correction", upload.single('correctedFile'), async (req
   }
 });
 
-// Aprobar formulario y guardar en aprobados (con upload incluido)
+// Aprobar formulario y guardar en aprobados
 router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => {
   try {
     console.log("Debug: Iniciando approve para ID:", req.params.id);
@@ -611,7 +616,6 @@ router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => 
       return res.status(404).json({ error: "Respuesta no encontrada" });
     }
 
-    // Si no hay correctedFile en la respuesta Y no se subió un archivo
     if (!respuesta.correctedFile && !req.file) {
       console.log("Debug: No hay corrección subida para ID:", req.params.id);
       return res.status(400).json({ error: "No hay corrección subida para aprobar" });
@@ -619,11 +623,9 @@ router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => 
 
     let correctedFileData;
 
-    // Si se subió un archivo en este request, usarlo
     if (req.file) {
       console.log("Debug: Subiendo nuevo archivo de corrección:", req.file.originalname);
 
-      // Normalizar nombre del archivo
       const normalizedFileName = normalizeFilename(req.file.originalname);
 
       correctedFileData = {
@@ -634,26 +636,13 @@ router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => 
         mimeType: req.file.mimetype,
         uploadedAt: new Date()
       };
-
-      // Actualizar correctedFile en la respuesta
-      await req.db.collection("respuestas").updateOne(
-        { _id: new ObjectId(req.params.id) },
-        {
-          $set: {
-            correctedFile: correctedFileData,
-            updatedAt: new Date()
-          }
-        }
-      );
     } else {
-      // Usar el correctedFile existente (ya debería estar normalizado)
       correctedFileData = respuesta.correctedFile;
       console.log("Debug: Usando corrección existente:", correctedFileData.fileName);
     }
 
     console.log("Debug: Aprobando respuesta con corrección:", correctedFileData.fileName);
 
-    // VERIFICAR SI EXISTE DOCUMENTO FIRMADO
     const existingSignature = await req.db.collection("firmados").findOne({
       responseId: req.params.id
     });
@@ -664,13 +653,16 @@ router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => 
       nuevoEstado = "firmado";
     }
 
-    // Actualizar estado (aprobado o firmado según corresponda)
     const updateResult = await req.db.collection("respuestas").updateOne(
       { _id: new ObjectId(req.params.id) },
       {
         $set: {
           status: nuevoEstado,
-          approvedAt: new Date()
+          approvedAt: new Date(),
+          updatedAt: new Date()
+        },
+        $unset: {
+          correctedFile: ""
         }
       }
     );
@@ -687,7 +679,6 @@ router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => 
 
     console.log("Debug: Resultado de actualización de estado:", updateResult);
 
-    // Guardar en colección aprobados
     const insertResult = await req.db.collection("aprobados").insertOne({
       responseId: req.params.id,
       correctedFile: correctedFileData,
@@ -722,7 +713,6 @@ router.delete("/:id/remove-correction", async (req, res) => {
     console.log("Debug: Iniciando remove-correction para ID:", req.params.id);
     console.log("Debug: ID recibido:", req.params.id);
 
-    // Verificar si existe documento firmado solo para logging
     const existingSignature = await req.db.collection("firmados").findOne({
       responseId: req.params.id
     });
@@ -742,8 +732,10 @@ router.delete("/:id/remove-correction", async (req, res) => {
       {
         $set: {
           status: "en_revision",
-          correctedFile: null,
           updatedAt: new Date()
+        },
+        $unset: {
+          correctedFile: ""
         }
       }
     );
@@ -830,7 +822,6 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       return res.status(400).json({ error: "Ya existe un documento firmado para este formulario" });
     }
 
-    // Normalizar nombre del archivo
     const normalizedFileName = normalizeFilename(req.file.originalname);
 
     const signatureData = {
@@ -876,16 +867,6 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       actionUrl: `/RespuestasForms?id=${respuesta.responseId}`,
     });
 
-    await addNotification(req.db, {
-      filtro: { cargo: "admin" },
-      titulo: `Documento ${respuesta.formTitle} Firmado`,
-      descripcion: `se ha recibido el Documento Firmado asociado al Formulario ${respuesta.formTitle} ${respuesta.responses['Nombre del trabajador']}`,
-      prioridad: 2,
-      icono: 'Pen',
-      color: '#dbca34ff',
-      actionUrl: `/RespuestasForms?id=${respuesta.responseId}`,
-    });
-
     res.json({
       success: true,
       message: "Documento firmado subido exitosamente",
@@ -898,7 +879,7 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
   }
 });
 
-// Obtener PDF firmado por cliente - CORREGIDO
+// Obtener PDF firmado por cliente
 router.get("/:responseId/client-signature", async (req, res) => {
   try {
     const { responseId } = req.params;
@@ -996,6 +977,68 @@ router.get("/:responseId/has-client-signature", async (req, res) => {
   } catch (err) {
     console.error("Error verificando firma del cliente:", err);
     res.status(500).json({ error: "Error verificando documento firmado" });
+  }
+});
+
+// Endpoint para regenerar documento desde respuestas existentes
+router.post("/:id/regenerate-document", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    console.log(`Regenerando documento para respuesta: ${id}`);
+
+    const respuesta = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(id)
+    });
+
+    if (!respuesta) {
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
+    const form = await req.db.collection("forms").findOne({
+      _id: new ObjectId(respuesta.formId)
+    });
+
+    if (!form) {
+      return res.status(404).json({ error: "Formulario original no encontrado" });
+    }
+
+    console.log(`Regenerando documento para formulario: ${form.title}`);
+
+    try {
+      await generarAnexoDesdeRespuesta(
+        respuesta.responses,
+        respuesta._id.toString(),
+        req.db,
+        form.section,
+        {
+          nombre: respuesta.user?.nombre,
+          empresa: respuesta.user?.empresa,
+          uid: respuesta.user?.uid
+        },
+        respuesta.formId,
+        respuesta.formTitle
+      );
+
+      console.log(`Documento regenerado exitosamente para respuesta: ${id}`);
+
+      res.json({
+        success: true,
+        message: "Documento regenerado exitosamente",
+        responseId: id,
+        formTitle: respuesta.formTitle
+      });
+
+    } catch (generationError) {
+      console.error("Error en generación de documento:", generationError);
+      return res.status(500).json({
+        error: "Error regenerando documento: " + generationError.message
+      });
+    }
+
+  } catch (error) {
+    console.error('Error regenerando documento:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
