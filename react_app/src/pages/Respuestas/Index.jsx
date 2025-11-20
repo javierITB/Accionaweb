@@ -21,7 +21,6 @@ const RequestTracking = () => {
   // Estados de la Aplicación
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [forms, setAllForms] = useState([]);
   const [resp, setResp] = useState([]);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showRequestDetails, setShowRequestDetails] = useState(false);
@@ -99,70 +98,35 @@ const RequestTracking = () => {
       try {
         setIsLoading(true);
 
-        const [resResp, resForms, resDocxs] = await Promise.all([
-          fetch('https://back-acciona.vercel.app/api/respuestas/'),
-          fetch('https://back-acciona.vercel.app/api/forms/'),
-          fetch('https://back-acciona.vercel.app/api/generador/docxs')
-        ]);
+        // 1. OBTENER RESPUESTAS MINIMIZADAS PARA LAS TARJETAS
+        // **Nueva URL simulando una respuesta con datos mínimos**
+        const resResp = await fetch('https://back-acciona.vercel.app/api/respuestas/mini'); // <--- CAMBIO CLAVE
 
-        if (!resResp.ok || !resForms.ok || !resDocxs.ok) {
+        if (!resResp.ok) {
           throw new Error('Error al obtener datos del servidor');
         }
 
         const responses = await resResp.json();
-        const forms = await resForms.json();
-        const docxs = await resDocxs.json();
+        // const docxs = await resDocxs.json(); // Se elimina la carga aquí
 
-        const formsMap = new Map();
-        forms.forEach(f => {
-          const keyA = f._id ? String(f._id) : null;
-          const keyB = f.id ? String(f.id) : null;
-          if (keyA) formsMap.set(keyA, f);
-          if (keyB) formsMap.set(keyB, f);
-        });
 
         const normalized = responses.map(r => {
-          const formIdKey = r.formId ? String(r.formId) : null;
-          const matchedForm = formIdKey ? formsMap.get(formIdKey) || null : null;
-
-          const matchedDoc = docxs.find(doc =>
-            doc.responseId === String(r._id)
-          );
-
-          const userName = r.user?.nombre || r.userId?.nombre || 'Usuario Desconocido';
-          const userCompany = r.user?.empresa || r.userId?.empresa || 'desconocida';
-          const userEmail = r.user?.mail || r.userId?.mail || '';
-
           return {
             _id: r._id,
             formId: r.formId,
-            title: r.title || r.formTitle || (matchedForm ? matchedForm.title : ''),
-            responses: r.responses || {},
-            adjuntos: r.adjuntos || [],
+            title: r.title || r.formTitle || "formulario",
             submittedAt: r.submittedAt || r.createdAt || null,
-            createdAt: r.createdAt || null,
-            updatedAt: r.updatedAt || null,
-            status: r.status || 'pendiente',
-
-            correctedFile: r.correctedFile,
             formTitle: r.formTitle,
-            approvedAt: r.approvedAt,
-
-            IDdoc: matchedDoc?.IDdoc,
-            docxStatus: matchedDoc?.estado,
-            docxCreatedAt: matchedDoc?.createdAt,
-            submittedBy: userName,
-            lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
+            status: r.status,
+            trabajador: r.trabajador,
+            submittedBy: r.user?.nombre || 'Usuario Desconocido',
+            lastUpdated: r.updatedAt || null,
             assignedTo: r.updatedAt || " - ",
-            hasMessages: false,
-            company: userCompany,
-            userEmail: userEmail,
-            form: matchedForm,
-            searchData: JSON.stringify(r.responses).toLowerCase()
+            hasMessages: false, // Mantener o buscar solo este dato
+            company: r.user?.empresa || 'desconocida'
           };
         });
 
-        setAllForms(forms);
         setResp(normalized);
 
       } catch (err) {
@@ -173,7 +137,7 @@ const RequestTracking = () => {
     };
 
     fetchForms();
-  }, []);
+  }, [/* dependencies */]);
 
   const mockStats = {
     total: resp?.length || 0,

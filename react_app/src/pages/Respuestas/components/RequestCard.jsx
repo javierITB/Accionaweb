@@ -153,18 +153,13 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate
     }
   };
 
-  const getTrabajadorName = () => {
-    return currentRequest?.responses?.["Nombre del trabajador:"] ||
-      currentRequest?.responses?.["Nombre del trabajador"] ||
-      currentRequest?.responses?.["NOMBRE DEL TRABAJADOR"] ||
-      'ninguno';
-  };
+ 
 
   const getCombinedTitle = () => {
-    const formTitle = currentRequest?.formTitle || currentRequest?.form?.title || currentRequest?.title || 'Formulario';
-    const trabajadorName = getTrabajadorName();
+    const formTitle = currentRequest?.formTitle || 'Formulario';
+    const trabajador = request?.trabajador || "";
 
-    return `${formTitle} - ${trabajadorName}`;
+    return `${formTitle} ${trabajador}`;
   };
 
   return (
@@ -196,12 +191,6 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate
             <div className="flex items-center space-x-1">
               <Icon name="User" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
               <span className="truncate">Por: {currentRequest?.submittedBy}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Icon name="Tag" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
-              <span className={getPriorityColor(currentRequest?.priority)}>
-                {currentRequest?.form?.section?.toUpperCase()}
-              </span>
             </div>
           </div>
         </div>

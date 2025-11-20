@@ -17,6 +17,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const [isLoadingPreviewSignature, setIsLoadingPreviewSignature] = useState(false);
   const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(false);
   const [documentInfo, setDocumentInfo] = useState(null);
+  const [fullRequestData, setFullRequestData] = useState(request);
+  const [isDetailLoading, setIsDetailLoading] = useState(false); // Asumimos este estado está definido
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
 
   const checkClientSignature = async () => {
     try {
@@ -56,6 +59,32 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     await checkClientSignature();
   };
 
+  const fetchAttachments = async (responseId) => {
+    setAttachmentsLoading(true);
+    try {
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`); // <-- ENDPOINT DE ADJUNTOS
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Actualizamos SOLAMENTE el campo adjuntos en fullRequestData
+        setFullRequestData(prevData => ({
+          ...prevData,
+          adjuntos: data.adjuntos || [], // Asumiendo que el endpoint devuelve { adjuntos: [...] } o [ adjunto, ... ]
+        }));
+      } else {
+        setFullRequestData(prevData => ({
+          ...prevData,
+          adjuntos: [],
+        }));
+      }
+    } catch (error) {
+      console.error('Error cargando adjuntos:', error);
+    } finally {
+      setAttachmentsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (request?.correctedFile) {
       setCorrectedFile({
@@ -73,6 +102,64 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       getDocumentInfo(request._id);
     }
   }, [request]);
+
+  useEffect(() => {
+    if (!isVisible || !request?._id) {
+      // Limpieza al cerrar el modal o si no hay request
+      setFullRequestData(request); // Reset al estado mínimo inicial
+      setDocumentInfo(null);
+      return;
+    }
+
+    const responseId = request._id;
+
+    const fetchFullDetailsAndDocs = async () => {
+      setIsDetailLoading(true);
+      try {
+        // --- PASO 2: Consulta extendida de un solo elemento ---
+        // Se asume que este endpoint devuelve TODOS los datos, incluyendo r.responses, r.adjuntos, etc.
+        const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setFullRequestData(data); // Almacena los datos completos
+
+          // --- PASO 4: Cargar la info del documento después de los detalles ---
+          getDocumentInfo(responseId);
+
+        } else {
+          // Si falla la carga de detalles completos, usamos el objeto request inicial
+          setFullRequestData(request);
+        }
+      } catch (error) {
+        console.error('Error cargando detalles completos:', error);
+        setFullRequestData(request);
+      } finally {
+        setIsDetailLoading(false);
+      }
+    };
+
+    // Condición de carga: Si el request es nuevo O la data actual no está completa
+    if (request._id !== fullRequestData?._id || !fullRequestData?.responses) {
+        fetchFullDetailsAndDocs();
+        fetchAttachments(responseId);
+    } else {
+        // Si ya está cargado (ej. se actualizó), al menos refrescamos la info del documento
+        getDocumentInfo(responseId);
+        fetchAttachments(responseId);
+    }
+
+    // El chequeo de firma se mantiene al abrir el modal (depende solo del ID)
+    checkClientSignature(responseId);
+
+  }, [isVisible, request?._id]); // Dependencia clave: `isVisible` y el ID
+
+
+  // ---------------------------------------------
+  //           FUNCIONES DE MANEJO
+  // ---------------------------------------------
+
+  // Variable de conveniencia para usar los datos completos o los iniciales
+  const requestToRender = fullRequestData || request;
 
   const downloadPdfForPreview = async (url) => {
     try {
@@ -621,13 +708,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
               <div className="flex items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">{request?.formTitle || request?.title}</h2>
-                  <p className="text-sm text-muted-foreground">ID: {request?._id}</p>
+                  <h2 className="text-xl font-semibold text-foreground">{requestToRender?.formTitle || requestToRender?.title}</h2>
+                  <p className="text-sm text-muted-foreground">ID: {requestToRender?._id}</p>
                 </div>
               </div>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(request?.status)}`}>
-                <Icon name={getStatusIcon(request?.status)} size={14} className="mr-2" />
-                {request?.status?.replace('_', ' ')?.toUpperCase()}
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(requestToRender?.status)}`}>
+                <Icon name={getStatusIcon(requestToRender?.status)} size={14} className="mr-2" />
+                {requestToRender?.status?.replace('_', ' ')?.toUpperCase()}
               </span>
             </div>
             <Button
@@ -647,17 +734,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 <h3 className="text-lg font-semibold text-foreground mb-3">Información General</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm font-medium text-foreground">{request?.formTitle}</span>
+                    <span className="text-sm font-medium text-foreground">{requestToRender?.formTitle}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Categoría:</span>
-                    <span className="text-sm font-medium text-foreground">{request?.form?.section}</span>
+                    <span className="text-sm font-medium text-foreground">{requestToRender?.form?.section}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={`text-sm font-medium ${request?.priority === 'high' ? 'text-error' :
-                      request?.priority === 'medium' ? 'text-warning' : 'text-success'
+                    <span className={`text-sm font-medium ${requestToRender?.priority === 'high' ? 'text-error' :
+                      requestToRender?.priority === 'medium' ? 'text-warning' : 'text-success'
                       }`}>
-                      {request?.priority?.toUpperCase()}
+                      {requestToRender?.priority?.toUpperCase()}
                     </span>
                   </div>
                 </div>
@@ -670,36 +757,36 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Enviado por:</span>
-                    <span className="text-sm font-medium text-foreground">{request?.submittedBy}, {request?.company}</span>
+                    <span className="text-sm font-medium text-foreground">{requestToRender?.submittedBy}, {requestToRender?.company}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Fecha de envío:</span>
-                    <span className="text-sm font-medium text-foreground">{formatDate(request?.submittedAt)}</span>
+                    <span className="text-sm font-medium text-foreground">{formatDate(requestToRender?.submittedAt)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm font-medium text-foreground">{request?.user?.nombre}</span>
+                    <span className="text-sm font-medium text-foreground">{requestToRender?.user?.nombre}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {request?.form?.description && (
+          {requestToRender?.form?.description && (
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">Descripción</h3>
               <div className="bg-muted/50 rounded-lg p-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {request?.form?.description}
+                  {requestToRender?.form?.description}
                 </p>
               </div>
             </div>
           )}
 
-          {request?.adjuntos && request.adjuntos.length > 0 && (
+          {requestToRender?.adjuntos?.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">Archivos Adjuntos</h3>
               <div className="space-y-2">
-                {request.adjuntos.map((adjunto, index) => (
+                {requestToRender.adjuntos.map((adjunto, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
@@ -717,7 +804,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                         iconName="Download"
                         iconPosition="left"
                         iconSize={16}
-                        onClick={() => handleDownloadAdjunto(request._id, index)}
+                        onClick={() => handleDownloadAdjunto(requestToRender._id, index)}
                       >
                         Descargar
                       </Button>
@@ -728,7 +815,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                           iconName={isLoadingPreviewAdjunto ? "Loader" : "Eye"}
                           iconPosition="left"
                           iconSize={16}
-                          onClick={() => handlePreviewAdjunto(request._id, index)}
+                          onClick={() => handlePreviewAdjunto(requestToRender._id, index)}
                           disabled={isLoadingPreviewAdjunto}
                         >
                           {isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}

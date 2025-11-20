@@ -159,7 +159,7 @@ const Header = ({ className = '' }) => {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-30 bg-card border-b border-border shadow-brand ${className}`}>
+    <header className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-brand ${className}`}>
       <div className="flex items-center justify-between h-20 px-6">
         {/* Logo Section (sin cambios) */}
         <div className="flex items-center space-x-3">
