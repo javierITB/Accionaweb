@@ -122,7 +122,7 @@ const RequestTracking = () => {
             submittedBy: r.user?.nombre || 'Usuario Desconocido',
             lastUpdated: r.updatedAt || null,
             assignedTo: r.updatedAt || " - ",
-            finalizedAt: finalizedAt,
+            finalizedAt: r.finalizedAt,
             hasMessages: false, // Mantener o buscar solo este dato
             company: r.user?.empresa || 'desconocida'
           };

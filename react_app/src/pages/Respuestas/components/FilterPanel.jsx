@@ -18,6 +18,7 @@ const FilterPanel = ({
     { value: 'en_revision', label: 'En Revisión' },
     { value: 'aprobado', label: 'Aprobado' },
     { value: 'firmado', label: 'Firmado' },
+    { value: 'finalizado', label: 'finalizado' },
   ];
 
   // Opciones de categoría basadas en los formularios existentes
