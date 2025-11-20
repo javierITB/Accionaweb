@@ -5,44 +5,50 @@ import CleanDocumentPreview from './CleanDocumentPreview';
 
 const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }) => {
   const [correctedFile, setCorrectedFile] = useState(null);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false); // Para documento generado
   const [clientSignature, setClientSignature] = useState(null);
   const [isApproving, setIsApproving] = useState(false);
   const fileInputRef = useRef(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
+  
+  // Estados de carga para vistas previas
   const [isLoadingPreviewGenerated, setIsLoadingPreviewGenerated] = useState(false);
   const [isLoadingPreviewCorrected, setIsLoadingPreviewCorrected] = useState(false);
   const [isLoadingPreviewSignature, setIsLoadingPreviewSignature] = useState(false);
-  const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(false);
+  const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(false); // Global para preview, se podría hacer por índice si se desea
+  
   const [documentInfo, setDocumentInfo] = useState(null);
-  
-  // CAMBIO 1: Inicializamos siempre clonando el request, no solo asignándolo
+
+  // Estado principal de datos
   const [fullRequestData, setFullRequestData] = useState({ ...request });
-  
+
+  // Estados de carga de secciones
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const [isCheckingSignature, setIsCheckingSignature] = useState(false); // Nuevo: Carga de firma
+
+  // Estados de carga para descargas específicas
+  const [downloadingAttachmentIndex, setDownloadingAttachmentIndex] = useState(null); // Nuevo: Cuál adjunto se baja
+  const [isDownloadingSignature, setIsDownloadingSignature] = useState(false); // Nuevo: Bajada de firma
 
   // ---------------------------------------------
   // 1. SINCRONIZACIÓN CON EL PADRE
   // ---------------------------------------------
-  // Si el prop 'request' cambia desde el padre, actualizamos nuestro estado local
-  // pero mantenemos la estructura para no perder datos previos si cambiamos de item.
   useEffect(() => {
     if (request) {
       setFullRequestData(prev => {
-        // Si cambiamos de ID (usuario abrió otro ítem), reemplazamos base con el nuevo prop
         if (prev?._id !== request._id) {
           return { ...request };
         }
-        // Si es el mismo ID, hacemos un merge suave por si el padre trajo info nueva
         return { ...prev, ...request };
       });
     }
   }, [request]);
 
   const checkClientSignature = async () => {
+    setIsCheckingSignature(true); // Inicio carga
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       if (response.ok) {
@@ -58,10 +64,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     } catch (error) {
       console.error('Error verificando firma del cliente:', error);
       setClientSignature(null);
+    } finally {
+      setIsCheckingSignature(false); // Fin carga
     }
   };
 
   const getDocumentInfo = async (responseId) => {
+    // Nota: Generalmente esto corre dentro de fetchFullDetailsAndDocs,
+    // por lo que usamos isDetailLoading para la UI, pero si se llama solo,
+    // es rápido.
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/generador/info-by-response/${responseId}`);
       if (response.ok) {
@@ -81,26 +92,22 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const fetchAttachments = async (responseId) => {
-    setAttachmentsLoading(true);
+    setAttachmentsLoading(true); // Inicio carga adjuntos
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`);
 
       if (response.ok) {
         const data = await response.json();
-        
-        // CAMBIO 2: Lógica robusta para extraer adjuntos basada en tu modelo de datos (Array de docs o objeto)
-        // Tu backend devolvía un array de documentos [{adjuntos: []}], así que tomamos el primero.
+
         let extractedAdjuntos = [];
         if (Array.isArray(data) && data.length > 0 && data[0].adjuntos) {
-            extractedAdjuntos = data[0].adjuntos;
+          extractedAdjuntos = data[0].adjuntos;
         } else if (data.adjuntos) {
-            extractedAdjuntos = data.adjuntos; // Por si cambias el backend
+          extractedAdjuntos = data.adjuntos; 
         } else if (Array.isArray(data)) {
-            // Fallback por si el endpoint devuelve directo el array de archivos
-            extractedAdjuntos = data;
+          extractedAdjuntos = data;
         }
 
-        // CAMBIO 3: MERGE de adjuntos. No reemplazamos todo el estado, solo actualizamos la propiedad adjuntos
         setFullRequestData(prev => ({
           ...prev,
           adjuntos: extractedAdjuntos
@@ -109,7 +116,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     } catch (error) {
       console.error('Error cargando adjuntos:', error);
     } finally {
-      setAttachmentsLoading(false);
+      setAttachmentsLoading(false); // Fin carga adjuntos
     }
   };
 
@@ -140,46 +147,36 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     const responseId = request._id;
 
     const fetchFullDetailsAndDocs = async () => {
-      setIsDetailLoading(true);
+      setIsDetailLoading(true); // Inicio carga general
       try {
         const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}`);
         if (response.ok) {
           const data = await response.json();
-          
-          // CAMBIO 4: EL MERGE PRINCIPAL
-          // Tomamos lo que ya teníamos (prev) y le "planchamos" encima lo nuevo (data)
-          // Esto asegura que si 'prev' tenía datos del padre que la API no trajo, se mantengan.
+
           setFullRequestData(prev => ({
             ...prev,
             ...data
           }));
 
-          getDocumentInfo(responseId);
+          await getDocumentInfo(responseId);
         }
-        // Si falla, no hacemos nada, nos quedamos con la info del padre (el estado inicial)
       } catch (error) {
         console.error('Error cargando detalles completos:', error);
       } finally {
-        setIsDetailLoading(false);
+        setIsDetailLoading(false); // Fin carga general
       }
     };
 
-    // Ejecutamos las cargas. 
-    // Nota: Como hacemos merge, es seguro llamar a esto siempre que se abre el modal
-    // para asegurar tener los datos más frescos.
     fetchFullDetailsAndDocs();
     fetchAttachments(responseId);
     checkClientSignature(responseId);
 
-  }, [isVisible, request?._id]); 
+  }, [isVisible, request?._id]);
 
 
   // ---------------------------------------------
   //           FUNCIONES DE MANEJO
   // ---------------------------------------------
-
-  // CAMBIO 5: Eliminamos 'requestToRender'.
-  // Ahora 'fullRequestData' es la única fuente de verdad, enriquecida progresivamente.
 
   const downloadPdfForPreview = async (url) => {
     try {
@@ -222,8 +219,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             if (onUpdate) {
               onUpdate(updatedRequest);
             }
-            // Opcional: Actualizar también el estado local si cambia el status
-            setFullRequestData(prev => ({...prev, status: updatedRequest.status}));
+            setFullRequestData(prev => ({ ...prev, status: updatedRequest.status }));
           }
         }
       } catch (error) {
@@ -414,6 +410,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleDownloadAdjunto = async (responseId, index) => {
+    setDownloadingAttachmentIndex(index); // Inicia carga para este item
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
 
@@ -435,10 +432,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     } catch (error) {
       console.error('Error descargando adjunto:', error);
       alert('Error al descargar el archivo');
+    } finally {
+      setDownloadingAttachmentIndex(null); // Fin carga
     }
   };
 
   const handleDownloadClientSignature = async (responseId) => {
+    setIsDownloadingSignature(true); // Inicio carga firma
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`);
 
@@ -459,6 +459,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     } catch (error) {
       console.error('Error descargando firma del cliente:', error);
       alert('Error descargando el documento firmado');
+    } finally {
+      setIsDownloadingSignature(false); // Fin carga firma
     }
   };
 
@@ -593,9 +595,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const getRealAttachments = () => {
-    if (!fullRequestData) return []; // Cambio request -> fullRequestData
+    if (!fullRequestData) return []; 
 
-    // Si tenemos documentInfo con IDdoc, usar esa información
     if (documentInfo && documentInfo.IDdoc) {
       let fileName = documentInfo.fileName;
 
@@ -787,7 +788,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                     <span className="text-sm text-muted-foreground">Fecha de envío:</span>
                     <span className="text-sm font-medium text-foreground">{formatDate(fullRequestData?.submittedAt)}</span>
                   </div>
-                  
                 </div>
               </div>
             </div>
@@ -795,9 +795,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
 
           {/* Aquí se renderizan los adjuntos combinados */}
-          {fullRequestData?.adjuntos?.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">Archivos Adjuntos</h3>
+          <div>
+              {/* TITULO CON LOADER DE ADJUNTOS */}
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                Archivos Adjuntos
+                {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+              </h3>
+              {fullRequestData?.adjuntos?.length > 0 && (
               <div className="space-y-2">
                 {fullRequestData.adjuntos.map((adjunto, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -814,12 +818,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       <Button
                         variant="outline"
                         size="sm"
-                        iconName="Download"
+                        // CAMBIO: Loader si es este indice especifico
+                        iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
                         iconPosition="left"
                         iconSize={16}
                         onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
+                        disabled={downloadingAttachmentIndex !== null} // Deshabilita todos si uno baja, o solo este
                       >
-                        Descargar
+                        {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
                       </Button>
                       {canPreviewAdjunto(adjunto.mimeType) && (
                         <Button
@@ -838,11 +844,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
+          
 
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3">Documento Generado</h3>
+            {/* TITULO CON LOADER DE GENERADO */}
+            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                Documento Generado
+                {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+            </h3>
             {realAttachments?.length > 0 ? (
               <div className="space-y-2">
                 {realAttachments?.map((file) => (
@@ -850,7 +861,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                     <div className="flex items-center space-x-3">
                       <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
                       <div>
-                        <p className="text-sm font-medium text-foreground">{file?.name}</p>
+                        <p
+                          className="text-sm font-medium text-foreground"
+                          title={file?.name}
+                        >
+                          {file?.name?.length > 45
+                            ? `${file.name.substring(0, 45)}...`
+                            : file?.name}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {file?.size} • Generado el {formatDate(file?.uploadedAt)}
                         </p>
@@ -860,7 +878,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       <Button
                         variant="outline"
                         size="sm"
-                        iconName="Download"
+                        // CAMBIO: Icono dinámico
+                        iconName={isDownloading ? "Loader" : "Download"}
                         iconPosition="left"
                         iconSize={16}
                         onClick={handleDownload}
@@ -972,7 +991,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
           {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado por Cliente</h3>
+              {/* TITULO CON LOADER DE FIRMA */}
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                Documento Firmado por Cliente
+                {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+              </h3>
               {clientSignature ? (
                 <div className="bg-success/10 rounded-lg p-4">
                   <div className="flex items-center justify-between">
@@ -989,12 +1012,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       <Button
                         variant="outline"
                         size="sm"
-                        iconName="Download"
+                        // CAMBIO: Icono dinámico descarga firma
+                        iconName={isDownloadingSignature ? "Loader" : "Download"}
                         iconPosition="left"
                         iconSize={16}
                         onClick={() => handleDownloadClientSignature(fullRequestData._id)}
+                        disabled={isDownloadingSignature}
                       >
-                        Descargar
+                         {isDownloadingSignature ? 'Descargando...' : 'Descargar'}
                       </Button>
                       <Button
                         variant="ghost"
@@ -1037,6 +1062,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                       iconPosition="left"
                       iconSize={16}
                       onClick={refreshClientSignature}
+                      disabled={isCheckingSignature}
                     >
                       Actualizar
                     </Button>
@@ -1067,7 +1093,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
               {fullRequestData?.status !== 'aprobado' && fullRequestData?.status !== 'firmado' && (
                 <Button
                   variant="default"
-                  iconName="CheckCircle"
+                  iconName={isApproving ? "Loader" : "CheckCircle"}
                   iconPosition="left"
                   iconSize={16}
                   onClick={handleApprove}
