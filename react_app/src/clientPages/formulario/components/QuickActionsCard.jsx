@@ -18,7 +18,7 @@ const FormPreview = ({ formData }) => {
   const cargo = sessionStorage.getItem("cargo");
   const mail = sessionStorage.getItem("email");
   const token = sessionStorage.getItem("token");
-  
+
   useEffect(() => {
     const fetchForm = async () => {
       try {
@@ -680,17 +680,20 @@ const FormPreview = ({ formData }) => {
             const fileList = answers[question.id];
             const questionTitle = getQuestionTitle(question);
 
-            const filePromises = Array.from(fileList).map(async (file) => {
+            const filePromises = Array.from(fileList).map(async (file, fileIndex) => {
               try {
                 const fileData = await fileToBase64(file);
-                
+
                 return {
-                  pregunta: questionTitle,
-                  fileName: file.name,
-                  fileData: fileData,
-                  mimeType: file.type,
-                  size: file.size,
-                  uploadedAt: new Date().toISOString()
+                  adjunto: {  // ✅ CAMBIAR a "adjunto" en lugar de archivo individual
+                    pregunta: questionTitle,
+                    fileName: file.name,
+                    fileData: fileData,
+                    mimeType: file.type,
+                    size: file.size
+                  },
+                  index: fileIndex,  // ✅ AGREGAR index
+                  total: fileList.length  // ✅ AGREGAR total
                 };
               } catch (error) {
                 console.error('Error procesando archivo:', error);
@@ -721,47 +724,45 @@ const FormPreview = ({ formData }) => {
       if (Object.values(answers).some(answer => answer instanceof FileList)) {
         console.log('Procesando archivos...');
         await processFiles(formData?.questions || []);
-        
+
         if (todosLosArchivos.length > 0) {
           console.log(`Enviando ${todosLosArchivos.length} archivos...`);
-          
-          // Enviar archivos en chunks para evitar payload too large
-          const CHUNK_SIZE = 2;
-          let archivosEnviados = 0;
-          
-          for (let i = 0; i < todosLosArchivos.length; i += CHUNK_SIZE) {
-            const chunk = todosLosArchivos.slice(i, i + CHUNK_SIZE);
-            const chunkSize = JSON.stringify(chunk).length;
-            console.log(`Enviando chunk ${Math.floor(i/CHUNK_SIZE) + 1}: ${chunk.length} archivos (${(chunkSize / 1024).toFixed(1)}KB)`);
-            
+
+          // Enviar archivos UNO POR UNO usando el endpoint correcto
+          for (let i = 0; i < todosLosArchivos.length; i++) {
+            const archivoData = todosLosArchivos[i];
+
             try {
-              const uploadRes = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/archivos`, {
+              console.log(`Enviando archivo ${i + 1} de ${todosLosArchivos.length}:`, archivoData.adjunto.fileName);
+
+              // ✅ USAR ENDPOINT CORRECTO
+              const uploadRes = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ archivos: chunk }),
+                body: JSON.stringify(archivoData), // Enviar el objeto completo con adjunto, index, total
               });
 
               if (!uploadRes.ok) {
                 const errorText = await uploadRes.text();
-                console.warn(`Error subiendo chunk de archivos:`, errorText);
+                console.warn(`Error subiendo archivo ${i + 1}:`, errorText);
               } else {
                 const uploadData = await uploadRes.json();
-                console.log(`Chunk ${Math.floor(i/CHUNK_SIZE) + 1} subido exitosamente`);
-                archivosEnviados += chunk.length;
+                console.log(`✅ Archivo ${i + 1} subido exitosamente:`, uploadData.message);
               }
             } catch (chunkError) {
-              console.error(`Error en chunk ${Math.floor(i/CHUNK_SIZE) + 1}:`, chunkError);
+              console.error(`Error en archivo ${i + 1}:`, chunkError);
             }
-            
+
+            // Pequeña pausa entre archivos
             await new Promise(resolve => setTimeout(resolve, 100));
           }
-          
-          console.log(`Total archivos enviados: ${archivosEnviados}/${todosLosArchivos.length}`);
+
+          console.log(`✅ Total archivos procesados: ${todosLosArchivos.length}`);
         }
       }
 
       alert('Formulario enviado con éxito');
-      
+
       // Limpiar estado
       setAnswers({});
       setRespaldo("");
