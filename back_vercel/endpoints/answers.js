@@ -9,17 +9,45 @@ const { validarToken } = require("../utils/validarToken.js");
 
 
 // Función para normalizar nombres de archivos
+// Función para normalizar nombres de archivos (versión mejorada)
 const normalizeFilename = (filename) => {
   if (!filename) return 'documento_sin_nombre.pdf';
 
   const extension = filename.split('.').pop() || 'pdf';
-  const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+  const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.')) || 'documento_sin_nombre';
 
   const normalized = nameWithoutExt
     .normalize('NFD')
+    // Reemplazar caracteres especiales del español
+    .replace(/ñ/g, 'n')
+    .replace(/Ñ/g, 'N')
+    .replace(/á/g, 'a')
+    .replace(/é/g, 'e')
+    .replace(/í/g, 'i')
+    .replace(/ó/g, 'o')
+    .replace(/ú/g, 'u')
+    .replace(/Á/g, 'A')
+    .replace(/É/g, 'E')
+    .replace(/Í/g, 'I')
+    .replace(/Ó/g, 'O')
+    .replace(/Ú/g, 'U')
+    .replace(/ü/g, 'u')
+    .replace(/Ü/g, 'U')
+    // Eliminar cualquier otro diacrítico
     .replace(/[\u0300-\u036f]/g, '')
+    // Eliminar caracteres especiales restantes
     .replace(/[^a-zA-Z0-9\s._-]/g, '')
-    .substring(0, 100);
+    // Reemplazar espacios múltiples por un solo guión bajo
+    .replace(/\s+/g, '_')
+    // Limitar longitud
+    .substring(0, 100)
+    // Eliminar guiones bajos al inicio/final
+    .replace(/^_+|_+$/g, '');
+
+  // Si después de normalizar queda vacío, usar nombre por defecto
+  if (!normalized || normalized.length === 0) {
+    return `documento_${Date.now()}.${extension}`;
+  }
 
   return `${normalized}.${extension}`;
 };
@@ -181,33 +209,63 @@ router.get("/:id/adjuntos", async (req, res) => {
 });
 
 // Descargar adjunto específico
-router.get("/:id/adjuntos/:adjuntoId", async (req, res) => {
+// CORREGIR endpoint para descargar adjuntos específicos
+router.get("/:id/adjuntos/:index", async (req, res) => {
   try {
-    const { id, adjuntoId } = req.params;
+    const { id, index } = req.params;
 
-    const adjunto = await req.db.collection("adjuntos").findOne({
-      _id: new ObjectId(adjuntoId),
-      responseId: id
-    });
+    console.log("Descargando adjunto:", { id, index });
 
-    if (!adjunto) {
+    // CORRECCIÓN: Verificar si los IDs son válidos antes de convertirlos
+    let query = {};
+
+    if (ObjectId.isValid(id)) {
+      query.responseId = new ObjectId(id);
+    } else {
+      return res.status(400).json({ error: "ID de respuesta inválido" });
+    }
+
+    const documentoAdjunto = await req.db.collection("adjuntos").findOne(query);
+
+    if (!documentoAdjunto) {
+      console.log("Adjunto no encontrado con query:", query);
       return res.status(404).json({ error: "Archivo adjunto no encontrado" });
     }
 
-    const base64Data = adjunto.fileData.replace(/^data:[^;]+;base64,/, '');
+    // CORRECCIÓN: Verificar la estructura real de tus datos
+    let archivoAdjunto;
+    
+    if (documentoAdjunto.adjuntos && documentoAdjunto.adjuntos.length > 0) {
+      // Si usas la nueva estructura con array 'adjuntos'
+      archivoAdjunto = documentoAdjunto.adjuntos[parseInt(index)];
+    } else if (documentoAdjunto.fileData) {
+      // Si usas la estructura antigua con campos directos
+      archivoAdjunto = documentoAdjunto;
+    } else {
+      return res.status(404).json({ error: "Estructura de archivo no válida" });
+    }
+
+    if (!archivoAdjunto.fileData) {
+      return res.status(404).json({ error: "Datos de archivo no disponibles" });
+    }
+
+    // Extraer datos base64
+    const base64Data = archivoAdjunto.fileData.replace(/^data:[^;]+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
+    // Configurar headers para descarga
     res.set({
-      'Content-Type': adjunto.mimeType,
-      'Content-Disposition': `attachment; filename="${adjunto.fileName}"`,
-      'Content-Length': buffer.length
+      'Content-Type': archivoAdjunto.mimeType || 'application/pdf',
+      'Content-Disposition': `attachment; filename="${archivoAdjunto.fileName}"`,
+      'Content-Length': buffer.length,
+      'Cache-Control': 'no-cache'
     });
 
     res.send(buffer);
 
   } catch (err) {
     console.error("Error descargando archivo adjunto:", err);
-    res.status(500).json({ error: "Error descargando archivo adjunto" });
+    res.status(500).json({ error: "Error descargando archivo adjunto: " + err.message });
   }
 });
 
@@ -282,6 +340,63 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/mail/:mail", async (req, res) => {
+  try {
+    const answers = await req.db
+      .collection("respuestas")
+      .find({ "user.mail": req.params.mail })
+      .project({
+        _id: 1,
+        formId: 1,
+        formTitle: 1,
+        "responses": 1, // Incluir todo el objeto responses para procesar después
+        "user.nombre": 1,
+        "user.empresa": 1,
+        "user.uid": 1,
+        status: 1,
+        createdAt: 1,
+        approvedAt: 1,
+        updatedAt: 1
+      })
+      .toArray();
+
+    console.log("Consulta para mail:", req.params.mail);
+
+    if (!answers || answers.length === 0) {
+      return res.status(404).json({ error: "No se encontraron formularios para este email" });
+    }
+
+    // Procesar las respuestas en JavaScript
+    const answersProcessed = answers.map(answer => {
+      // Buscar el nombre del trabajador en diferentes formatos
+      let trabajador = "No especificado";
+      
+      if (answer.responses) {
+        trabajador = answer.responses["Nombre del trabajador"] || 
+                    answer.responses["NOMBRE DEL TRABAJADOR"] || 
+                    answer.responses["nombre del trabajador"]
+      }
+
+      return {
+        _id: answer._id,
+        formId: answer.formId,
+        formTitle: answer.formTitle,
+        trabajador: trabajador,
+        user: answer.user,
+        status: answer.status,
+        createdAt: answer.createdAt,
+        approvedAt: answer.approvedAt,
+        updatedAt: answer.updatedAt
+      };
+    });
+
+    res.json(answersProcessed);
+  } catch (err) {
+    console.error("Error en /mail/:mail:", err);
+    res.status(500).json({ error: "Error al obtener formularios por email" });
+  }
+});
+
 router.get("/mini", async (req, res) => {
   try {
     const answers = await req.db.collection("respuestas")
@@ -329,20 +444,6 @@ router.get("/mini", async (req, res) => {
   } catch (err) {
     console.error("Error en /mini:", err);
     res.status(500).json({ error: "Error al obtener formularios" });
-  }
-});
-
-router.get("/mail/:mail", async (req, res) => {
-  try {
-    const form = await req.db
-      .collection("respuestas")
-      .find({ "user.mail": req.params.mail })
-      .toArray();
-    console.log(req.params);
-    if (!form) return res.status(404).json({ error: "Formulario no encontrado" });
-    res.json(form);
-  } catch (err) {
-    res.status(500).json({ error: "Error al obtener formulario" });
   }
 });
 
@@ -604,12 +705,68 @@ router.post("/:id/upload-correction", upload.single('correctedFile'), async (req
   }
 });
 
+router.get("/:id/finalized", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar que el ID sea válido
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "ID de respuesta inválido" });
+    }
+
+    const respuesta = await req.db.collection("respuestas").findOne({ 
+      _id: new ObjectId(id) 
+    });
+
+    if (!respuesta) {
+      console.log("Respuesta no encontrada para ID:", id);
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
+    const updateResult = await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          status: "finalizado",
+          finalizedAt: new Date(),
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    if (updateResult.matchedCount === 0) {
+      return res.status(404).json({ error: "No se pudo actualizar la respuesta" });
+    }
+
+    console.log(`Respuesta ${id} actualizada a estado: finalizado`);
+
+    res.json({
+      success: true,
+      message: "Respuesta finalizada correctamente",
+      status: "finalizado",
+      responseId: id
+    });
+
+  } catch (err) {
+    console.error("Error finalizando respuesta:", err);
+    res.status(500).json({ error: "Error finalizando respuesta: " + err.message });
+  }
+});
+
+
+
+
 // Aprobar formulario y guardar en aprobados
 router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => {
   try {
     console.log("Debug: Iniciando approve para ID:", req.params.id);
 
     const respuesta = await req.db.collection("respuestas").findOne({ _id: new ObjectId(req.params.id) });
+
+    if (!respuesta) {
+      console.log("Debug: Respuesta no encontrada para ID:", req.params.id);
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
 
     if (!respuesta) {
       console.log("Debug: Respuesta no encontrada para ID:", req.params.id);
@@ -765,6 +922,46 @@ router.delete("/:id/remove-correction", async (req, res) => {
   }
 });
 
+router.get("/data-approved/:responseId", async (req, res) => {
+  try {
+    const { responseId } = req.params;
+
+    console.log("Obteniendo datos de archivo aprobado para:", responseId);
+
+    const approvedDoc = await req.db.collection("aprobados").findOne({
+      responseId: responseId
+    });
+
+    if (!approvedDoc) {
+      console.log("No se encontró documento aprobado para responseId:", responseId);
+      return res.status(404).json({ error: "Documento aprobado no encontrado" });
+    }
+
+    if (!approvedDoc.correctedFile) {
+      console.log("No hay correctedFile en el documento aprobado:", responseId);
+      return res.status(404).json({ error: "Archivo corregido no disponible" });
+    }
+
+    // Retornar solo los datos específicos que necesitas
+    const responseData = {
+      fileName: approvedDoc.correctedFile.fileName,
+      fileSize: approvedDoc.correctedFile.fileSize,
+      mimeType: approvedDoc.correctedFile.mimeType,
+      uploadedAt: approvedDoc.correctedFile.uploadedAt,
+      approvedAt: approvedDoc.approvedAt,
+      formTitle: approvedDoc.formTitle
+    };
+
+    console.log("Datos retornados para responseId:", responseId, responseData);
+
+    res.json(responseData);
+
+  } catch (err) {
+    console.error("Error obteniendo datos de archivo aprobado:", err);
+    res.status(500).json({ error: "Error obteniendo datos de archivo aprobado: " + err.message });
+  }
+});
+
 router.get("/download-approved-pdf/:responseId", async (req, res) => {
   try {
     console.log("Debug: Solicitando descarga de PDF aprobado para responseId:", req.params.responseId);
@@ -879,7 +1076,7 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
   }
 });
 
-// Obtener PDF firmado por cliente
+// Obtener PDF firmado por cliente Y cambiar estado a "finalizado"
 router.get("/:responseId/client-signature", async (req, res) => {
   try {
     const { responseId } = req.params;
@@ -898,15 +1095,36 @@ router.get("/:responseId/client-signature", async (req, res) => {
       return res.status(404).json({ error: "Archivo PDF no disponible" });
     }
 
+    // PRIMERO: Actualizar el estado a "finalizado"
+    const updateResult = await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(responseId) },
+      {
+        $set: {
+          status: "finalizado",
+          finalizedAt: new Date(),
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    if (updateResult.matchedCount === 0) {
+      console.warn(`No se pudo actualizar estado la para respuesta`);
+    } else {
+      console.log(`Estado actualizado a "finalizado"`);
+
+    }
+
+    // LUEGO: Enviar el archivo
     res.setHeader('Content-Type', pdfData.mimeType || 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${pdfData.fileName}"`);
     res.setHeader('Content-Length', pdfData.fileSize);
+    res.setHeader('Cache-Control', 'no-cache');
 
     res.send(pdfData.fileData.buffer || pdfData.fileData);
 
   } catch (err) {
     console.error("Error descargando firma del cliente:", err);
-    res.status(500).json({ error: "Error descargando firma del cliente" });
+    res.status(500).json({ error: "Error descargando firma del cliente: " + err.message });
   }
 });
 
