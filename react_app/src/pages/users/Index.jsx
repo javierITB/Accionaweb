@@ -250,6 +250,36 @@ const handleEditUser = (user) => {
   });
 };
 
+const handleRemoveUser = async (userId) => {
+    const confirmDelete = window.confirm("¿Estás seguro de que deseas eliminar este usuario? Esta acción es irreversible.");
+    if (!confirmDelete) return;
+
+    setIsLoading(true);
+    try {
+        const response = await fetch(`https://back-acciona.vercel.app/api/auth/users/${userId}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al eliminar usuario');
+        }
+
+        alert('Usuario eliminado exitosamente');
+        
+        clearForm();
+        fetchUsers();
+
+    } catch (error) {
+        console.error('Error eliminando usuario:', error);
+        alert(`Error al eliminar usuario: ${error.message}`);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+
+
 const getTabContent = () => {
   switch (activeTab) {
     case 'properties':
@@ -399,7 +429,7 @@ return (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditUser(u)}
+                          onClick={() => handleRemoveUser(u._id)}
                           iconName="X"
                           iconSize={16}
                           className="text-error hover:bg-primary/10"
