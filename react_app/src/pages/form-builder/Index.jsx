@@ -40,9 +40,9 @@ const FormBuilder = () => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
       setIsMobileScreen(isMobile);
-      
+
       if (isMobile) {
-        setIsMobileOpen(false); 
+        setIsMobileOpen(false);
       }
     };
 
@@ -66,8 +66,8 @@ const FormBuilder = () => {
   };
 
   // Variable para el margen principal - AGREGADA
-  const mainMarginClass = isMobileScreen 
-    ? 'ml-0' 
+  const mainMarginClass = isMobileScreen
+    ? 'ml-0'
     : isDesktopOpen ? 'ml-64' : 'ml-16';
 
   // Question types available
@@ -101,7 +101,7 @@ const FormBuilder = () => {
     { value: 'Otras', label: 'Otras' }
   ];
 
-  // Load form from localStorage if editing
+  // Load form from localStorage if editing - MODIFICADO
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const formId = urlParams?.get('id');
@@ -112,6 +112,19 @@ const FormBuilder = () => {
         if (!res.ok) throw new Error('Formulario no encontrado');
         const data = await res.json();
 
+        // Procesar preguntas al cargar también
+        const processedQuestions = (data.questions || []).map(question => {
+          if (question.type === 'file') {
+            return {
+              ...question,
+              multiple: question.multiple || false,
+              accept: question.accept || '.pdf,application/pdf',
+              maxSize: question.maxSize || '1'
+            };
+          }
+          return question;
+        });
+
         const normalizedForm = {
           id: data._id || data.id || null,
           title: data.title || '',
@@ -121,7 +134,7 @@ const FormBuilder = () => {
           author: data.author || 'Admin',
           primaryColor: data.primaryColor || '#3B82F6',
           secondaryColor: data.secondaryColor || '#F3F4F6',
-          questions: data.questions || [],
+          questions: processedQuestions, // Usar preguntas procesadas
           status: data.status || 'borrador',
           section: data.section || '',
           icon: data.icon || 'FileText',
@@ -234,13 +247,28 @@ const FormBuilder = () => {
     }));
   };
 
-  // Save form as borrador
+  // Save form as borrador - MODIFICADA
   const saveForm = async () => {
     const newStatus = "borrador";
     const newUpdatedAt = new Date().toISOString();
 
+    // Procesar preguntas para asegurar que las de tipo 'file' tengan configuraciones
+    const processedQuestions = formData.questions.map(question => {
+      if (question.type === 'file') {
+        return {
+          ...question,
+          // Valores por defecto si no están definidos
+          multiple: question.multiple || false,
+          accept: question.accept || '.pdf,application/pdf',
+          maxSize: question.maxSize || '1'
+        };
+      }
+      return question;
+    });
+
     const dataToSend = {
       ...formData,
+      questions: processedQuestions, // Usar las preguntas procesadas
       status: newStatus,
       updatedAt: newUpdatedAt
     };
@@ -264,7 +292,7 @@ const FormBuilder = () => {
       const response = await fetch("https://back-acciona.vercel.app/api/forms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dataToSend), 
+        body: JSON.stringify(dataToSend),
       });
 
       if (!response.ok) {
@@ -272,16 +300,16 @@ const FormBuilder = () => {
       }
 
       const savedForm = await response.json();
-      
+
       setFormData(prev => ({
         ...prev,
         id: savedForm.insertedId || savedForm.id || prev.id,
         title: savedForm.title || prev.title,
         section: savedForm.section || prev.section,
         category: savedForm.category || prev.category,
-        questions: savedForm.questions || prev.questions,
-        status: savedForm.status || newStatus, 
-        updatedAt: savedForm.updatedAt || newUpdatedAt 
+        questions: savedForm.questions || processedQuestions, // Usar processedQuestions aquí también
+        status: savedForm.status || newStatus,
+        updatedAt: savedForm.updatedAt || newUpdatedAt
       }));
 
       alert("Formulario guardado como borrador exitosamente");
@@ -316,23 +344,44 @@ const FormBuilder = () => {
     }
   };
 
-  // Publish form
+  // Publish form - MODIFICADA
   const publishForm = async () => {
     if (!formData?.id) {
       alert("Primero guarda el borrador");
       return;
     }
 
+    // Procesar preguntas también para publicar
+    const processedQuestions = formData.questions.map(question => {
+      if (question.type === 'file') {
+        return {
+          ...question,
+          multiple: question.multiple || false,
+          accept: question.accept || '.pdf,application/pdf',
+          maxSize: question.maxSize || '1'
+        };
+      }
+      return question;
+    });
+
     setIsPublishing(true);
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/forms/public/${formData._id || formData.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, status: "publicado" }),
+        body: JSON.stringify({
+          ...formData,
+          questions: processedQuestions, // Usar preguntas procesadas
+          status: "publicado"
+        }),
       });
 
       const updatedForm = await response.json();
-      setFormData(prev => ({ ...prev, status: "publicado" }));
+      setFormData(prev => ({
+        ...prev,
+        status: "publicado",
+        questions: processedQuestions // Actualizar con preguntas procesadas
+      }));
 
       alert("¡Formulario publicado exitosamente!");
     } catch (error) {
@@ -342,7 +391,6 @@ const FormBuilder = () => {
       setIsPublishing(false);
     }
   };
-
   // Navigation tabs
   const tabs = [
     { id: 'properties', label: 'Propiedades', icon: 'Settings' },
@@ -387,19 +435,19 @@ const FormBuilder = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       {(isMobileOpen || !isMobileScreen) && (
         <>
-          <Sidebar 
-            isCollapsed={!isDesktopOpen} 
-            onToggleCollapse={toggleSidebar} 
+          <Sidebar
+            isCollapsed={!isDesktopOpen}
+            onToggleCollapse={toggleSidebar}
             isMobileOpen={isMobileOpen}
             onNavigate={handleNavigation}
           />
-          
+
           {isMobileScreen && isMobileOpen && (
-            <div 
-              className="fixed inset-0 bg-foreground/50 z-40" 
+            <div
+              className="fixed inset-0 bg-foreground/50 z-40"
               onClick={toggleSidebar}
             ></div>
           )}

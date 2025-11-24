@@ -477,7 +477,7 @@ const QuestionBuilder = ({
               Permitir múltiples archivos
             </span>
           </div>
-          
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
               Tipos de archivo permitidos
@@ -491,7 +491,7 @@ const QuestionBuilder = ({
               onBlur={saveChanges}
             />
             <p className="text-xs text-muted-foreground">
-              Separar extensiones con comas: .pdf, .doc, .jpg
+              Separar extensiones con comas: .pdf, .doc, .jpg, image/*, application/pdf
             </p>
           </div>
 

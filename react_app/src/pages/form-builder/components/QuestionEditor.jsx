@@ -80,8 +80,8 @@ const QuestionEditor = ({
     saveChanges({}, newOptions);
 
     requestAnimationFrame(() => {
-        window.scrollTo(0, currentScroll);
-      });
+      window.scrollTo(0, currentScroll);
+    });
 
   }, [localOptions, saveChanges]);
 
@@ -224,46 +224,98 @@ const QuestionEditor = ({
   ]);
 
   const renderFileConfig = useCallback(() => {
+    // Usar valores de la pregunta o valores por defecto
+    const accept = localQuestion.accept || '.pdf,application/pdf';
+    const maxSize = localQuestion.maxSize || '1';
+    const multiple = localQuestion.multiple || false;
+
+    // Convertir accept a texto legible
+    const getReadableAccept = (acceptStr) => {
+      const types = acceptStr.split(',').map(t => t.trim());
+      return types.map(type => {
+        if (type.startsWith('.')) return type.toUpperCase();
+        if (type === 'image/*') return 'Imágenes';
+        if (type === 'application/pdf') return 'PDF';
+        if (type === 'video/*') return 'Videos';
+        if (type === 'audio/*') return 'Audio';
+        return type;
+      }).join(', ');
+    };
+
     return (
       <div className="mt-3 space-y-4 p-4 bg-gray-50 rounded-lg border">
+        {/* ✅ Múltiples archivos - YA ESTÁ BIEN */}
         <div className="flex items-center space-x-2">
           <input
             type="checkbox"
-            checked={localQuestion.multiple || false}
+            checked={multiple}
             onChange={(e) => handleFieldChange('multiple', e.target.checked)}
             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
           <span className="text-sm font-medium text-gray-700">Permitir múltiples archivos</span>
         </div>
-        
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-gray-700">
-            Configuración de archivos
+
+        {/* ✅ Formatos permitidos - NUEVO */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            Tipos de archivo permitidos
           </label>
-          <div className="p-3 bg-white border border-gray-200 rounded-lg">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Tipo de archivo:</span>
-                <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">PDF solamente</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Tamaño máximo:</span>
-                <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">500 KB</span>
-              </div>
-            </div>
-          </div>
+          <input
+            type="text"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            value={accept}
+            onChange={(e) => handleFieldChange('accept', e.target.value)}
+            placeholder=".pdf,.doc,.docx,.jpg,.png"
+            onBlur={saveChanges}
+          />
+          <p className="text-xs text-muted-foreground">
+            Separar extensiones con comas: .pdf, .doc, .jpg, image/*, application/pdf
+          </p>
         </div>
 
+        {/* ✅ Tamaño máximo - NUEVO */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            Tamaño máximo (MB)
+          </label>
+          <input
+            type="number"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            value={maxSize}
+            onChange={(e) => handleFieldChange('maxSize', e.target.value)}
+            placeholder="10"
+            onBlur={saveChanges}
+          />
+        </div>
+
+        {/* ✅ Resumen de configuración */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-sm text-blue-800">
-            <strong>Configuración fija:</strong> Los archivos están limitados a PDF de máximo 500KB
+          <p className="text-sm text-blue-800 mb-2">
+            <strong>Configuración actual:</strong>
           </p>
+          <div className="space-y-1 text-sm text-blue-700">
+            <div className="flex justify-between">
+              <span>Formatos:</span>
+              <span className="font-medium">{getReadableAccept(accept)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Tamaño máximo:</span>
+              <span className="font-medium">{maxSize} MB</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Múltiples archivos:</span>
+              <span className="font-medium">{multiple ? 'Sí' : 'No'}</span>
+            </div>
+          </div>
         </div>
       </div>
     );
   }, [
     localQuestion.multiple,
-    handleFieldChange
+    localQuestion.accept,
+    localQuestion.maxSize,
+    handleFieldChange,
+    saveChanges
   ]);
 
   const renderQuestionInput = useCallback(() => {
@@ -326,7 +378,7 @@ const QuestionEditor = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={!isSelected}
               multiple={localQuestion.multiple || false}
-              accept=".pdf,application/pdf"
+              accept={localQuestion.accept || '.pdf,application/pdf'}
             />
             {isSelected && renderFileConfig()}
           </div>
@@ -514,8 +566,8 @@ const QuestionEditor = ({
               maxLength={50}
               placeholder="Título de la pregunta"
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-blue-500 ${(localQuestion.title?.length || 0) >= 50
-                  ? 'border-red-500 focus:ring-red-200'
-                  : 'border-gray-300 focus:ring-blue-200'
+                ? 'border-red-500 focus:ring-red-200'
+                : 'border-gray-300 focus:ring-blue-200'
                 }`}
             />
             <div className="flex justify-between items-center">

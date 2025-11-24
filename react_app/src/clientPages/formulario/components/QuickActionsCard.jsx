@@ -46,7 +46,7 @@ const FormPreview = ({ formData }) => {
     return question.title || 'Pregunta sin título';
   };
 
-  // Función para validar archivos
+  // Función para validar archivos CON CONFIGURACIONES PERSONALIZADAS
   const validateFiles = (files, question) => {
     const errors = [];
 
@@ -60,21 +60,63 @@ const FormPreview = ({ formData }) => {
       return errors;
     }
 
+    // Obtener configuraciones de la pregunta (con valores por defecto)
+    const allowedTypes = question.accept || '.pdf,application/pdf';
+    const maxSizeMB = question.maxSize ? parseInt(question.maxSize) : 0.5; // 0.5MB = 500KB por defecto
+    const maxSizeBytes = maxSizeMB * 1024 * 1024;
+
+    // Convertir allowedTypes a array y limpiar
+    const allowedTypesArray = allowedTypes.split(',')
+      .map(type => type.trim().toLowerCase())
+      .filter(type => type.length > 0);
+
+    console.log('Configuración de validación:', {
+      allowedTypes: allowedTypesArray,
+      maxSizeMB,
+      maxSizeBytes,
+      multiple: question.multiple
+    });
+
     // Validar cada archivo
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
-      // Validar formato - solo PDF
-      if (file.type !== 'application/pdf') {
-        errors.push(`Formato no permitido: ${file.name}. Solo se permiten archivos PDF`);
+      // Validar tipo de archivo
+      const isTypeValid = allowedTypesArray.some(allowedType => {
+        // Si es una extensión como ".pdf"
+        if (allowedType.startsWith('.')) {
+          const fileExtension = '.' + file.name.toLowerCase().split('.').pop();
+          return fileExtension === allowedType;
+        }
+        // Si es un MIME type como "application/pdf"
+        else if (allowedType.includes('/')) {
+          return file.type.toLowerCase() === allowedType;
+        }
+        // Si es un tipo genérico como "image/*"
+        else if (allowedType.endsWith('/*')) {
+          const category = allowedType.split('/*')[0];
+          return file.type.toLowerCase().startsWith(category + '/');
+        }
+        return false;
+      });
+
+      if (!isTypeValid) {
+        const allowedTypesText = allowedTypesArray.map(type => {
+          if (type.startsWith('.')) return type;
+          if (type === 'image/*') return 'imágenes';
+          if (type === 'application/pdf') return 'PDF';
+          if (type === 'video/*') return 'videos';
+          return type;
+        }).join(', ');
+
+        errors.push(`Tipo de archivo no permitido: ${file.name}. Formatos permitidos: ${allowedTypesText}`);
         continue;
       }
 
-      // Validar tamaño - máximo 500KB
-      const maxSizeBytes = 500 * 1024; // 500KB en bytes
+      // Validar tamaño
       if (file.size > maxSizeBytes) {
-        const fileSizeKB = (file.size / 1024).toFixed(2);
-        errors.push(`Archivo demasiado grande: ${file.name} (${fileSizeKB} KB). Tamaño máximo: 500 KB`);
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        errors.push(`Archivo demasiado grande: ${file.name} (${fileSizeMB} MB). Tamaño máximo: ${maxSizeMB} MB`);
       }
     }
 
@@ -327,8 +369,27 @@ const FormPreview = ({ formData }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const getFileTypesDescription = () => {
-    return 'PDF solamente';
+  const getFileTypesDescription = (question) => {
+    if (!question.accept) return 'PDF solamente (500KB máximo)';
+
+    const allowedTypes = question.accept.split(',')
+      .map(type => type.trim())
+      .filter(type => type.length > 0);
+
+    const readableTypes = allowedTypes.map(type => {
+      if (type.startsWith('.')) return type.toUpperCase();
+      if (type === 'image/*') return 'Imágenes';
+      if (type === 'application/pdf') return 'PDF';
+      if (type === 'video/*') return 'Videos';
+      if (type === 'audio/*') return 'Audio';
+      if (type === 'application/msword') return 'DOC';
+      if (type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'DOCX';
+      return type;
+    });
+
+    const maxSize = question.maxSize ? `${question.maxSize} MB` : '0.5 MB';
+
+    return `${readableTypes.join(', ')} (${maxSize} máximo)`;
   };
 
   const renderQuestion = (question, index, showNumber = true, parentPath = '') => {
@@ -441,8 +502,10 @@ const FormPreview = ({ formData }) => {
           );
 
         case 'file':
-          const fileTypesDescription = getFileTypesDescription();
+          const fileTypesDescription = getFileTypesDescription(question);
           const hasFileErrors = fileErrorList.length > 0;
+          const maxSizeMB = question.maxSize ? parseInt(question.maxSize) : 0.5;
+          const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
           return (
             <div>
@@ -450,7 +513,7 @@ const FormPreview = ({ formData }) => {
                 type="file"
                 className={`${baseInputClass} ${error || hasFileErrors ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                 multiple={question.multiple || false}
-                accept=".pdf,application/pdf"
+                accept={question.accept || '.pdf,application/pdf'}
                 onChange={(e) => handleFileChange(question.id, getQuestionTitle(question), e.target.files)}
               />
               <div className="mt-2 space-y-1">
@@ -462,9 +525,6 @@ const FormPreview = ({ formData }) => {
                     <strong>Múltiples archivos:</strong> Permitido
                   </p>
                 )}
-                <p className="text-xs text-gray-500">
-                  <strong>Tamaño máximo:</strong> 500 KB por archivo
-                </p>
                 {value instanceof FileList && value.length > 0 && !hasFileErrors && (
                   <p className="text-xs text-green-600">
                     <strong>Archivos seleccionados:</strong> {value.length} archivo(s)
