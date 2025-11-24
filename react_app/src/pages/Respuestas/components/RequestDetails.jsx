@@ -639,7 +639,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleApprovewithoutFile = async () => {
-    if (isApproving || request?.status === 'aprobado' || request?.status === 'firmado' ||  request?.status === 'finalizado' ) {
+    if (isApproving ||  request?.status === 'finalizado' ) {
       return;
     }
 

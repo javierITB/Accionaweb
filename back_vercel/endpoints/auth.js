@@ -360,6 +360,24 @@ router.put("/users/:id", async (req, res) => {
 });
 
 
+router.delete("/users/:id", async (req, res) => {
+  try {
+    const result = await req.db.collection("usuarios").deleteOne({
+      _id: new ObjectId(req.params.id)
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.json({ message: "Usuario eliminado exitosamente" });
+
+  } catch (err) {
+    console.error("Error eliminando usuario:", err);
+    res.status(500).json({ error: "Error al eliminar usuario" });
+  }
+});
+
 router.post("/set-password", async (req, res) => {
   try {
     const { userId, password } = req.body;
