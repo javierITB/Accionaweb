@@ -223,28 +223,16 @@ const QuestionEditor = ({
     addOption
   ]);
 
+  // En renderFileConfig - CORREGIR el input de formatos
   const renderFileConfig = useCallback(() => {
     // Usar valores de la pregunta o valores por defecto
-    const accept = localQuestion.accept || '.pdf,application/pdf';
+    const accept = localQuestion.accept || ''; // ✅ Cambiar a vacío por defecto
     const maxSize = localQuestion.maxSize || '1';
     const multiple = localQuestion.multiple || false;
 
-    // Convertir accept a texto legible
-    const getReadableAccept = (acceptStr) => {
-      const types = acceptStr.split(',').map(t => t.trim());
-      return types.map(type => {
-        if (type.startsWith('.')) return type.toUpperCase();
-        if (type === 'image/*') return 'Imágenes';
-        if (type === 'application/pdf') return 'PDF';
-        if (type === 'video/*') return 'Videos';
-        if (type === 'audio/*') return 'Audio';
-        return type;
-      }).join(', ');
-    };
-
     return (
       <div className="mt-3 space-y-4 p-4 bg-gray-50 rounded-lg border">
-        {/* ✅ Múltiples archivos - YA ESTÁ BIEN */}
+        {/* ✅ Múltiples archivos */}
         <div className="flex items-center space-x-2">
           <input
             type="checkbox"
@@ -255,48 +243,50 @@ const QuestionEditor = ({
           <span className="text-sm font-medium text-gray-700">Permitir múltiples archivos</span>
         </div>
 
-        {/* ✅ Formatos permitidos - NUEVO */}
+        {/* ✅ Formatos permitidos - CORREGIDO */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+          <label className="text-sm font-medium text-gray-700">
             Tipos de archivo permitidos
           </label>
           <input
             type="text"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            value={accept}
+            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            value={accept} // ✅ Ahora estará vacío por defecto
             onChange={(e) => handleFieldChange('accept', e.target.value)}
-            placeholder=".pdf,.doc,.docx,.jpg,.png"
+            placeholder=".pdf,.doc,.docx,.jpg,.png,image/*,application/pdf" // ✅ Placeholder como texto fantasma
             onBlur={saveChanges}
           />
-          <p className="text-xs text-muted-foreground">
-            Separar extensiones con comas: .pdf, .doc, .jpg, image/*, application/pdf
+          <p className="text-xs text-gray-500">
+            Separar extensiones con comas. Ejemplos: .pdf, .doc, .jpg, image/*, application/pdf
           </p>
         </div>
 
-        {/* ✅ Tamaño máximo - NUEVO */}
+        {/* ✅ Tamaño máximo */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+          <label className="text-sm font-medium text-gray-700">
             Tamaño máximo (MB)
           </label>
           <input
             type="number"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             value={maxSize}
             onChange={(e) => handleFieldChange('maxSize', e.target.value)}
-            placeholder="10"
+            placeholder="10" // ✅ Placeholder para tamaño
             onBlur={saveChanges}
           />
         </div>
 
-        {/* ✅ Resumen de configuración */}
+        {/* ✅ Resumen de configuración - MEJORADO */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <p className="text-sm text-blue-800 mb-2">
-            <strong>Configuración actual:</strong>
+            <strong>Resumen de configuración:</strong>
           </p>
           <div className="space-y-1 text-sm text-blue-700">
             <div className="flex justify-between">
-              <span>Formatos:</span>
-              <span className="font-medium">{getReadableAccept(accept)}</span>
+              <span>Formatos permitidos:</span>
+              <span className="font-medium">
+                {accept ? accept : '.pdf,application/pdf (por defecto)'} {/* ✅ Mostrar valor por defecto si está vacío */}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Tamaño máximo:</span>
