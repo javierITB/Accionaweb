@@ -4,6 +4,9 @@ import Button from '../../../components/ui/Button';
 import CleanDocumentPreview from './CleanDocumentPreview';
 
 const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }) => {
+  // --- ESTADOS DE UI ---
+  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'responses'
+
   const [correctedFile, setCorrectedFile] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [clientSignature, setClientSignature] = useState(null);
@@ -50,18 +53,22 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   }, [request]);
 
+  // Al abrir o cambiar de request, volver a la pestaña principal
+  useEffect(() => {
+    if (isVisible) {
+      setActiveTab('details');
+    }
+  }, [isVisible, request?._id]);
+
   // --- NUEVA FUNCIÓN PARA OBTENER DATOS APROBADOS ---
   const fetchApprovedData = async (responseId) => {
     setIsLoadingApprovedData(true);
     try {
-      // Asumiendo que la ruta base es /api/respuestas igual que las otras
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/data-approved/${responseId}`);
-      
       if (response.ok) {
         const data = await response.json();
         setApprovedData(data);
       } else {
-        // Si es 404 u otro error, limpiamos el estado
         setApprovedData(null);
       }
     } catch (error) {
@@ -120,7 +127,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
       if (response.ok) {
         const data = await response.json();
-
         let extractedAdjuntos = [];
         if (Array.isArray(data) && data.length > 0 && data[0].adjuntos) {
           extractedAdjuntos = data[0].adjuntos;
@@ -143,9 +149,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   useEffect(() => {
-    // Si estamos subiendo un archivo localmente, lo seteamos en el estado
     if (request?.correctedFile) {
-      // Esto es un fallback por si viene del padre, pero approvedData tendrá prioridad visual si no hay upload local
       setCorrectedFile({
         name: request.correctedFile.fileName,
         size: request.correctedFile.fileSize,
@@ -165,7 +169,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   useEffect(() => {
     if (!isVisible || !request?._id) {
       setDocumentInfo(null);
-      setApprovedData(null); // Limpiamos al cerrar
+      setApprovedData(null);
       return;
     }
 
@@ -177,12 +181,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}`);
         if (response.ok) {
           const data = await response.json();
-
           setFullRequestData(prev => ({
             ...prev,
             ...data
           }));
-
           await getDocumentInfo(responseId);
         }
       } catch (error) {
@@ -195,7 +197,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     fetchFullDetailsAndDocs();
     fetchAttachments(responseId);
     checkClientSignature(responseId);
-    fetchApprovedData(responseId); // <-- LLAMADA AL NUEVO ENDPOINT
+    fetchApprovedData(responseId);
 
   }, [isVisible, request?._id]);
 
@@ -207,19 +209,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const downloadPdfForPreview = async (url) => {
     try {
       const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
+      if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
       const blob = await response.blob();
-
-      if (blob.type !== 'application/pdf') {
-        throw new Error('El archivo no es un PDF válido');
-      }
-
-      const blobUrl = URL.createObjectURL(blob);
-      return blobUrl;
+      if (blob.type !== 'application/pdf') throw new Error('El archivo no es un PDF válido');
+      return URL.createObjectURL(blob);
     } catch (error) {
       console.error('Error descargando PDF para vista previa:', error);
       throw error;
@@ -240,13 +233,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
-
           if (updatedRequest.status !== request.status) {
-            if (onUpdate) {
-              onUpdate(updatedRequest);
-            }
+            if (onUpdate) onUpdate(updatedRequest);
             setFullRequestData(prev => ({ ...prev, status: updatedRequest.status }));
-            // Si cambió el estado, quizás se aprobó algo nuevo, refrescamos approvedData
             fetchApprovedData(request._id);
           }
         }
@@ -273,41 +262,31 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       alert('No hay documento disponible para vista previa');
       return;
     }
-
-    setPreviewDocument({
-      url: documentUrl,
-      type: documentType
-    });
+    setPreviewDocument({ url: documentUrl, type: documentType });
     setShowPreview(true);
   };
 
   const handlePreviewGenerated = async () => {
     try {
       setIsLoadingPreviewGenerated(true);
-
       const info = documentInfo || await getDocumentInfo(request._id);
-
       if (!info || !info.IDdoc) {
         alert('No hay documento generado disponible para vista previa');
         return;
       }
-
       const documentUrl = `https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`;
       const extension = info.tipo || 'docx';
-
       handlePreviewDocument(documentUrl, extension);
     } catch (error) {
-      console.error('Error en vista previa del documento generado:', error);
-      alert('Error al cargar la vista previa del documento generado: ' + error.message);
+      console.error('Error en vista previa:', error);
+      alert('Error: ' + error.message);
     } finally {
       setIsLoadingPreviewGenerated(false);
     }
   };
 
   const handlePreviewCorrected = async () => {
-    // Verificamos si existe alguno de los 3 orígenes posibles
     const hasFile = correctedFile || approvedData || fullRequestData?.correctedFile;
-
     if (!hasFile) {
       alert('No hay documento corregido para vista previa');
       return;
@@ -317,29 +296,24 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       setIsLoadingPreviewCorrected(true);
       let documentUrl;
 
-      // 1. Archivo local subido en este momento
       if (correctedFile && correctedFile instanceof File) {
         documentUrl = URL.createObjectURL(correctedFile);
       }
-      // 2. Archivo aprobado en el servidor (ya sea por approvedData o status)
       else if (approvedData || request?.status === 'aprobado' || request?.status === 'firmado') {
         const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${request._id}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
       }
-      // 3. En proceso de revisión antigua (fullRequestData)
       else if (request?.correctedFile) {
-        alert('El documento corregido está en proceso de revisión. Una vez aprobado podrás ver la vista previa.');
+        alert('El documento corregido está en proceso de revisión.');
         return;
       } else {
         alert('No hay documento corregido disponible');
         return;
       }
-
       handlePreviewDocument(documentUrl, 'pdf');
-
     } catch (error) {
-      console.error('Error en vista previa de documento corregido:', error);
-      alert('Error al cargar la vista previa del documento corregido: ' + error.message);
+      console.error('Error:', error);
+      alert('Error: ' + error.message);
     } finally {
       setIsLoadingPreviewCorrected(false);
     }
@@ -350,15 +324,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       alert('No hay documento firmado para vista previa');
       return;
     }
-
     try {
       setIsLoadingPreviewSignature(true);
       const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/${request._id}/client-signature`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
-      console.error('Error en vista previa de firma del cliente:', error);
-      alert('Error al cargar la vista previa del documento firmado: ' + error.message);
+      console.error('Error:', error);
+      alert('Error: ' + error.message);
     } finally {
       setIsLoadingPreviewSignature(false);
     }
@@ -368,46 +341,36 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     try {
       setIsLoadingPreviewAdjunto(true);
       const adjunto = fullRequestData.adjuntos[index];
-
       if (adjunto.mimeType !== 'application/pdf') {
-        alert('La vista previa solo está disponible para archivos PDF');
+        alert('Solo disponible para PDF');
         return;
       }
-
       const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
-
     } catch (error) {
-      console.error('Error abriendo vista previa del adjunto:', error);
-      alert('Error al abrir la vista previa del archivo: ' + error.message);
+      console.error('Error:', error);
+      alert('Error: ' + error.message);
     } finally {
       setIsLoadingPreviewAdjunto(false);
     }
   };
 
   const handleRegenerateDocument = async () => {
-    if (!confirm('¿Estás seguro de que quieres regenerar el documento? Esto generará un nuevo documento basado en las respuestas existentes.')) {
-      return;
-    }
-
+    if (!confirm('¿Regenerar documento?')) return;
     setIsRegenerating(true);
-
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/regenerate-document`, {
-        method: 'POST',
-      });
-
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/regenerate-document`, { method: 'POST' });
       if (response.ok) {
         await getDocumentInfo(request._id);
         alert('Documento regenerado exitosamente');
       } else {
         const errorData = await response.json();
-        alert('Error regenerando documento: ' + (errorData.error || 'Error desconocido'));
+        alert('Error: ' + (errorData.error || 'Desconocido'));
       }
     } catch (error) {
-      console.error('Error regenerando documento:', error);
-      alert('Error regenerando documento: ' + error.message);
+      console.error('Error:', error);
+      alert('Error: ' + error.message);
     } finally {
       setIsRegenerating(false);
     }
@@ -416,27 +379,19 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handleDownload = async () => {
     try {
       setIsDownloading(true);
-
       const info = documentInfo || await getDocumentInfo(request._id);
-
       if (!info || !info.IDdoc) {
-        alert('No hay documento disponible para descargar');
+        alert('No hay documento disponible');
         return;
       }
-
       window.open(`https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
-
       if (onUpdate) {
-        const updatedRequest = {
-          ...request,
-          status: 'en_revision'
-        };
+        const updatedRequest = { ...request, status: 'en_revision' };
         onUpdate(updatedRequest);
       }
-
     } catch (error) {
-      console.error('Error en descarga:', error);
-      alert('Error al descargar el documento');
+      console.error('Error:', error);
+      alert('Error al descargar');
     } finally {
       setIsDownloading(false);
     }
@@ -446,7 +401,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     setDownloadingAttachmentIndex(index);
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
-
       if (response.ok) {
         const blob = await response.blob();
         const adjunto = fullRequestData.adjuntos[index];
@@ -459,11 +413,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       } else {
-        alert('Error al descargar el archivo');
+        alert('Error al descargar');
       }
     } catch (error) {
-      console.error('Error descargando adjunto:', error);
-      alert('Error al descargar el archivo');
+      console.error('Error:', error);
+      alert('Error al descargar');
     } finally {
       setDownloadingAttachmentIndex(null);
     }
@@ -473,7 +427,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     setIsDownloadingSignature(true);
     try {
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`);
-
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -486,29 +439,23 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         document.body.removeChild(a);
       } else {
         const errorData = await response.json();
-        alert(errorData.error || 'Error descargando el documento firmado');
+        alert(errorData.error || 'Error descargando');
       }
     } catch (error) {
-      console.error('Error descargando firma del cliente:', error);
-      alert('Error descargando el documento firmado');
+      console.error('Error:', error);
+      alert('Error descargando');
     } finally {
       setIsDownloadingSignature(false);
     }
   };
 
   const handleDeleteClientSignature = async (responseId) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar el documento firmado por el cliente?')) {
-      return;
-    }
-
+    if (!confirm('¿Eliminar documento firmado por el cliente?')) return;
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`, {
-        method: 'DELETE',
-      });
-
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`, { method: 'DELETE' });
       if (response.ok) {
         setClientSignature(null);
-        alert('Documento firmado eliminado exitosamente');
+        alert('Eliminado exitosamente');
         if (onUpdate) {
           const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
@@ -516,11 +463,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         }
       } else {
         const errorData = await response.json();
-        alert(errorData.error || 'Error eliminando documento firmado');
+        alert(errorData.error || 'Error eliminando');
       }
     } catch (error) {
-      console.error('Error eliminando firma del cliente:', error);
-      alert('Error eliminando documento firmado');
+      console.error('Error:', error);
+      alert('Error eliminando');
     }
   };
 
@@ -541,134 +488,88 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleRemoveCorrection = async () => {
-    // Si es un archivo local que aún no se ha enviado
     if (correctedFile && correctedFile instanceof File) {
         setCorrectedFile(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
     }
-
     try {
       const signatureCheck = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       const signatureData = await signatureCheck.json();
-
       const hasSignature = signatureData.exists;
+      let warningMessage = '¿Eliminar corrección y volver a revisión?';
+      if (hasSignature) warningMessage = 'ADVERTENCIA: Existe documento firmado. ¿Continuar?';
+      if (!confirm(warningMessage)) return;
 
-      let warningMessage = '¿Estás seguro de que quieres eliminar esta corrección y volver a revisión?';
-
-      if (hasSignature) {
-        warningMessage = 'ADVERTENCIA: Existe un documento firmado por el cliente. \n\nAl eliminar la corrección, el estado volverá a "en revisión", pero el documento firmado se mantendrá. Cuando vuelvas a subir una corrección, el estado pasará directamente a "firmado". \n\n¿Continuar?';
-      }
-
-      if (!confirm(warningMessage)) {
-        return;
-      }
-
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/remove-correction`, {
-        method: 'DELETE',
-      });
-
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/remove-correction`, { method: 'DELETE' });
       const result = await response.json();
-
       if (response.ok) {
-        if (onUpdate && result.updatedRequest) {
-          onUpdate(result.updatedRequest);
-        }
-        // Limpiamos estados
+        if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
         setCorrectedFile(null);
-        setApprovedData(null); // Limpiamos los datos aprobados ya que se eliminó
-
-        if (result.hasExistingSignature) {
-          alert('Corrección eliminada. El documento firmado se mantiene. Al subir nueva corrección, el estado pasará directamente a "firmado".');
-        } else {
-          alert('Corrección eliminada, formulario vuelve a estado "en revisión"');
-        }
+        setApprovedData(null);
+        if (result.hasExistingSignature) alert('Corrección eliminada. Estado volverá a firmado al subir nueva.');
+        else alert('Corrección eliminada, vuelve a revisión.');
       } else {
-        alert(result.error || 'Error al eliminar la corrección');
+        alert(result.error || 'Error al eliminar');
       }
-
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al eliminar la corrección');
+      alert('Error al eliminar');
     }
   };
 
   const handleApprove = async () => {
-    if (!correctedFile || isApproving || request?.status === 'aprobado' || request?.status === 'firmado') {
-      return;
-    }
-
-    if (!confirm('¿Estás seguro de que quieres aprobar este formulario? Esta acción no se puede deshacer.')) {
-      return;
-    }
-
+    if (!correctedFile || isApproving || request?.status === 'aprobado' || request?.status === 'firmado') return;
+    if (!confirm('¿Aprobar formulario? Acción irreversible.')) return;
     setIsApproving(true);
-
     try {
       const formData = new FormData();
       formData.append('correctedFile', correctedFile);
-
       const approveResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/approve`, {
         method: 'POST',
         body: formData,
       });
-
       if (approveResponse.ok) {
-        const result = await approveResponse.json();
-
         if (onUpdate) {
           const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
-          // Refrescamos los datos aprobados
           fetchApprovedData(request._id);
         }
-
-        setCorrectedFile(null); // Limpiamos el archivo local para que se muestre el aprobado
-        alert('Formulario aprobado correctamente');
+        setCorrectedFile(null);
+        alert('Formulario aprobado');
       } else {
         const errorData = await approveResponse.json();
-        alert(`Error al aprobar el formulario: ${errorData.error}`);
+        alert(`Error: ${errorData.error}`);
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al aprobar el formulario: ' + error.message);
+      alert('Error: ' + error.message);
     } finally {
       setIsApproving(false);
     }
   };
 
   const handleApprovewithoutFile = async () => {
-    if (isApproving ||  request?.status === 'finalizado' ) {
-      return;
-    }
-
-    if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) {
-      return;
-    }
-
+    if (isApproving ||  request?.status === 'finalizado' ) return;
+    if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) return;
     setIsApproving(true);
-
     try {
       const approveResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/finalized`);
-
       if (approveResponse.ok) {
-        const result = await approveResponse.json();
-
         if (onUpdate) {
           const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
-
-        alert('Formulario aprobado correctamente');
+        alert('Finalizado correctamente');
       } else {
         const errorData = await approveResponse.json();
-        alert(`Error al aprobar el formulario: ${errorData.error}`);
+        alert(`Error: ${errorData.error}`);
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al aprobar el formulario: ' + error.message);
+      alert('Error: ' + error.message);
     } finally {
       setIsApproving(false);
     }
@@ -676,91 +577,53 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const getRealAttachments = () => {
     if (!fullRequestData) return []; 
-
     if (documentInfo && documentInfo.IDdoc) {
       let fileName = documentInfo.fileName;
-
       if (!fileName) {
         const formTitle = fullRequestData?.formTitle || 'Documento';
-
-        const nombreTrabajador = fullRequestData?.responses?.["Nombre del trabajador"] ||
-          fullRequestData?.responses?.["NOMBRE DEL TRABAJADOR"] ||
-          fullRequestData?.responses?.["Nombre del trabajador:"] ||
-          'Trabajador';
-
+        const nombreTrabajador = fullRequestData?.responses?.["Nombre del trabajador"] || 'Trabajador';
         fileName = `${formTitle}_${nombreTrabajador}`.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
       }
-
       const tipo = documentInfo.tipo || 'docx';
-
-      return [
-        {
+      return [{
           id: documentInfo.IDdoc,
           name: `${fileName}.${tipo}`,
           size: "Calculando...",
           type: tipo,
           uploadedAt: documentInfo.createdAt || fullRequestData?.submittedAt,
           downloadUrl: `/api/documents/download/${documentInfo.IDdoc}`
-        }
-      ];
+      }];
     }
-
     return [];
   };
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'pending':
-      case 'pendiente':
-        return 'bg-error text-error-foreground';
-      case 'in_review':
-      case 'en_revision':
-        return 'bg-secondary text-secondary-foreground';
-      case 'approved':
-      case 'aprobado':
-        return 'bg-warning text-warning-foreground';
-      case 'signed':
-      case 'firmado':
-        return 'bg-success text-success-foreground'
-      case 'finalizado':
-        return 'bg-accent text-accent-foreground'
-      default:
-        return 'bg-muted text-muted-foreground';
+      case 'pending': case 'pendiente': return 'bg-error text-error-foreground';
+      case 'in_review': case 'en_revision': return 'bg-secondary text-secondary-foreground';
+      case 'approved': case 'aprobado': return 'bg-warning text-warning-foreground';
+      case 'signed': case 'firmado': return 'bg-success text-success-foreground';
+      case 'finalizado': return 'bg-accent text-accent-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
-      case 'approved':
-      case 'aprobado':
-        return 'CheckCircle';
-      case 'pending':
-      case 'pendiente':
-        return 'Clock';
-      case 'in_review':
-      case 'en_revision':
-        return 'Eye';
-      case 'rejected':
-      case 'rechazado':
-        return 'XCircle';
-      case 'borrador':
-        return 'FileText';
-      default:
-        return 'Circle';
-      case 'signed':
-      case 'firmado':
-        return 'CheckSquare';
+      case 'approved': case 'aprobado': return 'CheckCircle';
+      case 'pending': case 'pendiente': return 'Clock';
+      case 'in_review': case 'en_revision': return 'Eye';
+      case 'rejected': case 'rechazado': return 'XCircle';
+      case 'borrador': return 'FileText';
+      case 'signed': case 'firmado': return 'CheckSquare';
+      default: return 'Circle';
     }
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Fecha no disponible';
     return new Date(dateString)?.toLocaleDateString('es-CL', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
   };
 
@@ -773,18 +636,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const getFileIcon = (type) => {
     switch (type?.toLowerCase()) {
-      case 'pdf':
-        return 'FileText';
-      case 'docx': case 'doc':
-        return 'FileText';
-      case 'txt':
-        return 'FileText';
-      case 'xlsx': case 'xls':
-        return 'FileSpreadsheet';
-      case 'jpg': case 'jpeg': case 'png':
-        return 'Image';
-      default:
-        return 'File';
+      case 'pdf': return 'FileText';
+      case 'docx': case 'doc': return 'FileText';
+      case 'xlsx': case 'xls': return 'FileSpreadsheet';
+      case 'jpg': case 'jpeg': case 'png': return 'Image';
+      default: return 'File';
     }
   };
 
@@ -793,21 +649,363 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     if (mimeType?.includes('word') || mimeType?.includes('document')) return 'FileText';
     if (mimeType?.includes('excel') || mimeType?.includes('spreadsheet')) return 'FileSpreadsheet';
     if (mimeType?.includes('image')) return 'Image';
-    if (mimeType?.includes('text')) return 'FileText';
     return 'File';
   };
 
-  const canPreviewAdjunto = (mimeType) => {
-    return mimeType === 'application/pdf';
-  };
+  const canPreviewAdjunto = (mimeType) => mimeType === 'application/pdf';
 
   const realAttachments = getRealAttachments();
+
+  // --- COMPONENTES INTERNOS DE RENDERIZADO ---
+
+  const renderDetailsTab = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Enviado por:</span>
+                <span className="text-sm font-medium text-foreground">{fullRequestData?.submittedBy}, {fullRequestData?.company}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Fecha de envío:</span>
+                <span className="text-sm font-medium text-foreground">{formatDate(fullRequestData?.submittedAt)}</span>
+              </div>
+      </div>
+
+      {/* ADJUNTOS */}
+      <div>
+        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+          Archivos Adjuntos
+          {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+        </h3>
+        {fullRequestData?.adjuntos?.length > 0 && (
+          <div className="space-y-2">
+            {fullRequestData.adjuntos.map((adjunto, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
+                    iconPosition="left"
+                    iconSize={16}
+                    onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
+                    disabled={downloadingAttachmentIndex !== null}
+                  >
+                    {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
+                  </Button>
+                  {canPreviewAdjunto(adjunto.mimeType) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      iconName={isLoadingPreviewAdjunto ? "Loader" : "Eye"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={() => handlePreviewAdjunto(fullRequestData._id, index)}
+                      disabled={isLoadingPreviewAdjunto}
+                    >
+                      {isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* DOCUMENTO GENERADO */}
+      <div>
+        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+          Documento Generado
+          {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+        </h3>
+        {realAttachments?.length > 0 ? (
+          <div className="space-y-2">
+            {realAttachments?.map((file) => (
+              <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground" title={file?.name}>
+                      {file?.name?.length > 45 ? `${file.name.substring(0, 45)}...` : file?.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {file?.size} • Generado el {formatDate(file?.uploadedAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    iconName={isDownloading ? "Loader" : "Download"}
+                    iconPosition="left"
+                    iconSize={16}
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                  >
+                    {isDownloading ? 'Descargando...' : 'Descargar'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handlePreviewGenerated}
+                    iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
+                    iconPosition="left"
+                    iconSize={16}
+                    disabled={isLoadingPreviewGenerated}
+                  >
+                    {isLoadingPreviewGenerated ? 'Cargando...' : 'Vista Previa'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRegenerateDocument}
+                    iconName={isRegenerating ? "Loader" : "RefreshCw"}
+                    iconPosition="left"
+                    iconSize={16}
+                    disabled={isRegenerating}
+                  >
+                    {isRegenerating ? 'Regenerando...' : 'Regenerar'}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <Icon name="Paperclip" size={48} className="mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No hay documentos generados para este formulario</p>
+          </div>
+        )}
+      </div>
+
+      {/* DOCUMENTO CORREGIDO */}
+      <div>
+        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+          Documento Corregido
+          {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+        </h3>
+        <div className="bg-muted/50 rounded-lg p-4">
+          {correctedFile || approvedData || fullRequestData?.correctedFile ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Icon name="FileText" size={20} className="text-accent" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {correctedFile?.name || approvedData?.fileName || fullRequestData?.correctedFile?.fileName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {correctedFile?.size
+                      ? `${(correctedFile.size / 1024 / 1024).toFixed(2)} MB`
+                      : approvedData?.fileSize
+                        ? formatFileSize(approvedData.fileSize)
+                        : fullRequestData?.correctedFile?.fileSize
+                          ? formatFileSize(fullRequestData.correctedFile.fileSize)
+                          : 'Tamaño no disponible'}
+                  </p>
+                  {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
+                    <p className="text-xs text-success font-medium mt-1">
+                      ✓ Formulario aprobado
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handlePreviewCorrected}
+                  iconName={isLoadingPreviewCorrected ? "Loader" : "Eye"}
+                  iconPosition="left"
+                  iconSize={16}
+                  disabled={isLoadingPreviewCorrected}
+                >
+                  {isLoadingPreviewCorrected ? 'Cargando...' : 'Vista Previa'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleRemoveCorrection}
+                  className="text-error hover:bg-error/10"
+                >
+                  <Icon name="X" size={16} />
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">No se han subido correcciones aún</p>
+              <Button
+                variant="outline"
+                size="sm"
+                iconName="Upload"
+                iconPosition="left"
+                onClick={handleUploadClick}
+              >
+                Subir
+              </Button>
+            </div>
+          )}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleUploadCorrection}
+            accept=".pdf"
+            className="hidden"
+          />
+        </div>
+      </div>
+
+      {/* DOCUMENTO FIRMADO */}
+      {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
+        <div>
+          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+            Documento Firmado por Cliente
+            {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+          </h3>
+          {clientSignature ? (
+            <div className="bg-success/10 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Icon name="FileSignature" size={20} className="text-success" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{clientSignature.fileName + '.pdf'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Subido el {formatDate(clientSignature.uploadedAt)} • {formatFileSize(clientSignature.fileSize)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    iconName={isDownloadingSignature ? "Loader" : "Download"}
+                    iconPosition="left"
+                    iconSize={16}
+                    onClick={() => handleDownloadClientSignature(fullRequestData._id)}
+                    disabled={isDownloadingSignature}
+                  >
+                    {isDownloadingSignature ? 'Descargando...' : 'Descargar'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handlePreviewClientSignature}
+                    iconName={isLoadingPreviewSignature ? "Loader" : "Eye"}
+                    iconPosition="left"
+                    iconSize={16}
+                    disabled={isLoadingPreviewSignature}
+                  >
+                    {isLoadingPreviewSignature ? 'Cargando...' : 'Vista Previa'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteClientSignature(fullRequestData._id)}
+                    className="text-error hover:bg-error/10"
+                  >
+                    <Icon name="Trash2" size={16} />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-muted/50 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Icon name="Clock" size={20} className="text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">El cliente aún no ha subido su documento firmado</p>
+                    <p className="text-xs text-muted-foreground">
+                      Esperando que el cliente descargue, firme y suba el documento
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconName="RefreshCw"
+                  iconPosition="left"
+                  iconSize={16}
+                  onClick={refreshClientSignature}
+                  disabled={isCheckingSignature}
+                >
+                  Actualizar
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderResponsesTab = () => {
+    // 1. Validamos que existan respuestas
+    const responses = fullRequestData?.responses || {};
+    const entries = Object.entries(responses);
+
+    if (entries.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center p-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border">
+          <Icon name="FileText" size={32} className="mb-2 opacity-50" />
+          <p>No hay respuestas registradas en este formulario.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Icon name="List" size={20} className="text-accent" />
+            Respuestas del Formulario
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {entries.map(([pregunta, respuesta], index) => (
+              <div 
+                key={index} 
+                className="bg-muted/30 rounded-lg p-4 border border-border/50 hover:bg-muted/50 transition-colors"
+              >
+                {/* La Pregunta / Etiqueta */}
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 break-words">
+                  {pregunta}
+                </h4>
+                
+                {/* La Respuesta */}
+                <div className="text-sm font-medium text-foreground leading-relaxed whitespace-pre-wrap break-words">
+                  {/* Verificamos que sea un valor renderizable, por si viene un booleano u objeto */}
+                  {respuesta !== null && typeof respuesta === 'object' 
+                    ? JSON.stringify(respuesta) 
+                    : String(respuesta || '-')
+                  }
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
-          <div className="flex items-center justify-between">
+        
+        {/* HEADER: AHORA CONTIENE EL MENÚ DE PESTAÑAS */}
+        <div className="sticky top-0 bg-card border-b border-border z-10">
+          {/* Fila Superior: Título y Acciones */}
+          <div className="flex items-center justify-between p-6 pb-2">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent" />
@@ -829,336 +1027,38 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
               iconSize={20}
             />
           </div>
+
+          {/* Fila Inferior: Pestañas de Navegación */}
+          <div className="px-6 flex space-x-6 ">
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === 'details'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Detalles
+            </button>
+            <button
+              onClick={() => setActiveTab('responses')}
+              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === 'responses'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Respuestas
+            </button>
+          </div>
         </div>
 
-        <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-3">Información General</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium text-foreground">{fullRequestData?.formTitle}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Categoría:</span>
-                    <span className="text-sm font-medium text-foreground">{fullRequestData?.form?.section}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={`text-sm font-medium ${fullRequestData?.priority === 'high' ? 'text-error' :
-                      fullRequestData?.priority === 'medium' ? 'text-warning' : 'text-success'
-                      }`}>
-                      {fullRequestData?.priority?.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-3">Usuario y Fechas</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Enviado por:</span>
-                    <span className="text-sm font-medium text-foreground">{fullRequestData?.submittedBy}, {fullRequestData?.company}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Fecha de envío:</span>
-                    <span className="text-sm font-medium text-foreground">{formatDate(fullRequestData?.submittedAt)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                Archivos Adjuntos
-                {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-              </h3>
-              {fullRequestData?.adjuntos?.length > 0 && (
-              <div className="space-y-2">
-                {fullRequestData.adjuntos.map((adjunto, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
-                        iconPosition="left"
-                        iconSize={16}
-                        onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
-                        disabled={downloadingAttachmentIndex !== null}
-                      >
-                        {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
-                      </Button>
-                      {canPreviewAdjunto(adjunto.mimeType) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName={isLoadingPreviewAdjunto ? "Loader" : "Eye"}
-                          iconPosition="left"
-                          iconSize={16}
-                          onClick={() => handlePreviewAdjunto(fullRequestData._id, index)}
-                          disabled={isLoadingPreviewAdjunto}
-                        >
-                          {isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                Documento Generado
-                {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-            </h3>
-            {realAttachments?.length > 0 ? (
-              <div className="space-y-2">
-                {realAttachments?.map((file) => (
-                  <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
-                      <div>
-                        <p
-                          className="text-sm font-medium text-foreground"
-                          title={file?.name}
-                        >
-                          {file?.name?.length > 45
-                            ? `${file.name.substring(0, 45)}...`
-                            : file?.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {file?.size} • Generado el {formatDate(file?.uploadedAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        iconName={isDownloading ? "Loader" : "Download"}
-                        iconPosition="left"
-                        iconSize={16}
-                        onClick={handleDownload}
-                        disabled={isDownloading}
-                      >
-                        {isDownloading ? 'Descargando...' : 'Descargar'}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handlePreviewGenerated}
-                        iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
-                        iconPosition="left"
-                        iconSize={16}
-                        disabled={isLoadingPreviewGenerated}
-                      >
-                        {isLoadingPreviewGenerated ? 'Cargando...' : 'Vista Previa'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRegenerateDocument}
-                        iconName={isRegenerating ? "Loader" : "RefreshCw"}
-                        iconPosition="left"
-                        iconSize={16}
-                        disabled={isRegenerating}
-                      >
-                        {isRegenerating ? 'Regenerando...' : 'Regenerar'}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Icon name="Paperclip" size={48} className="mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No hay documentos generados para este formulario</p>
-              </div>
-            )}
-          </div>
-
-          {/* --- SECCIÓN ACTUALIZADA: DOCUMENTO CORREGIDO --- */}
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                Documento Corregido
-                {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-            </h3>
-            <div className="bg-muted/50 rounded-lg p-4">
-              {/* LÓGICA DE VISUALIZACIÓN:
-                  1. Prioridad: Archivo que estoy subiendo ahora mismo (correctedFile - instancia de File)
-                  2. Prioridad: Datos aprobados que vienen de la API (approvedData)
-                  3. Prioridad: Datos antiguos en el request general (fullRequestData.correctedFile)
-              */}
-              {correctedFile || approvedData || fullRequestData?.correctedFile ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Icon name="FileText" size={20} className="text-accent" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {/* Nombre del archivo: Local > Aprobado > General */}
-                        {correctedFile?.name || approvedData?.fileName || fullRequestData?.correctedFile?.fileName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {/* Tamaño del archivo: Lógica adaptada para cada origen */}
-                        {correctedFile?.size 
-                            ? `${(correctedFile.size / 1024 / 1024).toFixed(2)} MB` 
-                            : approvedData?.fileSize 
-                                ? formatFileSize(approvedData.fileSize)
-                                : fullRequestData?.correctedFile?.fileSize 
-                                    ? formatFileSize(fullRequestData.correctedFile.fileSize) 
-                                    : 'Tamaño no disponible'}
-                      </p>
-                      {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
-                        <p className="text-xs text-success font-medium mt-1">
-                          ✓ Formulario aprobado
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handlePreviewCorrected}
-                      iconName={isLoadingPreviewCorrected ? "Loader" : "Eye"}
-                      iconPosition="left"
-                      iconSize={16}
-                      disabled={isLoadingPreviewCorrected}
-                    >
-                      {isLoadingPreviewCorrected ? 'Cargando...' : 'Vista Previa'}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleRemoveCorrection}
-                      className="text-error hover:bg-error/10"
-                    >
-                      <Icon name="X" size={16} />
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">No se han subido correcciones aún</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    iconName="Upload"
-                    iconPosition="left"
-                    onClick={handleUploadClick}
-                  >
-                    Subir
-                  </Button>
-                </div>
-              )}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleUploadCorrection}
-                accept=".pdf"
-                className="hidden"
-              />
-            </div>
-          </div>
-
-          {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                Documento Firmado por Cliente
-                {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-              </h3>
-              {clientSignature ? (
-                <div className="bg-success/10 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Icon name="FileSignature" size={20} className="text-success" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{clientSignature.fileName + '.pdf'}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Subido el {formatDate(clientSignature.uploadedAt)} • {formatFileSize(clientSignature.fileSize)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        iconName={isDownloadingSignature ? "Loader" : "Download"}
-                        iconPosition="left"
-                        iconSize={16}
-                        onClick={() => handleDownloadClientSignature(fullRequestData._id)}
-                        disabled={isDownloadingSignature}
-                      >
-                         {isDownloadingSignature ? 'Descargando...' : 'Descargar'}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handlePreviewClientSignature}
-                        iconName={isLoadingPreviewSignature ? "Loader" : "Eye"}
-                        iconPosition="left"
-                        iconSize={16}
-                        disabled={isLoadingPreviewSignature}
-                      >
-                        {isLoadingPreviewSignature ? 'Cargando...' : 'Vista Previa'}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteClientSignature(fullRequestData._id)}
-                        className="text-error hover:bg-error/10"
-                      >
-                        <Icon name="Trash2" size={16} />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Icon name="Clock" size={20} className="text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">El cliente aún no ha subido su documento firmado</p>
-                        <p className="text-xs text-muted-foreground">
-                          Esperando que el cliente descargue, firme y suba el documento
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      iconName="RefreshCw"
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={refreshClientSignature}
-                      disabled={isCheckingSignature}
-                    >
-                      Actualizar
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+        {/* CONTENIDO PRINCIPAL CON RENDERIZADO CONDICIONAL */}
+        <div className="p-6">
+          {activeTab === 'details' ? renderDetailsTab() : renderResponsesTab()}
         </div>
 
+        {/* FOOTER */}
         <div className="sticky bottom-0 bg-card border-t border-border p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -1219,6 +1119,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           }
           setShowPreview(false);
         }}
+        resposes={request}
         documentUrl={previewDocument?.url}
         documentType={previewDocument?.type}
       />

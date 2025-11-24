@@ -10,6 +10,9 @@ const CleanDocumentPreview = ({
     const [content, setContent] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    
+    // 1. Nuevo estado para controlar la pestaña activa ('preview' o 'respuestas')
+    const [activeTab, setActiveTab] = useState('preview');
 
     useEffect(() => {
         if (!isVisible || !documentUrl) return;
@@ -36,7 +39,6 @@ const CleanDocumentPreview = ({
                         includeDefaultStyleMap: false
                     });
 
-                    // Procesar el contenido para forzar saltos de línea
                     let processedContent = result.value
                         .replace(/\n/g, '<br>')
                         .replace(/<p>/g, '<p style="margin-bottom: 12px; line-height: 1.6;">')
@@ -65,10 +67,11 @@ const CleanDocumentPreview = ({
             setContent('');
             setIsLoading(true);
             setError(null);
+            // Reiniciamos a la pestaña de vista previa cada vez que se abre el modal
+            setActiveTab('preview');
         }
     }, [isVisible]);
 
-    // Cerrar con Escape key
     useEffect(() => {
         const handleEscape = (e) => {
             if (e.key === 'Escape' && isVisible) {
@@ -82,7 +85,33 @@ const CleanDocumentPreview = ({
 
     if (!isVisible) return null;
 
-    const renderContent = () => {
+    // 2. Nueva función para renderizar el contenido de la pestaña Respuestas
+    const renderRespuestas = () => {
+        return (
+            <div className="h-full overflow-auto bg-white dark:bg-black p-6">
+                <div className="max-w-4xl mx-auto">
+                    <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                        Detalle de Respuestas
+                    </h3>
+                    <div className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-400">
+                        <p>
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                        </p>
+                        <br />
+                        <p>
+                            Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                        </p>
+                        <br />
+                        <p>
+                            Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderPreviewContent = () => {
         if (isLoading) {
             return (
                 <div className="flex flex-col sm:flex-row justify-center items-center h-48 sm:h-64 p-4">
@@ -127,17 +156,8 @@ const CleanDocumentPreview = ({
                                 className="w-full h-full min-h-[400px] sm:min-h-[600px] md:min-h-[800px]"
                             >
                                 <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4 text-center">
-                                    <svg className="w-12 h-12 sm:w-16 sm:h-16 mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
                                     <p className="text-sm sm:text-base mb-2">No se puede mostrar la vista previa del PDF</p>
-                                    <a
-                                        href={documentUrl}
-                                        download
-                                        className="text-blue-600 hover:underline text-sm sm:text-base"
-                                    >
-                                        Descargar PDF
-                                    </a>
+                                    <a href={documentUrl} download className="text-blue-600 hover:underline">Descargar PDF</a>
                                 </div>
                             </object>
                         </div>
@@ -153,7 +173,7 @@ const CleanDocumentPreview = ({
                                 fontFamily: "'Times New Roman', serif",
                                 lineHeight: '1.6',
                                 color: '#000',
-                                fontSize: '11pt sm:12pt',
+                                fontSize: '11pt',
                                 whiteSpace: 'normal',
                                 wordWrap: 'break-word'
                             }}
@@ -174,23 +194,8 @@ const CleanDocumentPreview = ({
             default:
                 return (
                     <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-gray-500 p-4 sm:p-8 text-center">
-                        <svg className="w-12 h-12 sm:w-16 sm:h-16 mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <p className="text-base sm:text-lg font-medium mb-1 sm:mb-2">Formato no soportado</p>
-                        <p className="text-xs sm:text-sm mb-3 sm:mb-4 max-w-md">
-                            La vista previa para .{documentType} no está disponible
-                        </p>
-                        <a
-                            href={documentUrl}
-                            download
-                            className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm sm:text-base"
-                        >
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Descargar archivo
-                        </a>
+                        <p className="text-base font-medium">Formato no soportado</p>
+                        <a href={documentUrl} download className="text-blue-600 hover:underline">Descargar archivo</a>
                     </div>
                 );
         }
@@ -207,50 +212,65 @@ const CleanDocumentPreview = ({
 
             {isVisible && (
                 <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white dark:bg-black rounded-lg sm:rounded-xl shadow-xl flex flex-col w-[98vw] h-[95vh] sm:w-[95vw] sm:h-[90vh] max-w-6xl mx-2 sm:mx-4 overflow-hidden">
-                    {/* Header - Más compacto en móvil */}
-                    <div className="flex justify-between items-center p-2 sm:p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-black">
-                        <div className="flex items-center space-x-2 min-w-0 flex-1">
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
-                                Vista previa - {documentType?.toUpperCase()}
-                            </span>
+                    
+                    {/* Header - Ahora contiene el Pseudo Menu */}
+                    <div className="flex justify-between items-center px-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-black">
+                        
+                        {/* Zona Superior Izquierda: Menú de Pestañas */}
+                        <div className="flex items-center space-x-6 min-w-0 flex-1 h-12">
+                            <button
+                                onClick={() => setActiveTab('preview')}
+                                className={`h-full flex items-center space-x-2 border-b-2 px-1 transition-colors ${
+                                    activeTab === 'preview'
+                                        ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                            >
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                <span className="text-sm font-medium">Vista Previa</span>
+                            </button>
                         </div>
+
+                        {/* Botón Cerrar */}
                         <button
                             onClick={onClose}
-                            className="p-1 sm:p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex-shrink-0"
-                            title="Cerrar vista previa"
+                            className="p-2 ml-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+                            title="Cerrar"
                         >
-                            <svg width="16" height="16" className="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
 
-                    {/* Content Area */}
-                    <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
-                        {renderContent()}
+                    {/* Content Area con renderizado condicional */}
+                    <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 relative">
+                        {renderPreviewContent()}
                     </div>
 
-                    {/* Footer con acciones - Solo en móvil para ahorrar espacio */}
-                    <div className="sm:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-700 p-3">
-                        <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-500">
-                                {documentType?.toUpperCase()}
-                            </span>
-                            <a
-                                href={documentUrl}
-                                download
-                                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
-                            >
-                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                Descargar
-                            </a>
+                    {/* Footer solo para Vista Previa en móvil */}
+                    {activeTab === 'preview' && (
+                        <div className="sm:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-700 p-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500">
+                                    {documentType?.toUpperCase()}
+                                </span>
+                                <a
+                                    href={documentUrl}
+                                    download
+                                    className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
+                                >
+                                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Descargar
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             )}
         </>
