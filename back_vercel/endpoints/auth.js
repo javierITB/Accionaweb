@@ -359,6 +359,7 @@ router.put("/users/:id", async (req, res) => {
   }
 });
 
+
 router.delete("/users/:id", async (req, res) => {
   try {
     const result = await req.db.collection("usuarios").deleteOne({
