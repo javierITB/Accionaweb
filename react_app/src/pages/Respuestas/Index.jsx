@@ -119,6 +119,7 @@ const RequestTracking = () => {
             formTitle: r.formTitle,
             status: r.status,
             trabajador: r.trabajador,
+            rutTrabajador: r.rutTrabajador,
             submittedBy: r.user?.nombre || 'Usuario Desconocido',
             lastUpdated: r.updatedAt || null,
             assignedTo: r.updatedAt || " - ",
@@ -156,6 +157,8 @@ const RequestTracking = () => {
         request?.title?.toLowerCase()?.includes(searchTerm) ||
         request?.company?.toLowerCase()?.includes(searchTerm) ||
         request?.submittedBy?.toLowerCase()?.includes(searchTerm) ||
+        request?.trabajador?.toLowerCase()?.includes(searchTerm) ||
+        request?.rutTrabajador?.toLowerCase()?.includes(searchTerm) ||
         request?.userEmail?.toLowerCase()?.includes(searchTerm) ||
         request?._id?.toLowerCase()?.includes(searchTerm) ||
         request?.detalles?.toLowerCase()?.includes(searchTerm) ||
