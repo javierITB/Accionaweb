@@ -311,6 +311,7 @@ const RequestTracking = () => {
     setFilters({
       search: '',
       trabajador: '',
+      rutTrabajador: '',
       status: '',
       category: '',
       dateRange: '',
