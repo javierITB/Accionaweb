@@ -307,6 +307,7 @@ const RequestTracking = () => {
   const handleClearFilters = () => {
     setFilters({
       search: '',
+      trabajador: '',
       status: '',
       category: '',
       dateRange: '',

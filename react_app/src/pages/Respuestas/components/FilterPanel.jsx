@@ -21,19 +21,6 @@ const FilterPanel = ({
     { value: 'finalizado', label: 'finalizado' },
   ];
 
-  // Opciones de categoría basadas en los formularios existentes
-  const categoryOptions = [
-    { value: '', label: 'Todas las Categorías' },
-    { value: 'hr', label: 'Recursos Humanos' },
-    { value: 'it', label: 'Tecnología' },
-    { value: 'finance', label: 'Finanzas' },
-    { value: 'operations', label: 'Operaciones' },
-    { value: 'training', label: 'Capacitación' },
-    { value: 'feedback', label: 'Retroalimentación' },
-    { value: 'survey', label: 'Encuesta' },
-    { value: 'evaluation', label: 'Evaluación' }
-  ];
-
   const dateRangeOptions = [
     { value: '', label: 'Cualquier Fecha' },
     { value: 'today', label: 'Hoy' },
