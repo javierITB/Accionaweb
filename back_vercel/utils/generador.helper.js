@@ -575,10 +575,10 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
         if (existingDoc) {
             console.log(`Sobreescribiendo documento existente: ${existingDoc.IDdoc}`);
             IDdoc = existingDoc.IDdoc;
-            
+
             result = await db.collection('docxs').updateOne(
                 { responseId: responseId },
-                { 
+                {
                     $set: {
                         docxFile: buffer,
                         fileName: fileName,
@@ -620,10 +620,30 @@ function limpiarFileName(texto) {
     if (!texto) return 'documento';
 
     return texto
-        .normalize('NFD')
+        .replace(/ñ/g, 'n')
+        .replace(/Ñ/g, 'N')
+        .replace(/á/g, 'a')
+        .replace(/é/g, 'e')
+        .replace(/í/g, 'i')
+        .replace(/ó/g, 'o')
+        .replace(/ú/g, 'u')
+        .replace(/Á/g, 'A')
+        .replace(/É/g, 'E')
+        .replace(/Í/g, 'I')
+        .replace(/Ó/g, 'O')
+        .replace(/Ú/g, 'U')
+        .replace(/ü/g, 'u')
+        .replace(/Ü/g, 'U')
+        // Eliminar cualquier otro diacrítico
         .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z0-9\s]/g, '')
+        // Eliminar caracteres especiales restantes
+        .replace(/[^a-zA-Z0-9\s._-]/g, '')
+        // Reemplazar espacios múltiples por un solo guión bajo
         .replace(/\s+/g, '_')
+        // Limitar longitud
+        .substring(0, 100)
+        // Eliminar guiones bajos al inicio/final
+        .replace(/^_+|_+$/g, '')
         .substring(0, 30)
         .toUpperCase();
 }
@@ -676,7 +696,7 @@ function reemplazarVariablesEnContenido(contenido, variables) {
     console.log("Contenido procesado (TextRuns):", textRuns.length, "elementos");
     return textRuns;
 }
-async function generarDocumentoTxt(responses, responseId, db) {
+async function generarDocumentoTxt(responses, responseId, db, formTitle) {
     try {
         console.log("=== GENERANDO DOCUMENTO TXT MEJORADO ===");
 
@@ -718,9 +738,9 @@ async function generarDocumentoTxt(responses, responseId, db) {
         contenidoTxt += `\nGenerado el: ${new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })}`;
 
         const buffer = Buffer.from(contenidoTxt, 'utf8');
-        
+
         const trabajador = responses['NOMBRE_DEL_TRABAJADOR'] || responses['Nombre del trabajador'] || 'TRABAJADOR';
-        const nombreFormulario = 'FORMULARIO';
+        const nombreFormulario = formTitle || 'FORMULARIO';
         const fileName = `${limpiarFileName(nombreFormulario)}_${limpiarFileName(trabajador)}`;
 
         // VERIFICAR Y SOBREESCRIBIR DOCUMENTO EXISTENTE (TXT)
@@ -734,10 +754,10 @@ async function generarDocumentoTxt(responses, responseId, db) {
         if (existingDoc) {
             console.log(`Sobreescribiendo documento TXT existente: ${existingDoc.IDdoc}`);
             IDdoc = existingDoc.IDdoc;
-            
+
             result = await db.collection('docxs').updateOne(
                 { responseId: responseId },
-                { 
+                {
                     $set: {
                         docxFile: buffer,
                         fileName: fileName,

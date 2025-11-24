@@ -69,7 +69,7 @@ const upload = multer({
 
 router.use(express.json({ limit: '4mb' }));
 
-// En el endpoint POST principal (/)
+// En el endpoint POST principal (/) - SOLO FORMATO ESPECÍFICO
 router.post("/", async (req, res) => {
   try {
     const { formId, user, responses, formTitle, adjuntos = [], mail: correoRespaldo } = req.body;
@@ -77,6 +77,9 @@ router.post("/", async (req, res) => {
     const empresa = user?.empresa;
     const userId = user?.uid;
     const token = user?.token;
+
+    console.log("=== INICIO GUARDAR RESPUESTA ===");
+    console.log("Cantidad de adjuntos a procesar:", adjuntos.length);
 
     const tokenValido = await validarToken(req.db, token);
     if (!tokenValido.ok) {
@@ -98,7 +101,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Insertar respuesta principal
+    // Insertar respuesta principal SIN adjuntos
     const result = await req.db.collection("respuestas").insertOne({
       formId,
       user,
@@ -106,31 +109,25 @@ router.post("/", async (req, res) => {
       formTitle,
       mail: correoRespaldo,
       status: "pendiente",
-      createdAt: new Date(),
-      adjuntosCount: adjuntos.length
+      createdAt: new Date()
+      // SIN adjuntosCount - solo los campos básicos
     });
 
-    // CORRECCIÓN: Guardar adjuntos en el formato coherente
-    if (adjuntos.length > 0) {
-      const adjuntosParaGuardar = adjuntos.map(adjunto => ({
-        responseId: result.insertedId,
-        submittedAt: new Date().toISOString(), // Usar submittedAt como en tu formato objetivo
-        adjuntos: [
-          {
-            pregunta: adjunto.pregunta || "Adjunto sin descripción",
-            fileName: normalizeFilename(adjunto.fileName),
-            fileData: adjunto.fileData,
-            mimeType: adjunto.mimeType || 'application/octet-stream',
-            size: adjunto.size || 0,
-            uploadedAt: new Date().toISOString() // Mantener uploadedAt para cada archivo
-          }
-        ]
-      }));
+    console.log("✅ Respuesta principal guardada con ID:", result.insertedId);
 
-      await req.db.collection("adjuntos").insertMany(adjuntosParaGuardar);
+    // Crear documento para adjuntos con el formato específico
+    if (adjuntos.length > 0) {
+      const documentoAdjuntos = {
+        responseId: result.insertedId,
+        submittedAt: new Date().toISOString(),
+        adjuntos: [] // Array vacío inicial - se llenará con el endpoint individual
+      };
+
+      await req.db.collection("adjuntos").insertOne(documentoAdjuntos);
+      console.log("✅ Documento de adjuntos creado (vacío)");
     }
 
-    // El resto del código permanece igual...
+    // El resto del código (notificaciones, generación de documento, etc.)
     let resultadoCorreo = { enviado: false };
     if (correoRespaldo && correoRespaldo.trim() !== '') {
       resultadoCorreo = await enviarCorreoRespaldo(
@@ -146,7 +143,7 @@ router.post("/", async (req, res) => {
       filtro: { cargo: "RRHH" },
       titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondido el formulario ${formTitle}`,
       descripcion: adjuntos.length > 0
-        ? `Incluye ${adjuntos.length} archivo(s) adjunto(s)`
+        ? `Incluye ${adjuntos.length} archivo(s) adjunto(s) - Procesando...`
         : "Puedes revisar los detalles en el panel de respuestas.",
       prioridad: 2,
       color: "#bb8900ff",
@@ -175,15 +172,17 @@ router.post("/", async (req, res) => {
       console.error("Error generando documento:", error.message);
     }
 
+    console.log("=== FIN GUARDAR RESPUESTA PRINCIPAL ===");
+
+    // Retornar el ID para que el frontend pueda enviar los adjuntos
     res.json({
       _id: result.insertedId,
       formId,
       user,
       responses,
       formTitle,
-      mail: correoRespaldo,
-      adjuntosCount: adjuntos.length,
-      correoRespaldo: resultadoCorreo
+      mail: correoRespaldo
+      // SIN adjuntosCount ni adjuntosPendientes
     });
 
   } catch (err) {
@@ -208,8 +207,85 @@ router.get("/:id/adjuntos", async (req, res) => {
   }
 });
 
-// Descargar adjunto específico
-// CORREGIR endpoint para descargar adjuntos específicos
+// Subir adjunto individual - MISMO NOMBRE PARA FRONTEND
+router.post("/:id/adjuntos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adjunto, index, total } = req.body;
+
+    console.log(`Subiendo adjunto ${index + 1} de ${total} para respuesta:`, id);
+
+    if (!adjunto || typeof index === 'undefined' || !total) {
+      return res.status(400).json({ 
+        error: "Faltan campos: adjunto, index o total" 
+      });
+    }
+
+    // Verificar que la respuesta existe
+    const respuestaExistente = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(id)
+    });
+
+    if (!respuestaExistente) {
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
+    // Crear el objeto adjunto con el formato específico
+    const adjuntoNormalizado = {
+      pregunta: adjunto.pregunta || "Adjuntar documento aquí",
+      fileName: normalizeFilename(adjunto.fileName),
+      fileData: adjunto.fileData,
+      mimeType: adjunto.mimeType || 'application/pdf',
+      size: adjunto.size || 0,
+      uploadedAt: new Date().toISOString()
+    };
+
+    console.log(`Procesando adjunto ${index + 1}:`, {
+      fileName: adjuntoNormalizado.fileName,
+      size: adjuntoNormalizado.size
+    });
+
+    // Buscar el documento de adjuntos
+    const documentoAdjuntos = await req.db.collection("adjuntos").findOne({
+      responseId: new ObjectId(id)
+    });
+
+    if (!documentoAdjuntos) {
+      // Si no existe, crear uno nuevo con el formato específico
+      const nuevoDocumento = {
+        responseId: new ObjectId(id),
+        submittedAt: new Date().toISOString(),
+        adjuntos: [adjuntoNormalizado] // Array con el primer adjunto
+      };
+
+      await req.db.collection("adjuntos").insertOne(nuevoDocumento);
+      console.log(`✅ Creado nuevo documento con primer adjunto`);
+    } else {
+      // Si existe, agregar al array manteniendo el formato
+      await req.db.collection("adjuntos").updateOne(
+        { responseId: new ObjectId(id) },
+        {
+          $push: { adjuntos: adjuntoNormalizado }
+        }
+      );
+      console.log(`✅ Adjunto ${index + 1} agregado al documento existente`);
+    }
+
+    res.json({
+      success: true,
+      message: `Adjunto ${index + 1} de ${total} subido exitosamente`,
+      fileName: adjuntoNormalizado.fileName
+    });
+
+  } catch (error) {
+    console.error('Error subiendo adjunto individual:', error);
+    res.status(500).json({ 
+      error: `Error subiendo adjunto: ${error.message}`
+    });
+  }
+});
+
+
 router.get("/:id/adjuntos/:index", async (req, res) => {
   try {
     const { id, index } = req.params;
@@ -268,68 +344,6 @@ router.get("/:id/adjuntos/:index", async (req, res) => {
     res.status(500).json({ error: "Error descargando archivo adjunto: " + err.message });
   }
 });
-
-// CORREGIR endpoint para agregar adjuntos
-router.post("/:id/adjuntos", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { archivos } = req.body;
-
-    console.log(`Agregando ${archivos.length} archivos a respuesta:`, id);
-
-    if (!archivos || !Array.isArray(archivos)) {
-      return res.status(400).json({ error: "Formato inválido: se esperaba array 'archivos'" });
-    }
-
-    const respuestaExistente = await req.db.collection("respuestas").findOne({
-      _id: new ObjectId(id)
-    });
-
-    if (!respuestaExistente) {
-      return res.status(404).json({ error: "Respuesta no encontrada" });
-    }
-
-    // CORRECCIÓN: Usar el formato coherente
-    const adjuntosParaGuardar = archivos.map(archivo => ({
-      responseId: new ObjectId(id),
-      submittedAt: new Date().toISOString(),
-      adjuntos: [
-        {
-          pregunta: archivo.pregunta || "Adjunto sin descripción",
-          fileName: normalizeFilename(archivo.fileName),
-          fileData: archivo.fileData,
-          mimeType: archivo.mimeType || 'application/octet-stream',
-          size: archivo.size || 0,
-          uploadedAt: new Date().toISOString()
-        }
-      ]
-    }));
-
-    const result = await req.db.collection("adjuntos").insertMany(adjuntosParaGuardar);
-
-    await req.db.collection("respuestas").updateOne(
-      { _id: new ObjectId(id) },
-      {
-        $inc: { adjuntosCount: archivos.length },
-        $set: { updatedAt: new Date() }
-      }
-    );
-
-    console.log(`${archivos.length} archivos agregados a respuesta ${id}`);
-
-    res.json({
-      success: true,
-      message: 'Archivos agregados exitosamente',
-      archivosCount: archivos.length,
-      totalArchivos: (respuestaExistente.adjuntosCount || 0) + archivos.length
-    });
-
-  } catch (error) {
-    console.error('Error agregando archivos:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-//pendiente eliminacion
 
 router.get("/", async (req, res) => {
   try {

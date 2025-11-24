@@ -5,28 +5,62 @@ const { ObjectId } = require("mongodb");
 router.use(express.json({ limit: '4mb' }));
 
 // Crear un formulario
+// Crear o actualizar un formulario
 router.post("/", async (req, res) => {
   try {
-    data = req.body;
+    const data = req.body;
+
+    // ✅ PROCESAR PREGUNTAS para asegurar configuraciones de archivos
+    const processedQuestions = (data.questions || []).map(question => {
+      if (question.type === 'file') {
+        return {
+          ...question,
+          multiple: question.multiple || false,
+          accept: question.accept || '.pdf,application/pdf',
+          maxSize: question.maxSize || '1'
+        };
+      }
+      return question;
+    });
+
+    const formData = {
+      ...data,
+      questions: processedQuestions,
+      updatedAt: new Date()
+    };
+
     let result;
-    if (!data.id){
+
+    if (!data.id) {
+      // INSERT
       result = await req.db.collection("forms").insertOne({
-        ...req.body,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        ...formData,
+        createdAt: new Date()
       });
 
+      // Para insertOne, construimos la respuesta manualmente
+      res.status(201).json({
+        _id: result.insertedId,
+        ...formData
+      });
     } else {
+      // UPDATE
       result = await req.db.collection("forms").findOneAndUpdate(
-        { _id: new ObjectId(data.id)},
-        { $set: { ...req.body, updatedAt: new Date() } },
+        { _id: new ObjectId(data.id) },
+        { $set: formData },
         { returnDocument: "after" }
       );
-      if (!result) return res.status(404).json({ error: "Formulario no encontrado" });
+
+      if (!result.value) {
+        return res.status(404).json({ error: "Formulario no encontrado" });
+      }
+
+      res.status(200).json(result.value);
     }
-    res.status(201).json(result);
+
   } catch (err) {
-    res.status(500).json({ error: "Error al crear formulario, error: ", err });
+    console.error("Error en POST /forms:", err);
+    res.status(500).json({ error: "Error al crear/actualizar formulario: " + err.message });
   }
 });
 
@@ -70,7 +104,7 @@ router.get("/section/:section/:mail", async (req, res) => {
     // 2. Definir la consulta de filtrado
     const query = {
       // Condición estricta: debe pertenecer a la sección indicada
-      section: section, 
+      section: section,
       status: "publicado", // Condición estricta: debe estar publicado
 
       // Condición OR: el campo 'companies' debe coincidir con la empresa O con "Todas"
@@ -102,9 +136,29 @@ router.get("/section/:section/:mail", async (req, res) => {
 // Actualizar un formulario
 router.put("/:id", async (req, res) => {
   try {
+    const data = req.body;
+
+    const processedQuestions = (data.questions || []).map(question => {
+      if (question.type === 'file') {
+        return {
+          ...question,
+          multiple: question.multiple || false,
+          accept: question.accept || '.pdf,application/pdf',
+          maxSize: question.maxSize || '1'
+        };
+      }
+      return question;
+    });
+
     const result = await req.db.collection("forms").findOneAndUpdate(
       { _id: new ObjectId(req.params.id) },
-      { $set: { ...req.body, updatedAt: new Date() } },
+      {
+        $set: {
+          ...data,
+          questions: processedQuestions,
+          updatedAt: new Date()
+        }
+      },
       { returnDocument: "after" }
     );
 
@@ -115,22 +169,23 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Publicar un formulario (cambiar status de borrador → publicado)
+// Publicar un formulario
 router.put("/public/:id", async (req, res) => {
   try {
     const result = await req.db.collection("forms").findOneAndUpdate(
       { _id: new ObjectId(req.params.id) },
       {
-        $set: { 
-          status: "publicado", 
-          updatedAt: new Date() 
-        } 
+        $set: {
+          status: "publicado",
+          updatedAt: new Date()
+        }
       },
       { returnDocument: "after" }
     );
 
-    if (!result.value)
+    if (!result.value) {
       return res.status(404).json({ error: "Formulario no encontrado" });
+    }
 
     res.status(200).json(result.value);
   } catch (err) {
