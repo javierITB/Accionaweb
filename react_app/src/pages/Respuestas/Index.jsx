@@ -17,7 +17,7 @@ const RequestTracking = () => {
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
-  
+
   // Estados de la Aplicación
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -26,12 +26,11 @@ const RequestTracking = () => {
   const [showRequestDetails, setShowRequestDetails] = useState(false);
   const [messageRequest, setMessageRequest] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
-  const [sortBy, setSortBy] = useState('date');
-  const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
+
   const [filters, setFilters] = useState({
     search: '',
-    status: '',
+    status: '', // Se mantiene como string para filtro único
     category: '',
     dateRange: '',
     startDate: '',
@@ -45,9 +44,9 @@ const RequestTracking = () => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
       setIsMobileScreen(isMobile);
-      
+
       if (isMobile) {
-        setIsMobileOpen(false); 
+        setIsMobileOpen(false);
       }
     };
 
@@ -99,16 +98,13 @@ const RequestTracking = () => {
         setIsLoading(true);
 
         // 1. OBTENER RESPUESTAS MINIMIZADAS PARA LAS TARJETAS
-        // **Nueva URL simulando una respuesta con datos mínimos**
-        const resResp = await fetch('https://back-acciona.vercel.app/api/respuestas/mini'); // <--- CAMBIO CLAVE
+        const resResp = await fetch('https://back-acciona.vercel.app/api/respuestas/mini');
 
         if (!resResp.ok) {
           throw new Error('Error al obtener datos del servidor');
         }
 
         const responses = await resResp.json();
-        // const docxs = await resDocxs.json(); // Se elimina la carga aquí
-
 
         const normalized = responses.map(r => {
           return {
@@ -116,14 +112,18 @@ const RequestTracking = () => {
             formId: r.formId,
             title: r.title || r.formTitle || "formulario",
             submittedAt: r.submittedAt || r.createdAt || null,
+            createdAt: r.createdAt, // Aseguramos tener createdAt para estadísticas
+            reviewedAt: r.reviewedAt, // Para estadísticas
+            approvedAt: r.approvedAt, // Para estadísticas
+            finalizedAt: r.finalizedAt, // Para estadísticas
             formTitle: r.formTitle,
             status: r.status,
             trabajador: r.trabajador,
+            rutTrabajador: r.rutTrabajador,
             submittedBy: r.user?.nombre || 'Usuario Desconocido',
             lastUpdated: r.updatedAt || null,
             assignedTo: r.updatedAt || " - ",
-            finalizedAt: r.finalizedAt,
-            hasMessages: false, // Mantener o buscar solo este dato
+            hasMessages: false,
             company: r.user?.empresa || 'desconocida'
           };
         });
@@ -138,15 +138,31 @@ const RequestTracking = () => {
     };
 
     fetchForms();
-  }, [/* dependencies */]);
+  }, []);
 
   const mockStats = {
     total: resp?.length || 0,
     pending: resp?.filter(r => r.status === 'pendiente')?.length || 0,
     inReview: resp?.filter(r => r.status === 'en_revision')?.length || 0,
     approved: resp?.filter(r => r.status === 'aprobado')?.length || 0,
-    rejected: resp?.filter(r => r.status === 'rechazado')?.length || 0,
+    rejected: resp?.filter(r => r.status === 'firmado')?.length || 0, // Ajustado 'rechazado' a 'firmado' según tu StatsOverview
     finalized: resp?.filter(r => r.status === 'finalizado')?.length || 0,
+    archived: resp?.filter(r => r.status === 'archivado')?.length || 0,
+  };
+
+  // --- NUEVA LÓGICA: Manejo de filtro desde las tarjetas de estadísticas ---
+  const handleStatusFilter = (statusValue) => {
+    // Si es null (click en tarjeta Total), limpiamos el filtro de estado
+    if (statusValue === null) {
+      setFilters(prev => ({ ...prev, status: '' }));
+      return;
+    }
+
+    setFilters(prev => ({
+      ...prev,
+      // Toggle: Si ya está seleccionado, lo quitamos. Si no, lo ponemos.
+      status: prev.status === statusValue ? '' : statusValue
+    }));
   };
 
   const filteredRequests = resp?.filter(request => {
@@ -156,6 +172,8 @@ const RequestTracking = () => {
         request?.title?.toLowerCase()?.includes(searchTerm) ||
         request?.company?.toLowerCase()?.includes(searchTerm) ||
         request?.submittedBy?.toLowerCase()?.includes(searchTerm) ||
+        request?.trabajador?.toLowerCase()?.includes(searchTerm) ||
+        request?.rutTrabajador?.toLowerCase()?.includes(searchTerm) ||
         request?.userEmail?.toLowerCase()?.includes(searchTerm) ||
         request?._id?.toLowerCase()?.includes(searchTerm) ||
         request?.detalles?.toLowerCase()?.includes(searchTerm) ||
@@ -164,6 +182,7 @@ const RequestTracking = () => {
       if (!matchesSearch) return false;
     }
 
+    // Filtro de Status
     if (filters?.status && request?.status !== filters?.status) return false;
 
     if (filters?.category) {
@@ -238,31 +257,6 @@ const RequestTracking = () => {
     }
 
     return true;
-  })?.sort((a, b) => {
-    let aValue, bValue;
-
-    switch (sortBy) {
-      case 'date':
-        aValue = new Date(a.submittedAt || a.createdAt);
-        bValue = new Date(b.submittedAt || b.createdAt);
-        break;
-      case 'title':
-        aValue = a?.title?.toLowerCase();
-        bValue = b?.title?.toLowerCase();
-        break;
-      case 'status':
-        aValue = a?.status || '';
-        bValue = b?.status || '';
-        break;
-      default:
-        return 0;
-    }
-
-    if (sortOrder === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
-    }
   });
 
   const handleRemove = async (request) => {
@@ -308,6 +302,7 @@ const RequestTracking = () => {
     setFilters({
       search: '',
       trabajador: '',
+      rutTrabajador: '',
       status: '',
       category: '',
       dateRange: '',
@@ -324,34 +319,34 @@ const RequestTracking = () => {
     { value: 'status', label: 'Estado' }
   ];
 
-  const mainMarginClass = isMobileScreen 
-    ? 'ml-0' 
+  const mainMarginClass = isMobileScreen
+    ? 'ml-0'
     : isDesktopOpen ? 'lg:ml-64' : 'lg:ml-16';
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       {/* SIDEBAR - RESPONSIVE */}
       {(isMobileOpen || !isMobileScreen) && (
         <>
-          <Sidebar 
+          <Sidebar
             isCollapsed={!isDesktopOpen}
-            onToggleCollapse={toggleSidebar} 
+            onToggleCollapse={toggleSidebar}
             isMobileOpen={isMobileOpen}
             onNavigate={handleNavigation}
           />
-          
+
           {isMobileScreen && isMobileOpen && (
-            <div 
-              className="fixed inset-0 bg-foreground/50 z-40 lg:hidden" 
+            <div
+              className="fixed inset-0 bg-foreground/50 z-40 lg:hidden"
               onClick={toggleSidebar}
             ></div>
           )}
         </>
       )}
 
-      {/* BOTÓN FLOTANTE MÓVIL - MEJORADO */}
+      {/* BOTÓN FLOTANTE MÓVIL */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
           <Button
@@ -364,33 +359,70 @@ const RequestTracking = () => {
         </div>
       )}
 
-      {/* CONTENIDO PRINCIPAL - RESPONSIVE */}
+      {/* CONTENIDO PRINCIPAL */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-16 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto">
-          
-          {/* HEADER - RESPONSIVE */}
+
+          {/* HEADER */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
             <div className="min-w-0 flex-1 mb-3 md:mb-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Seguimiento de Solicitudes</h1>
-              <p className="text-muted-foreground mt-1 text-xs sm:text-sm lg:text-base">
-                Monitorea el estado de todas tus solicitudes con cronología detallada
-              </p>
+              <div className="flex flex-col">
+                {/* Contenedor del Título y el Badge alineados */}
+                <div className="flex items-center gap-3">
+                  {/* Badge Circular */}
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
+                    {resp.length}
+                  </span>
+
+                  {/* Título */}
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight">
+                    Seguimiento de Solicitudes
+                  </h1>
+                </div>
+
+                {/* Subtítulo (opcional, para que quede igual a tu foto) */}
+                <p className="text-muted-foreground mt-1 text-sm lg:text-base ml-11">
+                  Monitorea el estado de todas tus solicitudes con cronología detallada
+                </p>
+              </div>
             </div>
 
-            {/* BOTÓN SIDEBAR DESKTOP - RESPONSIVE */}
+            {/* BOTÓN SIDEBAR DESKTOP */}
             <div className="hidden lg:flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
-                iconSize={20}
-              />
+              <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground w-full md:w-auto justify-center md:justify-end">
+                {/* VISTA */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
+                  <div className="flex items-center border border-border rounded-lg">
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('grid')}
+                      iconName="Grid3X3"
+                      iconSize={14}
+                      className="rounded-r-none px-2 sm:px-3"
+                    />
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      iconName="List"
+                      iconSize={14}
+                      className="rounded-l-none border-l px-2 sm:px-3"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* STATS OVERVIEW */}
-          <StatsOverview stats={mockStats} allForms={resp} />
+          {/* STATS OVERVIEW (Ahora con filtros) */}
+          <StatsOverview
+            stats={mockStats}
+            allForms={resp}
+            filters={filters} // Pasamos los filtros actuales
+            onFilterChange={handleStatusFilter} // Pasamos la función de cambio
+          />
 
           {/* FILTER PANEL */}
           <FilterPanel
@@ -401,72 +433,15 @@ const RequestTracking = () => {
             onToggle={() => setShowFilters(!showFilters)}
           />
 
-          {/* CONTROLES - RESPONSIVE */}
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-card border border-border rounded-lg p-3 sm:p-4 space-y-3 md:space-y-0">
-            <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-3 sm:space-x-4 w-full md:w-auto">
-              {/* VISTA */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
-                <div className="flex items-center border border-border rounded-lg">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    iconName="Grid3X3"
-                    iconSize={14}
-                    className="rounded-r-none px-2 sm:px-3"
-                  />
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    iconName="List"
-                    iconSize={14}
-                    className="rounded-l-none border-l px-2 sm:px-3"
-                  />
-                </div>
-              </div>
-
-              {/* ORDENAR */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Ordenar por:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e?.target?.value)}
-                  className="px-2 sm:px-3 py-1 border border-border rounded-md text-xs sm:text-sm bg-input text-foreground min-w-0"
-                >
-                  {sortOptions?.map(option => (
-                    <option key={option?.value} value={option?.value}>
-                      {option?.label}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  iconName={sortOrder === 'asc' ? "ArrowUp" : "ArrowDown"}
-                  iconSize={14}
-                  className="w-7 h-7 sm:w-8 sm:h-8"
-                />
-              </div>
-            </div>
-
-            {/* CONTADOR - RESPONSIVE */}
-            <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground w-full md:w-auto justify-center md:justify-end">
-              <Icon name="FileText" size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
-              <span className="whitespace-nowrap">{filteredRequests?.length} solicitudes encontradas</span>
-            </div>
-          </div>
-
-          {/* LISTA DE SOLICITUDES - RESPONSIVE */}
+          {/* LISTA DE SOLICITUDES */}
           <div className={
             viewMode === 'grid'
               ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6'
-              : 'space-y-3 lg:space-y-4'
+              : 'space-y-2 lg:space-y-4 '
           }>
             {filteredRequests?.length > 0 ? (
               filteredRequests?.map((request) => (
+                (request.status !== "archivado" || filters.status == "archivado" ) && (
                 <RequestCard
                   key={request?._id || request?.id}
                   request={request}
@@ -475,7 +450,7 @@ const RequestTracking = () => {
                   onSendMessage={handleSendMessage}
                   viewMode={viewMode}
                 />
-              ))
+              )))
             ) : (
               <div className="text-center py-8 lg:py-12 bg-card border border-border rounded-lg col-span-full">
                 <Icon name="Search" size={32} className="mx-auto mb-3 lg:mb-4 text-muted-foreground opacity-50 sm:w-12 sm:h-12" />
@@ -489,7 +464,7 @@ const RequestTracking = () => {
 
         </div>
       </main>
-      
+
       {/* MODALES */}
       <MessageModal
         isOpen={showMessageModal}

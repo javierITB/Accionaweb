@@ -575,6 +575,32 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
+  const handleArchieve = async () => {
+    if (isApproving) return;
+    if (!confirm('¿Estás seguro de que quieres archivar este trabajo?')) return;
+    setIsApproving(true);
+    try {
+      const approveResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/archived`);
+      if (approveResponse.ok) {
+        if (onUpdate) {
+          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedRequest = await updatedResponse.json();
+          onUpdate(updatedRequest);
+        }
+        alert('Archivado correctamente');
+      } else {
+        const errorData = await approveResponse.json();
+        alert(`Error: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error: ' + error.message);
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+
   const getRealAttachments = () => {
     if (!fullRequestData) return [];
     if (documentInfo && documentInfo.IDdoc) {
@@ -1057,8 +1083,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             <button
               onClick={() => setActiveTab('details')}
               className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'details'
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
             >
               Detalles
@@ -1066,8 +1092,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             <button
               onClick={() => setActiveTab('responses')}
               className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'responses'
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
             >
               Respuestas
@@ -1122,6 +1148,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 </Button>
               )}
 
+              {fullRequestData?.status == 'finalizado' && (
+                <Button
+                  variant="default"
+                  iconName={isApproving ? "Loader" : "Folder"}
+                  iconPosition="left"
+                  iconSize={16}
+                  onClick={handleArchieve}
+                >
+                  {isApproving ? 'Archivando...' : 'Archivar'}
+                </Button>
+              )}
               <Button
                 variant="default"
                 onClick={onClose}

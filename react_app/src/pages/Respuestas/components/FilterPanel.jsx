@@ -19,6 +19,7 @@ const FilterPanel = ({
     { value: 'aprobado', label: 'Aprobado' },
     { value: 'firmado', label: 'Firmado' },
     { value: 'finalizado', label: 'finalizado' },
+    { value: 'archivado', label: 'archivado' },
   ];
 
   const dateRangeOptions = [

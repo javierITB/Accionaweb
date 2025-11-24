@@ -49,6 +49,8 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate
         return 'bg-success text-success-foreground'
       case 'finalizado':
         return 'bg-accent text-accent-foreground'
+      case 'archivado':
+        return 'bg-card bg-primary-foreground'
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -247,7 +249,6 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate
             iconSize={14}
             className="hidden sm:flex" // Hidden on mobile, shown on desktop
           >
-            Mensaje
           </Button>
 
           {/* Details Button - ICON ONLY ON MOBILE */}
