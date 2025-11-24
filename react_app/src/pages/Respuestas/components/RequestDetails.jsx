@@ -15,15 +15,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
-  
+
   // Estados de carga para vistas previas
   const [isLoadingPreviewGenerated, setIsLoadingPreviewGenerated] = useState(false);
   const [isLoadingPreviewCorrected, setIsLoadingPreviewCorrected] = useState(false);
   const [isLoadingPreviewSignature, setIsLoadingPreviewSignature] = useState(false);
   const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(false);
-  
+
   const [documentInfo, setDocumentInfo] = useState(null);
-  
+
   // --- NUEVO ESTADO PARA DATOS APROBADOS ---
   const [approvedData, setApprovedData] = useState(null);
   const [isLoadingApprovedData, setIsLoadingApprovedData] = useState(false);
@@ -131,7 +131,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         if (Array.isArray(data) && data.length > 0 && data[0].adjuntos) {
           extractedAdjuntos = data[0].adjuntos;
         } else if (data.adjuntos) {
-          extractedAdjuntos = data.adjuntos; 
+          extractedAdjuntos = data.adjuntos;
         } else if (Array.isArray(data)) {
           extractedAdjuntos = data;
         }
@@ -489,9 +489,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const handleRemoveCorrection = async () => {
     if (correctedFile && correctedFile instanceof File) {
-        setCorrectedFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return;
+      setCorrectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
     }
     try {
       const signatureCheck = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
@@ -551,7 +551,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleApprovewithoutFile = async () => {
-    if (isApproving ||  request?.status === 'finalizado' ) return;
+    if (isApproving || request?.status === 'finalizado') return;
     if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) return;
     setIsApproving(true);
     try {
@@ -576,22 +576,46 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const getRealAttachments = () => {
-    if (!fullRequestData) return []; 
+    if (!fullRequestData) return [];
     if (documentInfo && documentInfo.IDdoc) {
       let fileName = documentInfo.fileName;
       if (!fileName) {
         const formTitle = fullRequestData?.formTitle || 'Documento';
         const nombreTrabajador = fullRequestData?.responses?.["Nombre del trabajador"] || 'Trabajador';
-        fileName = `${formTitle}_${nombreTrabajador}`.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
+        fileName = `${formTitle}_${nombreTrabajador}`.normalize('NFD')
+          // Reemplazar caracteres especiales del español
+          .replace(/ñ/g, 'n')
+          .replace(/Ñ/g, 'N')
+          .replace(/á/g, 'a')
+          .replace(/é/g, 'e')
+          .replace(/í/g, 'i')
+          .replace(/ó/g, 'o')
+          .replace(/ú/g, 'u')
+          .replace(/Á/g, 'A')
+          .replace(/É/g, 'E')
+          .replace(/Í/g, 'I')
+          .replace(/Ó/g, 'O')
+          .replace(/Ú/g, 'U')
+          .replace(/ü/g, 'u')
+          .replace(/Ü/g, 'U')
+          // Eliminar cualquier otro diacrítico
+          .replace(/[\u0300-\u036f]/g, '')
+          // Eliminar caracteres especiales restantes
+          .replace(/[^a-zA-Z0-9\s._-]/g, '')
+          // Reemplazar espacios múltiples por un solo guión bajo
+          .replace(/\s+/g, '_')
+          // Limitar longitud
+          .substring(0, 100)
+          .toUpperCase();
       }
       const tipo = documentInfo.tipo || 'docx';
       return [{
-          id: documentInfo.IDdoc,
-          name: `${fileName}.${tipo}`,
-          size: "Calculando...",
-          type: tipo,
-          uploadedAt: documentInfo.createdAt || fullRequestData?.submittedAt,
-          downloadUrl: `/api/documents/download/${documentInfo.IDdoc}`
+        id: documentInfo.IDdoc,
+        name: `${fileName}.${tipo}`,
+        size: "Calculando...",
+        type: tipo,
+        uploadedAt: documentInfo.createdAt || fullRequestData?.submittedAt,
+        downloadUrl: `/api/documents/download/${documentInfo.IDdoc}`
       }];
     }
     return [];
@@ -661,14 +685,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const renderDetailsTab = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Enviado por:</span>
-                <span className="text-sm font-medium text-foreground">{fullRequestData?.submittedBy}, {fullRequestData?.company}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Fecha de envío:</span>
-                <span className="text-sm font-medium text-foreground">{formatDate(fullRequestData?.submittedAt)}</span>
-              </div>
+        <div className="flex justify-between">
+          <span className="text-sm text-muted-foreground">Enviado por:</span>
+          <span className="text-sm font-medium text-foreground">{fullRequestData?.submittedBy}, {fullRequestData?.company}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-sm text-muted-foreground">Fecha de envío:</span>
+          <span className="text-sm font-medium text-foreground">{formatDate(fullRequestData?.submittedAt)}</span>
+        </div>
       </div>
 
       {/* ADJUNTOS */}
@@ -973,20 +997,20 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {entries.map(([pregunta, respuesta], index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="bg-muted/30 rounded-lg p-4 border border-border/50 hover:bg-muted/50 transition-colors"
               >
                 {/* La Pregunta / Etiqueta */}
                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 break-words">
                   {pregunta}
                 </h4>
-                
+
                 {/* La Respuesta */}
                 <div className="text-sm font-medium text-foreground leading-relaxed whitespace-pre-wrap break-words">
                   {/* Verificamos que sea un valor renderizable, por si viene un booleano u objeto */}
-                  {respuesta !== null && typeof respuesta === 'object' 
-                    ? JSON.stringify(respuesta) 
+                  {respuesta !== null && typeof respuesta === 'object'
+                    ? JSON.stringify(respuesta)
                     : String(respuesta || '-')
                   }
                 </div>
@@ -1001,7 +1025,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        
+
         {/* HEADER: AHORA CONTIENE EL MENÚ DE PESTAÑAS */}
         <div className="sticky top-0 bg-card border-b border-border z-10">
           {/* Fila Superior: Título y Acciones */}
@@ -1032,21 +1056,19 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           <div className="px-6 flex space-x-6 ">
             <button
               onClick={() => setActiveTab('details')}
-              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                activeTab === 'details'
+              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'details'
                   ? 'border-accent text-accent'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
             >
               Detalles
             </button>
             <button
               onClick={() => setActiveTab('responses')}
-              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                activeTab === 'responses'
+              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'responses'
                   ? 'border-accent text-accent'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
             >
               Respuestas
             </button>
