@@ -17,7 +17,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
         const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
-          
+
           // Solo actualizar si el status cambió
           if (updatedRequest.status !== request.status) {
             if (onUpdate) {
@@ -81,14 +81,14 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       if (response.ok) {
         setHasSignedPdf(true);
         setUploadMessage('PDF firmado subido exitosamente');
-        
+
         // Actualizar el estado local y notificar al componente padre
         if (onUpdate) {
           const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
-        
+
         event.target.value = '';
       } else {
         setUploadMessage('Error: ' + (data.error || 'Error al subir el PDF'));
@@ -103,6 +103,17 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
   const handleDownloadApprovedPDF = async (responseId) => {
     try {
+      // PRIMERO obtener SOLO el filename
+      const fileDataResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/data-approved/${responseId}`);
+
+      let fileName = 'documento_aprobado.pdf';
+
+      if (fileDataResponse.ok) {
+        const fileData = await fileDataResponse.json();
+        fileName = fileData.fileName; // filename explícito
+      }
+
+      // LUEGO descargar el archivo
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${responseId}`);
 
       if (!response.ok) {
@@ -115,16 +126,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let fileName = request?.formTitle + request.trabajador || 'documento_aprobado.pdf';
-
-      if (contentDisposition) {
-        const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (fileNameMatch) fileName = fileNameMatch[1];
-      }
-
-      a.download = fileName;
+      a.download = fileName; // Usar el filename explícito obtenido
       document.body.appendChild(a);
       a.click();
 
@@ -245,7 +247,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Enviado por:</span>
-                    <span className="text-sm font-medium text-foreground">{request?.submittedBy + ", " + request?.company }</span>
+                    <span className="text-sm font-medium text-foreground">{request?.submittedBy + ", " + request?.company}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Fecha de envío:</span>
