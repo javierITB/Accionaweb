@@ -93,11 +93,14 @@ const RequestTracking = () => {
   }, [formId, resp]);
 
   useEffect(() => {
-    const fetchForms = async () => {
+    // 1. Definimos la función con la lógica (fuera del intervalo)
+    const fetchData = async () => {
       try {
-        setIsLoading(true);
+        // Opcional: Si no quieres que aparezca el "cargando..." cada 30 segundos,
+        // puedes condicionar esto o quitarlo después de la primera carga.
+        setIsLoading(true); 
 
-        // 1. OBTENER RESPUESTAS MINIMIZADAS PARA LAS TARJETAS
+        // OBTENER RESPUESTAS
         const resResp = await fetch('https://back-acciona.vercel.app/api/respuestas/mini');
 
         if (!resResp.ok) {
@@ -112,10 +115,10 @@ const RequestTracking = () => {
             formId: r.formId,
             title: r.title || r.formTitle || "formulario",
             submittedAt: r.submittedAt || r.createdAt || null,
-            createdAt: r.createdAt, // Aseguramos tener createdAt para estadísticas
-            reviewedAt: r.reviewedAt, // Para estadísticas
-            approvedAt: r.approvedAt, // Para estadísticas
-            finalizedAt: r.finalizedAt, // Para estadísticas
+            createdAt: r.createdAt,
+            reviewedAt: r.reviewedAt,
+            approvedAt: r.approvedAt,
+            finalizedAt: r.finalizedAt,
             formTitle: r.formTitle,
             status: r.status,
             trabajador: r.trabajador,
@@ -137,8 +140,16 @@ const RequestTracking = () => {
       }
     };
 
-    fetchForms();
-  }, []);
+    // 2. Ejecutamos la función INMEDIATAMENTE (Carga inicial)
+    fetchData();
+
+    // 3. Configuramos el intervalo para que se repita cada 30 segundos
+    const intervalId = setInterval(fetchData, 30000);
+
+    // 4. IMPORTANTE: Limpiamos el intervalo cuando el componente se desmonte
+    return () => clearInterval(intervalId);
+
+  }, []); 
 
   const mockStats = {
     total: resp?.length || 0,

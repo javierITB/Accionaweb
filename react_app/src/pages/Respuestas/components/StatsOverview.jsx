@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 
-const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange }) => {
+const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefresh}) => {
   
   // Función para determinar si una tarjeta está activa visualmente
   const isStatusFilterActive = (statusValue) => {

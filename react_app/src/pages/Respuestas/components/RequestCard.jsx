@@ -2,36 +2,14 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate }) => {
+const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
 
   useEffect(() => {
     setCurrentRequest(request);
   }, [request]);
 
-  useEffect(() => {
-    if (!currentRequest?._id) return;
 
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${currentRequest._id}`);
-        if (response.ok) {
-          const updatedRequest = await response.json();
-          
-          if (updatedRequest.status !== currentRequest.status) {
-            setCurrentRequest(updatedRequest);
-            if (onUpdate) {
-              onUpdate(updatedRequest);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error verificando actualización del request:', error);
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [currentRequest?._id, currentRequest?.status, onUpdate]);
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -155,7 +133,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate
     }
   };
 
- 
+
 
   const getCombinedTitle = () => {
     const formTitle = currentRequest?.formTitle || 'Formulario';
@@ -178,7 +156,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, onUpdate
               {getRelativeTime(currentRequest?.submittedAt)}
             </span>
           </div>
-          
+
           {/* Description */}
           <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
             {currentRequest?.description}
