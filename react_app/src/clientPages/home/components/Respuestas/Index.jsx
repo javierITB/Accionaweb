@@ -414,31 +414,6 @@ const RequestTracking = () => {
             )}
           </div>
 
-          {/* Timeline View */}
-          {showTimeline && selectedRequest && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-              <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-foreground">Cronología de la Solicitud</h2>
-                      <p className="text-sm text-muted-foreground">{selectedRequest?.title}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowTimeline(false)}
-                      iconName="X"
-                      iconSize={20}
-                    />
-                  </div>
-                </div>
-                <div className="p-6">
-                  <TimelineView timeline={mockTimeline} isVisible={true} />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </main>
       {/* Modals */}

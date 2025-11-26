@@ -260,7 +260,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
             </div>
           </div>
 
-          {(request?.status === 'aprobado' || request?.status === 'firmado') && (
+          {(request?.status !== 'pendiente' && request?.status !== 'en_revision') && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">Documento Aprobado</h3>
 
@@ -343,7 +343,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                 </div>
               )}
 
-              {request?.status === 'firmado' && (
+              {(request?.status === 'firmado' || request?.status === 'finalizado' || request?.status === 'archivado') && (
                 <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">

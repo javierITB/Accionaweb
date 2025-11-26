@@ -732,7 +732,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 &&
           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
             Archivos Adjuntos
-            {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
           </h3>
         }
         {fullRequestData?.adjuntos?.length > 0 && (
@@ -841,7 +840,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            
+
             <p className="text-sm">No hay documentos generados para este formulario</p>
           </div>
         )}
@@ -925,13 +924,21 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       </div>
 
       {/* DOCUMENTO FIRMADO */}
-      {(fullRequestData?.status !== 'pendiente' && fullRequestData?.status === 'en_revision') && (
+      {(fullRequestData?.status !== 'pendiente' && fullRequestData?.status !== 'en_revision') && (
         <div>
-          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-            Documento Firmado por Cliente
-            {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-          </h3>
-          {clientSignature ? (
+          {isCheckingSignature &&
+            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+              Documento Firmado por Cliente
+              {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+            </h3>
+          }
+          {!isCheckingSignature && clientSignature &&
+            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+              Documento Firmado por Cliente
+            </h3>
+          }
+
+          {clientSignature && (
             <div className="bg-success/10 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -977,32 +984,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="bg-muted/50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Icon name="Clock" size={20} className="text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">El cliente aún no ha subido su documento firmado</p>
-                    <p className="text-xs text-muted-foreground">
-                      Esperando que el cliente descargue, firme y suba el documento
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconName="RefreshCw"
-                  iconPosition="left"
-                  iconSize={16}
-                  onClick={refreshClientSignature}
-                  disabled={isCheckingSignature}
-                >
-                  Actualizar
-                </Button>
-              </div>
-            </div>
-          )}
+          ) }
         </div>
       )}
     </div>
