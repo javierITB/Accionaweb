@@ -723,10 +723,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
       {/* ADJUNTOS */}
       <div>
-        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-          Archivos Adjuntos
-          {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-        </h3>
+        {attachmentsLoading &&
+          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+            Archivos Adjuntos
+            {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+          </h3>
+        }
+        {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 &&
+          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+            Archivos Adjuntos
+            {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+          </h3>
+        }
         {fullRequestData?.adjuntos?.length > 0 && (
           <div className="space-y-2">
             {fullRequestData.adjuntos.map((adjunto, index) => (
@@ -833,7 +841,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            <Icon name="Paperclip" size={48} className="mx-auto mb-2 opacity-50" />
+            
             <p className="text-sm">No hay documentos generados para este formulario</p>
           </div>
         )}
@@ -917,7 +925,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       </div>
 
       {/* DOCUMENTO FIRMADO */}
-      {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
+      {(fullRequestData?.status !== 'pendiente' && fullRequestData?.status === 'en_revision') && (
         <div>
           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
             Documento Firmado por Cliente

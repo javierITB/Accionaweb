@@ -440,7 +440,7 @@ const RequestTracking = () => {
               : 'space-y-2 lg:space-y-4 '
           }>
             {filteredRequests?.length > 0 ? (
-              filteredRequests?.map((request) => (
+              filteredRequests?.reverse().map((request) => (
                 (request.status !== "archivado" || filters.status == "archivado" ) && (
                 <RequestCard
                   key={request?._id || request?.id}
