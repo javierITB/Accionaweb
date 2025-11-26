@@ -550,7 +550,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 //solicitar de mensajes
-router.get("/:formId/chat", async (req, res) => {
+router.get("/:formId/chat/admin", async (req, res) => {
   try {
     const { formId } = req.params;
 
@@ -575,6 +575,39 @@ router.get("/:formId/chat", async (req, res) => {
     res.status(500).json({ error: "Error al obtener chat" });
   }
 });
+
+router.get("/:formId/chat/", async (req, res) => {
+  try {
+    const { formId } = req.params;
+
+    let query;
+    if (ObjectId.isValid(formId)) {
+      query = { $or: [{ _id: new ObjectId(formId) }, { formId }] };
+    } else {
+      query = { formId };
+    }
+
+    // Obtenemos todos los mensajes primero
+    const respuesta = await req.db
+      .collection("respuestas")
+      .findOne(query, { projection: { mensajes: 1 } });
+
+    if (!respuesta) {
+      return res.status(404).json({ error: "No se encontró la respuesta con ese formId o _id" });
+    }
+
+    const todosLosMensajes = respuesta.mensajes || [];
+
+    const mensajesGenerales = todosLosMensajes.filter(msg => !msg.admin);
+
+    res.json(mensajesGenerales);
+
+  } catch (err) {
+    console.error("Error obteniendo chat general:", err);
+    res.status(500).json({ error: "Error al obtener chat general" });
+  }
+});
+
 
 //enviar mensaje
 router.post("/chat", async (req, res) => {
