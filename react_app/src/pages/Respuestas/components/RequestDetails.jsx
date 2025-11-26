@@ -944,7 +944,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 <div className="flex items-center space-x-3">
                   <Icon name="FileSignature" size={20} className="text-success" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">{clientSignature.fileName + '.pdf'}</p>
+                    <p className="text-sm font-medium text-foreground">{clientSignature.fileName}</p>
                     <p className="text-xs text-muted-foreground">
                       Subido el {formatDate(clientSignature.uploadedAt)} • {formatFileSize(clientSignature.fileSize)}
                     </p>
