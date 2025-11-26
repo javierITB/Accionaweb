@@ -579,7 +579,7 @@ router.get("/:formId/chat", async (req, res) => {
 //enviar mensaje
 router.post("/chat", async (req, res) => {
   try {
-    const { formId, autor, mensaje } = req.body;
+    const { formId, autor, mensaje, admin } = req.body;
 
     if (!autor || !mensaje || !formId) {
       return res.status(400).json({ error: "Faltan campos: formId, autor o mensaje" });
@@ -590,6 +590,7 @@ router.post("/chat", async (req, res) => {
       mensaje,
       leido: false,
       fecha: new Date(),
+      admin: admin || false
     };
 
     let query;
