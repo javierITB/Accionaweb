@@ -271,7 +271,7 @@ const Header = ({ className = '' }) => {
             {user && (
               <div className="relative" ref={userMenuRef}>
                 <button
-                  onClick={() => { window.location.href = "/profile" }}
+                  onClick={() => { window.location.href = "/perfil" }}
                   className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
                 >
                   {user ? (
