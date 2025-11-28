@@ -44,9 +44,9 @@ const FormBuilder = () => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
       setIsMobileScreen(isMobile);
-      
+
       if (isMobile) {
-        setIsMobileOpen(false); 
+        setIsMobileOpen(false);
       }
     };
 
@@ -70,8 +70,8 @@ const FormBuilder = () => {
   };
 
   // CLASE DE MARGEN - AGREGADA
-  const mainMarginClass = isMobileScreen 
-    ? 'ml-0' 
+  const mainMarginClass = isMobileScreen
+    ? 'ml-0'
     : isDesktopOpen ? 'ml-64' : 'ml-16';
 
   useEffect(() => {
@@ -160,6 +160,33 @@ const FormBuilder = () => {
   const handleTemplateSelect = async (selectedTemplateData) => {
     const selectedFormId = selectedTemplateData.id;
 
+    // Detectar el tipo de operación
+    const isDuplicating = selectedTemplateData.documentTitle && selectedTemplateData.paragraphs;
+    const isNewFromScratch = selectedTemplateData.isNewTemplate;
+
+    if (isDuplicating || isNewFromScratch) {
+      // CASO DUPLICACIÓN O CREACIÓN DESDE CERO: Usar los datos que ya vienen completos
+
+      const newTemplateState = {
+        id: null, // ← SIEMPRE null para nuevas plantillas
+        formId: selectedFormId,
+        documentTitle: selectedTemplateData.documentTitle,
+        paragraphs: selectedTemplateData.paragraphs,
+        signature1Text: selectedTemplateData.signature1Text,
+        signature2Text: selectedTemplateData.signature2Text,
+        questions: selectedTemplateData.questions || [],
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        ...newTemplateState,
+      }));
+
+      setActiveTab('document');
+      return;
+    }
+
+    // CASO EDICIÓN NORMAL: Buscar plantilla existente
     let existingTemplateData = null;
     try {
       const url = `https://back-acciona.vercel.app/api/plantillas/${selectedFormId}`;
@@ -167,10 +194,9 @@ const FormBuilder = () => {
 
       if (res.ok) {
         existingTemplateData = await res.json();
-        console.log("Plantilla existente encontrada por formId:", existingTemplateData);
       }
     } catch (err) {
-      console.warn("No se encontró plantilla existente para este formId. Creando una nueva.");
+      console.warn("No se encontró plantilla existente para este formId.");
     }
 
     const newTemplateState = existingTemplateData ? {
@@ -182,9 +208,10 @@ const FormBuilder = () => {
       signature2Text: existingTemplateData.signature2Text,
       questions: selectedTemplateData.questions || [],
     } : {
+      // Fallback por si acaso (no debería llegar aquí con el nuevo flujo)
       id: null,
       formId: selectedFormId,
-      documentTitle: selectedTemplateData.documentTitle,
+      documentTitle: `Plantilla para ${selectedTemplateData.title}`,
       questions: selectedTemplateData.questions || [],
       paragraphs: [{ id: 'p1', content: 'Primera cláusula del contrato - {{FECHA_ACTUAL}}.' }],
       signature1Text: 'Firma del Empleador (Emisor).',
@@ -279,16 +306,19 @@ const FormBuilder = () => {
 
       const savedData = await response.json();
 
+      // FORZAR la corrección
+      const finalId = savedData.id || savedData._id?.toString() || savedData._id;
+
       setFormData(prev => ({
         ...prev,
-        id: savedData._id || savedData.id || prev.id,
+        id: finalId,
         status: savedData.status || newStatus,
       }));
 
       alert(`Plantilla guardada como ${newStatus} exitosamente.`);
 
-      if (!formData.id && savedData._id) {
-        window.history.replaceState({}, "", `?id=${savedData._id}`);
+      if (!formData.id && finalId) {
+        window.history.replaceState({}, "", `?id=${finalId}`);
       }
 
     } catch (error) {
@@ -360,20 +390,20 @@ const FormBuilder = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       {/* IMPLEMENTACIÓN UNIFICADA DEL SIDEBAR - AGREGADA */}
       {(isMobileOpen || !isMobileScreen) && (
         <>
-          <Sidebar 
+          <Sidebar
             isCollapsed={!isDesktopOpen}
-            onToggleCollapse={toggleSidebar} 
+            onToggleCollapse={toggleSidebar}
             isMobileOpen={isMobileOpen}
             onNavigate={handleNavigation}
           />
-          
+
           {isMobileScreen && isMobileOpen && (
-            <div 
-              className="fixed inset-0 bg-foreground/50 z-40" 
+            <div
+              className="fixed inset-0 bg-foreground/50 z-40"
               onClick={toggleSidebar}
             ></div>
           )}
