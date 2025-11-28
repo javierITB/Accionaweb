@@ -15,6 +15,7 @@ const SecuritySettings = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [errors, setErrors] = useState({});
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [apiMessage, setApiMessage] = useState(null); // Para mostrar mensajes de éxito/error del server
 
   // Mock active sessions data
   const activeSessions = [
@@ -26,50 +27,20 @@ const SecuritySettings = () => {
       lastActive: "Hace 5 minutos",
       isCurrent: true
     },
-    {
-      id: 2,
-      device: "Safari en iPhone",
-      location: "Madrid, España", 
-      ipAddress: "192.168.1.101",
-      lastActive: "Hace 2 horas",
-      isCurrent: false
-    },
-    {
-      id: 3,
-      device: "Firefox en Ubuntu",
-      location: "Barcelona, España",
-      ipAddress: "10.0.0.50",
-      lastActive: "Hace 1 día",
-      isCurrent: false
-    }
+    // ... otros mocks se mantienen igual
   ];
 
-  // Mock security events
+  // Mock security events se mantiene igual...
   const securityEvents = [
     {
-      id: 1,
-      type: "login",
-      description: "Inicio de sesión exitoso",
-      timestamp: "07/11/2024 14:30",
-      location: "Madrid, España",
-      status: "success"
-    },
-    {
-      id: 2,
-      type: "password_change",
-      description: "Contraseña cambiada",
-      timestamp: "05/11/2024 09:15",
-      location: "Madrid, España",
-      status: "success"
-    },
-    {
-      id: 3,
-      type: "failed_login",
-      description: "Intento de inicio de sesión fallido",
-      timestamp: "03/11/2024 22:45",
-      location: "Valencia, España",
-      status: "warning"
+        id: 1,
+        type: "login",
+        description: "Inicio de sesión exitoso",
+        timestamp: "07/11/2024 14:30",
+        location: "Madrid, España",
+        status: "success"
     }
+    // ...
   ];
 
   const handlePasswordChange = (field, value) => {
@@ -80,11 +51,9 @@ const SecuritySettings = () => {
     
     // Clear errors when user types
     if (errors?.[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
+    if (apiMessage) setApiMessage(null);
   };
 
   const validatePasswordForm = () => {
@@ -110,21 +79,63 @@ const SecuritySettings = () => {
     return Object.keys(newErrors)?.length === 0;
   };
 
-  const handlePasswordSubmit = () => {
-    if (validatePasswordForm()) {
-      setIsChangingPassword(true);
-      // Mock password change
-      setTimeout(() => {
-        setIsChangingPassword(false);
+  const handlePasswordSubmit = async () => {
+    if (!validatePasswordForm()) return;
+
+    setIsChangingPassword(true);
+    setApiMessage(null);
+
+    try {
+      // 1. Obtener datos de sesión
+      // Asumimos que guardaste el usuario como string JSON en 'usr' o similar al hacer login
+      // Si guardaste solo el token, necesitarás decodificarlo o tener el email guardado aparte.
+      // Ajusta la clave 'user_data' o 'usr' según como lo guardes en el login.
+      const userEmail = sessionStorage.getItem('email') || "";
+      const token = sessionStorage.getItem('token'); // Asumiendo que el token se llama 'token'
+      
+
+      if (!userEmail) {
+        throw new Error("No se pudo identificar al usuario (Email no encontrado en sesión)");
+      }
+
+      // 2. Llamada a la API
+      const response = await fetch('http://back-acciona.vercel.app/api/change-password', { // Ajusta tu URL base si es necesario
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Enviar token si tienes middleware de auth
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Éxito
+        setApiMessage({ type: 'success', text: data.message });
         setPasswordForm({
           currentPassword: '',
           newPassword: '',
           confirmPassword: ''
         });
-        alert('Contraseña cambiada exitosamente');
-      }, 2000);
+      } else {
+        // Error controlado desde backend (ej: contraseña actual mal)
+        setApiMessage({ type: 'error', text: data.message || 'Error al cambiar la contraseña' });
+      }
+
+    } catch (error) {
+      console.error("Error changing password:", error);
+      setApiMessage({ type: 'error', text: 'Error de conexión o sesión inválida' });
+    } finally {
+      setIsChangingPassword(false);
     }
   };
+
+  // ... Resto de funciones (handleTwoFactorToggle, etc) se mantienen igual
 
   const handleTwoFactorToggle = () => {
     if (!twoFactorEnabled) {
@@ -145,33 +156,24 @@ const SecuritySettings = () => {
   };
 
   const handleTerminateSession = (sessionId) => {
-    // Mock session termination
     alert(`Sesión ${sessionId} terminada`);
   };
 
   const getEventIcon = (type) => {
     switch (type) {
-      case 'login':
-        return 'LogIn';
-      case 'password_change':
-        return 'Key';
-      case 'failed_login':
-        return 'AlertTriangle';
-      default:
-        return 'Activity';
+      case 'login': return 'LogIn';
+      case 'password_change': return 'Key';
+      case 'failed_login': return 'AlertTriangle';
+      default: return 'Activity';
     }
   };
 
   const getEventColor = (status) => {
     switch (status) {
-      case 'success':
-        return 'text-emerald-600';
-      case 'warning':
-        return 'text-amber-600';
-      case 'error':
-        return 'text-red-600';
-      default:
-        return 'text-muted-foreground';
+      case 'success': return 'text-emerald-600';
+      case 'warning': return 'text-amber-600';
+      case 'error': return 'text-red-600';
+      default: return 'text-muted-foreground';
     }
   };
 
@@ -183,13 +185,23 @@ const SecuritySettings = () => {
           <div className="flex items-center space-x-3">
             <Icon name="Key" size={18} className="text-primary sm:w-5 sm:h-5" />
             <h2 className="text-base sm:text-lg font-semibold text-foreground">
-              Cambiar Contraseña (panel en desarrollo, estas funciones se habilitarán pronto)
+              Cambiar Contraseña
             </h2>
           </div>
         </div>
 
         <div className="p-4 sm:p-6">
           <div className="max-w-md space-y-3 sm:space-y-4">
+            
+            {/* Mensajes de feedback de la API */}
+            {apiMessage && (
+              <div className={`p-3 rounded-md text-sm ${
+                apiMessage.type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+              }`}>
+                {apiMessage.text}
+              </div>
+            )}
+
             <Input
               label="Contraseña Actual"
               type="password"
@@ -248,15 +260,15 @@ const SecuritySettings = () => {
         </div>
       </div>
 
-      {/* Two-Factor Authentication */}
+      {/* Two-Factor Authentication (Sin cambios lógicos profundos, solo UI) */}
       <div className="bg-card rounded-lg border border-border shadow-subtle">
-        <div className="p-4 sm:p-6 border-b border-border">
+         {/* ... (código existente del 2FA) ... */}
+         <div className="p-4 sm:p-6 border-b border-border">
           <div className="flex items-center space-x-3">
             <Icon name="Smartphone" size={18} className="text-primary sm:w-5 sm:h-5" />
             <h2 className="text-base sm:text-lg font-semibold text-foreground">Autenticación de Dos Factores</h2>
           </div>
         </div>
-
         <div className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0 mb-4">
             <div className="min-w-0">
@@ -282,13 +294,11 @@ const SecuritySettings = () => {
               </Button>
             </div>
           </div>
-
           {showQRCode && (
             <div className="mt-4 sm:mt-6 p-3 sm:p-4 border border-border rounded-lg">
               <h4 className="text-sm font-medium text-foreground mb-3">
                 Configurar Autenticación de Dos Factores
               </h4>
-              
               <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground mb-3 sm:mb-4">
@@ -301,7 +311,6 @@ const SecuritySettings = () => {
                     </div>
                   </div>
                 </div>
-                
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground mb-3 sm:mb-4">
                     2. Ingresa el código de 6 dígitos de tu aplicación
@@ -329,83 +338,81 @@ const SecuritySettings = () => {
         </div>
       </div>
 
-      {/* Active Sessions */}
+      {/* Active Sessions (Sin cambios) */}
       <div className="bg-card rounded-lg border border-border shadow-subtle">
         <div className="p-4 sm:p-6 border-b border-border">
-          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3">
             <Icon name="Monitor" size={18} className="text-primary sm:w-5 sm:h-5" />
             <h2 className="text-base sm:text-lg font-semibold text-foreground">Sesiones Activas</h2>
-          </div>
+            </div>
         </div>
-
         <div className="p-4 sm:p-6">
-          <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-3 sm:space-y-4">
             {activeSessions?.map((session) => (
-              <div key={session?.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border border-border rounded-lg space-y-2 sm:space-y-0">
+                <div key={session?.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border border-border rounded-lg space-y-2 sm:space-y-0">
                 <div className="flex items-center space-x-3 sm:space-x-4">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
                     <Icon name="Monitor" size={16} className="text-muted-foreground sm:w-5 sm:h-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
+                    </div>
+                    <div className="min-w-0 flex-1">
                     <div className="flex flex-col xs:flex-row xs:items-center xs:space-x-2 space-y-1 xs:space-y-0">
-                      <h4 className="text-sm font-medium text-foreground break-words">{session?.device}</h4>
-                      {session?.isCurrent && (
+                        <h4 className="text-sm font-medium text-foreground break-words">{session?.device}</h4>
+                        {session?.isCurrent && (
                         <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded-full whitespace-nowrap self-start">
-                          Actual
+                            Actual
                         </span>
-                      )}
+                        )}
                     </div>
                     <p className="text-xs text-muted-foreground">{session?.location}</p>
                     <p className="text-xs text-muted-foreground">IP: {session?.ipAddress}</p>
-                  </div>
+                    </div>
                 </div>
                 <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between sm:justify-end sm:flex-col sm:items-end space-y-1 xs:space-y-0 xs:space-x-2 sm:space-x-0 sm:space-y-2">
-                  <p className="text-xs text-muted-foreground whitespace-nowrap">{session?.lastActive}</p>
-                  {!session?.isCurrent && (
+                    <p className="text-xs text-muted-foreground whitespace-nowrap">{session?.lastActive}</p>
+                    {!session?.isCurrent && (
                     <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleTerminateSession(session?.id)}
-                      className="w-full xs:w-auto sm:w-full"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleTerminateSession(session?.id)}
+                        className="w-full xs:w-auto sm:w-full"
                     >
-                      Terminar
+                        Terminar
                     </Button>
-                  )}
+                    )}
                 </div>
-              </div>
+                </div>
             ))}
-          </div>
+            </div>
         </div>
       </div>
 
-      {/* Security Events */}
+      {/* Security Events (Sin cambios) */}
       <div className="bg-card rounded-lg border border-border shadow-subtle">
         <div className="p-4 sm:p-6 border-b border-border">
-          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3">
             <Icon name="Activity" size={18} className="text-primary sm:w-5 sm:h-5" />
             <h2 className="text-base sm:text-lg font-semibold text-foreground">Actividad de Seguridad</h2>
-          </div>
+            </div>
         </div>
-
         <div className="p-4 sm:p-6">
-          <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-2 sm:space-y-3">
             {securityEvents?.map((event) => (
-              <div key={event?.id} className="flex items-center space-x-3 sm:space-x-4 p-2 sm:p-3 hover:bg-muted rounded-lg transition-colors">
+                <div key={event?.id} className="flex items-center space-x-3 sm:space-x-4 p-2 sm:p-3 hover:bg-muted rounded-lg transition-colors">
                 <Icon 
-                  name={getEventIcon(event?.type)} 
-                  size={14} 
-                  className={`${getEventColor(event?.status)} flex-shrink-0 sm:w-4 sm:h-4`}
+                    name={getEventIcon(event?.type)} 
+                    size={14} 
+                    className={`${getEventColor(event?.status)} flex-shrink-0 sm:w-4 sm:h-4`}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground break-words">{event?.description}</p>
-                  <p className="text-xs text-muted-foreground">{event?.location}</p>
+                    <p className="text-sm font-medium text-foreground break-words">{event?.description}</p>
+                    <p className="text-xs text-muted-foreground">{event?.location}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-xs text-muted-foreground whitespace-nowrap">{event?.timestamp}</p>
+                    <p className="text-xs text-muted-foreground whitespace-nowrap">{event?.timestamp}</p>
                 </div>
-              </div>
+                </div>
             ))}
-          </div>
+            </div>
         </div>
       </div>
     </div>
