@@ -37,7 +37,7 @@ router.get("/:mail", async (req, res) => {
   try {
     const usr = await req.db
       .collection("usuarios")
-      .findOne({ mail: req.params.mail });
+      .findOne({ mail: req.params.mail.toLowerCase().trim()});
 
     if (!usr) return res.status(404).json({ error: "Usuario no encontrado" });
 
@@ -51,7 +51,7 @@ router.get("/full/:mail", async (req, res) => {
   try {
     const usr = await req.db
       .collection("usuarios")
-      .findOne({ mail: req.params.mail });
+      .findOne({ mail: req.params.mail.toLowerCase().trim()});
 
     if (!usr) return res.status(404).json({ error: "Usuario no encontrado" });
 
@@ -67,7 +67,7 @@ router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await req.db.collection("usuarios").findOne({ mail: email });
+    const user = await req.db.collection("usuarios").findOne({ mail: email.toLowerCase().trim() });
     if (!user) return res.status(401).json({ success: false, message: "Credenciales inválidas" });
 
     if (user.estado === "pendiente")
@@ -95,7 +95,7 @@ router.post("/login", async (req, res) => {
 
     // 1. Buscar un token activo para este usuario
     const existingTokenRecord = await req.db.collection("tokens").findOne({
-      email: email,
+      email: email.toLowerCase().trim(),
       active: true
     });
 
@@ -126,7 +126,7 @@ router.post("/login", async (req, res) => {
       // Insertar el nuevo token
       await req.db.collection("tokens").insertOne({
         token: finalToken,
-        email,
+        email: email.toLowerCase().trim(),
         rol: user.rol,
         createdAt: now,
         expiresAt,
@@ -145,7 +145,7 @@ router.post("/login", async (req, res) => {
     const os = agent.os.toString();
     const browser = agent.toAgent()
 
-    const usr = { name: user.nombre, email, cargo: user.rol };
+    const usr = { name: user.nombre, email: email.toLowerCase().trim(), cargo: user.rol };
 
     const newLogin = {
       usr, 
@@ -225,13 +225,13 @@ router.post("/validate", async (req, res) => {
       });
     }
 
-    if (tokenRecord.email !== email)
+    if (tokenRecord.email !== email.toLowerCase().trim())
       return res.status(401).json({ valid: false, message: "Token no corresponde al usuario" });
 
     if (tokenRecord.rol !== cargo)
       return res.status(401).json({ valid: false, message: "Cargo no corresponde al usuario" });
 
-    return res.json({ valid: true, user: { email, cargo } });
+    return res.json({ valid: true, user: { email: email.toLowerCase().trim(), cargo } });
   } catch (err) {
     console.error("Error validando token:", err);
     res.status(500).json({ valid: false, message: "Error interno al validar token" });
@@ -270,7 +270,7 @@ router.post("/register", async (req, res) => {
     const newUser = {
       nombre,
       apellido,
-      mail,
+      mail: mail.toLowerCase().trim(),
       empresa,
       cargo,
       rol,
@@ -304,6 +304,73 @@ router.post("/register", async (req, res) => {
   }
 });
 
+// POST - Cambiar contraseña (Requiere validación de contraseña anterior)
+router.post("/change-password", async (req, res) => {
+  const { email, currentPassword, newPassword } = req.body;
+
+  if (!email || !currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: "Faltan datos requeridos" });
+  }
+
+  try {
+    // 1. Buscar usuario por email
+    const user = await req.db.collection("usuarios").findOne({ mail: email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+    }
+
+    // 2. Verificar contraseña actual (Pseudo-login)
+    if (user.pass !== currentPassword) {
+      return res.status(401).json({ success: false, message: "La contraseña actual es incorrecta" });
+    }
+
+    // 3. Validaciones de seguridad de la nueva contraseña
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, message: "La nueva contraseña debe tener al menos 8 caracteres" });
+    }
+    
+    // Evitar que la nueva sea igual a la anterior
+    if (user.pass === newPassword) {
+      return res.status(400).json({ success: false, message: "La nueva contraseña no puede ser igual a la actual" });
+    }
+
+    // 4. Actualizar contraseña
+    const result = await req.db.collection("usuarios").updateOne(
+      { _id: user._id },
+      { 
+        $set: { 
+          pass: newPassword, 
+          updatedAt: new Date().toISOString() 
+        } 
+      }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(500).json({ success: false, message: "No se pudo actualizar la contraseña" });
+    }
+
+    // 5. Registrar Notificación de seguridad
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    await addNotification(req.db, {
+      userId: user._id.toString(),
+      titulo: `Cambio de Contraseña`,
+      descripcion: `La contraseña fue actualizada exitosamente el ${new Date().toLocaleString()}. IP: ${ipAddress}`,
+      prioridad: 2,
+      color: "#ffae00", // Color de advertencia/seguridad
+      icono: "Shield",
+    });
+
+    // Opcional: Revocar otros tokens si se desea forzar logout en otros dispositivos
+    // await req.db.collection("tokens").updateMany({ email: email }, { $set: { active: false } });
+
+    res.json({ success: true, message: "Contraseña actualizada exitosamente" });
+
+  } catch (err) {
+    console.error("Error cambiando contraseña:", err);
+    res.status(500).json({ success: false, message: "Error interno del servidor" });
+  }
+});
 
 // PUT - Actualizar usuario por ID
 router.put("/users/:id", async (req, res) => {
@@ -317,7 +384,7 @@ router.put("/users/:id", async (req, res) => {
 
     // El email solo puede ser cambiado si no existe en otro usuario (excluyendo el actual)
     const existingUser = await req.db.collection("usuarios").findOne({
-      mail: mail,
+      mail: mail.toLowerCase().trim(),
       _id: { $ne: new ObjectId(userId) }
     });
     if (existingUser) {
@@ -327,7 +394,7 @@ router.put("/users/:id", async (req, res) => {
     const updateData = {
       nombre,
       apellido,
-      mail,
+      mail: mail.toLowerCase().trim(),
       empresa,
       cargo,
       rol,
