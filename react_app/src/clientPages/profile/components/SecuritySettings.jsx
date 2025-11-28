@@ -99,7 +99,7 @@ const SecuritySettings = () => {
       }
 
       // 2. Llamada a la API
-      const response = await fetch('http://back-acciona.vercel.app/api/auth/change-password', { // Ajusta tu URL base si es necesario
+      const response = await fetch('https://back-acciona.vercel.app/api/auth/change-password', { // Ajusta tu URL base si es necesario
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
