@@ -255,6 +255,50 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     };
   }, [previewDocument]);
 
+  // --- NUEVAS FUNCIONES PARA NAVEGACIÓN DE ESTADOS ---
+  const handleStatusChange = async (newStatus) => {
+    if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
+    
+    try {
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (onUpdate && result.updatedRequest) {
+          onUpdate(result.updatedRequest);
+          setFullRequestData(result.updatedRequest);
+        }
+        alert(`Estado cambiado a "${newStatus}"`);
+      } else {
+        const errorData = await response.json();
+        alert('Error: ' + (errorData.error || 'No se pudo cambiar el estado'));
+      }
+    } catch (error) {
+      console.error('Error cambiando estado:', error);
+      alert('Error cambiando estado: ' + error.message);
+    }
+  };
+
+  // Función para obtener el estado anterior
+  const getPreviousStatus = (currentStatus) => {
+    const statusFlow = ['pendiente', 'en_revision', 'aprobado', 'firmado', 'finalizado', 'archivado'];
+    const currentIndex = statusFlow.indexOf(currentStatus);
+    return currentIndex > 0 ? statusFlow[currentIndex - 1] : null;
+  };
+
+  // Función para obtener el siguiente estado
+  const getNextStatus = (currentStatus) => {
+    const statusFlow = ['pendiente', 'en_revision', 'aprobado', 'firmado', 'finalizado', 'archivado'];
+    const currentIndex = statusFlow.indexOf(currentStatus);
+    return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
+  };
+
   if (!isVisible || !request) return null;
 
   const handlePreviewDocument = (documentUrl, documentType) => {
@@ -385,10 +429,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         return;
       }
       window.open(`https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
-      if (onUpdate) {
-        const updatedRequest = { ...request, status: 'en_revision' };
-        onUpdate(updatedRequest);
-      }
     } catch (error) {
       console.error('Error:', error);
       alert('Error al descargar');
@@ -1054,10 +1094,37 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                   <p className="text-sm text-muted-foreground">ID: {fullRequestData?._id}</p>
                 </div>
               </div>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fullRequestData?.status)}`}>
-                <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
-                {fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
-              </span>
+              
+              {/* NUEVO: Flechas de navegación de estado */}
+              <div className="flex items-center space-x-2">
+                {/* Flecha izquierda */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleStatusChange(getPreviousStatus(fullRequestData?.status))}
+                  disabled={!getPreviousStatus(fullRequestData?.status)}
+                  iconName="ChevronLeft"
+                  iconSize={16}
+                  className="text-muted-foreground hover:text-foreground"
+                />
+                
+                {/* Estado actual */}
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fullRequestData?.status)}`}>
+                  <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
+                  {fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
+                </span>
+                
+                {/* Flecha derecha */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleStatusChange(getNextStatus(fullRequestData?.status))}
+                  disabled={!getNextStatus(fullRequestData?.status)}
+                  iconName="ChevronRight"
+                  iconSize={16}
+                  className="text-muted-foreground hover:text-foreground"
+                />
+              </div>
             </div>
             <Button
               variant="ghost"
