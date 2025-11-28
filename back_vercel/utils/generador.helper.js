@@ -644,7 +644,6 @@ function limpiarFileName(texto) {
         .substring(0, 100)
         // Eliminar guiones bajos al inicio/final
         .replace(/^_+|_+$/g, '')
-        .substring(0, 30)
         .toUpperCase();
 }
 function reemplazarVariablesEnContenido(contenido, variables) {
@@ -805,7 +804,7 @@ async function generarAnexoDesdeRespuesta(responses, responseId, db, section, us
 
         if (!formId) {
             console.log("No se recibió formId - Generando TXT");
-            return await generarDocumentoTxt(responses, responseId, db);
+            return await generarDocumentoTxt(responses, responseId, db, formTitle);
         }
 
         const plantilla = await buscarPlantillaPorFormId(formId, db);
@@ -815,7 +814,7 @@ async function generarAnexoDesdeRespuesta(responses, responseId, db, section, us
             return await generarDocumentoDesdePlantilla(responses, responseId, db, plantilla, userData, formTitle);
         } else {
             console.log("No hay plantilla - Generando TXT como fallback");
-            return await generarDocumentoTxt(responses, responseId, db);
+            return await generarDocumentoTxt(responses, responseId, db, formTitle);
         }
 
     } catch (error) {

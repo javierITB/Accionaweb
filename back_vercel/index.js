@@ -39,7 +39,7 @@ async function connectDB() {
   return db;
 }
 
-// Middleware para inyectar la base de datos en cada request
+// 
 app.use(async (req, res, next) => {
   try {
     req.db = await connectDB();
