@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo, useCallback } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
@@ -9,290 +9,270 @@ import MessageModal from './components/MessageModal';
 import RequestDetails from './components/RequestDetails';
 import StatsOverview from './components/StatsOverview';
 
-// --- FUNCIÓN PARA OBTENER DATOS DEL ADMIN DESDE SESSION STORAGE ---
-const getAdminData = () => {
-  if (typeof window !== 'undefined' && window.sessionStorage) {
-    const cargo = sessionStorage.getItem('cargo');
-    const email = sessionStorage.getItem('email');
-    const token = sessionStorage.getItem('token');
-    const nombre = sessionStorage.getItem('user'); 
-    const uid = sessionStorage.getItem('uid'); 
-    const empresa = sessionStorage.getItem('empresa'); 
-    
-    if (token && uid && nombre) {
-      return {
-        uid: uid,
-        nombre: nombre,
-        mail: email,
-        token: token,
-        cargo: cargo,
-        empresa: empresa || 'Admin'
-      };
-    }
-  }
-  return null;
-};
-// --- FIN FUNCIÓN PARA OBTENER DATOS DEL ADMIN ---
-
-// --- COMPONENTE SIMULADO PARA INYECCIÓN (MODAL) ---
-// **ESTE COMPONENTE DEBE SER REEMPLAZADO POR TU MODAL REAL DE FORMULARIO**
-const InjectRequestModal = ({ isOpen, onClose, onSubmit, forms }) => {
-    // Usamos datos predeterminados basados en tu estructura de formulario para el ejemplo
-    const FORM_ID = '692dbd48cbdccb42fb466c22'; 
-    const FORM_TITLE = 'Solicitud para Cliente';
-    const [formData, setFormData] = useState({
-        formId: FORM_ID, 
-        formTitle: FORM_TITLE,
-        responses: {
-            Destinatario: 'Joanis', // Nombre que debe coincidir con un usuario en la DB
-            EmpresaDestino: 'MINIMRKET KAMI 2024 SPA', // Empresa que debe coincidir con un usuario en la DB
-            Asunto: 'Solicitud Administrativa Inyectada',
-            Mensaje: 'Por favor, revise y responda esta solicitud.',
-        },
-        adjuntos: [], // Nombres de archivo para el payload del backend
-        files: [], // Objetos File para la subida real
-    });
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            responses: {
-                ...prev.responses,
-                [name]: value
-            }
-        }));
-    };
-
-    const handleFileChange = (e) => {
-        const selectedFiles = Array.from(e.target.files);
-        setFormData(prev => ({
-            ...prev,
-            files: selectedFiles,
-            // Preparamos el array 'adjuntos' con los nombres para el payload inicial
-            adjuntos: selectedFiles.map(f => f.name) 
-        }));
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onSubmit(formData);
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
-                <h2 className="text-xl font-bold mb-4">Inyectar Solicitud: {FORM_TITLE}</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Campos de simulación para el destinatario y el contenido */}
-                    <input type="hidden" name="formId" value={formData.formId} />
-                    
-                    <label className="block">Destinatario (Nombre):
-                        <input type="text" name="Destinatario" value={formData.responses.Destinatario} onChange={handleChange} required className="w-full p-2 border rounded" />
-                    </label>
-                    <label className="block">Destinatario (Empresa):
-                        <input type="text" name="EmpresaDestino" value={formData.responses.EmpresaDestino} onChange={handleChange} required className="w-full p-2 border rounded" />
-                    </label>
-                    <label className="block">Asunto:
-                        <input type="text" name="Asunto" value={formData.responses.Asunto} onChange={handleChange} required className="w-full p-2 border rounded" />
-                    </label>
-                    <label className="block">Mensaje:
-                        <textarea name="Mensaje" value={formData.responses.Mensaje} onChange={handleChange} required className="w-full p-2 border rounded"></textarea>
-                    </label>
-
-                    {/* Manejo de archivos múltiples */}
-                    <label className="block">Adjuntar Archivos (Múltiple):
-                        <input type="file" multiple onChange={handleFileChange} className="w-full p-2 border rounded" />
-                        <p className="text-sm text-gray-500 mt-1">{formData.files.length} archivo(s) seleccionado(s).</p>
-                    </label>
-
-                    <div className="flex justify-end space-x-2 pt-4">
-                        <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-                        <Button type="submit" variant="default">Inyectar Solicitud</Button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
-// --- FIN COMPONENTE SIMULADO PARA INYECCIÓN ---
-
-
 const RequestTracking = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showFilters, setShowFilters] = useState(true);
+  const [forms, setAllForms] = useState([]);
   const [resp, setResp] = useState([]);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showRequestDetails, setShowRequestDetails] = useState(false);
   const [messageRequest, setMessageRequest] = useState(null);
-  const [viewMode, setViewMode] = useState('list');
+  const [viewMode, setViewMode] = useState('list'); // 'grid' or 'list'
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
-  const [allForms, setAllForms] = useState([]); // Nuevo estado para los forms
-  const [showInjectModal, setShowInjectModal] = useState(false); // Nuevo estado para el modal
 
   const [filters, setFilters] = useState({
-    search: '', status: '', category: '', priority: '', dateRange: '', 
-    startDate: '', endDate: '', assignedTo: '', submittedBy: ''
+    search: '',
+    status: '',
+    category: '',
+    priority: '',
+    dateRange: '',
+    startDate: '',
+    endDate: '',
+    assignedTo: '',
+    submittedBy: ''
   });
 
   const [data, setData] = useState({ forms: [], resp: [] });
 
+  // Dentro de RequestTracking = () => { ...
+  useEffect(() => {
+    let active = true; // Controla si el componente está montado/activo
 
-  // --- FUNCIÓN DE SUBIDA DE ARCHIVOS ---
-  const handleUploadFiles = async (responseId, files, adminToken) => {
-      // Asumo que el endpoint de subida espera el ID en la URL
-      const UPLOAD_ENDPOINT = `https://back-acciona.vercel.app/api/adjuntos/upload/${responseId}`; 
+    const fetchForms = async () => {
+      if (!active) return; // Salir si ya no estamos montados o activos
 
-      for (const file of files) {
-          const formData = new FormData();
-          formData.append('file', file);
-          
-          const res = await fetch(UPLOAD_ENDPOINT, {
-              method: 'POST',
-              headers: {
-                  // El Authorization es crucial para que el backend valide al admin en la subida
-                  'Authorization': `Bearer ${adminToken}`, 
-              },
-              body: formData,
-          });
-
-          if (!res.ok) {
-              const errorResult = await res.json();
-              throw new Error(`Error al subir el archivo ${file.name}: ${errorResult.error || res.statusText}`);
-          }
-      }
-  };
-
-
-  // --- FUNCIÓN PRINCIPAL DE INYECCIÓN ---
-  const handleInjectRequest = async (dataToInject) => {
-    const adminUser = getAdminData();
-
-    if (!adminUser) {
-        alert("Error: Sesión de administrador no encontrada. Por favor, inicie sesión.");
-        return;
-    }
-
-    const { files, adjuntos, ...restOfData } = dataToInject;
-
-    // 1. Construir el Payload para guardar la respuesta (incluye solo nombres de archivo)
-    const payload = {
-        ...restOfData,
-        adjuntos: adjuntos, // Array de nombres de archivo
-        user: adminUser // El objeto del administrador (para validación)
-    };
-    
-    let insertedId = null;
-
-    try {
+      try {
         setIsLoading(true);
-        // POST al endpoint de administrador para guardar la respuesta principal
-        const res = await fetch('https://back-acciona.vercel.app/api/respuestas/admin', { 
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
 
-        const result = await res.json();
+        // Creamos un controlador para abortar las peticiones si el componente se desmonta
+        const controller = new AbortController();
+        const signal = controller.signal;
 
-        if (!res.ok) {
-            throw new Error(result.error || 'Error al inyectar la solicitud en el backend.');
+        // 1) Traer ambas colecciones en paralelo, pasando la señal
+        const [ resForms] = await Promise.all([
+          fetch('https://back-acciona.vercel.app/api/forms/', { signal })
+        ]);
+
+        if (!resForms.ok) {
+          throw new Error('Error al obtener datos del servidor');
         }
 
-        insertedId = result._id;
+        // ... (Pasos 2, 3, 4, 5: Convertir a JSON, construir mapa, normalizar, actualizar estados)
 
-        // 2. Si hay archivos, subirlos usando el ID de la respuesta
-        if (files && files.length > 0) {
-            await handleUploadFiles(insertedId, files, adminUser.token);
+        const forms = await resForms.json();
+
+        // ... (Lógica de formsMap y normalización) ...
+
+        // Si el componente todavía está montado, actualiza el estado
+        if (active) {
+          setAllForms(forms);
+          setResp(normalized);
         }
 
-        alert(`Solicitud inyectada correctamente para ${dataToInject.responses.Destinatario}.`);
-        setShowInjectModal(false);
-        fetchForms(); // Recargar la lista de solicitudes
+      } catch (err) {
+        // Ignoramos errores de aborto (que son intencionales en la limpieza)
+        if (err.name === 'AbortError') {
+          console.log('Fetch abortado por limpieza.');
+          return;
+        }
+        console.error('Error cargando formularios:', err);
+      } finally {
+        // Solo actualizar si el componente está montado
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
 
-    } catch (err) {
-        console.error("Error al inyectar solicitud:", err);
-        alert(`Fallo en la inyección (ID: ${insertedId || 'pendiente'}): ${err.message}`);
-    } finally {
-        setIsLoading(false);
+    fetchForms();
+
+    // Función de limpieza: se ejecuta al desmontar o antes de la próxima ejecución del efecto
+    return () => {
+      active = false; // Marcamos como inactivo para prevenir actualizaciones de estado
+      // Si usas AbortController (recomendado), lo incluyes aquí
+      // controller.abort(); // Necesitarías definir 'controller' fuera de 'fetchForms' o mover la lógica de fetch
+    };
+  }, []);
+  // ... }
+
+
+  // Mock timeline data
+  const mockTimeline = [
+    {
+      id: 1,
+      title: "Solicitud Enviada",
+      description: "La solicitud ha sido enviada y está pendiente de revisión inicial.",
+      status: "completed",
+      completedAt: "2025-01-18T09:30:00Z",
+      assignedTo: "Sistema Automático",
+      notes: "Solicitud recibida correctamente. Todos los campos obligatorios completados."
+    },
+    {
+      id: 2,
+      title: "Revisión Inicial",
+      description: "El equipo de RR.HH. está realizando la revisión inicial de la documentación.",
+      status: "completed",
+      completedAt: "2025-01-19T11:15:00Z",
+      assignedTo: "María González",
+      notes: "Documentación completa. Procede a aprobación del supervisor."
+    },
+    {
+      id: 3,
+      title: "Aprobación del Supervisor",
+      description: "Esperando aprobación del supervisor directo.",
+      status: "current",
+      completedAt: null,
+      assignedTo: "Carlos Mendoza",
+      estimatedCompletion: "2025-01-22T17:00:00Z",
+      notes: null
+    },
+    {
+      id: 4,
+      title: "Aprobación Final",
+      description: "Aprobación final por parte del departamento de RR.HH.",
+      status: "pending",
+      completedAt: null,
+      assignedTo: "Ana Rodríguez",
+      estimatedCompletion: "2025-01-24T17:00:00Z",
+      notes: null
+    },
+    {
+      id: 5,
+      title: "Procesamiento",
+      description: "Procesamiento final y notificación al empleado.",
+      status: "pending",
+      completedAt: null,
+      assignedTo: "Sistema Automático",
+      estimatedCompletion: "2025-01-25T12:00:00Z",
+      notes: null
     }
+  ];
+
+  // Mock stats data
+  const mockStats = {
+    total: resp?.length || 0,
+    pending: resp?.filter(r => !r.status || r.status === 'pending')?.length || 0,
+    inReview: resp?.filter(r => r.status === 'inReview')?.length || 0,
+    approved: resp?.filter(r => r.status === 'approved')?.length || 0,
+    rejected: resp?.filter(r => r.status === 'rejected')?.length || 0,
+    avgProcessingTime: 5.2 // puedes calcularlo después si tienes timestamps
   };
-  // --- FIN FUNCIÓN PRINCIPAL DE INYECCIÓN ---
 
+  // Filter and sort requests
+  const filteredRequests = resp?.filter(request => {
+    if (filters?.search && !request?.title?.toLowerCase()?.includes(filters?.search?.toLowerCase()) &&
+      !request?.description?.toLowerCase()?.includes(filters?.search?.toLowerCase()) &&
+      !request?.id?.toLowerCase()?.includes(filters?.search?.toLowerCase())) {
+      return false;
+    }
+    if (filters?.status && request?.status !== filters?.status) return false;
+    if (filters?.category && request?.category !== filters?.category) return false;
+    if (filters?.priority && request?.priority !== filters?.priority) return false;
+    if (filters?.assignedTo && (!request?.assignedTo || !request?.assignedTo?.toLowerCase()?.includes(filters?.assignedTo?.toLowerCase()))) return false;
+    if (filters?.submittedBy && !request?.submittedBy?.toLowerCase()?.includes(filters?.submittedBy?.toLowerCase())) return false;
 
-  // --- FETCH DE DATOS (ACTUALIZADO) ---
-  const fetchForms = useCallback(async () => {
-    let active = true; 
+    // Date filtering
+    if (filters?.startDate) {
+      const requestDate = new Date(request.submittedDate);
+      const startDate = new Date(filters.startDate);
+      if (requestDate < startDate) return false;
+    }
+    if (filters?.endDate) {
+      const requestDate = new Date(request.submittedDate);
+      const endDate = new Date(filters.endDate);
+      if (requestDate > endDate) return false;
+    }
+
+    return true;
+  })?.sort((a, b) => {
+    let aValue, bValue;
+
+    switch (sortBy) {
+      case 'date':
+        aValue = new Date(a.submittedDate);
+        bValue = new Date(b.submittedDate);
+        break;
+      case 'title':
+        aValue = a?.title?.toLowerCase();
+        bValue = b?.title?.toLowerCase();
+        break;
+      case 'status':
+        aValue = a?.status;
+        bValue = b?.status;
+        break;
+      case 'priority':
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        aValue = priorityOrder?.[a?.priority];
+        bValue = priorityOrder?.[b?.priority];
+        break;
+      default:
+        return 0;
+    }
+
+    if (sortOrder === 'asc') {
+      return aValue > bValue ? 1 : -1;
+    } else {
+      return aValue < bValue ? 1 : -1;
+    }
+  });
+
+  const handleRemove = async (request) => {
+    const requestId = request?._id
+    if (!requestId) return alert("ID no válido para eliminar.");
+
+    const confirmDelete = window.confirm("¿Seguro que deseas eliminar esta solicitud?");
+    if (!confirmDelete) return;
+
     try {
       setIsLoading(true);
+      const res = await fetch(`https://back-acciona.vercel.app/api/respuestas/${requestId}`, {
+        method: 'DELETE',
+      });
 
-      const controller = new AbortController();
-      const signal = controller.signal;
+      if (!res.ok) throw new Error('Error al eliminar la solicitud.');
 
-      // 1) Traer formularios y respuestas en paralelo
-      const [ resForms, resResp] = await Promise.all([
-        fetch('https://back-acciona.vercel.app/api/forms/', { signal }),
-        fetch('https://back-acciona.vercel.app/api/respuestas/', { signal }) // Asumo este endpoint
-      ]);
-
-      if (!resForms.ok || !resResp.ok) {
-        throw new Error('Error al obtener datos del servidor');
-      }
-
-      const [forms, responses] = await Promise.all([resForms.json(), resResp.json()]);
-
-      // Lógica de normalización
-      const formsMap = new Map(forms.map(form => [form._id, form]));
-      const normalized = responses.map(response => ({
-          ...response,
-          // Añadir lógica de submittedDate, submittedBy, etc.
-          formTitle: formsMap.get(response.formId)?.title || response.formTitle,
-          submittedDate: response.createdAt || new Date(0), // Asegurar un valor
-          submittedBy: response.user?.nombre || 'Desconocido',
-          // ... mapeo de otros campos necesarios para RequestCard y filtros
-      }));
-      // Fin Lógica de normalización
-
-      if (active) {
-        setAllForms(forms); // Guardar todos los forms para el modal
-        setResp(normalized);
-      }
+      setResp((prev) => prev.filter((r) => r._id !== requestId));
 
     } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error('Error cargando formularios:', err);
-      }
+      console.error(err);
+      alert("No se pudo eliminar la solicitud.");
     } finally {
-      if (active) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
-    return () => { active = false; };
-  }, []);
+  };
 
-  useEffect(() => {
-    fetchForms();
-  }, [fetchForms]);
+  const handleViewDetails = (request) => {
+    setSelectedRequest(request);
+    setShowRequestDetails(true);
+  };
 
+  const handleSendMessage = (request) => {
+    setMessageRequest(request);
+    setShowMessageModal(true);
+  };
 
-  // ... (Mock timeline data, mock stats data, filteredRequests, y sortOptions) ...
-  const mockTimeline = [/* ... */];
-  const mockStats = { /* ... */ };
-  const filteredRequests = resp?.filter(request => { /* ... */ })?.sort((a, b) => { /* ... */ });
+  const handleSendMessageSubmit = async (messageData) => {
+    // Mock API call
+    console.log('Sending message:', messageData);
+    // In real app, this would send to API
+  };
 
-
-  const handleRemove = async (request) => { /* ... */ };
-  const handleViewDetails = (request) => { /* ... */ };
-  const handleSendMessage = (request) => { /* ... */ };
-  const handleSendMessageSubmit = async (messageData) => { /* ... */ };
-  const handleClearFilters = () => { /* ... */ };
+  const handleClearFilters = () => {
+    setFilters({
+      search: '',
+      status: '',
+      category: '',
+      priority: '',
+      dateRange: '',
+      startDate: '',
+      endDate: '',
+      assignedTo: '',
+      submittedBy: ''
+    });
+  };
 
 
   const sortOptions = [
@@ -302,13 +282,13 @@ const RequestTracking = () => {
     { value: 'priority', label: 'Prioridad' }
   ];
 
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <Sidebar isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)
       } />
-      <main className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'} pt-16`}>
+      <main className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'
+        } pt-16`}>
         <div className="p-6 space-y-6">
           {/* Page Header */}
           <div className="flex items-center justify-between">
@@ -320,16 +300,6 @@ const RequestTracking = () => {
             </div>
 
             <div className="flex items-center space-x-3">
-              {/* BOTÓN PARA ABRIR EL MODAL DE INYECCIÓN */}
-              <Button
-                variant="default"
-                onClick={() => setShowInjectModal(true)}
-                iconName="Plus"
-                iconSize={20}
-              >
-                Inyectar Solicitud
-              </Button>
-              {/* FIN BOTÓN */}
 
               <Button
                 variant="ghost"
@@ -413,9 +383,7 @@ const RequestTracking = () => {
               ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
               : 'space-y-4'
           }>
-            {isLoading ? (
-                <div className="text-center py-12 col-span-full">Cargando solicitudes...</div>
-            ) : filteredRequests?.length > 0 ? (
+            {filteredRequests?.length > 0 ? (
               filteredRequests?.map((request) => (
                 <RequestCard
                   key={request?._id || request?.id}
@@ -450,14 +418,6 @@ const RequestTracking = () => {
         request={selectedRequest}
         isVisible={showRequestDetails}
         onClose={() => setShowRequestDetails(false)}
-      />
-      
-      {/* --- MODAL DE INYECCIÓN --- */}
-      <InjectRequestModal
-        isOpen={showInjectModal}
-        onClose={() => setShowInjectModal(false)}
-        onSubmit={handleInjectRequest}
-        forms={allForms}
       />
     </div>
   );

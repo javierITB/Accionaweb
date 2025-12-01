@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
@@ -6,6 +6,23 @@ import Button from '../../components/ui/Button';
 
 // Definimos la URL base (ajusta esto si la variable viene de un archivo de configuración)
 const IP_API = "https://back-acciona.vercel.app"; // O la URL que estés usando
+
+// --- FUNCIÓN PARA OBTENER DATOS DEL ADMIN/REMITENTE DESDE SESSION STORAGE ---
+// Usado para la trazabilidad y la token del usuario logeado
+const getSenderData = () => {
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    return {
+      mail: sessionStorage.getItem('email'),
+      nombre: sessionStorage.getItem('user'), // Asumo 'user' contiene el nombre completo
+      cargo: sessionStorage.getItem('cargo'),
+      token: sessionStorage.getItem('token'),
+      uid: sessionStorage.getItem('uid'),
+      empresa: sessionStorage.getItem('empresa')
+    };
+  }
+  return {};
+};
+// --- FIN FUNCIÓN PARA OBTENER DATOS DEL ADMIN/REMITENTE ---
 
 // --- Componentes UI reutilizados (Se mantienen igual) ---
 const Input = React.forwardRef((props, ref) => (
@@ -41,20 +58,18 @@ const Select = React.forwardRef(({ children, ...props }, ref) => (
   </div>
 ));
 
-// --- Función Auxiliar para Archivos (Tomada de FormPreview) ---
-// --- Función Auxiliar para Archivos (CORREGIDA: Elimina el prefijo Base64) ---
+// --- Función Auxiliar para Archivos (Base64) ---
 const fileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
-        // Obtenemos la URL de datos y eliminamos el prefijo (data:mime/type;base64,)
-        const base64String = reader.result.split(',')[1];
-        if (!base64String) {
-            reject(new Error("No se pudo obtener la cadena Base64 del archivo."));
-            return;
-        }
-        resolve(base64String); // Devolvemos solo la cadena limpia
+      const base64String = reader.result.split(',')[1];
+      if (!base64String) {
+        reject(new Error("No se pudo obtener la cadena Base64 del archivo."));
+        return;
+      }
+      resolve(base64String);
     };
     reader.onerror = error => reject(error);
   });
@@ -64,7 +79,7 @@ const fileToBase64 = (file) => {
 const MessageForm = () => {
   // 1. Estados del Formulario
   const [formData, setFormData] = useState({
-    destino: '',
+    destino: '', // Valor del select (Email o ID)
     asunto: '',
     mensaje: '',
   });
@@ -76,12 +91,12 @@ const MessageForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // 2. Estados de Layout (Se mantienen igual)
+  // 2. Estados de Layout
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
 
-  // 3. Efecto para manejo de pantalla (Se mantiene igual)
+  // 3. Efecto para manejo de pantalla
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
@@ -93,54 +108,58 @@ const MessageForm = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 4. FETCH DE DESTINATARIOS (Contiene la lógica para obtener mongoId)
-  useEffect(() => {
-    const fetchRecipients = async () => {
-      setIsLoadingRecipients(true);
-      try {
-        const response = await fetch(`${IP_API}/api/auth/solicitud`);
+  // 4. FETCH DE DESTINATARIOS (Restaurado el useCallback para mejor manejo)
+  const fetchRecipients = useCallback(async () => {
+    setIsLoadingRecipients(true);
+    try {
+      // Endpoint para obtener la lista de posibles destinatarios (usuarios)
+      const response = await fetch(`${IP_API}/api/auth/solicitud`);
 
-        if (!response.ok) {
-          throw new Error('Error al obtener solicitudes');
-        }
-
-        const data = await response.json();
-        const uniqueUsersMap = new Map();
-
-        data.forEach(item => {
-          // Intentamos obtener el ID de MongoDB, si no existe usamos el correo
-          // El campo '_id' debería ser el ObjectId
-          const mongoId = item._id || item.id || item.correo;
-
-          const userId = item.correo;
-          const userEmpresa = item.empresa || "";
-          const userName = item.nombre + " " + (item.apellido || "");
-          const userEmail = item.correo || "";
-
-          if (!uniqueUsersMap.has(userId)) {
-            uniqueUsersMap.set(userId, {
-              id: userId, // Es el email (se usa como key/value para el select)
-              label: userEmail ? `${userName} (${userEmpresa})` : userName,
-              value: userId,
-              profileData: {
-                ...item,
-                mongoId: mongoId // Guardamos el ID de MongoDB aquí
-              }
-            });
-          }
-        });
-
-        setRecipients(Array.from(uniqueUsersMap.values()));
-
-      } catch (error) {
-        console.error("Error cargando destinatarios:", error);
-      } finally {
-        setIsLoadingRecipients(false);
+      if (!response.ok) {
+        throw new Error('Error al obtener la lista de usuarios');
       }
-    };
 
-    fetchRecipients();
+      const data = await response.json();
+      const uniqueUsersMap = new Map();
+
+      data.forEach(item => {
+        // Usamos el UID de mongo si existe, o el correo como fallback
+        const uid = item.uid || item._id;
+        const email = item.correo || item.mail || item.email; // Aseguramos el email
+        const key = uid || email; // Clave única para el mapa
+
+        if (key && !uniqueUsersMap.has(key)) {
+          const userName = item.nombre;
+          const userEmpresa = item.empresa || "";
+
+          uniqueUsersMap.set(key, {
+            id: key, // Clave para el mapa
+            label: email ? `${userName} (${userEmpresa}) - ${email}` : `${userName} (${userEmpresa})`,
+            value: key, // El valor del select será el UID o el Email
+            profileData: {
+              uid: uid, // Usamos el uid real (ObjectId)
+              nombre: userName,
+              apellido: item.apellido || "",
+              empresa: userEmpresa,
+              correo: email,
+              // Añade aquí cualquier otro campo necesario (ej: cargo)
+            }
+          });
+        }
+      });
+
+      setRecipients(Array.from(uniqueUsersMap.values()));
+
+    } catch (error) {
+      console.error("Error cargando destinatarios:", error);
+    } finally {
+      setIsLoadingRecipients(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchRecipients();
+  }, [fetchRecipients]);
 
   // 5. Funciones de Layout (Se mantienen igual)
   const toggleSidebar = () => {
@@ -155,7 +174,7 @@ const MessageForm = () => {
     if (isMobileScreen) setIsMobileOpen(false);
   };
 
-  // 6. Lógica del Formulario (handleInputChange, removeFile se mantienen igual)
+  // 6. Lógica del Formulario
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -172,12 +191,14 @@ const MessageForm = () => {
     setFiles(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
+  // --- Constantes del Formulario de Backend que se está simulando ---
   const FORM_ID_SIMULADO = "6902379d46e3a2e6e0d8a57f";
   const FORM_TITLE_SIMULADO = "ENVÍO DE DOCUMENTOS";
-  const Q_NOMBRE_TRABAJADOR_TITLE = "Nombre del trabajador"; // Usaremos esto para el asunto
-  const Q_DOCUMENTO_ADJUNTO_TITLE = "Adjuntar documento aquí"; // Usaremos esto para los archivos
+  const Q_NOMBRE_TRABAJADOR_TITLE = "Nombre del trabajador";
+  const Q_DOCUMENTO_ADJUNTO_TITLE = "Adjuntar documento aquí";
+  // --- FIN Constantes ---
 
-  // *** LÓGICA DE ENVÍO DE FORMULARIO ADAPTADA Y CORREGIDA ***
+  // *** LÓGICA DE ENVÍO DE FORMULARIO (MODIFICADA PARA INYECTAR) ***
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -189,89 +210,87 @@ const MessageForm = () => {
     setIsLoading(true);
 
     try {
-      // --- 1. Obtener Datos de Usuarios ---
-      const loggedUserMail = sessionStorage.getItem("email");
-      const loggedUserName = sessionStorage.getItem("usuario");
-      const loggedUserCargo = sessionStorage.getItem("cargo");
-      const loggedUserToken = sessionStorage.getItem("token");
+      // --- 1. Obtener Datos del Remitente y Destinatario ---
+      const senderData = getSenderData(); // <<< DATOS DEL ADMINISTRADOR LOGEADO
+      
+      // Asegurarse de que el administrador tenga token para la validación
+      if (!senderData.token) {
+         throw new Error("Token de sesión de administrador no encontrado. Por favor, vuelva a iniciar sesión.");
+      }
+      
+      const senderInfo = `Nombre: ${senderData.nombre || 'Desconocido'}, Email: ${senderData.mail || 'Desconocido'}, Cargo: ${senderData.cargo || 'N/A'}, UID: ${senderData.uid || 'N/A'}`;
 
-      // Buscar el perfil completo del destinatario seleccionado
       const selectedRecipient = recipients.find(r => r.value === formData.destino);
       if (!selectedRecipient) {
         throw new Error("Destinatario no encontrado en la lista de solicitudes.");
       }
 
-      // Datos del Destinatario (será el 'user' del payload, el solicitante)
+      // Perfil del Destinatario (usado para inyectar en DB)
       const recipientProfile = selectedRecipient.profileData;
-
-      // Aseguramos que el UID sea el ObjectId si tiene 24 caracteres, o el correo.
-      const recipientUid = recipientProfile.mongoId && recipientProfile.mongoId.length === 24 ? recipientProfile.mongoId : recipientProfile.correo;
-
-      const userPayload = {
-        uid: recipientUid,
-        nombre: recipientProfile.nombre + " " + (recipientProfile.apellido || ""),
-        empresa: recipientProfile.empresa,
-        mail: recipientProfile.correo,
-        token: loggedUserToken || ""
-      };
-
-      // Datos del Usuario Logeado (para registrar quién lo envió)
-      const senderInfo = `Nombre: ${loggedUserName || 'Desconocido'}, Email: ${loggedUserMail || 'Desconocido'}, Cargo: ${loggedUserCargo || 'N/A'}`;
+      
+      // --- EXTRACCIÓN Y SEPARACIÓN CLAVE PARA EL BACKEND ---
+      const destinatarioNombreCompleto = recipientProfile.nombre;
+      const destinatarioEmpresa = recipientProfile.empresa;
+      // -----------------------------------------------------
 
       // --- 2. Simulación de la estructura de respuestas (responses) ---
-      // Mapeamos los campos del formulario de mensaje a los campos requeridos del formulario real:
-
       const cleanAnswers = {
-        // Campo requerido del formulario real: "Nombre del trabajador"
-        [Q_NOMBRE_TRABAJADOR_TITLE]: formData.asunto, // Usamos el ASUNTO para cumplir con el 'Nombre del trabajador'
-
-        // Campo de seguimiento: ¿Quién lo recibe?
-        "Destinatario Seleccionado (Sistema)": selectedRecipient.label,
-
-        // El cuerpo del mensaje como respuesta adicional:
+        // CAMPOS REQUERIDOS POR EL BACKEND ADMINISTRATIVO para buscar al usuario
+        "Destinatario": destinatarioNombreCompleto,
+        "EmpresaDestino": destinatarioEmpresa,
+        
+        // Contenido y trazabilidad
+        [Q_NOMBRE_TRABAJADOR_TITLE]: formData.asunto,
         "Cuerpo del Mensaje (Información Adicional)": formData.mensaje,
-
-        // El usuario logeado que lo envió (para trazabilidad en las respuestas)
-        "Enviado Por (Usuario Logeado)": senderInfo
+        "Enviado Por (Usuario Logeado)": senderInfo,
       };
-
-      // NOTA: El campo de archivo "Adjuntar documento aquí" no va aquí, se maneja en el paso 4.
 
 
       // --- 3. Payload Base (Envío sin archivos) ---
       const payloadBase = {
-        formId: FORM_ID_SIMULADO, // ID real del formulario "ENVÍO DE DOCUMENTOS"
+        formId: FORM_ID_SIMULADO,
         formTitle: FORM_TITLE_SIMULADO,
-        responses: cleanAnswers,
-        mail: "",
+        responses: cleanAnswers, 
+        mail: recipientProfile.correo,
         submittedAt: new Date().toISOString(),
-        user: userPayload,
+        
+        // *** CAMBIO CLAVE AQUÍ ***
+        // El campo 'user' debe ser el objeto del ADMINISTRADOR (con token) para la validación del endpoint /admin
+        user: senderData, 
+        
         adjuntos: []
       };
 
-      console.log('Enviando respuestas base (Simulando Formulario)...');
-      const res = await fetch(`${IP_API}/api/respuestas`, {
+      console.log('Enviando respuestas base a /admin (Para validación de token)...');
+
+      // Se mantiene la URL correcta
+      const res = await fetch(`${IP_API}/api/respuestas/admin`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(payloadBase),
       });
 
       if (!res.ok) {
         const errorText = await res.text();
-        throw new Error(`Error al enviar respuestas base: ${errorText}`);
+        // Intentar parsear el JSON para mostrar el error específico del backend (401 o 400)
+        let errorBody = { error: errorText };
+        try {
+            errorBody = JSON.parse(errorText);
+        } catch (e) { /* no es JSON */ }
+        
+        throw new Error(`Error al enviar respuestas base: ${errorBody.error || errorText}`);
       }
 
       const data = await res.json();
       const responseId = data._id;
       console.log('✅ Respuesta base guardada. ID de Respuesta:', responseId);
 
-      // --- 4. Procesar y Enviar Archivos ---
+      // --- 4. Procesar y Enviar Archivos (al endpoint de adjuntos) ---
       if (files.length > 0) {
         console.log('Procesando y enviando archivos...');
-
         const todosLosArchivos = [];
-
-        // Usamos el título del campo de archivo real del formulario
         const questionTitle = Q_DOCUMENTO_ADJUNTO_TITLE;
 
         const filePromises = files.map(async (file, fileIndex) => {
@@ -279,9 +298,9 @@ const MessageForm = () => {
             const fileData = await fileToBase64(file);
             return {
               adjunto: {
-                pregunta: questionTitle, // Usamos el título de la pregunta de archivo del formulario real
+                pregunta: questionTitle,
                 fileName: file.name,
-                fileData: fileData,
+                fileData: fileData, // Base64
                 mimeType: file.type,
                 size: file.size
               },
@@ -305,8 +324,6 @@ const MessageForm = () => {
             const archivoData = todosLosArchivos[i];
 
             try {
-              console.log(`Enviando archivo ${i + 1} de ${todosLosArchivos.length}:`, archivoData.adjunto.fileName);
-
               const uploadRes = await fetch(`${IP_API}/api/respuestas/${responseId}/adjuntos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -322,16 +339,12 @@ const MessageForm = () => {
             } catch (chunkError) {
               console.error(`Error en archivo ${i + 1}:`, chunkError);
             }
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100)); // Pequeña pausa
           }
-          console.log(`✅ Total archivos procesados: ${todosLosArchivos.length}`);
         }
-      } else {
-        // Ya se validó al inicio, pero por si acaso, lanzamos error si no hay archivos (el formulario los requiere)
-        throw new Error("El formulario requiere que adjuntes al menos un documento.");
       }
 
-      alert("Mensaje/Documento enviado con éxito y registrado en las respuestas.");
+      alert("Mensaje/Documento enviado con éxito y registrado en las respuestas del destinatario.");
 
       // Limpiar
       setFormData({ destino: '', asunto: '', mensaje: '' });
@@ -386,9 +399,9 @@ const MessageForm = () => {
 
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
             <div className="mb-4 md:mb-0">
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Nuevo Mensaje</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Inyección de Solicitud (Administrativo)</h1>
               <p className="text-muted-foreground mt-1 text-sm md:text-base">
-                Redacta y envía notificaciones a usuarios registrados.
+                Envía un documento/solicitud que aparecerá en el menú del usuario destinatario.
               </p>
             </div>
             <div className="hidden md:flex items-center">
@@ -434,12 +447,12 @@ const MessageForm = () => {
 
                 {/* Campo: Asunto */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Asunto</label>
+                  <label className="text-sm font-medium text-foreground">Asunto (Se mapea a: "{Q_NOMBRE_TRABAJADOR_TITLE}")</label>
                   <Input
                     name="asunto"
                     value={formData.asunto}
                     onChange={handleInputChange}
-                    placeholder="Escribe el asunto del mensaje"
+                    placeholder="Escribe el asunto del mensaje/documento"
                     required
                     disabled={isLoading}
                   />
@@ -447,7 +460,7 @@ const MessageForm = () => {
 
                 {/* Campo: Mensaje */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Mensaje</label>
+                  <label className="text-sm font-medium text-foreground">Mensaje (Se guarda como campo de trazabilidad)</label>
                   <Textarea
                     name="mensaje"
                     value={formData.mensaje}
@@ -460,8 +473,8 @@ const MessageForm = () => {
 
                 {/* Campo: Carga de Archivos */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Adjuntar Archivos</label>
-                  <div className={`border-2 border-dashed border-border rounded-lg p-6 hover:bg-muted/50 transition-colors text-center ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} onClick={() => !isLoading && fileInputRef.current?.click()}>
+                  <label className="text-sm font-medium text-foreground">Adjuntar Archivos (Se mapea a: "{Q_DOCUMENTO_ADJUNTO_TITLE}")</label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-6 hover:bg-muted/50 transition-colors text-center" onClick={() => !isLoading && fileInputRef.current?.click()}>
                     <input
                       type="file"
                       multiple
@@ -474,7 +487,7 @@ const MessageForm = () => {
                     <p className="text-sm text-muted-foreground">
                       <span className="font-semibold text-primary">Haz clic para subir</span> o arrastra y suelta
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">PDF, DOC, JPG, etc. (No hay validación estricta de tipo aquí)</p>
+                    <p className="text-xs text-muted-foreground mt-1">PDF, DOC, JPG, etc.</p>
                   </div>
 
                   {files.length > 0 && (
@@ -530,7 +543,7 @@ const MessageForm = () => {
                     ) : (
                       <>
                         <Icon name="Send" className="mr-2 h-4 w-4" />
-                        Enviar Mensaje
+                        Enviar Documento/Solicitud
                       </>
                     )}
                   </Button>

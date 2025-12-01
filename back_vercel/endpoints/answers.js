@@ -226,8 +226,7 @@ router.post("/admin", async (req, res) => {
     // --- LÓGICA DE BÚSQUEDA DEL USUARIO DESTINATARIO ---
     // ----------------------------------------------------
     const userDestinatario = await req.db.collection("users").findOne({
-        nombre: destinatarioNombre,
-        empresa: destinatarioEmpresa
+        mail: mail,
         // Puedes agregar más filtros si es necesario, como estado activo
     }, {
         // Proyectar solo los campos necesarios para el objeto 'user'
