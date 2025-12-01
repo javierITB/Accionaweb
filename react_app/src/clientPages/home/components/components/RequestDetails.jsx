@@ -7,6 +7,9 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
   const fileInputRef = useRef(null);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const [fullRequestData, setFullRequestData] = useState({ ...request });
+  const [downloadingAttachmentIndex, setDownloadingAttachmentIndex] = useState(null);
 
   // Polling para verificar cambios de estado cada 5 segundos
   useEffect(() => {
@@ -33,7 +36,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
     return () => clearInterval(interval);
   }, [isVisible, request?._id, request?.status, onUpdate]);
 
-  // Verificar PDF firmado
   useEffect(() => {
     if (isVisible && request?._id && request?.status === 'aprobado') {
       const checkSignedPdf = async () => {
@@ -47,7 +49,103 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       };
       checkSignedPdf();
     }
+    fetchAttachments(request?._id);
   }, [request, isVisible]);
+  
+
+
+  const getMimeTypeIcon = (mimeType) => {
+    if (mimeType?.includes('pdf')) return 'FileText';
+    if (mimeType?.includes('word') || mimeType?.includes('document')) return 'FileText';
+    if (mimeType?.includes('excel') || mimeType?.includes('spreadsheet')) return 'FileSpreadsheet';
+    if (mimeType?.includes('image')) return 'Image';
+    return 'File';
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 KB';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / 1048576).toFixed(2) + ' MB';
+  };
+
+  const fetchAttachments = async (responseId) => {
+    setAttachmentsLoading(true);
+    try {
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`);
+
+      if (response.ok) {
+        const data = await response.json();
+        let extractedAdjuntos = [];
+        if (Array.isArray(data) && data.length > 0 && data[0].adjuntos) {
+          extractedAdjuntos = data[0].adjuntos;
+        } else if (data.adjuntos) {
+          extractedAdjuntos = data.adjuntos;
+        } else if (Array.isArray(data)) {
+          extractedAdjuntos = data;
+        }
+
+        setFullRequestData(prev => ({
+          ...prev,
+          adjuntos: extractedAdjuntos
+        }));
+      }
+    } catch (error) {
+      console.error('Error cargando adjuntos:', error);
+    } finally {
+      setAttachmentsLoading(false);
+    }
+  };
+
+  const handleDownloadAdjunto = async (responseId, index) => {
+    setDownloadingAttachmentIndex(index);
+    try {
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const adjunto = fullRequestData.adjuntos[index];
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = adjunto.fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        alert('Error al descargar');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al descargar');
+    } finally {
+      setDownloadingAttachmentIndex(null);
+    }
+  };
+
+   const handlePreviewDocument = (documentUrl, documentType) => {
+    if (!documentUrl) {
+      alert('No hay documento disponible para vista previa');
+      return;
+    }
+    setPreviewDocument({ url: documentUrl, type: documentType });
+    setShowPreview(true);
+  };
+
+   const downloadPdfForPreview = async (url) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
+      const blob = await response.blob();
+      if (blob.type !== 'application/pdf') throw new Error('El archivo no es un PDF válido');
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      console.error('Error descargando PDF para vista previa:', error);
+      throw error;
+    }
+  };
+
+  
 
   if (!isVisible || !request) return null;
 
@@ -246,20 +344,61 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                 <h3 className="text-lg font-semibold text-foreground mb-3">Usuario y Fechas</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Enviado por:</span>
+                    <span className="text-sm text-muted-foreground">Asociado a:</span>
                     <span className="text-sm font-medium text-foreground">{request?.submittedBy + ", " + request?.company}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Fecha de envío:</span>
                     <span className="text-sm font-medium text-foreground">{formatDate(request?.submittedAt)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Usuario:</span>
-                    <span className="text-sm font-medium text-foreground">{request?.user?.nombre}</span>
-                  </div>
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* ADJUNTOS */}
+          <div>
+            {attachmentsLoading &&
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                Archivos Adjuntos
+                {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+              </h3>
+            }
+            {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 &&
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                Archivos Adjuntos
+              </h3>
+            }
+            {fullRequestData?.adjuntos?.length > 0 && (
+              <div className="space-y-2">
+                {fullRequestData.adjuntos.map((adjunto, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
+                        iconPosition="left"
+                        iconSize={16}
+                        onClick={() => handleDownloadAdjunto(request._id, index)}
+                        disabled={downloadingAttachmentIndex !== null}
+                      >
+                        {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {(request?.status !== 'pendiente' && request?.status !== 'en_revision') && (
