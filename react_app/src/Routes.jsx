@@ -19,6 +19,7 @@ import Users from './pages/users/Index.jsx';
 import Empresas from './pages/empresas/Index.jsx';
 import Ingresos from './pages/Ingresos/Index.jsx';
 import SetPassword from './pages/users/components/SetPassword.jsx'; 
+import Solicitudes from './pages/solicitudes/Index.jsx'; 
 
 import Home from './clientPages/home/Index.jsx';
 import FormList from './clientPages/FormList/Index.jsx';
@@ -56,6 +57,8 @@ const Routes = () => {
           <Route path="/empresas" element={<ProtectedRoute> <Empresas /> </ProtectedRoute>}/>
           <Route path="/dashboard-home" element={<ProtectedRoute> <DashboardHome /> </ProtectedRoute>}/>
           <Route path="/request-tracking" element={<ProtectedRoute> <RequestTracking /> </ProtectedRoute>}/>
+          <Route path="/solicitudes" element={<ProtectedRoute> <Solicitudes /> </ProtectedRoute>}/>
+          
           
 
           {/* Rutas libres */}

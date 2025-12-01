@@ -356,7 +356,7 @@ router.post("/change-password", async (req, res) => {
       userId: user._id.toString(),
       titulo: `Cambio de Contraseña`,
       descripcion: `La contraseña fue actualizada exitosamente el ${new Date().toLocaleString()}. IP: ${ipAddress}`,
-      prioridad: 2,
+      prioridad: 3,
       color: "#ffae00", // Color de advertencia/seguridad
       icono: "Shield",
     });
