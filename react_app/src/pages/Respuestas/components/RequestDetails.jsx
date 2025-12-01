@@ -5,9 +5,10 @@ import CleanDocumentPreview from './CleanDocumentPreview';
 
 const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }) => {
   // --- ESTADOS DE UI ---
-  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'responses'
-
-  const [correctedFile, setCorrectedFile] = useState(null);
+  const [activeTab, setActiveTab] = useState('details');
+  
+  // CAMBIO: De correctedFile a approvedFiles (array)
+  const [approvedFiles, setApprovedFiles] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [clientSignature, setClientSignature] = useState(null);
   const [isApproving, setIsApproving] = useState(false);
@@ -60,7 +61,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   }, [isVisible, request?._id]);
 
-  // --- NUEVA FUNCIÓN PARA OBTENER DATOS APROBADOS ---
+  // --- FUNCIÓN PARA OBTENER DATOS APROBADOS (COMPATIBLE) ---
   const fetchApprovedData = async (responseId) => {
     setIsLoadingApprovedData(true);
     try {
@@ -68,6 +69,21 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       if (response.ok) {
         const data = await response.json();
         setApprovedData(data);
+        
+        // COMPATIBILIDAD: Si viene un solo archivo (versión antigua), lo convertimos a array
+        if (data && !data.files && data.fileName) {
+          setApprovedData({
+            files: [{
+              fileName: data.fileName,
+              fileSize: data.fileSize,
+              mimeType: data.mimeType,
+              uploadedAt: data.uploadedAt,
+              fileType: 'pdf'
+            }],
+            totalFiles: 1,
+            isLegacyFormat: true
+          });
+        }
       } else {
         setApprovedData(null);
       }
@@ -149,15 +165,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   useEffect(() => {
+    // COMPATIBILIDAD: Si hay correctedFile individual (versión antigua), lo convertimos a array
     if (request?.correctedFile) {
-      setCorrectedFile({
+      setApprovedFiles([{
         name: request.correctedFile.fileName,
         size: request.correctedFile.fileSize,
         url: `https://back-acciona.vercel.app/api/respuestas/${request._id}/corrected-file`,
-        isServerFile: true
-      });
+        isServerFile: true,
+        isLegacy: true
+      }]);
     } else {
-      setCorrectedFile(null);
+      setApprovedFiles([]);
     }
 
     if (request?._id) {
@@ -201,10 +219,38 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   }, [isVisible, request?._id]);
 
+  // ---------------------------------------------
+  //           FUNCIONES DE MANEJO - MODIFICADAS
+  // ---------------------------------------------
 
-  // ---------------------------------------------
-  //           FUNCIONES DE MANEJO
-  // ---------------------------------------------
+  // CAMBIO: Manejar múltiples archivos
+  const handleUploadCorrection = (event) => {
+    const files = Array.from(event.target.files);
+    
+    // Filtrar solo PDFs
+    const pdfFiles = files.filter(file => file.type === 'application/pdf');
+    
+    if (pdfFiles.length === 0) {
+      alert('Por favor, sube solo archivos PDF');
+      event.target.value = '';
+      return;
+    }
+
+    // Agregar nuevos archivos al array
+    setApprovedFiles(prev => [...prev, ...pdfFiles]);
+    event.target.value = '';
+  };
+
+  // NUEVA: Eliminar archivo específico
+  const handleRemoveFile = (index) => {
+    setApprovedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // NUEVA: Eliminar todos los archivos
+  const handleRemoveAllFiles = () => {
+    setApprovedFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const downloadPdfForPreview = async (url) => {
     try {
@@ -255,6 +301,48 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     };
   }, [previewDocument]);
 
+  // --- FUNCIONES PARA NAVEGACIÓN DE ESTADOS ---
+  const handleStatusChange = async (newStatus) => {
+    if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
+    
+    try {
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (onUpdate && result.updatedRequest) {
+          onUpdate(result.updatedRequest);
+          setFullRequestData(result.updatedRequest);
+        }
+        alert(`Estado cambiado a "${newStatus}"`);
+      } else {
+        const errorData = await response.json();
+        alert('Error: ' + (errorData.error || 'No se pudo cambiar el estado'));
+      }
+    } catch (error) {
+      console.error('Error cambiando estado:', error);
+      alert('Error cambiando estado: ' + error.message);
+    }
+  };
+
+  const getPreviousStatus = (currentStatus) => {
+    const statusFlow = ['pendiente', 'en_revision', 'aprobado', 'firmado', 'finalizado', 'archivado'];
+    const currentIndex = statusFlow.indexOf(currentStatus);
+    return currentIndex > 0 ? statusFlow[currentIndex - 1] : null;
+  };
+
+  const getNextStatus = (currentStatus) => {
+    const statusFlow = ['pendiente', 'en_revision', 'aprobado', 'firmado', 'finalizado', 'archivado'];
+    const currentIndex = statusFlow.indexOf(currentStatus);
+    return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
+  };
+
   if (!isVisible || !request) return null;
 
   const handlePreviewDocument = (documentUrl, documentType) => {
@@ -285,10 +373,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
-  const handlePreviewCorrected = async () => {
-    const hasFile = correctedFile || approvedData || fullRequestData?.correctedFile;
-    if (!hasFile) {
-      alert('No hay documento corregido para vista previa');
+  const handlePreviewCorrected = async (fileIndex = 0) => {
+    const hasFiles = approvedFiles.length > 0 || approvedData || fullRequestData?.correctedFile;
+    if (!hasFiles) {
+      alert('No hay documentos corregidos para vista previa');
       return;
     }
 
@@ -296,18 +384,22 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       setIsLoadingPreviewCorrected(true);
       let documentUrl;
 
-      if (correctedFile && correctedFile instanceof File) {
-        documentUrl = URL.createObjectURL(correctedFile);
+      // Si hay archivos locales
+      if (approvedFiles.length > 0 && approvedFiles[fileIndex] instanceof File) {
+        documentUrl = URL.createObjectURL(approvedFiles[fileIndex]);
       }
-      else if (approvedData || request?.status === 'aprobado' || request?.status === 'firmado') {
+      // Si hay datos aprobados (nueva versión con array)
+      else if (approvedData?.files && approvedData.files.length > 0) {
+        const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/download-approved-file/${request._id}/${fileIndex}`;
+        documentUrl = await downloadPdfForPreview(pdfUrl);
+      }
+      // COMPATIBILIDAD: Si hay correctedFile individual (versión antigua)
+      else if (fullRequestData?.correctedFile) {
         const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${request._id}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
       }
-      else if (request?.correctedFile) {
-        alert('El documento corregido está en proceso de revisión.');
-        return;
-      } else {
-        alert('No hay documento corregido disponible');
+      else {
+        alert('No hay documentos corregidos disponibles');
         return;
       }
       handlePreviewDocument(documentUrl, 'pdf');
@@ -385,10 +477,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         return;
       }
       window.open(`https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
-      if (onUpdate) {
-        const updatedRequest = { ...request, status: 'en_revision' };
-        onUpdate(updatedRequest);
-      }
     } catch (error) {
       console.error('Error:', error);
       alert('Error al descargar');
@@ -471,28 +559,19 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
-  const handleUploadCorrection = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      if (file.type === 'application/pdf') {
-        setCorrectedFile(file);
-      } else {
-        alert('Por favor, sube solo archivos PDF');
-        event.target.value = '';
-      }
-    }
-  };
-
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
+  // CAMBIO: Manejar eliminación de correcciones (compatible)
   const handleRemoveCorrection = async () => {
-    if (correctedFile && correctedFile instanceof File) {
-      setCorrectedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+    // Si hay archivos locales, solo limpiar el estado
+    if (approvedFiles.length > 0 && approvedFiles.some(file => file instanceof File)) {
+      handleRemoveAllFiles();
       return;
     }
+
+    // Si es un archivo del servidor, hacer la llamada API
     try {
       const signatureCheck = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       const signatureData = await signatureCheck.json();
@@ -505,7 +584,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       const result = await response.json();
       if (response.ok) {
         if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
-        setCorrectedFile(null);
+        setApprovedFiles([]);
         setApprovedData(null);
         if (result.hasExistingSignature) alert('Corrección eliminada. Estado volverá a firmado al subir nueva.');
         else alert('Corrección eliminada, vuelve a revisión.');
@@ -518,26 +597,34 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
+  // CAMBIO: Manejar aprobación con múltiples archivos
   const handleApprove = async () => {
-    if (!correctedFile || isApproving || request?.status === 'aprobado' || request?.status === 'firmado') return;
-    if (!confirm('¿Aprobar formulario? Acción irreversible.')) return;
+    if (approvedFiles.length === 0 || isApproving || request?.status === 'aprobado' || request?.status === 'firmado') return;
+    
+    if (!confirm(`¿Aprobar formulario con ${approvedFiles.length} archivo(s) PDF?`)) return;
+    
     setIsApproving(true);
     try {
       const formData = new FormData();
-      formData.append('correctedFile', correctedFile);
+      approvedFiles.forEach(file => {
+        formData.append('approvedFiles', file);
+      });
+
       const approveResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/approve`, {
         method: 'POST',
         body: formData,
       });
+
       if (approveResponse.ok) {
+        const result = await approveResponse.json();
         if (onUpdate) {
           const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
           fetchApprovedData(request._id);
         }
-        setCorrectedFile(null);
-        alert('Formulario aprobado');
+        setApprovedFiles([]);
+        alert(`Formulario aprobado con ${result.filesCount || approvedFiles.length} archivo(s)`);
       } else {
         const errorData = await approveResponse.json();
         alert(`Error: ${errorData.error}`);
@@ -600,7 +687,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
-
   const getRealAttachments = () => {
     if (!fullRequestData) return [];
     if (documentInfo && documentInfo.IDdoc) {
@@ -609,7 +695,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         const formTitle = fullRequestData?.formTitle || 'Documento';
         const nombreTrabajador = fullRequestData?.responses?.["Nombre del trabajador"] || 'Trabajador';
         fileName = `${formTitle}_${nombreTrabajador}`.normalize('NFD')
-          // Reemplazar caracteres especiales del español
           .replace(/ñ/g, 'n')
           .replace(/Ñ/g, 'N')
           .replace(/á/g, 'a')
@@ -624,13 +709,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           .replace(/Ú/g, 'U')
           .replace(/ü/g, 'u')
           .replace(/Ü/g, 'U')
-          // Eliminar cualquier otro diacrítico
           .replace(/[\u0300-\u036f]/g, '')
-          // Eliminar caracteres especiales restantes
           .replace(/[^a-zA-Z0-9\s._-]/g, '')
-          // Reemplazar espacios múltiples por un solo guión bajo
           .replace(/\s+/g, '_')
-          // Limitar longitud
           .substring(0, 100)
           .toUpperCase();
       }
@@ -706,7 +787,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const realAttachments = getRealAttachments();
 
-  // --- COMPONENTES INTERNOS DE RENDERIZADO ---
+  // --- COMPONENTES INTERNOS DE RENDERIZADO - MODIFICADOS ---
 
   const renderDetailsTab = () => (
     <div className="space-y-6">
@@ -721,7 +802,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         </div>
       </div>
 
-      {/* ADJUNTOS */}
+      {/* ADJUNTOS (sin cambios) */}
       <div>
         {attachmentsLoading &&
           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -779,7 +860,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         )}
       </div>
 
-      {/* DOCUMENTO GENERADO */}
+      {/* DOCUMENTO GENERADO (sin cambios) */}
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
           Documento Generado
@@ -840,90 +921,150 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-
             <p className="text-sm">No hay documentos generados para este formulario</p>
           </div>
         )}
       </div>
 
-      {/* DOCUMENTO CORREGIDO */}
+      {/* CAMBIO: DOCUMENTOS PARA APROBAR (nueva versión con múltiples archivos) */}
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-          Documento Corregido
+          Documentos para Aprobar
           {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
         </h3>
-        <div className="bg-muted/50 rounded-lg p-4">
-          {correctedFile || approvedData || fullRequestData?.correctedFile ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Icon name="FileText" size={20} className="text-accent" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {correctedFile?.name || approvedData?.fileName || fullRequestData?.correctedFile?.fileName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {correctedFile?.size
-                      ? `${(correctedFile.size / 1024 / 1024).toFixed(2)} MB`
-                      : approvedData?.fileSize
-                        ? formatFileSize(approvedData.fileSize)
-                        : fullRequestData?.correctedFile?.fileSize
-                          ? formatFileSize(fullRequestData.correctedFile.fileSize)
-                          : 'Tamaño no disponible'}
-                  </p>
-                  {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
-                    <p className="text-xs text-success font-medium mt-1">
-                      ✓ Formulario aprobado
-                    </p>
-                  )}
+        <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+          {approvedFiles.length > 0 ? (
+            <div className="space-y-2">
+              {approvedFiles.map((file, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-background rounded border">
+                  <div className="flex items-center space-x-3">
+                    <Icon name="FileText" size={20} className="text-accent" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.size)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handlePreviewCorrected(index)}
+                      iconName={isLoadingPreviewCorrected ? "Loader" : "Eye"}
+                      iconPosition="left"
+                      iconSize={16}
+                      disabled={isLoadingPreviewCorrected}
+                    >
+                      Vista Previa
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveFile(index)}
+                      className="text-error hover:bg-error/10"
+                    >
+                      <Icon name="X" size={16} />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center space-x-2">
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No se han subido archivos aún</p>
+          )}
+          
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <p className="text-xs text-muted-foreground">
+                {approvedFiles.length} archivo(s) PDF listo(s) para aprobar
+              </p>
+              {approvedFiles.length > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handlePreviewCorrected}
-                  iconName={isLoadingPreviewCorrected ? "Loader" : "Eye"}
-                  iconPosition="left"
-                  iconSize={16}
-                  disabled={isLoadingPreviewCorrected}
-                >
-                  {isLoadingPreviewCorrected ? 'Cargando...' : 'Vista Previa'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleRemoveCorrection}
+                  onClick={handleRemoveAllFiles}
                   className="text-error hover:bg-error/10"
                 >
-                  <Icon name="X" size={16} />
+                  Eliminar todos
                 </Button>
-              </div>
+              )}
             </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">No se han subido correcciones aún</p>
-              <Button
-                variant="outline"
-                size="sm"
-                iconName="Upload"
-                iconPosition="left"
-                onClick={handleUploadClick}
-              >
-                Subir
-              </Button>
-            </div>
-          )}
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleUploadCorrection}
-            accept=".pdf"
-            className="hidden"
-          />
+            <Button
+              variant="outline"
+              size="sm"
+              iconName="Upload"
+              iconPosition="left"
+              onClick={handleUploadClick}
+            >
+              Agregar PDF
+            </Button>
+          </div>
         </div>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleUploadCorrection}
+          accept=".pdf"
+          multiple
+          className="hidden"
+        />
       </div>
 
-      {/* DOCUMENTO FIRMADO */}
+      {/* COMPATIBILIDAD: DOCUMENTOS APROBADOS (para mostrar archivos ya aprobados) */}
+      {(approvedData?.files && approvedData.files.length > 0) && (
+        <div>
+          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+            Documentos Aprobados
+            <span className="bg-success text-success-foreground text-xs px-2 py-1 rounded-full">
+              {approvedData.totalFiles}
+            </span>
+          </h3>
+          <div className="space-y-2">
+            {approvedData.files.map((file, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-success/10 rounded-lg border border-success/20">
+                <div className="flex items-center space-x-3">
+                  <Icon name="FileText" size={20} className="text-success" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{file.fileName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatFileSize(file.fileSize)} • Aprobado el {formatDate(file.uploadedAt)}
+                    </p>
+                    {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
+                      <p className="text-xs text-success font-medium mt-1">
+                        ✓ Documento aprobado
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePreviewCorrected(index)}
+                    iconName={isLoadingPreviewCorrected ? "Loader" : "Eye"}
+                    iconPosition="left"
+                    iconSize={16}
+                    disabled={isLoadingPreviewCorrected}
+                  >
+                    {isLoadingPreviewCorrected ? 'Cargando...' : 'Vista Previa'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRemoveCorrection}
+                    className="text-error hover:bg-error/10"
+                  >
+                    <Icon name="X" size={16} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* DOCUMENTO FIRMADO (sin cambios) */}
       {(fullRequestData?.status !== 'pendiente' && fullRequestData?.status !== 'en_revision') && (
         <div>
           {isCheckingSignature &&
@@ -984,12 +1125,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 </div>
               </div>
             </div>
-          ) }
+          )}
         </div>
       )}
     </div>
   );
 
+  // ... (resto del código igual: renderResponsesTab y return principal)
   const renderResponsesTab = () => {
     // 1. Validamos que existan respuestas
     const responses = fullRequestData?.responses || {};
@@ -1054,10 +1196,37 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                   <p className="text-sm text-muted-foreground">ID: {fullRequestData?._id}</p>
                 </div>
               </div>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fullRequestData?.status)}`}>
-                <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
-                {fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
-              </span>
+              
+              {/* NUEVO: Flechas de navegación de estado */}
+              <div className="flex items-center space-x-2">
+                {/* Flecha izquierda */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleStatusChange(getPreviousStatus(fullRequestData?.status))}
+                  disabled={!getPreviousStatus(fullRequestData?.status)}
+                  iconName="ChevronLeft"
+                  iconSize={16}
+                  className="text-muted-foreground hover:text-foreground"
+                />
+                
+                {/* Estado actual */}
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fullRequestData?.status)}`}>
+                  <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
+                  {fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
+                </span>
+                
+                {/* Flecha derecha */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleStatusChange(getNextStatus(fullRequestData?.status))}
+                  disabled={!getNextStatus(fullRequestData?.status)}
+                  iconName="ChevronRight"
+                  iconSize={16}
+                  className="text-muted-foreground hover:text-foreground"
+                />
+              </div>
             </div>
             <Button
               variant="ghost"
@@ -1114,16 +1283,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 Enviar Mensaje
               </Button>
 
-              {correctedFile && fullRequestData?.status !== 'aprobado' && fullRequestData?.status !== 'firmado' && (
+              {approvedFiles.length > 0 && fullRequestData?.status !== 'aprobado' && fullRequestData?.status !== 'firmado' && (
                 <Button
                   variant="default"
                   iconName={isApproving ? "Loader" : "CheckCircle"}
                   iconPosition="left"
                   iconSize={16}
                   onClick={handleApprove}
-                  disabled={!correctedFile || isApproving}
+                  disabled={approvedFiles.length === 0 || isApproving}
                 >
-                  {isApproving ? 'Aprobando...' : 'Aprobar'}
+                  {isApproving ? 'Aprobando...' : `Aprobar (${approvedFiles.length})`}
                 </Button>
               )}
               {fullRequestData?.status !== 'finalizado' && (

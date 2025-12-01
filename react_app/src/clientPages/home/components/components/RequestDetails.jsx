@@ -7,6 +7,10 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
   const fileInputRef = useRef(null);
+  
+  // NUEVO: Estado para manejar múltiples archivos aprobados
+  const [approvedFiles, setApprovedFiles] = useState([]);
+  const [isLoadingApprovedFiles, setIsLoadingApprovedFiles] = useState(false);
 
   // Polling para verificar cambios de estado cada 5 segundos
   useEffect(() => {
@@ -48,6 +52,93 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       checkSignedPdf();
     }
   }, [request, isVisible]);
+
+  // NUEVO: Cargar archivos aprobados
+  useEffect(() => {
+    if (isVisible && request?._id && (request?.status === 'aprobado' || request?.status === 'firmado' || request?.status === 'finalizado' || request?.status === 'archivado')) {
+      fetchApprovedFiles(request._id);
+    }
+  }, [isVisible, request?._id, request?.status]);
+
+  // NUEVO: Función para obtener archivos aprobados
+  const fetchApprovedFiles = async (responseId) => {
+    setIsLoadingApprovedFiles(true);
+    try {
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/data-approved/${responseId}`);
+      if (response.ok) {
+        const data = await response.json();
+        
+        // COMPATIBILIDAD: Manejar tanto versión antigua como nueva
+        if (data && data.files && Array.isArray(data.files)) {
+          // Nueva versión con array de archivos
+          setApprovedFiles(data.files);
+        } else if (data && data.fileName) {
+          // Versión antigua con un solo archivo - convertir a array
+          setApprovedFiles([{
+            fileName: data.fileName,
+            fileSize: data.fileSize,
+            mimeType: data.mimeType,
+            uploadedAt: data.uploadedAt,
+            fileType: 'pdf',
+            isLegacy: true
+          }]);
+        } else {
+          setApprovedFiles([]);
+        }
+      } else {
+        setApprovedFiles([]);
+      }
+    } catch (error) {
+      console.error('Error obteniendo archivos aprobados:', error);
+      setApprovedFiles([]);
+    } finally {
+      setIsLoadingApprovedFiles(false);
+    }
+  };
+
+  // NUEVO: Función para descargar archivo específico
+  const handleDownloadApprovedFile = async (responseId, fileIndex, fileName) => {
+    try {
+      let downloadUrl;
+      
+      // COMPATIBILIDAD: Usar endpoint nuevo para múltiples archivos o antiguo para uno
+      if (approvedFiles.length > 1 || !approvedFiles[0]?.isLegacy) {
+        downloadUrl = `https://back-acciona.vercel.app/api/respuestas/download-approved-file/${responseId}/${fileIndex}`;
+      } else {
+        // Versión antigua - usar endpoint original
+        downloadUrl = `https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${responseId}`;
+      }
+
+      const response = await fetch(downloadUrl);
+      
+      if (!response.ok) {
+        throw new Error('Error al descargar el archivo');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+    } catch (error) {
+      console.error('Error descargando archivo:', error);
+      alert('Error al descargar el archivo: ' + error.message);
+    }
+  };
+
+  // NUEVO: Función para formatear tamaño de archivo
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 KB';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / 1048576).toFixed(2) + ' MB';
+  };
 
   if (!isVisible || !request) return null;
 
@@ -101,6 +192,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
     }
   };
 
+  // FUNCIÓN ORIGINAL MANTENIDA (para compatibilidad)
   const handleDownloadApprovedPDF = async (responseId) => {
     try {
       // PRIMERO obtener SOLO el filename
@@ -264,32 +356,75 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
           {(request?.status !== 'pendiente' && request?.status !== 'en_revision') && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-foreground">Documento Aprobado</h3>
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                Documentos Aprobados
+                {isLoadingApprovedFiles && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+                {approvedFiles.length > 0 && (
+                  <span className="bg-success text-success-foreground text-xs px-2 py-1 rounded-full">
+                    {approvedFiles.length}
+                  </span>
+                )}
+              </h3>
 
-              <div className="bg-success/10 border border-success/20 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Icon name="FileText" size={20} className="text-success" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Documento PDF Aprobado</p>
-                      <p className="text-xs text-muted-foreground">
-                        Descarga el documento aprobado para firmarlo.
-                      </p>
+              {/* NUEVO: Lista de archivos aprobados */}
+              {approvedFiles.length > 0 ? (
+                <div className="space-y-3">
+                  {approvedFiles.map((file, index) => (
+                    <div key={index} className="bg-success/10 border border-success/20 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <Icon name="FileText" size={20} className="text-success" />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{file.fileName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(file.fileSize)} • PDF • {formatDate(file.uploadedAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          iconName="Download"
+                          iconPosition="left"
+                          iconSize={16}
+                          onClick={() => handleDownloadApprovedFile(request._id, index, file.fileName)}
+                          className="bg-success hover:bg-success/90"
+                        >
+                          Descargar
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // COMPATIBILIDAD: Mostrar botón de descarga único si no hay archivos en el array pero el estado lo permite
+                !isLoadingApprovedFiles && (
+                  <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Icon name="FileText" size={20} className="text-success" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Documento PDF Aprobado</p>
+                          <p className="text-xs text-muted-foreground">
+                            Descarga el documento aprobado para firmarlo.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        iconName="Download"
+                        iconPosition="left"
+                        iconSize={16}
+                        onClick={() => handleDownloadApprovedPDF(request._id)}
+                        className="bg-success hover:bg-success/90"
+                      >
+                        Descargar PDF
+                      </Button>
                     </div>
                   </div>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    iconName="Download"
-                    iconPosition="left"
-                    iconSize={16}
-                    onClick={() => handleDownloadApprovedPDF(request._id)}
-                    className="bg-success hover:bg-success/90"
-                  >
-                    Descargar PDF
-                  </Button>
-                </div>
-              </div>
+                )
+              )}
 
               {request?.status === 'aprobado' && (
                 <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
