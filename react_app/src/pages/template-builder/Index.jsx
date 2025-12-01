@@ -372,9 +372,10 @@ const FormBuilder = () => {
         }
         return (
           <DocumentTemplateEditor
+            dynamicVariables={dynamicVariables}
+            staticVariables={staticVariables}
             templateData={formData}
             onUpdateTemplateData={updateFormData}
-            zzzs
             onAddParagraph={handleAddParagraph}
             onUpdateParagraph={handleUpdateParagraph}
             onDeleteParagraph={handleDeleteParagraph}
