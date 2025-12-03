@@ -617,7 +617,10 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
 }
 
 function limpiarFileName(texto) {
-    if (!texto) return 'documento';
+    // Asegurarse de que texto sea siempre un string
+    if (typeof texto !== 'string') {
+        texto = String(texto || 'documento');
+    }
 
     return texto
         .replace(/ñ/g, 'n')
@@ -738,7 +741,7 @@ async function generarDocumentoTxt(responses, responseId, db, formTitle) {
 
         const buffer = Buffer.from(contenidoTxt, 'utf8');
 
-        const trabajador = responses['NOMBRE_DEL_TRABAJADOR'] || responses['Nombre del trabajador'] || 'TRABAJADOR';
+        const trabajador = responses['NOMBRE_DEL_TRABAJADOR'] || responses['Nombre del trabajador'] || ['NOMBRE DEL TRABAJADOR'] || 'TRABAJADOR';
         const nombreFormulario = formTitle || 'FORMULARIO';
         const fileName = `${limpiarFileName(nombreFormulario)}_${limpiarFileName(trabajador)}`;
 

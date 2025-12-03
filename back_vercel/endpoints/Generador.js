@@ -57,35 +57,6 @@ router.get("/download/:IDdoc", async (req, res) => {
         const fileBuffer = documento.docxFile.buffer || documento.docxFile;
         const bufferLength = fileBuffer.length;
 
-        const anser = await req.db.collection('respuestas').findOne({ _id: new ObjectId(documento.responseId) });
-
-        if (anser.status === 'en_revision') {
-            await addNotification(req.db, {
-                userId: anser?.user?.uid,
-                titulo: "Respuestas En Revisión",
-                descripcion: `Formulario ${documento.fileName} a cambiado su estado a En Revisión.`,
-                prioridad: 2,
-                icono: 'FileText',
-                color: '#00c6f8ff',
-                actionUrl: `/?id=${documento.responseId}`,
-            });
-        }
-        
-        // Actualizar estado en respuestas
-        if (documento.responseId && anser.status === 'pendiente') {
-            await req.db.collection("respuestas").updateOne(
-                { _id: new ObjectId(documento.responseId) },
-                {
-                    $set: {
-                        status: "en_revision",
-                        reviewedAt: new Date()
-                    }
-                }
-            );
-        }
-
-
-
         // USAR EL fileName GUARDADO EN LUGAR DEL IDdoc
         const fileName = documento.fileName || IDdoc;
         const extension = documento.tipo === 'txt' ? 'txt' : 'docx';
