@@ -173,6 +173,18 @@ router.post("/", async (req, res) => {
     });
 
     await addNotification(req.db, {
+      filtro: { cargo: "admin" },
+      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondido el formulario ${formTitle}`,
+      descripcion: adjuntos.length > 0
+        ? `Incluye ${adjuntos.length} archivo(s) adjunto(s) - Procesando...`
+        : "Puedes revisar los detalles en el panel de respuestas.",
+      prioridad: 2,
+      color: "#bb8900ff",
+      icono: "form",
+      actionUrl: `/RespuestasForms?id=${result.insertedId}`,
+    });
+
+    await addNotification(req.db, {
       userId,
       titulo: "Formulario completado",
       descripcion: `El formulario ${formTitle} fue completado correctamente.`,
