@@ -30,12 +30,12 @@ const TemplateList = ({ onUpdateFormData }) => {
       setIsLoading(true);
 
       // Cargar formularios
-      const formsRes = await fetch('https://back-acciona.vercel.app/api/forms');
+      const formsRes = await fetch('https://https://back-acciona.vercel.app/api/forms');
       if (!formsRes.ok) throw new Error('Error al obtener formularios');
       const formsData = await formsRes.json();
 
       // Cargar plantillas
-      const templatesRes = await fetch('https://back-acciona.vercel.app/api/plantillas');
+      const templatesRes = await fetch('https://https://back-acciona.vercel.app/api/plantillas');
       const templatesData = templatesRes.ok ? await templatesRes.json() : [];
 
       // Combinar información: para cada plantilla, encontrar su formulario asociado
@@ -83,7 +83,7 @@ const TemplateList = ({ onUpdateFormData }) => {
     try {
       setDeletingId(plantillaId);
 
-      const response = await fetch(`https://back-acciona.vercel.app/api/plantillas/${plantillaId}`, {
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/plantillas/${plantillaId}`, {
         method: 'DELETE',
       });
 
@@ -144,7 +144,7 @@ const TemplateList = ({ onUpdateFormData }) => {
 
     try {
       // Obtener los datos completos de la plantilla seleccionada
-      const response = await fetch(`https://back-acciona.vercel.app/api/plantillas/${selectedTemplateForDuplicate.formId}`);
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/plantillas/${selectedTemplateForDuplicate.formId}`);
 
       if (!response.ok) {
         throw new Error('Error al cargar la plantilla para duplicar');

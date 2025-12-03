@@ -478,6 +478,32 @@ const QuestionBuilder = ({
             </span>
           </div>
 
+          {/* NUEVO CAMPO: Número máximo de archivos */}
+          {localQuestion.multiple && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Número máximo de archivos
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                step="1"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={localQuestion.maxFiles || ''}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 1;
+                  handleFieldChange('maxFiles', Math.min(Math.max(value, 1), 20));
+                }}
+                placeholder="4"
+                onBlur={saveChanges}
+              />
+              <p className="text-xs text-muted-foreground">
+                Máximo de archivos que el usuario puede subir (1-20)
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
               Tipos de archivo permitidos

@@ -14,6 +14,8 @@ const FormPreview = ({ formData }) => {
     token: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFilesByQuestion, setSelectedFilesByQuestion] = useState({});
+
   const usuario = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
   const mail = sessionStorage.getItem("email");
@@ -22,7 +24,7 @@ const FormPreview = ({ formData }) => {
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const res = await fetch(`https://back-acciona.vercel.app/api/auth/${mail}`);
+        const res = await fetch(`https://https://back-acciona.vercel.app/api/auth/${mail}`);
         if (!res.ok) throw new Error('Usuario no encontrado');
         const data = await res.json();
 
@@ -46,7 +48,23 @@ const FormPreview = ({ formData }) => {
     return question.title || 'Pregunta sin título';
   };
 
-  // Función para validar archivos CON CONFIGURACIONES PERSONALIZADAS
+  const getFileIcon = (mimeType) => {
+    if (mimeType.includes('pdf')) return 'FileText';
+    if (mimeType.includes('image')) return 'Image';
+    if (mimeType.includes('video')) return 'Video';
+    if (mimeType.includes('audio')) return 'Music';
+    if (mimeType.includes('word') || mimeType.includes('document')) return 'File';
+    return 'File';
+  };
+
+  const formatFileType = (mimeType) => {
+    if (mimeType.includes('pdf')) return 'PDF';
+    if (mimeType.includes('jpeg') || mimeType.includes('jpg')) return 'JPEG';
+    if (mimeType.includes('png')) return 'PNG';
+    if (mimeType.includes('word')) return 'Word';
+    return mimeType.split('/')[1]?.toUpperCase() || 'Archivo';
+  };
+
   const validateFiles = (files, question) => {
     const errors = [];
 
@@ -54,45 +72,30 @@ const FormPreview = ({ formData }) => {
       return errors;
     }
 
-    // Validar cantidad de archivos
     if (!question.multiple && files.length > 1) {
       errors.push('Solo se permite un archivo');
       return errors;
     }
 
-    // Obtener configuraciones de la pregunta (con valores por defecto)
     const allowedTypes = question.accept || '.pdf,application/pdf';
-    const maxSizeMB = question.maxSize ? parseInt(question.maxSize) : 0.5; // 0.5MB = 500KB por defecto
+    const maxSizeMB = question.maxSize ? parseInt(question.maxSize) : 0.5;
     const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
-    // Convertir allowedTypes a array y limpiar
     const allowedTypesArray = allowedTypes.split(',')
       .map(type => type.trim().toLowerCase())
       .filter(type => type.length > 0);
 
-    console.log('Configuración de validación:', {
-      allowedTypes: allowedTypesArray,
-      maxSizeMB,
-      maxSizeBytes,
-      multiple: question.multiple
-    });
-
-    // Validar cada archivo
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
-      // Validar tipo de archivo
       const isTypeValid = allowedTypesArray.some(allowedType => {
-        // Si es una extensión como ".pdf"
         if (allowedType.startsWith('.')) {
           const fileExtension = '.' + file.name.toLowerCase().split('.').pop();
           return fileExtension === allowedType;
         }
-        // Si es un MIME type como "application/pdf"
         else if (allowedType.includes('/')) {
           return file.type.toLowerCase() === allowedType;
         }
-        // Si es un tipo genérico como "image/*"
         else if (allowedType.endsWith('/*')) {
           const category = allowedType.split('/*')[0];
           return file.type.toLowerCase().startsWith(category + '/');
@@ -113,7 +116,6 @@ const FormPreview = ({ formData }) => {
         continue;
       }
 
-      // Validar tamaño
       if (file.size > maxSizeBytes) {
         const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
         errors.push(`Archivo demasiado grande: ${file.name} (${fileSizeMB} MB). Tamaño máximo: ${maxSizeMB} MB`);
@@ -141,18 +143,37 @@ const FormPreview = ({ formData }) => {
     const question = findQuestionById(formData?.questions || [], questionId);
 
     if (question && question.type === 'file') {
-      // Validar archivos
-      const validationErrors = validateFiles(files, question);
+      const fileArray = Array.from(files);
+
+      const existingFiles = selectedFilesByQuestion[questionId] || [];
+
+      const newTotalFiles = existingFiles.length + fileArray.length;
+
+      // Usar question.maxFiles dinámicamente
+      const maxAllowedFiles = question.multiple ? (question.maxFiles || 4) : 1;
+
+      if (!question.multiple && newTotalFiles > 1) {
+        setFileErrors(prev => ({
+          ...prev,
+          [questionId]: ['Solo se permite un archivo']
+        }));
+        return;
+      }
+
+      if (question.multiple && newTotalFiles > maxAllowedFiles) {
+        setFileErrors(prev => ({
+          ...prev,
+          [questionId]: [`Máximo ${maxAllowedFiles} archivos permitidos`]
+        }));
+        return;
+      }
+
+      const validationErrors = validateFiles(fileArray, question);
 
       if (validationErrors.length > 0) {
         setFileErrors(prev => ({
           ...prev,
           [questionId]: validationErrors
-        }));
-        // Limpiar archivos inválidos
-        setAnswers(prev => ({
-          ...prev,
-          [questionId]: null
         }));
         return;
       } else {
@@ -161,14 +182,48 @@ const FormPreview = ({ formData }) => {
           [questionId]: []
         }));
       }
-    }
 
-    setAnswers((prev) => ({
+      const updatedFiles = [...existingFiles, ...fileArray];
+      setSelectedFilesByQuestion(prev => ({
+        ...prev,
+        [questionId]: updatedFiles
+      }));
+
+      const dataTransfer = new DataTransfer();
+      updatedFiles.forEach(file => dataTransfer.items.add(file));
+
+      setAnswers(prev => ({
+        ...prev,
+        [questionId]: dataTransfer.files
+      }));
+
+      if (errors[questionId]) {
+        setErrors(prev => ({
+          ...prev,
+          [questionId]: ''
+        }));
+      }
+    }
+  };
+
+  const removeFile = (questionId, fileIndex) => {
+    const updatedFiles = [...(selectedFilesByQuestion[questionId] || [])];
+    updatedFiles.splice(fileIndex, 1);
+
+    setSelectedFilesByQuestion(prev => ({
       ...prev,
-      [questionId]: files,
+      [questionId]: updatedFiles
     }));
 
-    if (errors[questionId]) {
+    const dataTransfer = new DataTransfer();
+    updatedFiles.forEach(file => dataTransfer.items.add(file));
+
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: updatedFiles.length > 0 ? dataTransfer.files : null
+    }));
+
+    if (updatedFiles.length === 0 && errors[questionId]) {
       setErrors(prev => ({
         ...prev,
         [questionId]: ''
@@ -176,7 +231,13 @@ const FormPreview = ({ formData }) => {
     }
   };
 
-  // Función auxiliar para buscar pregunta por ID
+  const triggerFileInput = (questionId) => {
+    const input = document.getElementById(`file-input-${questionId}`);
+    if (input) {
+      input.click();
+    }
+  };
+
   const findQuestionById = (questions, id) => {
     for (const question of questions) {
       if (question.id === id) return question;
@@ -262,7 +323,6 @@ const FormPreview = ({ formData }) => {
         }
       }
 
-      // Validar archivos específicamente
       if (question.type === 'file' && answers[question.id] instanceof FileList) {
         const fileErrors = validateFiles(answers[question.id], question);
         if (fileErrors.length > 0) {
@@ -317,14 +377,12 @@ const FormPreview = ({ formData }) => {
           answer !== '' && !(Array.isArray(answer) && answer.length === 0);
 
         if (hasValidAnswer) {
-          // PARA TXT Y VISUALIZACIÓN: mantener nombres originales (puede haber sobrescritura)
           if (question.type === 'file' && answer instanceof FileList) {
             mappedAnswers[questionTitle] = Array.from(answer).map(file => file.name).join(', ');
           } else {
             mappedAnswers[questionTitle] = answer;
           }
 
-          // PARA DOCX: guardar contexto para campos duplicados
           if (currentContext) {
             if (!contexto.camposContextuales) contexto.camposContextuales = {};
             if (!contexto.camposContextuales[currentContext]) {
@@ -334,7 +392,6 @@ const FormPreview = ({ formData }) => {
           }
         }
 
-        // Procesar subformularios
         (question?.options || []).forEach((option, optionIndex) => {
           if (typeof option === 'object' && option.hasSubform && option.subformQuestions) {
             const optionText = option.text || 'Opción';
@@ -353,7 +410,6 @@ const FormPreview = ({ formData }) => {
 
     processQuestionTree(questions);
 
-    // Combinar mappedAnswers normal con el contexto
     return {
       ...mappedAnswers,
       _contexto: contexto.camposContextuales || {}
@@ -376,20 +432,137 @@ const FormPreview = ({ formData }) => {
       .map(type => type.trim())
       .filter(type => type.length > 0);
 
+    // Primero convertir todo a formatos legibles
     const readableTypes = allowedTypes.map(type => {
-      if (type.startsWith('.')) return type.toUpperCase();
-      if (type === 'image/*') return 'Imágenes';
+      if (type.startsWith('.')) {
+        const ext = type.substring(1).toUpperCase();
+        return ext === 'PDF' ? 'PDF' : `.${ext}`;
+      }
       if (type === 'application/pdf') return 'PDF';
+      if (type === 'image/*') return 'Imágenes';
       if (type === 'video/*') return 'Videos';
       if (type === 'audio/*') return 'Audio';
       if (type === 'application/msword') return 'DOC';
       if (type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'DOCX';
+      if (type.includes('image/')) return type.split('/')[1].toUpperCase();
       return type;
     });
 
+    // Eliminar duplicados manteniendo el orden
+    const uniqueTypes = [...new Set(readableTypes)];
+
     const maxSize = question.maxSize ? `${question.maxSize} MB` : '0.5 MB';
 
-    return `${readableTypes.join(', ')} (${maxSize} máximo)`;
+    return `${uniqueTypes.join(', ')} (${maxSize} máximo)`;
+  };
+
+  const renderFileInput = (question, fileErrorList, error) => {
+    const fileTypesDescription = getFileTypesDescription(question);
+    const hasFileErrors = fileErrorList.length > 0;
+    const selectedFiles = selectedFilesByQuestion[question.id] || [];
+    const isMultipleAllowed = question.multiple || false;
+    const maxFiles = isMultipleAllowed ? (question.maxFiles || 4) : 1;
+
+    return (
+      <div className="space-y-3">
+        <input
+          id={`file-input-${question.id}`}
+          type="file"
+          className="hidden"
+          multiple={false}
+          accept={question.accept || '.pdf,application/pdf'}
+          onChange={(e) => {
+            handleFileChange(question.id, getQuestionTitle(question), e.target.files);
+            e.target.value = '';
+          }}
+        />
+
+        <button
+          type="button"
+          onClick={() => triggerFileInput(question.id)}
+          className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 flex flex-col items-center justify-center"
+          disabled={selectedFiles.length >= maxFiles}
+        >
+          <div className="flex items-center justify-center space-x-2">
+            <Icon name="Upload" size={20} className="text-gray-400" />
+            <span className="text-gray-700 font-medium">
+              {selectedFiles.length >= maxFiles ? 'Límite alcanzado' : 'Seleccionar archivo'}
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            Haz clic para seleccionar un archivo
+          </p>
+        </button>
+
+        <div className="space-y-1">
+          <p className="text-xs text-gray-500">
+            <strong>Formatos permitidos:</strong> {fileTypesDescription}
+          </p>
+          <p className="text-xs text-gray-500">
+            <strong>Límite:</strong> {isMultipleAllowed ? `Máximo ${maxFiles} archivos, uno por uno` : '1 archivo solamente'}
+          </p>
+          <p className="text-xs text-gray-500">
+            <strong>Seleccionados:</strong> {selectedFiles.length}/{maxFiles} archivos
+          </p>
+        </div>
+
+        {selectedFiles.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-700">Archivos seleccionados:</p>
+            <div className="space-y-2">
+              {selectedFiles.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    <Icon
+                      name={getFileIcon(file.type)}
+                      size={16}
+                      className="text-gray-400 flex-shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">
+                        {file.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {(file.size / 1024).toFixed(1)} KB • {formatFileType(file.type)}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(question.id, index)}
+                    className="ml-2 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
+                    title="Eliminar archivo"
+                  >
+                    <Icon name="X" size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {hasFileErrors && (
+          <div className="space-y-1">
+            {fileErrorList.map((errorMsg, idx) => (
+              <p key={idx} className="text-red-600 text-sm flex items-center">
+                <Icon name="AlertCircle" size={14} className="mr-1 flex-shrink-0" />
+                {errorMsg}
+              </p>
+            ))}
+          </div>
+        )}
+
+        {error && !hasFileErrors && (
+          <p className="text-red-600 text-sm mt-1 flex items-center">
+            <Icon name="AlertCircle" size={14} className="mr-1" />
+            {error}
+          </p>
+        )}
+      </div>
+    );
   };
 
   const renderQuestion = (question, index, showNumber = true, parentPath = '') => {
@@ -502,56 +675,7 @@ const FormPreview = ({ formData }) => {
           );
 
         case 'file':
-          const fileTypesDescription = getFileTypesDescription(question);
-          const hasFileErrors = fileErrorList.length > 0;
-          const maxSizeMB = question.maxSize ? parseInt(question.maxSize) : 0.5;
-          const maxSizeBytes = maxSizeMB * 1024 * 1024;
-
-          return (
-            <div>
-              <input
-                type="file"
-                className={`${baseInputClass} ${error || hasFileErrors ? 'border-red-500 ring-2 ring-red-200' : ''}`}
-                multiple={question.multiple || false}
-                accept={question.accept || '.pdf,application/pdf'}
-                onChange={(e) => handleFileChange(question.id, getQuestionTitle(question), e.target.files)}
-              />
-              <div className="mt-2 space-y-1">
-                <p className="text-xs text-gray-500">
-                  <strong>Formatos permitidos:</strong> {fileTypesDescription}
-                </p>
-                {question.multiple && (
-                  <p className="text-xs text-gray-500">
-                    <strong>Múltiples archivos:</strong> Permitido
-                  </p>
-                )}
-                {value instanceof FileList && value.length > 0 && !hasFileErrors && (
-                  <p className="text-xs text-green-600">
-                    <strong>Archivos seleccionados:</strong> {value.length} archivo(s)
-                  </p>
-                )}
-              </div>
-
-              {/* Mostrar errores de archivos */}
-              {hasFileErrors && (
-                <div className="mt-2 space-y-1">
-                  {fileErrorList.map((errorMsg, idx) => (
-                    <p key={idx} className="text-red-600 text-sm flex items-center">
-                      <Icon name="AlertCircle" size={14} className="mr-1 flex-shrink-0" />
-                      {errorMsg}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              {error && !hasFileErrors && (
-                <p className="text-red-600 text-sm mt-1 flex items-center">
-                  <Icon name="AlertCircle" size={14} className="mr-1" />
-                  {error}
-                </p>
-              )}
-            </div>
-          );
+          return renderFileInput(question, fileErrorList, error);
 
         case 'single_choice':
           return (
@@ -694,7 +818,6 @@ const FormPreview = ({ formData }) => {
       const answersWithTitles = mapAnswersToTitles(formData?.questions || [], answers);
       const processedAnswers = { ...answersWithTitles };
 
-      // PRIMERO: Enviar respuestas SIN archivos
       const cleanAnswers = Object.fromEntries(
         Object.entries(processedAnswers).filter(([_, value]) =>
           value !== '' &&
@@ -715,7 +838,7 @@ const FormPreview = ({ formData }) => {
       };
 
       console.log('Enviando respuestas base...');
-      const res = await fetch(`https://back-acciona.vercel.app/api/respuestas`, {
+      const res = await fetch(`https://https://back-acciona.vercel.app/api/respuestas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadBase),
@@ -731,7 +854,6 @@ const FormPreview = ({ formData }) => {
 
       const responseId = data._id;
 
-      // SEGUNDO: Procesar y enviar archivos por separado
       const todosLosArchivos = [];
 
       const processFiles = async (questions) => {
@@ -745,15 +867,15 @@ const FormPreview = ({ formData }) => {
                 const fileData = await fileToBase64(file);
 
                 return {
-                  adjunto: {  // ✅ CAMBIAR a "adjunto" en lugar de archivo individual
+                  adjunto: {
                     pregunta: questionTitle,
                     fileName: file.name,
                     fileData: fileData,
                     mimeType: file.type,
                     size: file.size
                   },
-                  index: fileIndex,  // ✅ AGREGAR index
-                  total: fileList.length  // ✅ AGREGAR total
+                  index: fileIndex,
+                  total: fileList.length
                 };
               } catch (error) {
                 console.error('Error procesando archivo:', error);
@@ -780,7 +902,6 @@ const FormPreview = ({ formData }) => {
         }
       };
 
-      // Procesar archivos si existen
       if (Object.values(answers).some(answer => answer instanceof FileList)) {
         console.log('Procesando archivos...');
         await processFiles(formData?.questions || []);
@@ -788,18 +909,16 @@ const FormPreview = ({ formData }) => {
         if (todosLosArchivos.length > 0) {
           console.log(`Enviando ${todosLosArchivos.length} archivos...`);
 
-          // Enviar archivos UNO POR UNO usando el endpoint correcto
           for (let i = 0; i < todosLosArchivos.length; i++) {
             const archivoData = todosLosArchivos[i];
 
             try {
               console.log(`Enviando archivo ${i + 1} de ${todosLosArchivos.length}:`, archivoData.adjunto.fileName);
 
-              // ✅ USAR ENDPOINT CORRECTO
-              const uploadRes = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`, {
+              const uploadRes = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(archivoData), // Enviar el objeto completo con adjunto, index, total
+                body: JSON.stringify(archivoData),
               });
 
               if (!uploadRes.ok) {
@@ -807,28 +926,27 @@ const FormPreview = ({ formData }) => {
                 console.warn(`Error subiendo archivo ${i + 1}:`, errorText);
               } else {
                 const uploadData = await uploadRes.json();
-                console.log(`✅ Archivo ${i + 1} subido exitosamente:`, uploadData.message);
+                console.log(`Archivo ${i + 1} subido exitosamente:`, uploadData.message);
               }
             } catch (chunkError) {
               console.error(`Error en archivo ${i + 1}:`, chunkError);
             }
 
-            // Pequeña pausa entre archivos
             await new Promise(resolve => setTimeout(resolve, 100));
           }
 
-          console.log(`✅ Total archivos procesados: ${todosLosArchivos.length}`);
+          console.log(`Total archivos procesados: ${todosLosArchivos.length}`);
         }
       }
 
       alert('Formulario enviado con éxito');
 
-      // Limpiar estado
       setAnswers({});
       setRespaldo("");
       setErrors({});
       setTouched({});
       setFileErrors({});
+      setSelectedFilesByQuestion({});
 
     } catch (err) {
       console.error('Error:', err);
@@ -836,6 +954,15 @@ const FormPreview = ({ formData }) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCancel = () => {
+    setAnswers({});
+    setRespaldo("");
+    setErrors({});
+    setTouched({});
+    setFileErrors({});
+    setSelectedFilesByQuestion({});
   };
 
   if (!formData?.title && formData?.questions?.length === 0) {
@@ -906,7 +1033,6 @@ const FormPreview = ({ formData }) => {
               renderQuestion(question, index, true)
             )}
 
-            {/* Respaldo de información */}
             <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
               <div className="mb-4">
                 <div className="flex items-start space-x-3">
@@ -944,7 +1070,6 @@ const FormPreview = ({ formData }) => {
               </div>
             </div>
 
-            {/* Botones de acción - MEJORADOS PARA MÓVIL */}
             <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
                 <div className="text-xs sm:text-sm text-gray-500 text-center sm:text-left">
@@ -954,13 +1079,7 @@ const FormPreview = ({ formData }) => {
                 <div className="flex flex-col xs:flex-row items-stretch xs:items-center space-y-2 xs:space-y-0 xs:space-x-3">
                   <button
                     className="px-4 sm:px-6 py-3 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition-colors text-sm sm:text-base"
-                    onClick={() => {
-                      setAnswers({});
-                      setRespaldo("");
-                      setErrors({});
-                      setTouched({});
-                      setFileErrors({});
-                    }}
+                    onClick={handleCancel}
                     disabled={isSubmitting}
                   >
                     Cancelar

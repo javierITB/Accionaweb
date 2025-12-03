@@ -101,7 +101,7 @@ const RequestTracking = () => {
         setIsLoading(true); 
 
         // OBTENER RESPUESTAS
-        const resResp = await fetch('https://back-acciona.vercel.app/api/respuestas/mini');
+        const resResp = await fetch('https://https://back-acciona.vercel.app/api/respuestas/mini');
 
         if (!resResp.ok) {
           throw new Error('Error al obtener datos del servidor');
@@ -279,7 +279,7 @@ const RequestTracking = () => {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`https://back-acciona.vercel.app/api/respuestas/${requestId}`, {
+      const res = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${requestId}`, {
         method: 'DELETE',
       });
 
