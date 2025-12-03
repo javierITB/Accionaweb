@@ -1178,7 +1178,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 onClick={() => onSendMessage(fullRequestData)}
                 iconSize={16}
               >
-                Enviar Mensaje
+                Mensajes
               </Button>
 
               {correctedFile && fullRequestData?.status !== 'aprobado' && fullRequestData?.status !== 'firmado' && (
