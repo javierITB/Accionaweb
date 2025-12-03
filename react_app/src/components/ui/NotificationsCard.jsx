@@ -19,16 +19,15 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         const res = await fetch(`https://back-acciona.vercel.app/api/noti/${user}`);
         const data = await res.json();
 
-        // Normalizar la información al formato que tu UI usa
         const normalizedNotis = data.map(n => ({
           id: n.id,
-          type: n.tipo || "system", // Puedes agregar un tipo si lo manejas
+          type: n.tipo || "system",
           title: n.titulo,
           message: n.descripcion,
           timestamp: new Date(n.fecha_creacion),
           isRead: n.leido,
           priority: n.prioridad === 1 ? "low" : n.prioridad === 2 ? "medium" : "high",
-          actionUrl: n.actionUrl || null, // Opcional
+          actionUrl: n.actionUrl || null,
           icon: n.icono,
           color: n.color
         }));
@@ -66,9 +65,8 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      // Actualiza el estado local si la eliminación fue exitosa
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-      console.log(`Notificación ${id} eliminada correctamente.`);
+      setNotifications([]);
+      console.log(`Todas las notificaciones eliminadas correctamente.`);
     } catch (err) {
       console.error("Error eliminando notificación:", err);
     }
@@ -96,7 +94,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      // Actualiza el estado local si la eliminación fue exitosa
       setNotifications((prev) => prev.filter((n) => n.id !== id));
       console.log(`Notificación ${id} eliminada correctamente.`);
     } catch (err) {
@@ -131,7 +128,8 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
       medium: { text: 'Media', class: 'bg-warning/10 text-warning border-warning/20' },
       low: { text: 'Baja', class: 'bg-success/10 text-success border-success/20' }
     };
-    return config?.[priority] || config?.medium;
+    const badgeClass = `px-2 py-1 rounded-full text-xs font-medium border ml-auto flex-shrink-0 ${config?.[priority]?.class}`;
+    return { ...config?.[priority], class: badgeClass } || { text: 'Media', class: badgeClass };
   };
 
   const formatTimestamp = (timestamp) => {
@@ -172,7 +170,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      // Actualiza el estado local después del éxito
       setNotifications(prev =>
         prev.map(n => ({ ...n, isRead: true, leido: true }))
       );
@@ -185,7 +182,9 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
 
   const handleNotificationClick = (notification) => {
-    window.location.href = notification?.actionUrl;
+    if (notification?.actionUrl) {
+      window.location.href = notification.actionUrl;
+    }
     setNotifications(prev =>
       prev.map(n =>
         n.id === notification.id ? { ...n, isRead: true } : n
@@ -193,118 +192,105 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
     );
   };
 
-  const unreadCount = notifications?.filter(n => !n?.isRead)?.length;
-
   return (
-    <div className="bg-card z-50 rounded-xl m-4 shadow-brand border border-border">
-      <div className="space-y-4 max-h-96 overflow-y-auto">
+    <div className="bg-card z-50 rounded-xl m-4 shadow-brand border border-border max-w-sm">
+      <div className="space-y-2 max-h-[60vh] overflow-y-auto"> {/* CLAVE: max-h-[80vh] para que ocupe más altura */}
         {notifications && notifications.length > 0 ? (
           notifications.map((notification) => (
             <div
               key={notification?.id}
-              className={`border rounded-lg p-4 m-2 transition-brand cursor-pointer hover:shadow-brand-hover ${notification?.isRead
-                ? 'border-border bg-card'
-                : 'border-primary/30 bg-primary/5 shadow-sm'
+              className={`relative border rounded-lg p-3 m-2 pl-4 transition-brand cursor-pointer hover:shadow-brand-hover hover:border-border-hover 
+                ${notification?.isRead ? 'border-border bg-card' : 'border-primary/30 bg-primary/5 shadow-sm'
                 }`}
+              onClick={() => handleNotificationClick(notification)}
             >
-              <div className="flex items-start space-x-4">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0`}
-                  style={{ backgroundColor: notification?.color }}
-                >
-                  <Icon name={notification?.icon} size={16} />
-                </div>
+              {/* BARRA VERTICAL (TESTIGO) */}
+              <div 
+                className="absolute top-0 bottom-0 left-0 w-1 rounded-l-lg"
+                style={{ backgroundColor: notification?.color || 'transparent' }}
+              ></div>
 
+              <div className="flex items-start"> 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between">
-                    <div
-                      className="flex-1 cursor-pointer"
-                      onClick={() => handleNotificationClick(notification)}
-                    >
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3
-                          className={`font-medium ${notification?.leido ? 'text-foreground' : 'text-primary'
-                            }`}
-                        >
-                          {notification?.title}
-                        </h3>
-                        {!notification?.isRead && (
-                          <div className="w-2 h-2 bg-primary rounded-full"></div>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {notification?.message}
-                      </p>
-                      <div className="flex items-center space-x-3">
-                        <span className="text-xs text-muted-foreground">
-                          {formatTimestamp(notification?.timestamp)}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityBadge(notification?.priority)?.class
-                            }`}
-                        >
-                          {getPriorityBadge(notification?.priority)?.text}
-                        </span>
-                      </div>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center space-x-2">
+                      {!notification?.isRead && (
+                        <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
+                      )}
+                      <h3
+                        className={`font-medium text-sm ${notification?.leido ? 'text-foreground' : 'text-primary'}`}
+                      >
+                        {notification?.title}
+                      </h3>
                     </div>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation(); // evita que se dispare el click general
-                        handleDeleteNotification(notification?.id);
-                      }}
-                      className="ml-3 text-muted-foreground hover:text-red-600 transition-colors"
-                      title="Eliminar notificación"
-                    >
-                      <Icon name="X" size={16} />
-                    </button>
+                    <div className="flex items-center space-x-3 text-xs flex-shrink-0">
+                      <span className="text-muted-foreground">
+                        {formatTimestamp(notification?.timestamp)}
+                      </span>
+                      <span className={getPriorityBadge(notification?.priority)?.class}>
+                        {getPriorityBadge(notification?.priority)?.text}
+                      </span>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteNotification(notification?.id);
+                        }}
+                        className="text-muted-foreground hover:text-red-600 transition-colors ml-3"
+                        title="Eliminar notificación"
+                      >
+                        <Icon name="X" size={16} />
+                      </button>
+                    </div>
                   </div>
+
+                  <p
+                    className="text-sm text-muted-foreground pr-10"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      lineHeight: '1.25em',
+                      maxHeight: '2.5em'
+                    }}
+                  >
+                    {notification?.message}
+                  </p>
                 </div>
               </div>
             </div>
-
-
           ))
         ) : (
+          /* Card de No Notificaciones */
           <div
             key="0"
-            className={`border rounded-lg p-4 m-2 transition-brand cursor-pointer hover:shadow-brand-hover border-primary/30 bg-primary/5 shadow-sm`}
+            className={`relative border rounded-lg p-3 m-2 pl-4 transition-brand border-primary/30 bg-primary/5 shadow-sm`}
           >
-            <div className="flex items-start space-x-4">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getNotificationColor(
-                  'system', 'bg-blue-500 text-white')}`}
-              >
-                <Icon name={getNotificationIcon("Settings")} size={16} />
-              </div>
-
+             {/* BARRA VERTICAL VACÍA */}
+             <div 
+                className="absolute top-0 bottom-0 left-0 w-1 rounded-l-lg bg-gray-300"
+              ></div>
+              
+            <div className="flex items-start">
               <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between">
-                  <div
-                    className="flex-1 cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h3
-                        className="font-medium text-primary">
-                        No hay notificaciones disponibles
-                      </h3>
-                      <div className="w-2 h-2 bg-primary rounded-full"></div>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Aqui aparecerán sus futuras notificaciones
-                    </p>
-                    <div className="flex items-center space-x-3">
-                      <span className="text-xs text-muted-foreground">
-                        ahora
-                      </span>
-
-                    </div>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center space-x-2"> 
+                    <h3 className="font-medium text-sm text-primary">
+                      No hay notificaciones disponibles
+                    </h3>
+                    <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
                   </div>
+                  <span className="text-xs text-muted-foreground">ahora</span>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  Aquí aparecerán sus futuras notificaciones
+                </p>
               </div>
             </div>
           </div>
-
         )}
       </div>
 
@@ -318,7 +304,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
               iconPosition="left"
               onClick={() => markAllAsRead()}
             >
-              Marcar como leido
+              Marcar como leído
             </Button>
             <Button
               variant="outline"
@@ -326,9 +312,8 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
               iconName="Trash2"
               iconPosition="left"
               onClick={(e) => {
-                e.stopPropagation(); // evita que se dispare el click general
+                e.stopPropagation();
                 handleDeleteNotifications();
-                setNotifications([]);
               }}
             >
               Eliminar Todas
@@ -336,7 +321,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
           </div>
         </div>) : null
       }
-
     </div>
   );
 
