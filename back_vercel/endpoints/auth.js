@@ -26,8 +26,42 @@ const upload = multer({
 router.get("/", async (req, res) => {
   try {
     const usr = await req.db.collection("usuarios").find().toArray();
-    res.json(usr);
+
+    if (!usr || usr.length === 0) {
+      return res.status(404).json({ error: "Usuarios no encontrados" });
+    }
+
+    // Eliminar el campo 'pass' de cada usuario
+    const usuariosSinPass = usr.map(usuario => {
+      const { pass, ...usuarioSinPass } = usuario;
+      return usuarioSinPass;
+    });
+
+    res.status(200).json(usuariosSinPass);
+
   } catch (err) {
+    console.error("Error al obtener usuarios:", err);
+    res.status(500).json({ error: "Error al obtener usuarios" });
+  }
+});
+
+router.get("/solicitud", async (req, res) => {
+  try {
+    const usuarios = await req.db
+      .collection("usuarios")
+      .find({}, { projection: { nombre: 1, apellido: 1, mail: 1, empresa: 1 } })
+      .toArray();
+
+    const usuariosFormateados = usuarios.map(usr => ({
+      nombre: usr.nombre,
+      apellido: usr.apellido,
+      correo: usr.mail,
+      empresa: usr.empresa
+    }));
+
+    res.json(usuariosFormateados);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Error al obtener usuarios" });
   }
 });
@@ -37,7 +71,7 @@ router.get("/:mail", async (req, res) => {
   try {
     const usr = await req.db
       .collection("usuarios")
-      .findOne({ mail: req.params.mail.toLowerCase().trim()});
+      .findOne({ mail: req.params.mail.toLowerCase().trim() });
 
     if (!usr) return res.status(404).json({ error: "Usuario no encontrado" });
 
@@ -51,7 +85,7 @@ router.get("/full/:mail", async (req, res) => {
   try {
     const usr = await req.db
       .collection("usuarios")
-      .findOne({ mail: req.params.mail.toLowerCase().trim()});
+      .findOne({ mail: req.params.mail.toLowerCase().trim() });
 
     if (!usr) return res.status(404).json({ error: "Usuario no encontrado" });
 
@@ -148,17 +182,16 @@ router.post("/login", async (req, res) => {
     const usr = { name: user.nombre, email: email.toLowerCase().trim(), cargo: user.rol };
 
     const newLogin = {
-      usr, 
-      ipAddress, 
-      os, 
-      browser, 
+      usr,
+      ipAddress,
+      os,
+      browser,
       now,
     }
 
     const result = await req.db.collection("ingresos").insertOne(newLogin);
-
+/*
     // Envío de Notificación
-    /*
     await addNotification(req.db, {
       userId: user._id.toString(),
       titulo: `Nuevo inicio de sesión detectado`,
@@ -170,7 +203,7 @@ router.post("/login", async (req, res) => {
       color: "#d42a00ff",
       icono: "User",
     });
-    */
+*/
     // Retornar el token reutilizado o el recién generado
     return res.json({ success: true, token: finalToken, usr });
   } catch (err) {
@@ -330,7 +363,7 @@ router.post("/change-password", async (req, res) => {
     if (newPassword.length < 8) {
       return res.status(400).json({ success: false, message: "La nueva contraseña debe tener al menos 8 caracteres" });
     }
-    
+
     // Evitar que la nueva sea igual a la anterior
     if (user.pass === newPassword) {
       return res.status(400).json({ success: false, message: "La nueva contraseña no puede ser igual a la actual" });
@@ -339,11 +372,11 @@ router.post("/change-password", async (req, res) => {
     // 4. Actualizar contraseña
     const result = await req.db.collection("usuarios").updateOne(
       { _id: user._id },
-      { 
-        $set: { 
-          pass: newPassword, 
-          updatedAt: new Date().toISOString() 
-        } 
+      {
+        $set: {
+          pass: newPassword,
+          updatedAt: new Date().toISOString()
+        }
       }
     );
 
@@ -357,7 +390,7 @@ router.post("/change-password", async (req, res) => {
       userId: user._id.toString(),
       titulo: `Cambio de Contraseña`,
       descripcion: `La contraseña fue actualizada exitosamente el ${new Date().toLocaleString()}. IP: ${ipAddress}`,
-      prioridad: 3,
+      prioridad: 2,
       color: "#ffae00", // Color de advertencia/seguridad
       icono: "Shield",
     });
