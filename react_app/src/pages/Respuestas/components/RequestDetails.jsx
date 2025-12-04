@@ -981,9 +981,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage})
 
   const realAttachments = getRealAttachments();
 
-  const link = () => {
-    urlParams?.get('id') ? window.location.href = "/RespuestasForms": onClose;
-  }
+
   
   const renderDetailsTab = () => (
     <div className="space-y-6">
@@ -1569,7 +1567,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage})
             <Button
               variant="ghost"
               size="icon"
-              onClick={link}
+              onClick={onClose}
               iconName="X"
               iconSize={20}
             />

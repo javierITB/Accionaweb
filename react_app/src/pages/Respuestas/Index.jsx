@@ -63,6 +63,22 @@ const RequestTracking = () => {
     }
   };
 
+  const removeUrlParameter = () => {
+    // 1. Obtiene la URL actual y la elimina de la historia del navegador
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('id');
+    
+    // 2. Usa history.replaceState para actualizar la URL sin recargar
+    window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search);
+  };
+  
+
+  const handleCloseRequestDetails = () => {
+    setShowRequestDetails(false);
+    setSelectedRequest(null); // Limpiar la solicitud seleccionada
+    removeUrlParameter();    // Eliminar el parámetro 'id' de la URL
+  };
+
   const handleNavigation = (path) => {
     if (isMobileScreen) {
       setIsMobileOpen(false);
@@ -487,7 +503,7 @@ const RequestTracking = () => {
       <RequestDetails
         request={selectedRequest}
         isVisible={showRequestDetails}
-        onClose={() => setShowRequestDetails(false)}
+        onClose={handleCloseRequestDetails}
         onUpdate={updateRequest}
         onSendMessage={handleSendMessage}
       />
