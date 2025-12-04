@@ -14,6 +14,9 @@ const Header = ({ className = '' }) => {
   const [isNotiOpen, setIsNotiOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  
+  // NUEVO ESTADO: Controla la agitación de la campana
+  const [shouldShake, setShouldShake] = useState(false); 
 
   const user = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
@@ -42,12 +45,13 @@ const Header = ({ className = '' }) => {
     { name: 'Iniciar Sesión', path: '/login', icon: 'LogIn' },
   ];
 
+  // --- EFECTO DE POLLING Y AGITACIÓN ---
   useEffect(() => {
     if (!userMail) return;
 
     let intervalId;
 
-    const fetchUnreadCount = async () => {
+    const fetchUnreadCount = async (isInitialLoad = false) => {
       try {
         const response = await fetch(`https://back-acciona.vercel.app/api/noti/${userMail}/unread-count`);
         const data = await response.json();
@@ -55,24 +59,25 @@ const Header = ({ className = '' }) => {
         const newUnreadCount = data.unreadCount || 0;
         console.log("No leídas:", newUnreadCount);
 
-        // Actualizar el estado. Esto causa una re-ejecución del useEffect
+        // Lógica de agitación: solo si es carga inicial Y hay notificaciones
+        if (isInitialLoad && newUnreadCount > 0) {
+          setShouldShake(true);
+          // Desactivar la agitación después de 1.5 segundos
+          setTimeout(() => setShouldShake(false), 1500);
+        }
+
         setUnreadCount(newUnreadCount);
+        
       } catch (error) {
         console.error("Error en polling de no leídas:", error);
       }
     };
 
-    // Lógica Condicional:
-    // Solo si NO hay notificaciones sin leer (unreadCount === 0), iniciamos el polling.
-    if (unreadCount === 0) {
-      // Primera ejecución inmediata
-      fetchUnreadCount();
-      // Iniciar el intervalo si el conteo actual es 0
-      intervalId = setInterval(fetchUnreadCount, 10000);
-    }
-    // Si unreadCount > 0, no se inicia el intervalo, deteniendo el polling.
-    // Cuando el usuario marque como leído (y setUnreadCount(0) se ejecute), 
-    // el useEffect se re-ejecutará y el polling se reiniciará.
+    // La primera llamada (carga inicial)
+    fetchUnreadCount(true); 
+
+    // Iniciar el polling (revisa el conteo cada 10 segundos)
+    intervalId = setInterval(() => fetchUnreadCount(false), 10000);
 
     // Función de limpieza: asegurar que el intervalo se detenga
     return () => {
@@ -81,10 +86,7 @@ const Header = ({ className = '' }) => {
       }
     };
 
-    // Dependencias: 
-    // userMail (para iniciar si cambia de usuario) 
-    // unreadCount (para reiniciar y comenzar el polling cuando el conteo pasa a 0).
-  }, [userMail, unreadCount]);
+  }, [userMail]); // Dependencia solo en userMail para el polling
 
 
   // Effect para detectar clics fuera de los menús
@@ -101,8 +103,7 @@ const Header = ({ className = '' }) => {
         setIsUserMenuOpen(false);
       }
 
-      // ✅ CORRECCIÓN PRINCIPAL: Mantenemos la lógica de cierre del menú "Más" de desktop 
-      // (que usa isMenuOpen) solo si no estamos en móvil, para que no interfiera.
+      // Mantenemos la lógica de cierre del menú "Más" de desktop 
       if (menuRef.current && !menuRef.current.contains(event.target) && window.innerWidth >= 1024) {
         setIsMenuOpen(false);
       }
@@ -114,14 +115,14 @@ const Header = ({ className = '' }) => {
     };
   }, [isMenuOpen]);
 
+  // --- FUNCIONES AUXILIARES ---
+
   const handleNavigation = (path) => {
     window.location.href = path;
-    // 💡 Asegurar cierre inmediato.
     setIsMenuOpen(false);
     setIsUserMenuOpen(false);
   };
 
-  // 💡 NUEVA FUNCIÓN: Click en el logo para ir al home
   const handleLogoClick = () => {
     window.location.href = '/';
   };
@@ -147,7 +148,7 @@ const Header = ({ className = '' }) => {
   return (
     <header className={`fixed top-0 left-0 right-0 bg-card border-b border-border shadow-brand z-30 ${className}`}>
       <div className="flex items-center justify-between h-16 lg:h-20 px-4 sm:px-6 lg:px-8 bg-warning">
-        {/* Logo Section - AHORA CLICKEABLE */}
+        {/* Logo Section - CLICKEABLE */}
         <div
           className="flex items-center space-x-3 cursor-pointer group"
           onClick={handleLogoClick}
@@ -235,9 +236,9 @@ const Header = ({ className = '' }) => {
 
         {/* User Profile & Actions */}
         <div className="flex items-center space-x-2 lg:space-x-3">
-          {/* Notifications */}
+          
+          {/* 🔔 Notifications */}
           <div ref={notiRef}>
-
             <Button
               variant="ghost"
               size="icon"
@@ -250,11 +251,11 @@ const Header = ({ className = '' }) => {
               {unreadCount > 0 && (
                 <span
                   className="
-                                absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4
-                                min-w-[1.25rem] h-5 px-1.5 
-                                text-xs font-bold text-white 
-                                bg-error rounded-full flex items-center justify-center
-                              "
+                    absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4
+                    min-w-[1.25rem] h-5 px-1.5 
+                    text-xs font-bold text-white 
+                    bg-error rounded-full flex items-center justify-center
+                  "
                 >
                   {unreadCount}
                 </span>

@@ -7,10 +7,10 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [isSending, setIsSending] = useState(false);
   const [user, setUser] = useState(sessionStorage.getItem("user"));
   const [messages, setMessages] = useState([]);
-  
+
   // 1. NUEVO ESTADO: Control de Pestañas ('general' | 'admin')
   const [activeTab, setActiveTab] = useState('general');
-  
+
   const chatRef = useRef(null);
 
   const id = formId || request?._id;
@@ -31,7 +31,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   useEffect(() => {
     if (!isOpen || !id) return;
 
-    fetchMessages(); 
+    fetchMessages();
     const interval = setInterval(fetchMessages, 3000);
     return () => clearInterval(interval);
   }, [isOpen, id]);
@@ -58,11 +58,11 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
     try {
       const autor = sessionStorage.getItem("user") || "Anónimo";
-      
+
       // 3. LÓGICA DE ENVÍO: Añadir flag admin si estamos en esa pestaña
-      const payload = { 
-        formId: id, 
-        autor, 
+      const payload = {
+        formId: id,
+        autor,
         mensaje: message.trim(),
         admin: activeTab === 'admin' // <--- IMPORTANTE
       };
@@ -107,10 +107,18 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
       <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col">
-        
+
         {/* Header & Tabs */}
-        <div className="border-b border-border bg-card rounded-t-lg">
+        <div
+          className={`
+            border-b border-border 
+            bg-card 
+            rounded-t-lg 
+            bg-error-foreground
+          `}
+        >
           {/* Fila superior: Título y Cerrar */}
+
           <div className="flex items-center justify-between p-4 sm:px-6 pb-2">
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
               <Icon name="MessageSquare" size={20} className="text-accent flex-shrink-0" />
@@ -119,15 +127,15 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                   Mensajes
                 </h2>
                 <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                  {request?.title || request?.formTitle}
+                  {request?.title || request?.formTitle} {request?.trabajador}
                 </p>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onClose} 
-              iconName="X" 
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              iconName="X"
               iconSize={20}
               className="flex-shrink-0 ml-2"
             />
@@ -137,23 +145,21 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
           <div className="flex px-6 space-x-6">
             <button
               onClick={() => setActiveTab('general')}
-              className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 ${
-                activeTab === 'general'
+              className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 ${activeTab === 'general'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-              title = "Ver mensajes generales"
+                }`}
+              title="Ver mensajes generales"
             >
               General
             </button>
             <button
               onClick={() => setActiveTab('admin')}
-              className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
-                activeTab === 'admin'
+              className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${activeTab === 'admin'
                   ? 'border-error text-error' // Color distintivo para admin
                   : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-              title = "Ver mensajes internos"
+                }`}
+              title="Ver mensajes internos"
             >
               <Icon name="Lock" size={12} />
               Interno
@@ -162,18 +168,17 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         </div>
 
         {/* Chat Area */}
-        <div 
-          ref={chatRef} 
+        <div
+          ref={chatRef}
           className={`flex-1 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 ${activeTab === 'admin' ? 'bg-error/5' : ''}`} // Fondo sutil para admin
         >
           {filteredMessages.length > 0 ? filteredMessages.map((msg, i) => (
             <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[90%] sm:max-w-[85%] rounded-lg px-3 py-2 ${
-                msg.autor === user 
-                  ? (activeTab === 'admin' ? 'bg-error text-error-foreground' : 'bg-primary text-primary-foreground') 
+              <div className={`max-w-[90%] sm:max-w-[85%] rounded-lg px-3 py-2 ${msg.autor === user
+                  ? (activeTab === 'admin' ? 'bg-error text-error-foreground' : 'bg-primary text-primary-foreground')
                   : 'bg-muted text-muted-foreground'
-              }`}>
-                
+                }`}>
+
                 {/* Mostrar nombre del remitente */}
                 {msg.autor !== user && (
                   <div className="flex items-center justify-between mb-1 sm:mb-2">
@@ -187,7 +192,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                 <p className="text-sm sm:text-base mb-1 sm:mb-2 break-words">
                   {msg.mensaje}
                 </p>
-                
+
                 {/* Timestamp */}
                 <span className="text-xs opacity-75 block text-right">
                   {formatMessageTime(msg.fecha)}
@@ -231,7 +236,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
               <span className="xs:hidden">Enviar</span>
             </Button>
           </div>
-          
+
           <div className="mt-2 text-xs text-muted-foreground text-center sm:text-left">
             <span className="hidden sm:inline">Presiona Enter para enviar, Shift+Enter para nueva línea</span>
             {activeTab === 'admin' && <span className="ml-2 text-error font-medium">(Modo Interno)</span>}
