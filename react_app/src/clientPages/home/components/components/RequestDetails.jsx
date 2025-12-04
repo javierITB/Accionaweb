@@ -53,7 +53,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   }, [request, isVisible]);
   
 
-
   const getMimeTypeIcon = (mimeType) => {
     if (mimeType?.includes('pdf')) return 'FileText';
     if (mimeType?.includes('word') || mimeType?.includes('document')) return 'FileText';
@@ -145,6 +144,50 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
     }
   };
 
+  const handleDownloadSignedPDF = async (responseId) => {
+    try {
+      setIsUploading(true);
+      setUploadMessage('Descargando documento firmado...');
+
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al descargar el documento firmado');
+      }
+
+      const blob = await response.blob();
+      
+      const contentDisposition = response.headers.get('content-disposition');
+      let fileName = 'documento_firmado.pdf';
+      
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = fileNameMatch[1];
+        }
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setUploadMessage('Documento firmado descargado exitosamente');
+      
+    } catch (error) {
+      console.error('Error descargando documento firmado:', error);
+      setUploadMessage('Error: ' + error.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
   
 
   if (!isVisible || !request) return null;
@@ -180,7 +223,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
         setHasSignedPdf(true);
         setUploadMessage('PDF firmado subido exitosamente');
 
-        // Actualizar el estado local y notificar al componente padre
         if (onUpdate) {
           const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
@@ -201,17 +243,15 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
   const handleDownloadApprovedPDF = async (responseId) => {
     try {
-      // PRIMERO obtener SOLO el filename
       const fileDataResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/data-approved/${responseId}`);
 
       let fileName = 'documento_aprobado.pdf';
 
       if (fileDataResponse.ok) {
         const fileData = await fileDataResponse.json();
-        fileName = fileData.fileName; // filename explícito
+        fileName = fileData.fileName;
       }
 
-      // LUEGO descargar el archivo
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${responseId}`);
 
       if (!response.ok) {
@@ -224,7 +264,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = fileName; // Usar el filename explícito obtenido
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
 
@@ -356,7 +396,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
             </div>
           </div>
 
-          {/* ADJUNTOS */}
           <div>
             {attachmentsLoading &&
               <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -439,7 +478,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                         <p className="text-sm font-medium text-foreground">Subir PDF Firmado</p>
                         <p className="text-xs text-muted-foreground">
                           {hasSignedPdf
-                            ? 'Ya has subido el PDF firmado.'
+                            ? 'Ya has subido el PDF firmado. Puedes descargarlo nuevamente si lo necesitas.'
                             : 'Sube el PDF con tu firma una vez descargado y firmado.'}
                         </p>
                         {uploadMessage && (
@@ -474,9 +513,23 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                           </Button>
                         </div>
                       ) : (
-                        <div className="flex items-center space-x-2 text-success">
-                          <Icon name="CheckCircle" size={16} />
-                          <span className="text-sm font-medium">PDF Firmado Subido</span>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            iconName="Download"
+                            iconPosition="left"
+                            iconSize={16}
+                            disabled={isUploading}
+                            onClick={() => handleDownloadSignedPDF(request._id)}
+                            className="text-accent"
+                          >
+                            {isUploading ? 'Descargando...' : 'Descargar'}
+                          </Button>
+                          <div className="flex items-center space-x-2 text-success">
+                            <Icon name="CheckCircle" size={16} />
+                            <span className="text-sm font-medium">PDF Firmado Subido</span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -493,12 +546,38 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                         <p className="text-sm font-medium text-foreground">Documento Firmado Completado</p>
                         <p className="text-xs text-muted-foreground">
                           El documento ha sido firmado y completado exitosamente.
+                          {hasSignedPdf && (
+                            <span className="block mt-1">
+                              Puedes volver a descargarlo si lo necesitas.
+                            </span>
+                          )}
                         </p>
+                        {uploadMessage && (
+                          <p className={`text-xs mt-1 ${uploadMessage.includes('Error') ? 'text-error' : 'text-success'}`}>
+                            {uploadMessage}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2 text-blue-500">
-                      <Icon name="CheckCircle" size={16} />
-                      <span className="text-sm font-medium">Proceso Finalizado</span>
+                    <div className="flex items-center space-x-2">
+                      {hasSignedPdf && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          iconName="Download"
+                          iconPosition="left"
+                          iconSize={16}
+                          disabled={isUploading}
+                          onClick={() => handleDownloadSignedPDF(request._id)}
+                          className="bg-blue-500 hover:bg-blue-600"
+                        >
+                          {isUploading ? 'Descargando...' : 'Descargar Firmado'}
+                        </Button>
+                      )}
+                      <div className="flex items-center space-x-2 text-blue-500">
+                        <Icon name="CheckCircle" size={16} />
+                        <span className="text-sm font-medium">Proceso Finalizado</span>
+                      </div>
                     </div>
                   </div>
                 </div>
