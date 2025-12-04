@@ -5,7 +5,7 @@ import Button from '../../components/ui/Button';
 const NotificationsCard = ({ user, onUnreadChange }) => {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-
+  const mail = sessionStorage.getItem("email");
   useEffect(() => {
     if (onUnreadChange) {
       const unread = notifications.filter(n => !n.isRead).length;
@@ -45,7 +45,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
   const handleDeleteNotifications = async () => {
     try {
-      const mail = sessionStorage.getItem("email");
 
       if (!mail) {
         console.error("Usuario no encontrado en sesión.");
@@ -74,7 +73,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
   const handleDeleteNotification = async (id) => {
     try {
-      const mail = sessionStorage.getItem("email");
 
       if (!mail) {
         console.error("Usuario no encontrado en sesión.");
@@ -152,7 +150,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
   const markAllAsRead = async () => {
     try {
-      const mail = sessionStorage.getItem("email");
 
       if (!mail) {
         console.error("Usuario no encontrado en sesión.");
@@ -181,16 +178,54 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
   };
 
 
-  const handleNotificationClick = (notification) => {
-    if (notification?.actionUrl) {
-      window.location.href = notification.actionUrl;
+const handleNotificationClick = async (notification) => {
+  // 1. Obtener los IDs necesarios (asumiendo que notification tiene el userId o puedes obtenerlo)
+  const notiId = notification.id;
+
+  if (!mail || !notiId) {
+    console.error("Faltan IDs para marcar la notificación como leída.");
+    // Continuar con el resto de la lógica a pesar del error
+  } else {
+    try {
+      // 2. Llamada al endpoint PUT para marcar como leída en la base de datos
+      const response = await fetch(
+        `https://back-acciona.vercel.app/${mail}/${notiId}/leido`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            // Agrega cualquier encabezado de autenticación (ej: 'Authorization') si es necesario
+          },
+        }
+      );
+
+      if (!response.ok) {
+        // Manejo de error si la respuesta del servidor no es exitosa (ej: 404, 500)
+        console.error(`Error al marcar ${notiId} como leída: ${response.statusText}`);
+        // Opcional: podrías querer no actualizar el estado local si falla la API
+      } else {
+        // 3. Actualización del estado local solo si la API fue exitosa
+        console.log(`Notificación ${notiId} marcada como leída en el servidor.`);
+      }
+
+    } catch (error) {
+      console.error("Error de red al llamar al endpoint:", error);
+      // Opcional: manejo de fallos de conexión
     }
-    setNotifications(prev =>
-      prev.map(n =>
-        n.id === notification.id ? { ...n, isRead: true } : n
-      )
-    );
-  };
+  }
+
+  setNotifications(prev =>
+    prev.map(n =>
+      n.id === notiId ? { ...n, isRead: true } : n
+    )
+  );
+/*
+  // 5. Redirección
+  if (notification?.actionUrl) {
+    window.location.href = notification.actionUrl;
+  }
+     */
+};
 
   return (
     <div className="bg-card z-50 rounded-xl m-4 shadow-brand border border-border max-w-sm">

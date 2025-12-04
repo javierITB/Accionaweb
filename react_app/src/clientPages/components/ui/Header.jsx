@@ -236,18 +236,23 @@ const Header = ({ className = '' }) => {
         <div className="flex items-center space-x-2 lg:space-x-3">
           {/* Notifications */}
           <div ref={notiRef}>
+            
             <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleNoti}
-              className="relative hover:bg-muted transition-brand w-10 h-10 lg:w-12 lg:h-12"
-              iconName="Bell"
-              iconSize={18}
-            >
-              {unreadCount > 0 && (
-                <span className="absolute top-1 -right-1 w-2 h-2 bg-error rounded-full animate-pulse-subtle"></span>
-              )}
-            </Button>
+  variant="ghost"
+  size="icon"
+  onClick={toggleNoti}
+  className="relative hover:bg-primary transition-brand w-10 h-10 lg:w-12 lg:h-12"
+  iconName="Bell"
+  iconSize={18}
+>
+  {unreadCount > 0 && (
+    <span
+      
+    >
+      {unreadCount}
+    </span>
+  )}
+</Button>
 
             {isNotiOpen && (
               <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">

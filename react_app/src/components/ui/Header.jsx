@@ -224,11 +224,16 @@ const Header = ({ className = '' }) => {
               variant="ghost"
               size="icon"
               onClick={toggleNoti}
-              className="relative hover:bg-muted transition-brand"
+              className="relative hover:bg-primary transition-brand w-10 h-10 lg:w-12 lg:h-12"
               iconName="Bell"
+              iconSize={18}
             >
-              {unreadCount > 0 && ( // usa el estado actualizado por el polling
-                <span className="absolute top-1 -right-1 w-2 h-2 bg-error rounded-full animate-pulse-subtle"></span>
+              {unreadCount > 0 && (
+                <span
+                  
+                >
+                  {unreadCount}
+                </span>
               )}
             </Button>
 
