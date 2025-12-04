@@ -189,7 +189,7 @@ const handleNotificationClick = async (notification) => {
     try {
       // 2. Llamada al endpoint PUT para marcar como leída en la base de datos
       const response = await fetch(
-        `https://back-acciona.vercel.app/${mail}/${notiId}/leido`,
+        `https://back-acciona.vercel.app/api/noti/${mail}/${notiId}/leido`,
         {
           method: 'PUT',
           headers: {
@@ -219,12 +219,12 @@ const handleNotificationClick = async (notification) => {
       n.id === notiId ? { ...n, isRead: true } : n
     )
   );
-/*
+
   // 5. Redirección
   if (notification?.actionUrl) {
     window.location.href = notification.actionUrl;
   }
-     */
+    
 };
 
   return (

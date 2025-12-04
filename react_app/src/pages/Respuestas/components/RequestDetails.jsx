@@ -1616,7 +1616,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 Mensajes
               </Button>
 
-              {fullRequestData?.status === 'en_revision' && (
+              {(fullRequestData?.status === 'en_revision' || fullRequestData?.status === 'pendiente') && (
                 <Button
                   variant="default"
                   iconName={isApproving ? "Loader" : "CheckCircle"}
