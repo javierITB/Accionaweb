@@ -225,7 +225,7 @@ const RequestTracking = () => {
       <div className="p-4 sm:p-6 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg sm:text-xl font-semibold text-foreground">Actividad Reciente</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-foreground">Mis Solicitudes</h2>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Últimas respuestas a formularios
             </p>

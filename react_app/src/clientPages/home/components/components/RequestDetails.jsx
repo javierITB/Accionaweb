@@ -37,7 +37,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   }, [isVisible, request?._id, request?.status, onUpdate]);
 
   useEffect(() => {
-    if (isVisible && request?._id && request?.status === 'aprobado') {
+    if (isVisible && request?._id && request?.status !== 'pendiente' && request?.status !== 'en_revision') {
       const checkSignedPdf = async () => {
         try {
           const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
