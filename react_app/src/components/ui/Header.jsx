@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo } from 'react'; // <-- Importar memo
+import React, { useState, useEffect, useRef, memo } from 'react';
 import Icon from '../AppIcon';
 import Button from './Button';
 import NotificationsCard from './NotificationsCard';
@@ -9,10 +9,14 @@ const Header = ({ className = '' }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const user = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
-  const [unreadCount, setUnreadCount] = useState(0); // Estado para el contador del ícono
+  const [unreadCount, setUnreadCount] = useState(0); 
   const [userRole, setUserRole] = useState(cargo || 'Usuario');
+  
+  // NUEVO ESTADO: Controla la agitación de la campana
+  const [shouldShake, setShouldShake] = useState(false); 
+  const [isNotiOpen, setIsNotiOpen] = useState(false);
 
-  // 1. 🌙 Estado del Tema
+  // 🌙 Estado del Tema
   const [theme, setTheme] = useState(
     localStorage.getItem('theme') ||
     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
@@ -30,12 +34,11 @@ const Header = ({ className = '' }) => {
     { name: 'Help', path: '/help', icon: 'HelpCircle' },
   ];
 
-  const [isNotiOpen, setIsNotiOpen] = useState(false);
+  // --- EFECTOS ---
 
-  // Efecto 1: Obtener el rol del usuario (Ejecución única)
+  // Efecto 1: Obtener el rol del usuario
   useEffect(() => {
     const fetchUserRole = async () => {
-      // ... (Lógica de fetchUserRole - se mantiene igual)
       try {
         if (!userMail) return;
 
@@ -61,7 +64,7 @@ const Header = ({ className = '' }) => {
     fetchUserRole();
   }, [userMail, cargo]);
 
-  // Efecto 2: Aplicar tema (Se mantiene igual)
+  // Efecto 2: Aplicar tema
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -72,7 +75,7 @@ const Header = ({ className = '' }) => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Efecto 3: Manejo de clics fuera (Se mantiene igual)
+  // Efecto 3: Manejo de clics fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -92,12 +95,13 @@ const Header = ({ className = '' }) => {
     };
   }, []);
 
+  // Efecto 4: Polling de Notificaciones y Agitación Inicial
   useEffect(() => {
     if (!userMail) return;
 
     let intervalId;
 
-    const fetchUnreadCount = async () => {
+    const fetchUnreadCount = async (isInitialLoad = false) => {
       try {
         const response = await fetch(`https://back-acciona.vercel.app/api/noti/${userMail}/unread-count`);
         const data = await response.json();
@@ -105,31 +109,39 @@ const Header = ({ className = '' }) => {
         const newUnreadCount = data.unreadCount || 0;
         console.log("No leídas:", newUnreadCount);
 
-        // Actualizar el estado. Esto causa una re-ejecución del useEffect
+        // Lógica de agitación: solo si es carga inicial Y hay notificaciones
+        if (isInitialLoad && newUnreadCount > 0) {
+          setShouldShake(true);
+          // Desactivar la agitación después de 1.5 segundos
+          setTimeout(() => setShouldShake(false), 1500);
+        }
+
         setUnreadCount(newUnreadCount);
+
+        // Si encontramos notificaciones sin leer, no hay necesidad de detener el polling aquí,
+        // ya que queremos que el conteo se actualice regularmente si hay cambios.
+        // La campana se agita solo en la carga inicial si hay algo que ver.
+
       } catch (error) {
         console.error("Error en polling de no leídas:", error);
       }
     };
 
-    // Lógica Condicional:
-    // Solo si NO hay notificaciones sin leer (unreadCount === 0), iniciamos el polling.
-    if (unreadCount === 0) {
-      // Primera ejecución inmediata
-      fetchUnreadCount();
-      // Iniciar el intervalo si el conteo actual es 0
-      intervalId = setInterval(fetchUnreadCount, 10000);
-    }
+    // La primera llamada (carga inicial)
+    fetchUnreadCount(true); 
+
+    // Iniciar el polling (revisa el conteo cada 10 segundos)
+    intervalId = setInterval(() => fetchUnreadCount(false), 10000);
 
     return () => {
       if (intervalId) {
         clearInterval(intervalId);
       }
     };
-  }, [userMail, unreadCount]);
+  }, [userMail]); // Dependencia solo en userMail para el polling
 
+  // --- FUNCIONES AUXILIARES ---
 
-  // ... (Funciones auxiliares se mantienen igual)
   const toggleTheme = () => {
     setTheme(currentTheme => (currentTheme === 'light' ? 'dark' : 'light'));
   };
@@ -158,14 +170,16 @@ const Header = ({ className = '' }) => {
     setIsUserMenuOpen(false);
   };
 
+  // --- RENDERIZADO ---
+
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-brand ${className}`}>
       <div className="flex items-center justify-between h-20 px-6">
-        {/* Logo Section (sin cambios) */}
+        {/* Logo Section */}
         <div className="flex items-center space-x-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden ">
             <img
-              src={logo}              // archivo: public/logo.png
+              src={logo}              
               alt="Logo Acciona"
               className="max-w-full max-h-full"
               style={{ objectFit: 'contain' }}
@@ -187,7 +201,7 @@ const Header = ({ className = '' }) => {
         </div>
 
 
-        {/* Desktop Navigation (sin cambios) */}
+        {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center space-x-1">
           {navigationItems?.map((item) => (
             <Button
@@ -214,23 +228,28 @@ const Header = ({ className = '' }) => {
             size="icon"
             onClick={toggleTheme}
             className="hover:bg-muted transition-brand"
-            // Cambiar el icono dependiendo del tema actual
             iconName={theme === 'dark' ? "Sun" : "Moon"}
           />
 
-          {/* Notifications (MODIFICADO para usar el estado 'unreadCount' actualizado por la Card) */}
+          {/* Notifications */}
           <div ref={notiRef}>
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleNoti}
-              className="relative hover:bg-primary transition-brand w-10 h-10 lg:w-12 lg:h-12"
+              // APLICACIÓN DE LA CLASE DE AGITACIÓN
+              className={`relative hover:bg-primary transition-brand w-10 h-10 lg:w-12 lg:h-12 ${shouldShake ? 'animate-bell-shake' : ''}`}
               iconName="Bell"
               iconSize={18}
             >
               {unreadCount > 0 && (
                 <span
-                  
+                  className="
+                    absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4
+                    min-w-[1.25rem] h-5 px-1.5 
+                    text-xs font-bold text-white 
+                    bg-error rounded-full flex items-center justify-center
+                  "
                 >
                   {unreadCount}
                 </span>
@@ -305,5 +324,4 @@ const Header = ({ className = '' }) => {
   );
 };
 
-// Envolver el Header en memo para evitar re-renderizaciones innecesarias
 export default memo(Header);

@@ -7,7 +7,7 @@ import CleanDocumentPreview from './CleanDocumentPreview';
 const MAX_FILES = 5; // Máximo de archivos
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
 
-const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }) => {
+const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage}) => {
   // --- ESTADOS DE UI ---
   const [activeTab, setActiveTab] = useState('details');
 
@@ -981,6 +981,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const realAttachments = getRealAttachments();
 
+  const link = () => {
+    urlParams?.get('id') ? window.location.href = "/RespuestasForms": onClose;
+  }
+  
   const renderDetailsTab = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1565,7 +1569,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             <Button
               variant="ghost"
               size="icon"
-              onClick={onClose}
+              onClick={link}
               iconName="X"
               iconSize={20}
             />
