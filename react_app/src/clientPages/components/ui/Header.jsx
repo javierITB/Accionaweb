@@ -43,49 +43,49 @@ const Header = ({ className = '' }) => {
   ];
 
   useEffect(() => {
-      if (!userMail) return;
-  
-      let intervalId;
-      
-      const fetchUnreadCount = async () => {
-        try {
-          const response = await fetch(`https://back-acciona.vercel.app/api/noti/${userMail}/unread-count`);
-          const data = await response.json();
-          
-          const newUnreadCount = data.unreadCount || 0;
-          console.log("No leídas:", newUnreadCount);
-          
-          // Actualizar el estado. Esto causa una re-ejecución del useEffect
-          setUnreadCount(newUnreadCount); 
-        } catch (error) {
-          console.error("Error en polling de no leídas:", error);
-        }
-      };
-      
-      // Lógica Condicional:
-      // Solo si NO hay notificaciones sin leer (unreadCount === 0), iniciamos el polling.
-      if (unreadCount === 0) {
-          // Primera ejecución inmediata
-          fetchUnreadCount(); 
-          // Iniciar el intervalo si el conteo actual es 0
-          intervalId = setInterval(fetchUnreadCount, 10000); 
-      } 
-      // Si unreadCount > 0, no se inicia el intervalo, deteniendo el polling.
-      // Cuando el usuario marque como leído (y setUnreadCount(0) se ejecute), 
-      // el useEffect se re-ejecutará y el polling se reiniciará.
-  
-      // Función de limpieza: asegurar que el intervalo se detenga
-      return () => {
-        if (intervalId) {
-          clearInterval(intervalId);
-        }
-      };
-  
+    if (!userMail) return;
+
+    let intervalId;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch(`https://back-acciona.vercel.app/api/noti/${userMail}/unread-count`);
+        const data = await response.json();
+
+        const newUnreadCount = data.unreadCount || 0;
+        console.log("No leídas:", newUnreadCount);
+
+        // Actualizar el estado. Esto causa una re-ejecución del useEffect
+        setUnreadCount(newUnreadCount);
+      } catch (error) {
+        console.error("Error en polling de no leídas:", error);
+      }
+    };
+
+    // Lógica Condicional:
+    // Solo si NO hay notificaciones sin leer (unreadCount === 0), iniciamos el polling.
+    if (unreadCount === 0) {
+      // Primera ejecución inmediata
+      fetchUnreadCount();
+      // Iniciar el intervalo si el conteo actual es 0
+      intervalId = setInterval(fetchUnreadCount, 10000);
+    }
+    // Si unreadCount > 0, no se inicia el intervalo, deteniendo el polling.
+    // Cuando el usuario marque como leído (y setUnreadCount(0) se ejecute), 
+    // el useEffect se re-ejecutará y el polling se reiniciará.
+
+    // Función de limpieza: asegurar que el intervalo se detenga
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+
     // Dependencias: 
     // userMail (para iniciar si cambia de usuario) 
     // unreadCount (para reiniciar y comenzar el polling cuando el conteo pasa a 0).
-    }, [userMail, unreadCount]); 
-  
+  }, [userMail, unreadCount]);
+
 
   // Effect para detectar clics fuera de los menús
   useEffect(() => {
@@ -237,23 +237,29 @@ const Header = ({ className = '' }) => {
         <div className="flex items-center space-x-2 lg:space-x-3">
           {/* Notifications */}
           <div ref={notiRef}>
-            
+
             <Button
-  variant="ghost"
-  size="icon"
-  onClick={toggleNoti}
-  className="relative hover:bg-primary transition-brand w-10 h-10 lg:w-12 lg:h-12"
-  iconName="Bell"
-  iconSize={18}
->
-  {unreadCount > 0 && (
-    <span
-      
-    >
-      {unreadCount}
-    </span>
-  )}
-</Button>
+              variant="ghost"
+              size="icon"
+              onClick={toggleNoti}
+              // APLICACIÓN DE LA CLASE DE AGITACIÓN
+              className={`relative hover:bg-primary transition-brand w-10 h-10 lg:w-12 lg:h-12 ${shouldShake ? 'animate-bell-shake' : ''}`}
+              iconName="Bell"
+              iconSize={18}
+            >
+              {unreadCount > 0 && (
+                <span
+                  className="
+                                absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4
+                                min-w-[1.25rem] h-5 px-1.5 
+                                text-xs font-bold text-white 
+                                bg-error rounded-full flex items-center justify-center
+                              "
+                >
+                  {unreadCount}
+                </span>
+              )}
+            </Button>
 
             {isNotiOpen && (
               <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
@@ -294,10 +300,10 @@ const Header = ({ className = '' }) => {
             }
             < div className="relative" ref={userMenuRef}>
               <button
-                onClick={() => { user ? handleLogout() : window.location.href = "/login"  }}
+                onClick={() => { user ? handleLogout() : window.location.href = "/login" }}
                 className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
-                title={user?"Cerrar sesión":"Iniciar Sesión"}
-              
+                title={user ? "Cerrar sesión" : "Iniciar Sesión"}
+
               >
                 {user ? (
                   <Icon name="LogOut" size={16} className="text-white" />
