@@ -7,15 +7,12 @@ const { generarAnexoDesdeRespuesta } = require("../utils/generador.helper");
 const { enviarCorreoRespaldo } = require("../utils/mailrespaldo.helper");
 const { validarToken } = require("../utils/validarToken.js");
 
-
 // Función para normalizar nombres de archivos (versión completa y segura)
 const normalizeFilename = (filename) => {
-  // Asegurarse de que filename sea siempre un string
   if (typeof filename !== 'string') {
     filename = String(filename || `documento_sin_nombre_${Date.now()}`);
   }
 
-  // Manejo seguro de la extensión
   const lastDotIndex = filename.lastIndexOf('.');
   let extension = '';
   let nameWithoutExt = filename;
@@ -25,7 +22,6 @@ const normalizeFilename = (filename) => {
     nameWithoutExt = filename.substring(0, lastDotIndex);
   }
 
-  // Limpiar la extensión (solo letras y números, máximo 10 caracteres)
   if (extension) {
     extension = extension
       .replace(/[^a-zA-Z0-9]/g, '')
@@ -33,40 +29,19 @@ const normalizeFilename = (filename) => {
       .toLowerCase();
   }
 
-  // Si no hay extensión válida, usar 'bin'
   if (!extension) extension = 'bin';
 
-  // Normalizar el nombre del archivo manteniendo mayúsculas
   let normalized = nameWithoutExt
-    // Vocales con tilde (minúsculas)
-    .replace(/á/g, 'a')
-    .replace(/é/g, 'e')
-    .replace(/í/g, 'i')
-    .replace(/ó/g, 'o')
-    .replace(/ú/g, 'u')
-    .replace(/ü/g, 'u')
-    // Vocales con tilde (mayúsculas)  
-    .replace(/Á/g, 'A')
-    .replace(/É/g, 'E')
-    .replace(/Í/g, 'I')
-    .replace(/Ó/g, 'O')
-    .replace(/Ú/g, 'U')
-    .replace(/Ü/g, 'U')
-    // Caracteres especiales
-    .replace(/ñ/g, 'n')
-    .replace(/Ñ/g, 'N')
-    .replace(/ç/g, 'c')
-    .replace(/Ç/g, 'C')
-    // Eliminar cualquier otro carácter especial (excepto letras, números, espacios, guiones, puntos)
+    .replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i')
+    .replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ü/g, 'u')
+    .replace(/Á/g, 'A').replace(/É/g, 'E').replace(/Í/g, 'I')
+    .replace(/Ó/g, 'O').replace(/Ú/g, 'U').replace(/Ü/g, 'U')
+    .replace(/ñ/g, 'n').replace(/Ñ/g, 'N').replace(/ç/g, 'c').replace(/Ç/g, 'C')
     .replace(/[^a-zA-Z0-9\s._-]/g, '')
-    // Reemplazar espacios múltiples por un solo guión bajo
     .replace(/\s+/g, '_')
-    // Limitar longitud del nombre (sin contar extensión)
     .substring(0, 100)
-    // Eliminar guiones bajos al inicio/final
     .replace(/^_+|_+$/g, '');
 
-  // Si después de normalizar queda vacío, usar nombre por defecto
   if (!normalized || normalized.length === 0) {
     normalized = `documento_${Date.now()}`;
   }
@@ -85,7 +60,23 @@ const upload = multer({
     }
   },
   limits: {
-    fileSize: 10 * 1024 * 1024
+    fileSize: 10 * 1024 * 1024 // 10MB límite por archivo
+  }
+});
+
+// Configurar Multer para múltiples archivos
+const uploadMultiple = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos PDF'), false);
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB límite por archivo
+    files: 10 // Máximo 10 archivos
   }
 });
 
@@ -174,7 +165,7 @@ router.post("/", async (req, res) => {
 
     await addNotification(req.db, {
       filtro: { cargo: "admin" },
-      titulo: `${usuario} de la empresa ${empresa} ha respondido el formulario ${formTitle}`,
+      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondedido el formulario ${formTitle}`,
       descripcion: adjuntos.length > 0
         ? `Incluye ${adjuntos.length} archivo(s) adjunto(s) - Procesando...`
         : "Puedes revisar los detalles en el panel de respuestas.",
@@ -236,13 +227,11 @@ router.post("/admin", async (req, res) => {
 
     // Campos del Destinatario que vienen en el payload de 'responses'
     const destinatarioNombre = responses?.Destinatario;
-    // ASUMIMOS que la empresa viene en otro campo de responses, por ejemplo, 'EmpresaDestino'
-    // **AJUSTA ESTE NOMBRE DE CAMPO ('EmpresaDestino') si es diferente en tu formulario.**
-    const destinatarioEmpresa = responses?.EmpresaDestino; 
+    const destinatarioEmpresa = responses?.EmpresaDestino;
 
     // Validación básica del Destinatario
     if (!destinatarioNombre || !destinatarioEmpresa) {
-        return res.status(400).json({ error: "El nombre y la empresa del destinatario son requeridos en las respuestas." });
+      return res.status(400).json({ error: "El nombre y la empresa del destinatario son requeridos en las respuestas." });
     }
 
     // --- VALIDACIÓN DEL ADMINISTRADOR ---
@@ -258,31 +247,28 @@ router.post("/admin", async (req, res) => {
     // --- LÓGICA DE BÚSQUEDA DEL USUARIO DESTINATARIO ---
     // ----------------------------------------------------
     const userDestinatario = await req.db.collection("usuarios").findOne({
-        mail: correoRespaldo,
-        // Puedes agregar más filtros si es necesario, como estado activo
+      mail: correoRespaldo,
     }, {
-        // Proyectar solo los campos necesarios para el objeto 'user'
-        projection: {
-            _id: 1, // Necesario para el uid
-            nombre: 1,
-            empresa: 1,
-            mail: 1, // Asumo que el campo de correo es 'mail'
-        }
+      projection: {
+        _id: 1,
+        nombre: 1,
+        empresa: 1,
+        mail: 1,
+      }
     });
 
     if (!userDestinatario) {
-        return res.status(404).json({ 
-            error: `Destinatario no encontrado: ${destinatarioNombre} en ${destinatarioEmpresa}.` 
-        });
+      return res.status(404).json({
+        error: `Destinatario no encontrado: ${destinatarioNombre} en ${destinatarioEmpresa}.`
+      });
     }
 
     // Construir el objeto 'user' para la respuesta con la estructura correcta
     const destinatarioUserObject = {
-        uid: userDestinatario._id.toString(), // Usamos el _id como uid
-        nombre: userDestinatario.nombre,
-        empresa: userDestinatario.empresa,
-        mail: userDestinatario.mail,
-        // No incluimos 'token', 'status', ni 'createdAt', como solicitaste.
+      uid: userDestinatario._id.toString(),
+      nombre: userDestinatario.nombre,
+      empresa: userDestinatario.empresa,
+      mail: userDestinatario.mail,
     };
 
     // Continuar con las validaciones del Formulario
@@ -298,14 +284,14 @@ router.post("/admin", async (req, res) => {
     const now = new Date();
     const result = await req.db.collection("respuestas").insertOne({
       formId,
-      user: destinatarioUserObject, // **¡OBJETO DESTINATARIO COMPLETO!**
+      user: destinatarioUserObject,
       responses,
       formTitle,
-      mail: correoRespaldo, // Usar el mail del payload, si corresponde.
+      mail: correoRespaldo,
       status: "pendiente",
       createdAt: now,
-      updatedAt: now, // Inicializar updatedAt
-      injectedBy: adminUser?.uid, // Rastreamos quién la inyectó
+      updatedAt: now,
+      injectedBy: adminUser?.uid,
     });
 
     console.log("✅ Solicitud inyectada guardada con ID:", result.insertedId);
@@ -324,18 +310,18 @@ router.post("/admin", async (req, res) => {
 
     // Lógica de Correo de Respaldo (usando el mail del destinatario, si aplica)
     let resultadoCorreo = { enviado: false };
-    if (userDestinatario.mail) { // Puedes usar el mail del usuario real
+    if (userDestinatario.mail) {
       resultadoCorreo = await enviarCorreoRespaldo(
-        userDestinatario.mail, 
+        userDestinatario.mail,
         formTitle,
-        destinatarioUserObject, 
+        destinatarioUserObject,
         responses,
         form.questions
       );
     }
-    
+
     // --- NOTIFICACIONES ---
-    
+
     // 1. Notificación a RRHH/Administradores
     await addNotification(req.db, {
       filtro: { cargo: "RRHH" },
@@ -372,7 +358,7 @@ router.post("/admin", async (req, res) => {
     res.json({
       _id: result.insertedId,
       formId,
-      user: destinatarioUserObject, 
+      user: destinatarioUserObject,
       responses,
       formTitle,
       mail: userDestinatario.mail,
@@ -477,7 +463,6 @@ router.post("/:id/adjuntos", async (req, res) => {
     });
   }
 });
-
 
 router.get("/:id/adjuntos/:index", async (req, res) => {
   try {
@@ -815,7 +800,6 @@ router.get("/:formId/chat/", async (req, res) => {
       query = { formId };
     }
 
-    // Obtenemos todos los mensajes primero
     const respuesta = await req.db
       .collection("respuestas")
       .findOne(query, { projection: { mensajes: 1 } });
@@ -926,7 +910,7 @@ router.put("/chat/marcar-leidos", async (req, res) => {
   }
 });
 
-// Subir corrección PDF
+// Subir corrección PDF (se mantiene por compatibilidad)
 router.post("/:id/upload-correction", upload.single('correctedFile'), async (req, res) => {
   try {
     console.log("Debug: Iniciando upload-correction para ID:", req.params.id);
@@ -984,7 +968,6 @@ router.get("/:id/finalized", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Verificar que el ID sea válido
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ error: "ID de respuesta inválido" });
     }
@@ -1028,12 +1011,10 @@ router.get("/:id/finalized", async (req, res) => {
   }
 });
 
-
 router.get("/:id/archived", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Verificar que el ID sea válido
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ error: "ID de respuesta inválido" });
     }
@@ -1062,79 +1043,402 @@ router.get("/:id/archived", async (req, res) => {
       return res.status(404).json({ error: "No se pudo actualizar la respuesta" });
     }
 
-    console.log(`Respuesta ${id} actualizada a estado: finalizado`);
+    console.log(`Respuesta ${id} actualizada a estado: archivado`);
 
     res.json({
       success: true,
-      message: "Respuesta finalizada correctamente",
-      status: "finalizado",
+      message: "Respuesta archivada correctamente",
+      status: "archivado",
       responseId: id
     });
 
   } catch (err) {
-    console.error("Error finalizando respuesta:", err);
-    res.status(500).json({ error: "Error finalizando respuesta: " + err.message });
+    console.error("Error archivando respuesta:", err);
+    res.status(500).json({ error: "Error archivando respuesta: " + err.message });
   }
 });
 
+// ============ NUEVOS ENDPOINTS PARA MÚLTIPLES ARCHIVOS ============
 
-
-// Aprobar formulario y guardar en aprobados
-router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => {
+// 1. SUBIR MÚLTIPLES ARCHIVOS CORREGIDOS
+// Cambia el endpoint para recibir archivos uno por uno
+router.post("/upload-corrected-files", async (req, res) => {
   try {
-    console.log("Debug: Iniciando approve para ID:", req.params.id);
+    console.log("=== DEBUG BACKEND - HEADERS ===");
+    console.log("Content-Type:", req.headers['content-type']);
 
-    const respuesta = await req.db.collection("respuestas").findOne({ _id: new ObjectId(req.params.id) });
+    uploadMultiple.array('files', 10)(req, res, async (err) => {
+      if (err) {
+        console.error("Error en uploadMultiple:", err);
+        return res.status(400).json({ error: err.message });
+      }
 
-    if (!respuesta) {
-      console.log("Debug: Respuesta no encontrada para ID:", req.params.id);
-      return res.status(404).json({ error: "Respuesta no encontrada" });
+      // VERIFICAR SI SE RECIBIERON FILES
+      console.log("Files recibidos:", req.files ? req.files.length : 'NONE');
+      console.log("Body fields:", Object.keys(req.body));
+      console.log("responseId:", req.body.responseId);
+      console.log("index:", req.body.index, "type:", typeof req.body.index);
+      console.log("total:", req.body.total, "type:", typeof req.body.total);
+
+      const { responseId, index, total } = req.body;
+      const files = req.files;
+
+      // VALIDACIONES MEJORADAS
+      if (!responseId) {
+        return res.status(400).json({ error: 'responseId es requerido' });
+      }
+
+      if (!files || !Array.isArray(files) || files.length === 0) {
+        return res.status(400).json({
+          error: 'No se subió ningún archivo',
+          filesReceived: files ? files.length : 0
+        });
+      }
+
+      // PROCESAR CADA ARCHIVO (por si llegan múltiples en una petición)
+      for (const file of files) {
+        console.log(`Procesando archivo: ${file.originalname}, size: ${file.size}`);
+
+        const correctedFile = {
+          fileName: normalizeFilename(file.originalname),
+          tipo: 'pdf',
+          fileData: file.buffer,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+          uploadedAt: new Date(),
+          order: parseInt(index) + 1 || 1
+        };
+
+        // BUSCAR O CREAR DOCUMENTO
+        const existingApproval = await req.db.collection("aprobados").findOne({
+          responseId: responseId
+        });
+
+        if (existingApproval) {
+          // USAR findOneAndUpdate para retornar el documento actualizado
+          const result = await req.db.collection("aprobados").findOneAndUpdate(
+            { responseId: responseId },
+            {
+              $push: { correctedFiles: correctedFile },
+              $set: { updatedAt: new Date() }
+            },
+            { returnDocument: 'after' }
+          );
+          console.log(`Archivo agregado. Total ahora:`, result.value?.correctedFiles?.length);
+        } else {
+          await req.db.collection("aprobados").insertOne({
+            responseId: responseId,
+            correctedFiles: [correctedFile],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            approvedAt: null,
+            approvedBy: null
+          });
+          console.log(`Nuevo documento creado con 1 archivo`);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Archivo(s) subido(s) exitosamente`,
+        filesProcessed: files.length
+      });
+    });
+  } catch (error) {
+    console.error('Error completo:', error);
+    res.status(500).json({ error: `Error: ${error.message}` });
+  }
+});
+
+// 2. OBTENER TODOS LOS ARCHIVOS CORREGIDOS DE UNA RESPUESTA
+router.get("/corrected-files/:responseId", async (req, res) => {
+  try {
+    const { responseId } = req.params;
+
+    const approvedDoc = await req.db.collection("aprobados").findOne({
+      responseId: responseId
+    }, {
+      projection: {
+        correctedFiles: 1,
+        formTitle: 1
+      }
+    });
+
+    if (!approvedDoc || !approvedDoc.correctedFiles) {
+      return res.json({
+        correctedFiles: [],
+        formTitle: null
+      });
     }
 
-    if (!respuesta) {
-      console.log("Debug: Respuesta no encontrada para ID:", req.params.id);
-      return res.status(404).json({ error: "Respuesta no encontrada" });
+    // Ordenar archivos por order si existe, sino por uploadedAt
+    const sortedFiles = approvedDoc.correctedFiles.sort((a, b) => {
+      if (a.order && b.order) return a.order - b.order;
+      return new Date(a.uploadedAt) - new Date(b.uploadedAt);
+    });
+
+    // Retornar información sin los datos binarios
+    const filesInfo = sortedFiles.map(file => ({
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      mimeType: file.mimeType,
+      uploadedAt: file.uploadedAt,
+      order: file.order || 1,
+      tipo: file.tipo
+    }));
+
+    res.json({
+      correctedFiles: filesInfo,
+      formTitle: approvedDoc.formTitle,
+      totalFiles: filesInfo.length
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo archivos corregidos:', error);
+    res.status(500).json({ error: `Error obteniendo archivos: ${error.message}` });
+  }
+});
+
+// 3. DESCARGAR ARCHIVO CORREGIDO ESPECÍFICO
+router.get("/download-corrected-file/:responseId", async (req, res) => {
+  try {
+    const { responseId } = req.params;
+    const { fileName, index } = req.query;
+
+    const approvedDoc = await req.db.collection("aprobados").findOne({
+      responseId: responseId
+    });
+
+    if (!approvedDoc || !approvedDoc.correctedFiles || approvedDoc.correctedFiles.length === 0) {
+      return res.status(404).json({ error: "No se encontraron archivos corregidos" });
     }
 
-    if (!respuesta.correctedFile && !req.file) {
-      console.log("Debug: No hay corrección subida para ID:", req.params.id);
-      return res.status(400).json({ error: "No hay corrección subida para aprobar" });
-    }
+    let file;
 
-    let correctedFileData;
-
-    if (req.file) {
-      console.log("Debug: Subiendo nuevo archivo de corrección:", req.file.originalname);
-
-      const normalizedFileName = normalizeFilename(req.file.originalname);
-
-      correctedFileData = {
-        fileName: normalizedFileName,
-        tipo: 'pdf',
-        fileData: req.file.buffer,
-        fileSize: req.file.size,
-        mimeType: req.file.mimetype,
-        uploadedAt: new Date()
-      };
+    if (fileName) {
+      file = approvedDoc.correctedFiles.find(f => f.fileName === fileName);
+    } else if (index !== undefined) {
+      const fileIndex = parseInt(index);
+      if (isNaN(fileIndex) || fileIndex < 0 || fileIndex >= approvedDoc.correctedFiles.length) {
+        return res.status(400).json({ error: "Índice de archivo inválido" });
+      }
+      file = approvedDoc.correctedFiles[fileIndex];
     } else {
-      correctedFileData = respuesta.correctedFile;
-      console.log("Debug: Usando corrección existente:", correctedFileData.fileName);
+      return res.status(400).json({ error: "Se requiere fileName o index" });
     }
 
-    console.log("Debug: Aprobando respuesta con corrección:", correctedFileData.fileName);
+    if (!file) {
+      return res.status(404).json({ error: "Archivo no encontrado" });
+    }
+
+    res.setHeader('Content-Type', file.mimeType || 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
+    res.setHeader('Content-Length', file.fileSize);
+    res.setHeader('Cache-Control', 'no-cache');
+
+    res.send(file.fileData.buffer || file.fileData);
+
+  } catch (err) {
+    console.error("Error descargando archivo corregido:", err);
+    res.status(500).json({ error: "Error descargando archivo: " + err.message });
+  }
+});
+
+// 4. ELIMINAR ARCHIVO CORREGIDO ESPECÍFICO
+router.delete("/delete-corrected-file/:responseId", async (req, res) => {
+  try {
+    const { responseId } = req.params;
+    const { fileName } = req.body;
+
+    if (!fileName) {
+      return res.status(400).json({ error: "fileName es requerido" });
+    }
+
+    const approvedDoc = await req.db.collection("aprobados").findOne({
+      responseId: responseId
+    });
+
+    if (!approvedDoc || !approvedDoc.correctedFiles) {
+      return res.status(404).json({ error: "No se encontraron archivos corregidos" });
+    }
+
+    const fileExists = approvedDoc.correctedFiles.some(f => f.fileName === fileName);
+    if (!fileExists) {
+      return res.status(404).json({ error: "Archivo no encontrado" });
+    }
+
+    // Guardar información del estado actual antes de eliminar
+    const respuestaActual = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(responseId)
+    });
+
+    const estadoActual = respuestaActual?.status;
+    const tieneFirma = await req.db.collection("firmados").findOne({
+      responseId: responseId
+    });
+
+    // Eliminar el archivo específico del array
+    const result = await req.db.collection("aprobados").updateOne(
+      { responseId: responseId },
+      {
+        $pull: {
+          correctedFiles: { fileName: fileName }
+        },
+        $set: { updatedAt: new Date() }
+      }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ error: "No se pudo eliminar el archivo" });
+    }
+
+    // Verificar si quedan archivos después de eliminar
+    const updatedDoc = await req.db.collection("aprobados").findOne({
+      responseId: responseId
+    });
+
+    // Si no quedan archivos, eliminar el documento completo y cambiar estado
+    if (!updatedDoc.correctedFiles || updatedDoc.correctedFiles.length === 0) {
+      await req.db.collection("aprobados").deleteOne({ responseId: responseId });
+
+      // Determinar el nuevo estado
+      let nuevoEstado = "en_revision";
+
+      // Solo cambiar a 'en_revision' si actualmente está en 'aprobado' o 'firmado'
+      // y NO hay firma existente
+      if ((estadoActual === 'aprobado' || estadoActual === 'firmado') && !tieneFirma) {
+        nuevoEstado = "en_revision";
+      } else if (estadoActual === 'firmado' && tieneFirma) {
+        // Si hay firma, mantener en 'firmado' pero sin correcciones
+        nuevoEstado = "firmado";
+      } else if (estadoActual === 'finalizado' || estadoActual === 'archivado') {
+        // No cambiar estados finales
+        nuevoEstado = estadoActual;
+      }
+
+      await req.db.collection("respuestas").updateOne(
+        { _id: new ObjectId(responseId) },
+        {
+          $set: {
+            hasCorrection: false,
+            status: nuevoEstado,
+            updatedAt: new Date()
+          }
+        }
+      );
+
+      // Enviar notificación si cambió el estado
+      if (nuevoEstado === 'en_revision' && estadoActual !== 'en_revision') {
+        await addNotification(req.db, {
+          filtro: { cargo: "RRHH" },
+          titulo: `Correcciones eliminadas - Volviendo a revisión`,
+          descripcion: `Se eliminaron todas las correcciones del formulario ${respuestaActual?.formTitle}. El estado ha vuelto a 'en_revision'.`,
+          prioridad: 2,
+          icono: 'RefreshCw',
+          color: '#ff9800',
+          actionUrl: `/RespuestasForms?id=${responseId}`,
+        });
+
+        await addNotification(req.db, {
+          userId: respuestaActual?.user?.uid,
+          titulo: "Documento vuelve a revisión",
+          descripcion: `Las correcciones del formulario ${respuestaActual?.formTitle} han sido eliminadas. El documento está nuevamente en revisión.`,
+          prioridad: 2,
+          icono: 'RefreshCw',
+          color: '#ff9800',
+          actionUrl: `/?id=${responseId}`,
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Archivo eliminado exitosamente. No quedan archivos corregidos.",
+        deletedFile: fileName,
+        statusChanged: nuevoEstado !== estadoActual,
+        newStatus: nuevoEstado,
+        hadFiles: false
+      });
+
+    } else {
+      // Si aún quedan archivos, solo actualizar la fecha
+      await req.db.collection("respuestas").updateOne(
+        { _id: new ObjectId(responseId) },
+        {
+          $set: {
+            updatedAt: new Date()
+          }
+        }
+      );
+
+      res.json({
+        success: true,
+        message: "Archivo eliminado exitosamente",
+        deletedFile: fileName,
+        remainingFiles: updatedDoc.correctedFiles.length,
+        hadFiles: true
+      });
+    }
+
+  } catch (err) {
+    console.error("Error eliminando archivo corregido:", err);
+    res.status(500).json({ error: "Error eliminando archivo: " + err.message });
+  }
+});
+
+// 5. APROBAR FORMULARIO CON MÚLTIPLES ARCHIVOS (MODIFICADO)
+router.post("/:id/approve", async (req, res) => {
+  try {
+    const responseId = req.params.id;
+    console.log("=== INICIO APPROVE CON MÚLTIPLES ARCHIVOS ===", responseId);
+
+    const respuesta = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(responseId)
+    });
+
+    if (!respuesta) {
+      console.log("Respuesta no encontrada para ID:", responseId);
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
+    // Verificar que existan archivos corregidos en la colección 'aprobados'
+    const approvedDoc = await req.db.collection("aprobados").findOne({
+      responseId: responseId
+    });
+
+    if (!approvedDoc || !approvedDoc.correctedFiles || approvedDoc.correctedFiles.length === 0) {
+      console.log("No hay archivos corregidos para aprobar:", responseId);
+      return res.status(400).json({
+        error: "No hay archivos corregidos para aprobar. Debe subir al menos un archivo PDF primero."
+      });
+    }
+
+    console.log(`Aprobando respuesta ${responseId} con ${approvedDoc.correctedFiles.length} archivo(s)`);
 
     const existingSignature = await req.db.collection("firmados").findOne({
-      responseId: req.params.id
+      responseId: responseId
     });
 
     let nuevoEstado = "aprobado";
     if (existingSignature) {
-      console.log("Debug: Existe documento firmado, saltando directamente a estado 'firmado'");
+      console.log("Existe documento firmado, saltando directamente a estado 'firmado'");
       nuevoEstado = "firmado";
     }
 
+    // Actualizar el documento en 'aprobados' con la información de aprobación
+    await req.db.collection("aprobados").updateOne(
+      { responseId: responseId },
+      {
+        $set: {
+          approvedAt: new Date(),
+          approvedBy: req.user?.id,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    // Actualizar la respuesta principal
     const updateResult = await req.db.collection("respuestas").updateOne(
-      { _id: new ObjectId(req.params.id) },
+      { _id: new ObjectId(responseId) },
       {
         $set: {
           status: nuevoEstado,
@@ -1147,109 +1451,39 @@ router.post("/:id/approve", upload.single('correctedFile'), async (req, res) => 
       }
     );
 
+    // Enviar notificación al usuario
     await addNotification(req.db, {
       userId: respuesta.user?.uid,
-      titulo: "Documento Generado",
-      descripcion: `Se ha generado el documento asociado al formulario ${respuesta.formTitle}`,
+      titulo: "Documento Aprobado",
+      descripcion: `Se ha aprobado el documento asociado al formulario ${respuesta.formTitle} con ${approvedDoc.correctedFiles.length} archivo(s)`,
       prioridad: 2,
       icono: 'file-text',
       color: '#47db34ff',
-      actionUrl: `/?id=${respuesta.responseId}`,
+      actionUrl: `/?id=${responseId}`,
     });
-
-    console.log("Debug: Resultado de actualización de estado:", updateResult);
-
-    const insertResult = await req.db.collection("aprobados").insertOne({
-      responseId: req.params.id,
-      correctedFile: correctedFileData,
-      approvedAt: new Date(),
-      approvedBy: req.user?.id,
-      createdAt: new Date(),
-      formTitle: respuesta.formTitle,
-      submittedBy: respuesta.submittedBy,
-      company: respuesta.company
-    });
-
-    console.log("Debug: Resultado de inserción en aprobados:", insertResult);
 
     res.json({
       message: existingSignature
-        ? "Formulario aprobado y restaurado a estado firmado (existía firma previa)"
-        : "Formulario aprobado correctamente",
+        ? `Formulario aprobado y restaurado a estado firmado (existía firma previa) con ${approvedDoc.correctedFiles.length} archivo(s)`
+        : `Formulario aprobado correctamente con ${approvedDoc.correctedFiles.length} archivo(s)`,
       approved: true,
       status: nuevoEstado,
-      hadExistingSignature: !!existingSignature
+      hadExistingSignature: !!existingSignature,
+      totalFiles: approvedDoc.correctedFiles.length
     });
 
   } catch (err) {
     console.error("Error aprobando formulario:", err);
-    res.status(500).json({ error: "Error aprobando formulario" });
+    res.status(500).json({ error: "Error aprobando formulario: " + err.message });
   }
 });
 
-// Eliminar corrección de formularios APROBADOS
-router.delete("/:id/remove-correction", async (req, res) => {
-  try {
-    console.log("Debug: Iniciando remove-correction para ID:", req.params.id);
-    console.log("Debug: ID recibido:", req.params.id);
-
-    const existingSignature = await req.db.collection("firmados").findOne({
-      responseId: req.params.id
-    });
-
-    if (existingSignature) {
-      console.log("Debug: Existe documento firmado, procediendo con eliminación de aprobado");
-    }
-
-    const deleteResult = await req.db.collection("aprobados").deleteOne({
-      responseId: req.params.id
-    });
-
-    console.log("Debug: Resultado de la eliminación en aprobados:", deleteResult);
-
-    const updateResult = await req.db.collection("respuestas").updateOne(
-      { _id: new ObjectId(req.params.id) },
-      {
-        $set: {
-          status: "en_revision",
-          updatedAt: new Date()
-        },
-        $unset: {
-          correctedFile: ""
-        }
-      }
-    );
-
-    console.log("Debug: Resultado de actualización en respuestas:", updateResult);
-
-    if (updateResult.matchedCount === 0) {
-      console.log("Debug: No se encontró la respuesta con ID:", req.params.id);
-      return res.status(404).json({ error: "Respuesta no encontrada" });
-    }
-
-    console.log("Debug: Estado actualizado a 'en_revision' en la base de datos para ID:", req.params.id);
-
-    const updatedResponse = await req.db.collection("respuestas").findOne({
-      _id: new ObjectId(req.params.id)
-    });
-
-    res.json({
-      message: "Corrección eliminada exitosamente",
-      updatedRequest: updatedResponse,
-      hasExistingSignature: !!existingSignature
-    });
-
-  } catch (err) {
-    console.error("Error eliminando corrección:", err);
-    res.status(500).json({ error: "Error eliminando corrección" });
-  }
-});
-
+// 6. OBTENER DATOS DE ARCHIVOS APROBADOS (MODIFICADO)
 router.get("/data-approved/:responseId", async (req, res) => {
   try {
     const { responseId } = req.params;
 
-    console.log("Obteniendo datos de archivo aprobado para:", responseId);
+    console.log("Obteniendo datos de archivos aprobados para:", responseId);
 
     const approvedDoc = await req.db.collection("aprobados").findOne({
       responseId: responseId
@@ -1260,19 +1494,26 @@ router.get("/data-approved/:responseId", async (req, res) => {
       return res.status(404).json({ error: "Documento aprobado no encontrado" });
     }
 
-    if (!approvedDoc.correctedFile) {
-      console.log("No hay correctedFile en el documento aprobado:", responseId);
-      return res.status(404).json({ error: "Archivo corregido no disponible" });
+    if (!approvedDoc.correctedFiles || approvedDoc.correctedFiles.length === 0) {
+      console.log("No hay archivos corregidos en el documento aprobado:", responseId);
+      return res.status(404).json({ error: "Archivos corregidos no disponibles" });
     }
 
-    // Retornar solo los datos específicos que necesitas
+    // Retornar información de todos los archivos
+    const filesInfo = approvedDoc.correctedFiles.map(file => ({
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      mimeType: file.mimeType,
+      uploadedAt: file.uploadedAt,
+      order: file.order || 1,
+      tipo: file.tipo
+    }));
+
     const responseData = {
-      fileName: approvedDoc.correctedFile.fileName,
-      fileSize: approvedDoc.correctedFile.fileSize,
-      mimeType: approvedDoc.correctedFile.mimeType,
-      uploadedAt: approvedDoc.correctedFile.uploadedAt,
+      correctedFiles: filesInfo,
       approvedAt: approvedDoc.approvedAt,
-      formTitle: approvedDoc.formTitle
+      formTitle: approvedDoc.formTitle,
+      totalFiles: filesInfo.length
     };
 
     console.log("Datos retornados para responseId:", responseId, responseData);
@@ -1280,40 +1521,131 @@ router.get("/data-approved/:responseId", async (req, res) => {
     res.json(responseData);
 
   } catch (err) {
-    console.error("Error obteniendo datos de archivo aprobado:", err);
-    res.status(500).json({ error: "Error obteniendo datos de archivo aprobado: " + err.message });
+    console.error("Error obteniendo datos de archivos aprobados:", err);
+    res.status(500).json({ error: "Error obteniendo datos de archivos aprobados: " + err.message });
   }
 });
 
+// 7. DESCARGAR PDF APROBADO (MODIFICADO - ahora soporta index)
 router.get("/download-approved-pdf/:responseId", async (req, res) => {
   try {
+    const { responseId } = req.params;
+    const { index } = req.query;
+
+    console.log("Descargando PDF aprobado para:", responseId, "index:", index);
+
     const approvedDoc = await req.db.collection("aprobados").findOne({
-      responseId: req.params.responseId
+      responseId: responseId
     });
 
     if (!approvedDoc) {
       return res.status(404).json({ error: "Documento aprobado no encontrado" });
     }
 
-    if (!approvedDoc.correctedFile || !approvedDoc.correctedFile.fileData) {
+    if (!approvedDoc.correctedFiles || approvedDoc.correctedFiles.length === 0) {
+      return res.status(404).json({ error: "Archivos PDF no disponibles" });
+    }
+
+    let file;
+    if (index !== undefined) {
+      const fileIndex = parseInt(index);
+      if (isNaN(fileIndex) || fileIndex < 0 || fileIndex >= approvedDoc.correctedFiles.length) {
+        return res.status(400).json({ error: "Índice de archivo inválido" });
+      }
+      file = approvedDoc.correctedFiles[fileIndex];
+    } else {
+      file = approvedDoc.correctedFiles[0];
+    }
+
+    if (!file || !file.fileData) {
       return res.status(404).json({ error: "Archivo PDF no disponible" });
     }
 
-    // Pasar filename explícitamente como query parameter
-    const fileName = approvedDoc.correctedFile.fileName;
+    res.setHeader('Content-Type', file.mimeType || 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
+    res.setHeader('Content-Length', file.fileSize);
+    res.setHeader('Cache-Control', 'no-cache');
 
-    res.setHeader('Content-Type', approvedDoc.correctedFile.mimeType || 'application/pdf');
-    res.setHeader('Content-Length', approvedDoc.correctedFile.fileSize);
-
-    res.send(approvedDoc.correctedFile.fileData.buffer || approvedDoc.correctedFile.fileData);
+    res.send(file.fileData.buffer || file.fileData);
 
   } catch (err) {
     console.error("Error descargando PDF aprobado:", err);
-    res.status(500).json({ error: "Error descargando PDF aprobado" });
+    res.status(500).json({ error: "Error descargando PDF aprobado: " + err.message });
   }
 });
 
-// Subir PDF firmado por cliente a colección firmados y cambiar estado de respuesta a 'firmado'
+// 8. ELIMINAR CORRECCIÓN (MODIFICADO)
+router.delete("/:id/remove-correction", async (req, res) => {
+  try {
+    const responseId = req.params.id;
+    console.log("=== INICIO REMOVE-CORRECTION PARA MÚLTIPLES ARCHIVOS ===", responseId);
+
+    const existingSignature = await req.db.collection("firmados").findOne({
+      responseId: responseId
+    });
+
+    const respuestaActual = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(responseId)
+    });
+
+    let nuevoEstado = "en_revision";
+
+    // Determinar nuevo estado según si hay firma
+    if (existingSignature) {
+      nuevoEstado = "firmado";
+      console.log("Existe documento firmado, manteniendo estado 'firmado'");
+    } else if (respuestaActual?.status === 'finalizado' || respuestaActual?.status === 'archivado') {
+      nuevoEstado = respuestaActual.status;
+    }
+
+    // Eliminar el documento completo de 'aprobados'
+    const deleteResult = await req.db.collection("aprobados").deleteOne({
+      responseId: responseId
+    });
+
+    console.log("Resultado de la eliminación en aprobados:", deleteResult);
+
+    // Actualizar la respuesta principal
+    const updateResult = await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(responseId) },
+      {
+        $set: {
+          status: nuevoEstado,
+          updatedAt: new Date()
+        },
+        $unset: {
+          correctedFile: "",
+          hasCorrection: ""
+        }
+      }
+    );
+
+    console.log("Resultado de actualización en respuestas:", updateResult);
+
+    if (updateResult.matchedCount === 0) {
+      console.log("No se encontró la respuesta con ID:", responseId);
+      return res.status(404).json({ error: "Respuesta no encontrada" });
+    }
+
+    const updatedResponse = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(responseId)
+    });
+
+    res.json({
+      message: "Corrección eliminada exitosamente",
+      updatedRequest: updatedResponse,
+      hasExistingSignature: !!existingSignature,
+      deletedFiles: deleteResult.deletedCount > 0 ? "Todos los archivos fueron eliminados" : "No había archivos para eliminar",
+      newStatus: nuevoEstado
+    });
+
+  } catch (err) {
+    console.error("Error eliminando corrección:", err);
+    res.status(500).json({ error: "Error eliminando corrección: " + err.message });
+  }
+});
+
+// 9. Subir PDF firmado por cliente a colección firmados y cambiar estado de respuesta a 'firmado'
 router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), async (req, res) => {
   try {
     const { responseId } = req.params;
@@ -1380,7 +1712,7 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       prioridad: 2,
       icono: 'Pen',
       color: '#dbca34ff',
-      actionUrl: `/RespuestasForms?id=${respuesta.responseId}`,
+      actionUrl: `/RespuestasForms?id=${respuesta._id}`,
     });
 
     res.json({
@@ -1395,7 +1727,7 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
   }
 });
 
-// Obtener PDF firmado por cliente Y cambiar estado a "finalizado"
+// 10. Obtener PDF firmado por cliente Y cambiar estado a "finalizado"
 router.get("/:responseId/client-signature", async (req, res) => {
   try {
     const { responseId } = req.params;
@@ -1430,7 +1762,6 @@ router.get("/:responseId/client-signature", async (req, res) => {
       console.warn(`No se pudo actualizar estado la para respuesta`);
     } else {
       console.log(`Estado actualizado a "finalizado"`);
-
     }
 
     // LUEGO: Enviar el archivo
@@ -1447,7 +1778,7 @@ router.get("/:responseId/client-signature", async (req, res) => {
   }
 });
 
-// Eliminar PDF firmado por cliente y volver al estado 'aprobado'
+// 11. Eliminar PDF firmado por cliente y volver al estado 'aprobado'
 router.delete("/:responseId/client-signature", async (req, res) => {
   try {
     const { responseId } = req.params;
@@ -1481,7 +1812,7 @@ router.delete("/:responseId/client-signature", async (req, res) => {
   }
 });
 
-// Verificar si existe PDF firmado para una respuesta específica
+// 12. Verificar si existe PDF firmado para una respuesta específica
 router.get("/:responseId/has-client-signature", async (req, res) => {
   try {
     const { responseId } = req.params;
@@ -1517,7 +1848,7 @@ router.get("/:responseId/has-client-signature", async (req, res) => {
   }
 });
 
-// Endpoint para regenerar documento desde respuestas existentes
+// 13. Endpoint para regenerar documento desde respuestas existentes
 router.post("/:id/regenerate-document", async (req, res) => {
   try {
     const { id } = req.params;
@@ -1579,7 +1910,7 @@ router.post("/:id/regenerate-document", async (req, res) => {
   }
 });
 
-// Cambiar estado de respuesta (avanzar o retroceder)
+// 14. Cambiar estado de respuesta (avanzar o retroceder)
 router.put("/:id/status", async (req, res) => {
   try {
     const { id } = req.params;
