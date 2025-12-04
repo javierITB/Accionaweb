@@ -116,6 +116,7 @@ const SetPassword = () => {
           <button 
             onClick={() => window.location.href = '/login'}
             className="mt-4 w-full bg-[#f97316] text-white py-2 rounded font-bold hover:bg-orange-500 transition"
+            title = "Ir al Login"
           >
             Ir al Login
           </button>
@@ -183,6 +184,7 @@ const SetPassword = () => {
           type="submit" 
           className="w-full bg-[#f97316] text-white py-2 rounded font-bold hover:bg-orange-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isLoading || passwordStrength !== 'Contraseña segura' || password !== confirmPassword}
+          title = "Establecer Contraseña"
         >
           {isLoading ? 'Guardando...' : 'Guardar Contraseña'}
         </button>
@@ -192,6 +194,7 @@ const SetPassword = () => {
             type="button"
             onClick={() => window.location.href = '/login'}
             className="text-blue-500 hover:text-blue-700"
+            title = "Ir al Login"
           >
             ¿Ya tienes cuenta? Inicia sesión
           </button>

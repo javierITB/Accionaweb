@@ -103,6 +103,7 @@ const Button = React.forwardRef(({
             {iconName && iconPosition === 'left' && renderIcon()}
             {children}
             {iconName && iconPosition === 'right' && renderIcon()}
+            title = {typeof children === 'string' ? children : undefined}
         </button>
     );
 

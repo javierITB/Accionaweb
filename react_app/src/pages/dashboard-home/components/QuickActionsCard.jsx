@@ -80,6 +80,7 @@ const QuickActionsCard = () => {
               key={action?.id}
               onClick={() => handleActionClick(action?.path)}
               className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg border border-border hover:border-primary hover:shadow-brand-hover transition-brand text-left group w-full"
+              title = {action.title}
             >
               {/* Icon */}
               <div className={`w-10 h-10 sm:w-12 sm:h-12 ${action?.color} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>

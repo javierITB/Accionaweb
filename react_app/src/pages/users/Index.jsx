@@ -420,12 +420,14 @@ const FormReg = () => {
                             <button
                               onClick={() => handleEditUser(u)}
                               className="w-full px-3 py-1.5 text-sm font-medium text-blue-600 rounded-md hover:bg-blue-50 transition-colors dark:text-blue-400 dark:hover:bg-blue-900/30 text-left"
+                              title = "Editar usuario"
                             >
                               Editar
                             </button>
                             <button
                               onClick={() => handleRemoveUser(u._id)}
                               className="w-full px-3 py-1.5 text-sm font-medium text-red-600 rounded-md hover:bg-red-50 transition-colors dark:text-red-400 dark:hover:bg-red-900/30 text-left"
+                              title = "Eliminar usuario"
                             >
                               Borrar
                             </button>

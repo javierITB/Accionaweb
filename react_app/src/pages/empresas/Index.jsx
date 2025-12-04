@@ -418,6 +418,7 @@ const CompanyReg = () => {
                       ? 'bg-primary text-primary-foreground shadow-brand'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     }`}
+                    title = {editingEmpresa ? 'Editar Empresa' : 'Registrar Empresa'}
                 >
                   <Icon name="Plus" size={16} className="inline mr-2" />
                   {editingEmpresa ? 'Editar Empresa' : 'Registrar Empresa'}
@@ -428,6 +429,7 @@ const CompanyReg = () => {
                       ? 'bg-primary text-primary-foreground shadow-brand'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     }`}
+                    title = "Ver Lista de Empresas"
                 >
                   <Icon name="List" size={16} className="inline mr-2" />
                   Lista de Empresas ({empresas.length})

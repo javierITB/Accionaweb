@@ -100,6 +100,7 @@ const UserProfileSettings = () => {
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-lg shadow-subtle"
+              title = "Seleccionar sección de configuración"
             >
               <div className="flex items-center space-x-3">
                 <Icon 
@@ -132,6 +133,7 @@ const UserProfileSettings = () => {
                           ? { backgroundColor: tab.color }
                           : {}
                       }
+                      title = {`Ir a la sección de ${tab?.label}`}
                     >
                       <Icon
                         name={tab?.icon}
@@ -180,6 +182,7 @@ const UserProfileSettings = () => {
                             ? { backgroundColor: tab.color }
                             : {}
                         }
+                        title = {`Ir a la sección de ${tab?.label}`}
                       >
                         <Icon
                           name={tab?.icon}

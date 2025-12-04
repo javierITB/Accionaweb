@@ -185,6 +185,7 @@ const QuestionEditor = ({
                       onClick={() => removeOption(index)}
                       className="text-red-500 hover:text-red-700 p-1"
                       type="button"
+                      title = "Eliminar opción"
                     >
                       <X size={16} />
                     </button>
@@ -202,6 +203,7 @@ const QuestionEditor = ({
             onClick={addOption}
             className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 py-2"
             type="button"
+            title = "Agregar opción"
           >
             <Plus size={16} />
             <span>Agregar opción</span>
@@ -455,6 +457,7 @@ const QuestionEditor = ({
                         onClick={() => removeOption(index)}
                         className="text-red-500 hover:text-red-700 p-1"
                         type="button"
+                        title = "Eliminar opción"
                       >
                         <X size={16} />
                       </button>
@@ -465,6 +468,7 @@ const QuestionEditor = ({
                   onClick={addOption}
                   className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 py-2"
                   type="button"
+                  title = "Agregar opción"
                 >
                   <Plus size={16} />
                   <span>Agregar opción</span>

@@ -491,6 +491,7 @@ const FormBuilder = () => {
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
                       }`}
                     disabled={tab.id === 'document' && !formData.formId}
+                    title = {tab.id === 'document' && !formData.formId ? "Debes seleccionar un formulario base primero" : `Ir a la pestaña ${tab?.label}`}
                   >
                     <Icon name={tab?.icon} size={16} />
                     <span>{tab?.label}</span>

@@ -482,6 +482,7 @@ const FormPreview = ({ formData }) => {
           onClick={() => triggerFileInput(question.id)}
           className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 flex flex-col items-center justify-center"
           disabled={selectedFiles.length >= maxFiles}
+          title="Seleccionar archivo"
         >
           <div className="flex items-center justify-center space-x-2">
             <Icon name="Upload" size={20} className="text-gray-400" />
@@ -1081,6 +1082,7 @@ const FormPreview = ({ formData }) => {
                     className="px-4 sm:px-6 py-3 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition-colors text-sm sm:text-base"
                     onClick={handleCancel}
                     disabled={isSubmitting}
+                    title="Cancelar y limpiar el formulario"
                   >
                     Cancelar
                   </button>
@@ -1092,6 +1094,7 @@ const FormPreview = ({ formData }) => {
                     }}
                     className="px-4 sm:px-6 py-3 rounded-md font-medium text-white hover:opacity-90 transition-opacity text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={isSubmitting}
+                    title = "Enviar el formulario con las respuestas proporcionadas"
                   >
                     {isSubmitting ? 'Enviando...' : 'Enviar Formulario'}
                   </button>

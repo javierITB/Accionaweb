@@ -127,6 +127,7 @@ const Select = React.forwardRef(({
                     aria-expanded={isOpen}
                     aria-haspopup="listbox"
                     {...props}
+                    
                 >
                     <span className="truncate">{getSelectedDisplay()}</span>
 

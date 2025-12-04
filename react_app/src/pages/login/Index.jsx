@@ -57,7 +57,12 @@ export default function LoginPage() {
           <label className="block mb-2 font-semibold">Contraseña</label>
           <input type="password" className="w-full border p-2 rounded" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
-        <button type="submit" className="w-full bg-[#f97316] text-white py-2 rounded font-bold hover:bg-orange-500 transition">
+        <button 
+        type="submit" 
+        className="w-full bg-[#f97316] text-white py-2 rounded font-bold hover:bg-orange-500 transition"
+        title = "Iniciar sesión"
+        >
+
           Ingresar
         </button>
       </form>

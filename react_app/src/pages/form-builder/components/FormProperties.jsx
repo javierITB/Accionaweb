@@ -492,6 +492,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
                 style={{
                   background: `linear-gradient(135deg, ${preset.primary} 0%, ${preset.secondary} 100%)`
                 }}
+                title = {`Seleccionar preset ${preset.name}`}
               >
                 <div className="text-xs font-medium text-white drop-shadow-sm">
                   {preset.name}
@@ -576,6 +577,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
                   style={{ backgroundColor: formData?.primaryColor }}
                   className="px-4 py-2 text-white rounded-md font-medium"
                   disabled
+                  title = "Botón de ejemplo"
                 >
                   Botón Primario
                 </button>

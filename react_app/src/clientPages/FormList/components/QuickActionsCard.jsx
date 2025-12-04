@@ -87,6 +87,7 @@ const QuickActionsCard = ({ section }) => {
                 key={action?.id}
                 onClick={() => handleActionClick(action?.path)}
                 className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg border border-border hover:border-primary hover:shadow-brand-hover transition-brand text-left group w-full"
+                title={action.title}
               >
                 {/* Icon */}
                 <div

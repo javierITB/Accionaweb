@@ -1578,6 +1578,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 ? 'border-accent text-accent'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
+                title = "Ver detalles de la solicitud"
             >
               Detalles
             </button>
@@ -1587,6 +1588,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 ? 'border-accent text-accent'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
+                title = "Ver respuestas del formulario"
             >
               Respuestas
             </button>

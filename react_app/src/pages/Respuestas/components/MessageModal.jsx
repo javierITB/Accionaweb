@@ -142,6 +142,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
+              title = "Ver mensajes generales"
             >
               General
             </button>
@@ -152,6 +153,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                   ? 'border-error text-error' // Color distintivo para admin
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
+              title = "Ver mensajes internos"
             >
               <Icon name="Lock" size={12} />
               Interno

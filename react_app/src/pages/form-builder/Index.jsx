@@ -586,6 +586,7 @@ const FormBuilder = () => {
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
                       }`}
+                      title = {`Ir a la sección de ${tab?.label}`}
                   >
                     <Icon name={tab?.icon} size={16} />
                     <span>{tab?.label}</span>

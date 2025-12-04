@@ -40,6 +40,7 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
         ? 'bg-white-50 hover:bg-gray-100 dark:hover:bg-secondary dark:text-foreground'
         : 'hover:bg-primary'
         }`}
+      title={`Copiar variable ${generateVarTag(v.title || v.text)}`}
     >
       <span className={`font-semibold ${isChild ? 'text-xs' : 'text-sm'}`}>
         {generateVarTag(v.title || v.text)}
@@ -85,6 +86,7 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between px-3 py-2 cursor-pointer text-left font-semibold text-sm hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
+        title = {isOpen ? "Cerrar detalles de la variable" : "Abrir detalles de la variable"}
       >
         <div className="flex flex-col items-start">
           <span className="font-semibold text-sm">{variable.title || variable.text}</span>
@@ -287,6 +289,7 @@ const DocumentTemplateEditor = ({
                 <button
                   onClick={() => setStaticVarsExpanded(!staticVarsExpanded)}
                   className="w-full flex items-center justify-between text-sm font-semibold text-foreground mb-2 hover:text-primary transition-colors p-2 rounded-md hover:bg-primary/5"
+                  title = {staticVarsExpanded ? "Cerrar detalles de la variable" : "Abrir detalles de la variable"}
                 >
                   <span>Variables Generales ({staticVariables.length})</span>
                   <Icon
@@ -303,6 +306,7 @@ const DocumentTemplateEditor = ({
                         key={variable.title}
                         onClick={() => copyVariable(generateVarTag(variable.title))}
                         className="w-full flex flex-col items-start px-3 py-2 rounded-md text-xs transition-brand cursor-pointer text-left font-mono border border-transparent bg-white-50 hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white dark:text-foreground"
+                        title = {`Copiar variable ${generateVarTag(variable.title)}`}
                       >
                         <span className="font-semibold text-sm">
                           {generateVarTag(variable.title)}

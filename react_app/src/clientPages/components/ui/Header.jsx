@@ -221,6 +221,7 @@ const Header = ({ className = '' }) => {
                       key={item?.path}
                       onClick={() => handleNavigation(item?.path)}
                       className="flex items-center w-full px-4 py-2 text-sm text-popover-foreground hover:bg-muted transition-brand"
+                      title={item.name}
                     >
                       <Icon name={item?.icon} size={16} className="mr-3" />
                       {item?.name}
@@ -278,6 +279,7 @@ const Header = ({ className = '' }) => {
                 <button
                   onClick={() => { window.location.href = "/perfil" }}
                   className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+                  title="Perfil de usuario"
                 >
                   {user ? (
                     <span className="text-sm font-semibold text-white">
@@ -294,7 +296,8 @@ const Header = ({ className = '' }) => {
               <button
                 onClick={() => { user ? handleLogout() : window.location.href = "/login"  }}
                 className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
-                title={user?"Cerrar sesión":"Log In"}
+                title={user?"Cerrar sesión":"Iniciar Sesión"}
+              
               >
                 {user ? (
                   <Icon name="LogOut" size={16} className="text-white" />
@@ -327,6 +330,7 @@ const Header = ({ className = '' }) => {
                   key={item?.path}
                   onClick={() => handleNavigation(item?.path)}
                   className="flex items-center w-full px-4 py-3 text-left text-foreground hover:bg-muted rounded-lg transition-brand"
+                  title={item?.name}
                 >
                   <Icon name={item?.icon} size={20} className="mr-3" />
                   <span className="font-medium">{item?.name}</span>
@@ -339,6 +343,7 @@ const Header = ({ className = '' }) => {
                   key={item?.path}
                   onClick={() => handleNavigation(item?.path)}
                   className="flex items-center w-full px-4 py-3 text-left text-foreground hover:bg-muted rounded-lg transition-brand"
+                  title={item?.name}
                 >
                   <Icon name={item?.icon} size={20} className="mr-3" />
                   <span className="font-medium">{item?.name}</span>

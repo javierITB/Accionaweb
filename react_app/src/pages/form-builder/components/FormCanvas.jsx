@@ -91,6 +91,7 @@ const FormCanvas = ({
                   }}
                   disabled={index === 0}
                   className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  title = "Mover arriba"
                 >
                   <ChevronUp size={16} />
                 </button>
@@ -101,6 +102,7 @@ const FormCanvas = ({
                   }}
                   disabled={index === form?.questions?.length - 1}
                   className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  title = "Mover abajo"
                 >
                   <ChevronDown size={16} />
                 </button>
@@ -110,6 +112,7 @@ const FormCanvas = ({
                     onDeleteQuestion(question?.id);
                   }}
                   className="p-1 text-red-400 hover:text-red-600"
+                  title = "Eliminar pregunta"
                 >
                   <Trash2 size={16} />
                 </button>

@@ -167,6 +167,7 @@ const CommunityForum = () => {
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
+                  title = {`Filtrar por tema: ${topic?.name}`}
                 >
                   <div className="flex items-center space-x-2">
                     <Icon name={topic?.icon} size={16} />

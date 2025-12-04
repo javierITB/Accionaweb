@@ -86,6 +86,7 @@ const SearchBar = ({ onSearch, className = '' }) => {
                     key={index}
                     onClick={() => handleSuggestionClick(suggestion)}
                     className="w-full px-3 sm:px-4 py-2 text-left text-xs sm:text-sm text-popover-foreground hover:bg-muted transition-brand flex items-center space-x-2"
+                    title = {`Buscar "${suggestion}"`}
                   >
                     <Icon name="Search" size={12} className="text-muted-foreground flex-shrink-0 sm:w-3.5 sm:h-3.5" />
                     <span className="truncate">{suggestion}</span>

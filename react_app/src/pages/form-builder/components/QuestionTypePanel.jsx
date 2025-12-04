@@ -68,6 +68,7 @@ const QuestionTypePanel = ({ onAddQuestion }) => {
             key={type?.id}
             onClick={() => handleAddQuestion(type?.id)}
             className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all group"
+            title = {`Agregar pregunta de tipo ${type?.name}`}
           >
             <div className="flex items-start space-x-3">
               <div className="p-1 rounded bg-gray-100 group-hover:bg-blue-100 transition-colors">
