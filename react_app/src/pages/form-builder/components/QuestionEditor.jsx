@@ -226,13 +226,14 @@ const QuestionEditor = ({
   // En renderFileConfig - CORREGIR el input de formatos
   const renderFileConfig = useCallback(() => {
     // Usar valores de la pregunta o valores por defecto
-    const accept = localQuestion.accept || ''; // ✅ Cambiar a vacío por defecto
+    const accept = localQuestion.accept || '';
     const maxSize = localQuestion.maxSize || '1';
     const multiple = localQuestion.multiple || false;
+    const maxFiles = localQuestion.maxFiles || (multiple ? 4 : 1); // ← NUEVO
 
     return (
       <div className="mt-3 space-y-4 p-4 bg-gray-50 rounded-lg border">
-        {/* ✅ Múltiples archivos */}
+        {/* Múltiples archivos */}
         <div className="flex items-center space-x-2">
           <input
             type="checkbox"
@@ -243,7 +244,33 @@ const QuestionEditor = ({
           <span className="text-sm font-medium text-gray-700">Permitir múltiples archivos</span>
         </div>
 
-        {/* ✅ Formatos permitidos - CORREGIDO */}
+        {/* NUEVO: Número máximo de archivos - Solo visible si multiple=true */}
+        {multiple && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Número máximo de archivos
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="20"
+              step="1"
+              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={maxFiles}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 1;
+                handleFieldChange('maxFiles', Math.min(Math.max(value, 1), 20));
+              }}
+              placeholder="4"
+              onBlur={saveChanges}
+            />
+            <p className="text-xs text-gray-500">
+              Máximo de archivos que el usuario puede subir (1-20)
+            </p>
+          </div>
+        )}
+
+        {/* Formatos permitidos */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">
             Tipos de archivo permitidos
@@ -251,9 +278,9 @@ const QuestionEditor = ({
           <input
             type="text"
             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            value={accept} // ✅ Ahora estará vacío por defecto
+            value={accept}
             onChange={(e) => handleFieldChange('accept', e.target.value)}
-            placeholder=".pdf,.doc,.docx,.jpg,.png,image/*,application/pdf" // ✅ Placeholder como texto fantasma
+            placeholder=".pdf,.doc,.docx,.jpg,.png,image/*,application/pdf"
             onBlur={saveChanges}
           />
           <p className="text-xs text-gray-500">
@@ -261,7 +288,7 @@ const QuestionEditor = ({
           </p>
         </div>
 
-        {/* ✅ Tamaño máximo */}
+        {/* Tamaño máximo */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">
             Tamaño máximo (MB)
@@ -271,30 +298,36 @@ const QuestionEditor = ({
             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             value={maxSize}
             onChange={(e) => handleFieldChange('maxSize', e.target.value)}
-            placeholder="10" // ✅ Placeholder para tamaño
+            placeholder="10"
             onBlur={saveChanges}
           />
         </div>
 
-        {/* ✅ Resumen de configuración - MEJORADO */}
+        {/* Resumen de configuración - ACTUALIZADO */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <p className="text-sm text-blue-800 mb-2">
             <strong>Resumen de configuración:</strong>
           </p>
           <div className="space-y-1 text-sm text-blue-700">
             <div className="flex justify-between">
+              <span>Múltiples archivos:</span>
+              <span className="font-medium">{multiple ? 'Sí' : 'No'}</span>
+            </div>
+            {multiple && (
+              <div className="flex justify-between">
+                <span>Límite de archivos:</span>
+                <span className="font-medium">{maxFiles} archivos</span>
+              </div>
+            )}
+            <div className="flex justify-between">
               <span>Formatos permitidos:</span>
               <span className="font-medium">
-                {accept ? accept : '.pdf,application/pdf (por defecto)'} {/* ✅ Mostrar valor por defecto si está vacío */}
+                {accept ? accept : '.pdf,application/pdf (por defecto)'}
               </span>
             </div>
             <div className="flex justify-between">
               <span>Tamaño máximo:</span>
               <span className="font-medium">{maxSize} MB</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Múltiples archivos:</span>
-              <span className="font-medium">{multiple ? 'Sí' : 'No'}</span>
             </div>
           </div>
         </div>
@@ -302,6 +335,7 @@ const QuestionEditor = ({
     );
   }, [
     localQuestion.multiple,
+    localQuestion.maxFiles, // ← AÑADIR
     localQuestion.accept,
     localQuestion.maxSize,
     handleFieldChange,

@@ -19,7 +19,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const fetchMessages = async () => {
     if (!id) return;
     try {
-      const res = await fetch(`https://back-acciona.vercel.app/api/respuestas/${id}/chat/admin`);
+      const res = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${id}/chat/admin`);
       if (!res.ok) throw new Error("Error al obtener chat");
       const data = await res.json();
       setMessages(data || []);
@@ -67,7 +67,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         admin: activeTab === 'admin' // <--- IMPORTANTE
       };
 
-      const res = await fetch("https://back-acciona.vercel.app/api/respuestas/chat", {
+      const res = await fetch("https://https://back-acciona.vercel.app/api/respuestas/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

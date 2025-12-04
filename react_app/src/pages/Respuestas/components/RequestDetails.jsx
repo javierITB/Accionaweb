@@ -3,11 +3,15 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import CleanDocumentPreview from './CleanDocumentPreview';
 
+// Límites configurados
+const MAX_FILES = 5; // Máximo de archivos
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
+
 const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }) => {
   // --- ESTADOS DE UI ---
-  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'responses'
+  const [activeTab, setActiveTab] = useState('details');
 
-  const [correctedFile, setCorrectedFile] = useState(null);
+  const [correctedFiles, setCorrectedFiles] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [clientSignature, setClientSignature] = useState(null);
   const [isApproving, setIsApproving] = useState(false);
@@ -27,6 +31,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   // --- NUEVO ESTADO PARA DATOS APROBADOS ---
   const [approvedData, setApprovedData] = useState(null);
   const [isLoadingApprovedData, setIsLoadingApprovedData] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
 
   // Estado principal de datos
   const [fullRequestData, setFullRequestData] = useState({ ...request });
@@ -39,9 +46,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const [downloadingAttachmentIndex, setDownloadingAttachmentIndex] = useState(null);
   const [isDownloadingSignature, setIsDownloadingSignature] = useState(false);
 
-  // ---------------------------------------------
-  // 1. SINCRONIZACIÓN CON EL PADRE
-  // ---------------------------------------------
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
+
   useEffect(() => {
     if (request) {
       setFullRequestData(prev => {
@@ -53,18 +60,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   }, [request]);
 
-  // Al abrir o cambiar de request, volver a la pestaña principal
   useEffect(() => {
     if (isVisible) {
       setActiveTab('details');
     }
   }, [isVisible, request?._id]);
 
-  // --- NUEVA FUNCIÓN PARA OBTENER DATOS APROBADOS ---
   const fetchApprovedData = async (responseId) => {
     setIsLoadingApprovedData(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/data-approved/${responseId}`);
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/data-approved/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setApprovedData(data);
@@ -82,7 +87,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const checkClientSignature = async () => {
     setIsCheckingSignature(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       if (response.ok) {
         const data = await response.json();
         if (data.exists) {
@@ -103,7 +108,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const getDocumentInfo = async (responseId) => {
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/generador/info-by-response/${responseId}`);
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/generador/info-by-response/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setDocumentInfo(data);
@@ -123,7 +128,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`);
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`);
 
       if (response.ok) {
         const data = await response.json();
@@ -150,14 +155,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   useEffect(() => {
     if (request?.correctedFile) {
-      setCorrectedFile({
+      setCorrectedFiles([{
         name: request.correctedFile.fileName,
         size: request.correctedFile.fileSize,
-        url: `https://back-acciona.vercel.app/api/respuestas/${request._id}/corrected-file`,
+        url: `https://https://back-acciona.vercel.app/api/respuestas/${request._id}/corrected-file`,
         isServerFile: true
-      });
+      }]);
     } else {
-      setCorrectedFile(null);
+      setCorrectedFiles([]);
     }
 
     if (request?._id) {
@@ -178,7 +183,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     const fetchFullDetailsAndDocs = async () => {
       setIsDetailLoading(true);
       try {
-        const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}`);
+        const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${responseId}`);
         if (response.ok) {
           const data = await response.json();
           setFullRequestData(prev => ({
@@ -200,11 +205,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     fetchApprovedData(responseId);
 
   }, [isVisible, request?._id]);
-
-
-  // ---------------------------------------------
-  //           FUNCIONES DE MANEJO
-  // ---------------------------------------------
 
   const downloadPdfForPreview = async (url) => {
     try {
@@ -230,7 +230,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+        const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
           if (updatedRequest.status !== request.status) {
@@ -255,19 +255,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     };
   }, [previewDocument]);
 
-  // --- NUEVAS FUNCIONES PARA NAVEGACIÓN DE ESTADOS ---
   const handleStatusChange = async (newStatus) => {
     if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
-    
+
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/status`, {
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: newStatus })
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         if (onUpdate && result.updatedRequest) {
@@ -285,14 +284,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
-  // Función para obtener el estado anterior
   const getPreviousStatus = (currentStatus) => {
     const statusFlow = ['pendiente', 'en_revision', 'aprobado', 'firmado', 'finalizado', 'archivado'];
     const currentIndex = statusFlow.indexOf(currentStatus);
     return currentIndex > 0 ? statusFlow[currentIndex - 1] : null;
   };
 
-  // Función para obtener el siguiente estado
   const getNextStatus = (currentStatus) => {
     const statusFlow = ['pendiente', 'en_revision', 'aprobado', 'firmado', 'finalizado', 'archivado'];
     const currentIndex = statusFlow.indexOf(currentStatus);
@@ -318,7 +315,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         alert('No hay documento generado disponible para vista previa');
         return;
       }
-      const documentUrl = `https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`;
+      const documentUrl = `https://https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`;
       const extension = info.tipo || 'docx';
       handlePreviewDocument(documentUrl, extension);
     } catch (error) {
@@ -329,31 +326,40 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
-  const handlePreviewCorrected = async () => {
-    const hasFile = correctedFile || approvedData || fullRequestData?.correctedFile;
-    if (!hasFile) {
-      alert('No hay documento corregido para vista previa');
+  const handlePreviewCorrectedFile = async (index = 0) => {
+    const hasFiles = correctedFiles.length > 0 || approvedData || fullRequestData?.correctedFile;
+
+    if (!hasFiles) {
+      alert('No hay documentos corregidos para vista previa');
       return;
     }
 
     try {
       setIsLoadingPreviewCorrected(true);
+      setPreviewIndex(index);
+
       let documentUrl;
 
-      if (correctedFile && correctedFile instanceof File) {
-        documentUrl = URL.createObjectURL(correctedFile);
+      if (correctedFiles.length > 0) {
+        if (index < 0 || index >= correctedFiles.length) {
+          alert('Índice de archivo inválido');
+          return;
+        }
+        const file = correctedFiles[index];
+        documentUrl = URL.createObjectURL(file);
       }
       else if (approvedData || request?.status === 'aprobado' || request?.status === 'firmado') {
-        const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${request._id}`;
+        const pdfUrl = `https://https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${request._id}?index=${index}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
       }
       else if (request?.correctedFile) {
         alert('El documento corregido está en proceso de revisión.');
         return;
       } else {
-        alert('No hay documento corregido disponible');
+        alert('No hay documentos corregidos disponibles');
         return;
       }
+
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
       console.error('Error:', error);
@@ -370,7 +376,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
     try {
       setIsLoadingPreviewSignature(true);
-      const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/${request._id}/client-signature`;
+      const pdfUrl = `https://https://back-acciona.vercel.app/api/respuestas/${request._id}/client-signature`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
@@ -389,7 +395,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         alert('Solo disponible para PDF');
         return;
       }
-      const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`;
+      const pdfUrl = `https://https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
@@ -404,7 +410,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     if (!confirm('¿Regenerar documento?')) return;
     setIsRegenerating(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/regenerate-document`, { method: 'POST' });
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/regenerate-document`, { method: 'POST' });
       if (response.ok) {
         await getDocumentInfo(request._id);
         alert('Documento regenerado exitosamente');
@@ -428,7 +434,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         alert('No hay documento disponible');
         return;
       }
-      window.open(`https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
+      window.open(`https://https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
     } catch (error) {
       console.error('Error:', error);
       alert('Error al descargar');
@@ -440,7 +446,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handleDownloadAdjunto = async (responseId, index) => {
     setDownloadingAttachmentIndex(index);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
       if (response.ok) {
         const blob = await response.blob();
         const adjunto = fullRequestData.adjuntos[index];
@@ -466,7 +472,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handleDownloadClientSignature = async (responseId) => {
     setIsDownloadingSignature(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`);
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -492,12 +498,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handleDeleteClientSignature = async (responseId) => {
     if (!confirm('¿Eliminar documento firmado por el cliente?')) return;
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`, { method: 'DELETE' });
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`, { method: 'DELETE' });
       if (response.ok) {
         setClientSignature(null);
         alert('Eliminado exitosamente');
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -511,16 +517,38 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
-  const handleUploadCorrection = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      if (file.type === 'application/pdf') {
-        setCorrectedFile(file);
-      } else {
-        alert('Por favor, sube solo archivos PDF');
-        event.target.value = '';
-      }
+  const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files);
+    const pdfFiles = files.filter(file => file.type === 'application/pdf');
+
+    if (pdfFiles.length === 0) {
+      alert('Por favor, sube solo archivos PDF');
+      event.target.value = '';
+      return;
     }
+
+    // Validar límite de cantidad de archivos
+    if (correctedFiles.length + pdfFiles.length > MAX_FILES) {
+      alert(`Máximo ${MAX_FILES} archivos permitidos. Ya tienes ${correctedFiles.length} archivo(s) seleccionado(s).`);
+      event.target.value = '';
+      return;
+    }
+
+    // Validar tamaño de cada archivo
+    const oversizedFiles = pdfFiles.filter(file => file.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      const oversizedNames = oversizedFiles.map(f => f.name).join(', ');
+      alert(`Los siguientes archivos exceden el límite de 1MB: ${oversizedNames}`);
+      event.target.value = '';
+      return;
+    }
+
+    setCorrectedFiles(prev => [...prev, ...pdfFiles]);
+    event.target.value = '';
+  };
+
+  const handleRemoveFile = (index) => {
+    setCorrectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleUploadClick = () => {
@@ -528,24 +556,26 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   };
 
   const handleRemoveCorrection = async () => {
-    if (correctedFile && correctedFile instanceof File) {
-      setCorrectedFile(null);
+    if (correctedFiles.length > 0) {
+      if (!confirm('¿Eliminar todos los archivos seleccionados?')) return;
+      setCorrectedFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
+
     try {
-      const signatureCheck = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      const signatureCheck = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       const signatureData = await signatureCheck.json();
       const hasSignature = signatureData.exists;
       let warningMessage = '¿Eliminar corrección y volver a revisión?';
       if (hasSignature) warningMessage = 'ADVERTENCIA: Existe documento firmado. ¿Continuar?';
       if (!confirm(warningMessage)) return;
 
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/remove-correction`, { method: 'DELETE' });
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/remove-correction`, { method: 'DELETE' });
       const result = await response.json();
       if (response.ok) {
         if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
-        setCorrectedFile(null);
+        setCorrectedFiles([]);
         setApprovedData(null);
         if (result.hasExistingSignature) alert('Corrección eliminada. Estado volverá a firmado al subir nueva.');
         else alert('Corrección eliminada, vuelve a revisión.');
@@ -558,35 +588,239 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
-  const handleApprove = async () => {
-    if (!correctedFile || isApproving || request?.status === 'aprobado' || request?.status === 'firmado') return;
-    if (!confirm('¿Aprobar formulario? Acción irreversible.')) return;
-    setIsApproving(true);
+  // Función para eliminar un archivo ya subido en el backend
+  const handleDeleteUploadedFile = async (fileName, index) => {
+    if (!confirm(`¿Eliminar el archivo "${fileName}"?`)) return;
+
+    setIsDeletingFile(index);
     try {
-      const formData = new FormData();
-      formData.append('correctedFile', correctedFile);
-      const approveResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/approve`, {
-        method: 'POST',
-        body: formData,
+      const token = localStorage.getItem('token');
+      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/delete-corrected-file/${request._id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileName })
       });
-      if (approveResponse.ok) {
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Archivo "${fileName}" eliminado exitosamente`);
+
+        // Refrescar los datos aprobados
+        await fetchApprovedData(request._id);
+
+        // Si onUpdate está disponible, actualizar el request
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedRequest = await updatedResponse.json();
+          onUpdate(updatedRequest);
+        }
+      } else {
+        const errorData = await response.json();
+        alert(`Error eliminando archivo: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error eliminando archivo:', error);
+      alert('Error eliminando archivo: ' + error.message);
+    } finally {
+      setIsDeletingFile(null);
+    }
+  };
+
+  // Función para subir archivos uno por uno (igual que adjuntos)
+  const uploadFilesOneByOne = async () => {
+    if (correctedFiles.length === 0) {
+      alert('No hay archivos para subir');
+      return false;
+    }
+
+    try {
+      const token = localStorage.getItem('token'); // Ajusta según tu auth
+      let successfulUploads = 0;
+
+      for (let i = 0; i < correctedFiles.length; i++) {
+        const file = correctedFiles[i];
+        const formData = new FormData();
+
+        // Agregar el archivo individual
+        formData.append('files', file);
+
+        // Agregar metadata como en adjuntos
+        formData.append('responseId', request._id);
+        formData.append('index', i.toString());
+        formData.append('total', correctedFiles.length.toString());
+
+        console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
+
+        const response = await fetch('https://https://back-acciona.vercel.app/api/respuestas/upload-corrected-files', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Archivo ${i + 1} subido:`, result);
+          successfulUploads++;
+
+          // Actualizar progreso
+          setUploadedFilesCount(successfulUploads);
+          setUploadProgress(Math.round((successfulUploads / correctedFiles.length) * 100));
+
+          // Pequeña pausa entre archivos
+          if (i < correctedFiles.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        } else {
+          const error = await response.json();
+          console.error(`Error subiendo archivo ${i + 1}:`, error);
+
+          // Preguntar si quiere continuar
+          const shouldContinue = window.confirm(
+            `Error subiendo "${file.name}": ${error.error}\n\n¿Continuar con los demás archivos?`
+          );
+
+          if (!shouldContinue) {
+            return false;
+          }
+        }
+      }
+
+      console.log(`Subida completada: ${successfulUploads}/${correctedFiles.length} archivos exitosos`);
+      return successfulUploads > 0; // Retorna true si al menos uno se subió
+
+    } catch (error) {
+      console.error('Error en proceso de subida:', error);
+      alert('Error subiendo archivos: ' + error.message);
+      return false;
+    }
+  };
+
+  const handleApprove = async () => {
+    // Validar que haya archivos
+    if (correctedFiles.length === 0) {
+      alert('Debe subir al menos un archivo PDF para aprobar');
+      return;
+    }
+
+    // Validar límite de archivos
+    if (correctedFiles.length > MAX_FILES) {
+      alert(`Máximo ${MAX_FILES} archivos permitidos. Tienes ${correctedFiles.length} archivos.`);
+      return;
+    }
+
+    // Validar tamaño de cada archivo
+    const oversizedFiles = correctedFiles.filter(file => file.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      const oversizedNames = oversizedFiles.map(f => f.name).join(', ');
+      alert(`No se puede aprobar. Los siguientes archivos exceden 1MB: ${oversizedNames}`);
+      return;
+    }
+
+    if (isApproving || request?.status === 'aprobado' || request?.status === 'firmado') {
+      return;
+    }
+
+    if (!confirm(`¿Subir ${correctedFiles.length} archivo(s) y aprobar formulario?`)) return;
+
+    setIsApproving(true);
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadedFilesCount(0);
+
+    try {
+      // 1. SUBIR ARCHIVOS UNO POR UNO
+      const uploadSuccess = await uploadFilesOneByOne();
+
+      if (!uploadSuccess) {
+        alert('Error subiendo archivos. No se pudo aprobar.');
+        return;
+      }
+
+      // 2. ESPERAR UN MOMENTO PARA ASEGURAR QUE LOS ARCHIVOS SE GUARDARON
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 3. APROBAR DESPUÉS DE SUBIR LOS ARCHIVOS
+      const token = localStorage.getItem('token');
+
+      const approveResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/approve`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({})
+      });
+
+      if (approveResponse.ok) {
+        const result = await approveResponse.json();
+
+        if (onUpdate) {
+          const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
           fetchApprovedData(request._id);
         }
-        setCorrectedFile(null);
-        alert('Formulario aprobado');
+
+        setCorrectedFiles([]);
+        setUploadProgress(100);
+
+        setTimeout(() => {
+          alert(`✅ Formulario aprobado exitosamente\n${correctedFiles.length} archivo(s) subido(s)`);
+        }, 500);
+
       } else {
         const errorData = await approveResponse.json();
-        alert(`Error: ${errorData.error}`);
+
+        // Si el error es que no hay archivos, podría ser un delay en la BD
+        if (errorData.error && errorData.error.includes('No hay archivos corregidos')) {
+          const retry = window.confirm(
+            'El backend no encontró los archivos recién subidos.\n¿Reintentar aprobación en 3 segundos?'
+          );
+
+          if (retry) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            const retryResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/approve`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({})
+            });
+
+            if (retryResponse.ok) {
+              // Éxito en el reintento
+              if (onUpdate) {
+                const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+                const updatedRequest = await updatedResponse.json();
+                onUpdate(updatedRequest);
+              }
+              alert('✅ Aprobado en reintento');
+            } else {
+              alert('❌ Error en reintento: ' + (await retryResponse.json()).error);
+            }
+          }
+        } else {
+          alert(`❌ Error aprobando: ${errorData.error}`);
+        }
       }
+
     } catch (error) {
       console.error('Error:', error);
       alert('Error: ' + error.message);
     } finally {
       setIsApproving(false);
+      setIsUploading(false);
+      setTimeout(() => {
+        setUploadProgress(0);
+        setUploadedFilesCount(0);
+      }, 2000);
     }
   };
 
@@ -595,10 +829,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/finalized`);
+      const approveResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/finalized`);
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -620,10 +854,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     if (!confirm('¿Estás seguro de que quieres archivar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/archived`);
+      const approveResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/archived`);
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -640,7 +874,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
   };
 
-
   const getRealAttachments = () => {
     if (!fullRequestData) return [];
     if (documentInfo && documentInfo.IDdoc) {
@@ -649,7 +882,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         const formTitle = fullRequestData?.formTitle || 'Documento';
         const nombreTrabajador = fullRequestData?.responses?.["Nombre del trabajador"] || 'Trabajador';
         fileName = `${formTitle}_${nombreTrabajador}`.normalize('NFD')
-          // Reemplazar caracteres especiales del español
           .replace(/ñ/g, 'n')
           .replace(/Ñ/g, 'N')
           .replace(/á/g, 'a')
@@ -664,13 +896,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           .replace(/Ú/g, 'U')
           .replace(/ü/g, 'u')
           .replace(/Ü/g, 'U')
-          // Eliminar cualquier otro diacrítico
           .replace(/[\u0300-\u036f]/g, '')
-          // Eliminar caracteres especiales restantes
           .replace(/[^a-zA-Z0-9\s._-]/g, '')
-          // Reemplazar espacios múltiples por un solo guión bajo
           .replace(/\s+/g, '_')
-          // Limitar longitud
           .substring(0, 100)
           .toUpperCase();
       }
@@ -720,8 +948,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const formatFileSize = (bytes) => {
     if (!bytes) return '0 KB';
     if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
-    return (bytes / 1048576).toFixed(2) + ' MB';
+    if (bytes < 1048576) {
+      const kb = (bytes / 1024).toFixed(2);
+      if (bytes > 900 * 1024) {
+        return `${kb} KB (cerca del límite)`;
+      }
+      return kb + ' KB';
+    }
+    const mb = (bytes / 1048576).toFixed(2);
+    return `${mb} MB (EXCEDE LÍMITE)`;
   };
 
   const getFileIcon = (type) => {
@@ -746,8 +981,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const realAttachments = getRealAttachments();
 
-  // --- COMPONENTES INTERNOS DE RENDERIZADO ---
-
   const renderDetailsTab = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -761,7 +994,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         </div>
       </div>
 
-      {/* ADJUNTOS */}
       <div>
         {attachmentsLoading &&
           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -819,7 +1051,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         )}
       </div>
 
-      {/* DOCUMENTO GENERADO */}
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
           Documento Generado
@@ -880,90 +1111,257 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-
             <p className="text-sm">No hay documentos generados para este formulario</p>
           </div>
         )}
       </div>
 
-      {/* DOCUMENTO CORREGIDO */}
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
           Documento Corregido
           {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
         </h3>
         <div className="bg-muted/50 rounded-lg p-4">
-          {correctedFile || approvedData || fullRequestData?.correctedFile ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Icon name="FileText" size={20} className="text-accent" />
+          {correctedFiles.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    {correctedFile?.name || approvedData?.fileName || fullRequestData?.correctedFile?.fileName}
+                    Archivos seleccionados: {correctedFiles.length}/{MAX_FILES}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {correctedFile?.size
-                      ? `${(correctedFile.size / 1024 / 1024).toFixed(2)} MB`
-                      : approvedData?.fileSize
-                        ? formatFileSize(approvedData.fileSize)
-                        : fullRequestData?.correctedFile?.fileSize
-                          ? formatFileSize(fullRequestData.correctedFile.fileSize)
-                          : 'Tamaño no disponible'}
+                    Límite: {MAX_FILES} archivos máximo • 1MB por archivo
                   </p>
-                  {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
-                    <p className="text-xs text-success font-medium mt-1">
-                      ✓ Formulario aprobado
-                    </p>
-                  )}
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUploadClick}
+                  iconName="Plus"
+                  iconPosition="left"
+                  disabled={correctedFiles.length >= MAX_FILES}
+                >
+                  Agregar más
+                </Button>
               </div>
-              <div className="flex items-center space-x-2">
+
+              {correctedFiles.map((file, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-card rounded border border-border">
+                  <div className="flex items-center space-x-3">
+                    <Icon name="FileText" size={20} className="text-accent" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {file.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.size)} • PDF • Archivo {index + 1}
+                        {file.size > MAX_FILE_SIZE && (
+                          <span className="text-red-500 font-medium ml-2">(Excede límite)</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handlePreviewCorrectedFile(index)}
+                      iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                      iconPosition="left"
+                      iconSize={16}
+                      disabled={isLoadingPreviewCorrected}
+                    >
+                      {isLoadingPreviewCorrected && previewIndex === index ? 'Cargando...' : 'Vista Previa'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveFile(index)}
+                      className="text-error hover:bg-error/10"
+                    >
+                      <Icon name="X" size={16} />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+
+              <div className="pt-2 border-t border-border flex justify-between items-center">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handlePreviewCorrected}
-                  iconName={isLoadingPreviewCorrected ? "Loader" : "Eye"}
-                  iconPosition="left"
-                  iconSize={16}
-                  disabled={isLoadingPreviewCorrected}
-                >
-                  {isLoadingPreviewCorrected ? 'Cargando...' : 'Vista Previa'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
                   onClick={handleRemoveCorrection}
+                  iconName="Trash2"
+                  iconPosition="left"
                   className="text-error hover:bg-error/10"
                 >
-                  <Icon name="X" size={16} />
+                  Eliminar todos ({correctedFiles.length})
+                </Button>
+
+                {correctedFiles.some(f => f.size > MAX_FILE_SIZE) && (
+                  <p className="text-xs text-red-500 font-medium">
+                    Algunos archivos exceden el límite de 1MB
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : approvedData?.correctedFiles || fullRequestData?.correctedFile ? (
+            <div className="space-y-3">
+              {approvedData?.correctedFiles?.map((file, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-card rounded border border-border">
+                  <div className="flex items-center space-x-3">
+                    <Icon name="FileText" size={20} className="text-accent" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {file.fileName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.fileSize)} • Subido el {formatDate(file.uploadedAt)} • Archivo {index + 1}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handlePreviewCorrectedFile(index)}
+                      iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                      iconPosition="left"
+                      iconSize={16}
+                      disabled={isLoadingPreviewCorrected}
+                    >
+                      {isLoadingPreviewCorrected && previewIndex === index ? 'Cargando...' : 'Vista Previa'}
+                    </Button>
+                    {/* NUEVO: Botón para eliminar archivo ya subido */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteUploadedFile(file.fileName, index)}
+                      className="text-error hover:bg-error/10"
+                      disabled={isDeletingFile === index}
+                    >
+                      <Icon name={isDeletingFile === index ? "Loader" : "Trash2"} size={16} className={isDeletingFile === index ? "animate-spin" : ""} />
+                    </Button>
+                  </div>
+                </div>
+              )) || (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Icon name="FileText" size={20} className="text-accent" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {approvedData?.fileName || fullRequestData?.correctedFile?.fileName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {approvedData?.fileSize
+                            ? formatFileSize(approvedData.fileSize)
+                            : fullRequestData?.correctedFile?.fileSize
+                              ? formatFileSize(fullRequestData.correctedFile.fileSize)
+                              : 'Tamaño no disponible'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handlePreviewCorrectedFile(0)}
+                        iconName={isLoadingPreviewCorrected ? "Loader" : "Eye"}
+                        iconPosition="left"
+                        iconSize={16}
+                        disabled={isLoadingPreviewCorrected}
+                      >
+                        {isLoadingPreviewCorrected ? 'Cargando...' : 'Vista Previa'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleRemoveCorrection}
+                        className="text-error hover:bg-error/10"
+                      >
+                        <Icon name="X" size={16} />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+              {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
+                <p className="text-xs text-success font-medium mt-2">
+                  ✓ Formulario aprobado
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">No se han subido correcciones aún</p>
+                  <p className="text-xs text-muted-foreground">
+                    Límite: {MAX_FILES} archivos máximo • 1MB por archivo
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  iconName="Upload"
+                  iconPosition="left"
+                  onClick={handleUploadClick}
+                >
+                  Seleccionar archivo(s)
                 </Button>
               </div>
             </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">No se han subido correcciones aún</p>
-              <Button
-                variant="outline"
-                size="sm"
-                iconName="Upload"
-                iconPosition="left"
-                onClick={handleUploadClick}
-              >
-                Subir
-              </Button>
-            </div>
           )}
+
           <input
             type="file"
             ref={fileInputRef}
-            onChange={handleUploadCorrection}
+            onChange={handleFileSelect}
             accept=".pdf"
+            multiple={true}
             className="hidden"
           />
         </div>
       </div>
 
-      {/* DOCUMENTO FIRMADO */}
+      {isUploading && (
+        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h4 className="text-sm font-semibold text-blue-800">
+                Subiendo archivos para aprobación
+              </h4>
+              <p className="text-xs text-blue-600">
+                {uploadedFilesCount} de {correctedFiles.length} completados
+              </p>
+            </div>
+            <span className="text-sm font-bold text-blue-700">
+              {uploadProgress}%
+            </span>
+          </div>
+
+          {/* Barra de progreso principal */}
+          <div className="w-full bg-blue-100 rounded-full h-2.5 mb-2">
+            <div
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
+
+          {/* Indicador de archivo actual */}
+          {uploadedFilesCount < correctedFiles.length && (
+            <p className="text-xs text-blue-700 mb-1">
+              Subiendo: {correctedFiles[uploadedFilesCount]?.name || 'Archivo...'}
+            </p>
+          )}
+
+          {/* Contador */}
+          <div className="flex justify-between text-xs text-blue-600">
+            <span>Archivo {Math.min(uploadedFilesCount + 1, correctedFiles.length)}/{correctedFiles.length}</span>
+            <span>{isApproving && !isUploading ? 'Aprobando...' : 'Subiendo...'}</span>
+          </div>
+        </div>
+      )}
+
       {(fullRequestData?.status !== 'pendiente' && fullRequestData?.status !== 'en_revision') && (
         <div>
           {isCheckingSignature &&
@@ -1024,14 +1422,58 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 </div>
               </div>
             </div>
-          ) }
+          )}
         </div>
       )}
     </div>
   );
 
+  const handleUploadFiles = async () => {
+    if (correctedFiles.length === 0) {
+      alert('No hay archivos para subir');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+
+      // Agregar cada archivo
+      correctedFiles.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      // Agregar responseId
+      formData.append('responseId', request._id);
+
+      // Obtener token si es necesario (ajusta según tu auth)
+      const token = localStorage.getItem('token'); // O como manejes el token
+
+      const response = await fetch('https://https://back-acciona.vercel.app/api/respuestas/upload-corrected-files', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`, // Si tu backend requiere auth
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Archivos subidos exitosamente:', result);
+        alert(`${correctedFiles.length} archivo(s) subido(s) exitosamente`);
+        return true;
+      } else {
+        const error = await response.json();
+        alert(`Error subiendo archivos: ${error.error}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error subiendo archivos:', error);
+      alert('Error subiendo archivos: ' + error.message);
+      return false;
+    }
+  };
+
   const renderResponsesTab = () => {
-    // 1. Validamos que existan respuestas
     const responses = fullRequestData?.responses || {};
     const entries = Object.entries(responses);
 
@@ -1057,14 +1499,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 key={index}
                 className="bg-muted/30 rounded-lg p-4 border border-border/50 hover:bg-muted/50 transition-colors"
               >
-                {/* La Pregunta / Etiqueta */}
                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 break-words">
                   {pregunta}
                 </h4>
-
-                {/* La Respuesta */}
                 <div className="text-sm font-medium text-foreground leading-relaxed whitespace-pre-wrap break-words">
-                  {/* Verificamos que sea un valor renderizable, por si viene un booleano u objeto */}
                   {respuesta !== null && typeof respuesta === 'object'
                     ? JSON.stringify(respuesta)
                     : String(respuesta || '-')
@@ -1078,13 +1516,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     );
   };
 
+  const totalFiles = correctedFiles.length > 0
+    ? correctedFiles.length
+    : approvedData?.correctedFiles?.length || 1;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
 
-        {/* HEADER: AHORA CONTIENE EL MENÚ DE PESTAÑAS */}
         <div className="sticky top-0 bg-card border-b border-border z-10">
-          {/* Fila Superior: Título y Acciones */}
           <div className="flex items-center justify-between p-6 pb-2">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
@@ -1094,10 +1534,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                   <p className="text-sm text-muted-foreground">ID: {fullRequestData?._id}</p>
                 </div>
               </div>
-              
-              {/* NUEVO: Flechas de navegación de estado */}
+
               <div className="flex items-center space-x-2">
-                {/* Flecha izquierda */}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -1107,14 +1545,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                   iconSize={16}
                   className="text-muted-foreground hover:text-foreground"
                 />
-                
-                {/* Estado actual */}
+
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fullRequestData?.status)}`}>
                   <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
                   {fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
                 </span>
-                
-                {/* Flecha derecha */}
+
                 <Button
                   variant="ghost"
                   size="icon"
@@ -1135,7 +1571,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             />
           </div>
 
-          {/* Fila Inferior: Pestañas de Navegación */}
           <div className="px-6 flex space-x-6 ">
             <button
               onClick={() => setActiveTab('details')}
@@ -1158,12 +1593,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           </div>
         </div>
 
-        {/* CONTENIDO PRINCIPAL CON RENDERIZADO CONDICIONAL */}
         <div className="p-6">
           {activeTab === 'details' ? renderDetailsTab() : renderResponsesTab()}
         </div>
 
-        {/* FOOTER */}
         <div className="sticky bottom-0 bg-card border-t border-border p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -1181,18 +1614,19 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
                 Mensajes
               </Button>
 
-              {correctedFile && fullRequestData?.status !== 'aprobado' && fullRequestData?.status !== 'firmado' && (
+              {fullRequestData?.status === 'en_revision' && (
                 <Button
                   variant="default"
                   iconName={isApproving ? "Loader" : "CheckCircle"}
                   iconPosition="left"
                   iconSize={16}
                   onClick={handleApprove}
-                  disabled={!correctedFile || isApproving}
+                  disabled={correctedFiles.length === 0 || isApproving || correctedFiles.length > MAX_FILES || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
                 >
-                  {isApproving ? 'Aprobando...' : 'Aprobar'}
+                  {isApproving ? 'Aprobando...' : `Aprobar (${correctedFiles.length}/${MAX_FILES})`}
                 </Button>
               )}
+
               {fullRequestData?.status !== 'finalizado' && (
                 <Button
                   variant="default"
@@ -1238,6 +1672,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         resposes={request}
         documentUrl={previewDocument?.url}
         documentType={previewDocument?.type}
+        currentIndex={previewIndex}
+        totalFiles={totalFiles}
+        onNext={() => {
+          const nextIndex = (previewIndex + 1) % totalFiles;
+          setPreviewIndex(nextIndex);
+          handlePreviewCorrectedFile(nextIndex);
+        }}
+        onPrevious={() => {
+          const prevIndex = (previewIndex - 1 + totalFiles) % totalFiles;
+          setPreviewIndex(prevIndex);
+          handlePreviewCorrectedFile(prevIndex);
+        }}
       />
     </div>
   );
