@@ -19,7 +19,7 @@ const QuickActionsCard = ({ section }) => {
         }
 
         // Enviar mail como query param
-        const res = await fetch(`https://https://back-acciona.vercel.app/api/forms/section/${section}/${encodeURIComponent(mail)}`);
+        const res = await fetch(`https://back-acciona.vercel.app/api/forms/section/${section}/${encodeURIComponent(mail)}`);
 
         if (!res.ok) {
           throw new Error(`Error en la respuesta del servidor: ${res.status}`);

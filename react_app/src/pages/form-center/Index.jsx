@@ -59,7 +59,7 @@ const FormCenter = () => {
     const fetchForms = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch('https://https://back-acciona.vercel.app/api/forms');
+        const res = await fetch('https://back-acciona.vercel.app/api/forms');
         const data = await res.json();
 
         const normalizedForms = data.map(f => ({

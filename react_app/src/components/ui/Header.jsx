@@ -39,14 +39,14 @@ const Header = ({ className = '' }) => {
       try {
         if (!userMail) return;
 
-        const response = await fetch(`https://https://back-acciona.vercel.app/api/auth/full/${userMail}`);
+        const response = await fetch(`https://back-acciona.vercel.app/api/auth/full/${userMail}`);
         if (response.ok) {
           const userData = await response.json();
           setUserRole(userData.rol || cargo || 'Usuario');
           return;
         }
 
-        const responseBasic = await fetch(`https://https://back-acciona.vercel.app/api/auth/${userMail}`);
+        const responseBasic = await fetch(`https://back-acciona.vercel.app/api/auth/${userMail}`);
         if (responseBasic.ok) {
           const userData = await responseBasic.json();
           setUserRole(cargo || 'Usuario');
@@ -99,7 +99,7 @@ const Header = ({ className = '' }) => {
 
     const fetchUnreadCount = async () => {
       try {
-        const response = await fetch(`https://https://back-acciona.vercel.app/api/noti/${userMail}/unread-count`);
+        const response = await fetch(`https://back-acciona.vercel.app/api/noti/${userMail}/unread-count`);
         const data = await response.json();
 
         const newUnreadCount = data.unreadCount || 0;

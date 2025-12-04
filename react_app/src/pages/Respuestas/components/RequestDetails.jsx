@@ -69,7 +69,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const fetchApprovedData = async (responseId) => {
     setIsLoadingApprovedData(true);
     try {
-      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/data-approved/${responseId}`);
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/data-approved/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setApprovedData(data);
@@ -87,7 +87,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const checkClientSignature = async () => {
     setIsCheckingSignature(true);
     try {
-      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       if (response.ok) {
         const data = await response.json();
         if (data.exists) {
@@ -108,7 +108,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
   const getDocumentInfo = async (responseId) => {
     try {
-      const response = await fetch(`https://https://back-acciona.vercel.app/api/generador/info-by-response/${responseId}`);
+      const response = await fetch(`https://back-acciona.vercel.app/api/generador/info-by-response/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setDocumentInfo(data);
@@ -128,7 +128,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
     try {
-      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`);
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`);
 
       if (response.ok) {
         const data = await response.json();
@@ -158,7 +158,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       setCorrectedFiles([{
         name: request.correctedFile.fileName,
         size: request.correctedFile.fileSize,
-        url: `https://https://back-acciona.vercel.app/api/respuestas/${request._id}/corrected-file`,
+        url: `https://back-acciona.vercel.app/api/respuestas/${request._id}/corrected-file`,
         isServerFile: true
       }]);
     } else {
@@ -183,7 +183,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     const fetchFullDetailsAndDocs = async () => {
       setIsDetailLoading(true);
       try {
-        const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${responseId}`);
+        const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}`);
         if (response.ok) {
           const data = await response.json();
           setFullRequestData(prev => ({
@@ -230,7 +230,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+        const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
           if (updatedRequest.status !== request.status) {
@@ -259,7 +259,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
 
     try {
-      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/status`, {
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -315,7 +315,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         alert('No hay documento generado disponible para vista previa');
         return;
       }
-      const documentUrl = `https://https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`;
+      const documentUrl = `https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`;
       const extension = info.tipo || 'docx';
       handlePreviewDocument(documentUrl, extension);
     } catch (error) {
@@ -349,7 +349,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         documentUrl = URL.createObjectURL(file);
       }
       else if (approvedData || request?.status === 'aprobado' || request?.status === 'firmado') {
-        const pdfUrl = `https://https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${request._id}?index=${index}`;
+        const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${request._id}?index=${index}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
       }
       else if (request?.correctedFile) {
@@ -376,7 +376,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
     try {
       setIsLoadingPreviewSignature(true);
-      const pdfUrl = `https://https://back-acciona.vercel.app/api/respuestas/${request._id}/client-signature`;
+      const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/${request._id}/client-signature`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
@@ -395,7 +395,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         alert('Solo disponible para PDF');
         return;
       }
-      const pdfUrl = `https://https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`;
+      const pdfUrl = `https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
@@ -410,7 +410,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     if (!confirm('¿Regenerar documento?')) return;
     setIsRegenerating(true);
     try {
-      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/regenerate-document`, { method: 'POST' });
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/regenerate-document`, { method: 'POST' });
       if (response.ok) {
         await getDocumentInfo(request._id);
         alert('Documento regenerado exitosamente');
@@ -434,7 +434,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         alert('No hay documento disponible');
         return;
       }
-      window.open(`https://https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
+      window.open(`https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
     } catch (error) {
       console.error('Error:', error);
       alert('Error al descargar');
@@ -446,7 +446,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handleDownloadAdjunto = async (responseId, index) => {
     setDownloadingAttachmentIndex(index);
     try {
-      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
       if (response.ok) {
         const blob = await response.blob();
         const adjunto = fullRequestData.adjuntos[index];
@@ -472,7 +472,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handleDownloadClientSignature = async (responseId) => {
     setIsDownloadingSignature(true);
     try {
-      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`);
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -498,12 +498,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
   const handleDeleteClientSignature = async (responseId) => {
     if (!confirm('¿Eliminar documento firmado por el cliente?')) return;
     try {
-      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`, { method: 'DELETE' });
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`, { method: 'DELETE' });
       if (response.ok) {
         setClientSignature(null);
         alert('Eliminado exitosamente');
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -564,14 +564,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     }
 
     try {
-      const signatureCheck = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      const signatureCheck = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
       const signatureData = await signatureCheck.json();
       const hasSignature = signatureData.exists;
       let warningMessage = '¿Eliminar corrección y volver a revisión?';
       if (hasSignature) warningMessage = 'ADVERTENCIA: Existe documento firmado. ¿Continuar?';
       if (!confirm(warningMessage)) return;
 
-      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/remove-correction`, { method: 'DELETE' });
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/remove-correction`, { method: 'DELETE' });
       const result = await response.json();
       if (response.ok) {
         if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
@@ -595,7 +595,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     setIsDeletingFile(index);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/delete-corrected-file/${request._id}`, {
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/delete-corrected-file/${request._id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -613,7 +613,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
         // Si onUpdate está disponible, actualizar el request
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -654,7 +654,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
 
         console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
 
-        const response = await fetch('https://https://back-acciona.vercel.app/api/respuestas/upload-corrected-files', {
+        const response = await fetch('https://back-acciona.vercel.app/api/respuestas/upload-corrected-files', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -747,7 +747,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       // 3. APROBAR DESPUÉS DE SUBIR LOS ARCHIVOS
       const token = localStorage.getItem('token');
 
-      const approveResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/approve`, {
+      const approveResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/approve`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -760,7 +760,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
         const result = await approveResponse.json();
 
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
           fetchApprovedData(request._id);
@@ -785,7 +785,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
           if (retry) {
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            const retryResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/approve`, {
+            const retryResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/approve`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${token}`,
@@ -797,7 +797,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
             if (retryResponse.ok) {
               // Éxito en el reintento
               if (onUpdate) {
-                const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+                const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
                 const updatedRequest = await updatedResponse.json();
                 onUpdate(updatedRequest);
               }
@@ -829,10 +829,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/finalized`);
+      const approveResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/finalized`);
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -854,10 +854,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     if (!confirm('¿Estás seguro de que quieres archivar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}/archived`);
+      const approveResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/archived`);
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://https://back-acciona.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -1448,7 +1448,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
       // Obtener token si es necesario (ajusta según tu auth)
       const token = localStorage.getItem('token'); // O como manejes el token
 
-      const response = await fetch('https://https://back-acciona.vercel.app/api/respuestas/upload-corrected-files', {
+      const response = await fetch('https://back-acciona.vercel.app/api/respuestas/upload-corrected-files', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`, // Si tu backend requiere auth
