@@ -11,6 +11,8 @@ import FormCenter from './pages/form-center/Index.jsx';
 import FormBuilder from './pages/form-builder/Index.jsx';
 import TemplateBuilder from './pages/template-builder/Index.jsx';
 import Login from './pages/login/Index.jsx';
+
+import Recuperacion from './pages/login/Recuperacion.jsx';
 import SupportPortal from './pages/support-portal/Index.jsx';
 import DashboardHome from './pages/dashboard-home/Index.jsx';
 import RequestTracking from './pages/request-tracking/Index.jsx';
@@ -45,7 +47,7 @@ const Routes = () => {
           <Route path="/set-password" element={<SetPassword />} />
           <Route path="/perfil" element={<ProtectedClient><Profile /></ProtectedClient>}/>
           <Route path="/support-portal" element={ <SupportPortal />}/>
-
+          <Route path="/recuperacion" element={ <Recuperacion />}/>
           {/* Rutas protegidas */}
           <Route path="/form-builder" element={<ProtectedRoute><FormBuilder /></ProtectedRoute>}/>
           <Route path="/template-builder" element={<ProtectedRoute><TemplateBuilder /></ProtectedRoute>}/>
