@@ -31,9 +31,6 @@ const RequestTracking = () => {
     dateRange: '',
     startDate: '',
     endDate: '',
-    assignedTo: '',
-    submittedBy: '',
-    description: ''
   });
 
   //buscar id de respuesta que se busca abrir
@@ -94,15 +91,15 @@ const RequestTracking = () => {
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,
             // ESTOS CAMPOS SON CRÍTICOS - INCLUIRLOS
-            status: r.status || 'pendiente', // ← ESTE ES EL QUE FALTA
-            correctedFile: r.correctedFile, // ← Y ESTE TAMBIÉN
-            formTitle: r.formTitle, // ← Y ESTE PARA EL NOMBRE DEL FORMULARIO
+            status: r.status || 'pendiente',
+            correctedFile: r.correctedFile,
+            formTitle: r.formTitle,
             trabajador: r.trabajador,
             // tus campos normalizados/auxiliares
             submittedBy: r.user?.nombre || r.submittedBy || 'Usuario',
             company: r.user?.empresa || 'Empresa',
             lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
-            assignedTo: r.updatedAt || " - ",
+            assignedTo: r.trabajador || " - ",
             hasMessages: false,
 
             // aquí va el objeto form asociado (o null si no se encuentra)
@@ -126,26 +123,84 @@ const RequestTracking = () => {
 
   // Filter and sort requests
   const filteredRequests = resp?.filter(request => {
-    if (filters?.search && !request?.title?.toLowerCase()?.includes(filters?.search?.toLowerCase()) &&
-      !request?.description?.toLowerCase()?.includes(filters?.search?.toLowerCase()) &&
-      !request?.id?.toLowerCase()?.includes(filters?.search?.toLowerCase())) {
-      return false;
+    // Búsqueda general
+    if (filters?.search) {
+      const searchTerm = filters.search.toLowerCase();
+      const searchableFields = [
+        request?.title,
+        request?.description,
+        request?.id,
+        request?.trabajador,
+        request?.formTitle,
+      ];
+      
+      const hasMatch = searchableFields.some(field => 
+        field && field.toString().toLowerCase().includes(searchTerm)
+      );
+      
+      if (!hasMatch) return false;
     }
+
     if (filters?.status && request?.status !== filters?.status) return false;
     if (filters?.category && request?.category !== filters?.category) return false;
     if (filters?.priority && request?.priority !== filters?.priority) return false;
-    if (filters?.assignedTo && (!request?.assignedTo || !request?.assignedTo?.toLowerCase()?.includes(filters?.assignedTo?.toLowerCase()))) return false;
-    if (filters?.submittedBy && !request?.submittedBy?.toLowerCase()?.includes(filters?.submittedBy?.toLowerCase())) return false;
 
-    // Date filtering
+    // Filtro por período (dateRange)
+    if (filters?.dateRange) {
+      const requestDate = new Date(request.submittedAt || request.createdAt);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      let startDate = new Date();
+      let endDate = new Date();
+      
+      switch (filters.dateRange) {
+        case 'today':
+          startDate = new Date(today);
+          endDate = new Date(today);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'week':
+          startDate = new Date(today);
+          startDate.setDate(today.getDate() - today.getDay() + 1);
+          endDate = new Date(today);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'month':
+          startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+          endDate = new Date(today);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'quarter':
+          const quarter = Math.floor(today.getMonth() / 3);
+          startDate = new Date(today.getFullYear(), quarter * 3, 1);
+          endDate = new Date(today);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'year':
+          startDate = new Date(today.getFullYear(), 0, 1);
+          endDate = new Date(today);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        default:
+          break;
+      }
+      
+      if (filters.dateRange !== '') {
+        if (requestDate < startDate || requestDate > endDate) return false;
+      }
+    }
+
+    // Filtro por fechas específicas (startDate y endDate)
     if (filters?.startDate) {
-      const requestDate = new Date(request.submittedDate);
+      const requestDate = new Date(request.submittedAt || request.createdAt);
       const startDate = new Date(filters.startDate);
       if (requestDate < startDate) return false;
     }
     if (filters?.endDate) {
-      const requestDate = new Date(request.submittedDate);
+      const requestDate = new Date(request.submittedAt || request.createdAt);
       const endDate = new Date(filters.endDate);
+      endDate.setHours(23, 59, 59, 999);
       if (requestDate > endDate) return false;
     }
 
@@ -155,8 +210,8 @@ const RequestTracking = () => {
 
     switch (sortBy) {
       case 'date':
-        aValue = new Date(a.submittedDate);
-        bValue = new Date(b.submittedDate);
+        aValue = new Date(a.submittedAt || a.createdAt);
+        bValue = new Date(b.submittedAt || b.createdAt);
         break;
       case 'title':
         aValue = a?.title?.toLowerCase();
@@ -207,8 +262,6 @@ const RequestTracking = () => {
       dateRange: '',
       startDate: '',
       endDate: '',
-      assignedTo: '',
-      submittedBy: ''
     });
   };
 

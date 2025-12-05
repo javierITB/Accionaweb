@@ -86,7 +86,7 @@ const FilterPanel = ({
             <Input
               label="Buscar Solicitudes"
               type="search"
-              placeholder="Buscar por título, empresa o usuario..."
+              placeholder="Buscar por título o trabajador..."
               value={filters?.search || ''}
               onChange={(e) => handleInputChange('search', e?.target?.value)}
               className="w-full"

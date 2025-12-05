@@ -3,6 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }) => {
+  // Inicializar con el estado actual del request
   const [hasSignedPdf, setHasSignedPdf] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
@@ -10,6 +11,9 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
   const [fullRequestData, setFullRequestData] = useState({ ...request });
   const [downloadingAttachmentIndex, setDownloadingAttachmentIndex] = useState(null);
+  const [approvedFilesData, setApprovedFilesData] = useState(null);
+  const [loadingApprovedFiles, setLoadingApprovedFiles] = useState(false);
+  const [downloadingApprovedFileIndex, setDownloadingApprovedFileIndex] = useState(null);
 
   // Polling para verificar cambios de estado cada 5 segundos
   useEffect(() => {
@@ -36,22 +40,36 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
     return () => clearInterval(interval);
   }, [isVisible, request?._id, request?.status, onUpdate]);
 
+  // Verificar si hay PDF firmado cada vez que se abre el modal
   useEffect(() => {
-    if (isVisible && request?._id && request?.status !== 'pendiente' && request?.status !== 'en_revision') {
-      const checkSignedPdf = async () => {
-        try {
-          const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+    if (!isVisible || !request?._id) return;
+    
+    const checkSignedPdf = async () => {
+      try {
+        const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+        if (response.ok) {
           const data = await response.json();
           setHasSignedPdf(data.exists);
-        } catch (error) {
-          console.error('Error verificando PDF firmado:', error);
         }
-      };
-      checkSignedPdf();
+      } catch (error) {
+        console.error('Error verificando PDF firmado:', error);
+      }
+    };
+    
+    // Siempre verificar el estado actual
+    checkSignedPdf();
+  }, [isVisible, request?._id]);
+
+  useEffect(() => {
+    if (isVisible && request?._id) {
+      fetchAttachments(request._id);
+      
+      // Cargar archivos aprobados si el estado no es pendiente/en_revision
+      if (request?.status !== 'pendiente' && request?.status !== 'en_revision') {
+        fetchApprovedFiles(request._id);
+      }
     }
-    fetchAttachments(request?._id);
   }, [request, isVisible]);
-  
 
   const getMimeTypeIcon = (mimeType) => {
     if (mimeType?.includes('pdf')) return 'FileText';
@@ -96,6 +114,21 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
     }
   };
 
+  const fetchApprovedFiles = async (responseId) => {
+    setLoadingApprovedFiles(true);
+    try {
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/data-approved/${responseId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setApprovedFilesData(data);
+      }
+    } catch (error) {
+      console.error('Error cargando archivos aprobados:', error);
+    } finally {
+      setLoadingApprovedFiles(false);
+    }
+  };
+
   const handleDownloadAdjunto = async (responseId, index) => {
     setDownloadingAttachmentIndex(index);
     try {
@@ -122,33 +155,24 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
     }
   };
 
-   const handlePreviewDocument = (documentUrl, documentType) => {
-    if (!documentUrl) {
-      alert('No hay documento disponible para vista previa');
-      return;
-    }
-    setPreviewDocument({ url: documentUrl, type: documentType });
-    setShowPreview(true);
-  };
-
-   const downloadPdfForPreview = async (url) => {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
-      const blob = await response.blob();
-      if (blob.type !== 'application/pdf') throw new Error('El archivo no es un PDF válido');
-      return URL.createObjectURL(blob);
-    } catch (error) {
-      console.error('Error descargando PDF para vista previa:', error);
-      throw error;
-    }
-  };
-
   const handleDownloadSignedPDF = async (responseId) => {
     try {
       setIsUploading(true);
       setUploadMessage('Descargando documento firmado...');
 
+      // Primero obtener metadatos para saber el nombre real
+      const metaResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/has-client-signature`);
+      
+      let fileName = 'documento_firmado.pdf';
+      
+      if (metaResponse.ok) {
+        const metaData = await metaResponse.json();
+        if (metaData.exists && metaData.signature?.fileName) {
+          fileName = metaData.signature.fileName;
+        }
+      }
+
+      // Descargar el archivo
       const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/client-signature`);
       
       if (!response.ok) {
@@ -158,9 +182,8 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
       const blob = await response.blob();
       
+      // También verificar Content-Disposition como respaldo
       const contentDisposition = response.headers.get('content-disposition');
-      let fileName = 'documento_firmado.pdf';
-      
       if (contentDisposition) {
         const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
         if (fileNameMatch && fileNameMatch[1]) {
@@ -188,7 +211,45 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       setIsUploading(false);
     }
   };
-  
+
+  // Función para descargar un archivo aprobado específico
+  const handleDownloadSingleApprovedFile = async (responseId, index, fileName) => {
+    setDownloadingApprovedFileIndex(index);
+    try {
+      // Si no viene fileName, intentar obtenerlo de los datos
+      if (!fileName && approvedFilesData?.correctedFiles?.[index]) {
+        fileName = approvedFilesData.correctedFiles[index].fileName;
+      }
+      
+      // Si aún no hay nombre, usar uno por defecto
+      const finalFileName = fileName || `documento_aprobado_${index + 1}.pdf`;
+      
+      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${responseId}?index=${index}`);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al descargar el PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = finalFileName;
+      document.body.appendChild(a);
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+    } catch (error) {
+      console.error('Error descargando archivo aprobado:', error);
+      alert('Error al descargar el documento: ' + error.message);
+    } finally {
+      setDownloadingApprovedFileIndex(null);
+    }
+  };
 
   if (!isVisible || !request) return null;
 
@@ -238,42 +299,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       setUploadMessage('Error de conexión al subir el PDF');
     } finally {
       setIsUploading(false);
-    }
-  };
-
-  const handleDownloadApprovedPDF = async (responseId) => {
-    try {
-      const fileDataResponse = await fetch(`https://back-acciona.vercel.app/api/respuestas/data-approved/${responseId}`);
-
-      let fileName = 'documento_aprobado.pdf';
-
-      if (fileDataResponse.ok) {
-        const fileData = await fileDataResponse.json();
-        fileName = fileData.fileName;
-      }
-
-      const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/download-approved-pdf/${responseId}`);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al descargar el PDF');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-    } catch (error) {
-      console.error('Error descargando PDF:', error);
-      alert('Error al descargar el PDF aprobado: ' + error.message);
     }
   };
 
@@ -331,6 +356,124 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Función para determinar qué sección mostrar
+  const renderSignedDocumentSection = () => {
+    // Siempre verificar el estado actual
+    const shouldShowSignedSection = request?.status === 'aprobado' || 
+                                    request?.status === 'firmado' || 
+                                    request?.status === 'finalizado' || 
+                                    request?.status === 'archivado';
+    
+    if (!shouldShowSignedSection) return null;
+
+    if (request?.status === 'aprobado') {
+      return (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado</h3>
+          <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Icon name="FileSignature" size={20} className="text-success" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Subir PDF Firmado</p>
+                  <p className="text-xs text-muted-foreground">
+                    {hasSignedPdf
+                      ? 'Ya has subido el PDF firmado. Puedes descargarlo nuevamente si lo necesitas.'
+                      : 'Sube el PDF con tu firma una vez descargado y firmado.'}
+                  </p>
+                  {uploadMessage && (
+                    <p className={`text-xs ${uploadMessage.includes('Error') ? 'text-error' : 'text-success'}`}>
+                      {uploadMessage}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                {!hasSignedPdf ? (
+                  <>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept=".pdf"
+                      onChange={handleUploadSignedPdf}
+                      disabled={isUploading}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="default"
+                      size="sm"
+                      iconName={isUploading ? "Loader" : "Upload"}
+                      iconPosition="left"
+                      iconSize={16}
+                      disabled={isUploading}
+                      onClick={handleUploadButtonClick}
+                      className="bg-success hover:bg-success/90"
+                    >
+                      {isUploading ? 'Subiendo...' : 'Subir PDF'}
+                    </Button>
+                  </>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      iconName={isUploading ? "Loader" : "Download"}
+                      iconPosition="left"
+                      iconSize={16}
+                      disabled={isUploading}
+                      onClick={() => handleDownloadSignedPDF(request._id)}
+                    >
+                      {isUploading ? 'Descargando...' : 'Descargar'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    } else if (request?.status === 'firmado' || request?.status === 'finalizado' || request?.status === 'archivado') {
+      return (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado</h3>
+          <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Icon name="CheckSquare" size={20} className="text-success" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Documento Firmado Completado</p>
+                  <p className="text-xs text-muted-foreground">
+                    El documento ha sido firmado y completado exitosamente.
+                  </p>
+                  {uploadMessage && (
+                    <p className={`text-xs mt-1 ${uploadMessage.includes('Error') ? 'text-error' : 'text-success'}`}>
+                      {uploadMessage}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  iconName={isUploading ? "Loader" : "Download"}
+                  iconPosition="left"
+                  iconSize={16}
+                  disabled={isUploading}
+                  onClick={() => handleDownloadSignedPDF(request._id)}
+                >
+                  {isUploading ? 'Descargando...' : 'Descargar'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   return (
@@ -396,6 +539,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
             </div>
           </div>
 
+          {/* Sección de Archivos Adjuntos */}
           <div>
             {attachmentsLoading &&
               <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -440,148 +584,64 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
             )}
           </div>
 
+          {/* Sección de Documentos Corregidos */}
           {(request?.status !== 'pendiente' && request?.status !== 'en_revision') && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-foreground">Documento Aprobado</h3>
-
-              <div className="bg-success/10 border border-success/20 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Icon name="FileText" size={20} className="text-success" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Documento PDF Aprobado</p>
-                      <p className="text-xs text-muted-foreground">
-                        Descarga el documento aprobado para firmarlo.
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    iconName="Download"
-                    iconPosition="left"
-                    iconSize={16}
-                    onClick={() => handleDownloadApprovedPDF(request._id)}
-                    className="bg-success hover:bg-success/90"
-                  >
-                    Descargar PDF
-                  </Button>
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                Documentos Corregidos
+                {loadingApprovedFiles && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+              </h3>
+              
+              {loadingApprovedFiles ? (
+                <div className="flex justify-center py-6">
+                  <Icon name="Loader" size={24} className="animate-spin text-accent" />
                 </div>
-              </div>
-
-              {request?.status === 'aprobado' && (
-                <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Icon name="FileSignature" size={20} className="text-accent" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">Subir PDF Firmado</p>
-                        <p className="text-xs text-muted-foreground">
-                          {hasSignedPdf
-                            ? 'Ya has subido el PDF firmado. Puedes descargarlo nuevamente si lo necesitas.'
-                            : 'Sube el PDF con tu firma una vez descargado y firmado.'}
-                        </p>
-                        {uploadMessage && (
-                          <p className={`text-xs ${uploadMessage.includes('Error') ? 'text-error' : 'text-success'}`}>
-                            {uploadMessage}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end space-y-2">
-                      {!hasSignedPdf ? (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            accept=".pdf"
-                            onChange={handleUploadSignedPdf}
-                            disabled={isUploading}
-                            className="hidden"
-                          />
-                          <Button
-                            variant="default"
-                            size="sm"
-                            iconName="Upload"
-                            iconPosition="left"
-                            iconSize={16}
-                            disabled={isUploading}
-                            onClick={handleUploadButtonClick}
-                            className="bg-accent hover:bg-accent/90"
-                          >
-                            {isUploading ? 'Subiendo...' : 'Subir PDF Firmado'}
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            iconName="Download"
-                            iconPosition="left"
-                            iconSize={16}
-                            disabled={isUploading}
-                            onClick={() => handleDownloadSignedPDF(request._id)}
-                            className="text-accent"
-                          >
-                            {isUploading ? 'Descargando...' : 'Descargar'}
-                          </Button>
-                          <div className="flex items-center space-x-2 text-success">
-                            <Icon name="CheckCircle" size={16} />
-                            <span className="text-sm font-medium">PDF Firmado Subido</span>
+              ) : (
+                <>
+                  {approvedFilesData?.correctedFiles?.length > 0 && (
+                    <div className="space-y-2">
+                      {approvedFilesData.correctedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <Icon name="FileText" size={20} className="text-success" />
+                            <div>
+                              <p className="text-sm font-medium text-foreground">
+                                {file.fileName || `Documento corregido ${index + 1}`}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                PDF • {formatFileSize(file.fileSize)} • {formatDate(file.uploadedAt)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              iconName={downloadingApprovedFileIndex === index ? "Loader" : "Download"}
+                              iconPosition="left"
+                              iconSize={16}
+                              onClick={() => handleDownloadSingleApprovedFile(request._id, index, file.fileName)}
+                              disabled={downloadingApprovedFileIndex !== null}
+                            >
+                              {downloadingApprovedFileIndex === index ? 'Descargando...' : 'Descargar'}
+                            </Button>
                           </div>
                         </div>
-                      )}
+                      ))}
                     </div>
-                  </div>
-                </div>
+                  )}
+                  
+                  {(!approvedFilesData?.correctedFiles || approvedFilesData.correctedFiles.length === 0) && (
+                    <div className="text-center py-4 text-sm text-muted-foreground">
+                      <Icon name="FileText" size={20} className="mx-auto mb-2 text-muted-foreground/50" />
+                      No hay documentos corregidos disponibles
+                    </div>
+                  )}
+                </>
               )}
 
-              {(request?.status === 'firmado' || request?.status === 'finalizado' || request?.status === 'archivado') && (
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Icon name="CheckSquare" size={20} className="text-blue-500" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">Documento Firmado Completado</p>
-                        <p className="text-xs text-muted-foreground">
-                          El documento ha sido firmado y completado exitosamente.
-                          {hasSignedPdf && (
-                            <span className="block mt-1">
-                              Puedes volver a descargarlo si lo necesitas.
-                            </span>
-                          )}
-                        </p>
-                        {uploadMessage && (
-                          <p className={`text-xs mt-1 ${uploadMessage.includes('Error') ? 'text-error' : 'text-success'}`}>
-                            {uploadMessage}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {hasSignedPdf && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          iconName="Download"
-                          iconPosition="left"
-                          iconSize={16}
-                          disabled={isUploading}
-                          onClick={() => handleDownloadSignedPDF(request._id)}
-                          className="bg-blue-500 hover:bg-blue-600"
-                        >
-                          {isUploading ? 'Descargando...' : 'Descargar Firmado'}
-                        </Button>
-                      )}
-                      <div className="flex items-center space-x-2 text-blue-500">
-                        <Icon name="CheckCircle" size={16} />
-                        <span className="text-sm font-medium">Proceso Finalizado</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Sección de documento firmado - SEPARADA Y CON SU PROPIO TÍTULO */}
+              {renderSignedDocumentSection()}
             </div>
           )}
 

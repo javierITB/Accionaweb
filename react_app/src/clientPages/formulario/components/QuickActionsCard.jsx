@@ -607,6 +607,10 @@ const FormPreview = ({ formData }) => {
                 value={value}
                 onChange={(e) => handleInputChange(question.id, getQuestionTitle(question), e.target.value)}
                 onBlur={(e) => handleInputBlur(question.id, e.target.value, question.required)}
+                onWheel={(e) => {
+                  // Previene el cambio numérico con la rueda del mouse
+                  e.preventDefault();
+                }}
               />
               {error && (
                 <p className="text-red-600 text-sm mt-1 flex items-center">
@@ -1094,7 +1098,7 @@ const FormPreview = ({ formData }) => {
                     }}
                     className="px-4 sm:px-6 py-3 rounded-md font-medium text-white hover:opacity-90 transition-opacity text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={isSubmitting}
-                    title = "Enviar el formulario con las respuestas proporcionadas"
+                    title="Enviar el formulario con las respuestas proporcionadas"
                   >
                     {isSubmitting ? 'Enviando...' : 'Enviar Formulario'}
                   </button>

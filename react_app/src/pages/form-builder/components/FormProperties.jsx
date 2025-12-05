@@ -67,7 +67,7 @@ const CustomMultiSelect = ({ options, value = [], onChange, placeholder = "Selec
 
       {/* Dropdown CON SCROLLBAR MEJORADO */}
       {isOpen && (
-        <div 
+        <div
           className="absolute z-50 w-full mt-1 bg-background border border-input rounded-md shadow-lg max-h-60 overflow-hidden"
           style={{ top: '100%' }}
         >
@@ -229,6 +229,13 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
     }
   };
 
+  // FUNCÓN PARA MANEJAR CAMBIOS EN LA DESCRIPCIÓN
+  const handleDescriptionChange = (value) => {
+    if (value.length <= 50) {
+      onUpdateFormData('description', value);
+    }
+  };
+
   // FUNCIÓN PARA MANEJAR MULTISELECT DE EMPRESAS
   const handleCompanyChange = (selectedValues) => {
     onUpdateFormData('companies', selectedValues);
@@ -289,7 +296,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              Descripción del Formulario <span className="text-destructive">*</span>
+              Descripción del Formulario
               <span className="text-xs text-muted-foreground ml-2">
                 ({formData?.description?.length || 0}/50 caracteres)
               </span>
@@ -300,9 +307,9 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               value={formData?.description || ''}
               onChange={(e) => handleDescriptionChange(e.target.value)}
               maxLength={50}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.title?.length || 0) >= 50
-                ? 'border-red-500 focus-visible:ring-red-200'
-                : 'border-input focus-visible:ring-blue-200'
+              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.description?.length || 0) >= 50
+                  ? 'border-red-500 focus-visible:ring-red-200'
+                  : 'border-input focus-visible:ring-blue-200'
                 }`}
             />
             {(formData?.description?.length || 0) >= 50 && (
@@ -492,7 +499,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
                 style={{
                   background: `linear-gradient(135deg, ${preset.primary} 0%, ${preset.secondary} 100%)`
                 }}
-                title = {`Seleccionar preset ${preset.name}`}
+                title={`Seleccionar preset ${preset.name}`}
               >
                 <div className="text-xs font-medium text-white drop-shadow-sm">
                   {preset.name}
@@ -577,7 +584,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
                   style={{ backgroundColor: formData?.primaryColor }}
                   className="px-4 py-2 text-white rounded-md font-medium"
                   disabled
-                  title = "Botón de ejemplo"
+                  title="Botón de ejemplo"
                 >
                   Botón Primario
                 </button>
