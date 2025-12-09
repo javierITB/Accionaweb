@@ -165,7 +165,7 @@ router.post("/", async (req, res) => {
 
     await addNotification(req.db, {
       filtro: { cargo: "admin" },
-      titulo: `El usuario ${usuario} de la empresa ${empresa} ha respondedido el formulario ${formTitle}`,
+      titulo: `${usuario} de la empresa ${empresa} ha respondido el formulario ${formTitle}`,
       descripcion: adjuntos.length > 0
         ? `Incluye ${adjuntos.length} archivo(s) adjunto(s) - Procesando...`
         : "Puedes revisar los detalles en el panel de respuestas.",
@@ -1526,7 +1526,7 @@ router.get("/data-approved/:responseId", async (req, res) => {
   }
 });
 
-// 7. DESCARGAR PDF APROBADO (MODIFICADO - ahora soporta index)
+// 7. DESCARGAR PDF APROBADO - CORREGIDO
 router.get("/download-approved-pdf/:responseId", async (req, res) => {
   try {
     const { responseId } = req.params;
@@ -1561,12 +1561,28 @@ router.get("/download-approved-pdf/:responseId", async (req, res) => {
       return res.status(404).json({ error: "Archivo PDF no disponible" });
     }
 
+    // DEPURACIÓN: Ver qué datos tenemos realmente
+    console.log("DEBUG - File object:", {
+      hasFileName: !!file.fileName,
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      mimeType: file.mimeType,
+      tipo: file.tipo
+    });
+
+    // CORREGIDO: Asegurar que fileName existe
+    const fileName = file.fileName || `documento_aprobado_${responseId}.pdf`;
+
     res.setHeader('Content-Type', file.mimeType || 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
-    res.setHeader('Content-Length', file.fileSize);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', file.fileSize || (file.fileData.buffer ? file.fileData.buffer.length : file.fileData.length));
     res.setHeader('Cache-Control', 'no-cache');
 
-    res.send(file.fileData.buffer || file.fileData);
+    // Enviar los datos correctamente
+    const fileBuffer = file.fileData.buffer || file.fileData;
+    res.send(fileBuffer);
+
+    console.log(`PDF aprobado enviado: ${fileName}`);
 
   } catch (err) {
     console.error("Error descargando PDF aprobado:", err);
@@ -1727,54 +1743,65 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
   }
 });
 
-// 10. Obtener PDF firmado por cliente Y cambiar estado a "finalizado"
+// 10. Obtener PDF firmado por cliente SIN cambiar estado - CORREGIDO
 router.get("/:responseId/client-signature", async (req, res) => {
   try {
     const { responseId } = req.params;
+
+    console.log(`Descargando documento firmado para: ${responseId}`);
 
     const signature = await req.db.collection("firmados").findOne({
       responseId: responseId
     });
 
     if (!signature) {
+      console.log(`No se encontró documento firmado para responseId: ${responseId}`);
       return res.status(404).json({ error: "Documento firmado no encontrado" });
     }
 
     const pdfData = signature.clientSignedPdf;
 
     if (!pdfData || !pdfData.fileData) {
+      console.log(`Documento firmado sin datos para responseId: ${responseId}`);
       return res.status(404).json({ error: "Archivo PDF no disponible" });
     }
 
-    // PRIMERO: Actualizar el estado a "finalizado"
-    const updateResult = await req.db.collection("respuestas").updateOne(
-      { _id: new ObjectId(responseId) },
-      {
-        $set: {
-          status: "finalizado",
-          finalizedAt: new Date(),
-          updatedAt: new Date()
-        }
-      }
-    );
+    // DEPURACIÓN: Ver qué datos tenemos realmente
+    console.log("DEBUG - PDF Data:", {
+      hasFileName: !!pdfData.fileName,
+      fileName: pdfData.fileName,
+      fileSize: pdfData.fileSize,
+      mimeType: pdfData.mimeType
+    });
 
-    if (updateResult.matchedCount === 0) {
-      console.warn(`No se pudo actualizar estado la para respuesta`);
-    } else {
-      console.log(`Estado actualizado a "finalizado"`);
+    // Obtener el buffer de datos
+    const fileBuffer = pdfData.fileData.buffer || pdfData.fileData;
+
+    if (!fileBuffer || fileBuffer.length === 0) {
+      console.log(`Buffer de archivo vacío para responseId: ${responseId}`);
+      return res.status(404).json({ error: "Datos del archivo no disponibles" });
     }
 
-    // LUEGO: Enviar el archivo
-    res.setHeader('Content-Type', pdfData.mimeType || 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${pdfData.fileName}"`);
-    res.setHeader('Content-Length', pdfData.fileSize);
-    res.setHeader('Cache-Control', 'no-cache');
+    // CORREGIDO: Usar el fileName real, no el por defecto
+    const fileName = pdfData.fileName || `documento_firmado_${responseId}.pdf`;
+    const encodedFileName = encodeURIComponent(fileName);
 
-    res.send(pdfData.fileData.buffer || pdfData.fileData);
+    res.setHeader('Content-Type', pdfData.mimeType || 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"; filename*=UTF-8''${encodedFileName}`);
+    res.setHeader('Content-Length', pdfData.fileSize || fileBuffer.length);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    console.log(`Enviando documento firmado: ${fileName}, tamaño: ${pdfData.fileSize || fileBuffer.length} bytes`);
+
+    res.send(fileBuffer);
 
   } catch (err) {
-    console.error("Error descargando firma del cliente:", err);
-    res.status(500).json({ error: "Error descargando firma del cliente: " + err.message });
+    console.error("Error descargando documento firmado:", err);
+    res.status(500).json({
+      error: "Error descargando documento firmado: " + err.message
+    });
   }
 });
 
