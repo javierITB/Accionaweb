@@ -42,7 +42,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
   // Verificar si hay PDF firmado cada vez que se abre el modal
   useEffect(() => {
-    if (!isVisible || !request?._id) return;
+    if (!isVisible || !request?._id || request?.status === 'pendiente' || request?.status === 'en_revision') return;
     
     const checkSignedPdf = async () => {
       try {
@@ -477,8 +477,8 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[80vh] overflow-y-auto py-3 pr-3">
         <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
