@@ -1,0 +1,136 @@
+/* Contenedor principal: Ocupa todo el Viewport */
+.snake-404-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #0b0b0b; /* Fondo negro oscuro */
+    position: relative;
+    overflow: hidden; 
+    font-family: 'Consolas', monospace;
+    color: white; /* Color base para el texto del 404 */
+}
+
+/* --- Capa de Elementos de Juego (Serpiente/Comida) --- */
+.game-elements-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* Detrás del overlay de texto */
+}
+
+/* Fondo de Cuadrícula Estética */
+.grid-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Crear el patrón de cuadrícula usando background-size */
+    background-image: linear-gradient(to right, #111 1px, transparent 1px), 
+                      linear-gradient(to bottom, #111 1px, transparent 1px);
+    background-size: var(--cell-size) var(--cell-size);
+}
+
+/* Estilos para la serpiente y la comida (usamos transform para el posicionamiento) */
+/* --- CAMBIO EN CSS --- */
+
+/* Clase de estilos para la serpiente y la comida */
+.snake-segment, .food {
+    position: absolute;
+    width: var(--cell-size);
+    height: var(--cell-size);
+    box-sizing: border-box;
+    transition: transform 0.15s linear; 
+}
+
+/* El resto del CSS queda igual. */
+
+.snake-segment {
+    background-color: #2ecc71; /* Verde esmeralda */
+    /* Sombra interna para dar un efecto de profundidad/borde */
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4); 
+}
+
+.snake-head {
+    background-color: #00ff00; /* Cabeza más brillante */
+    border-radius: 2px;
+}
+
+.food {
+    background-color: #e74c3c; /* Naranja/Rojo vivo */
+    border-radius: 50%; /* Circular */
+}
+
+/* --- CAPA DE TEXTO Y BOTONES (Frente/Overlay) --- */
+.overlay-content {
+    position: relative;
+    z-index: 2; /* Adelante del juego */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: 100vh; /* Ocupa el alto completo para posicionar botones abajo */
+    padding: 5vh 0; /* Padding superior e inferior para el contenido */
+    pointer-events: none; /* Permite hacer clic en el juego "a través" de este div */
+}
+
+.text-display {
+    text-align: center;
+    color: #555; /* Color oscuro para el texto de fondo */
+    transition: color 0.3s;
+}
+
+.text-display h1 {
+    font-size: 15vw; /* Tamaño muy grande, relativo al ancho del viewport */
+    line-height: 1;
+    margin: 0;
+    color: rgba(60, 60, 60, 0.4); /* 404 grande y muy transparente */
+}
+
+.text-display h2 {
+    font-size: 2.5rem;
+    color: white; /* Título principal blanco y legible */
+    margin: 10px 0;
+}
+
+.text-display p {
+    font-size: 1.1rem;
+    margin: 5px 0;
+    color: #ccc;
+}
+
+.score-display {
+    margin-top: 15px;
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #2ecc71; /* Muestra el score con el color de la serpiente */
+}
+
+/* Contenedor de Botones (Fondo inferior) */
+.buttons-container {
+    pointer-events: all; /* Activa la interacción solo para los botones */
+    display: flex;
+    gap: 15px;
+}
+
+.action-button {
+    background: rgba(0, 0, 0, 0.4);
+    color: #ccc;
+    border: 1px solid #444;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    text-transform: uppercase;
+    transition: all 0.2s;
+}
+
+.action-button:hover {
+    color: white;
+    border-color: #2ecc71;
+    background: rgba(46, 204, 113, 0.2);
+}
