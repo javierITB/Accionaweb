@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate }) => {
+const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode = 'list' }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
 
   useEffect(() => {
@@ -161,47 +161,63 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate }) => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 hover:shadow-brand-hover transition-brand">
+    <div className={`bg-card border border-border rounded-lg hover:shadow-brand-hover transition-brand ${viewMode === 'grid' ? 'p-4' : 'p-6'}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
-            <h3 className="text-lg font-semibold text-foreground">{getCombinedTitle()}</h3>
+            <h3 className={`font-semibold text-foreground ${viewMode === 'grid' ? 'text-sm line-clamp-2' : 'text-lg'}`}>
+              {getCombinedTitle()}
+            </h3>
             <span className="text-xs text-muted-foreground">
               {getRelativeTime(currentRequest?.submittedAt)}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground mb-3">{currentRequest?.description}</p>
+          <p className={`text-muted-foreground ${viewMode === 'grid' ? 'text-xs line-clamp-2' : 'text-sm'} mb-3`}>
+            {currentRequest?.description}
+          </p>
 
-          <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+          <div className={`${viewMode === 'grid' ? 'space-y-2' : 'flex items-center space-x-4 text-xs text-muted-foreground'}`}>
             <div className="flex items-center space-x-1">
               <Icon name="Briefcase" size={14} />
-              <span>Empresa: {currentRequest?.company}</span>
+              <span className={viewMode === 'grid' ? 'text-xs truncate' : ''}>
+                Empresa: {currentRequest?.company}
+              </span>
             </div>
             <div className="flex items-center space-x-1">
               <Icon name="User" size={14} />
-              <span>Por: {currentRequest?.submittedBy}</span>
+              <span className={viewMode === 'grid' ? 'text-xs truncate' : ''}>
+                Por: {currentRequest?.submittedBy}
+              </span>
             </div>
             <div className="flex items-center space-x-1">
               <Icon name="Tag" size={14} />
-              <span className={getPriorityColor(currentRequest?.priority)}>
+              <span className={`${getPriorityColor(currentRequest?.priority)} ${viewMode === 'grid' ? 'text-xs truncate' : ''}`}>
                 {currentRequest?.form?.section?.toUpperCase()}
               </span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 ml-4">
+        <div className={`flex items-center space-x-2 ${viewMode === 'grid' ? 'ml-2' : 'ml-4'}`}>
           {currentRequest?.hasMessages && (
             <div className="relative">
               <Icon name="MessageCircle" size={16} className="text-accent" />
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-secondary rounded-full"></span>
             </div>
           )}
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(currentRequest?.status)}`}>
-            <Icon name={getStatusIcon(currentRequest?.status)} size={12} className="mr-1" />
-            {formatStatusText(currentRequest?.status)}
-          </span>
-
+          {viewMode === 'grid' ? (
+            <div 
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${getStatusColor(currentRequest?.status)}`}
+              title={formatStatusText(currentRequest?.status)}
+            >
+              <Icon name={getStatusIcon(currentRequest?.status)} size={16} />
+            </div>
+          ) : (
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(currentRequest?.status)}`}>
+              <Icon name={getStatusIcon(currentRequest?.status)} size={12} className="mr-1" />
+              {formatStatusText(currentRequest?.status)}
+            </span>
+          )}
         </div>
       </div>
       <div className="flex items-center justify-between">
@@ -215,7 +231,6 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate }) => {
         </div>
 
         <div className="flex items-center space-x-2">
-
           <Button
             variant="outline"
             size="sm"
@@ -236,10 +251,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate }) => {
             iconPosition="left"
             iconSize={16}
           > 
-
           </Button>
-
-
         </div>
       </div>
     </div>
