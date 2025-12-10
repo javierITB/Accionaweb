@@ -42,7 +42,7 @@ export default function App() {
 
         if (res.ok && data?.success) {
             // LOGIN FINALIZADO EXITOSAMENTE
-            sessionStorage.setItem("cargo", data?.usr?.cargo);
+            sessionStorage.setItem("cargo", data?.usr?.rol);
             sessionStorage.setItem("email", data?.usr?.email);
             sessionStorage.setItem("user", data?.usr?.name);
             sessionStorage.setItem("token", data?.token);
