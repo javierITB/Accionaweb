@@ -248,7 +248,7 @@ const TemplateList = ({ onUpdateFormData }) => {
                         const selected = availableTemplates.find(t => t._id === e.target.value);
                         setSelectedTemplateForDuplicate(selected);
                       }}
-                      className="w-full p-2 border border-border rounded-md text-sm"
+                      className="w-full p-2 border border-border rounded-md text-sm bg-background text-foreground" // AGREGADO: bg-background text-foreground
                     >
                       <option value="">Selecciona una plantilla...</option>
                       {availableTemplates.map(template => (
