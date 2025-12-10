@@ -608,8 +608,8 @@ const FormPreview = ({ formData }) => {
                 onChange={(e) => handleInputChange(question.id, getQuestionTitle(question), e.target.value)}
                 onBlur={(e) => handleInputBlur(question.id, e.target.value, question.required)}
                 onWheel={(e) => {
-                  // Previene el cambio numérico con la rueda del mouse
-                  e.preventDefault();
+                  // Bloquea el scroll del mouse en el input numérico
+                  e.target.blur();
                 }}
               />
               {error && (
