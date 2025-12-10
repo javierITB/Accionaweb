@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
@@ -27,6 +27,10 @@ const RequestTracking = () => {
   const [messageRequest, setMessageRequest] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // --- NUEVOS ESTADOS DE PAGINACIÓN ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const requestsPerPage = 30; // Máximo de solicitudes por página
 
   const [filters, setFilters] = useState({
     search: '',
@@ -114,7 +118,7 @@ const RequestTracking = () => {
       try {
         // Opcional: Si no quieres que aparezca el "cargando..." cada 30 segundos,
         // puedes condicionar esto o quitarlo después de la primera carga.
-        setIsLoading(true); 
+        !resp && setIsLoading(true); 
 
         // OBTENER RESPUESTAS
         const resResp = await fetch('https://back-acciona.vercel.app/api/respuestas/mini');
@@ -182,109 +186,123 @@ const RequestTracking = () => {
     // Si es null (click en tarjeta Total), limpiamos el filtro de estado
     if (statusValue === null) {
       setFilters(prev => ({ ...prev, status: '' }));
-      return;
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        // Toggle: Si ya está seleccionado, lo quitamos. Si no, lo ponemos.
+        status: prev.status === statusValue ? '' : statusValue
+      }));
     }
-
-    setFilters(prev => ({
-      ...prev,
-      // Toggle: Si ya está seleccionado, lo quitamos. Si no, lo ponemos.
-      status: prev.status === statusValue ? '' : statusValue
-    }));
+    setCurrentPage(1); // Resetear a la página 1 al cambiar el filtro
   };
 
-  const filteredRequests = resp?.filter(request => {
-    if (filters?.search) {
-      const searchTerm = filters.search.toLowerCase();
-      const matchesSearch =
-        request?.title?.toLowerCase()?.includes(searchTerm) ||
-        request?.company?.toLowerCase()?.includes(searchTerm) ||
-        request?.submittedBy?.toLowerCase()?.includes(searchTerm) ||
-        request?.trabajador?.toLowerCase()?.includes(searchTerm) ||
-        request?.rutTrabajador?.toLowerCase()?.includes(searchTerm) ||
-        request?.userEmail?.toLowerCase()?.includes(searchTerm) ||
-        request?._id?.toLowerCase()?.includes(searchTerm) ||
-        request?.detalles?.toLowerCase()?.includes(searchTerm) ||
-        request?.searchData?.includes(searchTerm);
+  // --- LÓGICA DE FILTRADO (Ahora con useMemo para optimización) ---
+  const filteredRequests = useMemo(() => {
+    // Es buena práctica revertir el array antes de filtrar para que el nuevo aparezca primero
+    // Y luego aplicar el filtro
+    const requestsToFilter = [...resp].reverse(); 
 
-      if (!matchesSearch) return false;
-    }
+    return requestsToFilter.filter(request => {
+      if (filters?.search) {
+        const searchTerm = filters.search.toLowerCase();
+        const matchesSearch =
+          request?.title?.toLowerCase()?.includes(searchTerm) ||
+          request?.company?.toLowerCase()?.includes(searchTerm) ||
+          request?.submittedBy?.toLowerCase()?.includes(searchTerm) ||
+          request?.trabajador?.toLowerCase()?.includes(searchTerm) ||
+          request?.rutTrabajador?.toLowerCase()?.includes(searchTerm) ||
+          request?.userEmail?.toLowerCase()?.includes(searchTerm) ||
+          request?._id?.toLowerCase()?.includes(searchTerm) ||
+          request?.detalles?.toLowerCase()?.includes(searchTerm) ||
+          request?.searchData?.includes(searchTerm);
 
-    // Filtro de Status
-    if (filters?.status && request?.status !== filters?.status) return false;
-
-    if (filters?.category) {
-      const requestCategory = request?.form?.category || '';
-      if (requestCategory.toLowerCase() !== filters.category.toLowerCase()) return false;
-    }
-
-    if (filters?.company && (!request?.company || !request?.company?.toLowerCase()?.includes(filters?.company?.toLowerCase()))) {
-      return false;
-    }
-
-    if (filters?.submittedBy && (!request?.submittedBy || !request?.submittedBy?.toLowerCase()?.includes(filters?.submittedBy?.toLowerCase()))) {
-      return false;
-    }
-
-    const requestDate = new Date(request.submittedAt || request.createdAt);
-
-    if (filters?.dateRange) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      let startPeriod, endPeriod;
-
-      switch (filters.dateRange) {
-        case 'today':
-          startPeriod = new Date(today);
-          endPeriod = new Date(today);
-          endPeriod.setHours(23, 59, 59, 999);
-          break;
-        case 'week':
-          startPeriod = new Date(today);
-          startPeriod.setDate(today.getDate() - today.getDay());
-          endPeriod = new Date(today);
-          endPeriod.setDate(today.getDate() + (6 - today.getDay()));
-          endPeriod.setHours(23, 59, 59, 999);
-          break;
-        case 'month':
-          startPeriod = new Date(today.getFullYear(), today.getMonth(), 1);
-          endPeriod = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-          endPeriod.setHours(23, 59, 59, 999);
-          break;
-        case 'quarter':
-          const quarter = Math.floor(today.getMonth() / 3);
-          startPeriod = new Date(today.getFullYear(), quarter * 3, 1);
-          endPeriod = new Date(today.getFullYear(), (quarter + 1) * 3, 0);
-          endPeriod.setHours(23, 59, 59, 999);
-          break;
-        case 'year':
-          startPeriod = new Date(today.getFullYear(), 0, 1);
-          endPeriod = new Date(today.getFullYear(), 11, 31);
-          endPeriod.setHours(23, 59, 59, 999);
-          break;
-        default:
-          startPeriod = null;
-          endPeriod = null;
+        if (!matchesSearch) return false;
       }
 
-      if (startPeriod && endPeriod && (requestDate < startPeriod || requestDate > endPeriod)) {
+      // Filtro de Status
+      // Si el filtro de estado está vacío, mostramos todos (incluyendo 'archivado' si no hay otro filtro)
+      if (filters?.status) {
+        if (request?.status !== filters?.status) return false;
+      } else {
+        // Por defecto, si no hay filtro de estado, no mostramos 'archivado'
+        if (request.status === 'archivado') return false;
+      }
+
+
+      if (filters?.category) {
+        const requestCategory = request?.form?.category || '';
+        if (requestCategory.toLowerCase() !== filters.category.toLowerCase()) return false;
+      }
+
+      if (filters?.company && (!request?.company || !request?.company?.toLowerCase()?.includes(filters?.company?.toLowerCase()))) {
         return false;
       }
-    }
 
-    if (filters?.startDate) {
-      const startDate = new Date(filters.startDate);
-      if (requestDate < startDate) return false;
-    }
+      if (filters?.submittedBy && (!request?.submittedBy || !request?.submittedBy?.toLowerCase()?.includes(filters?.submittedBy?.toLowerCase()))) {
+        return false;
+      }
 
-    if (filters?.endDate) {
-      const endDate = new Date(filters.endDate);
-      endDate.setHours(23, 59, 59, 999);
-      if (requestDate > endDate) return false;
-    }
+      const requestDate = new Date(request.submittedAt || request.createdAt);
 
-    return true;
-  });
+      if (filters?.dateRange) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let startPeriod, endPeriod;
+
+        switch (filters.dateRange) {
+          case 'today':
+            startPeriod = new Date(today);
+            endPeriod = new Date(today);
+            endPeriod.setHours(23, 59, 59, 999);
+            break;
+          case 'week':
+            startPeriod = new Date(today);
+            startPeriod.setDate(today.getDate() - today.getDay());
+            endPeriod = new Date(today);
+            endPeriod.setDate(today.getDate() + (6 - today.getDay()));
+            endPeriod.setHours(23, 59, 59, 999);
+            break;
+          case 'month':
+            startPeriod = new Date(today.getFullYear(), today.getMonth(), 1);
+            endPeriod = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            endPeriod.setHours(23, 59, 59, 999);
+            break;
+          case 'quarter':
+            const quarter = Math.floor(today.getMonth() / 3);
+            startPeriod = new Date(today.getFullYear(), quarter * 3, 1);
+            endPeriod = new Date(today.getFullYear(), (quarter + 1) * 3, 0);
+            endPeriod.setHours(23, 59, 59, 999);
+            break;
+          case 'year':
+            startPeriod = new Date(today.getFullYear(), 0, 1);
+            endPeriod = new Date(today.getFullYear(), 11, 31);
+            endPeriod.setHours(23, 59, 59, 999);
+            break;
+          default:
+            startPeriod = null;
+            endPeriod = null;
+        }
+
+        if (startPeriod && endPeriod && (requestDate < startPeriod || requestDate > endPeriod)) {
+          return false;
+        }
+      }
+
+      if (filters?.startDate) {
+        const startDate = new Date(filters.startDate);
+        if (requestDate < startDate) return false;
+      }
+
+      if (filters?.endDate) {
+        const endDate = new Date(filters.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        if (requestDate > endDate) return false;
+      }
+
+      return true;
+    });
+  }, [resp, filters]); // Se recalcula si resp o filters cambian
 
   const handleRemove = async (request) => {
     const requestId = request?._id
@@ -338,13 +356,31 @@ const RequestTracking = () => {
       company: '',
       submittedBy: ''
     });
+    setCurrentPage(1); // Resetear a la página 1 al limpiar filtros
   };
 
-  const sortOptions = [
-    { value: 'date', label: 'Fecha' },
-    { value: 'title', label: 'Título' },
-    { value: 'status', label: 'Estado' }
-  ];
+  // --- LÓGICA DE PAGINACIÓN ---
+  
+  // Calcula el total de páginas
+  const totalPages = Math.ceil(filteredRequests.length / requestsPerPage);
+
+  // Calcula los índices de inicio y fin para la página actual
+  const indexOfLastRequest = currentPage * requestsPerPage;
+  const indexOfFirstRequest = indexOfLastRequest - requestsPerPage;
+
+  // Aplica la paginación para obtener las solicitudes actuales a mostrar
+  const currentRequests = filteredRequests.slice(indexOfFirstRequest, indexOfLastRequest);
+
+  // Funciones para cambiar de página
+  const paginate = (pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
+
+  const nextPage = () => paginate(currentPage + 1);
+  const prevPage = () => paginate(currentPage - 1);
+
 
   const mainMarginClass = isMobileScreen
     ? 'ml-0'
@@ -398,7 +434,7 @@ const RequestTracking = () => {
                 <div className="flex items-center gap-3">
                   {/* Badge Circular */}
                   <span className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
-                    {resp.length}
+                    {filteredRequests.length}
                   </span>
 
                   {/* Título */}
@@ -414,32 +450,57 @@ const RequestTracking = () => {
               </div>
             </div>
 
-            {/* BOTÓN SIDEBAR DESKTOP */}
-            <div className="hidden lg:flex items-center">
-              <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground w-full md:w-auto justify-center md:justify-end">
-                {/* VISTA */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
-                  <div className="flex items-center border border-border rounded-lg">
-                    <Button
-                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('grid')}
-                      iconName="Grid3X3"
-                      iconSize={14}
-                      className="rounded-r-none px-2 sm:px-3"
-                    />
-                    <Button
-                      variant={viewMode === 'list' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('list')}
-                      iconName="List"
-                      iconSize={14}
-                      className="rounded-l-none border-l px-2 sm:px-3"
-                    />
-                  </div>
+            {/* BOTONES DE CONTROL (Paginación + Vista) */}
+            <div className="hidden lg:flex items-center space-x-4">
+              
+              {/* CONTROL DE PAGINACIÓN */}
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground border border-border rounded-lg p-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  iconName="ChevronLeft"
+                  iconSize={14}
+                  className="px-2"
+                />
+                <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  iconName="ChevronRight"
+                  iconSize={14}
+                  className="px-2"
+                />
+              </div>
+
+              {/* VISTA GRID/LISTA */}
+              <div className="flex items-center space-x-2">
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
+                <div className="flex items-center border border-border rounded-lg">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    iconName="Grid3X3"
+                    iconSize={14}
+                    className="rounded-r-none px-2 sm:px-3"
+                  />
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    iconName="List"
+                    iconSize={14}
+                    className="rounded-l-none border-l px-2 sm:px-3"
+                  />
                 </div>
               </div>
+
             </div>
           </div>
 
@@ -460,15 +521,21 @@ const RequestTracking = () => {
             onToggle={() => setShowFilters(!showFilters)}
           />
 
-          {/* LISTA DE SOLICITUDES */}
+          {/* LISTA DE SOLICITUDES (PAGINADAS) */}
           <div className={
             viewMode === 'grid'
               ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6'
               : 'space-y-2 lg:space-y-4 '
           }>
-            {filteredRequests?.length > 0 ? (
-              filteredRequests?.reverse().map((request) => (
-                (request.status !== "archivado" || filters.status == "archivado" ) && (
+            {isLoading && (
+              <div className="text-center py-8 lg:py-12 col-span-full">
+                 <Icon name="Loader2" size={32} className="mx-auto mb-3 lg:mb-4 text-accent animate-spin" />
+                 <h3 className="text-lg font-semibold text-foreground">Cargando Solicitudes...</h3>
+              </div>
+            )}
+            
+            {!isLoading && currentRequests?.length > 0 ? (
+              currentRequests?.map((request) => (
                 <RequestCard
                   key={request?._id || request?.id}
                   request={request}
@@ -477,8 +544,9 @@ const RequestTracking = () => {
                   onSendMessage={handleSendMessage}
                   viewMode={viewMode}
                 />
-              )))
+              ))
             ) : (
+              !isLoading && (
               <div className="text-center py-8 lg:py-12 bg-card border border-border rounded-lg col-span-full">
                 <Icon name="Search" size={32} className="mx-auto mb-3 lg:mb-4 text-muted-foreground opacity-50 sm:w-12 sm:h-12" />
                 <h3 className="text-base lg:text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
@@ -486,8 +554,38 @@ const RequestTracking = () => {
                   Intenta ajustar los filtros o crear una nueva solicitud
                 </p>
               </div>
-            )}
+            ))}
           </div>
+          
+          {/* CONTROL DE PAGINACIÓN INFERIOR (Opcional) */}
+          {totalPages > 1 && (
+             <div className="flex justify-center items-center space-x-4 pt-4 pb-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  iconName="ChevronLeft"
+                  iconSize={16}
+                >
+                  Anterior
+                </Button>
+                <span className="text-sm font-medium text-foreground">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages}
+                  iconName="ChevronRight"
+                  iconSize={16}
+                  iconPosition="right"
+                >
+                  Siguiente
+                </Button>
+              </div>
+          )}
 
         </div>
       </main>
