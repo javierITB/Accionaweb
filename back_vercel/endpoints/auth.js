@@ -288,7 +288,7 @@ router.post("/verify-login-2fa", async (req, res) => {
 
     // 1. Buscar el código activo y no expirado para LOGIN
     const codeRecord = await req.db.collection("2fa_codes").findOne({
-      userId: userId,
+      userId: normalizedEmail,
       code: verificationCode,
       type: '2FA_LOGIN',
       active: true,
