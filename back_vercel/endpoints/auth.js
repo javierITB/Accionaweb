@@ -3,13 +3,13 @@ const router = express.Router();
 const crypto = require("crypto");
 const { ObjectId } = require('mongodb');
 const multer = require('multer');
-const { addNotification } = require("../utils/notificaciones.helper");
-const { sendEmail } = require("../utils/mail.helper"); // Importación del helper de correo
+const { addNotification} = require("../utils/notificaciones.helper");
+const {sendEmail} = require ("../utils/mail.helper"); // Importación del helper de correo
 const useragent = require('useragent');
 
 const TOKEN_EXPIRATION = 12 * 1000 * 60 * 60;
 // Constante para la expiración del código de recuperación (ej: 15 minutos)
-const RECOVERY_CODE_EXPIRATION = 15 * 60 * 1000;
+const RECOVERY_CODE_EXPIRATION = 15 * 60 * 1000; 
 
 // Configurar Multer para almacenar logos en memoria
 const upload = multer({
@@ -25,65 +25,6 @@ const upload = multer({
     fileSize: 2 * 1024 * 1024
   }
 });
-
-const generateAndSend2FACode = async (db, user, type) => {
-  // 1. Definir expiración y contenido del correo basado en el tipo
-  let EXPIRATION_TIME;
-  let subject;
-  let contextMessage;
-
-  if (type === '2FA_SETUP') {
-    EXPIRATION_TIME = 15 * 60 * 1000; // 15 minutos para activación
-    subject = 'Código de Activación de 2FA - Acciona';
-    contextMessage = 'Hemos recibido una solicitud para **activar** la Autenticación de Dos Factores (2FA).';
-  } else if (type === '2FA_LOGIN') {
-    EXPIRATION_TIME = 5 * 60 * 1000; // 5 minutos para login (más seguro)
-    subject = 'Código de Verificación de Acceso 2FA - Acciona';
-    contextMessage = 'Estás intentando **iniciar sesión**. Ingresa el código en el sistema.';
-  } else {
-    throw new Error("Tipo de código 2FA inválido.");
-  }
-
-  const verificationCode = crypto.randomInt(100000, 999999).toString();
-  const expiresAt = new Date(Date.now() + EXPIRATION_TIME);
-  const userId = user.mail; // **CORRECCIÓN: Usar el _id de MongoDB**
-
-  // 2. Invalidar códigos anteriores del MISMO TIPO
-  await db.collection("2fa_codes").updateMany(
-    { userId: userId, active: true, type: type }, // Usar el tipo y el ID para la limpieza
-    { $set: { active: false, revokedAt: new Date(), reason: "new_code_issued" } }
-  );
-
-  // 3. Guardar el nuevo código
-  await db.collection("2fa_codes").insertOne({
-    userId: userId,
-    code: verificationCode,
-    type: type, // Usar el tipo dinámico
-    createdAt: new Date(),
-    expiresAt: expiresAt,
-    active: true
-  });
-
-  // 4. Enviar el email
-  const minutes = EXPIRATION_TIME / 1000 / 60;
-  const htmlContent = `
-        <p>Hola ${user.nombre},</p>
-        <p>${contextMessage}</p>
-        <p>Tu código de verificación es:</p>
-        <h2 style="color: #f97316; font-size: 24px; text-align: center; border: 1px solid #f97316; padding: 10px; border-radius: 8px;">
-            ${verificationCode}
-        </h2>
-        <p>Este código expira en ${minutes} minutos. Si no solicitaste esta acción, ignora este correo.</p>
-        <p>Saludos cordiales,</p>
-        <p>El equipo de Acciona</p>
-    `;
-
-  await sendEmail({
-    to: user.mail,
-    subject: subject,
-    html: htmlContent
-  });
-};
 
 router.get("/", async (req, res) => {
   try {
@@ -159,7 +100,6 @@ router.get("/full/:mail", async (req, res) => {
 });
 
 
-
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -167,7 +107,6 @@ router.post("/login", async (req, res) => {
     const user = await req.db.collection("usuarios").findOne({ mail: email.toLowerCase().trim() });
     if (!user) return res.status(401).json({ success: false, message: "Credenciales inválidas" });
 
-    // Validaciones de estado
     if (user.estado === "pendiente")
       return res.status(401).json({
         success: false,
@@ -180,40 +119,20 @@ router.post("/login", async (req, res) => {
         message: "Usuario inactivo. Contacta al administrador."
       });
 
-    // Validación de contraseña (asumiendo pass plano)
     if (user.pass !== password)
       return res.status(401).json({ success: false, message: "Credenciales inválidas" });
 
     // ----------------------------------------------------------------
-    // 🔒 LÓGICA 2FA CONDICIONAL
-    // ----------------------------------------------------------------
-
-    const is2FAEnabled = user.twoFactorEnabled === true;
-
-    if (is2FAEnabled) {
-      // LLAMADA CORREGIDA: Usar '2FA_LOGIN'
-      await generateAndSend2FACode(req.db, user, '2FA_LOGIN');
-
-      // Retornamos la bandera `twoFA: true`
-      return res.json({
-        success: true,
-        twoFA: true,
-        message: "Se requiere código 2FA. Enviado a tu correo."
-      });
-    }
-
-    // ----------------------------------------------------------------
-    // 🚀 LÓGICA DE TOKEN (Solo si 2FA NO está activa)
+    // 🔍 LÓGICA DE BÚSQUEDA Y VALIDACIÓN DE TOKEN EXISTENTE
     // ----------------------------------------------------------------
 
     const now = new Date();
     let finalToken = null;
     let expiresAt = null;
-    const normalizedEmail = email.toLowerCase().trim();
 
     // 1. Buscar un token activo para este usuario
     const existingTokenRecord = await req.db.collection("tokens").findOne({
-      email: normalizedEmail,
+      email: email.toLowerCase().trim(),
       active: true
     });
 
@@ -222,24 +141,29 @@ router.post("/login", async (req, res) => {
       const isExpired = existingExpiresAt < now;
 
       if (isExpired) {
+        // 2a. Si existe y está expirado, lo revocamos
         await req.db.collection("tokens").updateOne(
           { _id: existingTokenRecord._id },
           { $set: { active: false, revokedAt: now } }
         );
+        // El token final se generará en el paso 3
       } else {
+        // 2b. Si existe y es válido, lo reutilizamos
         finalToken = existingTokenRecord.token;
         expiresAt = existingExpiresAt;
       }
     }
 
-    // 2. Si no hay un token válido, generar uno nuevo
+    // 3. Si no hay un token válido (ya sea porque no existía o fue revocado)
     if (!finalToken) {
+      // Generar un token nuevo
       finalToken = crypto.randomBytes(32).toString("hex");
       expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
 
+      // Insertar el nuevo token
       await req.db.collection("tokens").insertOne({
         token: finalToken,
-        email: normalizedEmail,
+        email: email.toLowerCase().trim(),
         rol: user.rol,
         createdAt: now,
         expiresAt,
@@ -247,21 +171,43 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // 3. Registrar Ingreso
+    // ----------------------------------------------------------------
+    // 🚀 RESPUESTA FINAL
+    // ----------------------------------------------------------------
+
+    // Recopilar datos para notificación
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgentString = req.headers['user-agent'] || 'Desconocido';
     const agent = useragent.parse(userAgentString);
-    const usr = { name: user.nombre, email: normalizedEmail, cargo: user.rol };
+    const os = agent.os.toString();
+    const browser = agent.toAgent()
 
-    await req.db.collection("ingresos").insertOne({
+    const usr = { name: user.nombre, email: email.toLowerCase().trim(), cargo: user.rol };
+
+    const newLogin = {
       usr,
       ipAddress,
-      os: agent.os.toString(),
-      browser: agent.toAgent(),
-      now: now,
-    });
+      os,
+      browser,
+      now,
+    }
 
-    // 4. Retornar el token
+    const result = await req.db.collection("ingresos").insertOne(newLogin);
+/*
+    // Envío de Notificación
+    await addNotification(req.db, {
+      userId: user._id.toString(),
+      titulo: `Nuevo inicio de sesión detectado`,
+      descripcion: `Se realizó un inicio de sesión a las ${now.toLocaleString()}. 
+        IP: **${ipAddress}**.
+        OS: **${os}**.
+        Navegador: **${browser}**.`,
+      prioridad: 2,
+      color: "#d42a00ff",
+      icono: "User",
+    });
+*/
+    // Retornar el token reutilizado o el recién generado
     return res.json({ success: true, token: finalToken, usr });
   } catch (err) {
     console.error("Error en login:", err);
@@ -269,137 +215,52 @@ router.post("/login", async (req, res) => {
   }
 });
 
-
-router.post("/verify-login-2fa", async (req, res) => {
-  const { email, verificationCode } = req.body;
-
-  if (!email || !verificationCode || verificationCode.length !== 6) {
-    return res.status(400).json({ success: false, message: "Datos incompletos o código inválido." });
-  }
-
-  const now = new Date();
-  const normalizedEmail = email.toLowerCase().trim();
-
-  try {
-    const user = await req.db.collection("usuarios").findOne({ mail: normalizedEmail });
-    if (!user) return res.status(401).json({ success: false, message: "Usuario no encontrado." });
-
-    const userId = user._id.toString();
-
-    // 1. Buscar el código activo y no expirado para LOGIN
-    const codeRecord = await req.db.collection("2fa_codes").findOne({
-      userId: normalizedEmail,
-      code: verificationCode,
-      type: '2FA_LOGIN',
-      active: true,
-      expiresAt: { $gt: now }
-    });
-
-    if (!codeRecord) {
-      return res.status(401).json({ success: false, message: "Código 2FA incorrecto o expirado." });
-    }
-
-    // 2. Marcar el código como usado/inactivo
-    await req.db.collection("2fa_codes").updateOne(
-      { _id: codeRecord._id },
-      { $set: { active: false, usedAt: now } }
-    );
-
-    // 3. Generar o Reutilizar Token (Misma lógica que en /login)
-    let finalToken = null;
-    let expiresAt = null;
-
-    const existingTokenRecord = await req.db.collection("tokens").findOne({
-      email: normalizedEmail,
-      active: true
-    });
-
-    // Lógica de reutilización/generación de token...
-    if (existingTokenRecord && new Date(existingTokenRecord.expiresAt) > now) {
-      finalToken = existingTokenRecord.token;
-    } else {
-      finalToken = crypto.randomBytes(32).toString("hex");
-      expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
-      await req.db.collection("tokens").insertOne({
-        token: finalToken,
-        email: normalizedEmail,
-        rol: user.rol,
-        createdAt: now,
-        expiresAt,
-        active: true
-      });
-    }
-
-    // 4. Registrar Ingreso
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const userAgentString = req.headers['user-agent'] || 'Desconocido';
-    const agent = useragent.parse(userAgentString);
-    const usr = { name: user.nombre, email: normalizedEmail, cargo: user.rol };
-
-    await req.db.collection("ingresos").insertOne({
-      usr,
-      ipAddress,
-      os: agent.os.toString(),
-      browser: agent.toAgent(),
-      now: now,
-    });
-
-    // 5. Retornar el token y datos del usuario (ACCESO CONCEDIDO)
-    return res.json({ success: true, token: finalToken, usr });
-
-  } catch (err) {
-    console.error("Error en verify-login-2fa:", err);
-    return res.status(500).json({ success: false, message: "Error interno en la verificación 2FA." });
-  }
-});
-
-
 // =================================================================
 // 🔑 ENDPOINT 1: SOLICITAR RECUPERACIÓN (PASO 1)
 // =================================================================
 router.post("/recuperacion", async (req, res) => {
-  const { email } = req.body;
+    const { email } = req.body;
 
-  if (!email) {
-    return res.status(400).json({ message: "El correo electrónico es obligatorio." });
-  }
-
-  try {
-    const user = await req.db.collection("usuarios").findOne({
-      mail: email.toLowerCase().trim()
-      // No validamos estado "activo" aquí para dar feedback si el email existe
-    });
-
-    // 1. Simular éxito si el usuario no existe para prevenir enumeración,
-    // pero para debug y flujo explícito, retornamos 404/401 si no está activo.
-    if (!user || user.estado === "inactivo") {
-      return res.status(404).json({ message: "Usuario no encontrado o no activo." });
+    if (!email) {
+        return res.status(400).json({ message: "El correo electrónico es obligatorio." });
     }
 
-    // 2. Generar código de 6 dígitos numéricos
-    // Aseguramos que tenga 6 dígitos, rellenando con ceros si es necesario, aunque
-    // crypto.randomInt(100000, 999999) ya garantiza 6 dígitos.
-    const verificationCode = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = new Date(Date.now() + RECOVERY_CODE_EXPIRATION);
+    try {
+        const user = await req.db.collection("usuarios").findOne({ 
+          mail: email.toLowerCase().trim()
+          // No validamos estado "activo" aquí para dar feedback si el email existe
+        });
+        
+        // 1. Simular éxito si el usuario no existe para prevenir enumeración,
+        // pero para debug y flujo explícito, retornamos 404/401 si no está activo.
+        if (!user || user.estado === "inactivo") {
+            return res.status(404).json({ message: "Usuario no encontrado o no activo." });
+        }
 
-    // 3. Invalidar códigos anteriores para este usuario/email (Limpieza)
-    await req.db.collection("recovery_codes").updateMany(
-      { email: email.toLowerCase().trim(), active: true },
-      { $set: { active: false, revokedAt: new Date(), reason: "new_code_issued" } }
-    );
+        // 2. Generar código de 6 dígitos numéricos
+        // Aseguramos que tenga 6 dígitos, rellenando con ceros si es necesario, aunque
+        // crypto.randomInt(100000, 999999) ya garantiza 6 dígitos.
+        const verificationCode = crypto.randomInt(100000, 999999).toString();
+        const expiresAt = new Date(Date.now() + RECOVERY_CODE_EXPIRATION);
 
-    // 4. Guardar el nuevo código en la colección temporal
-    await req.db.collection("recovery_codes").insertOne({
-      email: email.toLowerCase().trim(),
-      code: verificationCode,
-      userId: user._id.toString(), // Guardamos el ID por conveniencia
-      createdAt: new Date(),
-      expiresAt: expiresAt,
-      active: true
-    });
+        // 3. Invalidar códigos anteriores para este usuario/email (Limpieza)
+        await req.db.collection("recovery_codes").updateMany(
+            { email: email.toLowerCase().trim(), active: true },
+            { $set: { active: false, revokedAt: new Date(), reason: "new_code_issued" } }
+        );
 
-    // 5. Enviar el email
-    const htmlContent = `
+        // 4. Guardar el nuevo código en la colección temporal
+        await req.db.collection("recovery_codes").insertOne({
+            email: email.toLowerCase().trim(),
+            code: verificationCode,
+            userId: user._id.toString(), // Guardamos el ID por conveniencia
+            createdAt: new Date(),
+            expiresAt: expiresAt,
+            active: true
+        });
+
+        // 5. Enviar el email
+        const htmlContent = `
             <p>Hola ${user.nombre},</p>
             <p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta Acciona.</p>
             <p>Tu código de verificación es:</p>
@@ -411,167 +272,206 @@ router.post("/recuperacion", async (req, res) => {
             <p>El equipo de Acciona</p>
         `;
 
-    await sendEmail({
-      to: email,
-      subject: 'Código de Recuperación de Contraseña - Acciona',
-      html: htmlContent
-    });
+        await sendEmail({
+            to: email,
+            subject: 'Código de Recuperación de Contraseña - Acciona',
+            html: htmlContent
+        });
 
-    // 6. Respuesta al cliente (status 200 para pasar al paso 2)
-    res.status(200).json({ success: true, message: "Código de recuperación enviado." });
+        // 6. Respuesta al cliente (status 200 para pasar al paso 2)
+        res.status(200).json({ success: true, message: "Código de recuperación enviado." });
 
-  } catch (err) {
-    console.error("Error en /recuperacion:", err);
-    // Error genérico si el envío falla o hay un error de DB
-    res.status(500).json({ message: "Error interno al procesar la solicitud." });
-  }
+    } catch (err) {
+        console.error("Error en /recuperacion:", err);
+        // Error genérico si el envío falla o hay un error de DB
+        res.status(500).json({ message: "Error interno al procesar la solicitud." });
+    }
 });
 
 // =================================================================
 // 🔑 ENDPOINT 2: VERIFICAR CÓDIGO Y BORRAR PASS (PASO 2)
 // =================================================================
 router.post("/borrarpass", async (req, res) => {
-  const { email, code } = req.body;
-  const now = new Date();
+    const { email, code } = req.body;
+    const now = new Date();
 
-  if (!email || !code) {
-    return res.status(400).json({ message: "Correo y código de verificación son obligatorios." });
-  }
-
-  try {
-    // 1. Buscar código activo, sin expirar y que coincida con email/código
-    const recoveryRecord = await req.db.collection("recovery_codes").findOne({
-      email: email.toLowerCase().trim(),
-      code: code,
-      active: true
-    });
-
-    if (!recoveryRecord) {
-      return res.status(401).json({ message: "Código inválido o ya utilizado." });
+    if (!email || !code) {
+        return res.status(400).json({ message: "Correo y código de verificación son obligatorios." });
     }
 
-    // 2. Verificar expiración
-    if (recoveryRecord.expiresAt < now) {
-      // Marcar como inactivo si expiró
-      await req.db.collection("recovery_codes").updateOne(
-        { _id: recoveryRecord._id },
-        { $set: { active: false, revokedAt: now, reason: "expired" } }
-      );
-      return res.status(401).json({ message: "Código expirado. Solicita uno nuevo." });
+    try {
+        // 1. Buscar código activo, sin expirar y que coincida con email/código
+        const recoveryRecord = await req.db.collection("recovery_codes").findOne({
+            email: email.toLowerCase().trim(),
+            code: code,
+            active: true
+        });
+
+        if (!recoveryRecord) {
+            return res.status(401).json({ message: "Código inválido o ya utilizado." });
+        }
+
+        // 2. Verificar expiración
+        if (recoveryRecord.expiresAt < now) {
+            // Marcar como inactivo si expiró
+            await req.db.collection("recovery_codes").updateOne(
+                { _id: recoveryRecord._id },
+                { $set: { active: false, revokedAt: now, reason: "expired" } }
+            );
+            return res.status(401).json({ message: "Código expirado. Solicita uno nuevo." });
+        }
+
+        // 3. Marcar el código como inactivo (consumido)
+        await req.db.collection("recovery_codes").updateOne(
+            { _id: recoveryRecord._id },
+            { $set: { active: false, revokedAt: now, reason: "consumed" } }
+        );
+
+        // 4. Obtener el ID del usuario
+        // Podemos usar el userId que guardamos en el recoveryRecord
+        const userId = recoveryRecord.userId;
+        
+        if (!userId) {
+             return res.status(404).json({ message: "Error interno: ID de usuario no encontrado." });
+        }
+
+        // Opcional: Borrar el campo pass temporalmente para forzar el cambio, o simplemente redirigir
+        // Dado que el flujo es redirigir a `/set-password?userId=<uid>`, no borraremos la pass aquí.
+
+        // 5. Retornar el UID del usuario (como string)
+        return res.json({ success: true, uid: userId });
+
+    } catch (err) {
+        console.error("Error en /borrarpass:", err);
+        res.status(500).json({ message: "Error interno al verificar el código." });
     }
-
-    // 3. Marcar el código como inactivo (consumido)
-    await req.db.collection("recovery_codes").updateOne(
-      { _id: recoveryRecord._id },
-      { $set: { active: false, revokedAt: now, reason: "consumed" } }
-    );
-
-    // 4. Obtener el ID del usuario
-    // Podemos usar el userId que guardamos en el recoveryRecord
-    const userId = recoveryRecord.userId;
-
-    if (!userId) {
-      return res.status(404).json({ message: "Error interno: ID de usuario no encontrado." });
-    }
-
-    // Opcional: Borrar el campo pass temporalmente para forzar el cambio, o simplemente redirigir
-    // Dado que el flujo es redirigir a `/set-password?userId=<uid>`, no borraremos la pass aquí.
-
-    // 5. Retornar el UID del usuario (como string)
-    return res.json({ success: true, uid: userId });
-
-  } catch (err) {
-    console.error("Error en /borrarpass:", err);
-    res.status(500).json({ message: "Error interno al verificar el código." });
-  }
 });
 
 
 router.post("/send-2fa-code", async (req, res) => {
-  // Asumimos que el token JWT ya autenticó y el ID de usuario está disponible en req.user._id
-  // Si usas tokens, el ID es la forma más segura de obtener el email
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) {
-    return res.status(401).json({ message: "No autorizado. Token requerido." });
-  }
-
-  // Nota: Deberías decodificar el token para obtener el userId.
-  // Usaremos un placeholder simplificado (obtener email de sesión/storage) como en tu React:
-  const userEmail = req.body.email || 'EMAIL_DEL_TOKEN'; // Obtener email real del token decodificado
-
-  // --- LÓGICA DE VERIFICACIÓN DEL USUARIO Y ENVÍO DE CÓDIGO ---
-
-  try {
-    // En un entorno real, decodificas el token para obtener el ID del usuario:
-    // const decoded = jwt.verify(token, process.env.JWT_SECRET); 
-    // const user = await req.db.collection("usuarios").findOne({ _id: new ObjectId(decoded.id) });
-
-    // Usamos el email por simplicidad del ejemplo:
-    const user = await req.db.collection("usuarios").findOne({
-      mail: userEmail.toLowerCase().trim()
-    });
-
-    if (!user) {
-      // No revelamos si el email existe o no por seguridad, pero para este flujo
-      // asumimos que el usuario está logeado y debe existir.
-      return res.status(404).json({ message: "Usuario no encontrado." });
+    // Asumimos que el token JWT ya autenticó y el ID de usuario está disponible en req.user._id
+    // Si usas tokens, el ID es la forma más segura de obtener el email
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+        return res.status(401).json({ message: "No autorizado. Token requerido." });
     }
 
-    await generateAndSend2FACode(req.db, user, '2FA_SETUP');
+    // Nota: Deberías decodificar el token para obtener el userId.
+    // Usaremos un placeholder simplificado (obtener email de sesión/storage) como en tu React:
+    const userEmail = req.body.email || 'EMAIL_DEL_TOKEN'; // Obtener email real del token decodificado
+    
+    // --- LÓGICA DE VERIFICACIÓN DEL USUARIO Y ENVÍO DE CÓDIGO ---
+    
+    try {
+        // En un entorno real, decodificas el token para obtener el ID del usuario:
+        // const decoded = jwt.verify(token, process.env.JWT_SECRET); 
+        // const user = await req.db.collection("usuarios").findOne({ _id: new ObjectId(decoded.id) });
 
-    // 5. Respuesta al cliente
-    res.status(200).json({ success: true, message: "Código de activación 2FA enviado a tu correo." });
+        // Usamos el email por simplicidad del ejemplo:
+        const user = await req.db.collection("usuarios").findOne({ 
+          mail: userEmail.toLowerCase().trim()
+        });
+        
+        if (!user) {
+            // No revelamos si el email existe o no por seguridad, pero para este flujo
+            // asumimos que el usuario está logeado y debe existir.
+            return res.status(404).json({ message: "Usuario no encontrado." });
+        }
+        
+        // 1. Generar código de 6 dígitos
+        const verificationCode = crypto.randomInt(100000, 999999).toString();
+        // Usaremos 15 minutos de expiración, como en tu ejemplo:
+        const EXPIRATION_TIME = 1000 * 60 * 15; // 15 minutos
+        const expiresAt = new Date(Date.now() + EXPIRATION_TIME);
 
-  } catch (err) {
-    console.error("Error en /send-2fa-code:", err);
-    res.status(500).json({ success: false, message: "Error interno al procesar la solicitud." });
-  }
+        // 2. Invalidar códigos 2FA anteriores para este usuario/email (Limpieza)
+        await req.db.collection("2fa_codes").updateMany(
+            { userId: user._id.toString(), active: true, type: '2FA_SETUP' },
+            { $set: { active: false, revokedAt: new Date(), reason: "new_code_issued" } }
+        );
+
+        // 3. Guardar el nuevo código en la colección temporal
+        await req.db.collection("2fa_codes").insertOne({
+            userId: user._id.toString(),
+            code: verificationCode,
+            type: '2FA_SETUP', // Tipo de código para diferenciar de 'recovery'
+            createdAt: new Date(),
+            expiresAt: expiresAt,
+            active: true
+        });
+
+        // 4. Enviar el email
+        const htmlContent = `
+            <p>Hola ${user.nombre},</p>
+            <p>Hemos recibido una solicitud para <br>activar</br> la Autenticación de Dos Factores (2FA) en tu cuenta Acciona.</p>
+            <p>Tu código de activación 2FA es:</p>
+            <h2 style="color: #f97316; font-size: 24px; text-align: center; border: 1px solid #f97316; padding: 10px; border-radius: 8px;">
+                ${verificationCode}
+            </h2>
+            <p>Este código expira en 15 minutos. Si no solicitaste activar 2FA, ignora este correo.</p>
+            <p>Saludos cordiales,</p>
+            <p>El equipo de Acciona</p>
+        `;
+
+        await sendEmail({
+            to: user.mail,
+            subject: 'Código de Activación de 2FA - Acciona',
+            html: htmlContent
+        });
+
+        // 5. Respuesta al cliente
+        res.status(200).json({ success: true, message: "Código de activación 2FA enviado a tu correo." });
+
+    } catch (err) {
+        console.error("Error en /send-2fa-code:", err);
+        res.status(500).json({ success: false, message: "Error interno al procesar la solicitud." });
+    }
 });
 
 router.post("/verify-2fa-activation", async (req, res) => {
-  const { verificationCode } = req.body;
-  const token = req.headers.authorization?.split(" ")[1];
+    const { verificationCode } = req.body;
+    const token = req.headers.authorization?.split(" ")[1];
+    
+    // Asumimos que obtienes el ID del usuario del token
+    const userId = req.body.userId || 'ID_DEL_TOKEN'; // Obtener ID real del token decodificado
 
-  // Asumimos que obtienes el ID del usuario del token
-  const userId = req.body.userId || 'ID_DEL_TOKEN'; // Obtener ID real del token decodificado
-
-  if (!verificationCode || verificationCode.length !== 6 || !userId) {
-    return res.status(400).json({ success: false, message: "Datos incompletos o código inválido." });
-  }
-
-  try {
-    // 1. Buscar el código activo y no expirado
-    const codeRecord = await req.db.collection("2fa_codes").findOne({
-      userId: userId, // Usamos el ID de usuario autenticado
-      code: verificationCode,
-      type: '2FA_SETUP',
-      active: true,
-      expiresAt: { $gt: new Date() } // Debe ser mayor a la fecha/hora actual
-    });
-
-    if (!codeRecord) {
-      return res.status(400).json({ success: false, message: "Código incorrecto o expirado." });
+    if (!verificationCode || verificationCode.length !== 6 || !userId) {
+        return res.status(400).json({ success: false, message: "Datos incompletos o código inválido." });
     }
 
-    // 2. Marcar el código como usado/inactivo
-    await req.db.collection("2fa_codes").updateOne(
-      { _id: codeRecord._id },
-      { $set: { active: false, usedAt: new Date() } }
-    );
+    try {
+        // 1. Buscar el código activo y no expirado
+        const codeRecord = await req.db.collection("2fa_codes").findOne({
+            userId: userId, // Usamos el ID de usuario autenticado
+            code: verificationCode,
+            type: '2FA_SETUP',
+            active: true,
+            expiresAt: { $gt: new Date() } // Debe ser mayor a la fecha/hora actual
+        });
 
-    // 3. ACTUALIZAR EL ESTADO 2FA DEL USUARIO
-    await req.db.collection("usuarios").updateOne(
-      { mail: userId },
-      { $set: { twoFactorEnabled: true } } // ¡Importante!
-    );
+        if (!codeRecord) {
+            return res.status(400).json({ success: false, message: "Código incorrecto o expirado." });
+        }
 
-    // 4. Respuesta exitosa
-    res.status(200).json({ success: true, message: "Autenticación de Dos Factores activada exitosamente." });
+        // 2. Marcar el código como usado/inactivo
+        await req.db.collection("2fa_codes").updateOne(
+            { _id: codeRecord._id },
+            { $set: { active: false, usedAt: new Date() } }
+        );
 
-  } catch (err) {
-    console.error("Error en /verify-2fa-activation:", err);
-    res.status(500).json({ success: false, message: "Error interno en la verificación." });
-  }
+        // 3. ACTUALIZAR EL ESTADO 2FA DEL USUARIO
+        await req.db.collection("usuarios").updateOne(
+            { _id: new ObjectId(userId) },
+            { $set: { twoFactorEnabled: true } } // ¡Importante!
+        );
+
+        // 4. Respuesta exitosa
+        res.status(200).json({ success: true, message: "Autenticación de Dos Factores activada exitosamente." });
+
+    } catch (err) {
+        console.error("Error en /verify-2fa-activation:", err);
+        res.status(500).json({ success: false, message: "Error interno en la verificación." });
+    }
 });
 
 
