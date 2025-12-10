@@ -386,13 +386,13 @@ router.post("/send-2fa-code", async (req, res) => {
 
         // 2. Invalidar códigos 2FA anteriores para este usuario/email (Limpieza)
         await req.db.collection("2fa_codes").updateMany(
-            { userId: user._id.toString(), active: true, type: '2FA_SETUP' },
+            { userId: user.mail, active: true, type: '2FA_SETUP' },
             { $set: { active: false, revokedAt: new Date(), reason: "new_code_issued" } }
         );
 
         // 3. Guardar el nuevo código en la colección temporal
         await req.db.collection("2fa_codes").insertOne({
-            userId: user._id.toString(),
+            userId: user.mail,
             code: verificationCode,
             type: '2FA_SETUP', // Tipo de código para diferenciar de 'recovery'
             createdAt: new Date(),
