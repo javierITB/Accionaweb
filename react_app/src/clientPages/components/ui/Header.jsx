@@ -242,6 +242,7 @@ const Header = ({ className = '' }) => {
             <Button
               variant="ghost"
               size="icon"
+              title="Notificaciones"
               onClick={toggleNoti}
               // APLICACIÓN DE LA CLASE DE AGITACIÓN
               className={`relative hover:bg-primary transition-brand w-10 h-10 lg:w-12 lg:h-12 ${shouldShake ? 'animate-bell-shake' : ''}`}

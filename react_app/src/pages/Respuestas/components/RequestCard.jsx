@@ -221,6 +221,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
           <Button
             variant="outline"
             size="sm"
+            title="Chat de Mensajes"
             onClick={() => onSendMessage(currentRequest)}
             iconName="MessageSquare"
             iconPosition="left"
@@ -243,6 +244,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
           <Button
             variant="ghost"
             size="sm"
+            Title="Ver detalles"
             onClick={() => onViewDetails(currentRequest)}
             iconName="Info"
             iconPosition="left"
