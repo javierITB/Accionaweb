@@ -296,15 +296,15 @@ const FormBuilder = () => {
         body: JSON.stringify(dataToSend),
       });
 
-      if (!response) {
-        throw new Error('Error en la respuesta del servidor');
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${await response.text()}`);
       }
 
       const savedForm = await response.json();
 
       setFormData(prev => ({
         ...prev,
-        id: savedForm.insertedId || savedForm.id || prev.id,
+        id: savedForm._id || savedForm.insertedId || savedForm.id || prev.id,
         title: savedForm.title || prev.title,
         section: savedForm.section || prev.section,
         category: savedForm.category || prev.category,
@@ -316,7 +316,10 @@ const FormBuilder = () => {
       alert("Formulario guardado como borrador exitosamente");
 
       if (!formData?.id) {
-        window.history.replaceState({}, "", `?id=${savedForm.insertedId || savedForm._Id || savedForm.id}`);
+        const newId = savedForm._id || savedForm.insertedId || savedForm.id;
+        if (newId) {
+          window.history.replaceState({}, "", `?id=${newId}`);
+        }
       }
 
     } catch (error) {
@@ -367,7 +370,7 @@ const FormBuilder = () => {
 
     setIsPublishing(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/forms/public/${formData._id || formData.id}`, {
+      const response = await fetch(`https://back-acciona.vercel.app/api/forms/public/${formData.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
