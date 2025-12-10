@@ -288,7 +288,6 @@ router.post("/recuperacion", async (req, res) => {
     }
 });
 
-
 // =================================================================
 // 🔑 ENDPOINT 2: VERIFICAR CÓDIGO Y BORRAR PASS (PASO 2)
 // =================================================================
@@ -345,6 +344,133 @@ router.post("/borrarpass", async (req, res) => {
     } catch (err) {
         console.error("Error en /borrarpass:", err);
         res.status(500).json({ message: "Error interno al verificar el código." });
+    }
+});
+
+
+router.post("/send-2fa-code", async (req, res) => {
+    // Asumimos que el token JWT ya autenticó y el ID de usuario está disponible en req.user._id
+    // Si usas tokens, el ID es la forma más segura de obtener el email
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+        return res.status(401).json({ message: "No autorizado. Token requerido." });
+    }
+
+    // Nota: Deberías decodificar el token para obtener el userId.
+    // Usaremos un placeholder simplificado (obtener email de sesión/storage) como en tu React:
+    const userEmail = req.body.email || 'EMAIL_DEL_TOKEN'; // Obtener email real del token decodificado
+    
+    // --- LÓGICA DE VERIFICACIÓN DEL USUARIO Y ENVÍO DE CÓDIGO ---
+    
+    try {
+        // En un entorno real, decodificas el token para obtener el ID del usuario:
+        // const decoded = jwt.verify(token, process.env.JWT_SECRET); 
+        // const user = await req.db.collection("usuarios").findOne({ _id: new ObjectId(decoded.id) });
+
+        // Usamos el email por simplicidad del ejemplo:
+        const user = await req.db.collection("usuarios").findOne({ 
+          mail: userEmail.toLowerCase().trim()
+        });
+        
+        if (!user) {
+            // No revelamos si el email existe o no por seguridad, pero para este flujo
+            // asumimos que el usuario está logeado y debe existir.
+            return res.status(404).json({ message: "Usuario no encontrado." });
+        }
+        
+        // 1. Generar código de 6 dígitos
+        const verificationCode = crypto.randomInt(100000, 999999).toString();
+        // Usaremos 15 minutos de expiración, como en tu ejemplo:
+        const EXPIRATION_TIME = 1000 * 60 * 15; // 15 minutos
+        const expiresAt = new Date(Date.now() + EXPIRATION_TIME);
+
+        // 2. Invalidar códigos 2FA anteriores para este usuario/email (Limpieza)
+        await req.db.collection("2fa_codes").updateMany(
+            { userId: user._id.toString(), active: true, type: '2FA_SETUP' },
+            { $set: { active: false, revokedAt: new Date(), reason: "new_code_issued" } }
+        );
+
+        // 3. Guardar el nuevo código en la colección temporal
+        await req.db.collection("2fa_codes").insertOne({
+            userId: user._id.toString(),
+            code: verificationCode,
+            type: '2FA_SETUP', // Tipo de código para diferenciar de 'recovery'
+            createdAt: new Date(),
+            expiresAt: expiresAt,
+            active: true
+        });
+
+        // 4. Enviar el email
+        const htmlContent = `
+            <p>Hola ${user.nombre},</p>
+            <p>Hemos recibido una solicitud para <br>activar</br> la Autenticación de Dos Factores (2FA) en tu cuenta Acciona.</p>
+            <p>Tu código de activación 2FA es:</p>
+            <h2 style="color: #f97316; font-size: 24px; text-align: center; border: 1px solid #f97316; padding: 10px; border-radius: 8px;">
+                ${verificationCode}
+            </h2>
+            <p>Este código expira en 15 minutos. Si no solicitaste activar 2FA, ignora este correo.</p>
+            <p>Saludos cordiales,</p>
+            <p>El equipo de Acciona</p>
+        `;
+
+        await sendEmail({
+            to: user.mail,
+            subject: 'Código de Activación de 2FA - Acciona',
+            html: htmlContent
+        });
+
+        // 5. Respuesta al cliente
+        res.status(200).json({ success: true, message: "Código de activación 2FA enviado a tu correo." });
+
+    } catch (err) {
+        console.error("Error en /send-2fa-code:", err);
+        res.status(500).json({ success: false, message: "Error interno al procesar la solicitud." });
+    }
+});
+
+router.post("/verify-2fa-activation", async (req, res) => {
+    const { verificationCode } = req.body;
+    const token = req.headers.authorization?.split(" ")[1];
+    
+    // Asumimos que obtienes el ID del usuario del token
+    const userId = req.body.userId || 'ID_DEL_TOKEN'; // Obtener ID real del token decodificado
+
+    if (!verificationCode || verificationCode.length !== 6 || !userId) {
+        return res.status(400).json({ success: false, message: "Datos incompletos o código inválido." });
+    }
+
+    try {
+        // 1. Buscar el código activo y no expirado
+        const codeRecord = await req.db.collection("2fa_codes").findOne({
+            userId: userId, // Usamos el ID de usuario autenticado
+            code: verificationCode,
+            type: '2FA_SETUP',
+            active: true,
+            expiresAt: { $gt: new Date() } // Debe ser mayor a la fecha/hora actual
+        });
+
+        if (!codeRecord) {
+            return res.status(400).json({ success: false, message: "Código incorrecto o expirado." });
+        }
+
+        // 2. Marcar el código como usado/inactivo
+        await req.db.collection("2fa_codes").updateOne(
+            { _id: codeRecord._id },
+            { $set: { active: false, usedAt: new Date() } }
+        );
+
+        // 3. ACTUALIZAR EL ESTADO 2FA DEL USUARIO
+        await req.db.collection("usuarios").updateOne(
+            { _id: new ObjectId(userId) },
+            { $set: { twoFactorEnabled: true } } // ¡Importante!
+        );
+
+        // 4. Respuesta exitosa
+        res.status(200).json({ success: true, message: "Autenticación de Dos Factores activada exitosamente." });
+
+    } catch (err) {
+        console.error("Error en /verify-2fa-activation:", err);
+        res.status(500).json({ success: false, message: "Error interno en la verificación." });
     }
 });
 

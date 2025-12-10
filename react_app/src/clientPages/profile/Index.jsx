@@ -70,28 +70,6 @@ const UserProfileSettings = () => {
                 </p>
               </div>
 
-              {/* Quick Actions - MEJORADO PARA MÓVIL */}
-              <div className="flex flex-col xs:flex-row items-stretch xs:items-center space-y-2 xs:space-y-0 xs:space-x-3">
-                <Button
-                  variant="outline"
-                  iconName="Download"
-                  iconPosition="left"
-                  size="sm"
-                  className="w-full xs:w-auto justify-center"
-                >
-                  Exportar Datos
-                </Button>
-
-                <Button
-                  variant="outline"
-                  iconName="HelpCircle"
-                  iconPosition="left"
-                  size="sm"
-                  className="w-full xs:w-auto justify-center"
-                >
-                  Ayuda
-                </Button>
-              </div>
             </div>
           </div>
 
