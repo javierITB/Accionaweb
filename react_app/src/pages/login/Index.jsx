@@ -218,9 +218,9 @@ export default function App() {
         {view === '2fa' && (
             <form onSubmit={handle2FASubmit} className="space-y-6">
                 
-                {/* Mensaje de éxito de envío de código */}
-                <div className="p-3 bg-blue-50 border border-blue-300 text-blue-700 rounded-xl text-sm font-medium flex items-center space-x-2">
-                    <Shield className="w-5 h-5 flex-shrink-0" />
+                {/* Mensaje de éxito de envío de código - CAMBIADO A NARANJA */}
+                <div className={`p-3 bg-orange-50 border border-orange-300 text-orange-700 rounded-xl text-sm font-medium flex items-center space-x-2`}>
+                    <Shield className="w-5 h-5 flex-shrink-0 text-orange-600" />
                     <span>Se requiere un código de verificación. Revisa la bandeja de entrada de <strong className="font-semibold">{email}</strong>.</span>
                 </div>
                 
@@ -235,7 +235,7 @@ export default function App() {
                             type="text"
                             inputMode="numeric"
                             className={`w-full pl-4 pr-4 py-3 border border-gray-300 rounded-xl text-center transition duration-150 shadow-sm text-lg font-bold tracking-widest
-                              focus:ring-2 focus:ring-[${ORANGE_COLOR}] focus:border-[${ORANGE_COLOR}]`}
+                              focus:ring-2 focus:ring-[${ORANGE_COLOR}] focus:border-[${ORANGE_COLOR}]`} // <-- USANDO ORANGE_COLOR
                             value={twoFACode}
                             onChange={(e) => setTwoFACode(e.target.value)}
                             maxLength={6}
@@ -245,12 +245,12 @@ export default function App() {
                     </div>
                 </div>
 
-                {/* Botón de Submit 2FA */}
+                {/* Botón de Submit 2FA - CAMBIADO A NARANJA */}
                 <button 
                     type="submit" 
                     disabled={loading || twoFACode.length !== 6}
                     className={`w-full flex items-center justify-center p-3 text-lg font-semibold rounded-xl text-white 
-                      bg-green-600 hover:bg-green-700 transition duration-150 shadow-lg disabled:opacity-70 disabled:cursor-not-allowed`}
+                      bg-[${ORANGE_COLOR}] hover:bg-orange-500 transition duration-150 shadow-lg disabled:opacity-70 disabled:cursor-not-allowed`}
                     title="Verificar código"
                 >
                     {loading ? (

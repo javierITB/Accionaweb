@@ -6,6 +6,8 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const mail = sessionStorage.getItem("email");
+  
+  // ... (Efectos y funciones fetch se mantienen igual) ...
   useEffect(() => {
     if (onUnreadChange) {
       const unread = notifications.filter(n => !n.isRead).length;
@@ -299,32 +301,15 @@ const handleNotificationClick = async (notification) => {
             </div>
           ))
         ) : (
-          /* Card de No Notificaciones */
-          <div
-            key="0"
-            className={`relative border rounded-lg p-3 m-2 pl-4 transition-brand border-primary/30 bg-primary/5 shadow-sm`}
-          >
-             {/* BARRA VERTICAL VACÍA */}
-             <div 
-                className="absolute top-0 bottom-0 left-0 w-1 rounded-l-lg bg-gray-300"
-              ></div>
-              
-            <div className="flex items-start">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center space-x-2"> 
-                    <h3 className="font-medium text-sm text-primary">
-                      No hay notificaciones disponibles
-                    </h3>
-                    <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
-                  </div>
-                  <span className="text-xs text-muted-foreground">ahora</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Aquí aparecerán sus futuras notificaciones
-                </p>
-              </div>
-            </div>
+          /* Card de No Notificaciones - MEJORADO */
+          <div className="text-center py-10 px-6 m-2">
+            <Icon name="BellOff" size={36} className="mx-auto mb-4 text-muted-foreground/60" />
+            <h3 className="text-lg font-semibold text-foreground mb-1">
+              Sin notificaciones recientes
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Aquí aparecerán sus futuras notificaciones. ¡Todo en orden por ahora!
+            </p>
           </div>
         )}
       </div>

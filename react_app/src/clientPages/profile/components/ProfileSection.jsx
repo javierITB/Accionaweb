@@ -5,40 +5,31 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input'; 
 import Select from '../../components/ui/Select'; 
 
-// Función para obtener el email de sesión de sessionStorage
-const getSessionEmail = () => {
-  try {
-    const sessionData = sessionStorage.getItem('email');
-    if (sessionData) {
-      return sessionData || null;
-    }
-  } catch (e) {
-    console.error("Error reading session storage:", e);
-  }
-  return null;
-};
-
-const MOCK_SESSION_EMAIL = getSessionEmail() || "mail@mail.com"; 
-
-const ProfileSection = () => {
+// Recibimos los datos del usuario como props
+const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userId, setUserId] = useState(null); 
+  const [isSaving, setIsSaving] = useState(false);
   
-  const [profileData, setProfileData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    position: "",
-    employeeId: "",
-    department: "",
-    profileImage: "https://placehold.co/128x128/3B82F6/FFFFFF?text=A",
-    rol: 'user',
-    estado: 'activo'
-  });
-
-  const [formData, setFormData] = useState(profileData);
+  const [profileData, setProfileData] = useState(initialProfileData);
+  const [formData, setFormData] = useState(initialProfileData);
   const [errors, setErrors] = useState({});
+
+  // Sincronizar data si el prop inicial cambia (solo debería cambiar una vez al inicio)
+  useEffect(() => {
+    if (initialProfileData) {
+      // Necesitamos una imagen de fallback aquí porque el ProfileSection original la generaba
+      const defaultImage = `https://placehold.co/128x128/3B82F6/FFFFFF?text=${initialProfileData.firstName?.[0]?.toUpperCase() || 'A'}`;
+      
+      const syncedData = {
+          ...initialProfileData,
+          profileImage: defaultImage, // Asumiendo que no guardas la imagen en MongoDB aún
+      };
+      
+      setProfileData(syncedData);
+      setFormData(syncedData);
+    }
+  }, [initialProfileData]);
+
 
   const departmentOptions = [
     { value: 'Recursos Humanos', label: 'Recursos Humanos' },
@@ -49,65 +40,7 @@ const ProfileSection = () => {
     { value: 'Acciona Centro de Negocios Spa.', label: 'Acciona Centro de Negocios Spa.' },
   ];
 
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      const userEmail = getSessionEmail() || MOCK_SESSION_EMAIL;
-      
-      if (!userEmail) {
-        setIsLoading(false);
-        alert('No se pudo encontrar el email de sesión. Intente iniciar sesión.');
-        return;
-      }
-      
-      try {
-        setIsLoading(true);
-        const response = await fetch(`https://back-acciona.vercel.app/api/auth/full/${userEmail}`);
-
-        if (!response.ok) {
-          throw new Error('Error al cargar el perfil. Usuario no encontrado o API caída.');
-        }
-
-        const user = await response.json();
-        
-        const initialData = {
-          firstName: user.nombre || '',
-          lastName: user.apellido || '',
-          email: user.mail || '',
-          position: user.cargo || user.rol || '',
-          employeeId: user._id || '', 
-          department: user.empresa || '',
-          profileImage: `https://placehold.co/128x128/3B82F6/FFFFFF?text=${user.nombre?.[0]?.toUpperCase() || 'A'}`,
-          rol: user.rol || 'user',
-          estado: user.estado || 'activo'
-        };
-        
-        setUserId(user._id);
-        setProfileData(initialData);
-        setFormData(initialData);
-
-      } catch (error) {
-        console.error("Error al cargar perfil:", error);
-        
-        const fallbackData = {
-          firstName: "",
-          lastName: "",
-          email: "",
-          position: "Empleado",
-          employeeId: "",
-          department: ".",
-          rol: '',
-          estado: 'activo',
-          profileImage: profileData.profileImage
-        };
-        setProfileData(fallbackData);
-        setFormData(fallbackData);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
+  // ... (handleInputChange, validateForm se mantienen igual) ...
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -148,7 +81,7 @@ const ProfileSection = () => {
     if (!validateForm()) return;
     if (!userId) return alert('Error: ID de usuario no disponible para actualizar.');
     
-    setIsLoading(true);
+    setIsSaving(true);
 
     const updateBody = {
       nombre: formData.firstName,
@@ -161,10 +94,12 @@ const ProfileSection = () => {
     };
     
     try {
+      const token = sessionStorage.getItem('token');
       const response = await fetch(`https://back-acciona.vercel.app/api/auth/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(updateBody)
       });
@@ -174,7 +109,13 @@ const ProfileSection = () => {
         throw new Error(errorData.error || 'Error al actualizar el perfil.');
       }
       
-      setProfileData({ ...formData, rol: profileData.rol, estado: profileData.estado });
+      // Sincronizar estado local, manteniendo twoFactorEnabled
+      setProfileData({ 
+        ...formData, 
+        rol: profileData.rol, 
+        estado: profileData.estado,
+        twoFactorEnabled: profileData.twoFactorEnabled 
+      });
       setIsEditing(false);
       alert('Perfil actualizado exitosamente.');
       
@@ -182,7 +123,7 @@ const ProfileSection = () => {
       console.error("Error guardando perfil:", error);
       alert("Error al guardar el perfil: " + error.message);
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -206,7 +147,8 @@ const ProfileSection = () => {
     }
   };
 
-  if (isLoading) {
+
+  if (isParentLoading || !profileData) {
     return (
       <div className="bg-card rounded-lg border border-border shadow-subtle p-8 sm:p-12 text-center text-muted-foreground">
         <Icon name="Loader" size={24} className="animate-spin mx-auto mb-3 text-primary" />
@@ -217,6 +159,8 @@ const ProfileSection = () => {
 
   return (
     <div className="bg-card rounded-lg border border-border shadow-subtle w-full">
+      {/* ... (El resto del JSX se mantiene igual) ... */}
+      
       {/* Header - RESPONSIVE */}
       <div className="p-4 sm:p-6 border-b border-border">
         <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between space-y-3 xs:space-y-0">
@@ -242,7 +186,7 @@ const ProfileSection = () => {
               <Button
                 variant="ghost"
                 onClick={handleCancel}
-                disabled={isLoading}
+                disabled={isSaving}
                 size="sm"
                 className="w-full xs:w-auto justify-center"
               >
@@ -253,11 +197,11 @@ const ProfileSection = () => {
                 onClick={handleSave}
                 iconName="Save"
                 iconPosition="left"
-                disabled={isLoading}
+                disabled={isSaving}
                 size="sm"
                 className="w-full xs:w-auto justify-center"
               >
-                {isLoading ? 'Guardando...' : 'Guardar'}
+                {isSaving ? 'Guardando...' : 'Guardar'}
               </Button>
             </div>
           )}

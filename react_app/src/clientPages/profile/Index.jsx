@@ -5,9 +5,85 @@ import Button from '../../components/ui/Button';
 import ProfileSection from './components/ProfileSection';
 import SecuritySettings from './components/SecuritySettings';
 
+// Función para obtener el email de sesión
+const getSessionEmail = () => {
+  try {
+    return sessionStorage.getItem('email') || null;
+  } catch (e) {
+    console.error("Error reading session storage:", e);
+    return null;
+  }
+};
+
+const MOCK_SESSION_EMAIL = getSessionEmail() || "mail@mail.com"; 
+
 const UserProfileSettings = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // 🆕 ESTADOS PARA ALMACENAR LOS DATOS DEL USUARIO
+  const [userId, setUserId] = useState(null);
+  const [profileData, setProfileData] = useState(null); // Contendrá todos los datos, incluido 2FA
+
+  // ----------------------------------------------------------------
+  // 🔄 EFECTO PARA CARGAR DATOS DEL USUARIO (Movido aquí)
+  // ----------------------------------------------------------------
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const userEmail = getSessionEmail() || MOCK_SESSION_EMAIL;
+      
+      if (!userEmail) {
+        setIsLoading(false);
+        alert('No se pudo encontrar el email de sesión.');
+        return;
+      }
+      
+      try {
+        setIsLoading(true);
+        const response = await fetch(`https://back-acciona.vercel.app/api/auth/full/${userEmail}`);
+
+        if (!response.ok) {
+          throw new Error('Error al cargar el perfil.');
+        }
+
+        const user = await response.json();
+        
+        const initialData = {
+          firstName: user.nombre || '',
+          lastName: user.apellido || '',
+          email: user.mail || '',
+          position: user.cargo || user.rol || '',
+          employeeId: user._id || '', 
+          department: user.empresa || '',
+          rol: user.rol || 'user',
+          estado: user.estado || 'activo',
+          twoFactorEnabled: user.twoFactorEnabled === true, // 👈 CLAVE
+        };
+        
+        setUserId(user._id);
+        setProfileData(initialData);
+
+      } catch (error) {
+        console.error("Error al cargar perfil:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+  
+  // 🆕 FUNCIÓN PARA ACTUALIZAR ESTADO 2FA DESDE SECURITYSETTINGS
+  const handleUpdate2FAStatus = (newStatus) => {
+    if (profileData) {
+        setProfileData(prev => ({
+            ...prev,
+            twoFactorEnabled: newStatus
+        }));
+    }
+  };
+
 
   const tabs = [
     {
@@ -37,30 +113,55 @@ const UserProfileSettings = () => {
   };
 
   const renderTabContent = () => {
+    if (isLoading || !profileData) {
+        return (
+            <div className="bg-card rounded-lg border border-border shadow-subtle p-8 sm:p-12 text-center text-muted-foreground">
+                <Icon name="Loader" size={24} className="animate-spin mx-auto mb-3 text-primary" />
+                <span className="text-sm sm:text-base">Cargando datos del usuario...</span>
+            </div>
+        );
+    }
+
     switch (activeTab) {
       case 'profile':
-        return <ProfileSection />;
+        // 🔑 PASAR DATOS Y ID A PROFILE SECTION
+        return <ProfileSection 
+                    initialProfileData={profileData} 
+                    userId={userId} 
+                    isLoading={isLoading} 
+                />;
       case 'security':
-        return <SecuritySettings />;
+        // 🔑 PASAR ESTADO 2FA Y EL SETTER A SECURITY SETTINGS
+        return <SecuritySettings 
+                    twoFactorEnabled={profileData.twoFactorEnabled}
+                    onUpdate2FAStatus={handleUpdate2FAStatus}
+                    userEmail={profileData.email} // Necesario para enviar el código
+                />;
       case 'logout':
         handleLogout();
+        return null;
       default:
-        return <ProfileSection />;
+        return <ProfileSection 
+                    initialProfileData={profileData} 
+                    userId={userId} 
+                    isLoading={isLoading} 
+                />;
     }
   };
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    setShowMobileMenu(false); // Cerrar menú móvil al seleccionar pestaña
+    setShowMobileMenu(false);
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className={`transition-all duration-300 pt-16 lg:pt-20`}>
-        {/* 💡 CONTENEDOR PRINCIPAL RESPONSIVE */}
         <div className="px-4 sm:px-6 lg:px-8 xl:px-20 py-4 lg:py-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto">
-          {/* Page Header - RESPONSIVE */}
+          {/* ... (Todo el JSX de la navegación y el layout se mantiene) ... */}
+
+          {/* Page Header */}
           <div className="mb-6 lg:mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
               <div className="min-w-0 flex-1">
@@ -73,7 +174,7 @@ const UserProfileSettings = () => {
             </div>
           </div>
 
-          {/* Mobile Tab Selector - SOLO EN MÓVIL */}
+          {/* Mobile Tab Selector */}
           <div className="lg:hidden">
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
