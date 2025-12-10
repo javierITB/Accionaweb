@@ -195,7 +195,7 @@ const SecuritySettings = () => {
     setApiMessage(null);
     const token = sessionStorage.getItem('token');
     // Es mejor usar el ID del token, pero aquí simulamos pasando el email
-    const userId = sessionStorage.getItem('userId');
+    const userEmail = sessionStorage.getItem('email');
 
     try {
       const response = await fetch('https://back-acciona.vercel.app/api/auth/verify-2fa-activation', {
@@ -207,7 +207,7 @@ const SecuritySettings = () => {
         body: JSON.stringify({
           verificationCode: verificationCode,
           // Reemplazar con el ID del usuario real si tu backend lo necesita
-          userId: userId
+          userId: userEmail
         })
       });
 

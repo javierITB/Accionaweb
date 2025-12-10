@@ -442,7 +442,7 @@ router.post("/verify-2fa-activation", async (req, res) => {
     try {
         // 1. Buscar el código activo y no expirado
         const codeRecord = await req.db.collection("2fa_codes").findOne({
-            userId: userId, // Usamos el ID de usuario autenticado
+            mail: userId, // Usamos el ID de usuario autenticado
             code: verificationCode,
             type: '2FA_SETUP',
             active: true,
