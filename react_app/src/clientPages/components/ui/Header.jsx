@@ -32,12 +32,12 @@ const Header = ({ className = '' }) => {
     { name: 'Remuneraciones', path: '/remuneraciones', icon: 'LayoutDashboard' },
     { name: 'Anexos', path: '/Anexos', icon: 'FileText' },
     { name: 'Finiquitos', path: '/Finiquitos', icon: 'Clock' },
-    { name: 'Otras', path: '/otras', icon: 'HelpCircle' },
+    { name: 'Otras', path: '/otras', icon: 'Route' },
   ];
 
   const moreMenuItems = [
-    { name: 'Settings', path: '/settings', icon: 'Settings' },
-    { name: 'Help', path: '/help', icon: 'HelpCircle' },
+    { name: 'Ajustes', path: '/settings', icon: 'Settings' },
+    { name: 'Ayuda', path: '/help', icon: 'Search' },
     { name: 'Admin', path: '/RespuestasForms', icon: 'Shield' },
   ];
 

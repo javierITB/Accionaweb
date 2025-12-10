@@ -30,8 +30,8 @@ const Header = ({ className = '' }) => {
 
   const navigationItems = [
     { name: 'Inicio', path: '/', icon: 'Home' },
-    { name: 'Settings', path: '/settings', icon: 'Settings' },
-    { name: 'Help', path: '/help', icon: 'HelpCircle' },
+    { name: 'Ajustes', path: '/settings', icon: 'Settings' },
+    { name: 'Ayuda', path: '/help', icon: 'Search' },
   ];
 
   // --- EFECTOS ---

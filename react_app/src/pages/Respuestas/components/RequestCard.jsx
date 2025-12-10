@@ -245,7 +245,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
           <Button
             variant="ghost"
             size="sm"
-            Title="Ver detalles"
+            title="Ver detalles"
             onClick={() => onViewDetails(currentRequest)}
             iconName="Info"
             iconPosition="left"
