@@ -461,7 +461,7 @@ router.post("/verify-2fa-activation", async (req, res) => {
 
         // 3. ACTUALIZAR EL ESTADO 2FA DEL USUARIO
         await req.db.collection("usuarios").updateOne(
-            { _id: new ObjectId(userId) },
+            { mail: userId },
             { $set: { twoFactorEnabled: true } } // ¡Importante!
         );
 
