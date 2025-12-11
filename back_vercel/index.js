@@ -59,7 +59,7 @@ app.use("/api/mail", mailRoutes);
 app.use("/api/generador", gen);
 app.use("/api/noti", noti);
 app.use("/api/menu", menu);
-app.use('/api/anuncios', anunciosRouter);
+app.use("/api/anuncios", anunciosRouter);
 app.use("/api/plantillas", plantillas);
 
 // Ruta base
