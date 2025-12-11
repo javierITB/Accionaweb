@@ -333,6 +333,16 @@ router.post("/admin", async (req, res) => {
       actionUrl: `/RespuestasForms?id=${result.insertedId}`,
     });
 
+    await addNotification(req.db, {
+      filtro: { cargo: "admin" },
+      titulo: `Se ha creado una solicitud para ${destinatarioNombre}`,
+      descripcion: `El administrador ${adminUser?.nombre} creó la solicitud "${formTitle}".`,
+      prioridad: 2,
+      color: "#bb8900ff",
+      icono: "form",
+      actionUrl: `/RespuestasForms?id=${result.insertedId}`,
+    });
+
     // 2. Notificación al **Cliente/Destinatario** (usando el uid real)
     await addNotification(req.db, {
       userId: destinatarioUserObject.uid,

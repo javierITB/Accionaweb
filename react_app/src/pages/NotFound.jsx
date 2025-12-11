@@ -3,7 +3,7 @@ import './Snake404Game.css';
 
 // --- CONFIGURACIÓN ESTÁTICA ---
 const CELL_SIZE = 20; // Tamaño de cada celda en píxeles
-const INITIAL_SPEED = 100; 
+const INITIAL_SPEED = 25; 
 
 // Configuramos la serpiente inicial con 3 segmentos (ej. centrada, moviéndose a la derecha)
 const INITIAL_SNAKE = [
