@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
+// IMPORTACIONES REALES: Necesitas tener 'react-router-dom' instalado
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, Loader, Shield } from 'lucide-react'; // Añadimos Shield
+import { Mail, Lock, Loader } from 'lucide-react';
 
-// ... (El resto de las importaciones se mantienen)
+// NOTA IMPORTANTE: Para que la navegación funcione, este componente debe
+// estar envuelto en un componente <BrowserRouter> (o equivalente) en tu aplicación.
+// Si tu entorno no soporta 'react-router-dom' directamente, la función 'navigate'
+// no realizará la redirección visual, aunque la lógica del login será correcta.
+
+
 
 export default function App() {
   const navigate = useNavigate();
@@ -16,54 +22,45 @@ export default function App() {
   const [loading, setLoading] = useState(false);
 
   const from = location.state?.from?.pathname || "/";
-  const ORANGE_COLOR = '#f97316';
-  
-  // ... (El resto de funciones se mantienen)
-  
-  // ----------------------------------------------------------------
-  // 🆕 FUNCIÓN DE VERIFICACIÓN 2FA
-  // ----------------------------------------------------------------
+  const ORANGE_COLOR = '#f97316'; // Color semi-anaranjado
+
   const handle2FASubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-        const res = await fetch("https://back-acciona.vercel.app/api/auth/verify-login-2fa", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                email: email, // Usamos el email guardado del primer paso
-                verificationCode: twoFACode 
-            }),
-        });
+      const res = await fetch("https://back-acciona.vercel.app/api/auth/verify-login-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email, // Usamos el email guardado del primer paso
+          verificationCode: twoFACode
+        }),
+      });
 
-        const data = await res.json();
+      const data = await res.json();
 
-        if (res.ok && data?.success) {
-            // LOGIN FINALIZADO EXITOSAMENTE
-            sessionStorage.setItem("cargo", data?.usr?.rol);
-            sessionStorage.setItem("email", data?.usr?.email);
-            sessionStorage.setItem("user", data?.usr?.name);
-            sessionStorage.setItem("token", data?.token);
+      if (res.ok && data?.success) {
+        // LOGIN FINALIZADO EXITOSAMENTE
+        sessionStorage.setItem("cargo", data?.usr?.rol);
+        sessionStorage.setItem("email", data?.usr?.email);
+        sessionStorage.setItem("user", data?.usr?.name);
+        sessionStorage.setItem("token", data?.token);
 
-            navigate(from, { replace: true });
-        } else {
-            setError(data.message || "Código 2FA incorrecto o expirado.");
-        }
+        navigate(from, { replace: true });
+      } else {
+        setError(data.message || "Código 2FA incorrecto o expirado.");
+      }
 
     } catch (err) {
-        console.error(err);
-        setError("Error de conexión con el servidor. Inténtalo de nuevo.");
+      console.error(err);
+      setError("Error de conexión con el servidor. Inténtalo de nuevo.");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   }
 
-
-  // ----------------------------------------------------------------
-  // 🔄 FUNCIÓN DE SUBMIT MODIFICADA
-  // ----------------------------------------------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -77,65 +74,59 @@ export default function App() {
       });
 
       const data = await res.json();
-      
-      // Manejo de la respuesta
-      if (res.ok && data?.success) {
-        
-        if (data?.twoFA) {
-            // PASO 1 COMPLETO: Requerir 2FA
-            setError(""); // Limpiamos errores anteriores si los hay
-            setView('2fa'); // Cambiamos la vista
-            // El backend ya envió el código al correo
-            
-        } else {
-            // LOGIN DIRECTO (2FA NO ACTIVA)
-            sessionStorage.setItem("cargo", data?.usr?.cargo);
-            sessionStorage.setItem("email", data?.usr?.email);
-            sessionStorage.setItem("user", data?.usr?.name);
-            sessionStorage.setItem("token", data?.token);
 
-            navigate(from, { replace: true });
+      if (res.ok && data?.success) {
+
+        if (data?.twoFA) {
+          // PASO 1 COMPLETO: Requerir 2FA
+          setError(""); // Limpiamos errores anteriores si los hay
+          setView('2fa'); // Cambiamos la vista
+          // El backend ya envió el código al correo
+
+        } else {
+          // LOGIN DIRECTO (2FA NO ACTIVA)
+          sessionStorage.setItem("cargo", data?.usr?.cargo);
+          sessionStorage.setItem("email", data?.usr?.email);
+          sessionStorage.setItem("user", data?.usr?.name);
+          sessionStorage.setItem("token", data?.token);
+
+          navigate(from, { replace: true });
         }
-        
+
       } else {
-        // Error de credenciales o estado de usuario
         setError(data.message || "Error de inicio de sesión. Por favor, verifica tus credenciales.");
-        sessionStorage.clear();
+        sessionStorage.clear(); // Borramos token por seguridad
       }
     } catch (err) {
       console.error(err);
       setError("Error de conexión con el servidor. Inténtalo de nuevo más tarde.");
-      sessionStorage.clear();
+      sessionStorage.clear(); // Borramos token por seguridad
     } finally {
       setLoading(false);
     }
   };
 
-
-  // ----------------------------------------------------------------
-  // 🎨 RENDERIZADO CONDICIONAL
-  // ----------------------------------------------------------------
   return (
+    // Fondo gris claro, centrado
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 sm:p-6 font-sans">
+      {/* Tarjeta con bordes redondeados (rounded-xl) y sombra profunda (shadow-xl) */}
       <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
             {view === 'login' ? 'Iniciar Sesión' : 'Verificación 2FA'}
           </h1>
           <p className="mt-2 text-sm text-gray-500">
-            {view === 'login' 
-              ? 'Bienvenido de nuevo a tu plataforma Acciona' 
+            {view === 'login'
+              ? 'Bienvenido de nuevo a tu plataforma Acciona'
               : `Ingresa el código enviado a ${email}`}
           </p>
         </div>
-
-        {/* Mensaje de Error estilizado */}
         {error && (
-            <div className="p-3 bg-red-50 border border-red-300 text-red-700 rounded-xl text-sm font-medium">
-                {error}
-            </div>
+          <div className="p-3 bg-red-50 border border-red-300 text-red-700 rounded-xl text-sm font-medium">
+            {error}
+          </div>
         )}
-
+        
         {/* ----------------------------------------------------- */}
         {/* VISTA 1: FORMULARIO DE LOGIN (DEFAULT) */}
         {/* ----------------------------------------------------- */}
