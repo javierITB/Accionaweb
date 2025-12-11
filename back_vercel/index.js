@@ -11,6 +11,7 @@ const gen = require("./endpoints/Generador");
 const noti = require("./endpoints/notificaciones");
 const menu = require("./endpoints/web");
 const plantillas = require("./endpoints/plantillas");
+const anunciosRouter = require('./endpoints/anuncios');
 const app = express();
 
 app.use(express.json({ limit: '4mb' }));
@@ -58,6 +59,7 @@ app.use("/api/mail", mailRoutes);
 app.use("/api/generador", gen);
 app.use("/api/noti", noti);
 app.use("/api/menu", menu);
+app.use('/api/anuncios', anunciosRouter);
 app.use("/api/plantillas", plantillas);
 
 // Ruta base
