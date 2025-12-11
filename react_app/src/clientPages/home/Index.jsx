@@ -55,23 +55,31 @@ const DashboardHome = () => {
 
       {/* Main Content: Ajustamos el padding top para móvil y desktop */}
       <main className={`transition-all duration-300 pt-16 lg:pt-20`}>
-        {/* 💡 CONTENEDOR PRINCIPAL RESPONSIVE - MEJORADO */}
-        <div className="px-4 sm:px-6 lg:px-8 xl:px-20 py-4 lg:py-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto"> {/* Added max-w-7xl mx-auto */}
-          
-          {/* Welcome Section */}
-          <div className="w-full"> {/* Added wrapper with full width */}
-            <WelcomeCard user={currentUser} />
-          </div>
-
-          {/* Main Dashboard Grid */}
-          <div className="w-full"> {/* Added wrapper with full width */}
-            {/* Columna Principal */}
-            <div className="space-y-4 lg:space-y-6 w-full"> {/* Added full width */}
+        {/* 💡 CONTENEDOR PRINCIPAL RESPONSIVE */}
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-20 py-4 lg:py-6 space-y-4 lg:space-y-6 max-w-8xl mx-auto"> 
+           {/* Welcome Section (Se mueve dentro de la columna derecha) */}
+              <div className="w-full">
+                <WelcomeCard user={currentUser} />
+              </div>
+          {/* Main Dashboard Grid - ESTRUCTURA DE DOS COLUMNAS PRINCIPALES */}
+          <div className="w-full lg:flex lg:space-x-6"> 
+            
+            {/* 1. Columna Izquierda: Acciones Rápidas (Ancho fijo) */}
+            {user && (
+                <div className="w-full lg:w-80 flex-shrink-0 mb-4 lg:mb-0">
+                    {/* El WelcomeCard ya no está aquí */}
+                    <QuickActionsCard orientation="vertical" />
+                </div>
+            )}
+            
+            {/* 2. Columna Derecha: Contenido Principal (WelcomeCard + Mis Solicitudes) */}
+            <div className=" w-full lg:flex-grow"> 
+              {/* Mensaje de Login */}
               {!user && (
-                <div className="bg-card border border-border rounded-xl shadow-brand p-4 lg:p-6 text-center space-y-3 lg:space-y-4 w-full"> {/* Added full width */}
+                <div className="bg-card border border-border rounded-xl shadow-brand p-4 lg:p-6 text-center space-y-3 lg:space-y-4 w-full"> 
                   <Icon name="LogIn" size={40} className="mx-auto text-muted-foreground opacity-70 lg:w-12 lg:h-12" />
                   <h3 className="text-lg lg:text-xl font-semibold text-foreground">Inicie sesión para utilizar la plataforma.</h3>
-                  <p className="text-sm lg:text-base text-muted-foreground px-2"> {/* Added horizontal padding for better text flow */}
+                  <p className="text-sm lg:text-base text-muted-foreground px-2"> 
                     Acceda a su cuenta para ver la actividad reciente, formularios personalizados y notificaciones.
                   </p>
                   <Button
@@ -87,10 +95,9 @@ const DashboardHome = () => {
                 </div>
               )}
 
-              {/* Renderizado Condicional de Actividad Reciente */}
+              {/* Mis Solicitudes (RecentActivityCard) (Se mueve y se alinea a la derecha) */}
               {user && (
-                <div className="space-y-4 lg:space-y-6 w-full"> {/* Added full width */}
-                  <QuickActionsCard />
+                <div className="w-full">
                   <RecentActivityCard />
                 </div>
               )}

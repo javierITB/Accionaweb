@@ -273,7 +273,7 @@ const RequestTracking = () => {
   ];
 
   return (
-    <div className="bg-card rounded-xl shadow-brand border border-border mt-6 lg:mt-8 w-full">
+    <div className="bg-card rounded-xl shadow-brand border border-border  w-full">
       {/* Header - Responsive */}
       <div className="p-4 sm:p-6 border-b border-border">
         <div className="flex items-center justify-between">
@@ -300,6 +300,7 @@ const RequestTracking = () => {
           />
 
           {/* Controls - MEJORADO PARA MÓVIL */}
+          {filteredRequests?.length > 0 && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-card border border-border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-0">
             <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-4">
               {/* View Mode Toggle */}
@@ -323,22 +324,6 @@ const RequestTracking = () => {
                     className="rounded-l-none border-l px-2 sm:px-3"
                   />
                 </div>
-              </div>
-
-              {/* Sort Controls */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Ordenar por:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e?.target?.value)}
-                  className="px-2 sm:px-3 py-1 border border-border rounded-md text-xs sm:text-sm bg-input text-foreground min-w-0"
-                >
-                  {sortOptions?.map(option => (
-                    <option key={option?.value} value={option?.value}>
-                      {option?.label}
-                    </option>
-                  ))}
-                </select>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -348,6 +333,8 @@ const RequestTracking = () => {
                   className="w-8 h-8 sm:w-9 sm:h-9"
                 />
               </div>
+
+              
             </div>
 
             {/* Results Count */}
@@ -356,7 +343,7 @@ const RequestTracking = () => {
               <span className="whitespace-nowrap">{filteredRequests?.length} solicitudes encontradas</span>
             </div>
           </div>
-
+          )}
           {/* Requests List - RESPONSIVE GRID */}
           <div className={
             viewMode === 'grid'

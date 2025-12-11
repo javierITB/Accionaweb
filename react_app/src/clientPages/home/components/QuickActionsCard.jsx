@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 
-const QuickActionsCard = () => {
+const QuickActionsCard = ({ orientation = 'horizontal' }) => { // 💡 Agregamos la prop orientation
   const quickActions = [
     {
       id: 1,
@@ -36,7 +36,7 @@ const QuickActionsCard = () => {
       path: '/otras'
     },
     {
-      id: 5, // Corregí el ID duplicado
+      id: 5, 
       title: 'Envío de documentos',
       description: '',
       icon: 'FileText',
@@ -48,6 +48,11 @@ const QuickActionsCard = () => {
   const handleActionClick = (path) => {
     window.location.href = path;
   };
+
+  // 💡 Definimos las clases de layout según la orientación
+  const gridClasses = orientation === 'vertical' 
+    ? 'space-y-3 sm:space-y-4' // Lista vertical simple con espacio
+    : 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4'; // Grid original
 
   return (
     <div className="bg-card rounded-xl shadow-brand border border-border w-full">
@@ -64,9 +69,10 @@ const QuickActionsCard = () => {
         </div>
       </div>
       
-      {/* Actions Grid */}
+      {/* Actions Grid / List */}
       <div className="p-4 sm:p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+        {/* 💡 Aplicamos las clases dinámicas */}
+        <div className={gridClasses}>
           {quickActions?.map((action) => (
             <button
               key={action?.id}
@@ -84,6 +90,7 @@ const QuickActionsCard = () => {
                 <h3 className="font-medium text-foreground group-hover:text-primary transition-colors text-sm sm:text-base">
                   {action?.title}
                 </h3>
+                {/* Ocultamos la descripción si no hay espacio, aunque la descripción estaba vacía en tus datos */}
                 {action?.description && (
                   <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
                     {action?.description}
