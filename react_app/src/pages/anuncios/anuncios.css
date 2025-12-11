@@ -1,0 +1,63 @@
+/* react_app/src/pages/anuncios/anuncios.css */
+.anuncio-modal {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.destinatarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.user-selection-table {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.color-picker-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.color-picker-circle:hover {
+  transform: scale(1.1);
+}
+
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.priority-1 { background-color: #d1fae5; color: #065f46; }
+.priority-2 { background-color: #fef3c7; color: #92400e; }
+.priority-3 { background-color: #fee2e2; color: #991b1b; }
+.priority-4 { background-color: #fce7f3; color: #9d174d; }
+
+.stepper-connector {
+  height: 2px;
+  width: 40px;
+  background-color: #e5e7eb;
+  transition: background-color 0.3s;
+}
+
+.stepper-connector.active {
+  background-color: #3b82f6;
+}
