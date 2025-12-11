@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 // IMPORTACIONES REALES: Necesitas tener 'react-router-dom' instalado
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, Loader } from 'lucide-react';
+import { Mail, Lock, Loader, Shield  } from 'lucide-react';
 
 // NOTA IMPORTANTE: Para que la navegación funcione, este componente debe
 // estar envuelto en un componente <BrowserRouter> (o equivalente) en tu aplicación.
@@ -43,7 +43,7 @@ export default function App() {
 
       if (res.ok && data?.success) {
         // LOGIN FINALIZADO EXITOSAMENTE
-        sessionStorage.setItem("cargo", data?.usr?.rol);
+        sessionStorage.setItem("cargo", data?.usr?.cargo);
         sessionStorage.setItem("email", data?.usr?.email);
         sessionStorage.setItem("user", data?.usr?.name);
         sessionStorage.setItem("token", data?.token);

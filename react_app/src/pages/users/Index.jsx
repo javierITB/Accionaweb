@@ -15,7 +15,7 @@ const FormReg = () => {
     mail: '',
     empresa: '',
     cargo: '',
-    rol: 'Cliente'
+    rol: 'user'
   });
   const [activeTab, setActiveTab] = useState('properties');
 
@@ -97,7 +97,7 @@ const FormReg = () => {
   ];
 
   const roles = [
-    { value: 'admin', label: 'Administrador' },
+    { value: 'Admin', label: 'Administrador' },
     { value: 'user', label: 'Cliente' },
   ];
 
@@ -245,7 +245,7 @@ const FormReg = () => {
       mail: user.mail || '',
       empresa: user.empresa || '',
       cargo: user.cargo || '',
-      rol: user.rol || 'Cliente',
+      rol: user.rol || 'user',
       estado: user.estado || 'pendiente'
     });
   };
