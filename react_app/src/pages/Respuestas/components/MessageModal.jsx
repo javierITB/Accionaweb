@@ -280,7 +280,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
             <div className="flex-1 min-w-0">
               <textarea
                 value={message}
-                onChange={(e) => setMessage(e.value)}
+                onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={activeTab === 'admin' ? "Escribir nota interna (solo admins)..." : "Escribe tu mensaje aquí..."}
                 className="w-full min-h-[60px] sm:min-h-[80px] p-3 border border-border rounded-lg resize-none bg-input text-foreground focus:ring-2 focus:ring-ring text-sm sm:text-base"
