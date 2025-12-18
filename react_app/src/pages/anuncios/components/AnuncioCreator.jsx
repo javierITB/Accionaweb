@@ -89,13 +89,13 @@ const AnuncioCreator = ({ onClose, onSuccess }) => {
       const result = await response.json();
       
       if (result.success) {
-        alert(`✅ ${result.message}`);
+        alert(`${result.message}`);
         onSuccess();
       } else {
         throw new Error(result.error || 'Error al enviar anuncio');
       }
     } catch (error) {
-      alert(`❌ Error: ${error.message}`);
+      alert(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -185,10 +185,10 @@ const AnuncioCreator = ({ onClose, onSuccess }) => {
                     onChange={e => setFormData({...formData, icono: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   >
-                    <option value="paper">📄 Documento</option>
-                    <option value="alert">⚠️ Alerta</option>
-                    <option value="info">ℹ️ Información</option>
-                    <option value="announcement">📢 Anuncio</option>
+                    <option value="paper">Documento</option>
+                    <option value="alert">Alerta</option>
+                    <option value="info">ℹInformación</option>
+                    <option value="announcement">Anuncio</option>
                   </select>
                 </div>
               </div>

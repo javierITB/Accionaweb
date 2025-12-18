@@ -801,13 +801,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage})
                 const updatedRequest = await updatedResponse.json();
                 onUpdate(updatedRequest);
               }
-              alert('✅ Aprobado en reintento');
+              alert('Aprobado en reintento');
             } else {
-              alert('❌ Error en reintento: ' + (await retryResponse.json()).error);
+              alert('Error en reintento: ' + (await retryResponse.json()).error);
             }
           }
         } else {
-          alert(`❌ Error aprobando: ${errorData.error}`);
+          alert(`Error aprobando: ${errorData.error}`);
         }
       }
 

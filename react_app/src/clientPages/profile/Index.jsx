@@ -22,12 +22,12 @@ const UserProfileSettings = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  // 🆕 ESTADOS PARA ALMACENAR LOS DATOS DEL USUARIO
+  // ESTADOS PARA ALMACENAR LOS DATOS DEL USUARIO
   const [userId, setUserId] = useState(null);
   const [profileData, setProfileData] = useState(null); // Contendrá todos los datos, incluido 2FA
 
   // ----------------------------------------------------------------
-  // 🔄 EFECTO PARA CARGAR DATOS DEL USUARIO (Movido aquí)
+  // EFECTO PARA CARGAR DATOS DEL USUARIO (Movido aquí)
   // ----------------------------------------------------------------
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -74,7 +74,7 @@ const UserProfileSettings = () => {
     fetchUserProfile();
   }, []);
   
-  // 🆕 FUNCIÓN PARA ACTUALIZAR ESTADO 2FA DESDE SECURITYSETTINGS
+  // FUNCIÓN PARA ACTUALIZAR ESTADO 2FA DESDE SECURITYSETTINGS
   const handleUpdate2FAStatus = (newStatus) => {
     if (profileData) {
         setProfileData(prev => ({
@@ -124,14 +124,14 @@ const UserProfileSettings = () => {
 
     switch (activeTab) {
       case 'profile':
-        // 🔑 PASAR DATOS Y ID A PROFILE SECTION
+        // PASAR DATOS Y ID A PROFILE SECTION
         return <ProfileSection 
                     initialProfileData={profileData} 
                     userId={userId} 
                     isLoading={isLoading} 
                 />;
       case 'security':
-        // 🔑 PASAR ESTADO 2FA Y EL SETTER A SECURITY SETTINGS
+        // PASAR ESTADO 2FA Y EL SETTER A SECURITY SETTINGS
         return <SecuritySettings 
                     twoFactorEnabled={profileData.twoFactorEnabled}
                     onUpdate2FAStatus={handleUpdate2FAStatus}
@@ -159,8 +159,7 @@ const UserProfileSettings = () => {
       <Header />
       <main className={`transition-all duration-300 pt-16 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:px-8 xl:px-20 py-4 lg:py-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto">
-          {/* ... (Todo el JSX de la navegación y el layout se mantiene) ... */}
-
+          
           {/* Page Header */}
           <div className="mb-6 lg:mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">

@@ -285,7 +285,7 @@ const MessageForm = () => {
 
       const data = await res.json();
       const responseId = data._id;
-      console.log('✅ Respuesta base guardada. ID de Respuesta:', responseId);
+      console.log('Respuesta base guardada. ID de Respuesta:', responseId);
 
       // --- 4. Procesar y Enviar Archivos (al endpoint de adjuntos) ---
       if (files.length > 0) {
@@ -334,7 +334,7 @@ const MessageForm = () => {
                 const errorText = await uploadRes.text();
                 console.warn(`Error subiendo archivo ${i + 1}:`, errorText);
               } else {
-                console.log(`✅ Archivo ${i + 1} subido exitosamente.`);
+                console.log(`Archivo ${i + 1} subido exitosamente.`);
               }
             } catch (chunkError) {
               console.error(`Error en archivo ${i + 1}:`, chunkError);

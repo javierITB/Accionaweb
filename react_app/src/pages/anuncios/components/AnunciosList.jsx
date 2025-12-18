@@ -66,10 +66,10 @@ const AnunciosList = ({ onCreateNew }) => {
       }
       
       if (result.success && Array.isArray(result.data)) {
-        console.log(`✅ ${result.data.length} anuncios cargados`);
+        console.log(`${result.data.length} anuncios cargados`);
         setAnuncios(result.data);
       } else if (Array.isArray(result)) {
-        console.log(`✅ ${result.length} anuncios cargados (array directo)`);
+        console.log(`${result.length} anuncios cargados (array directo)`);
         setAnuncios(result);
       } else {
         console.warn('Formato de respuesta inesperado:', result);
@@ -77,7 +77,7 @@ const AnunciosList = ({ onCreateNew }) => {
       }
       
     } catch (error) {
-      console.error('❌ Error cargando anuncios:', error);
+      console.error('Error cargando anuncios:', error);
       setError(error.message);
       setAnuncios([]);
     } finally {

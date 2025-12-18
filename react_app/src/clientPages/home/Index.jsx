@@ -55,7 +55,7 @@ const DashboardHome = () => {
 
       {/* Main Content: Ajustamos el padding top para móvil y desktop */}
       <main className={`transition-all duration-300 pt-16 lg:pt-20`}>
-        {/* 💡 CONTENEDOR PRINCIPAL RESPONSIVE */}
+        {/* CONTENEDOR PRINCIPAL RESPONSIVE */}
         <div className="px-4 sm:px-6 lg:px-8 xl:px-20 py-4 lg:py-6 space-y-4 lg:space-y-6 max-w-8xl mx-auto"> 
            {/* Welcome Section (Se mueve dentro de la columna derecha) */}
               <div className="w-full">

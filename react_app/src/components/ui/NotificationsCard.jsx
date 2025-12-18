@@ -7,7 +7,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
   const [isLoading, setIsLoading] = useState(false);
   const mail = sessionStorage.getItem("email");
   
-  // ... (Efectos y funciones fetch se mantienen igual) ...
   useEffect(() => {
     if (onUnreadChange) {
       const unread = notifications.filter(n => !n.isRead).length;
