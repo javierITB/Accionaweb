@@ -12,17 +12,18 @@ const Header = ({ className = '' }) => {
   const [unreadCount, setUnreadCount] = useState(0); 
   const [userRole, setUserRole] = useState(cargo || 'Usuario');
   
-  // NUEVO ESTADO: Controla la agitación de la campana
   const [shouldShake, setShouldShake] = useState(false); 
   const [isNotiOpen, setIsNotiOpen] = useState(false);
 
-  // 🌙 Estado del Tema
+  // REF para el audio y para seguir el rastro del conteo anterior sin disparar re-renders
+  const audioRef = useRef(new Audio('/bell.mp3')); // Ruta a tu archivo en public
+  const prevUnreadCountRef = useRef(0);
+
   const [theme, setTheme] = useState(
     localStorage.getItem('theme') ||
     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
   );
 
-  // Refs para detectar clics fuera
   const menuRef = useRef(null);
   const notiRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -36,35 +37,28 @@ const Header = ({ className = '' }) => {
 
   // --- EFECTOS ---
 
-  // Efecto 1: Obtener el rol del usuario
+  // Efecto para el audio (opcional: ajustar volumen)
+  useEffect(() => {
+    audioRef.current.volume = 0.25;
+  }, []);
+
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
         if (!userMail) return;
-
         const response = await fetch(`https://back-acciona.vercel.app/api/auth/full/${userMail}`);
         if (response.ok) {
           const userData = await response.json();
           setUserRole(userData.rol || cargo || 'Usuario');
           return;
         }
-
-        const responseBasic = await fetch(`https://back-acciona.vercel.app/api/auth/${userMail}`);
-        if (responseBasic.ok) {
-          const userData = await responseBasic.json();
-          setUserRole(cargo || 'Usuario');
-        }
-
       } catch (error) {
         console.error('Error obteniendo rol del usuario:', error);
-        setUserRole(cargo || 'Usuario');
       }
     };
-
     fetchUserRole();
   }, [userMail, cargo]);
 
-  // Efecto 2: Aplicar tema
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -75,27 +69,17 @@ const Header = ({ className = '' }) => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Efecto 3: Manejo de clics fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsMenuOpen(false);
-      }
-      if (notiRef.current && !notiRef.current.contains(event.target)) {
-        setIsNotiOpen(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
-        setIsUserMenuOpen(false);
-      }
+      if (menuRef.current && !menuRef.current.contains(event.target)) setIsMenuOpen(false);
+      if (notiRef.current && !notiRef.current.contains(event.target)) setIsNotiOpen(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) setIsUserMenuOpen(false);
     };
-
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Efecto 4: Polling de Notificaciones y Agitación Inicial
+  // Polling de Notificaciones con lógica de sonido
   useEffect(() => {
     if (!userMail) return;
 
@@ -105,152 +89,94 @@ const Header = ({ className = '' }) => {
       try {
         const response = await fetch(`https://back-acciona.vercel.app/api/noti/${userMail}/unread-count`);
         const data = await response.json();
-
         const newUnreadCount = data.unreadCount || 0;
-        console.log("No leídas:", newUnreadCount);
 
-        // Lógica de agitación: solo si es carga inicial Y hay notificaciones
-        if (isInitialLoad && newUnreadCount > 0) {
+        // LÓGICA DE SONIDO Y AGITACIÓN
+        // Si el nuevo conteo es mayor al que teníamos guardado en la referencia
+        if (!isInitialLoad && newUnreadCount > prevUnreadCountRef.current) {
+          // 1. Reproducir sonido
+          audioRef.current.play().catch(error => {
+            console.log("El navegador bloqueó el audio hasta que el usuario interactúe con la página.", error);
+          });
+
+          // 2. Activar agitación visual
           setShouldShake(true);
-          // Desactivar la agitación después de 1.5 segundos
+          setTimeout(() => setShouldShake(false), 1500);
+        } 
+        else if (isInitialLoad && newUnreadCount > 0) {
+          // Agitación inicial sin sonido (opcional)
+          setShouldShake(true);
           setTimeout(() => setShouldShake(false), 1500);
         }
 
+        // Actualizar estados y referencias
         setUnreadCount(newUnreadCount);
-
-        // Si encontramos notificaciones sin leer, no hay necesidad de detener el polling aquí,
-        // ya que queremos que el conteo se actualice regularmente si hay cambios.
-        // La campana se agita solo en la carga inicial si hay algo que ver.
+        prevUnreadCountRef.current = newUnreadCount;
 
       } catch (error) {
         console.error("Error en polling de no leídas:", error);
       }
     };
 
-    // La primera llamada (carga inicial)
     fetchUnreadCount(true); 
-
-    // Iniciar el polling (revisa el conteo cada 10 segundos)
     intervalId = setInterval(() => fetchUnreadCount(false), 10000);
 
     return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
+      if (intervalId) clearInterval(intervalId);
     };
-  }, [userMail]); // Dependencia solo en userMail para el polling
+  }, [userMail]);
 
-  // --- FUNCIONES AUXILIARES ---
-
-  const toggleTheme = () => {
-    setTheme(currentTheme => (currentTheme === 'light' ? 'dark' : 'light'));
-  };
-
-  const toggleNoti = () => {
-    setIsNotiOpen(!isNotiOpen);
-  };
-
-  const handleNavigation = (path) => {
-    window.location.href = path;
-    setIsMenuOpen(false);
-    setIsUserMenuOpen(false);
-  };
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const toggleUserMenu = () => {
-    setIsUserMenuOpen(!isUserMenuOpen);
-  };
-
+  const toggleTheme = () => setTheme(currentTheme => (currentTheme === 'light' ? 'dark' : 'light'));
+  const toggleNoti = () => setIsNotiOpen(!isNotiOpen);
+  const handleNavigation = (path) => { window.location.href = path; };
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const handleLogout = () => {
     sessionStorage.clear();
     window.location.href = '/';
-    setIsUserMenuOpen(false);
   };
-
-  // --- RENDERIZADO ---
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-brand ${className}`}>
       <div className="flex items-center justify-between h-20 px-6">
-        {/* Logo Section */}
         <div className="flex items-center space-x-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden ">
-            <img
-              src={logo}              
-              alt="Logo Acciona"
-              className="max-w-full max-h-full"
-              style={{ objectFit: 'contain' }}
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = "/placeholder-logo.png";
-              }}
-              loading="lazy"
-            />
+            <img src={logo} alt="Logo Acciona" className="max-w-full max-h-full" style={{ objectFit: 'contain' }} />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-lg font-semibold text-foreground leading-tight">
-              Acciona RRHH Portal
-            </h1>
-            <span className="text-xs text-muted-foreground font-mono">
-              Panel de administración y gestión
-            </span>
+            <h1 className="text-lg font-semibold text-foreground leading-tight">Acciona RRHH Portal</h1>
+            <span className="text-xs text-muted-foreground font-mono">Panel de administración</span>
           </div>
         </div>
 
-
-        {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center space-x-1">
-          {navigationItems?.map((item) => (
+          {navigationItems.map((item) => (
             <Button
-              key={item?.path}
+              key={item.path}
               variant="ghost"
               size="sm"
-              onClick={() => handleNavigation(item?.path)}
-              iconName={item?.icon}
-              iconPosition="left"
-              iconSize={18}
-              className="px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-brand"
+              onClick={() => handleNavigation(item.path)}
+              iconName={item.icon}
+              className="px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
             >
-              {item?.name}
+              {item.name}
             </Button>
           ))}
         </nav>
 
-        {/* User Profile & Actions */}
         <div className="flex items-center space-x-3">
+          <Button variant="ghost" size="icon" onClick={toggleTheme} iconName={theme === 'dark' ? "Sun" : "Moon"} />
 
-          {/* Botón de Modo Oscuro/Claro */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="hover:bg-muted transition-brand"
-            iconName={theme === 'dark' ? "Sun" : "Moon"}
-          />
-
-          {/* Notifications */}
           <div ref={notiRef}>
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleNoti}
-              // APLICACIÓN DE LA CLASE DE AGITACIÓN
               className={`relative hover:bg-primary transition-brand w-10 h-10 lg:w-12 lg:h-12 ${shouldShake ? 'animate-bell-shake' : ''}`}
               iconName="Bell"
               iconSize={18}
             >
               {unreadCount > 0 && (
-                <span
-                  className="
-                    absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4
-                    min-w-[1.25rem] h-5 px-1.5 
-                    text-xs font-bold text-white 
-                    bg-error rounded-full flex items-center justify-center
-                  "
-                >
+                <span className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 min-w-[1.25rem] h-5 px-1.5 text-xs font-bold text-white bg-error rounded-full flex items-center justify-center">
                   {unreadCount}
                 </span>
               )}
@@ -265,7 +191,6 @@ const Header = ({ className = '' }) => {
             )}
           </div>
 
-          {/* User Profile */}
           <div className="flex items-center space-x-3 pl-3 border-l border-border">
             {user && (
               <div className="hidden md:block text-right" >
@@ -273,41 +198,19 @@ const Header = ({ className = '' }) => {
                 <p className="text-xs text-muted-foreground">{userRole}</p>
               </div>
             )}
-
-            {/* User Avatar with Dropdown */}
             {user && (
               <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => { window.location.href = "/perfil" }}
-                  className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
-                  title="perfil"
-                >
-                  {user ? (
-                    <span className="text-sm font-semibold text-white">
-                      {user.charAt(0).toUpperCase()}
-                    </span>
-                  ) : (
-                    <Icon name="User" size={16} className="text-white" />
-                  )}
+                <button onClick={() => { window.location.href = "/perfil" }} className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold">
+                  {user.charAt(0).toUpperCase()}
                 </button>
               </div>
-            )
-            }
-            < div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => { user ? handleLogout() : window.location.href = "/login" }}
-                className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
-                title={user ? "Cerrar sesión" : "Log In"}
-              >
-                {user ? (
-                  <Icon name="LogOut" size={16} className="text-white" />
-                ) : (
-                  <Icon name="LogIn" size={16} className="text-white" />
-                )}
+            )}
+            <div className="relative">
+              <button onClick={() => { user ? handleLogout() : window.location.href = "/login" }} className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white">
+                <Icon name={user ? "LogOut" : "LogIn"} size={16} />
               </button>
             </div>
           </div>
-
           {/* Mobile Menu Toggle */}
           <Button
             variant="ghost"
@@ -319,7 +222,6 @@ const Header = ({ className = '' }) => {
           </Button>
         </div>
       </div>
-
     </header>
   );
 };
