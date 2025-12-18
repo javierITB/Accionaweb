@@ -1,8 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { validarToken } = require('../utils/validarToken');
-const { createBlindIndex } = require("../utils/seguridad.helper");
-
+const { createBlindIndex, verifyPassword, decrypt } = require("../utils/seguridad.helper");
 router.post("/filter", async (req, res) => {
   try {
     const { mail, token } = req.body;
@@ -11,8 +10,7 @@ router.post("/filter", async (req, res) => {
       return res.status(400).json({ error: "Faltan parámetros de autenticación (mail y token)." });
     }
 
-    const cleanMail = mail.toLowerCase().trim();
-
+  const cleanMail = decrypt(mail).toLowerCase().trim();
     // =========================================================
     // --- PASO 1: Validar el Token ---
     // =========================================================
@@ -24,10 +22,6 @@ router.post("/filter", async (req, res) => {
       return res.status(401).json({ error: `Acceso denegado: ${tokenResult.reason}.` });
     }
 
-    // Seguridad extra: Validar que el token pertenezca al mail que hace la solicitud
-    if (tokenResult.email !== cleanMail) {
-      return res.status(403).json({ error: "El token no corresponde al usuario solicitado." });
-    }
 
     // =========================================================
     // --- PASO 2: Obtener el Rol del Usuario (Uso de Blind Index) ---
@@ -44,8 +38,7 @@ router.post("/filter", async (req, res) => {
       return res.status(401).json({ error: "Acceso denegado. Usuario no existe." });
     }
 
-    // Usamos 'rol' o 'cargo' según tu estructura (en tu ejemplo anterior usaste user.rol)
-    const userRole = user.rol || user.cargo;
+    const userRole = user.cargo;
 
     if (!userRole) {
       return res.status(403).json({ error: "Cargo no definido para el usuario." });

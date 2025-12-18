@@ -23,7 +23,6 @@ const AnuncioCreator = ({ onClose, onSuccess }) => {
     }
   });
 
-  // Cargar datos al iniciar
   useEffect(() => {
     cargarDatos();
   }, []);
@@ -32,14 +31,12 @@ const AnuncioCreator = ({ onClose, onSuccess }) => {
     try {
       const token = sessionStorage.getItem('token');
       
-      // Cargar usuarios
       const usersRes = await fetch('https://back-acciona.vercel.app/api/auth/', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const users = await usersRes.json();
       setUsuarios(Array.isArray(users) ? users : []);
       
-      // Cargar empresas
       const empresasRes = await fetch('https://back-acciona.vercel.app/api/auth/empresas/todas', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -54,7 +51,6 @@ const AnuncioCreator = ({ onClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validaciones
     if (formData.destinatarios.tipo === 'manual' && formData.destinatarios.usuariosManuales.length === 0) {
       alert('Por favor, selecciona al menos un destinatario');
       return;
@@ -74,8 +70,6 @@ const AnuncioCreator = ({ onClose, onSuccess }) => {
         actionUrl: formData.actionUrl?.trim() || null,
         destinatarios: formData.destinatarios
       };
-
-      console.log('Enviando anuncio:', payload);
 
       const response = await fetch('https://back-acciona.vercel.app/api/anuncios', {
         method: 'POST',
@@ -104,7 +98,6 @@ const AnuncioCreator = ({ onClose, onSuccess }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -116,7 +109,6 @@ const AnuncioCreator = ({ onClose, onSuccess }) => {
             </button>
           </div>
           
-          {/* Stepper */}
           <div className="flex justify-center space-x-8">
             <div className="text-center">
               <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${
