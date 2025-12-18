@@ -15,7 +15,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
   const id = formId || request?._id;
 
-  // 🔁 Fetch de mensajes (Trae TODOS, luego filtramos en el render)
+  // Fetch de mensajes (Trae TODOS, luego filtramos en el render)
   const fetchMessages = async () => {
     if (!id) return;
     try {

@@ -38,7 +38,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
       {/* Header - Solo padding responsive */}
       <div className="flex items-start justify-between mb-3 sm:mb-4">
         <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-          {/* ✅ ICONO CON COLOR DINÁMICO - Tamaño responsive */}
+          {/* ICONO CON COLOR DINÁMICO - Tamaño responsive */}
           <div
             className="p-1.5 sm:p-2 rounded-lg flex-shrink-0"
             style={{

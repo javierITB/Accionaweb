@@ -71,7 +71,7 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => { // 💡 Agregamos
       
       {/* Actions Grid / List */}
       <div className="p-4 sm:p-6">
-        {/* 💡 Aplicamos las clases dinámicas */}
+        {/* Aplicamos las clases dinámicas */}
         <div className={gridClasses}>
           {quickActions?.map((action) => (
             <button

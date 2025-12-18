@@ -3,7 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 
-// 🔑 Aceptamos las props pasadas desde UserProfileSettings
+// Aceptamos las props pasadas desde UserProfileSettings
 const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) => {
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -11,10 +11,10 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
     confirmPassword: ''
   });
   
-  // 🔑 Eliminamos el estado local de twoFactorEnabled y lo controlamos por props.
+  // Eliminamos el estado local de twoFactorEnabled y lo controlamos por props.
   // const [twoFactorEnabled, setTwoFactorEnabled] = useState(twoFactorEnabledProp); 
   
-  // 🆕 ESTADO PARA CONTROLAR LAS FASES DE ACTIVACIÓN 2FA POR EMAIL
+  // ESTADO PARA CONTROLAR LAS FASES DE ACTIVACIÓN 2FA POR EMAIL
   const [twoFAStage, setTwoFAStage] = useState(twoFactorEnabled ? 'active' : 'initial'); // 'initial', 'code_sent', 'active'
   
   const [verificationCode, setVerificationCode] = useState('');
@@ -115,7 +115,7 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
 
 
   // ----------------------------------------------------------------
-  // 🔄 LÓGICA DE ACTIVACIÓN / DESACTIVACIÓN 2FA
+  // LÓGICA DE ACTIVACIÓN / DESACTIVACIÓN 2FA
   // ----------------------------------------------------------------
   const handleTwoFactorToggle = async () => {
     // 1. DESACTIVAR 2FA

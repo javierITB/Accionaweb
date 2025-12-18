@@ -11,7 +11,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
   const id = formId || request?._id;
 
-  // 🔁 Fetch de mensajes
+  // Fetch de mensajes
   const fetchMessages = async () => {
     if (!id) return;
     try {

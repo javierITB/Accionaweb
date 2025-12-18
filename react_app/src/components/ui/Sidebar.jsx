@@ -4,7 +4,7 @@ import Button from './Button'; // CORRECCIÓN: Se ajusta la ruta a './Button' (a
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-// 💡 Agregamos los props isMobileOpen y onNavigate, que se pasan desde FormCenter.jsx
+// Agregamos los props isMobileOpen y onNavigate, que se pasan desde FormCenter.jsx
 const Sidebar = ({ 
   isCollapsed = false, 
   onToggleCollapse, 
@@ -28,7 +28,7 @@ const Sidebar = ({
   // CORRECCIÓN CRÍTICA: La navegación real siempre usa navigate(path). 
   // onNavigate (si se pasa) solo se usa para el efecto secundario (cerrar el menú).
   const handleNavigation = (path) => {
-    // 1. 🟢 ASEGURAMOS LA REDIRECCIÓN DE REACT ROUTER SIEMPRE
+    // 1. ASEGURAMOS LA REDIRECCIÓN DE REACT ROUTER SIEMPRE
     navigate(path);
     
     // 2. Ejecutar la acción de cierre (si el padre la proporcionó, lo cual ocurre en móvil)
@@ -95,7 +95,7 @@ const Sidebar = ({
   const finalClasses = `bg-card border-r border-border transition-all duration-300 ${widthClasses} ${mobileOpenClasses} ${className}`;
 
   if (isLoading) {
-    // 💡 Ajuste en la vista de carga para que sea responsive
+    // Ajuste en la vista de carga para que sea responsive
     return (
       <aside
         className={`fixed left-0 top-16 bottom-0 z-40 bg-card border-r border-border flex items-center justify-center ${

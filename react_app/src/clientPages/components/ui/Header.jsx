@@ -237,7 +237,7 @@ const Header = ({ className = '' }) => {
         {/* User Profile & Actions */}
         <div className="flex items-center space-x-2 lg:space-x-3">
           
-          {/* 🔔 Notifications */}
+          {/* Notifications */}
           <div ref={notiRef}>
             <Button
               variant="ghost"
