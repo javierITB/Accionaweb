@@ -201,22 +201,22 @@ const enviarCorreoRespaldo = async (correoRespaldo, formTitle, usuario, response
       html: contenido.html
     };
 
-    const mailResponse = await fetch('https://back-acciona.vercel.app/api/mail/send', {
+    const mailResponse = await fetch('https://back-vercel-iota.vercel.app/api/mail/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(mailPayload),
     });
 
     if (mailResponse.ok) {
-      console.log(`✅ Correo de respaldo enviado a: ${correoRespaldo}`);
+      console.log(`Correo de respaldo enviado a: ${correoRespaldo}`);
       return { enviado: true };
     } else {
       const errorData = await mailResponse.json();
-      console.warn(`❌ No se pudo enviar correo de respaldo a: ${correoRespaldo}`, errorData);
+      console.warn(`No se pudo enviar correo de respaldo a: ${correoRespaldo}`, errorData);
       return { enviado: false, motivo: errorData.error };
     }
   } catch (error) {
-    console.error('❌ Error enviando correo de respaldo:', error);
+    console.error('Error enviando correo de respaldo:', error);
     return { enviado: false, motivo: error.message };
   }
 };

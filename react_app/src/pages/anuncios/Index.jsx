@@ -12,9 +12,23 @@ const AnunciosPage = () => {
   const [showCreator, setShowCreator] = useState(false);
   const [selectedAnuncio, setSelectedAnuncio] = useState(null);
   const [stats, setStats] = useState({ totalAnuncios: 0, totalNotificaciones: 0 });
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Función para cargar estadísticas
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const toggleMobileSidebar = () => {
+    setIsMobileSidebarOpen(!isMobileSidebarOpen);
+  };
+
+  const handleNavigate = (path) => {
+    setIsMobileSidebarOpen(false);
+    navigate(path);
+  };
+
   const fetchStats = async () => {
     try {
       const token = sessionStorage.getItem('token');
@@ -50,21 +64,30 @@ const AnunciosPage = () => {
   const handleAnuncioSuccess = () => {
     setShowCreator(false);
     setSelectedAnuncio(null);
-    fetchStats(); // Refrescar estadísticas
+    fetchStats();
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar activeItem="anuncios" />
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar 
+        activeItem="anuncios"
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={toggleSidebar}
+        isMobileOpen={isMobileSidebarOpen}
+        onNavigate={handleNavigate}
+      />
       
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${
+        isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
+      }`}>
         <Header 
           title="Anuncios y Comunicados" 
           subtitle="Gestiona las notificaciones masivas para usuarios"
+          onMenuClick={toggleMobileSidebar}
         />
         
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="mb-6 flex justify-between items-center">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Anuncios</h1>
               <p className="text-gray-600">Crea y gestiona comunicados masivos</p>
@@ -82,7 +105,6 @@ const AnunciosPage = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Panel de lista de anuncios */}
             <div className="lg:col-span-2">
               <AnunciosList 
                 onSelectAnuncio={setSelectedAnuncio}
@@ -90,7 +112,6 @@ const AnunciosPage = () => {
               />
             </div>
 
-            {/* Panel de vista previa o estadísticas */}
             <div className="lg:col-span-1">
               {selectedAnuncio ? (
                 <AnuncioPreview anuncio={selectedAnuncio} />
@@ -101,7 +122,6 @@ const AnunciosPage = () => {
           </div>
         </main>
 
-        {/* Modal de creación/edición */}
         {showCreator && (
           <AnuncioCreator
             anuncio={selectedAnuncio}
@@ -117,7 +137,6 @@ const AnunciosPage = () => {
   );
 };
 
-// Componente de vista previa (se mantiene igual)
 const AnuncioPreview = ({ anuncio }) => (
   <div className="bg-white rounded-xl shadow-sm p-6">
     <h3 className="text-lg font-semibold mb-4">Vista Previa</h3>
@@ -146,7 +165,6 @@ const AnuncioPreview = ({ anuncio }) => (
   </div>
 );
 
-// Componente de estadísticas (actualizado)
 const AnunciosStats = ({ stats }) => (
   <div className="bg-white rounded-xl shadow-sm p-6">
     <h3 className="text-lg font-semibold mb-4">Estadísticas</h3>

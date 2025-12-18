@@ -1,4 +1,4 @@
-// AnunciosList.jsx - VERSIÓN CON DEBUG
+// AnunciosList.jsx - VERSIÓN ACTUALIZADA
 import React, { useState, useEffect } from 'react';
 
 const AnunciosList = ({ onCreateNew }) => {
@@ -16,26 +16,6 @@ const AnunciosList = ({ onCreateNew }) => {
       setError(null);
       const token = sessionStorage.getItem('token');
       
-      console.log('🔍 Fetching anuncios...');
-      console.log('Token:', token ? 'Presente' : 'Ausente');
-      
-      // PRIMERO: Probar endpoint de test
-      const testResponse = await fetch('https://back-acciona.vercel.app/api/anuncios/test', {
-        headers: { 
-          'Authorization': `Bearer ${token}` 
-        }
-      });
-      
-      console.log('Test endpoint status:', testResponse.status);
-      
-      if (!testResponse.ok) {
-        throw new Error(`Endpoint no disponible (${testResponse.status})`);
-      }
-      
-      const testData = await testResponse.text();
-      console.log('Test response:', testData);
-      
-      // AHORA: Obtener anuncios reales
       const response = await fetch('https://back-acciona.vercel.app/api/anuncios', {
         headers: { 
           'Content-Type': 'application/json',
@@ -43,36 +23,15 @@ const AnunciosList = ({ onCreateNew }) => {
         }
       });
       
-      console.log('Anuncios response status:', response.status);
-      console.log('Anuncios response headers:', response.headers);
-      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response text:', errorText);
-        throw new Error(`Error ${response.status}: ${errorText}`);
+        throw new Error(`Error ${response.status}: No se pudo cargar el historial`);
       }
       
-      const responseText = await response.text();
-      console.log('Response text (raw):', responseText);
+      const result = await response.json();
       
-      let result;
-      try {
-        result = JSON.parse(responseText);
-        console.log('Response JSON parsed:', result);
-      } catch (parseError) {
-        console.error('Error parseando JSON:', parseError);
-        console.error('Texto recibido:', responseText);
-        throw new Error('Respuesta no es JSON válido');
-      }
-      
-      if (result.success && Array.isArray(result.data)) {
-        console.log(`${result.data.length} anuncios cargados`);
+      if (result.success) {
         setAnuncios(result.data);
-      } else if (Array.isArray(result)) {
-        console.log(`${result.length} anuncios cargados (array directo)`);
-        setAnuncios(result);
       } else {
-        console.warn('Formato de respuesta inesperado:', result);
         setAnuncios([]);
       }
       
@@ -149,13 +108,15 @@ const AnunciosList = ({ onCreateNew }) => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
               <span className="text-2xl">📢</span>
             </div>
-            <h3 className="text-lg font-medium mb-2">No hay anuncios enviados</h3>
-            <p className="text-gray-500 mb-4">Crea tu primer anuncio para enviar notificaciones</p>
+            <h3 className="text-lg font-medium mb-2">Sin historial de anuncios</h3>
+            <p className="text-gray-500 mb-4">
+              Los anuncios se envían inmediatamente y no se almacenan en historial
+            </p>
             <button
               onClick={onCreateNew}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Crear primer anuncio
+              Crear nuevo anuncio
             </button>
           </div>
         ) : (
