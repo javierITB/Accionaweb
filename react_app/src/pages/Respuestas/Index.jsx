@@ -116,11 +116,6 @@ const RequestTracking = () => {
     // 1. Definimos la función con la lógica (fuera del intervalo)
     const fetchData = async () => {
       try {
-        // Opcional: Si no quieres que aparezca el "cargando..." cada 30 segundos,
-        // puedes condicionar esto o quitarlo después de la primera carga.
-        !resp && setIsLoading(true); 
-
-        // OBTENER RESPUESTAS
         const resResp = await fetch('https://back-acciona.vercel.app/api/respuestas/mini');
 
         if (!resResp.ok) {
@@ -155,18 +150,11 @@ const RequestTracking = () => {
 
       } catch (err) {
         console.error('Error cargando formularios:', err);
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    // 2. Ejecutamos la función INMEDIATAMENTE (Carga inicial)
     fetchData();
-
-    // 3. Configuramos el intervalo para que se repita cada 30 segundos
     const intervalId = setInterval(fetchData, 30000);
-
-    // 4. IMPORTANTE: Limpiamos el intervalo cuando el componente se desmonte
     return () => clearInterval(intervalId);
 
   }, []); 

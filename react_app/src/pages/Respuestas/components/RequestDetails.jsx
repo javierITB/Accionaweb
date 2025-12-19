@@ -7,7 +7,7 @@ import CleanDocumentPreview from './CleanDocumentPreview';
 const MAX_FILES = 5; // Máximo de archivos
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
 
-const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage}) => {
+const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }) => {
   // --- ESTADOS DE UI ---
   const [activeTab, setActiveTab] = useState('details');
 
@@ -52,10 +52,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage})
   useEffect(() => {
     if (request) {
       setFullRequestData(prev => {
-        if (prev?._id !== request._id) {
-          return { ...request };
+        if (prev?._id === request._id) {
+          return { ...prev, ...request };
         }
-        return { ...prev, ...request };
+        setCorrectedFiles([]);
+        return { ...request };
       });
     }
   }, [request]);
@@ -224,6 +225,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage})
       URL.revokeObjectURL(url);
     }
   };
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (correctedFiles.length > 0 && !isApproving) {
+        e.preventDefault();
+        e.returnValue = 'Tienes archivos cargados sin guardar. ¿Deseas salir?';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [correctedFiles.length, isApproving]);
 
   useEffect(() => {
     if (!isVisible || !request?._id) return;
@@ -982,7 +995,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage})
   const realAttachments = getRealAttachments();
 
 
-  
+
   const renderDetailsTab = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1580,7 +1593,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage})
                 ? 'border-accent text-accent'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
-                title = "Ver detalles de la solicitud"
+              title="Ver detalles de la solicitud"
             >
               Detalles
             </button>
@@ -1590,7 +1603,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage})
                 ? 'border-accent text-accent'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
-                title = "Ver respuestas del formulario"
+              title="Ver respuestas del formulario"
             >
               Respuestas
             </button>
