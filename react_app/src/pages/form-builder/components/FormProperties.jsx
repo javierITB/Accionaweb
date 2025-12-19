@@ -560,22 +560,22 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
 
         {/* Color Preview */}
         <div className="space-y-3">
-          <h4 className="font-medium text-foreground">Vista Previa de Colores</h4>
+          <h4 className="font-medium text-gray-800">Vista Previa de Colores</h4>
           <div
             className="p-6 rounded-lg border border-border"
             style={{ backgroundColor: formData?.secondaryColor }}
           >
             <div className="space-y-4">
-              <h5 className="font-semibold text-foreground">Ejemplo de Formulario</h5>
+              <h5 className="font-semibold text-gray-900">Ejemplo de Formulario</h5>
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">
+                  <label className="text-sm font-medium text-gray-900">
                     Campo de ejemplo
                   </label>
                   <input
                     type="text"
                     placeholder="Texto de ejemplo"
-                    className="w-full px-3 py-2 border border-input rounded-md bg-white"
+                    className="w-full px-3 py-2 border border-none rounded-md bg-white"
                     disabled
                   />
                 </div>

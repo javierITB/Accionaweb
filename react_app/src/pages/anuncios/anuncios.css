@@ -1,19 +1,4 @@
 /* react_app/src/pages/anuncios/anuncios.css */
-.anuncio-modal {
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .destinatarios-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -51,13 +36,4 @@
 .priority-3 { background-color: #fee2e2; color: #991b1b; }
 .priority-4 { background-color: #fce7f3; color: #9d174d; }
 
-.stepper-connector {
-  height: 2px;
-  width: 40px;
-  background-color: #e5e7eb;
-  transition: background-color 0.3s;
-}
-
-.stepper-connector.active {
-  background-color: #3b82f6;
-}
+/* Eliminar estilos del stepper y modal viejo */
