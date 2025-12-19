@@ -32,6 +32,7 @@ const AnuncioCreator = ({ onSuccess }) => {
     try {
       const token = sessionStorage.getItem('token');
       
+      // 🔥 PAYLOAD SIMPLE - SOLO DATOS PARA NOTIFICACIONES
       const payload = {
         titulo: formData.titulo.trim(),
         descripcion: formData.descripcion.trim(),
@@ -39,7 +40,10 @@ const AnuncioCreator = ({ onSuccess }) => {
         color: formData.color,
         actionUrl: formData.actionUrl?.trim() || null,
         destinatarios: formData.destinatarios
+        // NO enviar enviarNotificacion ni enviarCorreo
       };
+
+      console.log('📤 Enviando anuncio (solo notificaciones):', payload);
 
       const response = await fetch('https://back-acciona.vercel.app/api/anuncios', {
         method: 'POST',
@@ -158,6 +162,8 @@ const AnuncioCreator = ({ onSuccess }) => {
               setFormData={setFormData}
             />
           </div>
+
+          {/* 🔥 NO HAY SECCIÓN DE MÉTODO DE ENVÍO (sin checkboxes) */}
 
           {/* Botones de acción */}
           <div className="flex justify-end space-x-3 pt-6 border-t">
