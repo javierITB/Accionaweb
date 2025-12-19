@@ -1,8 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) => {
+const DestinatariosSelector = ({ formData, setFormData }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const [usuarios, setUsuarios] = useState([]);
+  const [empresas, setEmpresas] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Cargar usuarios y empresas
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        const token = sessionStorage.getItem('token');
+
+        // Cargar usuarios
+        const usersRes = await fetch('https://back-acciona.vercel.app/api/auth/', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const users = await usersRes.json();
+        setUsuarios(Array.isArray(users) ? users : []);
+
+        // Cargar empresas
+        const empresasRes = await fetch('https://back-acciona.vercel.app/api/auth/empresas/todas', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const empresasData = await empresasRes.json();
+        setEmpresas(Array.isArray(empresasData) ? empresasData : []);
+
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarDatos();
+  }, []);
+
   // Cargos predefinidos basados en tus datos
   const cargosDisponibles = ['RRHH', 'Cliente', 'Admin', 'Usuario'];
   const rolesDisponibles = ['Admin', 'user'];
@@ -27,13 +60,13 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
   const toggleUsuario = (userId) => {
     const current = [...formData.destinatarios.usuariosManuales];
     const index = current.indexOf(userId);
-    
+
     if (index === -1) {
       current.push(userId);
     } else {
       current.splice(index, 1);
     }
-    
+
     setFormData({
       ...formData,
       destinatarios: { ...formData.destinatarios, usuariosManuales: current }
@@ -43,7 +76,7 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
   // Filtrar usuarios para búsqueda
   const usuariosFiltrados = usuarios.filter(user => {
     if (!searchTerm) return true;
-    
+
     const term = searchTerm.toLowerCase();
     return (
       (user.nombre && user.nombre.toLowerCase().includes(term)) ||
@@ -60,20 +93,58 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
       return usuarios.length;
     } else if (formData.destinatarios.tipo === 'manual') {
       return formData.destinatarios.usuariosManuales.length;
-    } else {
-      // Estimación para filtros
+    } else if (formData.destinatarios.tipo === 'filtro') {
       const filtro = formData.destinatarios.filtro;
+
+      // Si no hay filtros seleccionados, es como "todos"
       if (filtro.empresas.length === 0 && filtro.cargos.length === 0 && filtro.roles.length === 0) {
         return usuarios.length;
       }
-      return 'Calculando...';
+
+      // Calcular usuarios que cumplen TODOS los filtros seleccionados (AND)
+      const usuariosFiltrados = usuarios.filter(user => {
+        let cumpleTodos = true;
+
+        // Verificar empresa (si se seleccionó al menos una)
+        if (filtro.empresas.length > 0) {
+          cumpleTodos = cumpleTodos && filtro.empresas.includes(user.empresa);
+        }
+
+        // Verificar cargo (si se seleccionó al menos uno)
+        if (filtro.cargos.length > 0) {
+          cumpleTodos = cumpleTodos && filtro.cargos.includes(user.cargo);
+        }
+
+        // Verificar rol (si se seleccionó al menos uno)
+        if (filtro.roles.length > 0) {
+          cumpleTodos = cumpleTodos && filtro.roles.includes(user.rol);
+        }
+
+        return cumpleTodos;
+      });
+
+      return usuariosFiltrados.length;
     }
+
+    return 0;
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h3 className="text-lg font-medium">Seleccionar Destinatarios</h3>
+        <div className="text-center p-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600">Cargando datos de usuarios...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Seleccionar Destinatarios</h3>
-      
+
       {/* Botones de tipo */}
       <div className="grid grid-cols-3 gap-3">
         <button
@@ -84,7 +155,7 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
           <div className="font-medium">Todos los usuarios</div>
           <div className="text-sm text-gray-500 mt-1">{usuarios.length} usuarios activos</div>
         </button>
-        
+
         <button
           type="button"
           onClick={() => handleTipoChange('filtro')}
@@ -93,7 +164,7 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
           <div className="font-medium">Por filtros</div>
           <div className="text-sm text-gray-500 mt-1">Empresa, cargo, rol</div>
         </button>
-        
+
         <button
           type="button"
           onClick={() => handleTipoChange('manual')}
@@ -108,7 +179,7 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
       {formData.destinatarios.tipo === 'filtro' && (
         <div className="space-y-6 p-4 bg-gray-50 rounded-lg">
           <h4 className="font-medium">Configurar filtros</h4>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Empresas</label>
@@ -116,7 +187,7 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
                 multiple
                 className="w-full border rounded-lg p-2"
                 value={formData.destinatarios.filtro.empresas}
-                onChange={e => handleFiltroChange('empresas', 
+                onChange={e => handleFiltroChange('empresas',
                   Array.from(e.target.selectedOptions, o => o.value)
                 )}
               >
@@ -130,14 +201,14 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
                 {formData.destinatarios.filtro.empresas.length} empresa(s) seleccionada(s)
               </p>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-2">Cargos</label>
               <select
                 multiple
                 className="w-full border rounded-lg p-2"
                 value={formData.destinatarios.filtro.cargos}
-                onChange={e => handleFiltroChange('cargos', 
+                onChange={e => handleFiltroChange('cargos',
                   Array.from(e.target.selectedOptions, o => o.value)
                 )}
               >
@@ -149,14 +220,14 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
                 {formData.destinatarios.filtro.cargos.length} cargo(s) seleccionado(s)
               </p>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-2">Roles</label>
               <select
                 multiple
                 className="w-full border rounded-lg p-2"
                 value={formData.destinatarios.filtro.roles}
-                onChange={e => handleFiltroChange('roles', 
+                onChange={e => handleFiltroChange('roles',
                   Array.from(e.target.selectedOptions, o => o.value)
                 )}
               >
@@ -169,9 +240,9 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
               </p>
             </div>
           </div>
-          
+
           <div className="p-3 bg-blue-50 rounded text-sm text-blue-700">
-            <strong>Nota:</strong> El anuncio se enviará a usuarios que cumplan AL MENOS UNO de los filtros seleccionados.
+            <strong>Nota:</strong> El anuncio se enviará a usuarios que cumplan con todos los filtros.
           </div>
         </div>
       )}
@@ -190,14 +261,13 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
               {usuariosFiltrados.length} de {usuarios.length} usuarios encontrados
             </p>
           </div>
-          
+
           <div className="max-h-64 overflow-y-auto border rounded-lg">
             {usuariosFiltrados.map(user => (
               <div
                 key={user._id}
-                className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${
-                  formData.destinatarios.usuariosManuales.includes(user._id) ? 'bg-blue-50' : ''
-                }`}
+                className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${formData.destinatarios.usuariosManuales.includes(user._id) ? 'bg-blue-50' : ''
+                  }`}
                 onClick={() => toggleUsuario(user._id)}
               >
                 <div className="flex justify-between items-center">
@@ -214,7 +284,7 @@ const DestinatariosSelector = ({ formData, setFormData, usuarios, empresas }) =>
               </div>
             ))}
           </div>
-          
+
           <div className="flex justify-between items-center">
             <div className="text-sm">
               <span className="font-medium">{formData.destinatarios.usuariosManuales.length}</span> usuario(s) seleccionado(s)
