@@ -39,7 +39,7 @@ const Header = ({ className = '' }) => {
 
   // Efecto para el audio (opcional: ajustar volumen)
   useEffect(() => {
-    audioRef.current.volume = 0.75;
+    audioRef.current.volume = 1.5;
   }, []);
 
   useEffect(() => {
