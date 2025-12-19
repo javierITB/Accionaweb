@@ -141,24 +141,43 @@ router.get("/solicitud", async (req, res) => {
 
 router.get("/:mail", async (req, res) => {
   try {
+    // 1. Limpiamos el parámetro de entrada
+    const cleanMail = req.params.mail.toLowerCase().trim();
+
+    // 2. Buscamos utilizando el Blind Index (Hash SHA-256)
+    // Esto permite que MongoDB use índices y la respuesta sea instantánea
     const usr = await req.db
       .collection("usuarios")
-      .findOne({ mail: req.params.mail.toLowerCase().trim() });
+      .findOne({ mail_index: createBlindIndex(cleanMail) });
 
-    if (!usr) return res.status(404).json({ error: "Usuario no encontrado" });
+    if (!usr) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
 
-    res.json({ id: usr._id, empresa: usr.empresa, cargo: usr.cargo });
+    // 3. Retornamos los datos. 
+    // Nota: Si 'empresa' o 'cargo' estuvieran cifrados, deberías usar decrypt() aquí.
+    res.json({
+      id: usr._id,
+      empresa: usr.empresa,
+      cargo: usr.cargo || usr.rol
+    });
+
   } catch (err) {
+    console.error("Error al obtener Usuario por mail:", err);
     res.status(500).json({ error: "Error al obtener Usuario" });
   }
 });
 
+// auth.js - Ruta /full/:mail CORREGIDA
 router.get("/full/:mail", async (req, res) => {
   try {
+    const { mail } = req.params;
+    const mailIndex = createBlindIndex(mail.toLowerCase().trim()); // Crear el hash del email
+
     const usr = await req.db
       .collection("usuarios")
       .findOne({
-        mail: req.params.mail.toLowerCase().trim()
+        mail_index: mailIndex // Buscar por el índice hash, no por el mail cifrado
       }, {
         projection: {
           _id: 1,
@@ -178,8 +197,13 @@ router.get("/full/:mail", async (req, res) => {
       usr.notificaciones = [];
     }
 
+    // Opcional: Descifrar los campos cifrados si es necesario para el frontend
+    usr.nombre = decrypt(usr.nombre);
+    usr.mail = decrypt(usr.mail);
+
     res.json(usr);
   } catch (err) {
+    console.error("Error en /full/:mail:", err);
     res.status(500).json({ error: "Error al obtener Usuario completo" });
   }
 });
