@@ -132,10 +132,10 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h3 className="text-lg font-medium">Seleccionar Destinatarios</h3>
+        <h3 className="text-lg font-medium text-card-foreground">Seleccionar Destinatarios</h3>
         <div className="text-center p-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600">Cargando datos de usuarios...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+          <p className="text-muted-foreground">Cargando datos de usuarios...</p>
         </div>
       </div>
     );
@@ -143,49 +143,67 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium">Seleccionar Destinatarios</h3>
+      <h3 className="text-lg font-medium text-card-foreground">Seleccionar Destinatarios</h3>
 
       {/* Botones de tipo */}
       <div className="grid grid-cols-3 gap-3">
         <button
           type="button"
           onClick={() => handleTipoChange('todos')}
-          className={`p-4 rounded-lg border text-center ${formData.destinatarios.tipo === 'todos' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
+          className={`p-4 rounded-lg border text-center transition-colors ${
+            formData.destinatarios.tipo === 'todos' 
+              ? 'border-primary bg-primary/10 text-card-foreground' 
+              : 'border-border hover:border-primary/50 bg-card text-card-foreground'
+          }`}
         >
           <div className="font-medium">Todos los usuarios</div>
-          <div className="text-sm text-gray-500 mt-1">{usuarios.length} usuarios activos</div>
+          <div className={`text-sm mt-1 ${
+            formData.destinatarios.tipo === 'todos' ? 'text-muted-foreground' : 'text-muted-foreground'
+          }`}>{usuarios.length} usuarios activos</div>
         </button>
 
         <button
           type="button"
           onClick={() => handleTipoChange('filtro')}
-          className={`p-4 rounded-lg border text-center ${formData.destinatarios.tipo === 'filtro' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
+          className={`p-4 rounded-lg border text-center transition-colors ${
+            formData.destinatarios.tipo === 'filtro' 
+              ? 'border-primary bg-primary/10 text-card-foreground' 
+              : 'border-border hover:border-primary/50 bg-card text-card-foreground'
+          }`}
         >
           <div className="font-medium">Por filtros</div>
-          <div className="text-sm text-gray-500 mt-1">Empresa, cargo, rol</div>
+          <div className={`text-sm mt-1 ${
+            formData.destinatarios.tipo === 'filtro' ? 'text-muted-foreground' : 'text-muted-foreground'
+          }`}>Empresa, cargo, rol</div>
         </button>
 
         <button
           type="button"
           onClick={() => handleTipoChange('manual')}
-          className={`p-4 rounded-lg border text-center ${formData.destinatarios.tipo === 'manual' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
+          className={`p-4 rounded-lg border text-center transition-colors ${
+            formData.destinatarios.tipo === 'manual' 
+              ? 'border-primary bg-primary/10 text-card-foreground' 
+              : 'border-border hover:border-primary/50 bg-card text-card-foreground'
+          }`}
         >
           <div className="font-medium">Selección manual</div>
-          <div className="text-sm text-gray-500 mt-1">Usuarios específicos</div>
+          <div className={`text-sm mt-1 ${
+            formData.destinatarios.tipo === 'manual' ? 'text-muted-foreground' : 'text-muted-foreground'
+          }`}>Usuarios específicos</div>
         </button>
       </div>
 
       {/* Contenido según tipo */}
       {formData.destinatarios.tipo === 'filtro' && (
-        <div className="space-y-6 p-4 bg-gray-50 rounded-lg">
-          <h4 className="font-medium">Configurar filtros</h4>
+        <div className="space-y-6 p-4 bg-muted rounded-lg border border-border">
+          <h4 className="font-medium text-card-foreground">Configurar filtros</h4>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Empresas</label>
+              <label className="block text-sm font-medium mb-2 text-card-foreground">Empresas</label>
               <select
                 multiple
-                className="w-full border rounded-lg p-2"
+                className="w-full border border-border rounded-lg p-2 bg-input text-foreground"
                 value={formData.destinatarios.filtro.empresas}
                 onChange={e => handleFiltroChange('empresas',
                   Array.from(e.target.selectedOptions, o => o.value)
@@ -197,16 +215,16 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
                   </option>
                 ))}
               </select>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {formData.destinatarios.filtro.empresas.length} empresa(s) seleccionada(s)
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Cargos</label>
+              <label className="block text-sm font-medium mb-2 text-card-foreground">Cargos</label>
               <select
                 multiple
-                className="w-full border rounded-lg p-2"
+                className="w-full border border-border rounded-lg p-2 bg-input text-foreground"
                 value={formData.destinatarios.filtro.cargos}
                 onChange={e => handleFiltroChange('cargos',
                   Array.from(e.target.selectedOptions, o => o.value)
@@ -216,16 +234,16 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
                   <option key={cargo} value={cargo}>{cargo}</option>
                 ))}
               </select>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {formData.destinatarios.filtro.cargos.length} cargo(s) seleccionado(s)
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Roles</label>
+              <label className="block text-sm font-medium mb-2 text-card-foreground">Roles</label>
               <select
                 multiple
-                className="w-full border rounded-lg p-2"
+                className="w-full border border-border rounded-lg p-2 bg-input text-foreground"
                 value={formData.destinatarios.filtro.roles}
                 onChange={e => handleFiltroChange('roles',
                   Array.from(e.target.selectedOptions, o => o.value)
@@ -235,13 +253,13 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
                   <option key={rol} value={rol}>{rol}</option>
                 ))}
               </select>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {formData.destinatarios.filtro.roles.length} rol(es) seleccionado(s)
               </p>
             </div>
           </div>
 
-          <div className="p-3 bg-blue-50 rounded text-sm text-blue-700">
+          <div className="p-3 bg-primary/10 rounded text-sm text-primary border border-primary/20">
             <strong>Nota:</strong> El anuncio se enviará a usuarios que cumplan con todos los filtros.
           </div>
         </div>
@@ -255,30 +273,33 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
               placeholder="Buscar usuarios por nombre, email, empresa..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground"
             />
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {usuariosFiltrados.length} de {usuarios.length} usuarios encontrados
             </p>
           </div>
 
-          <div className="max-h-64 overflow-y-auto border rounded-lg">
+          <div className="max-h-64 overflow-y-auto border border-border rounded-lg bg-card">
             {usuariosFiltrados.map(user => (
               <div
                 key={user._id}
-                className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${formData.destinatarios.usuariosManuales.includes(user._id) ? 'bg-blue-50' : ''
-                  }`}
+                className={`p-3 border-b border-border hover:bg-muted cursor-pointer transition-colors ${
+                  formData.destinatarios.usuariosManuales.includes(user._id) 
+                    ? 'bg-primary/10' 
+                    : 'bg-card'
+                }`}
                 onClick={() => toggleUsuario(user._id)}
               >
                 <div className="flex justify-between items-center">
                   <div>
-                    <div className="font-medium">{user.nombre} {user.apellido}</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="font-medium text-card-foreground">{user.nombre} {user.apellido}</div>
+                    <div className="text-sm text-muted-foreground">
                       {user.cargo} • {user.empresa} • {user.mail}
                     </div>
                   </div>
                   {formData.destinatarios.usuariosManuales.includes(user._id) && (
-                    <span className="text-blue-600 font-bold">✓</span>
+                    <span className="text-primary font-bold">✓</span>
                   )}
                 </div>
               </div>
@@ -286,7 +307,7 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
           </div>
 
           <div className="flex justify-between items-center">
-            <div className="text-sm">
+            <div className="text-sm text-card-foreground">
               <span className="font-medium">{formData.destinatarios.usuariosManuales.length}</span> usuario(s) seleccionado(s)
             </div>
             <div className="space-x-2">
@@ -302,7 +323,7 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
                     }
                   });
                 }}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm text-primary hover:text-primary/80 transition-colors"
               >
                 Seleccionar todos
               </button>
@@ -317,7 +338,7 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
                     }
                   });
                 }}
-                className="text-sm text-red-600 hover:text-red-800"
+                className="text-sm text-error hover:text-error/80 transition-colors"
               >
                 Limpiar
               </button>
@@ -327,18 +348,18 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
       )}
 
       {/* Resumen */}
-      <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+      <div className="p-4 bg-success/10 rounded-lg border border-success/20">
         <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
-            <span className="text-green-600">📢</span>
+          <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center mr-3">
+            <span className="text-success">📢</span>
           </div>
           <div>
-            <div className="font-medium text-green-800">
+            <div className="font-medium text-success">
               {formData.destinatarios.tipo === 'todos' && `Se enviará a todos los usuarios (${usuarios.length})`}
               {formData.destinatarios.tipo === 'filtro' && `Se enviará por filtros (${contarDestinatarios()})`}
               {formData.destinatarios.tipo === 'manual' && `Se enviará a ${formData.destinatarios.usuariosManuales.length} usuario(s) seleccionado(s)`}
             </div>
-            <div className="text-sm text-green-600 mt-1">
+            <div className="text-sm text-success/80 mt-1">
               La notificación se enviará inmediatamente con todos los parámetros configurados
             </div>
           </div>

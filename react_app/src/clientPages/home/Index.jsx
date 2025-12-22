@@ -138,7 +138,7 @@ const DashboardHome = () => {
             
             <div className="mt-3 lg:mt-4 pt-3 lg:pt-4 border-t border-border text-center">
               <p className="text-xs text-muted-foreground">
-                © {new Date().getFullYear()} Acciona. Todos los derechos reservados.
+                © {new Date().getFullYear()} Acciona. Todos los derechos reservados. {" "}
                 <br className="sm:hidden" />
                 Portal desarrollado para mejorar tu experiencia laboral.
               </p>

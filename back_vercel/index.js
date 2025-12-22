@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient } = require("mongodb");
-process.env.TZ = "America/Chile/santiago"
 
 // Importar rutas
 const authRoutes = require("./endpoints/auth");
