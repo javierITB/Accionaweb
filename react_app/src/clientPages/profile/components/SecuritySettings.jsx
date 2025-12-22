@@ -23,6 +23,7 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
   const [apiMessage, setApiMessage] = useState(null); // Para mostrar mensajes de éxito/error del server
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [isDisabling2FA, setIsDisabling2FA] = useState(false);
 
 
   // Mock active sessions data y security events se mantienen igual...
@@ -122,9 +123,9 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
     if (twoFactorEnabled) {
       if (!window.confirm("¿Seguro que deseas desactivar la Autenticación de Dos Factores?")) return;
       
-      // Lógica de Desactivación: Deberías pedir la contraseña o un código 2FA para desactivar.
-      // Por simplicidad, aquí solo hago una llamada a un endpoint de desactivación.
+      setIsDisabling2FA(true);
       setApiMessage(null);
+      
       try {
         const token = sessionStorage.getItem('token');
         const response = await fetch('https://back-acciona.vercel.app/api/auth/disable-2fa', {
@@ -140,12 +141,15 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
         if (data.success) {
             onUpdate2FAStatus(false); // 🔑 Actualizar el estado en el componente padre
             setTwoFAStage('initial');
-            setApiMessage({ type: 'success', text: '2FA desactivada correctamente.' });
+            setApiMessage({ type: 'success', text: data.message || '2FA desactivada correctamente.' });
         } else {
             setApiMessage({ type: 'error', text: data.message || 'No se pudo desactivar 2FA.' });
         }
       } catch (err) {
+        console.error("Error al desactivar 2FA:", err);
         setApiMessage({ type: 'error', text: 'Error de red al desactivar 2FA.' });
+      } finally {
+        setIsDisabling2FA(false);
       }
       return;
     }
@@ -331,10 +335,10 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
               )}
               {twoFAStage !== 'code_sent' && (
                 <Button
-                  variant={twoFactorEnabled ? "destructive" : "default"}
+                  variant="default"
                   onClick={handleTwoFactorToggle}
                   size="sm"
-                  loading={isSendingCode}
+                  loading={isSendingCode || isDisabling2FA}
                 >
                   {twoFactorEnabled ? 'Desactivar' : 'Activar 2FA'}
                 </Button>

@@ -581,6 +581,54 @@ router.post("/verify-2fa-activation", async (req, res) => {
   }
 });
 
+router.post("/disable-2fa", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ success: false, message: "No autorizado. Token requerido." });
+  }
+
+  const userEmail = req.body.email;
+  if (!userEmail) {
+    return res.status(400).json({ success: false, message: "Email es requerido." });
+  }
+
+  try {
+    const normalizedEmail = userEmail.toLowerCase().trim();
+
+    // 1. Buscar el usuario
+    const user = await req.db.collection("usuarios").findOne({
+      mail: normalizedEmail
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Usuario no encontrado." });
+    }
+
+    // 2. Verificar que el usuario tiene 2FA activado
+    if (!user.twoFactorEnabled) {
+      return res.status(400).json({ success: false, message: "El 2FA no está activado para este usuario." });
+    }
+
+    // 3. Actualizar el estado 2FA del usuario a false
+    await req.db.collection("usuarios").updateOne(
+      { mail: normalizedEmail },
+      { $set: { twoFactorEnabled: false } }
+    );
+
+    // 4. Invalidar todos los códigos 2FA activos del usuario
+    await req.db.collection("2fa_codes").updateMany(
+      { userId: normalizedEmail, active: true },
+      { $set: { active: false, revokedAt: new Date(), reason: "2fa_disabled" } }
+    );
+
+    // 5. Respuesta exitosa
+    res.status(200).json({ success: true, message: "Autenticación de Dos Factores desactivada exitosamente." });
+
+  } catch (err) {
+    console.error("Error en /disable-2fa:", err);
+    res.status(500).json({ success: false, message: "Error interno al desactivar 2FA." });
+  }
+});
 
 router.get("/logins/todos", async (req, res) => {
   try {
