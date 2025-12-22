@@ -84,75 +84,6 @@ const uploadMultiple = multer({
 
 router.use(express.json({ limit: '4mb' }));
 
-router.get("/mantenimiento/migrar-archivos-pqc", async (req, res) => {
-    try {
-        let stats = { adjuntos: 0, aprobados: 0, firmados: 0, docxs: 0 };
-
-        // 1. Migrar ADJUNTOS (Array de objetos)
-        const adjuntosDocs = await req.db.collection("adjuntos").find().toArray();
-        for (let doc of adjuntosDocs) {
-            let modificado = false;
-            const nuevosAdjuntos = doc.adjuntos.map(adj => {
-                if (adj.fileData && !adj.fileData.includes(':')) {
-                    adj.fileData = encrypt(adj.fileData);
-                    modificado = true;
-                }
-                return adj;
-            });
-            if (modificado) {
-                await req.db.collection("adjuntos").updateOne({ _id: doc._id }, { $set: { adjuntos: nuevosAdjuntos } });
-                stats.adjuntos++;
-            }
-        }
-
-        // 2. Migrar APROBADOS (Array correctedFiles)
-        const aprobadosDocs = await req.db.collection("aprobados").find().toArray();
-        for (let doc of aprobadosDocs) {
-            let modificado = false;
-            const nuevosFiles = (doc.correctedFiles || []).map(file => {
-                if (file.fileData && !file.fileData.includes(':')) {
-                    // Si fileData es un Buffer de Mongo, lo convertimos a base64 antes de cifrar
-                    const dataStr = Buffer.isBuffer(file.fileData) ? file.fileData.toString('base64') : file.fileData;
-                    file.fileData = encrypt(dataStr);
-                    modificado = true;
-                }
-                return file;
-            });
-            if (modificado) {
-                await req.db.collection("aprobados").updateOne({ _id: doc._id }, { $set: { correctedFiles: nuevosFiles } });
-                stats.aprobados++;
-            }
-        }
-
-        // 3. Migrar FIRMADOS (Objeto único clientSignedPdf)
-        const firmadosDocs = await req.db.collection("firmados").find().toArray();
-        for (let doc of firmadosDocs) {
-            if (doc.clientSignedPdf?.fileData && !doc.clientSignedPdf.fileData.includes(':')) {
-                const dataStr = Buffer.isBuffer(doc.clientSignedPdf.fileData) ? doc.clientSignedPdf.fileData.toString('base64') : doc.clientSignedPdf.fileData;
-                await req.db.collection("firmados").updateOne(
-                    { _id: doc._id }, 
-                    { $set: { "clientSignedPdf.fileData": encrypt(dataStr) } }
-                );
-                stats.firmados++;
-            }
-        }
-
-        // 4. Migrar DOCXS (Archivo generado)
-        const docxsDocs = await req.db.collection("docxs").find().toArray();
-        for (let doc of docxsDocs) {
-            if (doc.fileData && !doc.fileData.toString().includes(':')) {
-                const dataStr = Buffer.isBuffer(doc.fileData) ? doc.fileData.toString('base64') : doc.fileData;
-                await req.db.collection("docxs").updateOne({ _id: doc._id }, { $set: { fileData: encrypt(dataStr) } });
-                stats.docxs++;
-            }
-        }
-
-        res.json({ success: true, message: "Migración de archivos completada", stats });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // En el endpoint POST principal (/) - SOLO FORMATO ESPECÍFICO
 router.post("/", async (req, res) => {
   try {
@@ -242,96 +173,6 @@ router.post("/", async (req, res) => {
 
   } catch (err) {
     res.status(500).json({ error: "Error al guardar respuesta: " + err.message });
-  }
-});
-
-router.post("/admin", async (req, res) => {
-  try {
-    const { formId, user: adminUser, responses, formTitle, adjuntos = [], mail: correoRespaldo } = req.body;
-
-    const destinatarioNombre = responses?.Destinatario;
-    const destinatarioEmpresa = responses?.EmpresaDestino;
-
-    if (!destinatarioNombre || !destinatarioEmpresa) {
-      return res.status(400).json({ error: "Destinatario y empresa requeridos." });
-    }
-
-    const tokenValido = await validarToken(req.db, adminUser?.token);
-    if (!tokenValido.ok) return res.status(401).json({ error: tokenValido.reason });
-
-    // --- BÚSQUEDA PQC DEL USUARIO DESTINATARIO ---
-    // Buscamos por mail_index porque el mail original está cifrado
-    const userDestinatario = await req.db.collection("usuarios").findOne({
-      mail_index: createBlindIndex(correoRespaldo),
-    });
-
-    if (!userDestinatario) {
-      return res.status(404).json({ error: `Destinatario no encontrado con el correo: ${correoRespaldo}` });
-    }
-
-    // Desciframos los datos para construir el objeto de respuesta correctamente
-    const destinatarioUserObject = {
-      uid: userDestinatario._id.toString(),
-      nombre: decrypt(userDestinatario.nombre),
-      empresa: userDestinatario.empresa, // Si empresa no está cifrada
-      mail: correoRespaldo,
-    };
-
-    const form = await req.db.collection("forms").findOne({ _id: new ObjectId(formId) });
-    if (!form) return res.status(404).json({ error: "Formulario no encontrado" });
-
-    const now = new Date();
-    const result = await req.db.collection("respuestas").insertOne({
-      formId,
-      user: destinatarioUserObject,
-      responses,
-      formTitle,
-      mail: correoRespaldo,
-      status: "pendiente",
-      createdAt: now,
-      updatedAt: now,
-      injectedBy: adminUser?.uid,
-    });
-
-    if (adjuntos.length > 0) {
-      await req.db.collection("adjuntos").insertOne({
-        responseId: result.insertedId,
-        submittedAt: now.toISOString(),
-        adjuntos: []
-      });
-    }
-
-    if (correoRespaldo) {
-      await enviarCorreoRespaldo(correoRespaldo, formTitle, destinatarioUserObject, responses, form.questions);
-    }
-
-    // Notificaciones
-    await addNotification(req.db, {
-      filtro: { cargo: "RRHH" },
-      titulo: `Solicitud creada para ${destinatarioNombre}`,
-      descripcion: `El administrador ${adminUser?.nombre} creó "${formTitle}".`,
-      prioridad: 2, color: "#bb8900ff", icono: "form",
-      actionUrl: `/RespuestasForms?id=${result.insertedId}`,
-    });
-
-    await addNotification(req.db, {
-      userId: destinatarioUserObject.uid,
-      titulo: "Nueva Solicitud Administrativa",
-      descripcion: `Tienes una nueva solicitud pendiente: ${formTitle}.`,
-      prioridad: 2, icono: "Warning", color: "#ff8c00ff",
-      actionUrl: `/?id=${result.insertedId}`,
-    });
-
-    try {
-      await generarAnexoDesdeRespuesta(responses, result.insertedId.toString(), req.db, form.section, destinatarioUserObject, formId, formTitle);
-    } catch (error) {
-      console.error("Error generando documento:", error.message);
-    }
-
-    res.json({ _id: result.insertedId, formId, user: destinatarioUserObject, responses, formTitle, mail: correoRespaldo });
-
-  } catch (err) {
-    res.status(500).json({ error: "Error Admin: " + err.message });
   }
 });
 
@@ -598,29 +439,12 @@ router.get("/:id", async (req, res) => {
     const form = await req.db.collection("respuestas")
       .findOne({ _id: new ObjectId(req.params.id) });
 
-    if (!form) return res.status(404).json({ error: "Formulario no encontrado" });
+    if (!form) return res.status(404).json({ error: "Respuesta no encontrado" });
 
     res.json(form);
 
   } catch (err) {
-    res.status(500).json({ error: "Error al obtener formulario" });
-  }
-});
-
-router.get("/section/:section", async (req, res) => {
-  try {
-    const forms = await req.db
-      .collection("respuestas")
-      .find({ section: req.params.section })
-      .toArray();
-
-    if (!forms.length)
-      return res.status(404).json({ error: "No se encontraron formularios en esta sección" });
-
-    res.status(200).json(forms);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error al obtener formularios por sección" });
+    res.status(500).json({ error: "Error al obtener Respuesta" });
   }
 });
 
