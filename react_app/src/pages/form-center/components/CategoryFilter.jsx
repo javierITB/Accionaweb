@@ -22,20 +22,8 @@ const CategoryFilter = ({ categories, activeCategory, onCategoryChange, classNam
   const getCategoryColor = (category, isActive) => {
     if (!isActive) return 'text-muted-foreground';
     
-    switch (category) {
-      case 'all':
-        return 'text-primary';
-      case 'Remuneraciones':
-        return 'text-secondary';
-      case 'Anexos':
-        return 'text-accent';
-      case 'Finiquitos':
-        return 'text-success';
-      case 'Otras':
-        return 'text-warning';
-      default:
-        return 'text-foreground';
-    }
+    // Cuando está activo, todos los filtros tienen texto blanco
+    return 'text-white';
   };
 
   return (
@@ -63,7 +51,7 @@ const CategoryFilter = ({ categories, activeCategory, onCategoryChange, classNam
               {category?.count > 0 && (
                 <span className={`px-1.5 sm:px-2 py-0.5 text-xs rounded-full ${
                   isActive 
-                    ? 'bg-primary-foreground/20 text-primary-foreground' 
+                    ? 'bg-white/20 text-white' 
                     : 'bg-muted text-muted-foreground'
                 } whitespace-nowrap`}>
                   {category?.count}
