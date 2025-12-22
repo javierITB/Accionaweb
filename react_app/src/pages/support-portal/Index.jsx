@@ -11,8 +11,8 @@ const SupportPortal = () => {
       
       <main className="pt-16">
         <div className="p-8 max-w-7xl mx-auto">
-          <KnowledgeBase />
           <TicketSystem />
+          <KnowledgeBase />
           <ContactSupport />
         </div>
       </main>
