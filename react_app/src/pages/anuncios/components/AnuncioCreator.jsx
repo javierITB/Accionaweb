@@ -116,10 +116,9 @@ const AnuncioCreator = ({ onSuccess }) => {
                   onChange={e => setFormData({...formData, prioridad: parseInt(e.target.value)})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 >
-                  <option value="1">Normal</option>
+                  <option value="1">Baja</option>
                   <option value="2">Media</option>
                   <option value="3">Alta</option>
-                  <option value="4">Urgente</option>
                 </select>
               </div>
               
