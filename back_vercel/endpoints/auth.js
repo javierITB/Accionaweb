@@ -415,7 +415,7 @@ router.post("/verify-login-2fa", async (req, res) => {
       ipAddress,
       os: agent.os.toString(),
       browser: agent.toAgent(),
-      now: now,
+      now: getAhoraChile(),
     });
 
     // 5. Retornar el token y datos del usuario (ACCESO CONCEDIDO)
