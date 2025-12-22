@@ -48,7 +48,7 @@ const Routes = () => {
           <Route path="/forms" element={<ProtectedClient><Form /></ProtectedClient>}/>
           <Route path="/set-password" element={<SetPassword />} />
           <Route path="/perfil" element={<ProtectedClient><Profile /></ProtectedClient>}/>
-          <Route path="/support-portal" element={ <SupportPortal />}/>
+          <Route path="/soporte" element={ <SupportPortal />}/>
           <Route path="/recuperacion" element={ <Recuperacion />}/>
           {/* Rutas protegidas */}
           <Route path="/form-builder" element={<ProtectedRoute><FormBuilder /></ProtectedRoute>}/>
