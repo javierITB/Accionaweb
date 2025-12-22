@@ -94,7 +94,7 @@ const CompanyReg = () => {
                   <th className="px-4 py-2 text-left">IP</th>
                   <th className="px-4 py-2 text-left">Navegador</th>
                   <th className="px-4 py-2 text-left">S.O.</th>
-                  <th className="px-4 py-2 text-left">Fecha Igreso</th>
+                  <th className="px-4 py-2 text-left">Fecha Ingreso</th>
                 </tr>
               </thead>
               <tbody>
