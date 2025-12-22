@@ -84,75 +84,6 @@ const uploadMultiple = multer({
 
 router.use(express.json({ limit: '4mb' }));
 
-router.get("/mantenimiento/migrar-archivos-pqc", async (req, res) => {
-    try {
-        let stats = { adjuntos: 0, aprobados: 0, firmados: 0, docxs: 0 };
-
-        // 1. Migrar ADJUNTOS (Array de objetos)
-        const adjuntosDocs = await req.db.collection("adjuntos").find().toArray();
-        for (let doc of adjuntosDocs) {
-            let modificado = false;
-            const nuevosAdjuntos = doc.adjuntos.map(adj => {
-                if (adj.fileData && !adj.fileData.includes(':')) {
-                    adj.fileData = encrypt(adj.fileData);
-                    modificado = true;
-                }
-                return adj;
-            });
-            if (modificado) {
-                await req.db.collection("adjuntos").updateOne({ _id: doc._id }, { $set: { adjuntos: nuevosAdjuntos } });
-                stats.adjuntos++;
-            }
-        }
-
-        // 2. Migrar APROBADOS (Array correctedFiles)
-        const aprobadosDocs = await req.db.collection("aprobados").find().toArray();
-        for (let doc of aprobadosDocs) {
-            let modificado = false;
-            const nuevosFiles = (doc.correctedFiles || []).map(file => {
-                if (file.fileData && !file.fileData.includes(':')) {
-                    // Si fileData es un Buffer de Mongo, lo convertimos a base64 antes de cifrar
-                    const dataStr = Buffer.isBuffer(file.fileData) ? file.fileData.toString('base64') : file.fileData;
-                    file.fileData = encrypt(dataStr);
-                    modificado = true;
-                }
-                return file;
-            });
-            if (modificado) {
-                await req.db.collection("aprobados").updateOne({ _id: doc._id }, { $set: { correctedFiles: nuevosFiles } });
-                stats.aprobados++;
-            }
-        }
-
-        // 3. Migrar FIRMADOS (Objeto único clientSignedPdf)
-        const firmadosDocs = await req.db.collection("firmados").find().toArray();
-        for (let doc of firmadosDocs) {
-            if (doc.clientSignedPdf?.fileData && !doc.clientSignedPdf.fileData.includes(':')) {
-                const dataStr = Buffer.isBuffer(doc.clientSignedPdf.fileData) ? doc.clientSignedPdf.fileData.toString('base64') : doc.clientSignedPdf.fileData;
-                await req.db.collection("firmados").updateOne(
-                    { _id: doc._id }, 
-                    { $set: { "clientSignedPdf.fileData": encrypt(dataStr) } }
-                );
-                stats.firmados++;
-            }
-        }
-
-        // 4. Migrar DOCXS (Archivo generado)
-        const docxsDocs = await req.db.collection("docxs").find().toArray();
-        for (let doc of docxsDocs) {
-            if (doc.fileData && !doc.fileData.toString().includes(':')) {
-                const dataStr = Buffer.isBuffer(doc.fileData) ? doc.fileData.toString('base64') : doc.fileData;
-                await req.db.collection("docxs").updateOne({ _id: doc._id }, { $set: { fileData: encrypt(dataStr) } });
-                stats.docxs++;
-            }
-        }
-
-        res.json({ success: true, message: "Migración de archivos completada", stats });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // En el endpoint POST principal (/) - SOLO FORMATO ESPECÍFICO
 router.post("/", async (req, res) => {
   try {
@@ -449,7 +380,7 @@ router.get("/:id/adjuntos/:index", async (req, res) => {
       console.log("Adjunto no encontrado con query:", query);
       return res.status(404).json({ error: "Archivo adjunto no encontrado" });
     }
-    
+
     let archivoAdjunto;
 
     if (documentoAdjunto.adjuntos && documentoAdjunto.adjuntos.length > 0) {
@@ -512,17 +443,32 @@ router.get("/mail/:mail", async (req, res) => {
       return res.status(404).json({ error: "No se encontraron formularios" });
     }
 
-    const answersProcessed = answers.map(answer => ({
-      _id: answer._id,
-      formId: answer.formId,
-      formTitle: answer.formTitle,
-      trabajador: answer.responses?.["Nombre del trabajador"] || "No especificado",
-      user: answer.user,
-      status: answer.status,
-      createdAt: answer.createdAt,
-      approvedAt: answer.approvedAt,
-      updatedAt: answer.updatedAt
-    }));
+    if (!answers || answers.length === 0) {
+      return res.status(404).json({ error: "No se encontraron formularios para este email" });
+    }
+
+    // Procesar las respuestas en JavaScript
+    const answersProcessed = answers.map(answer => {
+      let trabajador = "No especificado";
+
+      if (answer.responses) {
+        trabajador = answer.responses["Nombre del trabajador"] ||
+          answer.responses["NOMBRE DEL TRABAJADOR"] ||
+          answer.responses["nombre del trabajador"]
+      }
+
+      return {
+        _id: answer._id,
+        formId: answer.formId,
+        formTitle: answer.formTitle,
+        trabajador: trabajador,
+        user: answer.user,
+        status: answer.status,
+        createdAt: answer.createdAt,
+        approvedAt: answer.approvedAt,
+        updatedAt: answer.updatedAt
+      };
+    });
 
     res.json(answersProcessed);
   } catch (err) {
