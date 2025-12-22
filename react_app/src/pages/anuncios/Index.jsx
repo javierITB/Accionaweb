@@ -30,7 +30,7 @@ const AnunciosPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-background">
       <Sidebar 
         activeItem="anuncios"
         isCollapsed={isSidebarCollapsed}
@@ -51,8 +51,8 @@ const AnunciosPage = () => {
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-2xl font-bold text-gray-900">Nuevo Anuncio</h1>
-              <p className="text-gray-600">Completa el formulario para enviar notificaciones</p>
+              <h1 className="text-2xl font-bold text-foreground">Nuevo Anuncio</h1>
+              <p className="text-muted-foreground">Completa el formulario para enviar notificaciones</p>
             </div>
             
             <AnuncioCreator onSuccess={handleAnuncioSuccess} />
