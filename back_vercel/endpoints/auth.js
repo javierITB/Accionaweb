@@ -8,6 +8,13 @@ const { sendEmail } = require("../utils/mail.helper"); // Importación del helpe
 const useragent = require('useragent');
 const { createBlindIndex, verifyPassword, decrypt } = require("../utils/seguridad.helper");
 
+//alteracion
+const getAhoraChile = () => {
+  const d = new Date();
+  return new Date(d.toLocaleString("en-US", {timeZone: "America/Santiago"}));
+};
+//fin alteracion
+
 
 const TOKEN_EXPIRATION = 12 * 1000 * 60 * 60;
 // Constante para la expiración del código de recuperación (ej: 15 minutos)
@@ -253,13 +260,17 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // const now = new Date();
+    const now = getAhoraChile()
 
-    const now = fecha.toLocaleString("es-cl", {
+    //const now = new Date();
+
+    /*const now = fecha.toLocaleString("es-cl", {
       timeZone: "America/Santiago",
       timeZoneName: "short"
     });
-    
+    */
+
+
     let finalToken = null;
     let expiresAt = null;
 
@@ -280,7 +291,9 @@ router.post("/login", async (req, res) => {
       }
 
       finalToken = crypto.randomBytes(32).toString("hex");
-      expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
+      //expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
+      expiresAt = new Date(now.getTime() + TOKEN_EXPIRATION);
+
 
       await req.db.collection("tokens").insertOne({
         token: finalToken,
@@ -311,7 +324,8 @@ router.post("/login", async (req, res) => {
       ipAddress,
       os: agent.os?.toString?.() || "Desconocido",
       browser: agent.toAgent?.() || "Desconocido",
-      now
+      //now
+      now : now
     });
 
     return res.json({
