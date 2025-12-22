@@ -11,7 +11,7 @@ const { createBlindIndex, verifyPassword, decrypt } = require("../utils/segurida
 //alteracion
 const getAhoraChile = () => {
   const d = new Date();
-  return new Date(d.toLocaleString("en-US", {timeZone: "America/Santiago"}));
+  return new Date(d.toLocaleString("en-US", {timeZone: "America/Chile/Santiago"}));
 };
 //fin alteracion
 
@@ -325,7 +325,7 @@ router.post("/login", async (req, res) => {
       os: agent.os?.toString?.() || "Desconocido",
       browser: agent.toAgent?.() || "Desconocido",
       //now
-      now : now
+      now : getAhoraChile()
     });
 
     return res.json({
