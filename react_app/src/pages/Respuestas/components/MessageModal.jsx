@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import Checkbox from '../../../components/ui/Checkbox';
 
 const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [sendToEmail, setSendToEmail] = useState(false);
   const [user, setUser] = useState(sessionStorage.getItem("user"));
   const [messages, setMessages] = useState([]);
   const [activeTab, setActiveTab] = useState('general');
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [hasNewMessages, setHasNewMessages] = useState(false);
+  const [userEmail, setUserEmail] = useState(null);
+  const [formName, setFormName] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const chatRef = useRef(null);
   const shouldAutoScroll = useRef(true);
@@ -18,6 +23,20 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const isTabChange = useRef(false);
 
   const id = formId || request?._id;
+
+  useEffect(() => {
+    if (!id || !request) return;
+
+    if (request.user && request.user.mail) {
+      setUserEmail(request.user.mail);
+    }
+
+    if (request._contexto && request._contexto.formTitle) {
+      setFormName(request._contexto.formTitle);
+    } else if (request.title || request.formTitle) {
+      setFormName(request.title || request.formTitle);
+    }
+  }, [id, request]);
 
   const fetchMessages = useCallback(async () => {
     if (!id) return;
@@ -49,6 +68,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
     isTabChange.current = false;
     setHasNewMessages(false);
     setShowScrollToBottom(false);
+    setSendToEmail(false);
 
     fetchMessages();
     const interval = setInterval(fetchMessages, 3000);
@@ -103,6 +123,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
     shouldAutoScroll.current = true;
     setActiveTab(tab);
     setHasNewMessages(false);
+    setSendToEmail(false);
   };
 
   const filteredMessages = messages.filter(msg => {
@@ -112,8 +133,107 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
     return !msg.admin;
   });
 
+  const sendMessageToEmail = async (messageText, author) => {
+    if (!userEmail || !id || !formName) {
+      console.log("No se puede enviar correo: faltan datos");
+      return false;
+    }
+
+    try {
+      setIsSendingEmail(true);
+      
+      const portalUrl = process.env.REACT_APP_PORTAL_URL || "https://tuportal.com";
+      const chatUrl = `${portalUrl}/respuestas/${id}?tab=messages`;
+
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #4f46e5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; }
+                .button { display: inline-block; background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
+                .message-box { background-color: #f0f9ff; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #4f46e5; }
+                .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Acciona Centro de Negocios</h1>
+                </div>
+                <div class="content">
+                    <h2>Nuevo mensaje recibido</h2>
+                    <p>Has recibido un nuevo mensaje en la siguiente solicitud/formulario:</p>
+                    
+                    <div class="message-box">
+                        <p><strong>Formulario:</strong> ${formName}</p>
+                        <p><strong>De:</strong> ${author}</p>
+                        <p><strong>Mensaje:</strong> "${messageText}"</p>
+                        <p><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CL', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}</p>
+                    </div>
+                    
+                    <p>Puedes responder a este mensaje ingresando al chat del formulario:</p>
+                    
+                    <a href="${chatUrl}" class="button">
+                        Ver chat completo
+                    </a>
+                    
+                    <p><small>O copia este enlace en tu navegador:<br>
+                    ${chatUrl}</small></p>
+                    
+                    <div class="footer">
+                        <p>Este es un mensaje automático. Por favor, no responder a este correo.</p>
+                        <p>Acciona Centro de Negocios Spa.</p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+      `;
+
+      const response = await fetch('https://back-vercel-iota.vercel.app/api/mail/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessKey: process.env.REACT_APP_MAIL_KEY || 'tu-clave-de-acceso',
+          to: userEmail,
+          subject: `Nuevo mensaje - ${formName} - Acciona`,
+          html: emailHtml
+        })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        console.log('Correo enviado exitosamente');
+        return true;
+      } else {
+        console.error('Error enviando correo:', data.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error enviando correo:', error);
+      return false;
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   const handleSend = async () => {
     if (!message.trim() || !id) return;
+    
     setIsSending(true);
 
     try {
@@ -132,11 +252,26 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
       });
 
       const data = await res.json();
+      
       if (res.ok && data?.data) {
         shouldAutoScroll.current = true;
         setMessages(prev => [...prev, data.data]);
         setMessage('');
         setHasNewMessages(false);
+
+        if (sendToEmail && userEmail && activeTab !== 'admin') {
+          const emailSent = await sendMessageToEmail(message.trim(), autor);
+          
+          if (emailSent) {
+            console.log('Mensaje enviado y correo notificado');
+          } else {
+            console.log('Mensaje enviado, pero el correo no se pudo enviar');
+          }
+        } else if (sendToEmail && activeTab === 'admin') {
+          console.log('Los mensajes internos no se envian por correo');
+        }
+
+        setSendToEmail(false);
       } else {
         console.error("Error enviando mensaje:", data.error || data);
       }
@@ -199,7 +334,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                   Mensajes
                 </h2>
                 <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                  {request?.title || request?.formTitle} {request?.trabajador}
+                  {formName || request?.title || request?.formTitle} {request?.trabajador}
                 </p>
               </div>
             </div>
@@ -291,8 +426,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
             <Button
               variant={activeTab === 'admin' ? 'destructive' : 'default'}
               onClick={handleSend}
-              disabled={!message.trim() || isSending}
-              loading={isSending}
+              disabled={!message.trim() || isSending || isSendingEmail}
+              loading={isSending || isSendingEmail}
               iconName="Send"
               iconPosition="left"
               iconSize={16}
@@ -303,8 +438,35 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
             </Button>
           </div>
 
+          {activeTab !== 'admin' && userEmail && (
+            <div className="mt-3 flex items-center space-x-2">
+              <Checkbox
+                id="send-to-email"
+                checked={sendToEmail}
+                onCheckedChange={(checked) => setSendToEmail(checked)}
+                disabled={isSending || isSendingEmail}
+                label="Enviar tambien por correo"
+                size="default"
+              />
+            </div>
+          )}
+
+          {activeTab === 'admin' && userEmail && (
+            <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
+              <Icon name="Info" size={12} />
+              Los mensajes internos no se envian por correo
+            </div>
+          )}
+
+          {!userEmail && activeTab !== 'admin' && (
+            <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
+              <Icon name="AlertCircle" size={12} />
+              No se encontro email del usuario para enviar correo
+            </div>
+          )}
+
           <div className="mt-2 text-xs text-muted-foreground text-center sm:text-left">
-            <span className="hidden sm:inline">Presiona Enter para enviar, Shift+Enter para nueva línea</span>
+            <span className="hidden sm:inline">Presiona Enter para enviar, Shift+Enter para nueva linea</span>
             {activeTab === 'admin' && <span className="ml-2 text-error font-medium">(Modo Interno)</span>}
           </div>
         </div>
