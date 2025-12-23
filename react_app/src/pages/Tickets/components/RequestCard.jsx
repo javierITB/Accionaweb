@@ -136,10 +136,16 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
 
 
   const getCombinedTitle = () => {
-    const formTitle = currentRequest?.formTitle || 'Formulario';
-    const trabajador = request?.trabajador || "";
+    const category = currentRequest?.formTitle || 'Ticket';
+    // Intentar obtener el asunto de las respuestas, si existe.
+    // La estructura puede variar dependiendo de cómo se guarde en responses.
+    // En soporte.js vemos que se guarda como responses.Asunto
+    const subject = currentRequest?.responses?.Asunto || '';
 
-    return `${formTitle} ${trabajador}`;
+    if (subject) {
+      return `${category} - ${subject}`;
+    }
+    return category;
   };
 
   return (

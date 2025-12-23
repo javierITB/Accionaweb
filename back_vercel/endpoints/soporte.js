@@ -404,6 +404,7 @@ router.get("/mini", async (req, res) => {
         user: answer.user,
         status: answer.status,
         assignedTo: answer.assignedTo,
+        responses: answer.responses,
         createdAt: answer.createdAt,
         adjuntosCount: answer.adjuntosCount || 0
       };

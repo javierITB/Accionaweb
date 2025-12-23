@@ -1151,7 +1151,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
               <div className="flex items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">{fullRequestData?.formTitle || fullRequestData?.title}</h2>
+                  <h2 className="text-xl font-semibold text-foreground">
+                    {fullRequestData?.responses?.Asunto
+                      ? `${fullRequestData?.formTitle} - ${fullRequestData?.responses?.Asunto}`
+                      : (fullRequestData?.formTitle || fullRequestData?.title)}
+                  </h2>
                   <p className="text-sm text-muted-foreground">ID: {fullRequestData?._id}</p>
                 </div>
               </div>
