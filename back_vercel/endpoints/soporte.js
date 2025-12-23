@@ -113,7 +113,7 @@ router.post("/", async (req, res) => {
         return res.status(403).json({ error: `La empresa ${empresa} no está autorizada.` });
       }
     } else {
-      console.log(`Ticket creado con categoria estática: ${formId}`);
+      console.log(`Ticket creado: ${formId}`);
     }
 
     const result = await req.db.collection("soporte").insertOne({
