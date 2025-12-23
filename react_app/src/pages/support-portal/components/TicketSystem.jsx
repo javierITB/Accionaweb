@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -9,59 +9,132 @@ const TicketSystem = () => {
   const [ticketForm, setTicketForm] = useState({
     subject: '',
     category: '',
-    priority: '',
+    priority: 'medium',
     description: '',
     attachments: []
   });
 
-  const categoryOptions = [
-    { value: 'technical', label: 'Soporte Técnico' },
-    { value: 'payroll', label: 'Nómina y Pagos' },
-    { value: 'benefits', label: 'Beneficios' },
-    { value: 'forms', label: 'Formularios' },
-    { value: 'policies', label: 'Políticas y Procedimientos' },
-    { value: 'other', label: 'Otros' }
-  ];
+  const [categories, setCategories] = useState([]);
+  const [myTickets, setMyTickets] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const userMail = sessionStorage.getItem("email");
+  const token = sessionStorage.getItem("token");
 
-  const priorityOptions = [
-    { value: 'low', label: 'Baja' },
-    { value: 'medium', label: 'Media' },
-    { value: 'high', label: 'Alta' },
-    { value: 'urgent', label: 'Urgente' }
-  ];
+  // Chat states
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
 
-  const myTickets = [
-    {
-      id: 'TK-2025-001',
-      subject: 'Problema con liquidación de enero',
-      category: 'Nómina y Pagos',
-      priority: 'high',
-      status: 'in_progress',
-      created: '2025-01-20',
-      lastUpdate: '2025-01-22',
-      assignedTo: 'María González'
-    },
-    {
-      id: 'TK-2025-002',
-      subject: 'Solicitud de certificado laboral',
-      category: 'Formularios',
-      priority: 'medium',
-      status: 'pending',
-      created: '2025-01-18',
-      lastUpdate: '2025-01-18',
-      assignedTo: 'Carlos Ruiz'
-    },
-    {
-      id: 'TK-2025-003',
-      subject: 'Acceso a beneficios de salud',
-      category: 'Beneficios',
-      priority: 'low',
-      status: 'resolved',
-      created: '2025-01-15',
-      lastUpdate: '2025-01-17',
-      assignedTo: 'Ana López'
+  // Fetch initial data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!userMail) return;
+      setIsLoading(true);
+      try {
+        // 1. Fetch User Details
+        const userRes = await fetch(`https://back-acciona.vercel.app/api/auth/full/${userMail}`);
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setCurrentUser({
+            nombre: userData.nombre || sessionStorage.getItem("user"),
+            empresa: userData.empresa,
+            uid: userData._id,
+            token: token,
+            email: userMail
+          });
+        }
+
+        // 2. Fetch Forms (Categories)
+        const formsRes = await fetch(`https://back-acciona.vercel.app/api/forms`);
+        if (formsRes.ok) {
+          const formsData = await formsRes.json();
+          // Filter forms that are relevant for support/tickets if needed, 
+          // or just use all published forms as categories
+          const activeForms = formsData
+            .filter(f => f.status === 'publicado')
+            .map(f => ({
+              value: f._id,
+              label: f.title
+            }));
+          setCategories(activeForms);
+        }
+
+        // 3. Fetch User Tickets
+        fetchTickets();
+
+      } catch (error) {
+        console.error("Error fetching initial data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userMail, token]);
+
+  const fetchTickets = async () => {
+    if (!userMail) return;
+    try {
+      const res = await fetch(`https://back-acciona.vercel.app/api/soporte/mail/${userMail}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMyTickets(data.reverse()); // Show newest first
+      }
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
     }
-  ];
+  };
+
+  const fetchChat = async (ticketId) => {
+    setIsChatLoading(true);
+    try {
+      const res = await fetch(`https://back-acciona.vercel.app/api/soporte/${ticketId}/chat`);
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages(data);
+      }
+    } catch (error) {
+      console.error("Error fetching chat:", error);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleTicketClick = (ticket) => {
+    setSelectedTicket(ticket);
+    fetchChat(ticket._id);
+    setActiveTab('details');
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedTicket || !currentUser) return;
+
+    try {
+      const payload = {
+        formId: selectedTicket._id,
+        autor: currentUser.nombre,
+        mensaje: newMessage,
+        admin: false
+      };
+
+      const res = await fetch("https://back-acciona.vercel.app/api/soporte/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        setNewMessage('');
+        fetchChat(selectedTicket._id); // Refresh chat
+      } else {
+        alert('Error al enviar mensaje');
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setTicketForm(prev => ({
@@ -70,51 +143,98 @@ const TicketSystem = () => {
     }));
   };
 
-  const handleSubmitTicket = () => {
+  const handleSubmitTicket = async () => {
     if (!ticketForm?.subject || !ticketForm?.category || !ticketForm?.description) {
       alert('Por favor completa todos los campos obligatorios');
       return;
     }
-    
-    alert('Ticket creado exitosamente. ID: TK-2025-004');
-    setTicketForm({
-      subject: '',
-      category: '',
-      priority: '',
-      description: '',
-      attachments: []
-    });
+
+    if (!currentUser) {
+      alert('Error: No se pudo identificar al usuario. Por favor recarga la página.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const selectedCategory = categories.find(c => c.value === ticketForm.category);
+
+      const payload = {
+        formId: ticketForm.category,
+        formTitle: selectedCategory ? selectedCategory.label : 'Ticket de Soporte',
+        user: {
+          nombre: currentUser.nombre,
+          empresa: currentUser.empresa,
+          uid: currentUser.uid,
+          token: currentUser.token
+        },
+        responses: {
+          Asunto: ticketForm.subject,
+          Descripción: ticketForm.description,
+          Prioridad: ticketForm.priority
+        },
+        mail: currentUser.email,
+        adjuntos: [] // Handle attachments if implemented
+      };
+
+      const res = await fetch("https://back-acciona.vercel.app/api/soporte/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        alert('Ticket creado exitosamente.');
+        setTicketForm({
+          subject: '',
+          category: '',
+          priority: 'medium',
+          description: '',
+          attachments: []
+        });
+        setActiveTab('my-tickets');
+        fetchTickets();
+      } else {
+        const errData = await res.json();
+        alert(`Error al crear ticket: ${errData.error || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error("Error creating ticket:", error);
+      alert('Error de conexión al crear el ticket.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'bg-warning text-warning-foreground';
-      case 'in_progress': return 'bg-primary text-primary-foreground';
-      case 'resolved': return 'bg-success text-success-foreground';
-      case 'closed': return 'bg-muted text-muted-foreground';
+      case 'pendiente': return 'bg-warning text-warning-foreground';
+      case 'en_revision': return 'bg-primary text-primary-foreground';
+      case 'aprobado': return 'bg-success text-success-foreground';
+      case 'finalizado': return 'bg-muted text-muted-foreground';
+      case 'archivado': return 'bg-gray-500 text-white';
       default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'pending': return 'Pendiente';
-      case 'in_progress': return 'En Progreso';
-      case 'resolved': return 'Resuelto';
-      case 'closed': return 'Cerrado';
-      default: return 'Desconocido';
+      case 'pendiente': return 'Pendiente';
+      case 'en_revision': return 'En Revisión';
+      case 'aprobado': return 'Aprobado';
+      case 'finalizado': return 'Finalizado';
+      case 'archivado': return 'Archivado';
+      default: status;
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'low': return 'text-success';
-      case 'medium': return 'text-warning';
-      case 'high': return 'text-secondary';
-      case 'urgent': return 'text-error';
-      default: return 'text-muted-foreground';
-    }
-  };
+  const priorityOptions = [
+    { value: 'low', label: 'Baja' },
+    { value: 'medium', label: 'Media' },
+    { value: 'high', label: 'Alta' },
+    { value: 'urgent', label: 'Urgente' }
+  ];
 
   return (
     <div className="mb-8">
@@ -124,7 +244,7 @@ const TicketSystem = () => {
         <Button
           variant={activeTab === 'create' ? 'default' : 'ghost'}
           size="sm"
-          onClick={() => setActiveTab('create')}
+          onClick={() => { setActiveTab('create'); setSelectedTicket(null); }}
           iconName="Plus"
           iconPosition="left"
           iconSize={16}
@@ -132,9 +252,9 @@ const TicketSystem = () => {
           Crear Ticket
         </Button>
         <Button
-          variant={activeTab === 'my-tickets' ? 'default' : 'ghost'}
+          variant={activeTab === 'my-tickets' || activeTab === 'details' ? 'default' : 'ghost'}
           size="sm"
-          onClick={() => setActiveTab('my-tickets')}
+          onClick={() => { setActiveTab('my-tickets'); setSelectedTicket(null); }}
           iconName="List"
           iconPosition="left"
           iconSize={16}
@@ -142,11 +262,14 @@ const TicketSystem = () => {
           Mis Tickets
         </Button>
       </div>
+
+      {isLoading && <div className="text-center py-4">Cargando...</div>}
+
       {/* Create Ticket Tab */}
-      {activeTab === 'create' && (
+      {!isLoading && activeTab === 'create' && (
         <div className="bg-card border border-border rounded-lg p-6">
           <h3 className="text-lg font-semibold text-foreground mb-6">Crear Nuevo Ticket</h3>
-          
+
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
@@ -157,11 +280,11 @@ const TicketSystem = () => {
                 onChange={(e) => handleInputChange('subject', e?.target?.value)}
                 required
               />
-              
+
               <Select
-                label="Categoría"
+                label="Categoría (Formulario)"
                 placeholder="Selecciona una categoría"
-                options={categoryOptions}
+                options={categories}
                 value={ticketForm?.category}
                 onChange={(value) => handleInputChange('category', value)}
                 required
@@ -190,6 +313,7 @@ const TicketSystem = () => {
               />
             </div>
 
+            {/* 
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 Archivos Adjuntos
@@ -207,11 +331,9 @@ const TicketSystem = () => {
                 </p>
               </div>
             </div>
+            */}
 
             <div className="flex justify-end space-x-3">
-              <Button variant="outline">
-                Guardar Borrador
-              </Button>
               <Button onClick={handleSubmitTicket}>
                 Crear Ticket
               </Button>
@@ -219,34 +341,31 @@ const TicketSystem = () => {
           </div>
         </div>
       )}
+
       {/* My Tickets Tab */}
-      {activeTab === 'my-tickets' && (
+      {!isLoading && activeTab === 'my-tickets' && (
         <div className="space-y-4">
           {myTickets?.map((ticket) => (
             <div
-              key={ticket?.id}
-              className="bg-card border border-border rounded-lg p-6 hover:shadow-brand-hover transition-brand"
+              key={ticket?._id}
+              className="bg-card border border-border rounded-lg p-6 hover:shadow-brand-hover transition-brand cursor-pointer"
+              onClick={() => handleTicketClick(ticket)}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
                     <h3 className="text-lg font-semibold text-foreground">
-                      {ticket?.subject}
+                      {ticket?.responses?.Asunto || ticket?.formTitle}
                     </h3>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(ticket?.status)}`}>
                       {getStatusText(ticket?.status)}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">
-                    ID: {ticket?.id} • Categoría: {ticket?.category}
+                    ID: {ticket?._id} • Categoría: {ticket?.formTitle}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Icon 
-                    name="AlertCircle" 
-                    size={16} 
-                    className={getPriorityColor(ticket?.priority)}
-                  />
                   <Button variant="ghost" size="sm">
                     Ver Detalles
                   </Button>
@@ -257,18 +376,18 @@ const TicketSystem = () => {
                 <div>
                   <p className="text-muted-foreground">Creado</p>
                   <p className="font-medium text-foreground">
-                    {new Date(ticket.created)?.toLocaleDateString('es-ES')}
+                    {new Date(ticket.createdAt)?.toLocaleDateString('es-ES')}
                   </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Última Actualización</p>
                   <p className="font-medium text-foreground">
-                    {new Date(ticket.lastUpdate)?.toLocaleDateString('es-ES')}
+                    {ticket.updatedAt ? new Date(ticket.updatedAt)?.toLocaleDateString('es-ES') : '-'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Asignado a</p>
-                  <p className="font-medium text-foreground">{ticket?.assignedTo}</p>
+                  <p className="text-muted-foreground">Estado</p>
+                  <p className="font-medium text-foreground">{getStatusText(ticket?.status)}</p>
                 </div>
               </div>
             </div>
@@ -286,6 +405,89 @@ const TicketSystem = () => {
               </Button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Ticket Details Tab */}
+      {!isLoading && activeTab === 'details' && selectedTicket && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="p-6 border-b border-border bg-muted/30">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  {selectedTicket.responses?.Asunto || selectedTicket.formTitle}
+                </h3>
+                <div className="flex items-center space-x-3 text-sm">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
+                    {getStatusText(selectedTicket.status)}
+                  </span>
+                  <span className="text-muted-foreground">
+                    ID: {selectedTicket._id}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {new Date(selectedTicket.createdAt).toLocaleDateString('es-ES')}
+                  </span>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setActiveTab('my-tickets')} iconName="X">
+                Cerrar
+              </Button>
+            </div>
+
+            <div className="bg-background p-4 rounded-md border border-border">
+              <p className="text-sm text-muted-foreground mb-1 font-medium">Descripción:</p>
+              <p className="text-foreground whitespace-pre-wrap">
+                {selectedTicket.responses?.Descripción || 'Sin descripción'}
+              </p>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <h4 className="font-semibold mb-4 flex items-center">
+              <Icon name="MessageCircle" size={18} className="mr-2" />
+              Historial de Conversación
+            </h4>
+
+            <div className="space-y-4 mb-6 max-h-[400px] overflow-y-auto p-2">
+              {isChatLoading ? (
+                <div className="text-center text-muted-foreground">Cargando mensajes...</div>
+              ) : chatMessages.length === 0 ? (
+                <div className="text-center text-muted-foreground py-4">No hay mensajes aún.</div>
+              ) : (
+                chatMessages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex flex-col ${msg.admin ? 'items-start' : 'items-end'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] p-3 rounded-lg ${msg.admin
+                        ? 'bg-muted text-foreground rounded-tl-none'
+                        : 'bg-primary text-primary-foreground rounded-tr-none'
+                        }`}
+                    >
+                      <p className="text-sm">{msg.mensaje}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground mt-1">
+                      {msg.autor} • {new Date(msg.fecha).toLocaleString()}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Input
+                placeholder="Escribe un mensaje..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="flex-1"
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+              />
+              <Button onClick={handleSendMessage} iconName="Send" iconPosition="right">
+                Enviar
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
