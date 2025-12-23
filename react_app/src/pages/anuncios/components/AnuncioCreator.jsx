@@ -12,6 +12,8 @@ const AnuncioCreator = ({ onSuccess }) => {
     prioridad: 1,
     color: '#f5872dff',
     actionUrl: '',
+    enviarNotificacion: true,
+    enviarCorreo: false,
     destinatarios: {
       tipo: 'todos',
       filtro: { empresas: [], cargos: [], roles: [] },
@@ -21,6 +23,12 @@ const AnuncioCreator = ({ onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formData.enviarNotificacion && !formData.enviarCorreo) {
+      alert('Debes seleccionar al menos un método de envío');
+      return;
+    }
+
     
     if (formData.destinatarios.tipo === 'manual' && formData.destinatarios.usuariosManuales.length === 0) {
       alert('Por favor, selecciona al menos un destinatario');
@@ -39,8 +47,17 @@ const AnuncioCreator = ({ onSuccess }) => {
         prioridad: formData.prioridad,
         color: formData.color,
         actionUrl: formData.actionUrl?.trim() || null,
-        destinatarios: formData.destinatarios
-        // NO enviar enviarNotificacion ni enviarCorreo
+
+        enviarNotificacion: formData.enviarNotificacion,
+        enviarCorreo: formData.enviarCorreo,
+
+
+        destinatarios: formData.destinatarios,
+
+
+
+
+        
       };
 
       console.log('📤 Enviando anuncio (solo notificaciones):', payload);
@@ -70,12 +87,12 @@ const AnuncioCreator = ({ onSuccess }) => {
   };
 
   return (
-    <div className="bg-card rounded-2xl shadow-lg overflow-hidden border border-border">
-      <div className="p-6 border-b border-border">
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+      <div className="p-6 border-b border-gray-200">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-card-foreground">Crear Anuncio</h2>
-            <p className="text-muted-foreground">Configura el contenido y destinatarios</p>
+            <h2 className="text-2xl font-bold">Crear Anuncio</h2>
+            <p className="text-gray-600">Configura el contenido y destinatarios</p>
           </div>
         </div>
       </div>
@@ -84,10 +101,10 @@ const AnuncioCreator = ({ onSuccess }) => {
         <div className="space-y-8">
           {/* Sección de Contenido */}
           <div className="space-y-6">
-            <h3 className="text-lg font-medium border-b border-border pb-2 text-card-foreground">Contenido del Anuncio</h3>
+            <h3 className="text-lg font-medium border-b pb-2">Contenido del Anuncio</h3>
             
             <div>
-              <label className="block text-sm font-medium mb-2 text-card-foreground">Título *</label>
+              <label className="block text-sm font-medium mb-2">Título *</label>
               <Input
                 value={formData.titulo}
                 onChange={e => setFormData({...formData, titulo: e.target.value})}
@@ -97,12 +114,12 @@ const AnuncioCreator = ({ onSuccess }) => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2 text-card-foreground">Mensaje *</label>
+              <label className="block text-sm font-medium mb-2">Mensaje *</label>
               <textarea
                 value={formData.descripcion}
                 onChange={e => setFormData({...formData, descripcion: e.target.value})}
                 rows={5}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary bg-input text-foreground placeholder:text-muted-foreground"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="Describe el anuncio en detalle..."
                 required
               />
@@ -110,11 +127,11 @@ const AnuncioCreator = ({ onSuccess }) => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-2 text-card-foreground">Prioridad</label>
+                <label className="block text-sm font-medium mb-2">Prioridad</label>
                 <select
                   value={formData.prioridad}
                   onChange={e => setFormData({...formData, prioridad: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 >
                   <option value="1">Baja</option>
                   <option value="2">Media</option>
@@ -123,7 +140,7 @@ const AnuncioCreator = ({ onSuccess }) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2 text-card-foreground">Color de notificación</label>
+                <label className="block text-sm font-medium mb-2">Color de notificación</label>
                 <div className="flex gap-2">
                   {['#f5872dff', '#45577eff', '#bb8900ff', '#dc2626ff', '#059669ff', '#7c3aedff'].map(color => (
                     <button
@@ -131,7 +148,7 @@ const AnuncioCreator = ({ onSuccess }) => {
                       type="button"
                       onClick={() => setFormData({...formData, color})}
                       className={`w-8 h-8 rounded-full border-2 ${
-                        formData.color === color ? 'border-foreground' : 'border-transparent'
+                        formData.color === color ? 'border-gray-800' : 'border-transparent'
                       }`}
                       style={{ backgroundColor: color }}
                       title={color}
@@ -142,19 +159,19 @@ const AnuncioCreator = ({ onSuccess }) => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2 text-card-foreground">URL de acción (opcional)</label>
+              <label className="block text-sm font-medium mb-2">URL de acción (opcional)</label>
               <Input
                 value={formData.actionUrl}
                 onChange={e => setFormData({...formData, actionUrl: e.target.value})}
                 placeholder="/ruta/destino"
               />
-              <p className="text-sm text-muted-foreground mt-1">Los usuarios serán redirigidos aquí al hacer clic</p>
+              <p className="text-sm text-gray-500 mt-1">Los usuarios serán redirigidos aquí al hacer clic</p>
             </div>
           </div>
 
           {/* Sección de Destinatarios */}
-          <div className="space-y-6 pt-6 border-t border-border">
-            <h3 className="text-lg font-medium text-card-foreground">Destinatarios</h3>
+          <div className="space-y-6 pt-6 border-t">
+            <h3 className="text-lg font-medium">Destinatarios</h3>
             
             <DestinatariosSelector
               formData={formData}
@@ -162,10 +179,51 @@ const AnuncioCreator = ({ onSuccess }) => {
             />
           </div>
 
-          {/* 🔥 NO HAY SECCIÓN DE MÉTODO DE ENVÍO (sin checkboxes) */}
+          {/* Sección de metodo de envio por medio de checkboxes implementado en front*/}
+
+         <div className="space-y-3 pt-6 border-t">
+            <h3 className="text-lg font-medium">Método de envío</h3>
+
+            <label className="flex items-center gap-3 cursor-pointer">
+         <input
+          type="checkbox"
+           checked={formData.enviarNotificacion}
+            onChange={e =>
+            setFormData({
+           ...formData,
+            enviarNotificacion: e.target.checked
+           })
+          }
+         className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+         />
+          <span className="text-sm text-gray-700">Notificación</span>
+          </label>
+
+
+            <label className="flex items-center gap-3 cursor-pointer">
+          <input
+           type="checkbox"
+             checked={formData.enviarCorreo}
+            onChange={e =>
+           setFormData({
+            ...formData,
+             enviarCorreo: e.target.checked
+            })
+           }
+            className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-700">Enviar al correo</span>
+            </label>
+
+            </div>
+
+
+
+
+
 
           {/* Botones de acción */}
-          <div className="flex justify-end space-x-3 pt-6 border-t border-border">
+          <div className="flex justify-end space-x-3 pt-6 border-t">
             <Button
               type="button"
               onClick={() => window.history.back()}
@@ -177,7 +235,7 @@ const AnuncioCreator = ({ onSuccess }) => {
             <Button
               type="submit"
               loading={loading}
-              className="px-6"
+              className="px-6 bg-blue-600 hover:bg-blue-700"
             >
               Enviar Anuncio
             </Button>
