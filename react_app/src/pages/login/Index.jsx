@@ -30,7 +30,7 @@ export default function App() {
     setError("");
 
     try {
-      const res = await fetch("https://back-acciona.vercel.app/api/auth/verify-login-2fa", {
+      const res = await fetch("https://back-vercel-iota.vercel.app/api/auth/verify-login-2fa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -67,7 +67,7 @@ export default function App() {
     setError("");
 
     try {
-      const res = await fetch("https://back-acciona.vercel.app/api/auth/login", {
+      const res = await fetch("https://back-vercel-iota.vercel.app/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

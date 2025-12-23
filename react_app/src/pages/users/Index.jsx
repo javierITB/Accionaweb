@@ -61,7 +61,7 @@ const FormReg = () => {
     const fetchEmpresas = async () => {
       try {
         setLoadingEmpresas(true);
-        const response = await fetch('https://back-acciona.vercel.app/api/auth/empresas/todas');
+        const response = await fetch('https://back-vercel-iota.vercel.app/api/auth/empresas/todas');
 
         if (!response.ok) {
           throw new Error('Error al cargar empresas');
@@ -103,7 +103,7 @@ const FormReg = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`https://back-acciona.vercel.app/api/auth/`);
+      const res = await fetch(`https://back-vercel-iota.vercel.app/api/auth/`);
       if (!res.ok) throw new Error('Usuarios no encontrados');
       const data = await res.json();
       setUsers(data);
@@ -150,8 +150,8 @@ const FormReg = () => {
 
     const method = isUpdating ? 'PUT' : 'POST';
     const url = isUpdating
-      ? `https://back-acciona.vercel.app/api/auth/users/${editingUser._id}`
-      : 'https://back-acciona.vercel.app/api/auth/register';
+      ? `https://back-vercel-iota.vercel.app/api/auth/users/${editingUser._id}`
+      : 'https://back-vercel-iota.vercel.app/api/auth/register';
 
     let bodyData = {
       ...formData,
@@ -188,7 +188,7 @@ const FormReg = () => {
       if (!isUpdating) {
         const savedUser = saved?.user;
 
-        const mailResponse = await fetch('https://back-acciona.vercel.app/api/mail/send', {
+        const mailResponse = await fetch('https://back-vercel-iota.vercel.app/api/mail/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -256,7 +256,7 @@ const FormReg = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/auth/users/${userId}`, {
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/users/${userId}`, {
         method: 'DELETE',
       });
 

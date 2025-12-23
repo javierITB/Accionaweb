@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Loader, CheckCircle, XCircle, KeyRound, ArrowLeft } from 'lucide-react';
 
 // Endpoints de la API
-const API_URL_EMAIL = 'https://back-acciona.vercel.app/api/auth/recuperacion';
-const API_URL_CODE = 'https://back-acciona.vercel.app/api/auth/borrarpass';
+const API_URL_EMAIL = 'https://back-vercel-iota.vercel.app/api/auth/recuperacion';
+const API_URL_CODE = 'https://back-vercel-iota.vercel.app/api/auth/borrarpass';
 
 
 

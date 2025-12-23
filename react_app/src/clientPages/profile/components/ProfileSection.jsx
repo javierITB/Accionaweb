@@ -95,7 +95,7 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
     
     try {
       const token = sessionStorage.getItem('token');
-      const response = await fetch(`https://back-acciona.vercel.app/api/auth/users/${userId}`, {
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
