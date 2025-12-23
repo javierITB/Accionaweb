@@ -17,7 +17,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`https://back-acciona.vercel.app/api/noti/${user}`);
+        const res = await fetch(`https://back-vercel-iota.vercel.app/api/noti/${user}`);
         const data = await res.json();
 
         const normalizedNotis = data.map(n => ({
@@ -52,7 +52,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      const res = await fetch(`https://back-acciona.vercel.app/api/noti/${mail}`, {
+      const res = await fetch(`https://back-vercel-iota.vercel.app/api/noti/${mail}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -80,7 +80,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      const res = await fetch(`https://back-acciona.vercel.app/api/noti/${mail}/${id}`, {
+      const res = await fetch(`https://back-vercel-iota.vercel.app/api/noti/${mail}/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -157,7 +157,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      const res = await fetch(`https://back-acciona.vercel.app/api/noti/${mail}/leido-todas`, {
+      const res = await fetch(`https://back-vercel-iota.vercel.app/api/noti/${mail}/leido-todas`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
       });
@@ -190,7 +190,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
       try {
         // 2. Llamada al endpoint PUT para marcar como leída en la base de datos
         const response = await fetch(
-          `https://back-acciona.vercel.app/api/noti/${mail}/${notiId}/leido`,
+          `https://back-vercel-iota.vercel.app/api/noti/${mail}/${notiId}/leido`,
           {
             method: 'PUT',
             headers: {

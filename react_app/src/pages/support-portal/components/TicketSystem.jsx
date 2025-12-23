@@ -39,7 +39,7 @@ const TicketSystem = () => {
       setIsLoading(true);
       try {
         // 1. Fetch User Details
-        const userRes = await fetch(`https://back-acciona.vercel.app/api/auth/full/${userMail}`);
+        const userRes = await fetch(`https://back-vercel-iota.vercel.app/api/auth/full/${userMail}`);
         if (userRes.ok) {
           const userData = await userRes.json();
           setCurrentUser({
@@ -67,7 +67,7 @@ const TicketSystem = () => {
   const fetchTickets = async () => {
     if (!userMail) return;
     try {
-      const res = await fetch(`https://back-acciona.vercel.app/api/soporte/mail/${userMail}`);
+      const res = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/mail/${userMail}`);
       if (res.ok) {
         const data = await res.json();
         setMyTickets(data.reverse());
@@ -122,7 +122,7 @@ const TicketSystem = () => {
         adjuntos: []
       };
 
-      const res = await fetch("https://back-acciona.vercel.app/api/soporte/", {
+      const res = await fetch("https://back-vercel-iota.vercel.app/api/soporte/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

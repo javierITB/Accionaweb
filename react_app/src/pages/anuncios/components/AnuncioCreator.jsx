@@ -62,7 +62,7 @@ const AnuncioCreator = ({ onSuccess }) => {
 
       console.log('📤 Enviando anuncio (solo notificaciones):', payload);
 
-      const response = await fetch('https://back-acciona.vercel.app/api/anuncios', {
+      const response = await fetch('https://back-vercel-iota.vercel.app/api/anuncios', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
