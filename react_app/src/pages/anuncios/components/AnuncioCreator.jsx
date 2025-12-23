@@ -82,12 +82,12 @@ const AnuncioCreator = ({ onSuccess }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-card rounded-2xl shadow-lg overflow-hidden border border-border">
+      <div className="p-6 border-b border-border">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold">Crear Anuncio</h2>
-            <p className="text-gray-600">Configura el contenido y destinatarios</p>
+            <h2 className="text-2xl font-bold text-foreground">Crear Anuncio</h2>
+            <p className="text-muted-foreground">Configura el contenido y destinatarios</p>
           </div>
         </div>
       </div>
@@ -96,10 +96,10 @@ const AnuncioCreator = ({ onSuccess }) => {
         <div className="space-y-8">
           {/* Sección de Contenido */}
           <div className="space-y-6">
-            <h3 className="text-lg font-medium border-b pb-2">Contenido del Anuncio</h3>
+            <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">Contenido del Anuncio</h3>
             
             <div>
-              <label className="block text-sm font-medium mb-2">Título *</label>
+              <label className="block text-sm font-medium mb-2 text-foreground">Título *</label>
               <Input
                 value={formData.titulo}
                 onChange={e => setFormData({...formData, titulo: e.target.value})}
@@ -109,12 +109,12 @@ const AnuncioCreator = ({ onSuccess }) => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2">Mensaje *</label>
+              <label className="block text-sm font-medium mb-2 text-foreground">Mensaje *</label>
               <textarea
                 value={formData.descripcion}
                 onChange={e => setFormData({...formData, descripcion: e.target.value})}
                 rows={5}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="Describe el anuncio en detalle..."
                 required
               />
@@ -122,11 +122,11 @@ const AnuncioCreator = ({ onSuccess }) => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-2">Prioridad</label>
+                <label className="block text-sm font-medium mb-2 text-foreground">Prioridad</label>
                 <select
                   value={formData.prioridad}
                   onChange={e => setFormData({...formData, prioridad: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg"
                 >
                   <option value="1">Baja</option>
                   <option value="2">Media</option>
@@ -135,7 +135,7 @@ const AnuncioCreator = ({ onSuccess }) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Color de notificación</label>
+                <label className="block text-sm font-medium mb-2 text-foreground">Color de notificación</label>
                 <div className="flex gap-2">
                   {['#f5872dff', '#45577eff', '#bb8900ff', '#dc2626ff', '#059669ff', '#7c3aedff'].map(color => (
                     <button
@@ -143,7 +143,7 @@ const AnuncioCreator = ({ onSuccess }) => {
                       type="button"
                       onClick={() => setFormData({...formData, color})}
                       className={`w-8 h-8 rounded-full border-2 ${
-                        formData.color === color ? 'border-gray-800' : 'border-transparent'
+                        formData.color === color ? 'border-foreground' : 'border-transparent'
                       }`}
                       style={{ backgroundColor: color }}
                       title={color}
@@ -154,19 +154,19 @@ const AnuncioCreator = ({ onSuccess }) => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2">URL de acción (opcional)</label>
+              <label className="block text-sm font-medium mb-2 text-foreground">URL de acción (opcional)</label>
               <Input
                 value={formData.actionUrl}
                 onChange={e => setFormData({...formData, actionUrl: e.target.value})}
                 placeholder="/ruta/destino"
               />
-              <p className="text-sm text-gray-500 mt-1">Los usuarios serán redirigidos aquí al hacer clic</p>
+              <p className="text-sm text-muted-foreground mt-1">Los usuarios serán redirigidos aquí al hacer clic</p>
             </div>
           </div>
 
           {/* Sección de Destinatarios */}
-          <div className="space-y-6 pt-6 border-t">
-            <h3 className="text-lg font-medium">Destinatarios</h3>
+          <div className="space-y-6 pt-6 border-t border-border">
+            <h3 className="text-lg font-medium text-foreground">Destinatarios</h3>
             
             <DestinatariosSelector
               formData={formData}
@@ -176,12 +176,12 @@ const AnuncioCreator = ({ onSuccess }) => {
 
           {/* Sección de metodo de envio por medio de checkboxes implementado*/}
 
-          <div className="space-y-3 pt-6 border-t">
-            <h3 className="text-lg font-medium">Método de envío</h3>
+          <div className="space-y-3 pt-6 border-t border-border">
+            <h3 className="text-lg font-medium text-foreground">Método de envío</h3>
             
             <div className="space-y-2">
               {/* Checkbox Notificación */}
-              <label className="flex items-center gap-3 cursor-pointer p-3 hover:bg-gray-50 rounded-lg">
+              <label className="flex items-center gap-3 cursor-pointer p-3 hover:bg-muted rounded-lg">
                 <input
                   type="checkbox"
                   checked={formData.enviarNotificacion}
@@ -189,16 +189,16 @@ const AnuncioCreator = ({ onSuccess }) => {
                     ...formData,
                     enviarNotificacion: e.target.checked
                   })}
-                  className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  className="w-5 h-5 text-blue-600 bg-card border-border rounded focus:ring-2 focus:ring-blue-500"
                 />
                 <div>
-                  <span className="text-sm font-medium text-gray-700">Notificación en la plataforma</span>
-                  <p className="text-xs text-gray-500">Los usuarios verán la notificación en su panel</p>
+                  <span className="text-sm font-medium text-foreground">Notificación en la plataforma</span>
+                  <p className="text-xs text-muted-foreground">Los usuarios verán la notificación en su panel</p>
                 </div>
               </label>
 
               {/* Checkbox Correo */}
-              <label className="flex items-center gap-3 cursor-pointer p-3 hover:bg-gray-50 rounded-lg">
+              <label className="flex items-center gap-3 cursor-pointer p-3 hover:bg-muted rounded-lg">
                 <input
                   type="checkbox"
                   checked={formData.enviarCorreo}
@@ -206,31 +206,27 @@ const AnuncioCreator = ({ onSuccess }) => {
                     ...formData,
                     enviarCorreo: e.target.checked
                   })}
-                  className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  className="w-5 h-5 text-blue-600 bg-card border-border rounded focus:ring-2 focus:ring-blue-500"
                 />
                 <div>
-                  <span className="text-sm font-medium text-gray-700">Enviar por correo electrónico</span>
-                  <p className="text-xs text-gray-500">Se enviará un email a los destinatarios seleccionados</p>
+                  <span className="text-sm font-medium text-foreground">Enviar por correo electrónico</span>
+                  <p className="text-xs text-muted-foreground">Se enviará un email a los destinatarios seleccionados</p>
                 </div>
               </label>
             </div>
 
             {/* Mensaje de advertencia si no hay método seleccionado */}
             {!formData.enviarNotificacion && !formData.enviarCorreo && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600 font-medium">
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800">
+                <p className="text-sm text-red-600 dark:text-red-400 font-medium">
                    Debes seleccionar al menos un método de envío
                 </p>
               </div>
             )}
           </div>
 
-
-
-
-
           {/* Botones de acción */}
-          <div className="flex justify-end space-x-3 pt-6 border-t">
+          <div className="flex justify-end space-x-3 pt-6 border-t border-border">
             <Button
               type="button"
               onClick={() => window.history.back()}
