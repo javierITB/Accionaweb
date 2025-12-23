@@ -112,6 +112,7 @@ const RequestTracking = () => {
   useEffect(() => {
     // 1. Definimos la función con la lógica (fuera del intervalo)
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         const resResp = await fetch('https://back-acciona.vercel.app/api/soporte/mini');
 
@@ -147,6 +148,8 @@ const RequestTracking = () => {
 
       } catch (err) {
         console.error('Error cargando formularios:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
