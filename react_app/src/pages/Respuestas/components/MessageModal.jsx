@@ -22,7 +22,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const fetchMessages = useCallback(async () => {
     if (!id) return;
     try {
-      const res = await fetch(`https://back-acciona.vercel.app/api/respuestas/${id}/chat/admin`);
+      const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${id}/chat/admin`);
       if (!res.ok) throw new Error("Error al obtener chat");
       const data = await res.json();
       
@@ -125,7 +125,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         admin: activeTab === 'admin'
       };
 
-      const res = await fetch("https://back-acciona.vercel.app/api/respuestas/chat", {
+      const res = await fetch("https://back-vercel-iota.vercel.app/api/respuestas/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

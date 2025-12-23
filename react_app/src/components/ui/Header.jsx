@@ -46,7 +46,7 @@ const Header = ({ className = '' }) => {
     const fetchUserRole = async () => {
       try {
         if (!userMail) return;
-        const response = await fetch(`https://back-acciona.vercel.app/api/auth/full/${userMail}`);
+        const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/full/${userMail}`);
         if (response.ok) {
           const userData = await response.json();
           setUserRole(userData.rol || cargo || 'Usuario');
@@ -87,7 +87,7 @@ const Header = ({ className = '' }) => {
 
     const fetchUnreadCount = async (isInitialLoad = false) => {
       try {
-        const response = await fetch(`https://back-acciona.vercel.app/api/noti/${userMail}/unread-count`);
+        const response = await fetch(`https://back-vercel-iota.vercel.app/api/noti/${userMail}/unread-count`);
         const data = await response.json();
         const newUnreadCount = data.unreadCount || 0;
 

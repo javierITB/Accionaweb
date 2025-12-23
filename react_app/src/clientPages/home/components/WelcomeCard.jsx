@@ -15,7 +15,7 @@ const WelcomeCard = ({ user }) => {
         console.log('Buscando logo para usuario:', userMail);
 
         // 1. Obtener datos del usuario para saber su empresa
-        const userResponse = await fetch(`https://back-acciona.vercel.app/api/auth/full/${userMail}`);
+        const userResponse = await fetch(`https://back-vercel-iota.vercel.app/api/auth/full/${userMail}`);
         if (!userResponse.ok) {
           console.log('Error obteniendo datos del usuario');
           return;
@@ -31,7 +31,7 @@ const WelcomeCard = ({ user }) => {
         }
 
         // 2. Obtener todas las empresas para buscar la del usuario
-        const companiesResponse = await fetch(`https://back-acciona.vercel.app/api/auth/empresas/todas`);
+        const companiesResponse = await fetch(`https://back-vercel-iota.vercel.app/api/auth/empresas/todas`);
         if (!companiesResponse.ok) {
           console.log('Error obteniendo empresas');
           return;

@@ -17,7 +17,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`https://back-acciona.vercel.app/api/noti/${user}`);
+        const res = await fetch(`https://back-vercel-iota.vercel.app/api/noti/${user}`);
         const data = await res.json();
 
         const normalizedNotis = data.map(n => ({
@@ -52,7 +52,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      const res = await fetch(`https://back-acciona.vercel.app/api/noti/${mail}`, {
+      const res = await fetch(`https://back-vercel-iota.vercel.app/api/noti/${mail}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -80,7 +80,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      const res = await fetch(`https://back-acciona.vercel.app/api/noti/${mail}/${id}`, {
+      const res = await fetch(`https://back-vercel-iota.vercel.app/api/noti/${mail}/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -127,7 +127,9 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
       medium: { text: 'Media', class: 'bg-warning/10 text-warning border-warning/20' },
       low: { text: 'Baja', class: 'bg-success/10 text-success border-success/20' }
     };
-    const badgeClass = `px-2 py-1 rounded-full text-xs font-medium border ml-auto flex-shrink-0 ${config?.[priority]?.class}`;
+    // const badgeClass = `px-2 py-1 rounded-full text-xs font-medium border ml-auto flex-shrink-0 ${config?.[priority]?.class}`;
+    const badgeClass = `px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${config?.[priority]?.class}`;
+
     return { ...config?.[priority], class: badgeClass } || { text: 'Media', class: badgeClass };
   };
 
@@ -157,7 +159,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      const res = await fetch(`https://back-acciona.vercel.app/api/noti/${mail}/leido-todas`, {
+      const res = await fetch(`https://back-vercel-iota.vercel.app/api/noti/${mail}/leido-todas`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
       });
@@ -190,7 +192,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
       try {
         // 2. Llamada al endpoint PUT para marcar como leída en la base de datos
         const response = await fetch(
-          `https://back-acciona.vercel.app/api/noti/${mail}/${notiId}/leido`,
+          `https://back-vercel-iota.vercel.app/api/noti/${mail}/${notiId}/leido`,
           {
             method: 'PUT',
             headers: {
@@ -248,6 +250,52 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
               <div className="flex items-start">
                 <div className="flex-1 min-w-0">
+
+                  {/*cambio incio*/}
+                  <div className="flex items-start justify-between mb-1"> {/* Cambiado a items-start para alineación superior */}
+                    {/* LADO IZQUIERDO: Punto de lectura + Título */}
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                      {!notification?.isRead && (
+                        <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
+                      )}
+                      <h3
+                        className={`font-medium text-sm truncate ${notification?.leido ? 'text-foreground' : 'text-primary'}`}
+                      >
+                        {notification?.title}
+                      </h3>
+                    </div>
+
+                    {/* LADO DERECHO: Stack vertical (Prioridad sobre Tiempo) + Botón X */}
+                    <div className="flex items-start space-x-3 text-xs flex-shrink-0 ml-4">
+                      
+                      {/* Contenedor en Columna para Prioridad y Tiempo */}
+                      <div className="flex flex-col items-end space-y-1">
+                        <span className={getPriorityBadge(notification?.priority)?.class}>
+                          {getPriorityBadge(notification?.priority)?.text}
+                        </span>
+                        <span className="text-muted-foreground text-[10px] leading-tight">
+                          {formatTimestamp(notification?.timestamp)}
+                        </span>
+                      </div>
+
+                      {/* Botón de eliminar (X) */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteNotification(notification?.id);
+                        }}
+                        className="text-muted-foreground hover:text-red-600 transition-colors pt-0.5"
+                        title="Eliminar notificación"
+                      >
+                        <Icon name="X" size={16} />
+                      </button>
+                    </div>
+                  </div>
+                {/*cambio final*/}
+
+
+
+                {/*
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
                       {!notification?.isRead && (
@@ -280,6 +328,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
                       </button>
                     </div>
                   </div>
+                  */}
 
                   <p
                     className="text-sm text-muted-foreground pr-10"
