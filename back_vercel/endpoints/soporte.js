@@ -388,6 +388,7 @@ router.get("/mini", async (req, res) => {
         "user.nombre": 1,
         "user.empresa": 1,
         status: 1,
+        assignedTo: 1,
         createdAt: 1,
         adjuntosCount: 1
       })
@@ -404,6 +405,7 @@ router.get("/mini", async (req, res) => {
         submittedAt: answer.submittedAt,
         user: answer.user,
         status: answer.status,
+        assignedTo: answer.assignedTo,
         createdAt: answer.createdAt,
         adjuntosCount: answer.adjuntosCount || 0
       };
