@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import Checkbox from '../../../components/ui/Checkbox';
 
 const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [message, setMessage] = useState('');
@@ -14,7 +13,6 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
   const [formName, setFormName] = useState('');
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const chatRef = useRef(null);
   const shouldAutoScroll = useRef(true);
@@ -133,104 +131,6 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
     return !msg.admin;
   });
 
-  const sendMessageToEmail = async (messageText, author) => {
-    if (!userEmail || !id || !formName) {
-      console.log("No se puede enviar correo: faltan datos");
-      return false;
-    }
-
-    try {
-      setIsSendingEmail(true);
-      
-      const portalUrl = process.env.REACT_APP_PORTAL_URL || "https://tuportal.com";
-      const chatUrl = `${portalUrl}/respuestas/${id}?tab=messages`;
-
-      const emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background-color: #4f46e5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-                .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; }
-                .button { display: inline-block; background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
-                .message-box { background-color: #f0f9ff; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #4f46e5; }
-                .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>Acciona Centro de Negocios</h1>
-                </div>
-                <div class="content">
-                    <h2>Nuevo mensaje recibido</h2>
-                    <p>Has recibido un nuevo mensaje en la siguiente solicitud/formulario:</p>
-                    
-                    <div class="message-box">
-                        <p><strong>Formulario:</strong> ${formName}</p>
-                        <p><strong>De:</strong> ${author}</p>
-                        <p><strong>Mensaje:</strong> "${messageText}"</p>
-                        <p><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CL', { 
-                            day: '2-digit', 
-                            month: '2-digit', 
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })}</p>
-                    </div>
-                    
-                    <p>Puedes responder a este mensaje ingresando al chat del formulario:</p>
-                    
-                    <a href="${chatUrl}" class="button">
-                        Ver chat completo
-                    </a>
-                    
-                    <p><small>O copia este enlace en tu navegador:<br>
-                    ${chatUrl}</small></p>
-                    
-                    <div class="footer">
-                        <p>Este es un mensaje automático. Por favor, no responder a este correo.</p>
-                        <p>Acciona Centro de Negocios Spa.</p>
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>
-      `;
-
-      const response = await fetch('https://back-vercel-iota.vercel.app/api/mail/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          accessKey: process.env.REACT_APP_MAIL_KEY || 'tu-clave-de-acceso',
-          to: userEmail,
-          subject: `Nuevo mensaje - ${formName} - Acciona`,
-          html: emailHtml
-        })
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        console.log('Correo enviado exitosamente');
-        return true;
-      } else {
-        console.error('Error enviando correo:', data.error);
-        return false;
-      }
-    } catch (error) {
-      console.error('Error enviando correo:', error);
-      return false;
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-
   const handleSend = async () => {
     if (!message.trim() || !id) return;
     
@@ -242,7 +142,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         formId: id,
         autor,
         mensaje: message.trim(),
-        admin: activeTab === 'admin'
+        admin: activeTab === 'admin',
+        sendToEmail: activeTab !== 'admin' && sendToEmail
       };
 
       const res = await fetch("https://back-vercel-iota.vercel.app/api/respuestas/chat", {
@@ -258,19 +159,11 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         setMessages(prev => [...prev, data.data]);
         setMessage('');
         setHasNewMessages(false);
-
-        if (sendToEmail && userEmail && activeTab !== 'admin') {
-          const emailSent = await sendMessageToEmail(message.trim(), autor);
-          
-          if (emailSent) {
-            console.log('Mensaje enviado y correo notificado');
-          } else {
-            console.log('Mensaje enviado, pero el correo no se pudo enviar');
-          }
-        } else if (sendToEmail && activeTab === 'admin') {
-          console.log('Los mensajes internos no se envian por correo');
+        
+        if (sendToEmail) {
+          console.log('Solicitud de envío por correo enviada al backend');
         }
-
+        
         setSendToEmail(false);
       } else {
         console.error("Error enviando mensaje:", data.error || data);
@@ -309,7 +202,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
-      <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col relative">
+      <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl h-[80vh] sm:h-[70vh] flex flex-col relative">
         
         {showScrollToBottom && (
           <div className="absolute -right-14 top-1/2 transform -translate-y-1/2 z-10">
@@ -325,7 +218,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
           </div>
         )}
         
-        <div className="border-b border-border bg-card rounded-t-lg bg-error-foreground">
+        <div className="border-b border-border bg-card rounded-t-lg">
           <div className="flex items-center justify-between p-4 sm:px-6 pb-2">
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
               <Icon name="MessageSquare" size={20} className="text-accent flex-shrink-0" />
@@ -373,101 +266,115 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
           </div>
         </div>
 
-        <div
-          ref={chatRef}
-          onScroll={handleScroll}
-          className={`flex-1 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 ${activeTab === 'admin' ? 'bg-error/5' : ''}`}
-        >
-          {filteredMessages.length > 0 ? filteredMessages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[90%] sm:max-w-[85%] rounded-lg px-3 py-2 ${msg.autor === user
-                  ? (activeTab === 'admin' ? 'bg-error text-error-foreground' : 'bg-primary text-primary-foreground')
-                  : 'bg-muted text-muted-foreground'
-                }`}>
-                {msg.autor !== user && (
-                  <div className="flex items-center justify-between mb-1 sm:mb-2">
-                    <span className="text-xs sm:text-sm font-medium truncate">
-                      {msg.autor}
-                    </span>
-                  </div>
-                )}
+        {/* Contenedor de mensajes con altura fija */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <div
+            ref={chatRef}
+            onScroll={handleScroll}
+            className={`h-full overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 ${activeTab === 'admin' ? 'bg-error/5' : ''}`}
+          >
+            {filteredMessages.length > 0 ? filteredMessages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[90%] sm:max-w-[85%] rounded-lg px-3 py-2 ${msg.autor === user
+                    ? (activeTab === 'admin' ? 'bg-error text-error-foreground' : 'bg-primary text-primary-foreground')
+                    : 'bg-muted text-muted-foreground'
+                  }`}>
+                  {msg.autor !== user && (
+                    <div className="flex items-center justify-between mb-1 sm:mb-2">
+                      <span className="text-xs sm:text-sm font-medium truncate">
+                        {msg.autor}
+                      </span>
+                    </div>
+                  )}
 
-                <p className="text-sm sm:text-base mb-1 sm:mb-2 break-words">
-                  {msg.mensaje}
-                </p>
+                  <p className="text-sm sm:text-base mb-1 sm:mb-2 break-words">
+                    {msg.mensaje}
+                  </p>
 
-                <span className="text-xs opacity-75 block text-right">
-                  {formatMessageTime(msg.fecha)}
-                </span>
+                  <span className="text-xs opacity-75 block text-right">
+                    {formatMessageTime(msg.fecha)}
+                  </span>
+                </div>
               </div>
-            </div>
-          )) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Icon name={activeTab === 'admin' ? "Lock" : "MessageCircle"} size={32} className="mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No hay mensajes {activeTab === 'admin' ? 'internos' : 'generales'} aún</p>
-              <p className="text-xs mt-1">Escribe algo para comenzar</p>
-            </div>
-          )}
+            )) : (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                <Icon name={activeTab === 'admin' ? "Lock" : "MessageCircle"} size={32} className="mb-2 opacity-50" />
+                <p className="text-sm">No hay mensajes {activeTab === 'admin' ? 'internos' : 'generales'} aún</p>
+                <p className="text-xs mt-1">Escribe algo para comenzar</p>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="p-3 sm:p-6 border-t border-border bg-card rounded-b-lg">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-end space-y-2 sm:space-y-0 sm:space-x-2">
-            <div className="flex-1 min-w-0">
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={activeTab === 'admin' ? "Escribir nota interna (solo admins)..." : "Escribe tu mensaje aquí..."}
-                className="w-full min-h-[60px] sm:min-h-[80px] p-3 border border-border rounded-lg resize-none bg-input text-foreground focus:ring-2 focus:ring-ring text-sm sm:text-base"
-                disabled={isSending}
-                rows={3}
-              />
+        <div className="border-t border-border bg-card rounded-b-lg">
+          <div className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end space-y-2 sm:space-y-0 sm:space-x-2">
+              <div className="flex-1 min-w-0">
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder={activeTab === 'admin' ? "Escribir nota interna (solo admins)..." : "Escribe tu mensaje aquí..."}
+                  className="w-full min-h-[60px] sm:min-h-[80px] p-3 border border-border rounded-lg resize-none bg-input text-foreground focus:ring-2 focus:ring-ring text-sm sm:text-base"
+                  disabled={isSending}
+                  rows={3}
+                />
+              </div>
+              <Button
+                variant={activeTab === 'admin' ? 'destructive' : 'default'}
+                onClick={handleSend}
+                disabled={!message.trim() || isSending}
+                loading={isSending}
+                iconName="Send"
+                iconPosition="left"
+                iconSize={16}
+                className="w-full sm:w-auto sm:min-w-[100px] h-12 sm:h-auto"
+              >
+                <span className="hidden xs:inline">Enviar</span>
+                <span className="xs:hidden">Enviar</span>
+              </Button>
             </div>
-            <Button
-              variant={activeTab === 'admin' ? 'destructive' : 'default'}
-              onClick={handleSend}
-              disabled={!message.trim() || isSending || isSendingEmail}
-              loading={isSending || isSendingEmail}
-              iconName="Send"
-              iconPosition="left"
-              iconSize={16}
-              className="w-full sm:w-auto sm:min-w-[100px] h-12 sm:h-auto"
-            >
-              <span className="hidden xs:inline">Enviar</span>
-              <span className="xs:hidden">Enviar</span>
-            </Button>
-          </div>
 
-          {activeTab !== 'admin' && userEmail && (
-            <div className="mt-3 flex items-center space-x-2">
-              <Checkbox
-                id="send-to-email"
-                checked={sendToEmail}
-                onCheckedChange={(checked) => setSendToEmail(checked)}
-                disabled={isSending || isSendingEmail}
-                label="Enviar tambien por correo"
-                size="default"
-              />
+            {activeTab !== 'admin' && userEmail && (
+              <div className="mt-3 flex items-center space-x-2">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="send-to-email"
+                    checked={sendToEmail}
+                    onChange={(e) => setSendToEmail(e.target.checked)}
+                    disabled={isSending}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary focus:ring-2 cursor-pointer transition-colors"
+                  />
+                  <label 
+                    htmlFor="send-to-email" 
+                    className="ml-2 text-sm text-muted-foreground cursor-pointer flex items-center gap-2"
+                  >
+                    <Icon name="Mail" size={14} />
+                    Enviar al correo
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'admin' && (
+              <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
+                <Icon name="Info" size={12} />
+                Los mensajes internos no se envian por correo
+              </div>
+            )}
+
+            {!userEmail && activeTab !== 'admin' && (
+              <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
+                <Icon name="AlertCircle" size={12} />
+                No se encontró email del usuario para enviar correo
+              </div>
+            )}
+
+            <div className="mt-2 text-xs text-muted-foreground text-center sm:text-left">
+              <span className="hidden sm:inline">Presiona Enter para enviar, Shift+Enter para nueva linea</span>
+              {activeTab === 'admin' && <span className="ml-2 text-error font-medium">(Modo Interno)</span>}
             </div>
-          )}
-
-          {activeTab === 'admin' && userEmail && (
-            <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
-              <Icon name="Info" size={12} />
-              Los mensajes internos no se envian por correo
-            </div>
-          )}
-
-          {!userEmail && activeTab !== 'admin' && (
-            <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
-              <Icon name="AlertCircle" size={12} />
-              No se encontro email del usuario para enviar correo
-            </div>
-          )}
-
-          <div className="mt-2 text-xs text-muted-foreground text-center sm:text-left">
-            <span className="hidden sm:inline">Presiona Enter para enviar, Shift+Enter para nueva linea</span>
-            {activeTab === 'admin' && <span className="ml-2 text-error font-medium">(Modo Interno)</span>}
           </div>
         </div>
       </div>
