@@ -88,10 +88,10 @@ router.use(express.json({ limit: '4mb' }));
 router.post("/", async (req, res) => {
   try {
     const { formId, user, responses, formTitle, adjuntos = [], mail: correoRespaldo } = req.body;
-    
+
     // El usuario que viene del frontend ya debería estar descifrado en su sesión, 
     // pero para la lógica interna usamos sus datos.
-    const usuario = user?.nombre; 
+    const usuario = user?.nombre;
     const empresa = user?.empresa;
     const userId = user?.uid;
     const token = user?.token;
@@ -113,9 +113,9 @@ router.post("/", async (req, res) => {
 
     // Insertar respuesta principal. 
     // Nota: El objeto 'user' aquí se guarda como viene, pero el mail se busca por Blind Index si fuera necesario.
-    const result = await req.db.collection("respuestas").insertOne({
+    const result = await req.db.collection("soporte").insertOne({
       formId,
-      user, 
+      user,
       responses,
       formTitle,
       mail: correoRespaldo,
@@ -207,7 +207,7 @@ router.post("/:id/adjuntos", async (req, res) => {
     }
 
     // Verificar que la respuesta existe
-    const respuestaExistente = await req.db.collection("respuestas").findOne({
+    const respuestaExistente = await req.db.collection("soporte").findOne({
       _id: new ObjectId(id)
     });
 
@@ -290,7 +290,7 @@ router.get("/:id/adjuntos/:index", async (req, res) => {
       console.log("Adjunto no encontrado con query:", query);
       return res.status(404).json({ error: "Archivo adjunto no encontrado" });
     }
-    
+
     let archivoAdjunto;
 
     if (documentoAdjunto.adjuntos && documentoAdjunto.adjuntos.length > 0) {
@@ -327,7 +327,7 @@ router.get("/:id/adjuntos/:index", async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const answers = await req.db.collection("respuestas").find().toArray();
+    const answers = await req.db.collection("soporte").find().toArray();
     res.json(answers);
   } catch (err) {
     res.status(500).json({ error: "Error al obtener formularios" });
@@ -340,14 +340,14 @@ router.get("/mail/:mail", async (req, res) => {
     // No buscamos por "user.mail" directo porque ese valor en respuestas 
     // podría ser plano o cifrado según cuando se guardó, pero el Blind Index 
     // en la colección de usuarios es nuestra fuente de verdad.
-    
+
     // Primero validamos si el usuario existe para obtener su UID
     const user = await req.db.collection("usuarios").findOne({ mail_index: createBlindIndex(cleanMail) });
-    
+
     if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
 
     // Ahora buscamos en respuestas por el UID del usuario (que es inmutable)
-    const answers = await req.db.collection("respuestas").find({ "user.uid": user._id.toString() }).toArray();
+    const answers = await req.db.collection("soporte").find({ "user.uid": user._id.toString() }).toArray();
 
     if (!answers || answers.length === 0) {
       return res.status(404).json({ error: "No se encontraron formularios" });
@@ -358,6 +358,7 @@ router.get("/mail/:mail", async (req, res) => {
       formId: answer.formId,
       formTitle: answer.formTitle,
       trabajador: answer.responses?.["Nombre del trabajador"] || "No especificado",
+      responses: answer.responses,
       user: answer.user,
       status: answer.status,
       createdAt: answer.createdAt,
@@ -373,7 +374,7 @@ router.get("/mail/:mail", async (req, res) => {
 
 router.get("/mini", async (req, res) => {
   try {
-    const answers = await req.db.collection("respuestas")
+    const answers = await req.db.collection("soporte")
       .find({})
       .project({
         _id: 1,
@@ -436,7 +437,7 @@ router.get("/mini", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const form = await req.db.collection("respuestas")
+    const form = await req.db.collection("soporte")
       .findOne({ _id: new ObjectId(req.params.id) });
 
     if (!form) return res.status(404).json({ error: "Respuesta no encontrado" });
@@ -451,7 +452,7 @@ router.get("/:id", async (req, res) => {
 //actualizar respuesta
 router.put("/:id", async (req, res) => {
   try {
-    const result = await req.db.collection("respuestas").findOneAndUpdate(
+    const result = await req.db.collection("soporte").findOneAndUpdate(
       { _id: new ObjectId(req.params.id) },
       { $set: { ...req.body, updatedAt: new Date() } },
       { returnDocument: "after" }
@@ -472,7 +473,7 @@ router.delete("/:id", async (req, res) => {
     // Eliminar de todas las colecciones relacionadas
     const [resultRespuestas, resultDocxs, resultAprobados, resultFirmados, resultAdjuntos] = await Promise.all([
       // Eliminar de respuestas
-      req.db.collection("respuestas").deleteOne({ _id: new ObjectId(responseId) }),
+      req.db.collection("soporte").deleteOne({ _id: new ObjectId(responseId) }),
 
       // Eliminar de docxs (si existe)
       req.db.collection("docxs").deleteOne({ responseId: responseId }),
@@ -528,7 +529,7 @@ router.put("/:id/status", async (req, res) => {
       return res.status(400).json({ error: "Estado no válido" });
     }
 
-    const respuesta = await req.db.collection("respuestas").findOne({
+    const respuesta = await req.db.collection("soporte").findOne({
       _id: new ObjectId(id)
     });
 
@@ -555,7 +556,7 @@ router.put("/:id/status", async (req, res) => {
       updateData.archivedAt = new Date();
     }
 
-    const updateResult = await req.db.collection("respuestas").updateOne(
+    const updateResult = await req.db.collection("soporte").updateOne(
       { _id: new ObjectId(id) },
       { $set: updateData }
     );
@@ -564,7 +565,7 @@ router.put("/:id/status", async (req, res) => {
       return res.status(404).json({ error: "No se pudo actualizar la respuesta" });
     }
 
-    const updatedResponse = await req.db.collection("respuestas").findOne({
+    const updatedResponse = await req.db.collection("soporte").findOne({
       _id: new ObjectId(id)
     });
 
