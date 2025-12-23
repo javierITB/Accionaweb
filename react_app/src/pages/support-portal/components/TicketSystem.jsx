@@ -14,18 +14,23 @@ const TicketSystem = () => {
     attachments: []
   });
 
-  const [categories, setCategories] = useState([]);
+  // Static categories for error reporting
+  const categories = [
+    { value: 'error_acceso', label: 'Error de Inicio de Sesión' },
+    { value: 'error_visualizacion', label: 'Problema de Visualización' },
+    { value: 'error_guardado', label: 'Error al Guardar Datos' },
+    { value: 'lentitud', label: 'Lentitud del Sistema' },
+    { value: 'funcionalidad_rota', label: 'Funcionalidad No Responde' },
+    { value: 'otro', label: 'Otro' }
+  ];
+
   const [myTickets, setMyTickets] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const userMail = sessionStorage.getItem("email");
   const token = sessionStorage.getItem("token");
 
-  // Chat states
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [chatMessages, setChatMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
 
   // Fetch initial data
   useEffect(() => {
@@ -46,22 +51,7 @@ const TicketSystem = () => {
           });
         }
 
-        // 2. Fetch Forms (Categories)
-        const formsRes = await fetch(`https://back-acciona.vercel.app/api/forms`);
-        if (formsRes.ok) {
-          const formsData = await formsRes.json();
-          // Filter forms that are relevant for support/tickets if needed, 
-          // or just use all published forms as categories
-          const activeForms = formsData
-            .filter(f => f.status === 'publicado')
-            .map(f => ({
-              value: f._id,
-              label: f.title
-            }));
-          setCategories(activeForms);
-        }
-
-        // 3. Fetch User Tickets
+        // 2. Fetch User Tickets
         fetchTickets();
 
       } catch (error) {
@@ -80,60 +70,16 @@ const TicketSystem = () => {
       const res = await fetch(`https://back-acciona.vercel.app/api/soporte/mail/${userMail}`);
       if (res.ok) {
         const data = await res.json();
-        setMyTickets(data.reverse()); // Show newest first
+        setMyTickets(data.reverse());
       }
     } catch (error) {
       console.error("Error fetching tickets:", error);
     }
   };
 
-  const fetchChat = async (ticketId) => {
-    setIsChatLoading(true);
-    try {
-      const res = await fetch(`https://back-acciona.vercel.app/api/soporte/${ticketId}/chat`);
-      if (res.ok) {
-        const data = await res.json();
-        setChatMessages(data);
-      }
-    } catch (error) {
-      console.error("Error fetching chat:", error);
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
-
   const handleTicketClick = (ticket) => {
     setSelectedTicket(ticket);
-    fetchChat(ticket._id);
     setActiveTab('details');
-  };
-
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedTicket || !currentUser) return;
-
-    try {
-      const payload = {
-        formId: selectedTicket._id,
-        autor: currentUser.nombre,
-        mensaje: newMessage,
-        admin: false
-      };
-
-      const res = await fetch("https://back-acciona.vercel.app/api/soporte/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        setNewMessage('');
-        fetchChat(selectedTicket._id); // Refresh chat
-      } else {
-        alert('Error al enviar mensaje');
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
   };
 
   const handleInputChange = (field, value) => {
@@ -173,7 +119,7 @@ const TicketSystem = () => {
           Prioridad: ticketForm.priority
         },
         mail: currentUser.email,
-        adjuntos: [] // Handle attachments if implemented
+        adjuntos: []
       };
 
       const res = await fetch("https://back-acciona.vercel.app/api/soporte/", {
@@ -282,8 +228,8 @@ const TicketSystem = () => {
               />
 
               <Select
-                label="Categoría (Formulario)"
-                placeholder="Selecciona una categoría"
+                label="Categoría"
+                placeholder="Selecciona el tipo de error"
                 options={categories}
                 value={ticketForm?.category}
                 onChange={(value) => handleInputChange('category', value)}
@@ -312,26 +258,6 @@ const TicketSystem = () => {
                 required
               />
             </div>
-
-            {/* 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Archivos Adjuntos
-              </label>
-              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                <Icon name="Upload" size={32} className="text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground mb-2">
-                  Arrastra archivos aquí o haz clic para seleccionar
-                </p>
-                <Button variant="outline" size="sm">
-                  Seleccionar Archivos
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Máximo 10MB por archivo. Formatos: PDF, DOC, JPG, PNG
-                </p>
-              </div>
-            </div>
-            */}
 
             <div className="flex justify-end space-x-3">
               <Button onClick={handleSubmitTicket}>
@@ -439,53 +365,6 @@ const TicketSystem = () => {
               <p className="text-foreground whitespace-pre-wrap">
                 {selectedTicket.responses?.Descripción || 'Sin descripción'}
               </p>
-            </div>
-          </div>
-
-          <div className="p-6">
-            <h4 className="font-semibold mb-4 flex items-center">
-              <Icon name="MessageCircle" size={18} className="mr-2" />
-              Historial de Conversación
-            </h4>
-
-            <div className="space-y-4 mb-6 max-h-[400px] overflow-y-auto p-2">
-              {isChatLoading ? (
-                <div className="text-center text-muted-foreground">Cargando mensajes...</div>
-              ) : chatMessages.length === 0 ? (
-                <div className="text-center text-muted-foreground py-4">No hay mensajes aún.</div>
-              ) : (
-                chatMessages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex flex-col ${msg.admin ? 'items-start' : 'items-end'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] p-3 rounded-lg ${msg.admin
-                        ? 'bg-muted text-foreground rounded-tl-none'
-                        : 'bg-primary text-primary-foreground rounded-tr-none'
-                        }`}
-                    >
-                      <p className="text-sm">{msg.mensaje}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground mt-1">
-                      {msg.autor} • {new Date(msg.fecha).toLocaleString()}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <Input
-                placeholder="Escribe un mensaje..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1"
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              />
-              <Button onClick={handleSendMessage} iconName="Send" iconPosition="right">
-                Enviar
-              </Button>
             </div>
           </div>
         </div>
