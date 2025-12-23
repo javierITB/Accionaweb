@@ -35,55 +35,6 @@ const ContactSupport = () => {
       responseTime: '15-30 minutos',
       contact: '+56 9 8765 4321',
       color: 'bg-accent'
-    },
-    {
-      id: 'teams',
-      title: 'Microsoft Teams',
-      description: 'Reunión virtual con especialista',
-      icon: 'Video',
-      availability: 'Con cita previa',
-      responseTime: 'Según disponibilidad',
-      contact: 'Agendar reunión',
-      color: 'bg-secondary'
-    }
-  ];
-
-  const supportTeam = [
-    {
-      id: 1,
-      name: "María González",
-      role: "Especialista en Recursos Humanos",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=80&h=80&fit=crop&crop=face",
-      specialties: ["Nómina", "Beneficios", "Políticas"],
-      languages: ["Español", "Inglés"],
-      availability: "online"
-    },
-    {
-      id: 2,
-      name: "Carlos Ruiz",
-      role: "Soporte Técnico",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face",
-      specialties: ["Portal", "Formularios", "Documentos"],
-      languages: ["Español"],
-      availability: "online"
-    },
-    {
-      id: 3,
-      name: "Ana López",
-      role: "Gerente de Recursos Humanos",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face",
-      specialties: ["Consultas Complejas", "Escalaciones"],
-      languages: ["Español", "Inglés", "Portugués"],
-      availability: "busy"
-    },
-    {
-      id: 4,
-      name: "Roberto Silva",
-      role: "Especialista en Compensaciones",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
-      specialties: ["Sueldos", "Bonos", "Liquidaciones"],
-      languages: ["Español"],
-      availability: "offline"
     }
   ];
 
@@ -99,28 +50,8 @@ const ContactSupport = () => {
       case 'whatsapp':
         alert(`Abriendo WhatsApp con ${method?.contact}...`);
         break;
-      case 'teams': alert('Redirigiendo a Microsoft Teams para agendar reunión...');
-        break;
       default:
         break;
-    }
-  };
-
-  const getAvailabilityColor = (availability) => {
-    switch (availability) {
-      case 'online': return 'bg-success';
-      case 'busy': return 'bg-warning';
-      case 'offline': return 'bg-muted';
-      default: return 'bg-muted';
-    }
-  };
-
-  const getAvailabilityText = (availability) => {
-    switch (availability) {
-      case 'online': return 'En línea';
-      case 'busy': return 'Ocupado';
-      case 'offline': return 'Desconectado';
-      default: return 'Desconocido';
     }
   };
 
@@ -128,7 +59,7 @@ const ContactSupport = () => {
     <div className="mb-8">
       <h2 className="text-2xl font-bold text-foreground mb-6">Contactar Soporte</h2>
       {/* Contact Methods */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {contactMethods?.map((method) => (
           <div
             key={method?.id}
