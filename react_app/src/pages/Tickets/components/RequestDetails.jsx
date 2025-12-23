@@ -37,6 +37,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
   // Estado principal de datos
   const [fullRequestData, setFullRequestData] = useState({ ...request });
+  const currentUser = sessionStorage.getItem("user");
 
   // Estados de carga de secciones
   const [isDetailLoading, setIsDetailLoading] = useState(false);
@@ -713,6 +714,38 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
   };
 
+  const handleTakeTicket = async () => {
+    if (!confirm('¿Tomar este ticket para revisión?')) return;
+
+    setIsApproving(true);
+    try {
+      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'en_revision', assignedTo: currentUser })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (onUpdate && result.updatedRequest) {
+          onUpdate(result.updatedRequest);
+          setFullRequestData(result.updatedRequest);
+        }
+        alert(`Ticket tomado exitosamente`);
+      } else {
+        const errorData = await response.json();
+        alert('Error: ' + (errorData.error || 'No se pudo tomar el ticket'));
+      }
+    } catch (error) {
+      console.error('Error tomando ticket:', error);
+      alert('Error tomando ticket: ' + error.message);
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
   const handleApprove = async () => {
     if (!confirm(`¿Aprobar ticket?`)) return;
 
@@ -921,6 +954,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
           <span className="text-sm text-muted-foreground">Enviado por:</span>
           <span className="text-sm font-medium text-foreground">{fullRequestData?.submittedBy}, {fullRequestData?.company}</span>
         </div>
+        {fullRequestData?.assignedTo && (
+          <div className="flex justify-between col-span-1 md:col-span-2 bg-muted/30 p-2 rounded">
+            <span className="text-sm text-muted-foreground">Tomado por:</span>
+            <span className="text-sm font-medium text-accent">{fullRequestData?.assignedTo}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-sm text-muted-foreground">Fecha de envío:</span>
           <span className="text-sm font-medium text-foreground">{formatDate(fullRequestData?.submittedAt)}</span>
@@ -1190,26 +1229,29 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
             <div className="flex items-center space-x-3">
 
 
-              {(fullRequestData?.status === 'en_revision' || fullRequestData?.status === 'pendiente') && (
+
+
+              {fullRequestData?.status === 'pendiente' && (
                 <Button
                   variant="default"
-                  iconName={isApproving ? "Loader" : "CheckCircle"}
+                  iconName={isApproving ? "Loader" : "UserCheck"}
                   iconPosition="left"
                   iconSize={16}
-                  onClick={handleApprove}
+                  onClick={handleTakeTicket}
                   disabled={isApproving}
                 >
-                  {isApproving ? 'Aprobando...' : `Aprobar`}
+                  {isApproving ? 'Procesando...' : `Tomar Ticket`}
                 </Button>
               )}
 
-              {fullRequestData?.status !== 'finalizado' && (
+              {fullRequestData?.status === 'en_revision' && (
                 <Button
                   variant="default"
                   iconName={isApproving ? "Loader" : "CheckCircle"}
                   iconPosition="left"
                   iconSize={16}
                   onClick={handleApprovewithoutFile}
+                  disabled={isApproving}
                 >
                   {isApproving ? 'Finalizando...' : 'Finalizar'}
                 </Button>
