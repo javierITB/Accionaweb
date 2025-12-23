@@ -8,6 +8,11 @@ const { sendEmail } = require("../utils/mail.helper");
 const useragent = require('useragent');
 const { createBlindIndex, verifyPassword, decrypt } = require("../utils/seguridad.helper");
 
+const getAhoraChile = () => {
+  const d = new Date();
+  return new Date(d.toLocaleString("en-US", {timeZone: "America/Santiago"}));
+};
+
 
 const TOKEN_EXPIRATION = 12 * 1000 * 60 * 60;
 const RECOVERY_CODE_EXPIRATION = 15 * 60 * 1000;
@@ -251,7 +256,8 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const now = new Date();
+    const now = getAhoraChile()
+
     let finalToken = null;
     let expiresAt = null;
 
@@ -421,7 +427,7 @@ router.post("/verify-login-2fa", async (req, res) => {
       }
 
       finalToken = crypto.randomBytes(32).toString("hex");
-      expiresAt = new Date(Date.now() + TOKEN_EXPIRATION);
+      expiresAt = new Date(now.getTime() + TOKEN_EXPIRATION);
 
       await req.db.collection("tokens").insertOne({
         token: finalToken,
