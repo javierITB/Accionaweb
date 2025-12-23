@@ -47,17 +47,12 @@ const AnuncioCreator = ({ onSuccess }) => {
         prioridad: formData.prioridad,
         color: formData.color,
         actionUrl: formData.actionUrl?.trim() || null,
-
-        enviarNotificacion: formData.enviarNotificacion,
-        enviarCorreo: formData.enviarCorreo,
-
-
+      
+        // Asegurar que sean boolean puro
+        enviarNotificacion: Boolean(formData.enviarNotificacion),
+        enviarCorreo: Boolean(formData.enviarCorreo),
+      
         destinatarios: formData.destinatarios,
-
-
-
-
-        
       };
 
       console.log('📤 Enviando anuncio (solo notificaciones):', payload);
@@ -179,44 +174,56 @@ const AnuncioCreator = ({ onSuccess }) => {
             />
           </div>
 
-          {/* Sección de metodo de envio por medio de checkboxes implementado en front*/}
+          {/* Sección de metodo de envio por medio de checkboxes implementado*/}
 
-         <div className="space-y-3 pt-6 border-t">
+          <div className="space-y-3 pt-6 border-t">
             <h3 className="text-lg font-medium">Método de envío</h3>
+            
+            <div className="space-y-2">
+              {/* Checkbox Notificación */}
+              <label className="flex items-center gap-3 cursor-pointer p-3 hover:bg-gray-50 rounded-lg">
+                <input
+                  type="checkbox"
+                  checked={formData.enviarNotificacion}
+                  onChange={e => setFormData({
+                    ...formData,
+                    enviarNotificacion: e.target.checked
+                  })}
+                  className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Notificación en la plataforma</span>
+                  <p className="text-xs text-gray-500">Los usuarios verán la notificación en su panel</p>
+                </div>
+              </label>
 
-            <label className="flex items-center gap-3 cursor-pointer">
-         <input
-          type="checkbox"
-           checked={formData.enviarNotificacion}
-            onChange={e =>
-            setFormData({
-           ...formData,
-            enviarNotificacion: e.target.checked
-           })
-          }
-         className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-         />
-          <span className="text-sm text-gray-700">Notificación</span>
-          </label>
-
-
-            <label className="flex items-center gap-3 cursor-pointer">
-          <input
-           type="checkbox"
-             checked={formData.enviarCorreo}
-            onChange={e =>
-           setFormData({
-            ...formData,
-             enviarCorreo: e.target.checked
-            })
-           }
-            className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-700">Enviar al correo</span>
-            </label>
-
+              {/* Checkbox Correo */}
+              <label className="flex items-center gap-3 cursor-pointer p-3 hover:bg-gray-50 rounded-lg">
+                <input
+                  type="checkbox"
+                  checked={formData.enviarCorreo}
+                  onChange={e => setFormData({
+                    ...formData,
+                    enviarCorreo: e.target.checked
+                  })}
+                  className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Enviar por correo electrónico</span>
+                  <p className="text-xs text-gray-500">Se enviará un email a los destinatarios seleccionados</p>
+                </div>
+              </label>
             </div>
 
+            {/* Mensaje de advertencia si no hay método seleccionado */}
+            {!formData.enviarNotificacion && !formData.enviarCorreo && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600 font-medium">
+                   Debes seleccionar al menos un método de envío
+                </p>
+              </div>
+            )}
+          </div>
 
 
 
