@@ -127,7 +127,9 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
       medium: { text: 'Media', class: 'bg-warning/10 text-warning border-warning/20' },
       low: { text: 'Baja', class: 'bg-success/10 text-success border-success/20' }
     };
-    const badgeClass = `px-2 py-1 rounded-full text-xs font-medium border ml-auto flex-shrink-0 ${config?.[priority]?.class}`;
+    // const badgeClass = `px-2 py-1 rounded-full text-xs font-medium border ml-auto flex-shrink-0 ${config?.[priority]?.class}`;
+    const badgeClass = `px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${config?.[priority]?.class}`;
+
     return { ...config?.[priority], class: badgeClass } || { text: 'Media', class: badgeClass };
   };
 
@@ -248,6 +250,52 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
               <div className="flex items-start">
                 <div className="flex-1 min-w-0">
+
+                  {/*cambio incio*/}
+                  <div className="flex items-start justify-between mb-1"> {/* Cambiado a items-start para alineación superior */}
+                    {/* LADO IZQUIERDO: Punto de lectura + Título */}
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                      {!notification?.isRead && (
+                        <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
+                      )}
+                      <h3
+                        className={`font-medium text-sm truncate ${notification?.leido ? 'text-foreground' : 'text-primary'}`}
+                      >
+                        {notification?.title}
+                      </h3>
+                    </div>
+
+                    {/* LADO DERECHO: Stack vertical (Prioridad sobre Tiempo) + Botón X */}
+                    <div className="flex items-start space-x-3 text-xs flex-shrink-0 ml-4">
+                      
+                      {/* Contenedor en Columna para Prioridad y Tiempo */}
+                      <div className="flex flex-col items-end space-y-1">
+                        <span className={getPriorityBadge(notification?.priority)?.class}>
+                          {getPriorityBadge(notification?.priority)?.text}
+                        </span>
+                        <span className="text-muted-foreground text-[10px] leading-tight">
+                          {formatTimestamp(notification?.timestamp)}
+                        </span>
+                      </div>
+
+                      {/* Botón de eliminar (X) */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteNotification(notification?.id);
+                        }}
+                        className="text-muted-foreground hover:text-red-600 transition-colors pt-0.5"
+                        title="Eliminar notificación"
+                      >
+                        <Icon name="X" size={16} />
+                      </button>
+                    </div>
+                  </div>
+                {/*cambio final*/}
+
+
+
+                {/*
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
                       {!notification?.isRead && (
@@ -280,6 +328,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
                       </button>
                     </div>
                   </div>
+                  */}
 
                   <p
                     className="text-sm text-muted-foreground pr-10"
