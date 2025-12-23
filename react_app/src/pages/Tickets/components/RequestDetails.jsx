@@ -299,13 +299,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   };
 
   const getPreviousStatus = (currentStatus) => {
-    const statusFlow = ['pendiente', 'en_revision', 'aprobado', 'firmado', 'finalizado', 'archivado'];
+    const statusFlow = ['pendiente', 'en_revision', 'finalizado', 'archivado'];
     const currentIndex = statusFlow.indexOf(currentStatus);
     return currentIndex > 0 ? statusFlow[currentIndex - 1] : null;
   };
 
   const getNextStatus = (currentStatus) => {
-    const statusFlow = ['pendiente', 'en_revision', 'aprobado', 'firmado', 'finalizado', 'archivado'];
+    const statusFlow = ['pendiente', 'en_revision', 'finalizado', 'archivado'];
     const currentIndex = statusFlow.indexOf(currentStatus);
     return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
   };
