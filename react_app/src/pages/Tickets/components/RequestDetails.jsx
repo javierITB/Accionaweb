@@ -71,7 +71,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const fetchApprovedData = async (responseId) => {
     setIsLoadingApprovedData(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/data-approved/${responseId}`);
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/data-approved/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setApprovedData(data);
@@ -89,7 +89,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const checkClientSignature = async () => {
     setIsCheckingSignature(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}/has-client-signature`);
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/has-client-signature`);
       if (response.ok) {
         const data = await response.json();
         if (data.exists) {
@@ -273,7 +273,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
 
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}/status`, {
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -517,7 +517,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
         setClientSignature(null);
         alert('Eliminado exitosamente');
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}`);
+          const updatedResponse = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -627,7 +627,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
         // Si onUpdate está disponible, actualizar el request
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}`);
+          const updatedResponse = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -719,7 +719,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
     setIsApproving(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}/status`, {
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -751,7 +751,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
     setIsApproving(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}/status`, {
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -783,7 +783,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}/status`, {
+      const approveResponse = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'finalizado' })
@@ -791,7 +791,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}`);
+          const updatedResponse = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -813,7 +813,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     if (!confirm('¿Estás seguro de que quieres archivar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}/status`, {
+      const approveResponse = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'archivado' })
@@ -821,7 +821,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}`);
+          const updatedResponse = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
