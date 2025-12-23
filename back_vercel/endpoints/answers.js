@@ -899,9 +899,6 @@ router.get("/:id/archived", async (req, res) => {
       return res.status(404).json({ error: "No se pudo actualizar la respuesta" });
     }
 
-    // =========================================================
-    // 🗑️ LIMPIEZA DE COLECCIONES RELACIONADAS (Archivado)
-    // =========================================================
     const cleanupResults = await Promise.all([
       // Eliminar de aprobados (usa responseId como string u objeto según tu flujo)
       req.db.collection("aprobados").deleteMany({ responseId: id }),
