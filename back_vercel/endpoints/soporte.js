@@ -139,27 +139,25 @@ router.post("/", async (req, res) => {
       await enviarCorreoRespaldo(correoRespaldo, formTitle, user, responses, form?.questions || []);
     }
 
-    // Notificaciones (RRHH y Admin)
     const notifData = {
-      titulo: `${usuario} de la empresa ${empresa} ha respondido el formulario ${formTitle}`,
+      titulo: `${usuario} de la empresa ${empresa} ha levantado un ticket de soporte`,
       descripcion: adjuntos.length > 0 ? `Incluye ${adjuntos.length} archivo(s)` : "Revisar en panel.",
       prioridad: 2,
       color: "#bb8900ff",
       icono: "form",
-      actionUrl: `/RespuestasForms?id=${result.insertedId}`,
+      actionUrl: `/Tickets?id=${result.insertedId}`,
     };
-    await addNotification(req.db, { filtro: { cargo: "RRHH" }, ...notifData });
-    await addNotification(req.db, { filtro: { cargo: "admin" }, ...notifData });
+    await addNotification(req.db, { filtro: { rol: "Admin" }, ...notifData });
 
     // Notificación al usuario
     await addNotification(req.db, {
       userId,
-      titulo: "Formulario completado",
-      descripcion: `El formulario ${formTitle} fue completado correctamente.`,
+      titulo: "Ticket enviado con éxito",
+      descripcion: `Se ha recibido correctamente su ticket. Su ID de solicitud es el ${result.insertedId}.`,
       prioridad: 2,
       icono: "CheckCircle",
       color: "#006e13ff",
-      actionUrl: `/?id=${result.insertedId}`,
+      actionUrl: `/soporte?id=${result.insertedId}`,
     });
 
     try {
