@@ -16,10 +16,8 @@ const FilterPanel = ({
     { value: '', label: 'Todos los Estados' },
     { value: 'pendiente', label: 'Pendiente' },
     { value: 'en_revision', label: 'En Revisión' },
-    { value: 'aprobado', label: 'Aprobado' },
-    { value: 'firmado', label: 'Firmado' },
-    { value: 'finalizado', label: 'finalizado' },
-    { value: 'archivado', label: 'archivado' },
+    { value: 'finalizado', label: 'Finalizado' },
+    { value: 'archivado', label: 'Archivado' },
   ];
 
   const dateRangeOptions = [

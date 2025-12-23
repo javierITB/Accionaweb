@@ -55,28 +55,6 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefres
       filterKey: 'en_revision'
     },
     {
-      title: 'Aprobadas',
-      value: stats?.approved,
-      icon: 'CheckCircle',
-      color: 'text-warning',
-      bgColor: 'bg-warning/10',
-      borderColor: 'border-warning',
-      change: last24hApprovedCount,
-      changeType: last24hApprovedCount === 0 ? 'positive' : 'negative',
-      filterKey: 'aprobado'
-    },
-    {
-      title: 'Firmadas',
-      value: stats?.rejected,
-      icon: 'CheckSquare',
-      color: 'text-success',
-      bgColor: 'bg-success/10',
-      borderColor: 'border-success',
-      change: '+3%',
-      changeType: 'positive',
-      filterKey: 'firmado'
-    },
-    {
       title: 'Finalizados',
       value: stats?.finalized,
       icon: 'Timer',
@@ -86,8 +64,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefres
       change: last24hFinalizedCount,
       changeType: 'positive',
       filterKey: 'finalizado'
-    }
-    ,
+    },
     {
       title: 'Archivados',
       value: stats?.archived,
