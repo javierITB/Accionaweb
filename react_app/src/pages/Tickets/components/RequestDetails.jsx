@@ -949,23 +949,78 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
   const renderDetailsTab = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">Enviado por:</span>
-          <span className="text-sm font-medium text-foreground">{fullRequestData?.submittedBy}, {fullRequestData?.company}</span>
-        </div>
-        {fullRequestData?.assignedTo && (
-          <div className="flex justify-between col-span-1 md:col-span-2 bg-muted/30 p-2 rounded">
-            <span className="text-sm text-muted-foreground">Tomado por:</span>
-            <span className="text-sm font-medium text-accent">{fullRequestData?.assignedTo}</span>
-          </div>
-        )}
-        <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">Fecha de envío:</span>
-          <span className="text-sm font-medium text-foreground">{formatDate(fullRequestData?.submittedAt)}</span>
+
+      {/* Subject Section */}
+      <div className="bg-muted/10 p-5 rounded-lg border border-border/60 shadow-sm">
+        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Icon name="Type" size={16} className="text-accent" />
+          Asunto
+        </h3>
+        <p className="text-lg font-bold text-foreground leading-tight">
+          {fullRequestData?.responses?.['Asunto'] || fullRequestData?.responses?.Asunto || "Sin Asunto"}
+        </p>
+      </div>
+
+      {/* Description Section */}
+      <div className="bg-muted/10 p-5 rounded-lg border border-border/60 shadow-sm">
+        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Icon name="AlignLeft" size={16} className="text-accent" />
+          Descripción del Ticket
+        </h3>
+        <div className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed bg-background p-3 rounded border border-border/50">
+          {fullRequestData?.responses?.['Descripción'] ||
+            fullRequestData?.responses?.['descripcion'] ||
+            fullRequestData?.responses?.['Description'] ||
+            fullRequestData?.responses?.['description'] ||
+            fullRequestData?.description ||
+            "Sin descripción proporcionada."}
         </div>
       </div>
 
+      {/* Meta Info Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        {/* Sender Info */}
+        <div className="bg-muted/30 p-3 rounded-lg border border-border/50 flex items-start gap-3">
+          <div className="p-2 bg-primary/10 rounded-full text-primary">
+            <Icon name="User" size={16} />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Enviado por</p>
+            <p className="text-sm font-semibold text-foreground">{fullRequestData?.submittedBy}</p>
+            <p className="text-xs text-muted-foreground">{fullRequestData?.company}</p>
+          </div>
+        </div>
+
+        {/* Assigned Info */}
+        <div className="bg-muted/30 p-3 rounded-lg border border-border/50 flex items-start gap-3">
+          <div className={`p-2 rounded-full ${fullRequestData?.assignedTo ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground'}`}>
+            <Icon name="ShieldCheck" size={16} />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tomado por</p>
+            <p className={`text-sm font-semibold ${fullRequestData?.assignedTo ? 'text-accent' : 'text-muted-foreground italic'}`}>
+              {fullRequestData?.assignedTo || 'Sin asignar'}
+            </p>
+            {fullRequestData?.assignedAt && (
+              <p className="text-xs text-muted-foreground">{formatDate(fullRequestData?.assignedAt)}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Date Info */}
+        <div className="bg-muted/30 p-3 rounded-lg border border-border/50 flex items-start gap-3">
+          <div className="p-2 bg-foreground/5 rounded-full text-foreground">
+            <Icon name="Calendar" size={16} />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Fecha de Creación</p>
+            <p className="text-sm font-semibold text-foreground">{formatDate(fullRequestData?.submittedAt)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Attachments Section */}
       <div>
         {attachmentsLoading &&
           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -975,15 +1030,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
         }
         {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 &&
           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Icon name="Paperclip" size={18} />
             Archivos Adjuntos
           </h3>
         }
         {fullRequestData?.adjuntos?.length > 0 && (
           <div className="space-y-2">
             {fullRequestData.adjuntos.map((adjunto, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group hover:bg-muted transition-colors">
                 <div className="flex items-center space-x-3">
-                  <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
+                  <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent group-hover:scale-110 transition-transform" />
                   <div>
                     <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
                     <p className="text-xs text-muted-foreground">
@@ -991,17 +1047,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
                     iconPosition="left"
                     iconSize={16}
                     onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
                     disabled={downloadingAttachmentIndex !== null}
+                    className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:h-9"
                   >
-                    {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
+                    <span className="hidden sm:inline">{downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}</span>
                   </Button>
                   {canPreviewAdjunto(adjunto.mimeType) && (
                     <Button
@@ -1012,78 +1069,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
                       iconSize={16}
                       onClick={() => handlePreviewAdjunto(fullRequestData._id, index)}
                       disabled={isLoadingPreviewAdjunto}
+                      className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:h-9"
                     >
-                      {isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}
+                      <span className="hidden sm:inline">{isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}</span>
                     </Button>
                   )}
                 </div>
               </div>
             ))}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-          Documento Generado
-          {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-        </h3>
-        {realAttachments?.length > 0 ? (
-          <div className="space-y-2">
-            {realAttachments?.map((file) => (
-              <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground" title={file?.name}>
-                      {file?.name?.length > 45 ? `${file.name.substring(0, 45)}...` : file?.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {file?.size} • Generado el {formatDate(file?.uploadedAt)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    iconName={isDownloading ? "Loader" : "Download"}
-                    iconPosition="left"
-                    iconSize={16}
-                    onClick={handleDownload}
-                    disabled={isDownloading}
-                  >
-                    {isDownloading ? 'Descargando...' : 'Descargar'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handlePreviewGenerated}
-                    iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
-                    iconPosition="left"
-                    iconSize={16}
-                    disabled={isLoadingPreviewGenerated}
-                  >
-                    {isLoadingPreviewGenerated ? 'Cargando...' : 'Vista Previa'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRegenerateDocument}
-                    iconName={isRegenerating ? "Loader" : "RefreshCw"}
-                    iconPosition="left"
-                    iconSize={16}
-                    disabled={isRegenerating}
-                  >
-                    {isRegenerating ? 'Regenerando...' : 'Regenerar'}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <p className="text-sm">No hay documentos generados para este formulario</p>
           </div>
         )}
       </div>
@@ -1152,9 +1145,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
                   <h2 className="text-xl font-semibold text-foreground">
-                    {fullRequestData?.responses?.Asunto
-                      ? `${fullRequestData?.formTitle} - ${fullRequestData?.responses?.Asunto}`
-                      : (fullRequestData?.formTitle || fullRequestData?.title)}
+                    {fullRequestData?.formTitle || fullRequestData?.title}
                   </h2>
                   <p className="text-sm text-muted-foreground">ID: {fullRequestData?._id}</p>
                 </div>

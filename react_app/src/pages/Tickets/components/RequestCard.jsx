@@ -140,7 +140,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
     // Intentar obtener el asunto de las respuestas, si existe.
     // La estructura puede variar dependiendo de cómo se guarde en responses.
     // En soporte.js vemos que se guarda como responses.Asunto
-    const subject = currentRequest?.responses?.Asunto || '';
+    const subject = currentRequest?.responses?.['Asunto'] || '';
 
     if (subject) {
       return `${category} - ${subject}`;
@@ -165,7 +165,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
 
           {/* Description */}
           <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-            {currentRequest?.description}
+            {currentRequest?.responses?.['Descripción'] || currentRequest?.description}
           </p>
 
           {/* Meta Info - RESPONSIVE */}
