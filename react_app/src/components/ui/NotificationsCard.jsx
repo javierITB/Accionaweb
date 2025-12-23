@@ -232,7 +232,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
   return (
     <div className="bg-card z-50 rounded-xl m-4 shadow-brand border border-border max-w-sm">
-      <div className="space-y-2 max-h-[60vh] overflow-y-auto"> {/* CLAVE: max-h-[80vh] para que ocupe más altura */}
+      <div className="space-y-2 max-h-[60vh] overflow-y-auto overflow-x-hidden"> {/* CLAVE: max-h-[80vh] para que ocupe más altura y limitacion de scroll horizontal*/}
         {notifications && notifications.length > 0 ? (
           notifications.map((notification) => (
             <div
@@ -259,7 +259,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
                         <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
                       )}
                       <h3
-                        className={`font-medium text-sm truncate ${notification?.leido ? 'text-foreground' : 'text-primary'}`}
+                        className={`font-medium text-sm ${notification?.leido ? 'text-foreground' : 'text-primary'}`}
                       >
                         {notification?.title}
                       </h3>
