@@ -755,7 +755,7 @@ router.post("/chat", async (req, res) => {
 
         // ENVIAR CORREO SI TENEMOS EMAIL
         if (userEmail) {
-          const baseUrl = process.env.PORTAL_URL || "https://infoacciona.cl";
+          const baseUrl = process.env.PORTAL_URL || "https://infodesa.vercel.app";
           const responseUrl = `${baseUrl}/preview?type=messages&id=${respuestaId}`;
 
           const emailHtml = `
@@ -1278,6 +1278,7 @@ router.post("/upload-corrected-files", async (req, res) => {
           const { sendEmail } = require("../utils/mail.helper");
           const portalUrl = process.env.PORTAL_URL || "https://infoacciona.cl";
           const responseUrl = `${portalUrl}/preview?type=details&id=${responseId}`;
+
 
           const emailHtml = `
             <!DOCTYPE html>
