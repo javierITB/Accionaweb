@@ -7,12 +7,11 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [isSending, setIsSending] = useState(false);
   const [user, setUser] = useState(sessionStorage.getItem("user"));
   const [messages, setMessages] = useState([]);
-  const [lastCleared, setLastCleared] = useState(null);
   const chatRef = useRef(null);
   const [formName, setFormName] = useState('');
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [hasNewMessages, setHasNewMessages] = useState(false);
-
+  
   // LÓGICA DEL AUTO-SCROLL COPIADA
   const shouldAutoScroll = useRef(true);
   const lastMessageCount = useRef(0);
@@ -23,14 +22,14 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   // logica de extraer nombre del formulario
 
   useEffect(() => {
-    if (!id || !request) return;
+    if(!id || !request) return;
 
-    if (request._contexto && request._contexto.formTitle) {
+    if(request._contexto && request._contexto.formTitle) {
       setFormName(request._contexto.formTitle);
-    } else if (request.title || request.formTitle) {
+    } else if(request.title || request.formTitle){
       setFormName(request.title || request.formTitle);
     }
-  }, [id, request]);
+  }, [id,request]);
 
   // Fetch de mensajes
   const fetchMessages = async () => {
@@ -39,14 +38,14 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
       const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${id}/chat`);
       if (!res.ok) throw new Error("Error al obtener chat");
       const data = await res.json();
-
+      
       const currentCount = data?.length || 0;
       const hadNewMessages = currentCount > lastMessageCount.current;
-
+      
       if (hadNewMessages && !isFirstLoad.current) {
         setHasNewMessages(true);
       }
-
+      
       setMessages(data || []);
       lastMessageCount.current = currentCount;
     } catch (err) {
@@ -66,11 +65,6 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
     fetchMessages(); // fetch inicial
     const interval = setInterval(fetchMessages, 3000);
-
-    // Load last cleared time
-    const storedLastCleared = localStorage.getItem(`chatLastCleared_${id}`);
-    setLastCleared(storedLastCleared);
-
     return () => clearInterval(interval);
   }, [isOpen, id]);
 
@@ -88,7 +82,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
       } else if (shouldAutoScroll.current) {
         const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
         const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 100;
-
+        
         if (isNearBottom) {
           setTimeout(() => {
             if (chatRef.current) {
@@ -105,12 +99,12 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   // MANEJADOR DE SCROLL COPIADO
   const handleScroll = () => {
     if (!chatRef.current) return;
-
+    
     const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
     const isAtBottom = Math.abs(scrollHeight - (scrollTop + clientHeight)) < 10;
-
+    
     setShowScrollToBottom(!isAtBottom);
-
+    
     if (!isAtBottom) {
       shouldAutoScroll.current = false;
     } else {
@@ -181,36 +175,30 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => {
-            if (id) {
-              localStorage.setItem(`chatLastCleared_${id}`, new Date().toISOString());
-            }
-            onClose();
-          }} iconName="X" iconSize={20} />
+          <Button variant="ghost" size="icon" onClick={onClose} iconName="X" iconSize={20} />
         </div>
 
-        {/* Chat */}
-        <div
-          ref={chatRef}
+        {/* Chat - AGREGADO onScroll */}
+        <div 
+          ref={chatRef} 
           className="flex-1 overflow-y-auto p-6 space-y-4"
           onScroll={handleScroll}
         >
-          {messages.filter(msg => !lastCleared || new Date(msg.fecha) > new Date(lastCleared)).length > 0 ?
-            messages.filter(msg => !lastCleared || new Date(msg.fecha) > new Date(lastCleared)).map((msg, i) => (
-              <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-lg p-4 ${msg.autor === user ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">{msg.autor}</span>
-                    <span className="text-xs opacity-70 ml-2">{formatMessageTime(msg.fecha)}</span>
-                  </div>
-                  <p className="text-sm whitespace-pre-wrap break-words">{msg.mensaje}</p>
+          {messages.length > 0 ? messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] rounded-lg p-4 ${msg.autor === user ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">{msg.autor}</span>
                 </div>
+                <p className="text-sm mb-2">{msg.mensaje}</p>
+                <span className="text-xs opacity-75">{formatMessageTime(msg.fecha)}</span>
               </div>
-            )) : <p className="text-center text-muted-foreground">Sin mensajes aún.</p>}
+            </div>
+          )) : <p className="text-center text-muted-foreground">Sin mensajes aún.</p>}
         </div>
 
         {/* Input */}
-        < div className="p-6 border-t border-border" >
+        <div className="p-6 border-t border-border">
           <div className="flex items-center space-x-2">
             <textarea
               value={message}
@@ -232,16 +220,17 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
             </Button>
             {/* AGREGADO: Botón para bajar rápido a la derecha del enviar */}
             {showScrollToBottom && (
-              <div className="flex-shrink-0">
-                <button
-                  onClick={scrollToBottom}
-                  className={`shadow-lg flex items-center justify-center bg-primary hover:bg-primary/90 text-white rounded-lg transition-all ${hasNewMessages ? 'px-3 py-2 text-sm min-w-[70px]' : 'w-10 h-10'
-                    }`}
-                >
-                  {hasNewMessages ? "Nuevos" : "↓"}
-                </button>
-              </div>
-            )}
+          <div className="flex-shrink-0">
+            <Button
+              onClick={scrollToBottom}
+              className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-white"
+              iconName="ArrowDown" 
+              size="sm"
+            >
+              {hasNewMessages && "Nuevos"}  {/* ← Texto solo cuando hay nuevos */}
+            </Button>
+          </div>
+        )}
           </div>
         </div>
       </div>
