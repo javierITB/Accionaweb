@@ -343,7 +343,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
               }}
             >
               <Icon 
-                name={getTypeIcon(type)} 
+                name={type === 'all' ? 'Bell' : type} 
                 size={14} 
                 className={`mr-2 ${activeFilter === type ? 'text-white' : 'text-muted-foreground'}`}
               />
