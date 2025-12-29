@@ -321,24 +321,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     setShowPreview(true);
   };
 
-  const handlePreviewGenerated = async () => {
-    try {
-      setIsLoadingPreviewGenerated(true);
-      const info = documentInfo || await getDocumentInfo(request._id);
-      if (!info || !info.IDdoc) {
-        alert('No hay documento generado disponible para vista previa');
-        return;
-      }
-      const documentUrl = `https://back-vercel-iota.vercel.app/api/generador/download/${info.IDdoc}`;
-      const extension = info.tipo || 'docx';
-      handlePreviewDocument(documentUrl, extension);
-    } catch (error) {
-      console.error('Error en vista previa:', error);
-      alert('Error: ' + error.message);
-    } finally {
-      setIsLoadingPreviewGenerated(false);
-    }
-  };
 
   const handlePreviewCorrectedFile = async (index = 0) => {
     const hasFiles = correctedFiles.length > 0 || approvedData || fullRequestData?.correctedFile;
@@ -383,23 +365,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
   };
 
-  const handlePreviewClientSignature = async () => {
-    if (!clientSignature) {
-      alert('No hay documento firmado para vista previa');
-      return;
-    }
-    try {
-      setIsLoadingPreviewSignature(true);
-      const pdfUrl = `https://back-vercel-iota.vercel.app/api/soporte/${request._id}/client-signature`;
-      const documentUrl = await downloadPdfForPreview(pdfUrl);
-      handlePreviewDocument(documentUrl, 'pdf');
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
-    } finally {
-      setIsLoadingPreviewSignature(false);
-    }
-  };
 
   const handlePreviewAdjunto = async (responseId, index) => {
     try {
@@ -420,42 +385,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
   };
 
-  const handleRegenerateDocument = async () => {
-    if (!confirm('¿Regenerar documento?')) return;
-    setIsRegenerating(true);
-    try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/regenerate-document`, { method: 'POST' });
-      if (response.ok) {
-        await getDocumentInfo(request._id);
-        alert('Documento regenerado exitosamente');
-      } else {
-        const errorData = await response.json();
-        alert('Error: ' + (errorData.error || 'Desconocido'));
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
-    } finally {
-      setIsRegenerating(false);
-    }
-  };
-
-  const handleDownload = async () => {
-    try {
-      setIsDownloading(true);
-      const info = documentInfo || await getDocumentInfo(request._id);
-      if (!info || !info.IDdoc) {
-        alert('No hay documento disponible');
-        return;
-      }
-      window.open(`https://back-vercel-iota.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error al descargar');
-    } finally {
-      setIsDownloading(false);
-    }
-  };
 
   const handleDownloadAdjunto = async (responseId, index) => {
     setDownloadingAttachmentIndex(index);
@@ -483,236 +412,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
   };
 
-  const handleDownloadClientSignature = async (responseId) => {
-    setIsDownloadingSignature(true);
-    try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${responseId}/client-signature`);
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = clientSignature.fileName;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        const errorData = await response.json();
-        alert(errorData.error || 'Error descargando');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error descargando');
-    } finally {
-      setIsDownloadingSignature(false);
-    }
-  };
-
-  const handleDeleteClientSignature = async (responseId) => {
-    if (!confirm('¿Eliminar documento firmado por el cliente?')) return;
-    try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${responseId}/client-signature`, { method: 'DELETE' });
-      if (response.ok) {
-        setClientSignature(null);
-        alert('Eliminado exitosamente');
-        if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}`);
-          const updatedRequest = await updatedResponse.json();
-          onUpdate(updatedRequest);
-        }
-      } else {
-        const errorData = await response.json();
-        alert(errorData.error || 'Error eliminando');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error eliminando');
-    }
-  };
-
-  const handleFileSelect = (event) => {
-    const files = Array.from(event.target.files);
-    const pdfFiles = files.filter(file => file.type === 'application/pdf');
-
-    if (pdfFiles.length === 0) {
-      alert('Por favor, sube solo archivos PDF');
-      event.target.value = '';
-      return;
-    }
-
-    // Validar límite de cantidad de archivos
-    if (correctedFiles.length + pdfFiles.length > MAX_FILES) {
-      alert(`Máximo ${MAX_FILES} archivos permitidos. Ya tienes ${correctedFiles.length} archivo(s) seleccionado(s).`);
-      event.target.value = '';
-      return;
-    }
-
-    // Validar tamaño de cada archivo
-    const oversizedFiles = pdfFiles.filter(file => file.size > MAX_FILE_SIZE);
-    if (oversizedFiles.length > 0) {
-      const oversizedNames = oversizedFiles.map(f => f.name).join(', ');
-      alert(`Los siguientes archivos exceden el límite de 1MB: ${oversizedNames}`);
-      event.target.value = '';
-      return;
-    }
-
-    setCorrectedFiles(prev => [...prev, ...pdfFiles]);
-    event.target.value = '';
-  };
-
-  const handleRemoveFile = (index) => {
-    setCorrectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleRemoveCorrection = async () => {
-    if (correctedFiles.length > 0) {
-      if (!confirm('¿Eliminar todos los archivos seleccionados?')) return;
-      setCorrectedFiles([]);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    try {
-      const signatureCheck = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/has-client-signature`);
-      const signatureData = await signatureCheck.json();
-      const hasSignature = signatureData.exists;
-      let warningMessage = '¿Eliminar corrección y volver a revisión?';
-      if (hasSignature) warningMessage = 'ADVERTENCIA: Existe documento firmado. ¿Continuar?';
-      if (!confirm(warningMessage)) return;
-
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/remove-correction`, { method: 'DELETE' });
-      const result = await response.json();
-      if (response.ok) {
-        if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
-        setCorrectedFiles([]);
-        setApprovedData(null);
-        if (result.hasExistingSignature) alert('Corrección eliminada. Estado volverá a firmado al subir nueva.');
-        else alert('Corrección eliminada, vuelve a revisión.');
-      } else {
-        alert(result.error || 'Error al eliminar');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error al eliminar');
-    }
-  };
-
-  // Función para eliminar un archivo ya subido en el backend
-  const handleDeleteUploadedFile = async (fileName, index) => {
-    if (!confirm(`¿Eliminar el archivo "${fileName}"?`)) return;
-
-    setIsDeletingFile(index);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/delete-corrected-file/${request._id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fileName })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        alert(`Archivo "${fileName}" eliminado exitosamente`);
-
-        // Refrescar los datos aprobados
-        await fetchApprovedData(request._id);
-
-        // Si onUpdate está disponible, actualizar el request
-        if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}`);
-          const updatedRequest = await updatedResponse.json();
-          onUpdate(updatedRequest);
-        }
-      } else {
-        const errorData = await response.json();
-        alert(`Error eliminando archivo: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Error eliminando archivo:', error);
-      alert('Error eliminando archivo: ' + error.message);
-    } finally {
-      setIsDeletingFile(null);
-    }
-  };
-
-  // Función para subir archivos uno por uno (igual que adjuntos)
-  const uploadFilesOneByOne = async () => {
-    if (correctedFiles.length === 0) {
-      alert('No hay archivos para subir');
-      return false;
-    }
-
-    try {
-      const token = localStorage.getItem('token'); // Ajusta según tu auth
-      let successfulUploads = 0;
-
-      for (let i = 0; i < correctedFiles.length; i++) {
-        const file = correctedFiles[i];
-        const formData = new FormData();
-
-        // Agregar el archivo individual
-        formData.append('files', file);
-
-        // Agregar metadata como en adjuntos
-        formData.append('responseId', request._id);
-        formData.append('index', i.toString());
-        formData.append('total', correctedFiles.length.toString());
-
-        console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
-
-        const response = await fetch('https://back-vercel-iota.vercel.app/api/soporte/upload-corrected-files', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: formData
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          console.log(`Archivo ${i + 1} subido:`, result);
-          successfulUploads++;
-
-          // Actualizar progreso
-          setUploadedFilesCount(successfulUploads);
-          setUploadProgress(Math.round((successfulUploads / correctedFiles.length) * 100));
-
-          // Pequeña pausa entre archivos
-          if (i < correctedFiles.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-        } else {
-          const error = await response.json();
-          console.error(`Error subiendo archivo ${i + 1}:`, error);
-
-          // Preguntar si quiere continuar
-          const shouldContinue = window.confirm(
-            `Error subiendo "${file.name}": ${error.error}\n\n¿Continuar con los demás archivos?`
-          );
-
-          if (!shouldContinue) {
-            return false;
-          }
-        }
-      }
-
-      console.log(`Subida completada: ${successfulUploads}/${correctedFiles.length} archivos exitosos`);
-      return successfulUploads > 0; // Retorna true si al menos uno se subió
-
-    } catch (error) {
-      console.error('Error en proceso de subida:', error);
-      alert('Error subiendo archivos: ' + error.message);
-      return false;
-    }
-  };
 
   const handleTakeTicket = async () => {
     if (!currentUser) {
@@ -745,38 +444,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     } catch (error) {
       console.error('Error tomando ticket:', error);
       alert('Error tomando ticket: ' + error.message);
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
-  const handleApprove = async () => {
-    if (!confirm(`¿Aprobar ticket?`)) return;
-
-    setIsApproving(true);
-    try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'aprobado' })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (onUpdate && result.updatedRequest) {
-          onUpdate(result.updatedRequest);
-          setFullRequestData(result.updatedRequest);
-        }
-        alert(`Ticket aprobado exitosamente`);
-      } else {
-        const errorData = await response.json();
-        alert('Error: ' + (errorData.error || 'No se pudo aprobar'));
-      }
-    } catch (error) {
-      console.error('Error aprobando:', error);
-      alert('Error aprobando: ' + error.message);
     } finally {
       setIsApproving(false);
     }
@@ -925,16 +592,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
     const mb = (bytes / 1048576).toFixed(2);
     return `${mb} MB (EXCEDE LÍMITE)`;
-  };
-
-  const getFileIcon = (type) => {
-    switch (type?.toLowerCase()) {
-      case 'pdf': return 'FileText';
-      case 'docx': case 'doc': return 'FileText';
-      case 'xlsx': case 'xls': return 'FileSpreadsheet';
-      case 'jpg': case 'jpeg': case 'png': return 'Image';
-      default: return 'File';
-    }
   };
 
   const getMimeTypeIcon = (mimeType) => {
