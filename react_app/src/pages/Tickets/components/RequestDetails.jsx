@@ -110,7 +110,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
   const getDocumentInfo = async (responseId) => {
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/generador/info-by-response/${responseId}`);
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/generador/info-by-response/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setDocumentInfo(data);
@@ -130,7 +130,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${responseId}/adjuntos`);
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${responseId}/adjuntos`);
 
       if (response.ok) {
         const data = await response.json();
@@ -160,7 +160,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
       setCorrectedFiles([{
         name: request.correctedFile.fileName,
         size: request.correctedFile.fileSize,
-        url: `https://back-acciona.vercel.app/api/soporte/${request._id}/corrected-file`,
+        url: `https://back-vercel-iota.vercel.app/api/soporte/${request._id}/corrected-file`,
         isServerFile: true
       }]);
     } else {
@@ -185,7 +185,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     const fetchFullDetailsAndDocs = async () => {
       setIsDetailLoading(true);
       try {
-        const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${responseId}`);
+        const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${responseId}`);
         if (response.ok) {
           const data = await response.json();
           setFullRequestData(prev => ({
@@ -244,7 +244,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}`);
+        const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
           if (updatedRequest.status !== request.status) {
@@ -329,7 +329,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
         alert('No hay documento generado disponible para vista previa');
         return;
       }
-      const documentUrl = `https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`;
+      const documentUrl = `https://back-vercel-iota.vercel.app/api/generador/download/${info.IDdoc}`;
       const extension = info.tipo || 'docx';
       handlePreviewDocument(documentUrl, extension);
     } catch (error) {
@@ -363,7 +363,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
         documentUrl = URL.createObjectURL(file);
       }
       else if (approvedData || request?.status === 'aprobado' || request?.status === 'firmado') {
-        const pdfUrl = `https://back-acciona.vercel.app/api/soporte/download-approved-pdf/${request._id}?index=${index}`;
+        const pdfUrl = `https://back-vercel-iota.vercel.app/api/soporte/download-approved-pdf/${request._id}?index=${index}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
       }
       else if (request?.correctedFile) {
@@ -390,7 +390,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
     try {
       setIsLoadingPreviewSignature(true);
-      const pdfUrl = `https://back-acciona.vercel.app/api/soporte/${request._id}/client-signature`;
+      const pdfUrl = `https://back-vercel-iota.vercel.app/api/soporte/${request._id}/client-signature`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
@@ -409,7 +409,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
         alert('Solo disponible para PDF');
         return;
       }
-      const pdfUrl = `https://back-acciona.vercel.app/api/soporte/${responseId}/adjuntos/${index}`;
+      const pdfUrl = `https://back-vercel-iota.vercel.app/api/soporte/${responseId}/adjuntos/${index}`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
@@ -424,7 +424,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     if (!confirm('¿Regenerar documento?')) return;
     setIsRegenerating(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}/regenerate-document`, { method: 'POST' });
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/regenerate-document`, { method: 'POST' });
       if (response.ok) {
         await getDocumentInfo(request._id);
         alert('Documento regenerado exitosamente');
@@ -448,7 +448,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
         alert('No hay documento disponible');
         return;
       }
-      window.open(`https://back-acciona.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
+      window.open(`https://back-vercel-iota.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
     } catch (error) {
       console.error('Error:', error);
       alert('Error al descargar');
@@ -460,7 +460,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const handleDownloadAdjunto = async (responseId, index) => {
     setDownloadingAttachmentIndex(index);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${responseId}/adjuntos/${index}`);
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${responseId}/adjuntos/${index}`);
       if (response.ok) {
         const blob = await response.blob();
         const adjunto = fullRequestData.adjuntos[index];
@@ -486,7 +486,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const handleDownloadClientSignature = async (responseId) => {
     setIsDownloadingSignature(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${responseId}/client-signature`);
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${responseId}/client-signature`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -512,7 +512,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const handleDeleteClientSignature = async (responseId) => {
     if (!confirm('¿Eliminar documento firmado por el cliente?')) return;
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${responseId}/client-signature`, { method: 'DELETE' });
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${responseId}/client-signature`, { method: 'DELETE' });
       if (response.ok) {
         setClientSignature(null);
         alert('Eliminado exitosamente');
@@ -578,14 +578,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
 
     try {
-      const signatureCheck = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}/has-client-signature`);
+      const signatureCheck = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/has-client-signature`);
       const signatureData = await signatureCheck.json();
       const hasSignature = signatureData.exists;
       let warningMessage = '¿Eliminar corrección y volver a revisión?';
       if (hasSignature) warningMessage = 'ADVERTENCIA: Existe documento firmado. ¿Continuar?';
       if (!confirm(warningMessage)) return;
 
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/${request._id}/remove-correction`, { method: 'DELETE' });
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${request._id}/remove-correction`, { method: 'DELETE' });
       const result = await response.json();
       if (response.ok) {
         if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
@@ -609,7 +609,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     setIsDeletingFile(index);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`https://back-acciona.vercel.app/api/soporte/delete-corrected-file/${request._id}`, {
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/delete-corrected-file/${request._id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -668,7 +668,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
         console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
 
-        const response = await fetch('https://back-acciona.vercel.app/api/soporte/upload-corrected-files', {
+        const response = await fetch('https://back-vercel-iota.vercel.app/api/soporte/upload-corrected-files', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -715,6 +715,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   };
 
   const handleTakeTicket = async () => {
+    if (!currentUser) {
+      alert("Error: No se pudo identificar al usuario actual. Por favor, recarga la página o inicia sesión nuevamente.");
+      return;
+    }
     if (!confirm('¿Tomar este ticket para revisión?')) return;
 
     setIsApproving(true);
@@ -945,7 +949,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
   const realAttachments = getRealAttachments();
 
-
+  const findResponseValue = (responses, keys) => {
+    if (!responses) return null;
+    const lowerKeys = keys.map(k => k.toLowerCase());
+    for (const [key, value] of Object.entries(responses)) {
+      if (lowerKeys.includes(key.toLowerCase())) return value;
+    }
+    return null;
+  };
 
   const renderDetailsTab = () => (
     <div className="space-y-6">
@@ -957,7 +968,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
           Asunto
         </h3>
         <p className="text-lg font-bold text-foreground leading-tight">
-          {fullRequestData?.responses?.['Asunto'] || fullRequestData?.responses?.Asunto || "Sin Asunto"}
+          {findResponseValue(fullRequestData?.responses, ['Asunto', 'Título', 'Title', 'Subject', 'Tema']) || "Sin Asunto"}
         </p>
       </div>
 
@@ -968,10 +979,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
           Descripción del Ticket
         </h3>
         <div className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed bg-background p-3 rounded border border-border/50">
-          {fullRequestData?.responses?.['Descripción'] ||
-            fullRequestData?.responses?.['descripcion'] ||
-            fullRequestData?.responses?.['Description'] ||
-            fullRequestData?.responses?.['description'] ||
+          {findResponseValue(fullRequestData?.responses, ['Descripción', 'Descripcion', 'Description', 'Detalle', 'Mensaje']) ||
             fullRequestData?.description ||
             "Sin descripción proporcionada."}
         </div>
@@ -987,8 +995,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Enviado por</p>
-            <p className="text-sm font-semibold text-foreground">{fullRequestData?.submittedBy}</p>
-            <p className="text-xs text-muted-foreground">{fullRequestData?.company}</p>
+            <p className="text-sm font-semibold text-foreground">{fullRequestData?.submittedBy || fullRequestData?.user?.nombre || 'Usuario Desconocido'}</p>
+            <p className="text-xs text-muted-foreground">{fullRequestData?.company || fullRequestData?.user?.empresa || 'Empresa Desconocida'}</p>
           </div>
         </div>
 
@@ -999,8 +1007,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tomado por</p>
-            <p className={`text-sm font-semibold ${fullRequestData?.assignedTo ? 'text-accent' : 'text-muted-foreground italic'}`}>
-              {fullRequestData?.assignedTo || 'Sin asignar'}
+            <p className={`text-sm font-semibold ${(fullRequestData?.assignedTo && fullRequestData?.assignedTo !== '-') ? 'text-accent' : 'text-muted-foreground italic'}`}>
+              {(fullRequestData?.assignedTo && fullRequestData?.assignedTo !== '-') ? fullRequestData?.assignedTo : 'Sin asignar'}
             </p>
             {fullRequestData?.assignedAt && (
               <p className="text-xs text-muted-foreground">{formatDate(fullRequestData?.assignedAt)}</p>
