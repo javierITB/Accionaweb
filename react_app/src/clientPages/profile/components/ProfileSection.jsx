@@ -324,10 +324,10 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
           </div>
         </div>
 
-
-        <div className="lg:w-2/3">
-          <div className="grid grid-cols-1 gap-3 sm:gap-4">
-          {/* Botones de acción - MEJORADOS PARA MÓVIL */}
+    </div>
+    <div className="p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+    {/* Botones de acción - MEJORADOS PARA MÓVIL */}
           {!isEditing ? (
             <Button
               variant="outline"
@@ -363,10 +363,8 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
               </Button>
             </div>
           )}
-
-        </div>
-      </div>
-    </div>
+          </div >
+          </div >
     </div >
   );
 };
