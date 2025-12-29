@@ -7,7 +7,7 @@ import CleanDocumentPreview from './CleanDocumentPreview';
 const MAX_FILES = 5; // Máximo de archivos
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
 
-const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }) => {
+const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, isStandalone = false }) => {
   // --- ESTADOS DE UI ---
   const [activeTab, setActiveTab] = useState('details');
 
@@ -1535,9 +1535,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
     ? correctedFiles.length
     : approvedData?.correctedFiles?.length || 1;
 
+  const containerClass = isStandalone
+    ? "w-full h-full flex flex-col bg-card"
+    : "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm";
+
+  const modalClass = isStandalone
+    ? "flex flex-col flex-1 h-full w-full overflow-y-auto"
+    : "bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+    <div className={containerClass}>
+      <div className={modalClass}>
 
         <div className="sticky top-0 bg-card border-b border-border z-10">
           <div className="flex items-center justify-between p-6 pb-2">
@@ -1551,39 +1559,45 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
               </div>
 
               <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleStatusChange(getPreviousStatus(fullRequestData?.status))}
-                  disabled={!getPreviousStatus(fullRequestData?.status)}
-                  iconName="ChevronLeft"
-                  iconSize={16}
-                  className="text-muted-foreground hover:text-foreground"
-                />
+                {!isStandalone && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleStatusChange(getPreviousStatus(fullRequestData?.status))}
+                    disabled={!getPreviousStatus(fullRequestData?.status)}
+                    iconName="ChevronLeft"
+                    iconSize={16}
+                    className="text-muted-foreground hover:text-foreground"
+                  />
+                )}
 
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fullRequestData?.status)}`}>
                   <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
                   {fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
                 </span>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleStatusChange(getNextStatus(fullRequestData?.status))}
-                  disabled={!getNextStatus(fullRequestData?.status)}
-                  iconName="ChevronRight"
-                  iconSize={16}
-                  className="text-muted-foreground hover:text-foreground"
-                />
+                {!isStandalone && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleStatusChange(getNextStatus(fullRequestData?.status))}
+                    disabled={!getNextStatus(fullRequestData?.status)}
+                    iconName="ChevronRight"
+                    iconSize={16}
+                    className="text-muted-foreground hover:text-foreground"
+                  />
+                )}
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              iconName="X"
-              iconSize={20}
-            />
+            {!isStandalone && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                iconName="X"
+                iconSize={20}
+              />
+            )}
           </div>
 
           <div className="px-6 flex space-x-6 ">
@@ -1621,58 +1635,64 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage }
               <span>Última actualización: {formatDate(fullRequestData?.submittedAt)}</span>
             </div>
             <div className="flex items-center space-x-3">
-              <Button
-                variant="outline"
-                iconName="MessageSquare"
-                iconPosition="left"
-                onClick={() => onSendMessage(fullRequestData)}
-                iconSize={16}
-              >
-                Mensajes
-              </Button>
+              {!isStandalone && (
+                <>
+                  <Button
+                    variant="outline"
+                    iconName="MessageSquare"
+                    iconPosition="left"
+                    onClick={() => onSendMessage(fullRequestData)}
+                    iconSize={16}
+                  >
+                    Mensajes
+                  </Button>
 
-              {(fullRequestData?.status === 'en_revision' || fullRequestData?.status === 'pendiente') && (
+                  {(fullRequestData?.status === 'en_revision' || fullRequestData?.status === 'pendiente') && (
+                    <Button
+                      variant="default"
+                      iconName={isApproving ? "Loader" : "CheckCircle"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={handleApprove}
+                      disabled={correctedFiles.length === 0 || isApproving || correctedFiles.length > MAX_FILES || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
+                    >
+                      {isApproving ? 'Aprobando...' : `Aprobar (${correctedFiles.length}/${MAX_FILES})`}
+                    </Button>
+                  )}
+
+                  {fullRequestData?.status !== 'finalizado' && (
+                    <Button
+                      variant="default"
+                      iconName={isApproving ? "Loader" : "CheckCircle"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={handleApprovewithoutFile}
+                    >
+                      {isApproving ? 'Finalizando...' : 'Finalizar'}
+                    </Button>
+                  )}
+
+                  {fullRequestData?.status == 'finalizado' && (
+                    <Button
+                      variant="default"
+                      iconName={isApproving ? "Loader" : "Folder"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={handleArchieve}
+                    >
+                      {isApproving ? 'Archivando...' : 'Archivar'}
+                    </Button>
+                  )}
+                </>
+              )}
+              {!isStandalone && (
                 <Button
                   variant="default"
-                  iconName={isApproving ? "Loader" : "CheckCircle"}
-                  iconPosition="left"
-                  iconSize={16}
-                  onClick={handleApprove}
-                  disabled={correctedFiles.length === 0 || isApproving || correctedFiles.length > MAX_FILES || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
+                  onClick={onClose}
                 >
-                  {isApproving ? 'Aprobando...' : `Aprobar (${correctedFiles.length}/${MAX_FILES})`}
+                  Cerrar
                 </Button>
               )}
-
-              {fullRequestData?.status !== 'finalizado' && (
-                <Button
-                  variant="default"
-                  iconName={isApproving ? "Loader" : "CheckCircle"}
-                  iconPosition="left"
-                  iconSize={16}
-                  onClick={handleApprovewithoutFile}
-                >
-                  {isApproving ? 'Finalizando...' : 'Finalizar'}
-                </Button>
-              )}
-
-              {fullRequestData?.status == 'finalizado' && (
-                <Button
-                  variant="default"
-                  iconName={isApproving ? "Loader" : "Folder"}
-                  iconPosition="left"
-                  iconSize={16}
-                  onClick={handleArchieve}
-                >
-                  {isApproving ? 'Archivando...' : 'Archivar'}
-                </Button>
-              )}
-              <Button
-                variant="default"
-                onClick={onClose}
-              >
-                Cerrar
-              </Button>
             </div>
           </div>
         </div>

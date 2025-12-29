@@ -13,7 +13,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
   const [formName, setFormName] = useState('');
-  const [lastCleared, setLastCleared] = useState(null);
+
 
   const chatRef = useRef(null);
   const shouldAutoScroll = useRef(true);
@@ -35,11 +35,13 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
     } else if (request.title || request.formTitle) {
       setFormName(request.title || request.formTitle);
     }
-
-    // Load last cleared time
-    const storedLastCleared = localStorage.getItem(`chatLastCleared_${id}`);
-    setLastCleared(storedLastCleared);
   }, [id, request]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMessages([]);
+    }
+  }, [isOpen, id]);
 
   const fetchMessages = useCallback(async () => {
     if (!id) return;
@@ -130,18 +132,10 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   };
 
   const handleClose = () => {
-    if (id) {
-      const now = new Date().toISOString();
-      localStorage.setItem(`chatLastCleared_${id}`, now);
-      setLastCleared(now);
-    }
     onClose();
   };
 
   const filteredMessages = messages.filter(msg => {
-    if (lastCleared && new Date(msg.fecha) <= new Date(lastCleared)) {
-      return false;
-    }
     if (activeTab === 'admin') {
       return msg.admin === true;
     }
