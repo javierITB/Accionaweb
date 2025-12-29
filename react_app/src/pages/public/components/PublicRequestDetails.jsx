@@ -640,7 +640,7 @@ const PublicRequestDetails = ({ request }) => {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                                 <Icon name="Clock" size={16} />
-                                <span>Última actualización: {formatDate(request?.lastUpdated)}</span>
+                                <span>Última actualización: {formatDate(request?.updatedAt || request?.lastUpdated || request?.createdAt)}</span>
                             </div>
                         </div>
                     </div>
