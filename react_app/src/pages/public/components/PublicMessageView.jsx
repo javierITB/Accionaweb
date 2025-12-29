@@ -178,26 +178,26 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
             <div className={modalClass}>
                 {/* Header Enhanced */}
                 <div className="flex flex-col space-y-3 p-4 sm:p-6 border-b border-border bg-card z-10">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                            <Icon name="MessageSquare" size={24} className="text-accent" />
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start space-x-3">
+                            <Icon name="MessageSquare" size={24} className="text-accent mt-1 flex-shrink-0" />
                             <div>
-                                <h2 className="text-xl font-semibold text-foreground">
+                                <h2 className="text-xl font-semibold text-foreground leading-tight">
                                     {request?.formDef?.title || request?.formTitle || formName || request?.title || "Solicitud"}
                                 </h2>
-                                <div className="flex flex-col space-y-1 mt-1 text-sm text-muted-foreground">
-                                    <div className="flex items-center gap-1">
+                                <div className="flex flex-col space-y-1 mt-2 text-sm text-muted-foreground">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1">
                                         <span className="font-medium text-foreground/80">Asociado a:</span>
                                         <span>{(request?.submittedBy || request?.user?.nombre) + ", " + (request?.company || request?.user?.empresa)}</span>
                                     </div>
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1">
                                         <span className="font-medium text-foreground/80">Fecha de envío:</span>
                                         <span>{new Date(request?.createdAt || request?.submittedAt).toLocaleDateString('es-CL')}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex flex-col items-end space-y-2">
+                        <div className="flex flex-col items-end space-y-2 flex-shrink-0">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(request?.status)}`}>
                                 <Icon name={getStatusIcon(request?.status)} size={12} className="mr-1.5" />
                                 {request?.status?.replace('_', ' ')?.toUpperCase()}
