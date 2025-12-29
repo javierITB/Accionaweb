@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import Icon from '../../components/AppIcon'; 
-import Image from '../../components/AppImage'; 
-import Button from '../../components/ui/Button'; 
-import Input from '../../components/ui/Input'; 
-import Select from '../../components/ui/Select'; 
+import Icon from '../../components/AppIcon';
+import Image from '../../components/AppImage';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import Select from '../../components/ui/Select';
 
 // Recibimos los datos del usuario como props
 const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const [profileData, setProfileData] = useState(initialProfileData);
   const [formData, setFormData] = useState(initialProfileData);
   const [errors, setErrors] = useState({});
@@ -19,12 +19,12 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
     if (initialProfileData) {
       // Necesitamos una imagen de fallback aquí porque el ProfileSection original la generaba
       const defaultImage = `https://placehold.co/128x128/3B82F6/FFFFFF?text=${initialProfileData.firstName?.[0]?.toUpperCase() || 'A'}`;
-      
+
       const syncedData = {
-          ...initialProfileData,
-          profileImage: defaultImage, // Asumiendo que no guardas la imagen en MongoDB aún
+        ...initialProfileData,
+        profileImage: defaultImage, // Asumiendo que no guardas la imagen en MongoDB aún
       };
-      
+
       setProfileData(syncedData);
       setFormData(syncedData);
     }
@@ -80,7 +80,7 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
   const handleSave = async () => {
     if (!validateForm()) return;
     if (!userId) return alert('Error: ID de usuario no disponible para actualizar.');
-    
+
     setIsSaving(true);
 
     const updateBody = {
@@ -89,10 +89,10 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
       mail: formData.email,
       empresa: formData.department,
       cargo: formData.position,
-      rol: profileData.rol, 
-      estado: profileData.estado 
+      rol: profileData.rol,
+      estado: profileData.estado
     };
-    
+
     try {
       const token = sessionStorage.getItem('token');
       const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/users/${userId}`, {
@@ -108,17 +108,17 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
         const errorData = await response.json();
         throw new Error(errorData.error || 'Error al actualizar el perfil.');
       }
-      
+
       // Sincronizar estado local, manteniendo twoFactorEnabled
-      setProfileData({ 
-        ...formData, 
-        rol: profileData.rol, 
+      setProfileData({
+        ...formData,
+        rol: profileData.rol,
         estado: profileData.estado,
-        twoFactorEnabled: profileData.twoFactorEnabled 
+        twoFactorEnabled: profileData.twoFactorEnabled
       });
       setIsEditing(false);
       alert('Perfil actualizado exitosamente.');
-      
+
     } catch (error) {
       console.error("Error guardando perfil:", error);
       alert("Error al guardar el perfil: " + error.message);
@@ -160,7 +160,7 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
   return (
     <div className="bg-card rounded-lg border border-border shadow-subtle w-full">
       {/* ... (El resto del JSX se mantiene igual) ... */}
-      
+
       {/* Header - RESPONSIVE */}
       <div className="p-4 sm:p-6 border-b border-border">
         <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between space-y-3 xs:space-y-0">
@@ -168,43 +168,7 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
             <Icon name="User" size={18} className="text-primary sm:w-5 sm:h-5" />
             <h2 className="text-base sm:text-lg font-semibold text-foreground">Información Personal</h2>
           </div>
-          
-          {/* Botones de acción - MEJORADOS PARA MÓVIL */}
-          {!isEditing ? (
-            <Button
-              variant="outline"
-              onClick={() => setIsEditing(true)}
-              iconName="Edit"
-              iconPosition="left"
-              size="sm"
-              className="w-full xs:w-auto justify-center"
-            >
-              Editar Perfil
-            </Button>
-          ) : (
-            <div className="flex flex-col xs:flex-row items-stretch xs:items-center space-y-2 xs:space-y-0 xs:space-x-2 w-full xs:w-auto">
-              <Button
-                variant="ghost"
-                onClick={handleCancel}
-                disabled={isSaving}
-                size="sm"
-                className="w-full xs:w-auto justify-center"
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="default"
-                onClick={handleSave}
-                iconName="Save"
-                iconPosition="left"
-                disabled={isSaving}
-                size="sm"
-                className="w-full xs:w-auto justify-center"
-              >
-                {isSaving ? 'Guardando...' : 'Guardar'}
-              </Button>
-            </div>
-          )}
+
         </div>
       </div>
 
@@ -234,7 +198,7 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
                   </label>
                 )}
               </div>
-              
+
               <div className="text-center">
                 <h3 className="text-base sm:text-lg font-medium text-foreground break-words">
                   {formData?.firstName} {formData?.lastName}
@@ -361,6 +325,43 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
           </div>
         </div>
       </div>
+
+      {/* Botones de acción - MEJORADOS PARA MÓVIL */}
+      {!isEditing ? (
+        <Button
+          variant="outline"
+          onClick={() => setIsEditing(true)}
+          iconName="Edit"
+          iconPosition="left"
+          size="sm"
+          className="w-full xs:w-auto justify-center"
+        >
+          Editar Perfil
+        </Button>
+      ) : (
+        <div className="flex flex-col xs:flex-row items-stretch xs:items-center space-y-2 xs:space-y-0 xs:space-x-2 w-full xs:w-auto">
+          <Button
+            variant="ghost"
+            onClick={handleCancel}
+            disabled={isSaving}
+            size="sm"
+            className="w-full xs:w-auto justify-center"
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="default"
+            onClick={handleSave}
+            iconName="Save"
+            iconPosition="left"
+            disabled={isSaving}
+            size="sm"
+            className="w-full xs:w-auto justify-center"
+          >
+            {isSaving ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
