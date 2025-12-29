@@ -7,7 +7,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [isSending, setIsSending] = useState(false);
   const [user, setUser] = useState(sessionStorage.getItem("user"));
   const [messages, setMessages] = useState([]);
-  // const [lastCleared, setLastCleared] = useState(null); // REMOVED
+  const [lastCleared, setLastCleared] = useState(null);
   const chatRef = useRef(null);
   const [formName, setFormName] = useState('');
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -68,28 +68,66 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
     fetchMessages();
     const interval = setInterval(fetchMessages, 3000);
 
+    // Load last cleared time
+    const storedLastCleared = localStorage.getItem(`chatLastCleared_${id}`);
+    setLastCleared(storedLastCleared);
+
     return () => clearInterval(interval);
   }, [isOpen, id]);
 
-  // Removed lastCleared logic
+  // ⬇️ AUTO-SCROLL COPIADO DE LA VISTA ADMIN
+  useEffect(() => {
+    if (isOpen && chatRef.current && messages.length > 0) {
+      if (isFirstLoad.current) {
+        setTimeout(() => {
+          if (chatRef.current) {
+            chatRef.current.scrollTop = chatRef.current.scrollHeight;
+            isFirstLoad.current = false;
+            setHasNewMessages(false);
+          }
+        }, 100);
+      } else if (shouldAutoScroll.current) {
+        const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
+        const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 100;
 
-  // ... (auto scroll effects remain)
+        if (isNearBottom) {
+          setTimeout(() => {
+            if (chatRef.current) {
+              chatRef.current.scrollTop = chatRef.current.scrollHeight;
+              setHasNewMessages(false);
+            }
+          }, 50);
+        }
+        shouldAutoScroll.current = false;
+      }
+    }
+  }, [messages, isOpen]);
 
-  // ... (handleScroll remains)
+  // MANEJADOR DE SCROLL COPIADO
+  const handleScroll = () => {
+    if (!chatRef.current) return;
 
-  // ... (handleClose simple)
-  const handleClose = () => {
-    onClose();
+    const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
+    const isAtBottom = Math.abs(scrollHeight - (scrollTop + clientHeight)) < 10;
+
+    setShowScrollToBottom(!isAtBottom);
+
+    if (!isAtBottom) {
+      shouldAutoScroll.current = false;
+    } else {
+      setHasNewMessages(false);
+    }
   };
 
-  // No filtering needed anymore, use messages directly (or just filtered by admin tab if applicable, but this is client modal so it might be simpler? 
-  // Wait, Client modal usually doesn't have tabs? checking file... 
-  // Ah, looking at previous `read_file` of Client MessageModal (step 127), it DOES NOT have tabs logic visible in that snippet.
-  // Wait, step 104 showed a file with tabs. That was Admin modal? No, path was `src/pages/Respuestas/components/MessageModal.jsx`.
-  // Step 127 path was `src/clientPages/home/components/components/MessageModal.jsx`. 
-  // Client modal (step 127) does NOT have tabs.
-  // So just use `messages` directly.
+  const scrollToBottom = () => {
+    shouldAutoScroll.current = true;
+    setHasNewMessages(false);
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  };
 
+  // Enviar mensaje
   const handleSend = async () => {
     if (!message.trim() || !id) return;
     setIsSending(true);
@@ -144,22 +182,17 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => {
-            if (id) {
-              localStorage.setItem(`chatLastCleared_${id}`, new Date().toISOString());
-            }
-            onClose();
-          }} iconName="X" iconSize={20} />
+          <Button variant="ghost" size="icon" onClick={onClose} iconName="X" iconSize={20} />
         </div>
 
-        {/* Chat */}
+        {/* Chat - AGREGADO onScroll */}
         <div
           ref={chatRef}
           className="flex-1 overflow-y-auto p-6 space-y-4"
           onScroll={handleScroll}
         >
-          {messages.length > 0 ?
-            messages.map((msg, i) => (
+          {messages.filter(msg => !lastCleared || new Date(msg.fecha) > new Date(lastCleared)).length > 0 ?
+            messages.filter(msg => !lastCleared || new Date(msg.fecha) > new Date(lastCleared)).map((msg, i) => (
               <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] rounded-lg p-4 ${msg.autor === user ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                   <div className="flex items-center justify-between mb-2">
@@ -173,7 +206,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         </div>
 
         {/* Input */}
-        < div className="p-6 border-t border-border" >
+        <div className="p-6 border-t border-border">
           <div className="flex items-center space-x-2">
             <textarea
               value={message}
@@ -196,13 +229,14 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
             {/* AGREGADO: Botón para bajar rápido a la derecha del enviar */}
             {showScrollToBottom && (
               <div className="flex-shrink-0">
-                <button
+                <Button
                   onClick={scrollToBottom}
-                  className={`shadow-lg flex items-center justify-center bg-primary hover:bg-primary/90 text-white rounded-lg transition-all ${hasNewMessages ? 'px-3 py-2 text-sm min-w-[70px]' : 'w-10 h-10'
-                    }`}
+                  className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-white"
+                  iconName="ArrowDown"
+                  size="sm"
                 >
-                  {hasNewMessages ? "Nuevos" : "↓"}
-                </button>
+                  {hasNewMessages && "Nuevos"}  {/* ← Texto solo cuando hay nuevos */}
+                </Button>
               </div>
             )}
           </div>
