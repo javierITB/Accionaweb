@@ -13,6 +13,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
   const [formName, setFormName] = useState('');
+  const [lastCleared, setLastCleared] = useState(null);
 
   const chatRef = useRef(null);
   const shouldAutoScroll = useRef(true);
@@ -34,6 +35,10 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
     } else if (request.title || request.formTitle) {
       setFormName(request.title || request.formTitle);
     }
+
+    // Load last cleared time
+    const storedLastCleared = localStorage.getItem(`chatLastCleared_${id}`);
+    setLastCleared(storedLastCleared);
   }, [id, request]);
 
   const fetchMessages = useCallback(async () => {
@@ -42,14 +47,14 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
       const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${id}/chat/admin`);
       if (!res.ok) throw new Error("Error al obtener chat");
       const data = await res.json();
-      
+
       const currentCount = data?.length || 0;
       const hadNewMessages = currentCount > lastMessageCount.current;
-      
+
       if (hadNewMessages && !isFirstLoad.current && !isTabChange.current) {
         setHasNewMessages(true);
       }
-      
+
       setMessages(data || []);
       lastMessageCount.current = currentCount;
     } catch (err) {
@@ -87,7 +92,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
       } else if (shouldAutoScroll.current) {
         const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
         const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 100;
-        
+
         if (isNearBottom) {
           setTimeout(() => {
             if (chatRef.current) {
@@ -103,12 +108,12 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
   const handleScroll = useCallback(() => {
     if (!chatRef.current) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
     const isAtBottom = Math.abs(scrollHeight - (scrollTop + clientHeight)) < 10;
-    
+
     setShowScrollToBottom(!isAtBottom);
-    
+
     if (!isAtBottom) {
       shouldAutoScroll.current = false;
     } else {
@@ -124,7 +129,19 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
     setSendToEmail(false);
   };
 
+  const handleClose = () => {
+    if (id) {
+      const now = new Date().toISOString();
+      localStorage.setItem(`chatLastCleared_${id}`, now);
+      setLastCleared(now);
+    }
+    onClose();
+  };
+
   const filteredMessages = messages.filter(msg => {
+    if (lastCleared && new Date(msg.fecha) <= new Date(lastCleared)) {
+      return false;
+    }
     if (activeTab === 'admin') {
       return msg.admin === true;
     }
@@ -133,7 +150,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
   const handleSend = async () => {
     if (!message.trim() || !id) return;
-    
+
     setIsSending(true);
 
     try {
@@ -153,17 +170,17 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
       });
 
       const data = await res.json();
-      
+
       if (res.ok && data?.data) {
         shouldAutoScroll.current = true;
         setMessages(prev => [...prev, data.data]);
         setMessage('');
         setHasNewMessages(false);
-        
+
         if (sendToEmail) {
           console.log('Solicitud de envío por correo enviada al backend');
         }
-        
+
         setSendToEmail(false);
       } else {
         console.error("Error enviando mensaje:", data.error || data);
@@ -203,7 +220,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
       <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl h-[80vh] sm:h-[70vh] flex flex-col relative">
-        
+
         {showScrollToBottom && (
           <div className="absolute -right-14 top-1/2 transform -translate-y-1/2 z-10">
             <Button
@@ -217,7 +234,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
             </Button>
           </div>
         )}
-        
+
         <div className="border-b border-border bg-card rounded-t-lg">
           <div className="flex items-center justify-between p-4 sm:px-6 pb-2">
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
@@ -234,7 +251,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={onClose}
+              onClick={handleClose}
               iconName="X"
               iconSize={20}
               className="flex-shrink-0 ml-2"
@@ -245,8 +262,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
             <button
               onClick={() => handleTabChange('general')}
               className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 ${activeTab === 'general'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               title="Ver mensajes generales"
             >
@@ -255,8 +272,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
             <button
               onClick={() => handleTabChange('admin')}
               className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${activeTab === 'admin'
-                  ? 'border-error text-error'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'border-error text-error'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               title="Ver mensajes internos"
             >
@@ -276,8 +293,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
             {filteredMessages.length > 0 ? filteredMessages.map((msg, i) => (
               <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[90%] sm:max-w-[85%] rounded-lg px-3 py-2 ${msg.autor === user
-                    ? (activeTab === 'admin' ? 'bg-error text-error-foreground' : 'bg-primary text-primary-foreground')
-                    : 'bg-muted text-muted-foreground'
+                  ? (activeTab === 'admin' ? 'bg-error text-error-foreground' : 'bg-primary text-primary-foreground')
+                  : 'bg-muted text-muted-foreground'
                   }`}>
                   {msg.autor !== user && (
                     <div className="flex items-center justify-between mb-1 sm:mb-2">
@@ -346,8 +363,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                     disabled={isSending}
                     className="h-4 w-4 rounded border-border text-primary focus:ring-primary focus:ring-2 cursor-pointer transition-colors"
                   />
-                  <label 
-                    htmlFor="send-to-email" 
+                  <label
+                    htmlFor="send-to-email"
                     className="ml-2 text-sm text-muted-foreground cursor-pointer flex items-center gap-2"
                   >
                     <Icon name="Mail" size={14} />
