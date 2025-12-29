@@ -301,7 +301,7 @@ const RequestTracking = () => {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`https://back-acciona.vercel.app/api/soporte/${requestId}`, {
+      const res = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${requestId}`, {
         method: 'DELETE',
       });
 

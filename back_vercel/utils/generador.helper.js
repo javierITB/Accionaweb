@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const docx = require("docx");
 const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, ImageRun, BorderStyle } = docx;
+const { createBlindIndex, decrypt } = require("./seguridad.helper");
 
 // ========== FUNCIONES DE UTILIDAD (MANTENIDAS) ==========
 
@@ -68,39 +69,59 @@ async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
             throw new Error("Base de datos no disponible");
         }
 
+        const nombreIndex = createBlindIndex(nombreEmpresa);
+        console.log("Blind index generado:", nombreIndex);
+
         const empresa = await db.collection('empresas').findOne({
-            nombre: { $regex: new RegExp(nombreEmpresa, 'i') }
+            nombre_index: nombreIndex
         });
 
-        console.log("Empresa encontrada en BD:", empresa);
-
         if (empresa) {
-            return {
-                nombre: empresa.nombre,
-                rut: empresa.rut,
-                encargado: empresa.encargado || "",
-                direccion: empresa.direccion || "",
-                rut_encargado: empresa.rut_encargado || "",
+            console.log("Empresa encontrada en BD por índice");
+
+            const empresaDescifrada = {
+                nombre: decrypt(empresa.nombre),
+                rut: decrypt(empresa.rut),
+                encargado: decrypt(empresa.encargado),
+                direccion: decrypt(empresa.direccion),
+                rut_encargado: decrypt(empresa.rut_encargado),
                 logo: empresa.logo
             };
+
+            console.log("Información empresa descifrada:", {
+                nombre: empresaDescifrada.nombre,
+                rut: empresaDescifrada.rut,
+                encargado: empresaDescifrada.encargado,
+                direccion: empresaDescifrada.direccion
+            });
+
+            return empresaDescifrada;
         }
+
+        console.log("No se encontró empresa en BD con índice:", nombreIndex);
 
         const palabras = nombreEmpresa.toUpperCase().split(' ');
         for (const palabra of palabras) {
             if (palabra.length > 3) {
+                const palabraIndex = createBlindIndex(palabra);
                 const empresaPorPalabra = await db.collection('empresas').findOne({
-                    nombre: { $regex: new RegExp(palabra, 'i') }
+                    nombre_index: palabraIndex
                 });
 
                 if (empresaPorPalabra) {
-                    console.log("Empresa encontrada por palabra clave:", empresaPorPalabra);
-                    return {
-                        nombre: empresaPorPalabra.nombre,
-                        rut: empresaPorPalabra.rut,
-                        encargado: empresaPorPalabra.encargado || "",
-                        rut_encargado: empresaPorPalabra.rut_encargado || "",
+                    console.log("Empresa encontrada por palabra clave por índice");
+
+                    const empresaDescifrada = {
+                        nombre: decrypt(empresaPorPalabra.nombre),
+                        rut: decrypt(empresaPorPalabra.rut),
+                        encargado: decrypt(empresaPorPalabra.encargado),
+                        direccion: decrypt(empresaPorPalabra.direccion),
+                        rut_encargado: decrypt(empresaPorPalabra.rut_encargado),
                         logo: empresaPorPalabra.logo
                     };
+
+                    console.log("Información empresa descifrada por palabra:", empresaDescifrada.nombre);
+                    return empresaDescifrada;
                 }
             }
         }
@@ -194,9 +215,18 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
         console.log(`Variable: "${key}" → "${nombreVariable}" =`, valor);
     });
 
-    if (userData.empresa) {
+    if (userData && userData.empresa) {
         try {
-            const empresaInfo = await obtenerEmpresaDesdeBD(userData.empresa, db);
+            console.log("userData.empresa (posiblemente cifrado):", userData.empresa);
+            
+            let nombreEmpresaDescifrado = userData.empresa;
+            
+            if (userData.empresa.includes(':')) {
+                nombreEmpresaDescifrado = decrypt(userData.empresa);
+                console.log("Empresa descifrada de userData:", nombreEmpresaDescifrado);
+            }
+            
+            const empresaInfo = await obtenerEmpresaDesdeBD(nombreEmpresaDescifrado, db);
             if (empresaInfo) {
                 if (!variables[normalizarNombreVariable('Empresa')]) {
                     variables[normalizarNombreVariable('Empresa')] = empresaInfo.nombre;
@@ -209,13 +239,17 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
                 variables[normalizarNombreVariable('Rut encargado empresa')] = empresaInfo.rut_encargado || '';
                 variables[normalizarNombreVariable('Direccion empresa')] = empresaInfo.direccion || '';
 
-                console.log("Información empresa obtenida:", {
+                console.log("Información empresa obtenida y descifrada:", {
                     nombre: empresaInfo.nombre,
                     rut: empresaInfo.rut,
                     encargado: empresaInfo.encargado,
                     direccion: empresaInfo.direccion,
                     rut_encargado: empresaInfo.rut_encargado
                 });
+            } else {
+                console.log("No se pudo obtener información de la empresa, usando nombre descifrado");
+                variables[normalizarNombreVariable('Empresa')] = nombreEmpresaDescifrado;
+                variables[normalizarNombreVariable('Nombre empresa')] = nombreEmpresaDescifrado;
             }
         } catch (error) {
             console.error("Error obteniendo información de empresa:", error);
@@ -564,7 +598,6 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
 
         const fileName = `${limpiarFileName(nombreFormulario)}_${limpiarFileName(trabajador)}`;
 
-        // VERIFICAR Y SOBREESCRIBIR DOCUMENTO EXISTENTE
         const existingDoc = await db.collection('docxs').findOne({
             responseId: responseId
         });
@@ -617,7 +650,6 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
 }
 
 function limpiarFileName(texto) {
-    // Asegurarse de que texto sea siempre un string
     if (typeof texto !== 'string') {
         texto = String(texto || 'documento');
     }
@@ -637,20 +669,16 @@ function limpiarFileName(texto) {
         .replace(/Ú/g, 'U')
         .replace(/ü/g, 'u')
         .replace(/Ü/g, 'U')
-        // Eliminar cualquier otro diacrítico
         .replace(/[\u0300-\u036f]/g, '')
-        // Eliminar caracteres especiales restantes
         .replace(/[^a-zA-Z0-9\s._-]/g, '')
-        // Reemplazar espacios múltiples por un solo guión bajo
         .replace(/\s+/g, '_')
-        // Limitar longitud
         .substring(0, 100)
-        // Eliminar guiones bajos al inicio/final
         .replace(/^_+|_+$/g, '')
         .toUpperCase();
 }
-function reemplazarVariablesEnContenido(contenido, variables) {
-    console.log("=== REEMPLAZANDO VARIABLES EN CONTENIDO ===");
+
+function reemplazarVariablesEnContenidoTxt(contenido, variables) {
+    console.log("=== REEMPLAZANDO VARIABLES EN CONTENIDO TXT ===");
 
     const regex = /{{([^}]+)}}/g;
     let match;
@@ -663,16 +691,13 @@ function reemplazarVariablesEnContenido(contenido, variables) {
         const nombreVariable = match[1].trim();
         const matchIndex = match.index;
 
-        // Texto normal antes de la variable
         if (matchIndex > lastIndex) {
             const textoNormal = contenido.substring(lastIndex, matchIndex);
             textRuns.push(new TextRun(textoNormal));
         }
 
-        // Variable en negrita
         let valor = variables[nombreVariable] || `[${nombreVariable} NO ENCONTRADA]`;
 
-        // Detectar y formatear fechas automáticamente
         if (esCampoDeFecha(nombreVariable) && valor && !valor.includes('NO ENCONTRADA')) {
             try {
                 const fechaFormateada = formatearFechaEspanol(valor);
@@ -689,7 +714,6 @@ function reemplazarVariablesEnContenido(contenido, variables) {
         lastIndex = matchIndex + variableCompleta.length;
     }
 
-    // Texto normal después de la última variable
     if (lastIndex < contenido.length) {
         const textoFinal = contenido.substring(lastIndex);
         textRuns.push(new TextRun(textoFinal));
@@ -698,6 +722,7 @@ function reemplazarVariablesEnContenido(contenido, variables) {
     console.log("Contenido procesado (TextRuns):", textRuns.length, "elementos");
     return textRuns;
 }
+
 async function generarDocumentoTxt(responses, responseId, db, formTitle) {
     try {
         console.log("=== GENERANDO DOCUMENTO TXT MEJORADO ===");
@@ -745,7 +770,6 @@ async function generarDocumentoTxt(responses, responseId, db, formTitle) {
         const nombreFormulario = formTitle || 'FORMULARIO';
         const fileName = `${limpiarFileName(nombreFormulario)}_${limpiarFileName(trabajador)}`;
 
-        // VERIFICAR Y SOBREESCRIBIR DOCUMENTO EXISTENTE (TXT)
         const existingDoc = await db.collection('docxs').findOne({
             responseId: responseId
         });

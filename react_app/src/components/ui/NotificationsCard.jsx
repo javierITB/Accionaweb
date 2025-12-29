@@ -5,7 +5,26 @@ import Button from '../../components/ui/Button';
 const NotificationsCard = ({ user, onUnreadChange }) => {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [filteredNotifications, setFilteredNotifications] = useState([]);
   const mail = sessionStorage.getItem("email");
+
+  // Función para inferir tipo de notificación basado en icono y título
+  const inferNotificationType = (notification) => {
+    const title = notification.titulo?.toLowerCase() || '';
+    const icon = notification.icono;
+    
+    if (icon === 'Edit' || title.includes('mensaje') || title.includes('enviado')) {
+      return 'message';
+    } 
+    else if (icon === 'form' || title.includes('respondido') || title.includes('formulario')) {
+      return 'form_response';
+    }
+    else if (title.includes('ticket') || title.includes('soporte')) {
+      return 'support';
+    }
+    return 'system';
+  };
 
   useEffect(() => {
     if (onUnreadChange) {
@@ -22,7 +41,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
         const normalizedNotis = data.map(n => ({
           id: n.id,
-          type: n.tipo || "system",
+          type: inferNotificationType(n), // Usar la función de inferencia
           title: n.titulo,
           message: n.descripcion,
           timestamp: new Date(n.fecha_creacion),
@@ -34,6 +53,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         }));
 
         setNotifications(normalizedNotis.reverse());
+        setFilteredNotifications(normalizedNotis.reverse());
       } catch (err) {
         console.error("Error cargando notificaciones:", err);
       } finally {
@@ -44,9 +64,67 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
     fetchNotifications();
   }, [user]);
 
+  // Obtener tipos únicos de notificaciones
+  const notificationTypes = React.useMemo(() => {
+    const types = new Set(notifications.map(n => n.type));
+    return ['all', ...Array.from(types)];
+  }, [notifications]);
+
+  // Contar notificaciones por tipo
+  const countByType = React.useMemo(() => {
+    const counts = { all: notifications.length };
+    notifications.forEach(noti => {
+      counts[noti.type] = (counts[noti.type] || 0) + 1;
+    });
+    return counts;
+  }, [notifications]);
+
+  // Filtrar notificaciones cuando cambia el filtro activo
+  useEffect(() => {
+    if (activeFilter === 'all') {
+      setFilteredNotifications(notifications);
+    } else {
+      const filtered = notifications.filter(n => n.type === activeFilter);
+      setFilteredNotifications(filtered);
+    }
+  }, [activeFilter, notifications]);
+
+  // Funciones para obtener etiquetas y estilos de los tipos
+  const getTypeLabel = (type) => {
+    const labels = {
+      all: 'Todas',
+      message: 'Mensajes',
+      form_response: 'Formularios',
+      support: 'Soporte',
+      system: 'Sistema'
+    };
+    return labels[type] || type;
+  };
+
+  const getTypeIcon = (type) => {
+    const icons = {
+      all: 'Bell',
+      message: 'MessageSquare',
+      form_response: 'FileText',
+      support: 'HelpCircle',
+      system: 'Settings'
+    };
+    return icons[type] || 'Bell';
+  };
+
+  const getTypeColor = (type) => {
+    const colors = {
+      all: '#3b82f6', // blue-500
+      message: '#2563eb', // blue-600
+      form_response: '#16a34a', // green-600
+      support: '#ea580c', // orange-600
+      system: '#7c3aed' // purple-600
+    };
+    return colors[type] || '#6b7280';
+  };
+
   const handleDeleteNotifications = async () => {
     try {
-
       if (!mail) {
         console.error("Usuario no encontrado en sesión.");
         return;
@@ -66,6 +144,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
       }
 
       setNotifications([]);
+      setFilteredNotifications([]);
       console.log(`Todas las notificaciones eliminadas correctamente.`);
     } catch (err) {
       console.error("Error eliminando notificación:", err);
@@ -74,7 +153,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
   const handleDeleteNotification = async (id) => {
     try {
-
       if (!mail) {
         console.error("Usuario no encontrado en sesión.");
         return;
@@ -94,6 +172,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
       }
 
       setNotifications((prev) => prev.filter((n) => n.id !== id));
+      setFilteredNotifications((prev) => prev.filter((n) => n.id !== id));
       console.log(`Notificación ${id} eliminada correctamente.`);
     } catch (err) {
       console.error("Error eliminando notificación:", err);
@@ -127,7 +206,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
       medium: { text: 'Media', class: 'bg-warning/10 text-warning border-warning/20' },
       low: { text: 'Baja', class: 'bg-success/10 text-success border-success/20' }
     };
-    // const badgeClass = `px-2 py-1 rounded-full text-xs font-medium border ml-auto flex-shrink-0 ${config?.[priority]?.class}`;
     const badgeClass = `px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${config?.[priority]?.class}`;
 
     return { ...config?.[priority], class: badgeClass } || { text: 'Media', class: badgeClass };
@@ -153,7 +231,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
   const markAllAsRead = async () => {
     try {
-
       if (!mail) {
         console.error("Usuario no encontrado en sesión.");
         return;
@@ -173,6 +250,10 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
       setNotifications(prev =>
         prev.map(n => ({ ...n, isRead: true, leido: true }))
       );
+      
+      setFilteredNotifications(prev =>
+        prev.map(n => ({ ...n, isRead: true, leido: true }))
+      );
 
       console.log("Todas las notificaciones marcadas como leídas");
     } catch (err) {
@@ -180,40 +261,30 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
     }
   };
 
-
   const handleNotificationClick = async (notification) => {
-    // 1. Obtener los IDs necesarios (asumiendo que notification tiene el userId o puedes obtenerlo)
     const notiId = notification.id;
 
     if (!mail || !notiId) {
       console.error("Faltan IDs para marcar la notificación como leída.");
-      // Continuar con el resto de la lógica a pesar del error
     } else {
       try {
-        // 2. Llamada al endpoint PUT para marcar como leída en la base de datos
         const response = await fetch(
           `https://back-vercel-iota.vercel.app/api/noti/${mail}/${notiId}/leido`,
           {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
-              // Agrega cualquier encabezado de autenticación (ej: 'Authorization') si es necesario
             },
           }
         );
 
         if (!response.ok) {
-          // Manejo de error si la respuesta del servidor no es exitosa (ej: 404, 500)
           console.error(`Error al marcar ${notiId} como leída: ${response.statusText}`);
-          // Opcional: podrías querer no actualizar el estado local si falla la API
         } else {
-          // 3. Actualización del estado local solo si la API fue exitosa
           console.log(`Notificación ${notiId} marcada como leída en el servidor.`);
         }
-
       } catch (error) {
         console.error("Error de red al llamar al endpoint:", error);
-        // Opcional: manejo de fallos de conexión
       }
     }
 
@@ -222,19 +293,75 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         n.id === notiId ? { ...n, isRead: true } : n
       )
     );
+    
+    setFilteredNotifications(prev =>
+      prev.map(n =>
+        n.id === notiId ? { ...n, isRead: true } : n
+      )
+    );
 
-    // 5. Redirección
     if (notification?.actionUrl) {
       window.location.href = notification.actionUrl;
     }
-
   };
 
   return (
     <div className="bg-card z-50 rounded-xl m-4 shadow-brand border border-border max-w-sm">
-      <div className="space-y-2 max-h-[60vh] overflow-y-auto overflow-x-hidden"> {/* CLAVE: max-h-[80vh] para que ocupe más altura y limitacion de scroll horizontal*/}
-        {notifications && notifications.length > 0 ? (
-          notifications.map((notification) => (
+      {/* FILTROS POR TIPO - ARRIBA DE LOS MENSAJES */}
+      <div className="sticky top-0 bg-card z-10 pt-4 px-4 pb-3 border-b border-border">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-foreground">Filtrar por tipo:</h3>
+          {activeFilter !== 'all' && (
+            <button
+              onClick={() => setActiveFilter('all')}
+              className="text-xs text-primary hover:text-primary/80 font-medium"
+            >
+              Ver todas
+            </button>
+          )}
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          {notificationTypes.map(type => (
+            <button
+              key={type}
+              onClick={() => setActiveFilter(type)}
+              className={`
+                flex items-center px-3 py-2 rounded-lg text-xs font-medium transition-all
+                ${activeFilter === type 
+                  ? 'text-white shadow-sm' 
+                  : 'bg-muted text-muted-foreground hover:bg-muted-hover'
+                }
+              `}
+              style={{
+                backgroundColor: activeFilter === type ? getTypeColor(type) : '',
+                borderColor: activeFilter === type ? getTypeColor(type) : 'transparent'
+              }}
+            >
+              <Icon 
+                name={getTypeIcon(type)} 
+                size={14} 
+                className={`mr-2 ${activeFilter === type ? 'text-white' : 'text-muted-foreground'}`}
+              />
+              <span>{getTypeLabel(type)}</span>
+              <span className={`
+                ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold min-w-[20px] text-center
+                ${activeFilter === type 
+                  ? 'bg-white/30 text-white' 
+                  : 'bg-black/10 text-foreground'
+                }
+              `}>
+                {countByType[type] || 0}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* LISTA DE NOTIFICACIONES FILTRADAS */}
+      <div className="space-y-2 max-h-[60vh] overflow-y-auto overflow-x-hidden">
+        {filteredNotifications && filteredNotifications.length > 0 ? (
+          filteredNotifications.map((notification) => (
             <div
               key={notification?.id}
               className={`relative border rounded-lg p-3 m-2 pl-4 transition-brand cursor-pointer hover:shadow-brand-hover hover:border-border-hover 
@@ -250,10 +377,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
               <div className="flex items-start">
                 <div className="flex-1 min-w-0">
-
-                  {/*cambio incio*/}
-                  <div className="flex items-start justify-between mb-1"> {/* Cambiado a items-start para alineación superior */}
-                    {/* LADO IZQUIERDO: Punto de lectura + Título */}
+                  <div className="flex items-start justify-between mb-1">
                     <div className="flex items-center space-x-2 min-w-0 flex-1">
                       {!notification?.isRead && (
                         <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
@@ -265,10 +389,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
                       </h3>
                     </div>
 
-                    {/* LADO DERECHO: Stack vertical (Prioridad sobre Tiempo) + Botón X */}
                     <div className="flex items-start space-x-3 text-xs flex-shrink-0 ml-4">
-                      
-                      {/* Contenedor en Columna para Prioridad y Tiempo */}
                       <div className="flex flex-col items-end space-y-1">
                         <span className={getPriorityBadge(notification?.priority)?.class}>
                           {getPriorityBadge(notification?.priority)?.text}
@@ -278,7 +399,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
                         </span>
                       </div>
 
-                      {/* Botón de eliminar (X) */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -291,48 +411,8 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
                       </button>
                     </div>
                   </div>
-                {/*cambio final*/}
 
-
-
-                {/*
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center space-x-2">
-                      {!notification?.isRead && (
-                        <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
-                      )}
-                      <h3
-                        className={`font-medium text-sm ${notification?.leido ? 'text-foreground' : 'text-primary'}`}
-                      >
-                        {notification?.title}
-                      </h3>
-                    </div>
-
-                    <div className="flex items-center space-x-3 text-xs flex-shrink-0">
-                      <span className="text-muted-foreground">
-                        {formatTimestamp(notification?.timestamp)}
-                      </span>
-                      <span className={getPriorityBadge(notification?.priority)?.class}>
-                        {getPriorityBadge(notification?.priority)?.text}
-                      </span>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteNotification(notification?.id);
-                        }}
-                        className="text-muted-foreground hover:text-red-600 transition-colors ml-3"
-                        title="Eliminar notificación"
-                      >
-                        <Icon name="X" size={16} />
-                      </button>
-                    </div>
-                  </div>
-                  */}
-
-                  <p
-                    className="text-sm text-muted-foreground pr-10"
-                  >
+                  <p className="text-sm text-muted-foreground pr-10">
                     {notification?.message}
                   </p>
                 </div>
@@ -340,20 +420,37 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
             </div>
           ))
         ) : (
-          /* Card de No Notificaciones - MEJORADO */
           <div className="text-center py-10 px-6 m-2">
-            <Icon name="BellOff" size={36} className="mx-auto mb-4 text-muted-foreground/60" />
+            <Icon 
+              name={activeFilter === 'all' ? "BellOff" : "Filter"} 
+              size={36} 
+              className="mx-auto mb-4 text-muted-foreground/60" 
+            />
             <h3 className="text-lg font-semibold text-foreground mb-1">
-              Sin notificaciones recientes
+              {activeFilter === 'all' 
+                ? 'Sin notificaciones recientes' 
+                : `Sin notificaciones de tipo "${getTypeLabel(activeFilter)}"`
+              }
             </h3>
             <p className="text-sm text-muted-foreground">
-              Aquí aparecerán sus futuras notificaciones. ¡Todo en orden por ahora!
+              {activeFilter === 'all' 
+                ? 'Aquí aparecerán sus futuras notificaciones.' 
+                : 'Intenta con otro filtro o mira todas las notificaciones.'
+              }
             </p>
+            {activeFilter !== 'all' && (
+              <button
+                onClick={() => setActiveFilter('all')}
+                className="mt-3 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Ver todas las notificaciones
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {notifications.length > 0 ? (
+      {filteredNotifications.length > 0 ? (
         <div className="mt-3 py-2 border-t border-border">
           <div className="flex gap-2 justify-between m-2">
             <Button
@@ -378,11 +475,10 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
               Eliminar Todas
             </Button>
           </div>
-        </div>) : null
-      }
+        </div>
+      ) : null}
     </div>
   );
-
 };
 
 export default NotificationsCard;
