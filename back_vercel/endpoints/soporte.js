@@ -226,8 +226,9 @@ Generado el: ${fecha}
   
   <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #3498db;">
     <h3 style="color: #2c3e50; margin-top: 0;">INFORMACIÓN GENERAL</h3>
+    <p><strong>Trabajador:</strong> ${nombreTrabajador}</p>
     <p><strong>Empresa:</strong> ${usuario.empresa}</p>
-    <p><strong>Autor Ticket:</strong> ${usuario.nombre}</p>
+    <p><strong>Respondido por:</strong> ${usuario.nombre}</p>
     <p><strong>Fecha y hora:</strong> ${fecha}</p>
   </div>
 
