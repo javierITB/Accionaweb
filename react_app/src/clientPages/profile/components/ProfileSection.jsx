@@ -325,45 +325,49 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
         </div>
 
 
-
-        {/* Botones de acción - MEJORADOS PARA MÓVIL */}
-        {!isEditing ? (
-          <Button
-            variant="outline"
-            onClick={() => setIsEditing(true)}
-            iconName="Edit"
-            iconPosition="left"
-            size="sm"
-            className="w-full xs:w-auto justify-center"
-          >
-            Editar Perfil
-          </Button>
-        ) : (
-          <div className="flex flex-col xs:flex-row items-stretch xs:items-center space-y-2 xs:space-y-0 xs:space-x-2 w-full xs:w-auto">
+        <div className="lg:w-2/3">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
+          {/* Botones de acción - MEJORADOS PARA MÓVIL */}
+          {!isEditing ? (
             <Button
-              variant="ghost"
-              onClick={handleCancel}
-              disabled={isSaving}
-              size="sm"
-              className="w-full xs:w-auto justify-center"
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="default"
-              onClick={handleSave}
-              iconName="Save"
+              variant="outline"
+              onClick={() => setIsEditing(true)}
+              iconName="Edit"
               iconPosition="left"
-              disabled={isSaving}
               size="sm"
               className="w-full xs:w-auto justify-center"
             >
-              {isSaving ? 'Guardando...' : 'Guardar'}
+              Editar Perfil
             </Button>
-          </div>
-        )}
+          ) : (
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center space-y-2 xs:space-y-0 xs:space-x-2 w-full xs:w-auto">
+              <Button
+                variant="ghost"
+                onClick={handleCancel}
+                disabled={isSaving}
+                size="sm"
+                className="w-full xs:w-auto justify-center"
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleSave}
+                iconName="Save"
+                iconPosition="left"
+                disabled={isSaving}
+                size="sm"
+                className="w-full xs:w-auto justify-center"
+              >
+                {isSaving ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
+    </div >
   );
 };
 
