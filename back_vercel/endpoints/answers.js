@@ -889,14 +889,14 @@ router.get("/mantenimiento/limpiar-archivos-archivados", async (req, res) => {
     // 3. Ejecutar la eliminación masiva en las colecciones de archivos
     // Usamos $in para borrar todos los documentos cuyos responseId coincidan con la lista
     const [delAprobados, delAdjuntos, delDocxs] = await Promise.all([
-      req.db.collection("aprobados").deleteMany({ 
-        responseId: { $in: idsString } 
+      req.db.collection("aprobados").deleteMany({
+        responseId: { $in: idsString }
       }),
-      req.db.collection("adjuntos").deleteMany({ 
-        responseId: { $in: idsObjectId } 
+      req.db.collection("adjuntos").deleteMany({
+        responseId: { $in: idsObjectId }
       }),
-      req.db.collection("docxs").deleteMany({ 
-        responseId: { $in: idsString } 
+      req.db.collection("docxs").deleteMany({
+        responseId: { $in: idsString }
       })
     ]);
 
@@ -919,8 +919,8 @@ router.get("/mantenimiento/limpiar-archivos-archivados", async (req, res) => {
 
   } catch (err) {
     console.error("Error en la limpieza masiva de archivos:", err);
-    res.status(500).json({ 
-      error: "Error durante el proceso de limpieza: " + err.message 
+    res.status(500).json({
+      error: "Error durante el proceso de limpieza: " + err.message
     });
   }
 });
@@ -962,10 +962,10 @@ router.get("/:id/archived", async (req, res) => {
     const cleanupResults = await Promise.all([
       // Eliminar de aprobados (usa responseId como string u objeto según tu flujo)
       req.db.collection("aprobados").deleteMany({ responseId: id }),
-      
+
       // Eliminar de adjuntos (suele usar ObjectId por la estructura anterior)
       req.db.collection("adjuntos").deleteMany({ responseId: new ObjectId(id) }),
-      
+
       // Eliminar de docxs (usa responseId habitualmente como string)
       req.db.collection("docxs").deleteMany({ responseId: id })
     ]);

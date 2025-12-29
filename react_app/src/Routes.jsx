@@ -30,6 +30,7 @@ import Home from './clientPages/home/Index.jsx';
 import FormList from './clientPages/FormList/Index.jsx';
 import Form from './clientPages/formulario/Index.jsx';
 import Profile from './clientPages/profile/Index.jsx';
+import PublicPreview from './pages/public/PublicPreview.jsx';
 
 const Routes = () => {
   return (
@@ -39,6 +40,7 @@ const Routes = () => {
         <RouterRoutes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Home />} />
+          <Route path="/preview" element={<PublicPreview />} />
 
           <Route path="/Remuneraciones" element={<ProtectedClient><FormList section={"Remuneraciones"} /></ProtectedClient>} />
           <Route path="/Finiquitos" element={<ProtectedClient><FormList section={"Finiquitos"} /></ProtectedClient>} />

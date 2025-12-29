@@ -1,0 +1,92 @@
+import React, { useState, useEffect } from 'react';
+import RequestDetails from '../Respuestas/components/RequestDetails';
+import PublicMessageView from './components/PublicMessageView';
+import Icon from '../../components/AppIcon';
+
+const PublicPreview = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const type = urlParams.get('type'); // 'messages' | 'details'
+    const id = urlParams.get('id');
+
+    const [request, setRequest] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!id) {
+                setError("ID no proporcionado");
+                setLoading(false);
+                return;
+            }
+
+            try {
+                // Fetch basic request data needed for the components
+                const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${id}`);
+                if (!res.ok) throw new Error("No se pudo cargar la información de la solicitud.");
+
+                const data = await res.json();
+                setRequest(data);
+            } catch (err) {
+                console.error(err);
+                setError("Error cargando la solicitud. Puede que no exista o el enlace sea incorrecto.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <Icon name="Loader2" size={32} className="animate-spin text-accent" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 text-center">
+                <Icon name="AlertCircle" size={48} className="text-error mb-4" />
+                <h1 className="text-xl font-bold mb-2">Error</h1>
+                <p className="text-muted-foreground">{error}</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+            {type === 'messages' && (
+                <div className="w-full max-w-2xl bg-white shadow-xl rounded-lg overflow-hidden h-[80vh] relative">
+                    {/* We pass isStandalone=true to tell the component it's not a modal */}
+                    <MessageModal
+                        isOpen={true}
+                        onClose={() => { }}
+                        request={request}
+                        formId={id}
+                        isStandalone={true}
+                    />
+                </div>
+            )}
+
+            {type === 'details' && (
+                <div className="w-full max-w-4xl bg-white shadow-xl rounded-lg overflow-hidden h-[90vh] relative">
+                    <RequestDetails
+                        request={request}
+                        isVisible={true}
+                        onClose={() => { }}
+                        isStandalone={true}
+                    />
+                </div>
+            )}
+
+            {!['messages', 'details'].includes(type) && (
+                <p className="text-muted-foreground">Tipo de vista no válido.</p>
+            )}
+        </div>
+    );
+};
+
+export default PublicPreview;

@@ -7,132 +7,195 @@
 @import 'docx-preview/dist/docx-preview.css';
 
 @layer base {
+
   /* ... TUS VARIABLES DE COLOR MODO CLARO ... */
   :root {
     /* Core Colors */
-    --color-background: #F8FAFC; /* slate-50 */
-    --color-foreground: #1E293B; /* slate-800 */
-    --color-border: #E2E8F0; /* slate-200 */
-    --color-input: #FFFFFF; /* white */
-    --color-ring: #1E40AF; /* blue-800 */
-    
+    --color-background: #F8FAFC;
+    /* slate-50 */
+    --color-foreground: #1E293B;
+    /* slate-800 */
+    --color-border: #E2E8F0;
+    /* slate-200 */
+    --color-input: #FFFFFF;
+    /* white */
+    --color-ring: #1E40AF;
+    /* blue-800 */
+
     /* Card Colors */
-    --color-card: #FFFFFF; /* white */
-    --color-card-foreground: #1E293B; /* slate-800 */
-    --color-popover: #FFFFFF; /* white */
-    --color-popover-foreground: #1E293B; /* slate-800 */
-    
+    --color-card: #FFFFFF;
+    /* white */
+    --color-card-foreground: #1E293B;
+    /* slate-800 */
+    --color-popover: #FFFFFF;
+    /* white */
+    --color-popover-foreground: #1E293B;
+    /* slate-800 */
+
     /* Muted Colors */
-    --color-muted: #F1F5F9; /* slate-100 */
-    --color-muted-foreground: #64748B; /* slate-500 */
-    
+    --color-muted: #F1F5F9;
+    /* slate-100 */
+    --color-muted-foreground: #64748B;
+    /* slate-500 */
+
     /* Primary Colors */
-    --color-primary: #1E40AF; /* blue-800 */
-    --color-primary-foreground: #FFFFFF; /* white */
-    
+    --color-primary: #1E40AF;
+    /* blue-800 */
+    --color-primary-foreground: #FFFFFF;
+    /* white */
+
     /* Secondary Colors */
-    --color-secondary: #F97316; /* orange-500 */
-    --color-secondary-foreground: #FFFFFF; /* white */
-    
+    --color-secondary: #F97316;
+    /* orange-500 */
+    --color-secondary-foreground: #FFFFFF;
+    /* white */
+
     /* Accent Colors */
-    --color-accent: #0D9488; /* teal-600 */
-    --color-accent-foreground: #FFFFFF; /* white */
-    
+    --color-accent: #0D9488;
+    /* teal-600 */
+    --color-accent-foreground: #FFFFFF;
+    /* white */
+
     /* Success Colors */
-    --color-success: #059669; /* emerald-600 */
-    --color-success-foreground: #FFFFFF; /* white */
-    
+    --color-success: #059669;
+    /* emerald-600 */
+    --color-success-foreground: #FFFFFF;
+    /* white */
+
     /* Warning Colors */
-    --color-warning: #ffae00; /* amber-600 */
-    --color-warning-foreground: #FFFFFF; /* white */
-    
+    --color-warning: #ffae00;
+    /* amber-600 */
+    --color-warning-foreground: #FFFFFF;
+    /* white */
+
     /* Error Colors */
-    --color-error: #DC2626; /* red-600 */
-    --color-error-foreground: #FFFFFF; /* white */
-    
+    --color-error: #DC2626;
+    /* red-600 */
+    --color-error-foreground: #FFFFFF;
+    /* white */
+
     /* Destructive Colors */
-    --color-C: #DC2626; /* red-600 */
-    --color-destructive-foreground: #FFFFFF; /* white */
-    
+    --color-C: #DC2626;
+    /* red-600 */
+    --color-destructive-foreground: #FFFFFF;
+    /* white */
+
     /* Brand Specific Colors */
-    --color-brand-indigo: #6366F1; /* indigo-500 */
-    --color-brand-indigo-foreground: #FFFFFF; /* white */
-    
+    --color-brand-indigo: #6366F1;
+    /* indigo-500 */
+    --color-brand-indigo-foreground: #FFFFFF;
+    /* white */
+
     /* Text Hierarchy */
-    --color-text-primary: #1E293B; /* slate-800 */
-    --color-text-secondary: #64748B; /* slate-500 */
-    
+    --color-text-primary: #1E293B;
+    /* slate-800 */
+    --color-text-secondary: #64748B;
+    /* slate-500 */
+
     /* Surface Colors */
-    --color-surface: #FFFFFF; /* white */
-    --color-surface-foreground: #1E293B; /* slate-800 */
+    --color-surface: #FFFFFF;
+    /* white */
+    --color-surface-foreground: #1E293B;
+    /* slate-800 */
   }
 
   /* ... TUS VARIABLES DE COLOR MODO OSCURO ... */
   .dark {
     /* Colores oscuros ajustados para contraste y visibilidad */
-    
+
     /* Core Colors */
-    --color-background: #0F172A; /* slate-900 */
-    --color-foreground: #F8FAFC; /* slate-50 */
-    --color-border: #334155; /* slate-700 */
-    --color-input: #1E293B; /* slate-800 */
-    --color-ring: #60A5FA; /* blue-400 - Adaptado para contraste */
-    
+    --color-background: #0F172A;
+    /* slate-900 */
+    --color-foreground: #F8FAFC;
+    /* slate-50 */
+    --color-border: #334155;
+    /* slate-700 */
+    --color-input: #1E293B;
+    /* slate-800 */
+    --color-ring: #60A5FA;
+    /* blue-400 - Adaptado para contraste */
+
     /* Card Colors */
-    --color-card: #1E293B; /* slate-800 */
-    --color-card-foreground: #F8FAFC; /* slate-50 */
-    --color-popover: #1E293B; /* slate-800 */
-    --color-popover-foreground: #F8FAFC; /* slate-50 */
-    
+    --color-card: #1E293B;
+    /* slate-800 */
+    --color-card-foreground: #F8FAFC;
+    /* slate-50 */
+    --color-popover: #1E293B;
+    /* slate-800 */
+    --color-popover-foreground: #F8FAFC;
+    /* slate-50 */
+
     /* Muted Colors */
-    --color-muted: #1E293B; /* slate-800 */
-    --color-muted-foreground: #94A3B8; /* slate-400 */
-    
+    --color-muted: #1E293B;
+    /* slate-800 */
+    --color-muted-foreground: #94A3B8;
+    /* slate-400 */
+
     /* Primary Colors */
-    --color-primary: #3B82F6; /* blue-500 - Adaptado para visibilidad */
-    --color-primary-foreground: #0F172A; /* slate-900 - Adaptado para contraste */
-    
+    --color-primary: #3B82F6;
+    /* blue-500 - Adaptado para visibilidad */
+    --color-primary-foreground: #0F172A;
+    /* slate-900 - Adaptado para contraste */
+
     /* Secondary Colors */
-    --color-secondary: #F97316; /* orange-500 - Mantenido si funciona bien en oscuro */
-    --color-secondary-foreground: #0F172A; /* slate-900 - Adaptado para contraste */
-    
+    --color-secondary: #F97316;
+    /* orange-500 - Mantenido si funciona bien en oscuro */
+    --color-secondary-foreground: #0F172A;
+    /* slate-900 - Adaptado para contraste */
+
     /* Accent Colors */
-    --color-accent: #2DD4BF; /* teal-400 - Adaptado para visibilidad */
-    --color-accent-foreground: #0F172A; /* slate-900 - Adaptado para contraste */
-    
+    --color-accent: #2DD4BF;
+    /* teal-400 - Adaptado para visibilidad */
+    --color-accent-foreground: #0F172A;
+    /* slate-900 - Adaptado para contraste */
+
     /* Success Colors */
-    --color-success: #10B981; /* emerald-500 - Adaptado para visibilidad */
-    --color-success-foreground: #0F172A; /* slate-900 - Adaptado para contraste */
-    
+    --color-success: #10B981;
+    /* emerald-500 - Adaptado para visibilidad */
+    --color-success-foreground: #0F172A;
+    /* slate-900 - Adaptado para contraste */
+
     /* Warning Colors */
-    --color-warning: #FBBF24; /* amber-400 - Adaptado para visibilidad */
-    --color-warning-foreground: #0F172A; /* slate-900 - Adaptado para contraste */
-    
+    --color-warning: #FBBF24;
+    /* amber-400 - Adaptado para visibilidad */
+    --color-warning-foreground: #0F172A;
+    /* slate-900 - Adaptado para contraste */
+
     /* Error Colors */
-    --color-error: #EF4444; /* red-500 - Adaptado para visibilidad */
-    --color-error-foreground: #0F172A; /* slate-900 - Adaptado para contraste */
-    
+    --color-error: #EF4444;
+    /* red-500 - Adaptado para visibilidad */
+    --color-error-foreground: #0F172A;
+    /* slate-900 - Adaptado para contraste */
+
     /* Destructive Colors */
-    --color-destructive: #EF4444; /* red-500 - Adaptado para visibilidad */
-    --color-destructive-foreground: #0F172A; /* slate-900 - Adaptado para contraste */
-    
+    --color-destructive: #EF4444;
+    /* red-500 - Adaptado para visibilidad */
+    --color-destructive-foreground: #0F172A;
+    /* slate-900 - Adaptado para contraste */
+
     /* Brand Specific Colors */
-    --color-brand-indigo: #818CF8; /* indigo-400 - Adaptado para visibilidad */
-    --color-brand-indigo-foreground: #0F172A; /* slate-900 - Adaptado para contraste */
-    
+    --color-brand-indigo: #818CF8;
+    /* indigo-400 - Adaptado para visibilidad */
+    --color-brand-indigo-foreground: #0F172A;
+    /* slate-900 - Adaptado para contraste */
+
     /* Text Hierarchy */
-    --color-text-primary: #F8FAFC; /* slate-50 */
-    --color-text-secondary: #94A3B8; /* slate-400 */
-    
+    --color-text-primary: #F8FAFC;
+    /* slate-50 */
+    --color-text-secondary: #94A3B8;
+    /* slate-400 */
+
     /* Surface Colors */
-    --color-surface: #1E293B; /* slate-800 */
-    --color-surface-foreground: #F8FAFC; /* slate-50 */
+    --color-surface: #1E293B;
+    /* slate-800 */
+    --color-surface-foreground: #F8FAFC;
+    /* slate-50 */
   }
 
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
@@ -140,14 +203,19 @@
     letter-spacing: 0.02em;
     line-height: 1.6;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Inter', sans-serif;
     font-weight: 600;
     line-height: 1.2;
     letter-spacing: -0.01em;
   }
-  
+
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
@@ -157,99 +225,107 @@
   .gradient-primary {
     background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%);
   }
-  
+
   .dark .gradient-primary {
     background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 50%, #93C5FD 100%);
   }
-  
+
   .shadow-brand {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
   }
-  
+
   .dark .shadow-brand {
     box-shadow: 0 1px 3px rgba(255, 255, 255, 0.05), 0 1px 2px rgba(255, 255, 255, 0.03);
   }
-  
+
   .shadow-brand-hover {
     box-shadow: 0 4px 20px rgba(30, 64, 175, 0.15);
   }
-  
+
   .dark .shadow-brand-hover {
     box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25);
   }
-  
+
   .shadow-brand-active {
     box-shadow: 0 8px 40px rgba(30, 64, 175, 0.25);
   }
-  
+
   .dark .shadow-brand-active {
     box-shadow: 0 8px 40px rgba(59, 130, 246, 0.35);
   }
-  
+
   .transition-brand {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .animate-pulse-subtle {
     animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-  
+
   @keyframes pulse-subtle {
-    0%, 100% {
+
+    0%,
+    100% {
       opacity: 0.7;
     }
+
     50% {
       opacity: 1;
     }
   }
-  
+
   .animate-slide-up {
     animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   @keyframes slide-up {
     from {
       opacity: 0;
       transform: translateY(10px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
     }
   }
-  
+
   .animate-scale-in {
     animation: scale-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   @keyframes scale-in {
     from {
       opacity: 0;
       transform: scale(0.95);
     }
+
     to {
       opacity: 1;
       transform: scale(1);
     }
   }
-  
+
   /* 🏗️ NUEVO: Contenedor principal adaptable */
   /* Aplicar esta clase a un <div> que envuelva tu contenido principal */
   .container-main {
-    @apply mx-auto w-full px-4; /* padding-x de 1rem por defecto (móvil) */
+    @apply mx-auto w-full px-4;
+    /* padding-x de 1rem por defecto (móvil) */
   }
-  
+
   /* Ajuste para Tablet (md: 768px) */
   @media (min-width: 768px) {
     .container-main {
-      @apply px-6; /* padding-x de 1.5rem */
+      @apply px-6;
+      /* padding-x de 1.5rem */
     }
   }
-  
+
   /* Ajuste para PC/Desktop (lg: 1024px) */
   @media (min-width: 1024px) {
     .container-main {
-      @apply max-w-7xl px-8; /* Limita el ancho máximo a 1280px y padding-x de 2rem */
+      @apply max-w-7xl px-8;
+      /* Limita el ancho máximo a 1280px y padding-x de 2rem */
     }
   }
 }
@@ -258,11 +334,11 @@
   .text-balance {
     text-wrap: balance;
   }
-  
+
   /* AJUSTE: Grid-auto-fit para adaptabilidad móvil */
   .grid-auto-fit {
     /* Por defecto (móvil < 640px), una sola columna para evitar desbordamiento */
-    grid-template-columns: 1fr; 
+    grid-template-columns: 1fr;
   }
 
   /* Aplica el layout de múltiples columnas a partir de sm (640px) */
@@ -271,27 +347,58 @@
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     }
   }
-  
+
   .min-touch-target {
     min-height: 44px;
     min-width: 44px;
   }
 
   /* Coloca esto en tu archivo CSS global */
-@keyframes shake-bell {
-  0%, 100% { transform: rotate(0deg); }
-  10% { transform: rotate(10deg); }
-  20% { transform: rotate(-8deg); }
-  30% { transform: rotate(10deg); }
-  40% { transform: rotate(-4deg); }
-  50% { transform: rotate(8deg); }
-  60% { transform: rotate(-2deg); }
-  70% { transform: rotate(5deg); }
-  80% { transform: rotate(-1deg); }
-  90% { transform: rotate(3deg); }
-}
+  @keyframes shake-bell {
 
-.animate-bell-shake {
-  animation: shake-bell 0.8s ease-in-out;
-}
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+
+    10% {
+      transform: rotate(10deg);
+    }
+
+    20% {
+      transform: rotate(-8deg);
+    }
+
+    30% {
+      transform: rotate(10deg);
+    }
+
+    40% {
+      transform: rotate(-4deg);
+    }
+
+    50% {
+      transform: rotate(8deg);
+    }
+
+    60% {
+      transform: rotate(-2deg);
+    }
+
+    70% {
+      transform: rotate(5deg);
+    }
+
+    80% {
+      transform: rotate(-1deg);
+    }
+
+    90% {
+      transform: rotate(3deg);
+    }
+  }
+
+  .animate-bell-shake {
+    animation: shake-bell 0.8s ease-in-out;
+  }
 }
