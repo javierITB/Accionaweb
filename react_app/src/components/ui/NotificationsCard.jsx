@@ -14,12 +14,16 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
     const title = notification.titulo?.toLowerCase() || '';
     const icon = notification.icono;
     
-    if (icon === 'Edit' || title.includes('mensaje') || title.includes('enviado')) {
+    if (icon === 'Edit') {
       return 'message';
     } 
-    else if (icon === 'form' || title.includes('respondido') || title.includes('formulario')) {
+    else if (icon === 'form') {
       return 'form_response';
     }
+    else if (icon === 'CheckCircle') {
+      return 'CheckCircle';
+    }
+
     else if (title.includes('ticket') || title.includes('soporte')) {
       return 'support';
     }
@@ -41,7 +45,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
 
         const normalizedNotis = data.map(n => ({
           id: n.id,
-          type: inferNotificationType(n), // Usar la función de inferencia
+          type: n.icono, // Usar la función de inferencia
           title: n.titulo,
           message: n.descripcion,
           timestamp: new Date(n.fecha_creacion),
