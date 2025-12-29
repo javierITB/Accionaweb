@@ -335,7 +335,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
               </Button>
             </div>
 
-            {activeTab !== 'admin' && userEmail && (
+            {activeTab !== 'admin' && (
               <div className="mt-3 flex items-center space-x-2">
                 <div className="flex items-center">
                   <input
@@ -361,13 +361,6 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
               <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
                 <Icon name="Info" size={12} />
                 Los mensajes internos no se envian por correo
-              </div>
-            )}
-
-            {!userEmail && activeTab !== 'admin' && (
-              <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
-                <Icon name="AlertCircle" size={12} />
-                No se encontró email del usuario para enviar correo
               </div>
             )}
 
