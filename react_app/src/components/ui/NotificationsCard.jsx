@@ -347,7 +347,6 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
                 size={14} 
                 className={`mr-2 ${activeFilter === type ? 'text-white' : 'text-muted-foreground'}`}
               />
-              <span>{getTypeLabel(type)}</span>
               <span className={`
                 ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold min-w-[20px] text-center
                 ${activeFilter === type 
