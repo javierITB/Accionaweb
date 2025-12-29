@@ -14,7 +14,6 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [userEmail, setUserEmail] = useState(null);
   const [formName, setFormName] = useState('');
 
-
   const chatRef = useRef(null);
   const shouldAutoScroll = useRef(true);
   const lastMessageCount = useRef(0);
@@ -213,22 +212,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
-      <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl h-[80vh] sm:h-[70vh] flex flex-col relative">
-
-        {showScrollToBottom && (
-          <div className="absolute -right-14 top-1/2 transform -translate-y-1/2 z-10">
-            <Button
-              variant={hasNewMessages ? "default" : "secondary"}
-              size="sm"
-              onClick={scrollToBottom}
-              className="shadow-lg flex items-center gap-1 whitespace-nowrap"
-              iconName="ArrowDown"
-            >
-              {hasNewMessages ? "Nuevos" : "↓"}
-            </Button>
-          </div>
-        )}
-
+      <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl h-[80vh] sm:h-[70vh] flex flex-col">
+        
         <div className="border-b border-border bg-card rounded-t-lg">
           <div className="flex items-center justify-between p-4 sm:px-6 pb-2">
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
@@ -344,6 +329,19 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                 <span className="hidden xs:inline">Enviar</span>
                 <span className="xs:hidden">Enviar</span>
               </Button>
+              {/* AGREGADO: Botón para bajar rápido a la derecha del enviar */}
+              {showScrollToBottom && (
+                <div className="flex-shrink-0">
+                  <Button
+                    onClick={scrollToBottom}
+                    className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-white"
+                    iconName="ArrowDown"
+                    size="sm"
+                  >
+                    {hasNewMessages && "Nuevos"}
+                  </Button>
+                </div>
+              )}
             </div>
 
             {activeTab !== 'admin' && (
