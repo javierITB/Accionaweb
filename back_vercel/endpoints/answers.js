@@ -1276,8 +1276,9 @@ router.post("/upload-corrected-files", async (req, res) => {
       if (userEmail) {
         try {
           const { sendEmail } = require("../utils/mail.helper");
-          const portalUrl = process.env.PORTAL_URL || "https://infodesa.vercel.app";
+          const portalUrl = process.env.PORTAL_URL || "https://infoacciona.cl";
           const responseUrl = `${portalUrl}/preview?type=details&id=${responseId}`;
+
 
           const emailHtml = `
             <!DOCTYPE html>
