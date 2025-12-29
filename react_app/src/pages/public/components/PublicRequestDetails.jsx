@@ -646,6 +646,15 @@ const PublicRequestDetails = ({ request }) => {
                     </div>
                 </div>
             </div>
+            <div className="p-4 sm:p-6 border-t border-border bg-gray-50/50 flex justify-end">
+                <a
+                    href="https://infoacciona.cl/"
+                    className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
+                >
+                    Ir al Portal
+                    <Icon name="ExternalLink" size={16} className="ml-2" />
+                </a>
+            </div>
         </div>
     );
 };
