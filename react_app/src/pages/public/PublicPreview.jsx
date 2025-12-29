@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import RequestDetails from '../Respuestas/components/RequestDetails';
+import PublicRequestDetails from './components/PublicRequestDetails';
 import PublicMessageView from './components/PublicMessageView';
 import Icon from '../../components/AppIcon';
 
 const PublicPreview = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const type = urlParams.get('type'); // 'messages' | 'details'
+    const type = urlParams.get('type');
     const id = urlParams.get('id');
 
     const [request, setRequest] = useState(null);
@@ -21,11 +21,23 @@ const PublicPreview = () => {
             }
 
             try {
-                // Fetch basic request data needed for the components
                 const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${id}`);
                 if (!res.ok) throw new Error("No se pudo cargar la información de la solicitud.");
 
                 const data = await res.json();
+
+                if (data.formId) {
+                    try {
+                        const formRes = await fetch(`https://back-vercel-iota.vercel.app/api/forms/${data.formId}`);
+                        if (formRes.ok) {
+                            const formData = await formRes.json();
+                            data.formDef = formData;
+                        }
+                    } catch (formErr) {
+                        console.warn("Could not fetch form definition:", formErr);
+                    }
+                }
+
                 setRequest(data);
             } catch (err) {
                 console.error(err);
@@ -59,31 +71,26 @@ const PublicPreview = () => {
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             {type === 'messages' && (
-                <div className="w-full max-w-2xl bg-white shadow-xl rounded-lg overflow-hidden h-[80vh] relative">
-                    {/* We pass isStandalone=true to tell the component it's not a modal */}
-                    <MessageModal
+                <div className="w-full max-w-2xl bg-white shadow-xl rounded-lg overflow-hidden flex flex-col max-h-[80vh] relative">
+                    <PublicMessageView
                         isOpen={true}
                         onClose={() => { }}
                         request={request}
                         formId={id}
-                        isStandalone={true}
                     />
                 </div>
             )}
 
             {type === 'details' && (
-                <div className="w-full max-w-4xl bg-white shadow-xl rounded-lg overflow-hidden h-[90vh] relative">
-                    <RequestDetails
+                <div className="w-full max-w-4xl bg-white shadow-xl rounded-lg overflow-hidden flex flex-col max-h-[90vh] relative">
+                    <PublicRequestDetails
                         request={request}
-                        isVisible={true}
-                        onClose={() => { }}
-                        isStandalone={true}
                     />
                 </div>
             )}
 
             {!['messages', 'details'].includes(type) && (
-                <p className="text-muted-foreground">Tipo de vista no válido.</p>
+                <p className="text-muted-foreground p-4">Tipo de vista no válido.</p>
             )}
         </div>
     );

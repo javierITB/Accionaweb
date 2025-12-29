@@ -3,16 +3,12 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
-    const [message, setMessage] = useState('');
-    const [isSending, setIsSending] = useState(false);
-    const [user, setUser] = useState(sessionStorage.getItem("user"));
     const [messages, setMessages] = useState([]);
-    // const [lastCleared, setLastCleared] = useState(null); // REMOVED
     const chatRef = useRef(null);
     const [formName, setFormName] = useState('');
     const [showScrollToBottom, setShowScrollToBottom] = useState(false);
     const [hasNewMessages, setHasNewMessages] = useState(false);
-
+    const [user] = useState(sessionStorage.getItem("user"));
     // LÓGICA DEL AUTO-SCROLL COPIADA
     const shouldAutoScroll = useRef(true);
     const lastMessageCount = useRef(0);
@@ -21,7 +17,6 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
     const id = formId || request?._id;
 
     // logica de extraer nombre del formulario
-
     useEffect(() => {
         if (!id || !request) return;
 
@@ -57,20 +52,19 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
     useEffect(() => {
         if (!isOpen || !id) return;
 
-        setMessages([]); // Clear previous messages
+        setMessages([]);
         shouldAutoScroll.current = true;
         lastMessageCount.current = 0;
         isFirstLoad.current = true;
         setHasNewMessages(false);
         setShowScrollToBottom(false);
 
-        fetchMessages(); // fetch inicial
+        fetchMessages();
         const interval = setInterval(fetchMessages, 3000);
 
         return () => clearInterval(interval);
     }, [isOpen, id]);
 
-    // ⬇️ AUTO-SCROLL COPIADO DE LA VISTA ADMIN
     useEffect(() => {
         if (isOpen && chatRef.current && messages.length > 0) {
             if (isFirstLoad.current) {
@@ -98,7 +92,6 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
         }
     }, [messages, isOpen]);
 
-    // MANEJADOR DE SCROLL COPIADO
     const handleScroll = () => {
         if (!chatRef.current) return;
 
@@ -122,36 +115,6 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
         }
     };
 
-    // Enviar mensaje
-    const handleSend = async () => {
-        if (!message.trim() || !id) return;
-        setIsSending(true);
-
-        try {
-            const autor = sessionStorage.getItem("user") || "Anónimo";
-            const res = await fetch("https://back-vercel-iota.vercel.app/api/respuestas/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ formId: id, autor, mensaje: message.trim() }),
-            });
-
-            const data = await res.json();
-            if (res.ok && data?.data) {
-                // Forzar auto-scroll cuando el usuario envía un mensaje (COPIADO)
-                shouldAutoScroll.current = true;
-                setMessages(prev => [...prev, data.data]);
-                setMessage('');
-                setHasNewMessages(false);
-            } else {
-                console.error("Error enviando mensaje:", data.error || data);
-            }
-        } catch (err) {
-            console.error("Error enviando mensaje:", err);
-        } finally {
-            setIsSending(false);
-        }
-    };
-
     const formatMessageTime = (timestamp) =>
         new Date(timestamp).toLocaleString('es-CL', {
             day: '2-digit',
@@ -160,83 +123,135 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
             minute: '2-digit'
         });
 
+    const getStatusColor = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'pending':
+            case 'pendiente':
+                return 'bg-success text-success-foreground';
+            case 'in_review':
+            case 'en_revision':
+                return 'bg-warning text-warning-foreground';
+            case 'approved':
+            case 'aprobado':
+                return 'bg-secondary text-secondary-foreground';
+            case 'signed':
+            case 'firmado':
+                return 'bg-success text-success-foreground'
+            case 'finalizado':
+                return 'bg-accent text-accent-foreground'
+            default:
+                return 'bg-muted text-muted-foreground';
+        }
+    };
+
+    const getStatusIcon = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'approved':
+            case 'aprobado':
+                return 'CheckCircle';
+            case 'pending':
+            case 'pendiente':
+                return 'Clock';
+            case 'in_review':
+            case 'en_revision':
+                return 'Eye';
+            case 'rejected':
+            case 'rechazado':
+                return 'XCircle';
+            case 'borrador':
+                return 'FileText';
+            default:
+                return 'Circle';
+            case 'signed':
+            case 'firmado':
+                return 'CheckSquare';
+        }
+    };
+
     if (!isOpen || !request) return null;
 
-    // Always standalone styles
-    const containerClass = "w-full h-full flex flex-col bg-card";
-    const modalClass = "flex flex-col flex-1 h-full w-full";
+    const containerClass = "w-full flex flex-col bg-card min-h-0";
+    const modalClass = "flex flex-col w-full min-h-0";
 
     return (
         <div className={containerClass}>
             <div className={modalClass}>
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-border">
-                    <div className="flex items-center space-x-3">
-                        <Icon name="MessageSquare" size={24} className="text-accent" />
-                        <div>
-                            <h2 className="text-xl font-semibold text-foreground">Mensajes</h2>
-                            {/* MODIFICADO: Nombre completo del formulario */}
-                            <p className="text-sm text-muted-foreground truncate">
-                                {formName || request?.title || request?.formTitle} {request?.trabajador || ''}
-                            </p>
+                {/* Header Enhanced */}
+                <div className="flex flex-col space-y-3 p-4 sm:p-6 border-b border-border bg-card z-10">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <Icon name="MessageSquare" size={24} className="text-accent" />
+                            <div>
+                                <h2 className="text-xl font-semibold text-foreground">
+                                    {request?.formDef?.title || request?.formTitle || formName || request?.title || "Solicitud"}
+                                </h2>
+                                <div className="flex flex-col space-y-1 mt-1 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-1">
+                                        <span className="font-medium text-foreground/80">Asociado a:</span>
+                                        <span>{(request?.submittedBy || request?.user?.nombre) + ", " + (request?.company || request?.user?.empresa)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <span className="font-medium text-foreground/80">Fecha de envío:</span>
+                                        <span>{new Date(request?.createdAt || request?.submittedAt).toLocaleDateString('es-CL')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end space-y-2">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(request?.status)}`}>
+                                <Icon name={getStatusIcon(request?.status)} size={12} className="mr-1.5" />
+                                {request?.status?.replace('_', ' ')?.toUpperCase()}
+                            </span>
                         </div>
                     </div>
-                    {/* No close button in public view */}
                 </div>
 
-                {/* Chat */}
+                {/* Chat Read-Only */}
                 <div
                     ref={chatRef}
-                    className="flex-1 overflow-y-auto p-6 space-y-4"
+                    className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4"
                     onScroll={handleScroll}
                 >
                     {messages.length > 0 ?
                         messages.map((msg, i) => (
                             <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] rounded-lg p-4 ${msg.autor === user ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium">{msg.autor}</span>
-                                        <span className="text-xs opacity-70 ml-2">{formatMessageTime(msg.fecha)}</span>
+                                <div className={`max-w-[85%] rounded-lg p-3 sm:p-4 ${msg.autor === user ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs font-semibold mr-2">{msg.autor}</span>
+                                        <span className="text-[10px] opacity-70">{formatMessageTime(msg.fecha)}</span>
                                     </div>
                                     <p className="text-sm whitespace-pre-wrap break-words">{msg.mensaje}</p>
                                 </div>
                             </div>
-                        )) : <p className="text-center text-muted-foreground">Sin mensajes aún.</p>}
-                </div>
-
-                {/* Input */}
-                <div className="p-6 border-t border-border" >
-                    <div className="flex items-center space-x-2">
-                        <textarea
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            placeholder="Escribe tu mensaje aquí..."
-                            className="w-full min-h-[60px] p-3 border border-border rounded-lg resize-none bg-input text-foreground focus:ring-2 focus:ring-ring"
-                            disabled={isSending}
-                        />
-                        <Button
-                            variant="default"
-                            onClick={handleSend}
-                            disabled={!message.trim() || isSending}
-                            loading={isSending}
-                            iconName="Send"
-                            iconPosition="left"
-                            iconSize={16}
-                        >
-                            Enviar
-                        </Button>
-                        {/* AGREGADO: Botón para bajar rápido a la derecha del enviar */}
-                        {showScrollToBottom && (
-                            <div className="flex-shrink-0">
-                                <button
-                                    onClick={scrollToBottom}
-                                    className={`shadow-lg flex items-center justify-center bg-primary hover:bg-primary/90 text-white rounded-lg transition-all ${hasNewMessages ? 'px-3 py-2 text-sm min-w-[70px]' : 'w-10 h-10'
-                                        }`}
-                                >
-                                    {hasNewMessages ? "Nuevos" : "↓"}
-                                </button>
+                        )) : (
+                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6 text-center">
+                                <Icon name="MessageSquare" size={48} className="mb-4 opacity-20" />
+                                <p>No hay mensajes en esta conversación.</p>
                             </div>
                         )}
+                </div>
+
+                {/* Footer with Portal Button and Auto-scroll button */}
+                <div className="p-4 sm:p-6 border-t border-border bg-gray-50/50">
+                    <div className="flex items-center justify-end gap-3">
+                        {showScrollToBottom && (
+                            <button
+                                onClick={scrollToBottom}
+                                className={`shadow-lg flex items-center justify-center bg-accent text-white rounded-full transition-all w-10 h-10 hover:bg-accent/90`}
+                                title="Ir al final"
+                            >
+                                {hasNewMessages ? <div className="w-3 h-3 bg-red-500 rounded-full absolute top-0 right-0 border-2 border-white"></div> : null}
+                                <Icon name="ArrowDown" size={20} />
+                            </button>
+                        )}
+
+                        <a
+                            href="https://infoacciona.cl/"
+                            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
+                        >
+                            Ir al Portal
+                            <Icon name="ExternalLink" size={16} className="ml-2" />
+                        </a>
                     </div>
                 </div>
             </div>
