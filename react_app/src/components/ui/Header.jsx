@@ -31,7 +31,6 @@ const Header = ({ className = '' }) => {
 
   const navigationItems = [
     { name: 'Inicio', path: '/', icon: 'Home' },
-    { name: 'Ajustes', path: '/settings', icon: 'Settings' },
     { name: 'Ayuda', path: '/soporte', icon: 'Search' },
   ];
 
