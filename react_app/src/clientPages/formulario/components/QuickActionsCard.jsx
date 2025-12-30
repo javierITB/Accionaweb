@@ -24,7 +24,7 @@ const FormPreview = ({ formData }) => {
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const res = await fetch(`https://back-vercel-iota.vercel.app/api/auth/${mail}`);
+        const res = await fetch(`https://back-acciona.vercel.app/api/auth/${mail}`);
         if (!res.ok) throw new Error('Usuario no encontrado');
         const data = await res.json();
 
@@ -843,7 +843,7 @@ const FormPreview = ({ formData }) => {
       };
 
       console.log('Enviando respuestas base...');
-      const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas`, {
+      const res = await fetch(`https://back-acciona.vercel.app/api/respuestas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadBase),
@@ -920,7 +920,7 @@ const FormPreview = ({ formData }) => {
             try {
               console.log(`Enviando archivo ${i + 1} de ${todosLosArchivos.length}:`, archivoData.adjunto.fileName);
 
-              const uploadRes = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/adjuntos`, {
+              const uploadRes = await fetch(`https://back-acciona.vercel.app/api/respuestas/${responseId}/adjuntos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(archivoData),

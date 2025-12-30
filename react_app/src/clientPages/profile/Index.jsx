@@ -41,7 +41,7 @@ const UserProfileSettings = () => {
       
       try {
         setIsLoading(true);
-        const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/full/${userEmail}`);
+        const response = await fetch(`https://back-acciona.vercel.app/api/auth/full/${userEmail}`);
 
         if (!response.ok) {
           throw new Error('Error al cargar el perfil.');

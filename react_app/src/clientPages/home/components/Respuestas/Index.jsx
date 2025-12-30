@@ -53,7 +53,7 @@ const RequestTracking = () => {
 
         // 1) Traer ambas colecciones en paralelo, pasando la señal
         const [ resForms] = await Promise.all([
-          fetch('https://back-vercel-iota.vercel.app/api/forms/', { signal })
+          fetch('https://back-acciona.vercel.app/api/forms/', { signal })
         ]);
 
         if (!resForms.ok) {
@@ -228,7 +228,7 @@ const RequestTracking = () => {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${requestId}`, {
+      const res = await fetch(`https://back-acciona.vercel.app/api/respuestas/${requestId}`, {
         method: 'DELETE',
       });
 

@@ -116,7 +116,7 @@ const RequestTracking = () => {
     // 1. Definimos la función con la lógica (fuera del intervalo)
     const fetchData = async () => {
       try {
-        const resResp = await fetch('https://back-vercel-iota.vercel.app/api/respuestas/mini');
+        const resResp = await fetch('https://back-acciona.vercel.app/api/respuestas/mini');
 
         if (!resResp.ok) {
           throw new Error('Error al obtener datos del servidor');
@@ -301,7 +301,7 @@ const RequestTracking = () => {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${requestId}`, {
+      const res = await fetch(`https://back-acciona.vercel.app/api/respuestas/${requestId}`, {
         method: 'DELETE',
       });
 

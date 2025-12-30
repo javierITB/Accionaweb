@@ -114,7 +114,7 @@ const RequestTracking = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const resResp = await fetch('https://back-vercel-iota.vercel.app/api/soporte/mini');
+        const resResp = await fetch('https://back-acciona.vercel.app/api/soporte/mini');
 
         if (!resResp.ok) {
           throw new Error('Error al obtener datos del servidor');
@@ -301,7 +301,7 @@ const RequestTracking = () => {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`https://back-vercel-iota.vercel.app/api/soporte/${requestId}`, {
+      const res = await fetch(`https://back-acciona.vercel.app/api/soporte/${requestId}`, {
         method: 'DELETE',
       });
 

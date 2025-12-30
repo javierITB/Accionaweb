@@ -13,14 +13,14 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
         const token = sessionStorage.getItem('token');
 
         // Cargar usuarios
-        const usersRes = await fetch('https://back-vercel-iota.vercel.app/api/auth/', {
+        const usersRes = await fetch('https://back-acciona.vercel.app/api/auth/', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const users = await usersRes.json();
         setUsuarios(Array.isArray(users) ? users : []);
 
         // Cargar empresas
-        const empresasRes = await fetch('https://back-vercel-iota.vercel.app/api/auth/empresas/todas', {
+        const empresasRes = await fetch('https://back-acciona.vercel.app/api/auth/empresas/todas', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const empresasData = await empresasRes.json();

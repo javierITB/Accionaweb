@@ -65,7 +65,7 @@ const SetPassword = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/set-password`, {
+      const response = await fetch(`https://back-acciona.vercel.app/api/auth/set-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

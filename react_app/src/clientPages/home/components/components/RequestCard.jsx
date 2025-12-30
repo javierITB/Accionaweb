@@ -14,7 +14,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode
 
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${currentRequest._id}`);
+        const response = await fetch(`https://back-acciona.vercel.app/api/respuestas/${currentRequest._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
           

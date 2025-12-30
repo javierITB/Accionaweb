@@ -5,7 +5,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 
 // Definimos la URL base (ajusta esto si la variable viene de un archivo de configuración)
-const IP_API = "https://back-vercel-iota.vercel.app"; // O la URL que estés usando
+const IP_API = "https://back-acciona.vercel.app"; // O la URL que estés usando
 
 // --- FUNCIÓN PARA OBTENER DATOS DEL ADMIN/REMITENTE DESDE SESSION STORAGE ---
 // Usado para la trazabilidad y la token del usuario logeado
