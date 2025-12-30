@@ -9,7 +9,7 @@ import Button from '../components/ui/Button';
 const DashboardHome = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+
   const user = sessionStorage.getItem("user");
   const mail = sessionStorage.getItem("email");
 
@@ -56,30 +56,30 @@ const DashboardHome = () => {
       {/* Main Content: Ajustamos el padding top para móvil y desktop */}
       <main className={`transition-all duration-300 pt-16 lg:pt-20`}>
         {/* CONTENEDOR PRINCIPAL RESPONSIVE */}
-        <div className="px-4 sm:px-6 lg:px-8 xl:px-20 py-4 lg:py-6 space-y-4 lg:space-y-6 max-w-8xl mx-auto"> 
-           {/* Welcome Section (Se mueve dentro de la columna derecha) */}
-              <div className="w-full">
-                <WelcomeCard user={currentUser} />
-              </div>
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-20 py-4 lg:py-6 space-y-4 lg:space-y-6 max-w-8xl mx-auto">
+          {/* Welcome Section (Se mueve dentro de la columna derecha) */}
+          <div className="w-full">
+            <WelcomeCard user={currentUser} />
+          </div>
           {/* Main Dashboard Grid - ESTRUCTURA DE DOS COLUMNAS PRINCIPALES */}
-          <div className="w-full lg:flex lg:space-x-6"> 
-            
+          <div className="w-full xl:flex xl:space-x-6">
+
             {/* 1. Columna Izquierda: Acciones Rápidas (Ancho fijo) */}
             {user && (
-                <div className="w-full lg:w-80 flex-shrink-0 mb-4 lg:mb-0">
-                    {/* El WelcomeCard ya no está aquí */}
-                    <QuickActionsCard orientation="vertical" />
-                </div>
+              <div className="w-full xl:w-80 flex-shrink-0 mb-4 xl:mb-0">
+                {/* El WelcomeCard ya no está aquí */}
+                <QuickActionsCard orientation="vertical" />
+              </div>
             )}
-            
+
             {/* 2. Columna Derecha: Contenido Principal (WelcomeCard + Mis Solicitudes) */}
-            <div className=" w-full lg:flex-grow"> 
+            <div className=" w-full xl:flex-grow">
               {/* Mensaje de Login */}
               {!user && (
-                <div className="bg-card border border-border rounded-xl shadow-brand p-4 lg:p-6 text-center space-y-3 lg:space-y-4 w-full"> 
+                <div className="bg-card border border-border rounded-xl shadow-brand p-4 lg:p-6 text-center space-y-3 lg:space-y-4 w-full">
                   <Icon name="LogIn" size={40} className="mx-auto text-muted-foreground opacity-70 lg:w-12 lg:h-12" />
                   <h3 className="text-lg lg:text-xl font-semibold text-foreground">Inicie sesión para utilizar la plataforma.</h3>
-                  <p className="text-sm lg:text-base text-muted-foreground px-2"> 
+                  <p className="text-sm lg:text-base text-muted-foreground px-2">
                     Acceda a su cuenta para ver la actividad reciente, formularios personalizados y notificaciones.
                   </p>
                   <Button
@@ -118,7 +118,7 @@ const DashboardHome = () => {
                   </p>
                 </div>
               </div>
-              
+
               {/* Info text - Mejor disposición en móvil */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:flex lg:items-center lg:justify-end lg:space-x-6 text-xs lg:text-sm text-muted-foreground">
                 <div className="flex items-center justify-center sm:justify-start space-x-2">
@@ -135,7 +135,7 @@ const DashboardHome = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-3 lg:mt-4 pt-3 lg:pt-4 border-t border-border text-center">
               <p className="text-xs text-muted-foreground">
                 © {new Date().getFullYear()} Acciona. Todos los derechos reservados. {" "}
