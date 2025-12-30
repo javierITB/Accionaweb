@@ -499,23 +499,27 @@ router.get("/mini", async (req, res) => {
       let trabajador = "No especificado";
 
       if (answer.responses) {
-        trabajador = answer.responses["Nombre del trabajador"] ||
+        trabajador = decrypt(
+          answer.responses["Nombre del trabajador"] ||
           answer.responses["NOMBRE DEL TRABAJADOR"] ||
           answer.responses["nombre del trabajador"] ||
           answer.responses["Nombre del Trabajador"] ||
           answer.responses["Nombre Del trabajador "] ||
-          "No especificado";
+          "No especificado"
+        );
       }
 
       let rutTrabajador = "No especificado";
 
       if (answer.responses) {
-        rutTrabajador = answer.responses["RUT del trabajador"] ||
+        rutTrabajador = decrypt(
+          answer.responses["RUT del trabajador"] ||
           answer.responses["RUT DEL TRABAJADOR"] ||
           answer.responses["rut del trabajador"] ||
           answer.responses["Rut del Trabajador"] ||
           answer.responses["Rut Del trabajador "] ||
-          "No especificado";
+          "No especificado"
+        );
       }
 
       return {
@@ -525,7 +529,10 @@ router.get("/mini", async (req, res) => {
         trabajador: trabajador,
         rutTrabajador: rutTrabajador,
         submittedAt: answer.submittedAt,
-        user: answer.user,
+        user: answer.user ? {
+          nombre: decrypt(answer.user.nombre),
+          empresa: decrypt(answer.user.empresa)
+        } : answer.user,
         status: answer.status,
         createdAt: answer.createdAt,
         adjuntosCount: answer.adjuntosCount || 0

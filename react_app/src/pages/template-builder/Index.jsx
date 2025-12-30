@@ -410,7 +410,7 @@ const FormBuilder = () => {
       )}
 
       {!isMobileOpen && isMobileScreen && (
-        <div className="fixed bottom-4 left-4 z-50">
+        <div className="fixed bottom-4 left-4 z-50" style={{position: 'fixed'}}>
           <Button
             variant="default"
             size="icon"
