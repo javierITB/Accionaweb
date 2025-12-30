@@ -170,8 +170,8 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
 
     if (!isOpen || !request) return null;
 
-    const containerClass = "w-full flex flex-col bg-card min-h-0";
-    const modalClass = "flex flex-col w-full min-h-0";
+    const containerClass = "w-full flex flex-col bg-card min-h-0 h-full";
+    const modalClass = "flex flex-col w-full min-h-0 h-full";
 
     return (
         <div className={containerClass}>

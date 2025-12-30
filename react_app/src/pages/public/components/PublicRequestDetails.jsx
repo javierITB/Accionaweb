@@ -459,8 +459,8 @@ const PublicRequestDetails = ({ request }) => {
         return null;
     };
 
-    const containerClass = "w-full flex flex-col bg-card min-h-0";
-    const modalClass = "flex flex-col w-full min-h-0";
+    const containerClass = "w-full flex flex-col bg-card min-h-0 h-full";
+    const modalClass = "flex flex-col w-full min-h-0 h-full";
 
     return (
         <div className={containerClass}>
@@ -484,8 +484,9 @@ const PublicRequestDetails = ({ request }) => {
                     </div>
                 </div>
 
-                <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-4 sm:p-6 overflow-y-auto flex-1 flex flex-col">
+                    {/* Top Section: Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
                         <div className="space-y-4">
                             <div>
                                 <h3 className="text-lg font-semibold text-foreground mb-3">Información General</h3>
@@ -519,141 +520,144 @@ const PublicRequestDetails = ({ request }) => {
                         </div>
                     </div>
 
-                    {/* Sección de Archivos Adjuntos */}
-                    <div>
-                        {attachmentsLoading &&
-                            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                                Archivos Adjuntos
-                                {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-                            </h3>
-                        }
-                        {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 &&
-                            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                                Archivos Adjuntos
-                            </h3>
-                        }
-                        {fullRequestData?.adjuntos?.length > 0 && (
-                            <div className="space-y-2">
-                                {fullRequestData.adjuntos.map((adjunto, index) => (
-                                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                                        <div className="flex items-center space-x-3">
-                                            <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
-                                            <div>
-                                                <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
-                                                </p>
+                    {/* Bottom Section: Documents (pushes to bottom) */}
+                    <div className="mt-auto space-y-6 pt-6">
+                        {/* Sección de Archivos Adjuntos */}
+                        <div>
+                            {attachmentsLoading &&
+                                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                                    Archivos Adjuntos
+                                    {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+                                </h3>
+                            }
+                            {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 &&
+                                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                                    Archivos Adjuntos
+                                </h3>
+                            }
+                            {fullRequestData?.adjuntos?.length > 0 && (
+                                <div className="space-y-2">
+                                    {fullRequestData.adjuntos.map((adjunto, index) => (
+                                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                            <div className="flex items-center space-x-3">
+                                                <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
+                                                    iconPosition="left"
+                                                    iconSize={16}
+                                                    onClick={() => handleDownloadAdjunto(request._id, index)}
+                                                    disabled={downloadingAttachmentIndex !== null}
+                                                >
+                                                    {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
+                                                </Button>
                                             </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
-                                                iconPosition="left"
-                                                iconSize={16}
-                                                onClick={() => handleDownloadAdjunto(request._id, index)}
-                                                disabled={downloadingAttachmentIndex !== null}
-                                            >
-                                                {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Sección de Documentos Corregidos */}
-                    {(request?.status !== 'pendiente' && request?.status !== 'en_revision') && (
-                        <div>
-                            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                                Documentos Corregidos
-                                {loadingApprovedFiles && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-                            </h3>
-
-                            {loadingApprovedFiles ? (
-                                <div className="flex justify-center py-6">
-                                    <Icon name="Loader" size={24} className="animate-spin text-accent" />
+                                    ))}
                                 </div>
-                            ) : (
-                                <>
-                                    {approvedFilesData?.correctedFiles?.length > 0 && (
-                                        <div className="space-y-2">
-                                            {approvedFilesData.correctedFiles.map((file, index) => (
-                                                <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                                                    <div className="flex items-center space-x-3">
-                                                        <Icon name="FileText" size={20} className="text-success" />
-                                                        <div>
-                                                            <p className="text-sm font-medium text-foreground">
-                                                                {file.fileName || `Documento corregido ${index + 1}`}
-                                                            </p>
-                                                            <p className="text-xs text-muted-foreground">
-                                                                PDF • {formatFileSize(file.fileSize)} • {formatDate(file.uploadedAt)}
-                                                            </p>
+                            )}
+                        </div>
+
+                        {/* Sección de Documentos Corregidos */}
+                        {(request?.status !== 'pendiente' && request?.status !== 'en_revision') && (
+                            <div>
+                                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                                    Documentos Corregidos
+                                    {loadingApprovedFiles && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+                                </h3>
+
+                                {loadingApprovedFiles ? (
+                                    <div className="flex justify-center py-6">
+                                        <Icon name="Loader" size={24} className="animate-spin text-accent" />
+                                    </div>
+                                ) : (
+                                    <>
+                                        {approvedFilesData?.correctedFiles?.length > 0 && (
+                                            <div className="space-y-2">
+                                                {approvedFilesData.correctedFiles.map((file, index) => (
+                                                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                                        <div className="flex items-center space-x-3">
+                                                            <Icon name="FileText" size={20} className="text-success" />
+                                                            <div>
+                                                                <p className="text-sm font-medium text-foreground">
+                                                                    {file.fileName || `Documento corregido ${index + 1}`}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    PDF • {formatFileSize(file.fileSize)} • {formatDate(file.uploadedAt)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                iconName={downloadingApprovedFileIndex === index ? "Loader" : "Download"}
+                                                                iconPosition="left"
+                                                                iconSize={16}
+                                                                onClick={() => handleDownloadSingleApprovedFile(request._id, index, file.fileName)}
+                                                                disabled={downloadingApprovedFileIndex !== null}
+                                                            >
+                                                                {downloadingApprovedFileIndex === index ? 'Descargando...' : 'Descargar'}
+                                                            </Button>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            iconName={downloadingApprovedFileIndex === index ? "Loader" : "Download"}
-                                                            iconPosition="left"
-                                                            iconSize={16}
-                                                            onClick={() => handleDownloadSingleApprovedFile(request._id, index, file.fileName)}
-                                                            disabled={downloadingApprovedFileIndex !== null}
-                                                        >
-                                                            {downloadingApprovedFileIndex === index ? 'Descargando...' : 'Descargar'}
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                                ))}
+                                            </div>
+                                        )}
 
-                                    {(!approvedFilesData?.correctedFiles || approvedFilesData.correctedFiles.length === 0) && (
-                                        <div className="text-center py-4 text-sm text-muted-foreground">
-                                            <Icon name="FileText" size={20} className="mx-auto mb-2 text-muted-foreground/50" />
-                                            No hay documentos corregidos disponibles
-                                        </div>
-                                    )}
-                                </>
-                            )}
+                                        {(!approvedFilesData?.correctedFiles || approvedFilesData.correctedFiles.length === 0) && (
+                                            <div className="text-center py-4 text-sm text-muted-foreground">
+                                                <Icon name="FileText" size={20} className="mx-auto mb-2 text-muted-foreground/50" />
+                                                No hay documentos corregidos disponibles
+                                            </div>
+                                        )}
+                                    </>
+                                )}
 
-                            {/* Sección de documento firmado */}
-                            {renderSignedDocumentSection()}
-                        </div>
-                    )}
-
-                    {request?.form?.description && (
-                        <div>
-                            <h3 className="text-lg font-semibold text-foreground mb-3">Descripción</h3>
-                            <div className="bg-muted/50 rounded-lg p-4">
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {request?.form?.description}
-                                </p>
+                                {/* Sección de documento firmado */}
+                                {renderSignedDocumentSection()}
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    <div className="sticky bottom-0 bg-card border-t border-border p-4 sm:p-6 mt-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                                <Icon name="Clock" size={16} />
-                                <span>Última actualización: {formatDate(request?.updatedAt || request?.lastUpdated || request?.createdAt)}</span>
+                        {request?.form?.description && (
+                            <div>
+                                <h3 className="text-lg font-semibold text-foreground mb-3">Descripción</h3>
+                                <div className="bg-muted/50 rounded-lg p-4">
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        {request?.form?.description}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="sticky bottom-0 bg-card border-t border-border p-4 sm:p-6 mt-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                                    <Icon name="Clock" size={16} />
+                                    <span>Última actualización: {formatDate(request?.updatedAt || request?.lastUpdated || request?.createdAt)}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div className="p-4 sm:p-6 border-t border-border bg-gray-50/50 flex justify-end">
-                <a
-                    href="https://infodesa.vercel.app/"
-                    className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
-                >
-                    Ir al Portal
-                    <Icon name="ExternalLink" size={16} className="ml-2" />
-                </a>
+                <div className="p-4 sm:p-6 border-t border-border bg-gray-50/50 flex justify-end">
+                    <a
+                        href="https://infodesa.vercel.app/"
+                        className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
+                    >
+                        Ir al Portal
+                        <Icon name="ExternalLink" size={16} className="ml-2" />
+                    </a>
+                </div>
             </div>
         </div>
     );

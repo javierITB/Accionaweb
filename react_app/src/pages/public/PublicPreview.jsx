@@ -69,9 +69,9 @@ const PublicPreview = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gray-50 flex justify-center">
             {type === 'messages' && (
-                <div className="w-full max-w-2xl bg-white shadow-xl rounded-lg overflow-hidden flex flex-col max-h-[80vh] relative">
+                <div className="w-full max-w-2xl bg-white shadow-xl flex flex-col h-screen relative">
                     <PublicMessageView
                         isOpen={true}
                         onClose={() => { }}
@@ -82,7 +82,7 @@ const PublicPreview = () => {
             )}
 
             {type === 'details' && (
-                <div className="w-full max-w-4xl bg-white shadow-xl rounded-lg overflow-hidden flex flex-col max-h-[90vh] relative">
+                <div className="w-full max-w-4xl bg-white shadow-xl flex flex-col h-screen relative">
                     <PublicRequestDetails
                         request={request}
                     />
