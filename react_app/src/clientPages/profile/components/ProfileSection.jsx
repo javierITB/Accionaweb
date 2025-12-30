@@ -168,7 +168,6 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
             <Icon name="User" size={18} className="text-primary sm:w-5 sm:h-5" />
             <h2 className="text-base sm:text-lg font-semibold text-foreground">Información Personal</h2>
           </div>
-
         </div>
       </div>
 
@@ -324,45 +323,49 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Botones de acción - MEJORADOS PARA MÓVIL */}
-      {!isEditing ? (
-        <Button
-          variant="outline"
-          onClick={() => setIsEditing(true)}
-          iconName="Edit"
-          iconPosition="left"
-          size="sm"
-          className="w-full xs:w-auto justify-center"
-        >
-          Editar Perfil
-        </Button>
-      ) : (
-        <div className="flex flex-col xs:flex-row items-stretch xs:items-center space-y-2 xs:space-y-0 xs:space-x-2 w-full xs:w-auto">
-          <Button
-            variant="ghost"
-            onClick={handleCancel}
-            disabled={isSaving}
-            size="sm"
-            className="w-full xs:w-auto justify-center"
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="default"
-            onClick={handleSave}
-            iconName="Save"
-            iconPosition="left"
-            disabled={isSaving}
-            size="sm"
-            className="w-full xs:w-auto justify-center"
-          >
-            {isSaving ? 'Guardando...' : 'Guardar'}
-          </Button>
-        </div>
-      )}
     </div>
+    <div className="p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+    {/* Botones de acción - MEJORADOS PARA MÓVIL */}
+          {!isEditing ? (
+            <Button
+              variant="outline"
+              onClick={() => setIsEditing(true)}
+              iconName="Edit"
+              iconPosition="left"
+              size="sm"
+              className="w-full xs:w-auto justify-center"
+            >
+              Editar Perfil
+            </Button>
+          ) : (
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center space-y-2 xs:space-y-0 xs:space-x-2 w-full xs:w-auto">
+              <Button
+                variant="ghost"
+                onClick={handleCancel}
+                disabled={isSaving}
+                size="sm"
+                className="w-full xs:w-auto justify-center"
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleSave}
+                iconName="Save"
+                iconPosition="left"
+                disabled={isSaving}
+                size="sm"
+                className="w-full xs:w-auto justify-center"
+              >
+                {isSaving ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
+          )}
+          </div >
+          </div >
+    </div >
   );
 };
 
