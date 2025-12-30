@@ -318,7 +318,20 @@ const CompanyReg = () => {
         <div className="fixed inset-0 bg-foreground/50 z-40" onClick={toggleSidebar}></div>
       )}
 
-      <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
+      {/* BOTÓN FLOTANTE MÓVIL */}
+      {!isMobileOpen && isMobileScreen && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <Button
+            variant="default"
+            size="icon"
+            onClick={toggleSidebar}
+            iconName="Menu"
+            className="w-12 h-12 rounded-full shadow-brand-active"
+          />
+        </div>
+      )}
+
+      <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16 lg:pt-20`}>
         <div className="p-6 space-y-6 container-main">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
             <div>
