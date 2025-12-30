@@ -1362,6 +1362,46 @@ router.delete("/empresas/:id", async (req, res) => {
   }
 });
 
+
+router.get("/mantenimiento/migrar-empresas-pqc", async (req, res) => {
+  try {
+    const empresas = await req.db.collection("empresas").find().toArray();
+    let cont = 0;
+
+    for (let emp of empresas) {
+      const updates = {};
+      
+      // Cifrar campos de texto si no tienen el formato cifrado "iv:tag:data"
+      if (emp.nombre && !emp.nombre.includes(':')) {
+        updates.nombre = encrypt(emp.nombre);
+        updates.nombre_index = createBlindIndex(emp.nombre);
+      }
+      if (emp.rut && !emp.rut.includes(':')) {
+        updates.rut = encrypt(emp.rut);
+        updates.rut_index = createBlindIndex(emp.rut);
+      }
+      if (emp.direccion && !emp.direccion.includes(':')) updates.direccion = encrypt(emp.direccion);
+      if (emp.encargado && !emp.encargado.includes(':')) updates.encargado = encrypt(emp.encargado);
+      if (emp.rut_encargado && !emp.rut_encargado.includes(':')) updates.rut_encargado = encrypt(emp.rut_encargado);
+
+      // Cifrar el logo si existe y es un Buffer/Base64 plano
+      if (emp.logo && emp.logo.fileData && !emp.logo.fileData.toString().includes(':')) {
+        const dataStr = Buffer.isBuffer(emp.logo.fileData) ? emp.logo.fileData.toString('base64') : emp.logo.fileData;
+        updates["logo.fileData"] = encrypt(dataStr);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await req.db.collection("empresas").updateOne({ _id: emp._id }, { $set: updates });
+        cont++;
+      }
+    }
+    res.json({ success: true, message: `Empresas migradas: ${cont}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 router.get("/mantenimiento/migrar-tokens-pqc", async (req, res) => {
   try {
     const tokens = await req.db.collection("tokens").find().toArray();
