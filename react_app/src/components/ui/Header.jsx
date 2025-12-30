@@ -29,11 +29,6 @@ const Header = ({ className = '' }) => {
   const userMenuRef = useRef(null);
   const userMail = sessionStorage.getItem("email");
 
-  const navigationItems = [
-    { name: 'Inicio', path: '/', icon: 'Home' },
-    { name: 'Ayuda', path: '/soporte', icon: 'Search' },
-  ];
-
   // --- EFECTOS ---
 
   // Efecto para el audio (opcional: ajustar volumen)
@@ -137,29 +132,21 @@ const Header = ({ className = '' }) => {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-brand ${className}`}>
       <div className="flex items-center justify-between h-20 px-6">
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden ">
+        <button 
+          onClick={() => handleNavigation('/')} 
+          className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+        >
+          <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden">
             <img src={logo} alt="Logo Acciona" className="max-w-full max-h-full" style={{ objectFit: 'contain' }} />
           </div>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold text-foreground leading-tight">Acciona RRHH Portal</h1>
             <span className="text-xs text-muted-foreground font-mono hidden sm:block">Panel de administración</span>
           </div>
-        </div>
+        </button>
 
         <nav className="hidden lg:flex items-center space-x-1">
-          {navigationItems.map((item) => (
-            <Button
-              key={item.path}
-              variant="ghost"
-              size="sm"
-              onClick={() => handleNavigation(item.path)}
-              iconName={item.icon}
-              className="px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
-            >
-              {item.name}
-            </Button>
-          ))}
+          {/* Los botones de Inicio y Ayuda han sido removidos */}
         </nav>
 
         <div className="flex items-center space-x-3">
@@ -224,23 +211,10 @@ const Header = ({ className = '' }) => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu - Solo modo claro/oscuro y perfil/cierre de sesión */}
       {isMenuOpen && (
         <div className="lg:hidden px-4 pt-2 pb-4 space-y-2 bg-card border-t border-border">
-          {navigationItems.map((item) => (
-            <Button
-              key={item.path}
-              variant="ghost"
-              size="sm"
-              onClick={() => handleNavigation(item.path)}
-              iconName={item.icon}
-              className="w-full justify-start px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
-              iconPosition="left"
-            >
-              {item.name}
-            </Button>
-          ))}
-          <div className="border-t border-border mt-2 pt-2">
+          <div className="border-b border-border pb-2 mb-2">
             <Button
               variant="ghost"
               size="sm"
@@ -251,43 +225,43 @@ const Header = ({ className = '' }) => {
             >
               {theme === 'dark' ? "Modo Claro" : "Modo Oscuro"}
             </Button>
+          </div>
 
-            {user ? (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleNavigation('/perfil')}
-                  iconName="User"
-                  className="w-full justify-start px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
-                  iconPosition="left"
-                >
-                  Mi Perfil
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  iconName="LogOut"
-                  className="w-full justify-start px-4 py-2 text-md font-medium text-error hover:bg-error/10 hover:text-error"
-                  iconPosition="left"
-                >
-                  Cerrar Sesión
-                </Button>
-              </>
-            ) : (
+          {user ? (
+            <>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => handleNavigation('/login')}
-                iconName="LogIn"
+                onClick={() => handleNavigation('/perfil')}
+                iconName="User"
                 className="w-full justify-start px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
                 iconPosition="left"
               >
-                Iniciar Sesión
+                Mi Perfil
               </Button>
-            )}
-          </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                iconName="LogOut"
+                className="w-full justify-start px-4 py-2 text-md font-medium text-error hover:bg-error/10 hover:text-error"
+                iconPosition="left"
+              >
+                Cerrar Sesión
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleNavigation('/login')}
+              iconName="LogIn"
+              className="w-full justify-start px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+              iconPosition="left"
+            >
+              Iniciar Sesión
+            </Button>
+          )}
         </div>
       )}
     </header>
