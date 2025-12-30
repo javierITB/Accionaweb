@@ -5,20 +5,20 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // Agregamos los props isMobileOpen y onNavigate, que se pasan desde FormCenter.jsx
-const Sidebar = ({ 
-  isCollapsed = false, 
-  onToggleCollapse, 
-  className = '', 
-  isMobileOpen = false, 
-  onNavigate 
+const Sidebar = ({
+  isCollapsed = false,
+  onToggleCollapse,
+  className = '',
+  isMobileOpen = false,
+  onNavigate
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // 1. Estados para la navegación dinámica y el estado de carga
   const [navigationItems, setNavigationItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Obtener datos del usuario
   const user = sessionStorage.getItem("user");
   const mail = sessionStorage.getItem("email");
@@ -30,23 +30,34 @@ const Sidebar = ({
   const handleNavigation = (path) => {
     // 1. ASEGURAMOS LA REDIRECCIÓN DE REACT ROUTER SIEMPRE
     navigate(path);
-    
+
     // 2. Ejecutar la acción de cierre (si el padre la proporcionó, lo cual ocurre en móvil)
-    if (onNavigate) { 
-      onNavigate(path); 
+    if (onNavigate) {
+      onNavigate(path);
     }
   };
 
   // 2. useEffect para la llamada a la API (sin cambios)
   useEffect(() => {
     if (!mail || !token || !cargo) {
-        console.error("Datos de usuario insuficientes para filtrar el menú.");
-        setIsLoading(false);
-        return;
+      console.error("Datos de usuario insuficientes para filtrar el menú.");
+      setIsLoading(false);
+      return;
+    }
+
+    // 1. Intentar cargar desde cache primero
+    const cachedMenu = sessionStorage.getItem('adminMenuData');
+    if (cachedMenu) {
+      setNavigationItems(JSON.parse(cachedMenu));
+      setIsLoading(false);
+      // Opcional: Podríamos hacer fetch en background para actualizar, 
+      // pero para velocidad, confiamos en el cache por esta sesión.
     }
 
     const fetchMenu = async () => {
-      setIsLoading(true);
+      // Solo poner isLoading true si NO tenemos cache
+      if (!cachedMenu) setIsLoading(true);
+
       try {
         const response = await fetch(`https://back-vercel-iota.vercel.app/api/menu/filter`, {
           method: 'POST',
@@ -65,7 +76,13 @@ const Sidebar = ({
         }
 
         const data = await response.json();
-        setNavigationItems(data);
+
+        // Verificar si los datos han cambiado antes de actualizar el estado para evitar re-renders
+        if (JSON.stringify(data) !== cachedMenu) {
+          setNavigationItems(data);
+          sessionStorage.setItem('adminMenuData', JSON.stringify(data));
+        }
+
       } catch (error) {
         console.error("Fallo al obtener el menú filtrado:", error);
       } finally {
@@ -83,12 +100,12 @@ const Sidebar = ({
   ];
 
   // Lógica de Clases Condicionales (Desktop vs Mobile)
-  
+
   // 1. Visibilidad y posición: En móvil abierto, debe ser fixed y z-60.
-  const mobileOpenClasses = isMobileOpen 
+  const mobileOpenClasses = isMobileOpen
     ? 'fixed inset-y-0 left-0 h-screen w-64 z-[60] shadow-2xl'
     : 'hidden md:block fixed left-0 top-16 bottom-0 z-40'; // Oculto en móvil por defecto, fijo en desktop
-    
+
   // 2. Ancho: W-64 en móvil abierto o desktop expandido, W-16 en desktop colapsado.
   const widthClasses = (isCollapsed && !isMobileOpen) ? 'w-16' : 'w-64';
 
@@ -98,9 +115,8 @@ const Sidebar = ({
     // Ajuste en la vista de carga para que sea responsive
     return (
       <aside
-        className={`fixed left-0 top-16 bottom-0 z-40 bg-card border-r border-border flex items-center justify-center ${
-          (isCollapsed && !isMobileOpen) ? "w-16" : "w-64"
-        } hidden md:flex ${className}`}
+        className={`fixed left-0 top-16 bottom-0 z-40 bg-card border-r border-border flex items-center justify-center ${(isCollapsed && !isMobileOpen) ? "w-16" : "w-64"
+          } hidden md:flex ${className}`}
       >
         <span className="text-muted-foreground text-sm">Cargando menú...</span>
       </aside>
@@ -113,25 +129,25 @@ const Sidebar = ({
 
         {/* Botón de Cierre para Móvil (cuando está isMobileOpen) */}
         {isMobileOpen && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onToggleCollapse} 
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleCollapse}
             className="absolute top-4 right-4 z-[70] text-foreground hover:bg-muted min-touch-target"
           >
             <Icon name="X" size={24} />
           </Button>
         )}
 
-        
 
-        {/* Main navigation */}
-        <nav className="flex-1 mt-4 p-4 space-y-2 overflow-y-auto overflow-x-hidden">
+
+        {/* Main navigation - Added top spacing for mobile to avoid X overlap */}
+        <nav className={`flex-1 ${isMobileOpen ? 'mt-16' : 'mt-4'} p-4 space-y-2 overflow-y-auto overflow-x-hidden`}>
           {navigationItems.map((item) => {
-            const isActive = location.pathname === item.path || (location.pathname == "/form-builder" && item.path== "/form-center");
-            
+            const isActive = location.pathname === item.path || (location.pathname == "/form-builder" && item.path == "/form-center");
+
             const isTextVisible = !(isCollapsed && !isMobileOpen); // Es visible si no está colapsado Y no está en móvil
-            
+
             return (
               <button
                 key={item.path}
