@@ -60,7 +60,7 @@ const CompanyReg = () => {
 
   const fetchEmpresas = async () => {
     try {
-      const response = await fetch('https://back-acciona.vercel.app/api/auth/empresas/todas');
+      const response = await fetch('https://back-vercel-iota.vercel.app/api/auth/empresas/todas');
       if (response.ok) {
         const empresasData = await response.json();
         const transformedData = empresasData.map(empresa => ({
@@ -123,7 +123,7 @@ const CompanyReg = () => {
     setIsLoading(true);
     setActiveTab('register');
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/auth/empresas/${empresaId}`);
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/empresas/${empresaId}`);
       if (!response.ok) throw new Error('Error al cargar la empresa');
       const empresa = await response.json();
       const logoDataURL = createDataURL(empresa.logo);
@@ -151,7 +151,7 @@ const CompanyReg = () => {
     if (!window.confirm("¿Estás seguro de que deseas eliminar esta empresa?")) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`https://back-acciona.vercel.app/api/auth/empresas/${empresaId}`, { method: 'DELETE' });
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/empresas/${empresaId}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Error al eliminar');
       alert('Empresa eliminada exitosamente');
       clearForm();
@@ -181,8 +181,8 @@ const CompanyReg = () => {
 
       const isUpdating = !!editingEmpresa;
       const url = isUpdating 
-        ? `https://back-acciona.vercel.app/api/auth/empresas/${editingEmpresa._id}` 
-        : 'https://back-acciona.vercel.app/api/auth/empresas/register';
+        ? `https://back-vercel-iota.vercel.app/api/auth/empresas/${editingEmpresa._id}` 
+        : 'https://back-vercel-iota.vercel.app/api/auth/empresas/register';
 
       const response = await fetch(url, {
         method: isUpdating ? 'PUT' : 'POST',

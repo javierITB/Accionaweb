@@ -31,7 +31,7 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
     const fetchMessages = async () => {
         if (!id) return;
         try {
-            const res = await fetch(`https://back-acciona.vercel.app/api/respuestas/${id}/chat`);
+            const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${id}/chat`);
             if (!res.ok) throw new Error("Error al obtener chat");
             const data = await res.json();
 
