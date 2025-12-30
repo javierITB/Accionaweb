@@ -553,23 +553,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.get("/section/:section", async (req, res) => {
-  try {
-    const forms = await req.db
-      .collection("respuestas")
-      .find({ section: req.params.section })
-      .toArray();
-
-    if (!forms.length)
-      return res.status(404).json({ error: "No se encontraron formularios en esta sección" });
-
-    res.status(200).json(forms);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error al obtener formularios por sección" });
-  }
-});
-
 //actualizar respuesta
 router.put("/:id", async (req, res) => {
   try {
