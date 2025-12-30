@@ -341,7 +341,6 @@ const FormBuilder = () => {
     const staticVariables = [
       { type: "Date", title: "FECHA ACTUAL" },
       { type: "time", title: "HORA ACTUAL" },
-      { type: "text", title: "AUTOR NOMBRE" },
       { type: "text", title: "NOMBRE EMPRESA" },
       { type: "text", title: "RUT EMPRESA" },
       { type: "text", title: "DIRECCION EMPRESA" },
