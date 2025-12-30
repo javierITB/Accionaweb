@@ -390,9 +390,9 @@ const QuestionBuilder = ({
                   </div>
 
                   {getOptionHasSubform(option) && (
-                    <div className="ml-6 border-l-2 border-blue-200 pl-4 bg-blue-50 rounded">
+                    <div className="ml-6 border-l-2 border-blue-200 dark:border-blue-500/30 pl-4 bg-blue-50 dark:bg-blue-500/10 rounded">
                       <div className="flex items-center justify-between p-3">
-                        <h4 className="text-sm font-medium text-blue-700">
+                        <h4 className="text-sm font-medium text-blue-700 dark:text-blue-300">
                           Subsección para "{getOptionText(option)}"
                         </h4>
                         <Button
@@ -406,9 +406,9 @@ const QuestionBuilder = ({
                       </div>
 
                       {isSubsectionExpanded && option.subformQuestions && (
-                        <div className="p-3 border-t border-blue-200">
+                        <div className="p-3 border-t border-blue-200 dark:border-blue-500/30">
                           <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm text-blue-600">Subsección - Nivel {depth + 1}</span>
+                            <span className="text-sm text-blue-600 dark:text-blue-400">Subsección - Nivel {depth + 1}</span>
                             <Button
                               onClick={() => {
                                 const newQuestion = handleAddSubformQuestion(optionIndex);
@@ -447,7 +447,7 @@ const QuestionBuilder = ({
                           ))}
 
                           {option.subformQuestions.length === 0 && (
-                            <div className="text-center py-4 text-sm text-blue-600 bg-blue-50 rounded">
+                            <div className="text-center py-4 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 rounded">
                               No hay preguntas en esta subsección
                             </div>
                           )}
