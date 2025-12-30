@@ -13,10 +13,10 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
   const inferNotificationType = (notification) => {
     const title = notification.titulo?.toLowerCase() || '';
     const icon = notification.icono;
-    
+
     if (icon === 'Edit') {
       return 'message';
-    } 
+    }
     else if (icon === 'form') {
       return 'form_response';
     }
@@ -133,6 +133,10 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         console.error("Usuario no encontrado en sesión.");
         return;
       }
+
+      setNotifications([]);
+      setFilteredNotifications([]);
+      setActiveFilter('all');
 
       const res = await fetch(`https://back-vercel-iota.vercel.app/api/noti/${mail}`, {
         method: "DELETE",
@@ -254,7 +258,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
       setNotifications(prev =>
         prev.map(n => ({ ...n, isRead: true, leido: true }))
       );
-      
+
       setFilteredNotifications(prev =>
         prev.map(n => ({ ...n, isRead: true, leido: true }))
       );
@@ -297,7 +301,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         n.id === notiId ? { ...n, isRead: true } : n
       )
     );
-    
+
     setFilteredNotifications(prev =>
       prev.map(n =>
         n.id === notiId ? { ...n, isRead: true } : n
@@ -324,41 +328,41 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
             </button>
           )}
         </div>
-        
+
         <div className="flex flex-wrap gap-2">
           {notificationTypes.map(type => (
             type !== 'all' && (
-            <button
-              key={type}
-              onClick={() => setActiveFilter(type)}
-              className={`
+              <button
+                key={type}
+                onClick={() => setActiveFilter(type)}
+                className={`
                 flex items-center px-3 py-2 rounded-lg text-xs font-medium transition-all
-                ${activeFilter === type 
-                  ? 'text-white shadow-sm' 
-                  : 'bg-muted text-muted-foreground hover:bg-muted-hover'
-                }
+                ${activeFilter === type
+                    ? 'text-white shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-muted-hover'
+                  }
               `}
-              style={{
-                backgroundColor: activeFilter === type ? getTypeColor(type) : '',
-                borderColor: activeFilter === type ? getTypeColor(type) : 'transparent'
-              }}
-            >
-          
-              <Icon 
-                name={type === 'all' ? 'Bell' : type} 
-                size={14} 
-                className={`mr-2 ${activeFilter === type ? 'text-white' : 'text-muted-foreground'}`}
-              />
-              <span className={`
+                style={{
+                  backgroundColor: activeFilter === type ? getTypeColor(type) : '',
+                  borderColor: activeFilter === type ? getTypeColor(type) : 'transparent'
+                }}
+              >
+
+                <Icon
+                  name={type === 'all' ? 'Bell' : type}
+                  size={14}
+                  className={`mr-2 ${activeFilter === type ? 'text-white' : 'text-muted-foreground'}`}
+                />
+                <span className={`
                 ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold min-w-[20px] text-center
-                ${activeFilter === type 
-                  ? 'bg-white/30 text-white' 
-                  : 'bg-black/10 text-foreground'
-                }
+                ${activeFilter === type
+                    ? 'bg-white/30 text-white'
+                    : 'bg-black/10 text-foreground'
+                  }
               `}>
-                {countByType[type] || 0}
-              </span>
-            </button> )
+                  {countByType[type] || 0}
+                </span>
+              </button>)
           ))}
         </div>
       </div>
@@ -426,20 +430,20 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
           ))
         ) : (
           <div className="text-center py-10 px-6 m-2">
-            <Icon 
-              name={activeFilter === 'all' ? "BellOff" : "Filter"} 
-              size={36} 
-              className="mx-auto mb-4 text-muted-foreground/60" 
+            <Icon
+              name={activeFilter === 'all' ? "BellOff" : "Filter"}
+              size={36}
+              className="mx-auto mb-4 text-muted-foreground/60"
             />
             <h3 className="text-lg font-semibold text-foreground mb-1">
-              {activeFilter === 'all' 
-                ? 'Sin notificaciones recientes' 
+              {activeFilter === 'all'
+                ? 'Sin notificaciones recientes'
                 : `Sin notificaciones de tipo "${getTypeLabel(activeFilter)}"`
               }
             </h3>
             <p className="text-sm text-muted-foreground">
-              {activeFilter === 'all' 
-                ? 'Aquí aparecerán sus futuras notificaciones.' 
+              {activeFilter === 'all'
+                ? 'Aquí aparecerán sus futuras notificaciones.'
                 : 'Intenta con otro filtro o mira todas las notificaciones.'
               }
             </p>
