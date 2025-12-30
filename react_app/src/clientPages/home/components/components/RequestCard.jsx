@@ -17,7 +17,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode
         const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${currentRequest._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
-          
+
           if (updatedRequest.status !== currentRequest.status) {
             setCurrentRequest(updatedRequest);
             if (onUpdate) {
@@ -161,38 +161,41 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode
   };
 
   return (
-    <div className={`bg-card border border-border rounded-lg hover:shadow-brand-hover transition-brand ${viewMode === 'grid' ? 'p-4' : 'p-6'}`}>
+    <div className={`bg-card border border-border rounded-lg hover:shadow-brand-hover transition-brand ${viewMode === 'grid' ? 'p-4' : 'p-4 sm:p-6'}`}>
       <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center space-x-3 mb-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center space-x-3 mb-1">
             <h3 className={`font-semibold text-foreground ${viewMode === 'grid' ? 'text-sm line-clamp-2' : 'text-lg'}`}>
               {getCombinedTitle()}
             </h3>
-            <span className="text-xs text-muted-foreground">
-              {getRelativeTime(currentRequest?.submittedAt)}
-            </span>
           </div>
           <p className={`text-muted-foreground ${viewMode === 'grid' ? 'text-xs line-clamp-2' : 'text-sm'} mb-3`}>
             {currentRequest?.description}
           </p>
 
-          <div className={`${viewMode === 'grid' ? 'space-y-2' : 'flex items-center space-x-4 text-xs text-muted-foreground'}`}>
-            <div className="flex items-center space-x-1">
-              <Icon name="Briefcase" size={14} />
-              <span className={viewMode === 'grid' ? 'text-xs truncate' : ''}>
-                Empresa: {currentRequest?.company}
+          <div className={`${viewMode === 'grid' ? 'space-y-2' : 'flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0 text-xs text-muted-foreground'}`}>
+            <div className="flex items-center space-x-2">
+              <Icon name="Briefcase" size={14} className="flex-shrink-0" />
+              <span className={viewMode === 'grid' ? 'text-xs truncate' : 'truncate'}>
+                {currentRequest?.company}
               </span>
             </div>
-            <div className="flex items-center space-x-1">
-              <Icon name="User" size={14} />
-              <span className={viewMode === 'grid' ? 'text-xs truncate' : ''}>
-                Por: {currentRequest?.submittedBy}
+            <div className="flex items-center space-x-2">
+              <Icon name="User" size={14} className="flex-shrink-0" />
+              <span className={viewMode === 'grid' ? 'text-xs truncate' : 'truncate'}>
+                {currentRequest?.submittedBy}
               </span>
             </div>
-            <div className="flex items-center space-x-1">
-              <Icon name="Tag" size={14} />
-              <span className={`${getPriorityColor(currentRequest?.priority)} ${viewMode === 'grid' ? 'text-xs truncate' : ''}`}>
+            <div className="flex items-center space-x-2">
+              <Icon name="Tag" size={14} className="flex-shrink-0" />
+              <span className={`${getPriorityColor(currentRequest?.priority)} ${viewMode === 'grid' ? 'text-xs truncate' : 'truncate'}`}>
                 {currentRequest?.form?.section?.toUpperCase()}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Icon name="Clock" size={14} className="flex-shrink-0" />
+              <span className={viewMode === 'grid' ? 'text-xs truncate' : 'truncate'}>
+                {getRelativeTime(currentRequest?.submittedAt)}
               </span>
             </div>
           </div>
@@ -206,7 +209,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode
             </div>
           )}
           {viewMode === 'grid' ? (
-            <div 
+            <div
               className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${getStatusColor(currentRequest?.status)}`}
               title={formatStatusText(currentRequest?.status)}
             >
@@ -250,7 +253,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode
             iconName="Info"
             iconPosition="left"
             iconSize={16}
-          > 
+          >
           </Button>
         </div>
       </div>

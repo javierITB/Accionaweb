@@ -43,7 +43,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   // Verificar si hay PDF firmado cada vez que se abre el modal
   useEffect(() => {
     if (!isVisible || !request?._id || request?.status === 'pendiente' || request?.status === 'en_revision') return;
-    
+
     const checkSignedPdf = async () => {
       try {
         const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}/has-client-signature`);
@@ -55,7 +55,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
         console.error('Error verificando PDF firmado:', error);
       }
     };
-    
+
     // Siempre verificar el estado actual
     checkSignedPdf();
   }, [isVisible, request?._id]);
@@ -63,7 +63,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   useEffect(() => {
     if (isVisible && request?._id) {
       fetchAttachments(request._id);
-      
+
       // Cargar archivos aprobados si el estado no es pendiente/en_revision
       if (request?.status !== 'pendiente' && request?.status !== 'en_revision') {
         fetchApprovedFiles(request._id);
@@ -162,9 +162,9 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
       // Primero obtener metadatos para saber el nombre real
       const metaResponse = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/has-client-signature`);
-      
+
       let fileName = 'documento_firmado.pdf';
-      
+
       if (metaResponse.ok) {
         const metaData = await metaResponse.json();
         if (metaData.exists && metaData.signature?.fileName) {
@@ -174,14 +174,14 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
       // Descargar el archivo
       const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/client-signature`);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Error al descargar el documento firmado');
       }
 
       const blob = await response.blob();
-      
+
       // También verificar Content-Disposition como respaldo
       const contentDisposition = response.headers.get('content-disposition');
       if (contentDisposition) {
@@ -198,12 +198,12 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       a.download = fileName;
       document.body.appendChild(a);
       a.click();
-      
+
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       setUploadMessage('Documento firmado descargado exitosamente');
-      
+
     } catch (error) {
       console.error('Error descargando documento firmado:', error);
       setUploadMessage('Error: ' + error.message);
@@ -220,10 +220,10 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       if (!fileName && approvedFilesData?.correctedFiles?.[index]) {
         fileName = approvedFilesData.correctedFiles[index].fileName;
       }
-      
+
       // Si aún no hay nombre, usar uno por defecto
       const finalFileName = fileName || `documento_aprobado_${index + 1}.pdf`;
-      
+
       const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/download-approved-pdf/${responseId}?index=${index}`);
 
       if (!response.ok) {
@@ -242,7 +242,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
     } catch (error) {
       console.error('Error descargando archivo aprobado:', error);
       alert('Error al descargar el documento: ' + error.message);
@@ -361,11 +361,11 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   // Función para determinar qué sección mostrar
   const renderSignedDocumentSection = () => {
     // Siempre verificar el estado actual
-    const shouldShowSignedSection = request?.status === 'aprobado' || 
-                                    request?.status === 'firmado' || 
-                                    request?.status === 'finalizado' || 
-                                    request?.status === 'archivado';
-    
+    const shouldShowSignedSection = request?.status === 'aprobado' ||
+      request?.status === 'firmado' ||
+      request?.status === 'finalizado' ||
+      request?.status === 'archivado';
+
     if (!shouldShowSignedSection) return null;
 
     if (request?.status === 'aprobado') {
@@ -472,25 +472,25 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
         </div>
       );
     }
-    
+
     return null;
   };
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[80vh] overflow-y-auto py-3 pr-3">
-        <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <Icon name="FileText" size={24} className="text-accent" />
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground">{request?.title}</h2>
-                  <p className="text-sm text-muted-foreground">ID: {request?._id}</p>
+      <div className="bg-card border border-border shadow-brand-active w-full overflow-y-auto h-full rounded-none sm:h-auto sm:max-h-[85vh] sm:max-w-4xl sm:rounded-lg">
+        <div className="sticky top-0 bg-card border-b border-border p-4 sm:p-6 z-10">
+          <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 max-w-[85%] sm:max-w-none">
+              <div className="flex items-start sm:items-center space-x-3">
+                <Icon name="FileText" size={24} className="text-accent mt-1 sm:mt-0 flex-shrink-0" />
+                <div className="min-w-0">
+                  <h2 className="text-lg sm:text-xl font-semibold text-foreground break-words">{request?.title}</h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground break-all">ID: {request?._id}</p>
                 </div>
               </div>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(request?.status)}`}>
-                <Icon name={getStatusIcon(request?.status)} size={14} className="mr-2" />
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium w-fit ${getStatusColor(request?.status)}`}>
+                <Icon name={getStatusIcon(request?.status)} size={14} className="mr-2 flex-shrink-0" />
                 {request?.status?.replace('_', ' ')?.toUpperCase()}
               </span>
             </div>
@@ -500,11 +500,12 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
               onClick={onClose}
               iconName="X"
               iconSize={20}
+              className="flex-shrink-0 ml-2"
             />
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
@@ -591,7 +592,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                 Documentos Corregidos
                 {loadingApprovedFiles && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
               </h3>
-              
+
               {loadingApprovedFiles ? (
                 <div className="flex justify-center py-6">
                   <Icon name="Loader" size={24} className="animate-spin text-accent" />
@@ -630,7 +631,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                       ))}
                     </div>
                   )}
-                  
+
                   {(!approvedFilesData?.correctedFiles || approvedFilesData.correctedFiles.length === 0) && (
                     <div className="text-center py-4 text-sm text-muted-foreground">
                       <Icon name="FileText" size={20} className="mx-auto mb-2 text-muted-foreground/50" />
@@ -657,7 +658,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
           )}
         </div>
 
-        <div className="sticky bottom-0 bg-card border-t border-border p-6">
+        <div className="sticky bottom-0 bg-card border-t border-border p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Icon name="Clock" size={16} />

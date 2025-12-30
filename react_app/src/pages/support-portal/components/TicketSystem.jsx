@@ -274,30 +274,52 @@ const TicketSystem = () => {
           {myTickets?.map((ticket) => (
             <div
               key={ticket?._id}
-              className="bg-card border border-border rounded-lg p-6 hover:shadow-brand-hover transition-brand cursor-pointer"
+              className="bg-card border border-border rounded-lg p-6 hover:shadow-brand-hover transition-brand cursor-pointer relative"
               onClick={() => handleTicketClick(ticket)}
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-foreground">
-                      {ticket?.responses?.Asunto || ticket?.formTitle}
-                    </h3>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(ticket?.status)}`}>
+              <div className="flex flex-col pr-32">
+                {/* Title */}
+                <h3 className="text-lg font-semibold text-foreground break-words mb-2 line-clamp-2">
+                  {ticket?.responses?.Asunto || ticket?.formTitle}
+                </h3>
+
+                {/* Metadata Stack */}
+                <div className="space-y-2 text-sm text-muted-foreground mb-3">
+                  {/* ID */}
+                  <div className="flex items-center space-x-2">
+                    <Icon name="Hash" size={14} className="flex-shrink-0" />
+                    <span className="truncate text-xs font-mono">ID: {ticket?._id}</span>
+                  </div>
+
+                  {/* Categoría */}
+                  <div className="flex items-center space-x-2">
+                    <Icon name="Tag" size={14} className="flex-shrink-0" />
+                    <span className="truncate">{ticket?.formTitle}</span>
+                  </div>
+
+                  {/* Fecha */}
+                  <div className="flex items-center space-x-2">
+                    <Icon name="Calendar" size={14} className="flex-shrink-0" />
+                    <span>{new Date(ticket.createdAt)?.toLocaleDateString('es-ES')}</span>
+                  </div>
+
+                  {/* Status Badge inline in metadata or separate? Keeping it clean in stack or below title? 
+                       RequestCard puts it at right top but we have button there.
+                       User wanted "limpia". Let's put status as a badge in the stack.
+                   */}
+                  <div className="pt-1">
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(ticket?.status)}`}>
                       {getStatusText(ticket?.status)}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    ID: {ticket?._id} • Categoría: {ticket?.formTitle}
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm">
-                    Ver Detalles
-                  </Button>
                 </div>
               </div>
 
+              <div className="absolute top-6 right-6">
+                <Button variant="ghost" size="sm">
+                  Ver Detalles
+                </Button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Creado</p>
@@ -337,27 +359,52 @@ const TicketSystem = () => {
       {/* Ticket Details Tab */}
       {!isLoading && activeTab === 'details' && selectedTicket && (
         <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <div className="p-6 border-b border-border bg-muted/30">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-bold text-foreground mb-2">
-                  {selectedTicket.responses?.Asunto || selectedTicket.formTitle}
-                </h3>
-                <div className="flex items-center space-x-3 text-sm">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
+          <div className="p-6 border-b border-border bg-muted/30 relative">
+            <div className="flex flex-col items-start mb-4 pr-24">
+              <h3 className="text-xl font-bold text-foreground mb-4 break-words">
+                {selectedTicket.responses?.Asunto || selectedTicket.formTitle}
+              </h3>
+
+              {/* Metadata Stack for Details */}
+              <div className="space-y-2 text-sm text-muted-foreground w-full">
+
+                <div className="flex items-center space-x-2">
+                  <Icon name="Hash" size={14} className="flex-shrink-0" />
+                  <span className="font-mono text-xs break-all">ID: {selectedTicket._id}</span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Icon name="Tag" size={14} className="flex-shrink-0" />
+                  <span>{selectedTicket.formTitle}</span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Icon name="Calendar" size={14} className="flex-shrink-0" />
+                  <span>{new Date(selectedTicket.createdAt).toLocaleDateString('es-ES')}</span>
+                </div>
+
+                <div className="pt-2">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
                     {getStatusText(selectedTicket.status)}
-                  </span>
-                  <span className="text-muted-foreground">
-                    ID: {selectedTicket._id}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {new Date(selectedTicket.createdAt).toLocaleDateString('es-ES')}
                   </span>
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setActiveTab('my-tickets')} iconName="X">
-                Cerrar
-              </Button>
+            </div>
+
+            {/* Botón Cerrar: Absoluto Top Right */}
+            <div className="absolute top-6 right-6">
+              {/* Opción 1: Desktop con Icono */}
+              <div className="hidden sm:block">
+                <Button variant="ghost" size="sm" onClick={() => setActiveTab('my-tickets')} iconName="X">
+                  Cerrar
+                </Button>
+              </div>
+              {/* Opción 2: Mobile SIN Icono */}
+              <div className="block sm:hidden">
+                <Button variant="ghost" size="sm" onClick={() => setActiveTab('my-tickets')}>
+                  Cerrar
+                </Button>
+              </div>
             </div>
 
             <div className="bg-background p-4 rounded-md border border-border">

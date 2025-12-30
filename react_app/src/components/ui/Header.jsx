@@ -9,10 +9,10 @@ const Header = ({ className = '' }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const user = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
-  const [unreadCount, setUnreadCount] = useState(0); 
+  const [unreadCount, setUnreadCount] = useState(0);
   const [userRole, setUserRole] = useState(cargo || 'Usuario');
-  
-  const [shouldShake, setShouldShake] = useState(false); 
+
+  const [shouldShake, setShouldShake] = useState(false);
   const [isNotiOpen, setIsNotiOpen] = useState(false);
 
   // REF para el audio y para seguir el rastro del conteo anterior sin disparar re-renders
@@ -101,7 +101,7 @@ const Header = ({ className = '' }) => {
           // 2. Activar agitación visual
           setShouldShake(true);
           setTimeout(() => setShouldShake(false), 1500);
-        } 
+        }
         else if (isInitialLoad && newUnreadCount > 0) {
           // Agitación inicial sin sonido (opcional)
           setShouldShake(true);
@@ -117,7 +117,7 @@ const Header = ({ className = '' }) => {
       }
     };
 
-    fetchUnreadCount(true); 
+    fetchUnreadCount(true);
     intervalId = setInterval(() => fetchUnreadCount(false), 10000);
 
     return () => {
@@ -143,7 +143,7 @@ const Header = ({ className = '' }) => {
           </div>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold text-foreground leading-tight">Acciona RRHH Portal</h1>
-            <span className="text-xs text-muted-foreground font-mono">Panel de administración</span>
+            <span className="text-xs text-muted-foreground font-mono hidden sm:block">Panel de administración</span>
           </div>
         </div>
 
@@ -163,7 +163,9 @@ const Header = ({ className = '' }) => {
         </nav>
 
         <div className="flex items-center space-x-3">
-          <Button variant="ghost" size="icon" onClick={toggleTheme} iconName={theme === 'dark' ? "Sun" : "Moon"} />
+          <div className="hidden sm:block">
+            <Button variant="ghost" size="icon" onClick={toggleTheme} iconName={theme === 'dark' ? "Sun" : "Moon"} />
+          </div>
 
           <div ref={notiRef}>
             <Button
@@ -190,7 +192,7 @@ const Header = ({ className = '' }) => {
             )}
           </div>
 
-          <div className="flex items-center space-x-3 pl-3 border-l border-border">
+          <div className="hidden sm:flex items-center space-x-3 pl-3 border-l border-border">
             {user && (
               <div className="hidden md:block text-right" >
                 <p className="text-sm font-medium text-foreground">{user}</p>
@@ -221,6 +223,73 @@ const Header = ({ className = '' }) => {
           </Button>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {isMenuOpen && (
+        <div className="lg:hidden px-4 pt-2 pb-4 space-y-2 bg-card border-t border-border">
+          {navigationItems.map((item) => (
+            <Button
+              key={item.path}
+              variant="ghost"
+              size="sm"
+              onClick={() => handleNavigation(item.path)}
+              iconName={item.icon}
+              className="w-full justify-start px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+              iconPosition="left"
+            >
+              {item.name}
+            </Button>
+          ))}
+          <div className="border-t border-border mt-2 pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              iconName={theme === 'dark' ? "Sun" : "Moon"}
+              className="w-full justify-start px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+              iconPosition="left"
+            >
+              {theme === 'dark' ? "Modo Claro" : "Modo Oscuro"}
+            </Button>
+
+            {user ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleNavigation('/perfil')}
+                  iconName="User"
+                  className="w-full justify-start px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+                  iconPosition="left"
+                >
+                  Mi Perfil
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  iconName="LogOut"
+                  className="w-full justify-start px-4 py-2 text-md font-medium text-error hover:bg-error/10 hover:text-error"
+                  iconPosition="left"
+                >
+                  Cerrar Sesión
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleNavigation('/login')}
+                iconName="LogIn"
+                className="w-full justify-start px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+                iconPosition="left"
+              >
+                Iniciar Sesión
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };

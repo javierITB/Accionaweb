@@ -11,7 +11,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [formName, setFormName] = useState('');
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [hasNewMessages, setHasNewMessages] = useState(false);
-  
+
   // LÓGICA DEL AUTO-SCROLL COPIADA
   const shouldAutoScroll = useRef(true);
   const lastMessageCount = useRef(0);
@@ -22,14 +22,14 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   // logica de extraer nombre del formulario
 
   useEffect(() => {
-    if(!id || !request) return;
+    if (!id || !request) return;
 
-    if(request._contexto && request._contexto.formTitle) {
+    if (request._contexto && request._contexto.formTitle) {
       setFormName(request._contexto.formTitle);
-    } else if(request.title || request.formTitle){
+    } else if (request.title || request.formTitle) {
       setFormName(request.title || request.formTitle);
     }
-  }, [id,request]);
+  }, [id, request]);
 
   // Fetch de mensajes
   const fetchMessages = async () => {
@@ -38,14 +38,14 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
       const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${id}/chat`);
       if (!res.ok) throw new Error("Error al obtener chat");
       const data = await res.json();
-      
+
       const currentCount = data?.length || 0;
       const hadNewMessages = currentCount > lastMessageCount.current;
-      
+
       if (hadNewMessages && !isFirstLoad.current) {
         setHasNewMessages(true);
       }
-      
+
       setMessages(data || []);
       lastMessageCount.current = currentCount;
     } catch (err) {
@@ -82,7 +82,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
       } else if (shouldAutoScroll.current) {
         const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
         const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 100;
-        
+
         if (isNearBottom) {
           setTimeout(() => {
             if (chatRef.current) {
@@ -99,12 +99,12 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   // MANEJADOR DE SCROLL COPIADO
   const handleScroll = () => {
     if (!chatRef.current) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
     const isAtBottom = Math.abs(scrollHeight - (scrollTop + clientHeight)) < 10;
-    
+
     setShowScrollToBottom(!isAtBottom);
-    
+
     if (!isAtBottom) {
       shouldAutoScroll.current = false;
     } else {
@@ -162,9 +162,9 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] flex flex-col">
+      <div className="bg-card border border-border shadow-lg w-full h-full rounded-none sm:max-w-2xl sm:h-auto sm:max-h-[80vh] sm:rounded-lg flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border">
           <div className="flex items-center space-x-3">
             <Icon name="MessageSquare" size={24} className="text-accent" />
             <div>
@@ -179,9 +179,9 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         </div>
 
         {/* Chat - AGREGADO onScroll */}
-        <div 
-          ref={chatRef} 
-          className="flex-1 overflow-y-auto p-6 space-y-4"
+        <div
+          ref={chatRef}
+          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4"
           onScroll={handleScroll}
         >
           {messages.length > 0 ? messages.map((msg, i) => (
@@ -198,7 +198,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         </div>
 
         {/* Input */}
-        <div className="p-6 border-t border-border">
+        <div className="p-4 sm:p-6 border-t border-border">
           <div className="flex items-center space-x-2">
             <textarea
               value={message}
@@ -220,17 +220,17 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
             </Button>
             {/* AGREGADO: Botón para bajar rápido a la derecha del enviar */}
             {showScrollToBottom && (
-          <div className="flex-shrink-0">
-            <Button
-              onClick={scrollToBottom}
-              className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-white"
-              iconName="ArrowDown" 
-              size="sm"
-            >
-              {hasNewMessages && "Nuevos"}  {/* ← Texto solo cuando hay nuevos */}
-            </Button>
-          </div>
-        )}
+              <div className="flex-shrink-0">
+                <Button
+                  onClick={scrollToBottom}
+                  className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-white"
+                  iconName="ArrowDown"
+                  size="sm"
+                >
+                  {hasNewMessages && "Nuevos"}  {/* ← Texto solo cuando hay nuevos */}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

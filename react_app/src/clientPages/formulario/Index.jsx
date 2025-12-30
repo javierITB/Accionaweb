@@ -67,22 +67,13 @@ const DashboardHome = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <Header />
-      
+
       {/* Main Content */}
       <main className={`transition-all duration-300 pt-16 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto">
           {/* Page Header */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 lg:space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="lg:hidden w-10 h-10"
-              >
-                <Icon name="Menu" size={20} />
-              </Button>
-            </div>
+
           </div>
 
           {/* Main Dashboard Grid */}
@@ -90,7 +81,7 @@ const DashboardHome = () => {
             {/* Left Column - Primary Actions */}
             <div className="xl:col-span-2 space-y-6 lg:space-y-12 w-full">
               {/* Quick Actions - Este componente renderizará el formulario */}
-              <QuickActionsCard formData={formData}/>
+              <QuickActionsCard formData={formData} />
             </div>
           </div>
 
@@ -125,7 +116,7 @@ const DashboardHome = () => {
             </div>
             <div className="mt-3 lg:mt-4 pt-3 lg:pt-4 border-t border-border text-center">
               <p className="text-xs text-muted-foreground">
-                © {new Date()?.getFullYear()} Acciona. Todos los derechos reservados. 
+                © {new Date()?.getFullYear()} Acciona. Todos los derechos reservados.
                 <br className="sm:hidden" />
                 Portal desarrollado para mejorar tu experiencia laboral.
               </p>

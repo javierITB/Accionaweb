@@ -14,9 +14,9 @@ const Header = ({ className = '' }) => {
   const [isNotiOpen, setIsNotiOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
   // NUEVO ESTADO: Controla la agitación de la campana
-  const [shouldShake, setShouldShake] = useState(false); 
+  const [shouldShake, setShouldShake] = useState(false);
 
   const user = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
@@ -66,14 +66,14 @@ const Header = ({ className = '' }) => {
         }
 
         setUnreadCount(newUnreadCount);
-        
+
       } catch (error) {
         console.error("Error en polling de no leídas:", error);
       }
     };
 
     // La primera llamada (carga inicial)
-    fetchUnreadCount(true); 
+    fetchUnreadCount(true);
 
     // Iniciar el polling (revisa el conteo cada 10 segundos)
     intervalId = setInterval(() => fetchUnreadCount(false), 10000);
@@ -177,14 +177,14 @@ const Header = ({ className = '' }) => {
             <h1 className="text-base lg:text-lg font-semibold text-foreground leading-tight group-hover:text-primary transition-colors">
               Portal Acciona
             </h1>
-            <span className="text-xs text-muted-foreground font-mono xs:block">
+            <span className="text-[10px] sm:text-xs text-amber-900/80 font-mono block leading-tight">
               plataforma de asistencia a clientes
             </span>
           </div>
         </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center space-x-1">
+        {/* Desktop Navigation - Hidden on LG, visible on XL */}
+        <nav className="hidden xl:flex items-center space-x-1">
           {navigationItems?.map((item) => (
             <Button
               key={item?.path}
@@ -235,7 +235,7 @@ const Header = ({ className = '' }) => {
 
         {/* User Profile & Actions */}
         <div className="flex items-center space-x-2 lg:space-x-3">
-          
+
           {/* Notifications */}
           <div ref={notiRef}>
             <Button
@@ -272,7 +272,7 @@ const Header = ({ className = '' }) => {
           </div>
 
           {/* User Profile */}
-          <div className="flex items-center space-x-2 lg:space-x-3 pl-2 lg:pl-3 border-l border-border">
+          <div className="hidden sm:flex items-center space-x-2 lg:space-x-3 pl-2 lg:pl-3 border-l border-border">
             {user && (
               <div className="hidden md:block text-right">
                 <p className="text-sm font-medium text-foreground">{user}</p>
@@ -299,7 +299,7 @@ const Header = ({ className = '' }) => {
               </div>
             )
             }
-            < div className="relative" ref={userMenuRef}>
+            <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => { user ? handleLogout() : window.location.href = "/login" }}
                 className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
@@ -320,7 +320,7 @@ const Header = ({ className = '' }) => {
             variant="ghost"
             size="icon"
             onClick={toggleMenu}
-            className="lg:hidden hover:bg-muted transition-brand w-10 h-10"
+            className="xl:hidden hover:bg-muted transition-brand w-10 h-10"
           >
             <Icon name={isMenuOpen ? "X" : "Menu"} size={20} />
           </Button>
@@ -330,7 +330,7 @@ const Header = ({ className = '' }) => {
       {/* Mobile Navigation Menu */}
       {
         isMenuOpen && (
-          <div className="lg:hidden bg-card border-b border-border shadow-brand animate-slide-down">
+          <div className="xl:hidden bg-card border-b border-border shadow-brand animate-slide-down">
             <div className="px-4 py-3 space-y-1">
               {navigationItems?.map((item) => (
                 <button
@@ -344,7 +344,6 @@ const Header = ({ className = '' }) => {
                 </button>
               ))}
 
-              {/* More items in mobile */}
               {moreMenuItems?.map((item) => (
                 <button
                   key={item?.path}
@@ -356,6 +355,39 @@ const Header = ({ className = '' }) => {
                   <span className="font-medium">{item?.name}</span>
                 </button>
               ))}
+
+              {/* User Actions Mobile */}
+              <div className="border-t border-border mt-2 pt-2">
+                {user ? (
+                  <>
+                    <button
+                      onClick={() => handleNavigation('/perfil')}
+                      className="flex items-center w-full px-4 py-3 text-left text-foreground hover:bg-muted rounded-lg transition-brand"
+                    >
+                      <Icon name="User" size={20} className="mr-3" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">Mi Perfil</span>
+                        <span className="text-xs text-muted-foreground">{user}</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-3 text-left text-error hover:bg-error/10 rounded-lg transition-brand"
+                    >
+                      <Icon name="LogOut" size={20} className="mr-3" />
+                      <span className="font-medium">Cerrar Sesión</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => handleNavigation('/login')}
+                    className="flex items-center w-full px-4 py-3 text-left text-foreground hover:bg-muted rounded-lg transition-brand"
+                  >
+                    <Icon name="LogIn" size={20} className="mr-3" />
+                    <span className="font-medium">Iniciar Sesión</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )
