@@ -327,6 +327,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         
         <div className="flex flex-wrap gap-2">
           {notificationTypes.map(type => (
+            type !== 'all' && (
             <button
               key={type}
               onClick={() => setActiveFilter(type)}
@@ -342,6 +343,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
                 borderColor: activeFilter === type ? getTypeColor(type) : 'transparent'
               }}
             >
+          
               <Icon 
                 name={type === 'all' ? 'Bell' : type} 
                 size={14} 
@@ -356,7 +358,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
               `}>
                 {countByType[type] || 0}
               </span>
-            </button>
+            </button> )
           ))}
         </div>
       </div>
