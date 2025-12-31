@@ -121,7 +121,7 @@ const FormReg = () => {
 
   const filteredUsers = useMemo(() => {
     if (!filters.field || !filters.value) return users;
-    return users.filter(user => 
+    return users.filter(user =>
       String(user[filters.field]).toLowerCase() === String(filters.value).toLowerCase()
     );
   }, [users, filters]);
@@ -174,7 +174,25 @@ const FormReg = () => {
             accessKey: "wBlL283JH9TqdEJRxon1QOBuI0A6jGVEwpUYchnyMGz",
             to: [formData.mail],
             subject: "Completa tu registro",
-            html: `<h2>Bienvenido ${formData.nombre}</h2><p>Tu cuenta ha sido creada.</p>`
+            html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #3B82F6;">¡Bienvenido a la plataforma!</h2>
+              <p>Hola <strong>${formData.nombre} ${formData.apellido}</strong>,</p>
+              <p>Has sido registrado en nuestra plataforma. Para completar tu registro y establecer tu contraseña, haz clic en el siguiente botón:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="https://infoacciona.vercel.app/set-password?userId=${savedUser?.id || savedUser?._id}" 
+                   style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                  Establecer Contraseña
+                </a>
+              </div>
+              <p><strong>Datos de tu cuenta:</strong></p>
+              <ul>
+                <li><strong>Empresa:</strong> ${formData.empresa}</li>
+                <li><strong>Cargo:</strong> ${formData.cargo}</li>
+              </ul>
+              <p style="color: #666; font-size: 12px;">Si no solicitaste este registro, por favor ignora este correo.</p>
+            </div>
+          `
           }),
         });
         alert('Usuario registrado y correo enviado.');
@@ -289,7 +307,7 @@ const FormReg = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Usuarios registrados {filters.field && `(Filtrado por ${filters.field})`}</h2>
               {filters.field && (
-                <button 
+                <button
                   onClick={() => setFilters({ field: null, value: null })}
                   className="text-sm text-blue-600 hover:underline"
                 >
@@ -320,38 +338,37 @@ const FormReg = () => {
                     {filteredUsers.map((u) => (
                       <tr key={u._id} className="border-t hover:bg-muted/30 transition">
                         <td className="px-4 py-2 text-xs font-mono text-muted-foreground">{u._id}</td>
-                        <td 
+                        <td
                           className="px-4 py-2 cursor-pointer hover:text-blue-500"
                           onClick={() => handleFilter('nombre', u.nombre)}
                         >
                           {u.nombre} {u.apellido}
                         </td>
-                        <td 
+                        <td
                           className="px-4 py-2 cursor-pointer hover:text-blue-500 font-medium"
                           onClick={() => handleFilter('empresa', u.empresa)}
                         >
                           {u.empresa || '—'}
                         </td>
                         <td className="px-4 py-2">{u.mail}</td>
-                        <td 
+                        <td
                           className="px-4 py-2 cursor-pointer hover:text-blue-500"
                           onClick={() => handleFilter('cargo', u.cargo)}
                         >
                           {u.cargo || '—'}
                         </td>
-                        <td 
+                        <td
                           className="px-4 py-2 cursor-pointer hover:text-blue-500"
                           onClick={() => handleFilter('rol', u.rol)}
                         >
                           {u.rol || '—'}
                         </td>
                         <td className="px-4 py-2">
-                          <span 
+                          <span
                             onClick={() => handleFilter('estado', u.estado)}
-                            className={`px-2 py-1 text-xs rounded-full cursor-pointer ${
-                              u.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 
-                              u.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                            }`}
+                            className={`px-2 py-1 text-xs rounded-full cursor-pointer ${u.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                                u.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                              }`}
                           >
                             {u.estado}
                           </span>
