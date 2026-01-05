@@ -458,30 +458,20 @@ const RequestTracking = () => {
                   iconSize={14}
                   className="px-2"
                 />
+                <Button
+                  variant="default"
+                  size="sm"
+                  iconName="Plus"
+                  iconPosition="left"
+                  iconSize={16}
+                  onClick={() => window.location.href = "/ticket-builder"}
+                  className="mb-2 md:mb-0 text-xs sm:text-sm"
+                >
+                  Crear Formulario
+                </Button>
               </div>
 
-              {/* VISTA GRID/LISTA */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
-                <div className="flex items-center border border-border rounded-lg">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    iconName="Grid3X3"
-                    iconSize={14}
-                    className="rounded-r-none px-2 sm:px-3"
-                  />
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    iconName="List"
-                    iconSize={14}
-                    className="rounded-l-none border-l px-2 sm:px-3"
-                  />
-                </div>
-              </div>
+              
 
             </div>
           </div>
