@@ -436,14 +436,22 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     setIsApproving(true);
     try {
       // Logic to append user
-      let newAssignedTo = [];
+      let previousAssignments = [];
       if (Array.isArray(currentAssigned)) {
-        newAssignedTo = [...currentAssigned, currentUser];
+        previousAssignments = currentAssigned;
       } else if (currentAssigned && currentAssigned !== 'Sin asignar' && currentAssigned !== '-') {
-        newAssignedTo = [currentAssigned, currentUser];
-      } else {
-        newAssignedTo = [currentUser];
+        previousAssignments = [currentAssigned];
       }
+
+      previousAssignments = previousAssignments.filter(u => {
+        if (!u) return false;
+        const clean = String(u).trim();
+        return clean !== '-' && clean !== 'Sin asignar' && clean !== '';
+      });
+
+      let newAssignedTo = [...previousAssignments, currentUser];
+
+      newAssignedTo = [...new Set(newAssignedTo)];
 
       const response = await apiFetch(`${API_BASE_URL}/soporte/${request._id}/status`, {
         method: 'PUT',
@@ -473,7 +481,27 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const displayAssignedUsers = () => {
     const assigned = fullRequestData?.assignedTo;
     if (!assigned || assigned === '-') return 'Sin asignar';
-    if (Array.isArray(assigned)) return assigned.join(', ');
+
+    if (Array.isArray(assigned)) {
+      // Robust filter: trim spaces, check for '-', check for empty strings
+      const validUsers = assigned.filter(u => {
+        if (!u) return false;
+        const clean = String(u).trim();
+        return clean !== '-' && clean !== 'Sin asignar' && clean !== '';
+      });
+
+      if (validUsers.length === 0) return 'Sin asignar';
+      return validUsers.join(', ');
+    }
+
+    // Try to parse if it is a string that looks like an array or comma separated (fallback)
+    if (typeof assigned === 'string' && assigned.includes(',')) {
+      return assigned.split(',')
+        .map(u => u.trim())
+        .filter(u => u && u !== '-' && u !== 'Sin asignar')
+        .join(', ');
+    }
+
     return assigned;
   };
 
