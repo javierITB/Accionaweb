@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
+import { apiFetch, API_BASE_URL } from '../../../utils/api';
 
 const WelcomeCard = ({ user }) => {
   const currentHour = new Date()?.getHours();
@@ -15,13 +16,13 @@ const WelcomeCard = ({ user }) => {
         console.log('Buscando logo para usuario:', userMail);
 
         // 1. Obtener datos del usuario para saber su empresa
-        const userResponse = await fetch(`https://back-desa.vercel.app/api/auth/full/${userMail}`);
-        if (!userResponse.ok) {
-          console.log('Error obteniendo datos del usuario');
-          return;
-        }
+        const userResponse = await apiFetch(`${API_BASE_URL}/auth/full/${userMail}`);
 
-        const userData = await userResponse.json();
+        // Con apiFetch, si hay error lanza excepción, así que simplificamos la lógica
+        const userData = userResponse; // apiFetch retorna userResponse.json() o similar dependiendo de la implementación
+        // EDIT: Revisando apiFetch implementation. 
+        // apiFetch retorna la respuesta parseada si es JSON.
+
         const userCompany = userData.empresa;
         console.log('Empresa del usuario:', userCompany);
 
@@ -31,13 +32,8 @@ const WelcomeCard = ({ user }) => {
         }
 
         // 2. Obtener todas las empresas para buscar la del usuario
-        const companiesResponse = await fetch(`https://back-desa.vercel.app/api/auth/empresas/todas`);
-        if (!companiesResponse.ok) {
-          console.log('Error obteniendo empresas');
-          return;
-        }
-
-        const companies = await companiesResponse.json();
+        // NOTA: Endpoint protegido requiere token
+        const companies = await apiFetch(`${API_BASE_URL}/auth/empresas/todas`);
         console.log('Empresas encontradas:', companies.length);
 
         // 3. Buscar la empresa del usuario (búsqueda más flexible)
