@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch, API_BASE_URL } from '../../../utils/api';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
@@ -10,10 +10,13 @@ const TicketSystem = () => {
   const [ticketForm, setTicketForm] = useState({
     subject: '',
     category: '',
-    priority: 'medium',
     description: '',
-    attachments: []
+    attachments: [] // Stores File objects
   });
+
+  const fileInputRef = useRef(null);
+  const MAX_FILES = 5;
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit per file
 
   // Static categories for error reporting
   const categories = [
@@ -90,6 +93,59 @@ const TicketSystem = () => {
     }));
   };
 
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 KB';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) {
+      return (bytes / 1024).toFixed(2) + ' KB';
+    }
+    return (bytes / 1048576).toFixed(2) + ' MB';
+  };
+
+  const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files);
+
+    // Filter for allowed types if needed (currently images and PDF based on backend filter)
+    // Backend supports: pdf, jpg, jpeg, png, webp
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    const invalidFiles = files.filter(file => !allowedTypes.includes(file.type));
+
+    if (invalidFiles.length > 0) {
+      alert('Solo se permiten archivos PDF e imágenes (JPG, PNG, WEBP)');
+      event.target.value = '';
+      return;
+    }
+
+    // Validate count
+    if (ticketForm.attachments.length + files.length > MAX_FILES) {
+      alert(`Máximo ${MAX_FILES} archivos permitidos.`);
+      event.target.value = '';
+      return;
+    }
+
+    // Validate size
+    const oversizedFiles = files.filter(file => file.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      const names = oversizedFiles.map(f => f.name).join(', ');
+      alert(`Los siguientes archivos exceden el límite de 5MB: ${names}`);
+      event.target.value = '';
+      return;
+    }
+
+    setTicketForm(prev => ({
+      ...prev,
+      attachments: [...prev.attachments, ...files]
+    }));
+    event.target.value = '';
+  };
+
+  const handleRemoveFile = (index) => {
+    setTicketForm(prev => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, i) => i !== index)
+    }));
+  };
+
   const handleSubmitTicket = async () => {
     if (!ticketForm?.subject || !ticketForm?.category || !ticketForm?.description) {
       alert('Por favor completa todos los campos obligatorios');
@@ -104,28 +160,36 @@ const TicketSystem = () => {
     setIsLoading(true);
     try {
       const selectedCategory = categories.find(c => c.value === ticketForm.category);
+      const categoryLabel = selectedCategory ? selectedCategory.label : 'Ticket de Soporte';
 
-      const payload = {
-        formId: ticketForm.category,
-        formTitle: selectedCategory ? selectedCategory.label : 'Ticket de Soporte',
-        user: {
-          nombre: currentUser.nombre,
-          empresa: currentUser.empresa,
-          uid: currentUser.uid,
-          token: currentUser.token
-        },
-        responses: {
-          Asunto: ticketForm.subject,
-          Descripción: ticketForm.description,
-          Prioridad: ticketForm.priority
-        },
-        mail: currentUser.email,
-        adjuntos: []
-      };
+      const formData = new FormData();
+      formData.append('formId', ticketForm.category);
+      formData.append('formTitle', categoryLabel);
+      formData.append('mail', currentUser.email);
 
+      // User and Responses as JSON strings
+      formData.append('user', JSON.stringify({
+        nombre: currentUser.nombre,
+        empresa: currentUser.empresa,
+        uid: currentUser.uid,
+        token: currentUser.token
+      }));
+
+      formData.append('responses', JSON.stringify({
+        Asunto: ticketForm.subject,
+        Descripción: ticketForm.description,
+        Prioridad: 'Media' // Default priority maintained backend-side as requested
+      }));
+
+      // Append files
+      ticketForm.attachments.forEach(file => {
+        formData.append('adjuntos', file);
+      });
+
+      // No need to set Content-Type header, apiFetch/browser handles multipart/form-data boundary
       const res = await apiFetch(`${API_BASE_URL}/soporte/`, {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: formData
       });
 
       if (res.ok) {
@@ -133,7 +197,6 @@ const TicketSystem = () => {
         setTicketForm({
           subject: '',
           category: '',
-          priority: 'medium',
           description: '',
           attachments: []
         });
@@ -173,12 +236,7 @@ const TicketSystem = () => {
     }
   };
 
-  const priorityOptions = [
-    { value: 'low', label: 'Baja' },
-    { value: 'medium', label: 'Media' },
-    { value: 'high', label: 'Alta' },
-    { value: 'urgent', label: 'Urgente' }
-  ];
+
 
   return (
     <div className="mb-8">
@@ -235,15 +293,6 @@ const TicketSystem = () => {
               />
             </div>
 
-            <Select
-              label="Prioridad"
-              placeholder="Selecciona la prioridad"
-              options={priorityOptions}
-              value={ticketForm?.priority}
-              onChange={(value) => handleInputChange('priority', value)}
-              className="max-w-xs"
-            />
-
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 Descripción Detallada *
@@ -255,6 +304,90 @@ const TicketSystem = () => {
                 onChange={(e) => handleInputChange('description', e?.target?.value)}
                 required
               />
+            </div>
+
+            {/* File Upload Section - Styled like Admin RequestDetails */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-3">
+                Archivos Adjuntos
+              </label>
+              <div className="bg-muted/30 rounded-lg p-4 border border-border">
+                {ticketForm.attachments.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          Archivos seleccionados: {ticketForm.attachments.length}/{MAX_FILES}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Límite: {MAX_FILES} archivos • 5MB por archivo
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        iconName="Plus"
+                        iconPosition="left"
+                        disabled={ticketForm.attachments.length >= MAX_FILES}
+                      >
+                        Agregar más
+                      </Button>
+                    </div>
+
+                    {ticketForm.attachments.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-card rounded border border-border">
+                        <div className="flex items-center space-x-3">
+                          <Icon name={file.type === 'application/pdf' ? 'FileText' : 'Image'} size={20} className="text-accent" />
+                          <div>
+                            <p className="text-sm font-medium text-foreground truncate max-w-[200px]">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(file.size)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveFile(index)}
+                          className="text-error hover:bg-error/10"
+                        >
+                          <Icon name="X" size={16} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">No se han seleccionado archivos</p>
+                      <p className="text-xs text-muted-foreground">
+                        Soporta PDF, JPG, PNG, WEBP (Máx 5MB)
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      iconName="Upload"
+                      iconPosition="left"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Seleccionar archivo(s)
+                    </Button>
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept=".pdf, .jpg, .jpeg, .png, .webp"
+                  multiple
+                  className="hidden"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end space-x-3">
@@ -305,10 +438,16 @@ const TicketSystem = () => {
                        RequestCard puts it at right top but we have button there.
                        User wanted "limpia". Let's put status as a badge in the stack.
                    */}
-                  <div className="pt-1">
+                  <div className="pt-1 flex items-center space-x-2">
                     <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(ticket?.status)}`}>
                       {getStatusText(ticket?.status)}
                     </span>
+                    {ticket.adjuntos && ticket.adjuntos.length > 0 && (
+                      <div className="flex items-center text-muted-foreground" title={`${ticket.adjuntos.length} archivo(s) adjunto(s)`}>
+                        <Icon name="Paperclip" size={14} className="mr-1" />
+                        <span className="text-xs">{ticket.adjuntos.length}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
