@@ -202,10 +202,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
       }
     };
 
-    fetchFullDetailsAndDocs();
+    fetchFullDetailsAndDocs().then(() => {
+      // Solo buscar datos aprobados si el estado lo amerita
+      const currentStatus = fullRequestData?.status || request?.status;
+      if (['aprobado', 'firmado', 'finalizado', 'archivado'].includes(currentStatus)) {
+        fetchApprovedData(responseId);
+      }
+    });
     fetchAttachments(responseId);
     checkClientSignature(responseId);
-    fetchApprovedData(responseId);
 
   }, [isVisible, request?._id]);
 
@@ -483,7 +488,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     if (!assigned || assigned === '-') return 'Sin asignar';
 
     if (Array.isArray(assigned)) {
-      // Robust filter: trim spaces, check for '-', check for empty strings
       const validUsers = assigned.filter(u => {
         if (!u) return false;
         const clean = String(u).trim();
@@ -494,7 +498,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
       return validUsers.join(', ');
     }
 
-    // Try to parse if it is a string that looks like an array or comma separated (fallback)
     if (typeof assigned === 'string' && assigned.includes(',')) {
       return assigned.split(',')
         .map(u => u.trim())
