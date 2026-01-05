@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { apiFetch, API_BASE_URL } from '../../utils/api';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import RegisterForm from './components/RegisterForm';
@@ -62,7 +63,7 @@ const FormReg = () => {
     const fetchEmpresas = async () => {
       try {
         setLoadingEmpresas(true);
-        const response = await fetch('https://back-desa.vercel.app/api/auth/empresas/todas');
+        const response = await apiFetch(`${API_BASE_URL}/auth/empresas/todas`);
         if (!response.ok) throw new Error('Error al cargar empresas');
         const empresasData = await response.json();
         const empresasOptions = empresasData.map(empresa => ({
@@ -97,7 +98,7 @@ const FormReg = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`https://back-desa.vercel.app/api/auth/`);
+      const res = await apiFetch(`${API_BASE_URL}/auth/`);
       if (!res.ok) throw new Error('Usuarios no encontrados');
       const data = await res.json();
       setUsers(data);
@@ -151,14 +152,13 @@ const FormReg = () => {
 
     const method = isUpdating ? 'PUT' : 'POST';
     const url = isUpdating
-      ? `https://back-desa.vercel.app/api/auth/users/${editingUser._id}`
-      : 'https://back-desa.vercel.app/api/auth/register';
+      ? `${API_BASE_URL}/auth/users/${editingUser._id}`
+      : `${API_BASE_URL}/auth/register`;
 
     try {
       setIsLoading(true);
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: method,
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(isUpdating ? { ...formData, estado: formData.estado } : { ...formData, pass: "", estado: "pendiente" }),
       });
 
@@ -167,9 +167,8 @@ const FormReg = () => {
       if (!isUpdating) {
         const saved = await response.json();
         const savedUser = saved?.userId;
-        await fetch('https://back-desa.vercel.app/api/mail/send', {
+        await apiFetch(`${API_BASE_URL}/mail/send`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             accessKey: "wBlL283JH9TqdEJRxon1QOBuI0A6jGVEwpUYchnyMGz",
             to: [formData.mail],
@@ -225,7 +224,7 @@ const FormReg = () => {
     if (!window.confirm("¿Estás seguro?")) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`https://back-desa.vercel.app/api/auth/users/${userId}`, { method: 'DELETE' });
+      const response = await apiFetch(`${API_BASE_URL}/auth/users/${userId}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Error al eliminar');
       alert('Usuario eliminado');
       fetchUsers();
