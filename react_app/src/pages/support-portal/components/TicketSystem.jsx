@@ -178,15 +178,13 @@ const TicketSystem = () => {
       formData.append('responses', JSON.stringify({
         Asunto: ticketForm.subject,
         Descripción: ticketForm.description,
-        Prioridad: 'Media' // Default priority maintained backend-side as requested
+        Prioridad: 'Media'
       }));
 
-      // Append files
       ticketForm.attachments.forEach(file => {
         formData.append('adjuntos', file);
       });
 
-      // No need to set Content-Type header, apiFetch/browser handles multipart/form-data boundary
       const res = await apiFetch(`${API_BASE_URL}/soporte/`, {
         method: "POST",
         body: formData

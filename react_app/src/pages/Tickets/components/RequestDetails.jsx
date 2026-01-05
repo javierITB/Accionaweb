@@ -420,13 +420,34 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
       alert("Error: No se pudo identificar al usuario actual. Por favor, recarga la página o inicia sesión nuevamente.");
       return;
     }
+
+    // Check if user is already assigned
+    const currentAssigned = fullRequestData?.assignedTo;
+    const isAssigned = Array.isArray(currentAssigned)
+      ? currentAssigned.includes(currentUser)
+      : currentAssigned === currentUser;
+
+    if (isAssigned) {
+      return; // Should not happen if button is hidden, but safety check
+    }
+
     if (!confirm('¿Tomar este ticket para revisión?')) return;
 
     setIsApproving(true);
     try {
+      // Logic to append user
+      let newAssignedTo = [];
+      if (Array.isArray(currentAssigned)) {
+        newAssignedTo = [...currentAssigned, currentUser];
+      } else if (currentAssigned && currentAssigned !== 'Sin asignar' && currentAssigned !== '-') {
+        newAssignedTo = [currentAssigned, currentUser];
+      } else {
+        newAssignedTo = [currentUser];
+      }
+
       const response = await apiFetch(`${API_BASE_URL}/soporte/${request._id}/status`, {
         method: 'PUT',
-        body: JSON.stringify({ status: 'en_revision', assignedTo: currentUser })
+        body: JSON.stringify({ status: 'en_revision', assignedTo: newAssignedTo })
       });
 
       if (response.ok) {
@@ -447,6 +468,28 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
       setIsApproving(false);
     }
   };
+
+  // Helper to displaying assigned users
+  const displayAssignedUsers = () => {
+    const assigned = fullRequestData?.assignedTo;
+    if (!assigned || assigned === '-') return 'Sin asignar';
+    if (Array.isArray(assigned)) return assigned.join(', ');
+    return assigned;
+  };
+
+  const isUserAssigned = () => {
+    const assigned = fullRequestData?.assignedTo;
+    if (!assigned) return false;
+    if (Array.isArray(assigned)) return assigned.includes(currentUser);
+    return assigned === currentUser;
+  };
+
+  // ... skip to render ... 
+
+  // Inside render (need to match context, splitting replace if needed but let's try to target specific blocks if easy,
+  // or I can just replace the function and the display block separately).
+  // Actually, I'll do separate replace calls to be safe.
+
 
   const handleApprovewithoutFile = async () => {
     if (isApproving || request?.status === 'finalizado') return;
@@ -662,7 +705,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tomado por</p>
             <p className={`text-sm font-semibold ${(fullRequestData?.assignedTo && fullRequestData?.assignedTo !== '-') ? 'text-accent' : 'text-muted-foreground italic'}`}>
-              {(fullRequestData?.assignedTo && fullRequestData?.assignedTo !== '-') ? fullRequestData?.assignedTo : 'Sin asignar'}
+              {displayAssignedUsers()}
             </p>
             {fullRequestData?.assignedAt && (
               <p className="text-xs text-muted-foreground">{formatDate(fullRequestData?.assignedAt)}</p>
@@ -888,7 +931,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
 
 
-              {fullRequestData?.status === 'pendiente' && (
+              {(fullRequestData?.status === 'pendiente' || (fullRequestData?.status === 'en_revision' && !isUserAssigned())) && (
                 <Button
                   variant="default"
                   iconName={isApproving ? "Loader" : "UserCheck"}
