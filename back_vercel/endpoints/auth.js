@@ -11,6 +11,21 @@ const { encrypt, createBlindIndex, verifyPassword, decrypt } = require("../utils
 const getAhoraChile = () => {
   const d = new Date();
   return new Date(d.toLocaleString("en-US", { timeZone: "America/Santiago" }));
+  return new Date(d.toLocaleString("en-US", { timeZone: "America/Santiago" }));
+};
+
+const verifyRequest = async (req) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw { status: 401, message: "No autorizado" };
+  }
+  const token = authHeader.split(" ")[1];
+  const { validarToken } = require("../utils/validarToken");
+  const validation = await validarToken(req.db, token);
+  if (!validation.ok) {
+    throw { status: 401, message: "Acceso denegado: " + validation.reason };
+  }
+  return validation.data;
 };
 
 const TOKEN_EXPIRATION = 12 * 1000 * 60 * 60;
@@ -138,6 +153,7 @@ const desactivarTokenPorEmail = async (db, email) => {
 
 router.get("/", async (req, res) => {
   try {
+    await verifyRequest(req);
     const usuarios = await req.db.collection("usuarios").find().toArray();
 
     if (!usuarios || usuarios.length === 0) {
@@ -167,6 +183,7 @@ router.get("/", async (req, res) => {
 
 router.get("/solicitud", async (req, res) => {
   try {
+    await verifyRequest(req);
     const usuarios = await req.db
       .collection("usuarios")
       .find({}, { projection: { nombre: 1, apellido: 1, mail: 1, empresa: 1 } })
@@ -188,6 +205,7 @@ router.get("/solicitud", async (req, res) => {
 
 router.get("/:mail", async (req, res) => {
   try {
+    await verifyRequest(req);
     const cleanMail = req.params.mail.toLowerCase().trim();
 
     const usr = await req.db
@@ -212,6 +230,7 @@ router.get("/:mail", async (req, res) => {
 
 router.get("/full/:mail", async (req, res) => {
   try {
+    await verifyRequest(req);
     const { mail } = req.params;
     const mailIndex = createBlindIndex(mail.toLowerCase().trim());
 
@@ -257,12 +276,6 @@ router.get("/full/:mail", async (req, res) => {
     res.status(500).json({ error: "Error al obtener Usuario completo" });
   }
 });
-
-const BLOCK_TIMES = {
-  3: 1 * 60 * 1000,    // 1 minuto
-  4: 5 * 60 * 1000,    // 5 minutos
-  5: 10 * 60 * 1000    // 10 minutos
-};
 
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -828,10 +841,12 @@ router.post("/verify-2fa-activation", async (req, res) => {
   }
 });
 
+// RUTA /disable-2fa TOKENIZADA - COMPATIBLE CON FRONTEND ACTUAL
 router.post("/disable-2fa", async (req, res) => {
   const { email } = req.body;
+  const authHeader = req.headers.authorization;
 
-  console.log("DEBUG disable-2fa - Body recibido:", req.body);
+  console.log("DEBUG disable-2fa tokenizada - Body recibido:", req.body);
 
   if (!email) {
     return res.status(400).json({
@@ -840,13 +855,103 @@ router.post("/disable-2fa", async (req, res) => {
     });
   }
 
+  // ==================== 1. VALIDAR TOKEN EN HEADER ====================
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log("DEBUG: Falta Authorization header o formato incorrecto");
+    return res.status(401).json({
+      success: false,
+      message: "Token de autenticación requerido."
+    });
+  }
+
+  const sessionToken = authHeader.split(' ')[1];
+
   try {
-    // Buscar usuario por email (usando blind index)
+    // ==================== 2. BUSCAR TOKEN EN BD ====================
+    const tokenRecord = await req.db.collection("tokens").findOne({
+      token: sessionToken
+    });
+
+    if (!tokenRecord) {
+      console.log("DEBUG: Token no encontrado en BD");
+      return res.status(401).json({
+        success: false,
+        message: "Token inválido o sesión expirada."
+      });
+    }
+
+    // ==================== 3. VALIDAR ESTADO DEL TOKEN ====================
+    // Verificar si está activo
+    let activeDescifrado = "false";
+    try {
+      if (tokenRecord.active && tokenRecord.active.includes(':')) {
+        activeDescifrado = decrypt(tokenRecord.active);
+      }
+    } catch (error) {
+      console.error("Error descifrando active del token:", error);
+      return res.status(401).json({
+        success: false,
+        message: "Error en validación de token."
+      });
+    }
+
+    if (activeDescifrado !== "true") {
+      console.log("DEBUG: Token marcado como inactivo");
+      return res.status(401).json({
+        success: false,
+        message: "Sesión inactiva. Inicia sesión nuevamente."
+      });
+    }
+
+    // Verificar expiración
+    const now = new Date();
+    const expiresAt = new Date(tokenRecord.expiresAt);
+    if (expiresAt < now) {
+      console.log("DEBUG: Token expirado - ExpiresAt:", expiresAt, "Now:", now);
+
+      // Desactivar token automáticamente
+      await req.db.collection("tokens").updateOne(
+        { token: sessionToken },
+        { $set: { active: encrypt("false"), revokedAt: now } }
+      );
+
+      return res.status(401).json({
+        success: false,
+        message: "Sesión expirada. Inicia sesión nuevamente."
+      });
+    }
+
+    // ==================== 4. VERIFICAR QUE TOKEN CORRESPONDE AL EMAIL ====================
+    let tokenEmailDescifrado = "";
+    try {
+      if (tokenRecord.email && tokenRecord.email.includes(':')) {
+        tokenEmailDescifrado = decrypt(tokenRecord.email);
+      }
+    } catch (error) {
+      console.error("Error descifrando email del token:", error);
+      return res.status(401).json({
+        success: false,
+        message: "Error en validación de token."
+      });
+    }
+
+    const emailNormalizado = email.toLowerCase().trim();
+
+    if (tokenEmailDescifrado !== emailNormalizado) {
+      console.log("DEBUG: Email no coincide - Token email:", tokenEmailDescifrado, "Body email:", emailNormalizado);
+      return res.status(401).json({
+        success: false,
+        message: "No tienes permisos para esta acción."
+      });
+    }
+
+    // ==================== 5. BUSCAR USUARIO ====================
     const user = await req.db.collection("usuarios").findOne({
-      mail_index: createBlindIndex(email.toLowerCase().trim())
+      mail_index: createBlindIndex(emailNormalizado)
     });
 
     if (!user) {
+      console.log("DEBUG: Usuario no encontrado en BD");
       return res.status(404).json({
         success: false,
         message: "Usuario no encontrado."
@@ -860,6 +965,7 @@ router.post("/disable-2fa", async (req, res) => {
       });
     }
 
+    // ==================== 6. DESHABILITAR 2FA ====================
     const userId = user._id.toString();
 
     // Actualizar estado
@@ -874,10 +980,28 @@ router.post("/disable-2fa", async (req, res) => {
       { $set: { active: false, revokedAt: new Date(), reason: "2fa_disabled" } }
     );
 
+    // ==================== 7. REGISTRAR ACCIÓN (OPCIONAL) ====================
+    try {
+      await req.db.collection("security_logs").insertOne({
+        action: "2FA_DISABLED",
+        userId: userId,
+        email: emailNormalizado,
+        timestamp: new Date(),
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+    } catch (logError) {
+      console.error("Error registrando en logs:", logError);
+      // No fallar la operación principal por un error de logs
+    }
+
+    console.log("DEBUG: 2FA deshabilitado exitosamente para:", emailNormalizado);
+
     res.status(200).json({
       success: true,
       message: "Autenticación de Dos Factores desactivada exitosamente."
     });
+
   } catch (err) {
     console.error("Error en /disable-2fa:", err);
     res.status(500).json({
@@ -889,9 +1013,11 @@ router.post("/disable-2fa", async (req, res) => {
 
 router.get("/logins/todos", async (req, res) => {
   try {
+    await verifyRequest(req);
     const tkn = await req.db.collection("ingresos").find().toArray();
     res.json(tkn);
   } catch (err) {
+    if (err.status) return res.status(err.status).json({ message: err.message });
     res.status(500).json({ error: "Error al obtener ingresos" });
   }
 });
@@ -1076,6 +1202,8 @@ router.post("/logout", async (req, res) => {
 
 router.post("/register", async (req, res) => {
   try {
+    const auth = await verifyRequest(req); // Requiere admin
+    // Opcional: validar rol de admin aqui si es necesario
     const { nombre, apellido, mail, empresa, cargo, rol, estado } = req.body;
     const m = mail.toLowerCase().trim();
 
@@ -1187,6 +1315,7 @@ router.post("/change-password", async (req, res) => {
 
 router.put("/users/:id", async (req, res) => {
   try {
+    await verifyRequest(req);
     const { nombre, apellido, mail, empresa, cargo, rol, estado } = req.body;
     const userId = req.params.id;
 
@@ -1261,6 +1390,7 @@ router.put("/users/:id", async (req, res) => {
 
 router.delete("/users/:id", async (req, res) => {
   try {
+    await verifyRequest(req);
     const result = await req.db.collection("usuarios").deleteOne({
       _id: new ObjectId(req.params.id)
     });
@@ -1350,6 +1480,7 @@ router.post("/set-password", async (req, res) => {
 
 router.get("/empresas/todas", async (req, res) => {
   try {
+    await verifyRequest(req);
     const empresas = await req.db.collection("empresas").find().toArray();
 
     const empresasDescifradas = empresas.map(emp => {
@@ -1413,6 +1544,7 @@ router.get("/empresas/todas", async (req, res) => {
 
 router.get("/empresas/:id", async (req, res) => {
   try {
+    await verifyRequest(req);
     const empresa = await req.db.collection("empresas").findOne({
       _id: new ObjectId(req.params.id)
     });
@@ -1440,6 +1572,7 @@ router.get("/empresas/:id", async (req, res) => {
 
 router.post("/empresas/register", upload.single('logo'), async (req, res) => {
   try {
+    await verifyRequest(req);
     const { nombre, rut, direccion, encargado, rut_encargado } = req.body;
     if (!nombre || !rut) return res.status(400).json({ error: "Nombre y RUT obligatorios" });
 
@@ -1489,6 +1622,7 @@ router.post("/empresas/register", upload.single('logo'), async (req, res) => {
 
 router.put("/empresas/:id", upload.single('logo'), async (req, res) => {
   try {
+    await verifyRequest(req);
     const { nombre, rut, direccion, encargado, rut_encargado } = req.body;
     const id = new ObjectId(req.params.id);
 
@@ -1505,7 +1639,7 @@ router.put("/empresas/:id", upload.single('logo'), async (req, res) => {
 
     if (req.file) {
       updateData.logo = {
-        fileName: req.file.originalname,  
+        fileName: req.file.originalname,
         fileData: encrypt(req.file.buffer.toString('base64')),
         fileSize: req.file.size,
         mimeType: req.file.mimetype,
@@ -1526,10 +1660,12 @@ router.put("/empresas/:id", upload.single('logo'), async (req, res) => {
 
 router.delete("/empresas/:id", async (req, res) => {
   try {
+    await verifyRequest(req);
     const result = await req.db.collection("empresas").deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) return res.status(404).json({ error: "No encontrada" });
     res.json({ message: "Empresa eliminada exitosamente" });
   } catch (err) {
+    if (err.status) return res.status(err.status).json({ message: err.message });
     res.status(500).json({ error: "Error al eliminar" });
   }
 });
