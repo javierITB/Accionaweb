@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE_URL } from '../../utils/api';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
@@ -62,7 +63,7 @@ const CompanyReg = () => {
 
   const fetchLogins = async () => {
     try {
-      const response = await fetch('https://back-desa.vercel.app/api/auth/logins/todos');
+      const response = await apiFetch(`${API_BASE_URL}/auth/logins/todos`);
       if (response.ok) {
         const loginsData = await response.json();
         setLogins(loginsData);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE_URL } from '../../../utils/api';
 
 const DestinatariosSelector = ({ formData, setFormData }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -10,19 +11,13 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        const token = sessionStorage.getItem('token');
-
         // Cargar usuarios
-        const usersRes = await fetch('https://back-desa.vercel.app/api/auth/', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const usersRes = await apiFetch(`${API_BASE_URL}/auth/`);
         const users = await usersRes.json();
         setUsuarios(Array.isArray(users) ? users : []);
 
         // Cargar empresas
-        const empresasRes = await fetch('https://back-desa.vercel.app/api/auth/empresas/todas', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const empresasRes = await apiFetch(`${API_BASE_URL}/auth/empresas/todas`);
         const empresasData = await empresasRes.json();
         setEmpresas(Array.isArray(empresasData) ? empresasData : []);
 
@@ -151,8 +146,8 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
           type="button"
           onClick={() => handleTipoChange('todos')}
           className={`p-4 rounded-lg border text-center transition-colors ${formData.destinatarios.tipo === 'todos'
-              ? 'border-primary bg-primary/10 text-card-foreground'
-              : 'border-border hover:border-primary/50 bg-card text-card-foreground'
+            ? 'border-primary bg-primary/10 text-card-foreground'
+            : 'border-border hover:border-primary/50 bg-card text-card-foreground'
             }`}
         >
           <div className="font-medium">Todos los usuarios</div>
@@ -164,8 +159,8 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
           type="button"
           onClick={() => handleTipoChange('filtro')}
           className={`p-4 rounded-lg border text-center transition-colors ${formData.destinatarios.tipo === 'filtro'
-              ? 'border-primary bg-primary/10 text-card-foreground'
-              : 'border-border hover:border-primary/50 bg-card text-card-foreground'
+            ? 'border-primary bg-primary/10 text-card-foreground'
+            : 'border-border hover:border-primary/50 bg-card text-card-foreground'
             }`}
         >
           <div className="font-medium">Por filtros</div>
@@ -177,8 +172,8 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
           type="button"
           onClick={() => handleTipoChange('manual')}
           className={`p-4 rounded-lg border text-center transition-colors ${formData.destinatarios.tipo === 'manual'
-              ? 'border-primary bg-primary/10 text-card-foreground'
-              : 'border-border hover:border-primary/50 bg-card text-card-foreground'
+            ? 'border-primary bg-primary/10 text-card-foreground'
+            : 'border-border hover:border-primary/50 bg-card text-card-foreground'
             }`}
         >
           <div className="font-medium">Selección manual</div>
@@ -279,8 +274,8 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
               <div
                 key={user._id}
                 className={`p-3 border-b border-border hover:bg-muted cursor-pointer transition-colors ${formData.destinatarios.usuariosManuales.includes(user._id)
-                    ? 'bg-primary/10'
-                    : 'bg-card'
+                  ? 'bg-primary/10'
+                  : 'bg-card'
                   }`}
                 onClick={() => toggleUsuario(user._id)}
               >

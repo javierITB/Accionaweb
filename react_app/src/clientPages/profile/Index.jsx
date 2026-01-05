@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE_URL } from '../../utils/api';
 import Header from '../../clientPages/components/ui/Header';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
@@ -41,7 +42,7 @@ const UserProfileSettings = () => {
 
       try {
         setIsLoading(true);
-        const response = await fetch(`https://back-desa.vercel.app/api/auth/full/${userEmail}`);
+        const response = await apiFetch(`${API_BASE_URL}/auth/full/${userEmail}`);
 
         if (!response.ok) {
           throw new Error('Error al cargar el perfil.');

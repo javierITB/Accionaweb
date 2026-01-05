@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { apiFetch, API_BASE_URL } from '../../utils/api';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import RegisterForm from './components/RegisterForm';
@@ -60,7 +61,7 @@ const CompanyReg = () => {
 
   const fetchEmpresas = async () => {
     try {
-      const response = await fetch('https://back-desa.vercel.app/api/auth/empresas/todas');
+      const response = await apiFetch(`${API_BASE_URL}/auth/empresas/todas`);
       if (response.ok) {
         const empresasData = await response.json();
         const transformedData = empresasData.map(empresa => ({
@@ -123,7 +124,7 @@ const CompanyReg = () => {
     setIsLoading(true);
     setActiveTab('register');
     try {
-      const response = await fetch(`https://back-desa.vercel.app/api/auth/empresas/${empresaId}`);
+      const response = await apiFetch(`${API_BASE_URL}/auth/empresas/${empresaId}`);
       if (!response.ok) throw new Error('Error al cargar la empresa');
       const empresa = await response.json();
       const logoDataURL = createDataURL(empresa.logo);
@@ -151,7 +152,7 @@ const CompanyReg = () => {
     if (!window.confirm("¿Estás seguro de que deseas eliminar esta empresa?")) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`https://back-desa.vercel.app/api/auth/empresas/${empresaId}`, { method: 'DELETE' });
+      const response = await apiFetch(`${API_BASE_URL}/auth/empresas/${empresaId}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Error al eliminar');
       alert('Empresa eliminada exitosamente');
       clearForm();
@@ -181,10 +182,10 @@ const CompanyReg = () => {
 
       const isUpdating = !!editingEmpresa;
       const url = isUpdating
-        ? `https://back-desa.vercel.app/api/auth/empresas/${editingEmpresa._id}`
-        : 'https://back-desa.vercel.app/api/auth/empresas/register';
+        ? `${API_BASE_URL}/auth/empresas/${editingEmpresa._id}`
+        : `${API_BASE_URL}/auth/empresas/register`;
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: isUpdating ? 'PUT' : 'POST',
         body: submitData,
       });
