@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import CleanDocumentPreview from './CleanDocumentPreview';
+import { apiFetch, API_BASE_URL } from '../../../utils/api';
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
@@ -69,8 +69,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
   const fetchApprovedData = async (responseId) => {
     setIsLoadingApprovedData(true);
+    setIsLoadingApprovedData(true);
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/data-approved/${responseId}`);
+      const response = await apiFetch(`${API_BASE_URL}/respuestas/data-approved/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setApprovedData(data);
@@ -87,8 +88,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
   const checkClientSignature = async () => {
     setIsCheckingSignature(true);
+    setIsCheckingSignature(true);
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/has-client-signature`);
       if (response.ok) {
         const data = await response.json();
         if (data.exists) {
@@ -109,7 +111,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
   const getDocumentInfo = async (responseId) => {
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/generador/info-by-response/${responseId}`);
+      const response = await apiFetch(`${API_BASE_URL}/generador/info-by-response/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setDocumentInfo(data);
@@ -129,7 +131,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/adjuntos`);
+      const response = await apiFetch(`${API_BASE_URL}/respuestas/${responseId}/adjuntos`);
 
       if (response.ok) {
         const data = await response.json();
@@ -184,7 +186,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     const fetchFullDetailsAndDocs = async () => {
       setIsDetailLoading(true);
       try {
-        const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}`);
+        const response = await apiFetch(`${API_BASE_URL}/respuestas/${responseId}`);
         if (response.ok) {
           const data = await response.json();
           setFullRequestData(prev => ({
@@ -209,7 +211,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
   const downloadPdfForPreview = async (url) => {
     try {
-      const response = await fetch(url);
+      const token = sessionStorage.getItem("token");
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      const response = await fetch(url, { headers });
       if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
       const blob = await response.blob();
       if (blob.type !== 'application/pdf') throw new Error('El archivo no es un PDF válido');
@@ -243,7 +248,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}`);
+        const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
           if (updatedRequest.status !== request.status) {
@@ -271,12 +276,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   const handleStatusChange = async (newStatus) => {
     if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
 
+    if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
+
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}/status`, {
+      const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/status`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ status: newStatus })
       });
 
@@ -420,20 +424,25 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   };
 
   const handleRegenerateDocument = async () => {
-    if (!confirm('¿Regenerar documento?')) return;
+    if (!confirm("¿Estás seguro de regenerar el documento? Esto sobrescribirá el documento generado actual.")) return;
+
     setIsRegenerating(true);
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}/regenerate-document`, { method: 'POST' });
+      const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/regenerate-document`, {
+        method: 'POST'
+      });
+
       if (response.ok) {
-        await getDocumentInfo(request._id);
+        const result = await response.json();
         alert('Documento regenerado exitosamente');
+        await getDocumentInfo(request._id); // Recargar info del documento
       } else {
-        const errorData = await response.json();
-        alert('Error: ' + (errorData.error || 'Desconocido'));
+        const error = await response.json();
+        alert('Error regenerando documento: ' + (error.error || 'Desconocido'));
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
+      console.error('Error regenerando documento:', error);
+      alert('Error regenerando documento');
     } finally {
       setIsRegenerating(false);
     }
@@ -459,21 +468,25 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   const handleDownloadAdjunto = async (responseId, index) => {
     setDownloadingAttachmentIndex(index);
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
-      if (response.ok) {
-        const blob = await response.blob();
-        const adjunto = fullRequestData.adjuntos[index];
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = adjunto.fileName;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        alert('Error al descargar');
-      }
+      const token = sessionStorage.getItem("token");
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`, {
+        headers
+      });
+
+      if (!response.ok) throw new Error('Error descargando archivo');
+
+      const blob = await response.blob();
+      const adjunto = fullRequestData.adjuntos[index];
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = adjunto.fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
       console.error('Error:', error);
       alert('Error al descargar');
@@ -485,48 +498,29 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   const handleDownloadClientSignature = async (responseId) => {
     setIsDownloadingSignature(true);
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/client-signature`);
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = clientSignature.fileName;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        const errorData = await response.json();
-        alert(errorData.error || 'Error descargando');
-      }
+      const token = sessionStorage.getItem("token");
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/client-signature`, {
+        headers
+      });
+
+      if (!response.ok) throw new Error('Error descargando firma');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = clientSignature.fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
       console.error('Error:', error);
-      alert('Error descargando');
+      alert('Error descargando: ' + (error.message || 'Desconocido'));
     } finally {
       setIsDownloadingSignature(false);
-    }
-  };
-
-  const handleDeleteClientSignature = async (responseId) => {
-    if (!confirm('¿Eliminar documento firmado por el cliente?')) return;
-    try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/client-signature`, { method: 'DELETE' });
-      if (response.ok) {
-        setClientSignature(null);
-        alert('Eliminado exitosamente');
-        if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}`);
-          const updatedRequest = await updatedResponse.json();
-          onUpdate(updatedRequest);
-        }
-      } else {
-        const errorData = await response.json();
-        alert(errorData.error || 'Error eliminando');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error eliminando');
     }
   };
 
@@ -577,14 +571,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     }
 
     try {
-      const signatureCheck = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+      const signatureCheck = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/has-client-signature`);
       const signatureData = await signatureCheck.json();
       const hasSignature = signatureData.exists;
       let warningMessage = '¿Eliminar corrección y volver a revisión?';
       if (hasSignature) warningMessage = 'ADVERTENCIA: Existe documento firmado. ¿Continuar?';
       if (!confirm(warningMessage)) return;
 
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}/remove-correction`, { method: 'DELETE' });
+      const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/remove-correction`, { method: 'DELETE' });
       const result = await response.json();
       if (response.ok) {
         if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
@@ -603,17 +597,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
   // Función para eliminar un archivo ya subido en el backend
   const handleDeleteUploadedFile = async (fileName, index) => {
-    if (!confirm(`¿Eliminar el archivo "${fileName}"?`)) return;
+    if (!confirm(`¿Estás seguro de eliminar el archivo "${fileName}"?`)) return;
 
     setIsDeletingFile(index);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/delete-corrected-file/${request._id}`, {
+      const response = await apiFetch(`${API_BASE_URL}/respuestas/delete-corrected-file/${request._id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ fileName })
       });
 
@@ -1461,13 +1450,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       formData.append('responseId', request._id);
 
       // Obtener token si es necesario (ajusta según tu auth)
-      const token = localStorage.getItem('token'); // O como manejes el token
-
-      const response = await fetch('https://back-vercel-iota.vercel.app/api/respuestas/upload-corrected-files', {
+      // Usar apiFetch para upload (automáticamente maneja headers y formData)
+      const response = await apiFetch(`${API_BASE_URL}/respuestas/upload-corrected-files`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`, // Si tu backend requiere auth
-        },
         body: formData
       });
 
@@ -1547,7 +1532,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     <div className={containerClass}>
       <div className={modalClass}>
 
-        <div className="sticky top-0 bg-card border-b border-border z-10">
+        <div className="sticky top-0 bg-card border-b border-border z-10">2
           <div className="flex items-center justify-between p-6 pb-2">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">

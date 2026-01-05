@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
+import { apiFetch, API_BASE_URL } from '../../utils/api';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import RequestCard from './components/RequestCard';
@@ -27,7 +28,7 @@ const RequestTracking = () => {
   const [messageRequest, setMessageRequest] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // --- NUEVOS ESTADOS DE PAGINACIÓN ---
   const [currentPage, setCurrentPage] = useState(1);
   const requestsPerPage = 30; // Máximo de solicitudes por página
@@ -71,11 +72,11 @@ const RequestTracking = () => {
     // 1. Obtiene la URL actual y la elimina de la historia del navegador
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.delete('id');
-    
+
     // 2. Usa history.replaceState para actualizar la URL sin recargar
     window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search);
   };
-  
+
 
   const handleCloseRequestDetails = () => {
     setShowRequestDetails(false);
@@ -116,7 +117,7 @@ const RequestTracking = () => {
     // 1. Definimos la función con la lógica (fuera del intervalo)
     const fetchData = async () => {
       try {
-        const resResp = await fetch('https://back-vercel-iota.vercel.app/api/respuestas/mini');
+        const resResp = await apiFetch(`${API_BASE_URL}/respuestas/mini`);
 
         if (!resResp.ok) {
           throw new Error('Error al obtener datos del servidor');
@@ -157,7 +158,7 @@ const RequestTracking = () => {
     const intervalId = setInterval(fetchData, 30000);
     return () => clearInterval(intervalId);
 
-  }, []); 
+  }, []);
 
   const mockStats = {
     total: resp?.length || 0,
@@ -188,7 +189,7 @@ const RequestTracking = () => {
   const filteredRequests = useMemo(() => {
     // Es buena práctica revertir el array antes de filtrar para que el nuevo aparezca primero
     // Y luego aplicar el filtro
-    const requestsToFilter = [...resp].reverse(); 
+    const requestsToFilter = [...resp].reverse();
 
     return requestsToFilter.filter(request => {
       if (filters?.search) {
@@ -301,7 +302,7 @@ const RequestTracking = () => {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${requestId}`, {
+      const res = await apiFetch(`${API_BASE_URL}/respuestas/${requestId}`, {
         method: 'DELETE',
       });
 
@@ -348,7 +349,7 @@ const RequestTracking = () => {
   };
 
   // --- LÓGICA DE PAGINACIÓN ---
-  
+
   // Calcula el total de páginas
   const totalPages = Math.ceil(filteredRequests.length / requestsPerPage);
 
@@ -440,7 +441,7 @@ const RequestTracking = () => {
 
             {/* BOTONES DE CONTROL (Paginación + Vista) */}
             <div className="hidden lg:flex items-center space-x-4">
-              
+
               {/* CONTROL DE PAGINACIÓN */}
               <div className="flex items-center space-x-2 text-sm text-muted-foreground border border-border rounded-lg p-1">
                 <Button
@@ -517,11 +518,11 @@ const RequestTracking = () => {
           }>
             {isLoading && (
               <div className="text-center py-8 lg:py-12 col-span-full">
-                 <Icon name="Loader2" size={32} className="mx-auto mb-3 lg:mb-4 text-accent animate-spin" />
-                 <h3 className="text-lg font-semibold text-foreground">Cargando Solicitudes...</h3>
+                <Icon name="Loader2" size={32} className="mx-auto mb-3 lg:mb-4 text-accent animate-spin" />
+                <h3 className="text-lg font-semibold text-foreground">Cargando Solicitudes...</h3>
               </div>
             )}
-            
+
             {!isLoading && currentRequests?.length > 0 ? (
               currentRequests?.map((request) => (
                 <RequestCard
@@ -535,44 +536,44 @@ const RequestTracking = () => {
               ))
             ) : (
               !isLoading && (
-              <div className="text-center py-8 lg:py-12 bg-card border border-border rounded-lg col-span-full">
-                <Icon name="Search" size={32} className="mx-auto mb-3 lg:mb-4 text-muted-foreground opacity-50 sm:w-12 sm:h-12" />
-                <h3 className="text-base lg:text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
-                <p className="text-muted-foreground mb-4 text-sm lg:text-base px-4">
-                  Intenta ajustar los filtros o crear una nueva solicitud
-                </p>
-              </div>
-            ))}
+                <div className="text-center py-8 lg:py-12 bg-card border border-border rounded-lg col-span-full">
+                  <Icon name="Search" size={32} className="mx-auto mb-3 lg:mb-4 text-muted-foreground opacity-50 sm:w-12 sm:h-12" />
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
+                  <p className="text-muted-foreground mb-4 text-sm lg:text-base px-4">
+                    Intenta ajustar los filtros o crear una nueva solicitud
+                  </p>
+                </div>
+              ))}
           </div>
-          
+
           {/* CONTROL DE PAGINACIÓN INFERIOR (Opcional) */}
           {totalPages > 1 && (
-             <div className="flex justify-center items-center space-x-4 pt-4 pb-8">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={prevPage}
-                  disabled={currentPage === 1}
-                  iconName="ChevronLeft"
-                  iconSize={16}
-                >
-                  Anterior
-                </Button>
-                <span className="text-sm font-medium text-foreground">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={nextPage}
-                  disabled={currentPage === totalPages}
-                  iconName="ChevronRight"
-                  iconSize={16}
-                  iconPosition="right"
-                >
-                  Siguiente
-                </Button>
-              </div>
+            <div className="flex justify-center items-center space-x-4 pt-4 pb-8">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={prevPage}
+                disabled={currentPage === 1}
+                iconName="ChevronLeft"
+                iconSize={16}
+              >
+                Anterior
+              </Button>
+              <span className="text-sm font-medium text-foreground">
+                Página {currentPage} de {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={nextPage}
+                disabled={currentPage === totalPages}
+                iconName="ChevronRight"
+                iconSize={16}
+                iconPosition="right"
+              >
+                Siguiente
+              </Button>
+            </div>
           )}
 
         </div>

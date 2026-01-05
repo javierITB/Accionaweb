@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { apiFetch, API_BASE_URL } from '../../../../utils/api';
 
 const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [message, setMessage] = useState('');
@@ -35,7 +36,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const fetchMessages = async () => {
     if (!id) return;
     try {
-      const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${id}/chat`);
+      const res = await apiFetch(`${API_BASE_URL}/respuestas/${id}/chat`);
       if (!res.ok) throw new Error("Error al obtener chat");
       const data = await res.json();
 
@@ -127,9 +128,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
     try {
       const autor = sessionStorage.getItem("user") || "Anónimo";
-      const res = await fetch("https://back-vercel-iota.vercel.app/api/respuestas/chat", {
+      const res = await apiFetch(`${API_BASE_URL}/respuestas/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ formId: id, autor, mensaje: message.trim() }),
       });
 

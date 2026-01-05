@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { apiFetch, API_BASE_URL } from '../../../utils/api';
 
 const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const [message, setMessage] = useState('');
@@ -45,7 +45,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   const fetchMessages = useCallback(async () => {
     if (!id) return;
     try {
-      const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${id}/chat/admin`);
+      const res = await apiFetch(`${API_BASE_URL}/respuestas/${id}/chat/admin`);
       if (!res.ok) throw new Error("Error al obtener chat");
       const data = await res.json();
 
@@ -156,9 +156,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         sendToEmail: activeTab !== 'admin' && sendToEmail
       };
 
-      const res = await fetch("https://back-vercel-iota.vercel.app/api/respuestas/chat", {
+      const res = await apiFetch(`${API_BASE_URL}/respuestas/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -213,7 +212,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
       <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl h-[80vh] sm:h-[70vh] flex flex-col">
-        
+
         <div className="border-b border-border bg-card rounded-t-lg">
           <div className="flex items-center justify-between p-4 sm:px-6 pb-2">
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">

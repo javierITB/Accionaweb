@@ -1,6 +1,7 @@
 import React, { useState, useEffect, memo } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
+import { apiFetch, API_BASE_URL } from '../../../../utils/api';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import RequestCard from './components/RequestCard';
@@ -52,8 +53,8 @@ const RequestTracking = () => {
         const signal = controller.signal;
 
         // 1) Traer ambas colecciones en paralelo, pasando la señal
-        const [ resForms] = await Promise.all([
-          fetch('https://back-vercel-iota.vercel.app/api/forms/', { signal })
+        const [resForms] = await Promise.all([
+          apiFetch(`${API_BASE_URL}/forms/`, { signal })
         ]);
 
         if (!resForms.ok) {
@@ -228,7 +229,7 @@ const RequestTracking = () => {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${requestId}`, {
+      const res = await apiFetch(`${API_BASE_URL}/respuestas/${requestId}`, {
         method: 'DELETE',
       });
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { apiFetch, API_BASE_URL } from '../../../../utils/api';
 
 const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }) => {
   // Inicializar con el estado actual del request
@@ -21,7 +22,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}`);
+        const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
 
@@ -46,7 +47,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
     const checkSignedPdf = async () => {
       try {
-        const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+        const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/has-client-signature`);
         if (response.ok) {
           const data = await response.json();
           setHasSignedPdf(data.exists);
@@ -89,7 +90,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/adjuntos`);
+      const response = await apiFetch(`${API_BASE_URL}/respuestas/${responseId}/adjuntos`);
 
       if (response.ok) {
         const data = await response.json();
@@ -117,7 +118,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   const fetchApprovedFiles = async (responseId) => {
     setLoadingApprovedFiles(true);
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/data-approved/${responseId}`);
+      const response = await apiFetch(`${API_BASE_URL}/respuestas/data-approved/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setApprovedFilesData(data);
@@ -132,7 +133,13 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   const handleDownloadAdjunto = async (responseId, index) => {
     setDownloadingAttachmentIndex(index);
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
+      const token = sessionStorage.getItem("token");
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`, {
+        headers
+      });
+
       if (response.ok) {
         const blob = await response.blob();
         const adjunto = fullRequestData.adjuntos[index];
@@ -161,7 +168,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       setUploadMessage('Descargando documento firmado...');
 
       // Primero obtener metadatos para saber el nombre real
-      const metaResponse = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/has-client-signature`);
+      const metaResponse = await apiFetch(`${API_BASE_URL}/respuestas/${responseId}/has-client-signature`);
 
       let fileName = 'documento_firmado.pdf';
 
@@ -173,7 +180,12 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       }
 
       // Descargar el archivo
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/client-signature`);
+      const token = sessionStorage.getItem("token");
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/client-signature`, {
+        headers
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -224,7 +236,12 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       // Si aún no hay nombre, usar uno por defecto
       const finalFileName = fileName || `documento_aprobado_${index + 1}.pdf`;
 
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/download-approved-pdf/${responseId}?index=${index}`);
+      const token = sessionStorage.getItem("token");
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/download-approved-pdf/${responseId}?index=${index}`, {
+        headers
+      });
 
       if (!response.ok) {
         const errorData = await response.json();

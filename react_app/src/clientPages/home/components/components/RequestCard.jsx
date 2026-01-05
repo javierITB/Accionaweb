@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { apiFetch, API_BASE_URL } from '../../../../utils/api';
 
 const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode = 'list' }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
@@ -14,7 +15,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode
 
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${currentRequest._id}`);
+        const response = await apiFetch(`${API_BASE_URL}/respuestas/${currentRequest._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
 

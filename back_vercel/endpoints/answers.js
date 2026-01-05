@@ -82,6 +82,24 @@ const uploadMultiple = multer({
   }
 });
 
+// Helper para verificar token en cualquier request
+const verifyRequest = async (req) => {
+  let token = req.headers.authorization?.split(" ")[1]; // Bearer <token>
+
+  // Fallback: buscar en body.user.token (legacy)
+  if (!token && req.body?.user?.token) token = req.body.user.token;
+
+  // Fallback: buscar en query param (para descargas/GET simples)
+  if (!token && req.query?.token) token = req.query.token;
+
+  if (!token) return { ok: false, error: "Token no proporcionado" };
+
+  const valid = await validarToken(req.db, token);
+  if (!valid.ok) return { ok: false, error: valid.reason };
+
+  return { ok: true, data: valid.data };
+};
+
 router.use(express.json({ limit: '4mb' }));
 
 // En el endpoint POST principal (/) - SOLO FORMATO ESPECÍFICO
@@ -395,6 +413,10 @@ router.get("/:id/adjuntos", async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const adjuntos = await req.db.collection("adjuntos")
       .findOne({ responseId: new ObjectId(id) });
 
@@ -411,6 +433,10 @@ router.post("/:id/adjuntos", async (req, res) => {
   try {
     const { id } = req.params;
     const { adjunto, index, total } = req.body;
+
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     console.log(`Subiendo adjunto ${index + 1} de ${total} para respuesta:`, id);
 
@@ -489,6 +515,10 @@ router.get("/:id/adjuntos/:index", async (req, res) => {
   try {
     const { id, index } = req.params;
 
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     console.log("Descargando adjunto:", { id, index });
 
     let query = {};
@@ -543,6 +573,10 @@ router.get("/:id/adjuntos/:index", async (req, res) => {
 // Obtener todas las respuestas
 router.get("/", async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const answers = await req.db.collection("respuestas").find().toArray();
 
     // Importar decrypt
@@ -749,6 +783,10 @@ router.get("/mail/:mail", async (req, res) => {
 // Obtener respuestas en formato mini
 router.get("/mini", async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const answers = await req.db.collection("respuestas")
       .find({})
       .project({
@@ -820,6 +858,10 @@ router.get("/mini", async (req, res) => {
 // Obtener respuesta por ID - Versión simplificada
 router.get("/:id", async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const respuesta = await req.db.collection("respuestas")
       .findOne({ _id: new ObjectId(req.params.id) });
 
@@ -890,6 +932,10 @@ router.get("/:id", async (req, res) => {
 //actualizar respuesta
 router.put("/:id", async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const { user, responses, ...rest } = req.body;
 
     // Preparar objeto de actualización
@@ -1039,6 +1085,10 @@ router.put("/:id", async (req, res) => {
 // Obtener respuestas por sección
 router.get("/section/:section", async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const forms = await req.db
       .collection("respuestas")
       .find({ section: req.params.section })
@@ -1097,6 +1147,10 @@ router.put("/public/:id", async (req, res) => {
 //eliminar respuesta
 router.delete("/:id", async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const responseId = req.params.id;
 
     // Eliminar de todas las colecciones relacionadas
@@ -1141,6 +1195,10 @@ router.delete("/:id", async (req, res) => {
 //solicitar de mensajes
 router.get("/:formId/chat/admin", async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const { formId } = req.params;
 
     let query;
@@ -1168,6 +1226,10 @@ router.get("/:formId/chat/admin", async (req, res) => {
 //solicitar de mensajes generales
 router.get("/:formId/chat/", async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const { formId } = req.params;
 
     let query;
@@ -1200,6 +1262,10 @@ router.get("/:formId/chat/", async (req, res) => {
 //enviar mensaje
 router.post("/chat", async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const { formId, autor, mensaje, admin, sendToEmail } = req.body;
     if (!autor || !mensaje || !formId) return res.status(400).json({ error: "Faltan campos" });
 
@@ -1378,6 +1444,10 @@ router.post("/chat", async (req, res) => {
 // Marcar todos los mensajes como leídos
 router.put("/chat/marcar-leidos", async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const result = await req.db.collection("respuestas").updateMany(
       { "mensajes.leido": false },
       { $set: { "mensajes.$[].leido": true } }
@@ -1396,6 +1466,10 @@ router.put("/chat/marcar-leidos", async (req, res) => {
 // Subir corrección PDF (se mantiene por compatibilidad)
 router.post("/:id/upload-correction", upload.single('correctedFile'), async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     if (!req.file) return res.status(400).json({ error: "No se subió ningún archivo" });
 
     const respuesta = await req.db.collection("respuestas").findOne({ _id: new ObjectId(req.params.id) });
@@ -1447,6 +1521,10 @@ router.get("/:id/finalized", async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ error: "ID de respuesta inválido" });
     }
@@ -1493,6 +1571,10 @@ router.get("/:id/finalized", async (req, res) => {
 // Endpoint de mantenimiento único para limpiar archivos de respuestas ya archivadas
 router.get("/mantenimiento/limpiar-archivos-archivados", async (req, res) => {
   try {
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     // 1. Buscar todas las respuestas que ya están en estado "archivado"
     const respuestasArchivadas = await req.db
       .collection("respuestas")
@@ -1554,6 +1636,10 @@ router.get("/mantenimiento/limpiar-archivos-archivados", async (req, res) => {
 router.get("/:id/archived", async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ error: "ID de respuesta inválido" });
@@ -1623,6 +1709,10 @@ router.get("/:id/archived", async (req, res) => {
 // Subir múltiples archivos corregidos
 router.post("/upload-corrected-files", async (req, res) => {
   try {
+    // Verificar token (antes de procesar uploads si es posible, o dentro del callback)
+    // Nota: Como usamos uploadMultiple.array, multer procesa primero. 
+    // Podríamos verificar el token dentro del callback, ya que req.body estará poblado ahí.
+
     console.log("=== DEBUG BACKEND - HEADERS ===");
     console.log("Content-Type:", req.headers['content-type']);
 
@@ -1631,6 +1721,11 @@ router.post("/upload-corrected-files", async (req, res) => {
         console.error("Error en uploadMultiple:", err);
         return res.status(400).json({ error: err.message });
       }
+
+      // Verificar token AHORA que tenemos acceso a req y body (aunque body puede estar vacío si es form-data puro sin campos de texto previos)
+      // Pero verifyRequest mira headers también.
+      const auth = await verifyRequest(req);
+      if (!auth.ok) return res.status(401).json({ error: auth.error });
 
       // VERIFICAR SI SE RECIBIERON FILES
       console.log("Files recibidos:", req.files ? req.files.length : 'NONE');
@@ -1858,6 +1953,10 @@ router.get("/corrected-files/:responseId", async (req, res) => {
   try {
     const { responseId } = req.params;
 
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const approvedDoc = await req.db.collection("aprobados").findOne({
       responseId: responseId
     }, {
@@ -1908,6 +2007,10 @@ router.get("/download-corrected-file/:responseId", async (req, res) => {
     const { responseId } = req.params;
     const { fileName, index } = req.query;
 
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const approvedDoc = await req.db.collection("aprobados").findOne({
       responseId: responseId
     });
@@ -1952,6 +2055,10 @@ router.delete("/delete-corrected-file/:responseId", async (req, res) => {
   try {
     const { responseId } = req.params;
     const { fileName } = req.body;
+
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     if (!fileName) {
       return res.status(400).json({ error: "fileName es requerido" });
@@ -2235,6 +2342,10 @@ router.get("/download-approved-pdf/:responseId", async (req, res) => {
     const { responseId } = req.params;
     const { index } = req.query;
 
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     console.log("Descargando PDF aprobado para:", responseId, "index:", index);
 
     const approvedDoc = await req.db.collection("aprobados").findOne({
@@ -2297,6 +2408,11 @@ router.get("/download-approved-pdf/:responseId", async (req, res) => {
 router.delete("/:id/remove-correction", async (req, res) => {
   try {
     const responseId = req.params.id;
+
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     console.log("=== INICIO REMOVE-CORRECTION PARA MÚLTIPLES ARCHIVOS ===", responseId);
 
     const existingSignature = await req.db.collection("firmados").findOne({
@@ -2368,6 +2484,10 @@ router.delete("/:id/remove-correction", async (req, res) => {
 router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), async (req, res) => {
   try {
     const { responseId } = req.params;
+
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     if (!req.file) {
       return res.status(400).json({ error: "No se subió ningún archivo" });
@@ -2451,6 +2571,10 @@ router.get("/:responseId/client-signature", async (req, res) => {
   try {
     const { responseId } = req.params;
 
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     console.log(`Descargando documento firmado para: ${responseId}`);
 
     const signature = await req.db.collection("firmados").findOne({
@@ -2512,6 +2636,10 @@ router.get("/:responseId/client-signature", async (req, res) => {
 router.delete("/:responseId/client-signature", async (req, res) => {
   try {
     const { responseId } = req.params;
+
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     const deleteResult = await req.db.collection("firmados").deleteOne({
       responseId: responseId
@@ -2582,6 +2710,10 @@ router.get("/:responseId/has-client-signature", async (req, res) => {
 router.post("/:id/regenerate-document", async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     console.log(`Regenerando documento para respuesta: ${id}`);
 
@@ -2679,6 +2811,10 @@ router.put("/:id/status", async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    // Verificar token
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ error: "ID de respuesta inválido" });
