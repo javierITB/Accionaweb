@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE_URL } from '../../../utils/api';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -39,7 +40,7 @@ const TicketSystem = () => {
       setIsLoading(true);
       try {
         // 1. Fetch User Details
-        const userRes = await fetch(`https://back-desa.vercel.app/api/auth/full/${userMail}`);
+        const userRes = await apiFetch(`${API_BASE_URL}/auth/full/${userMail}`);
         if (userRes.ok) {
           const userData = await userRes.json();
           setCurrentUser({
@@ -67,7 +68,7 @@ const TicketSystem = () => {
   const fetchTickets = async () => {
     if (!userMail) return;
     try {
-      const res = await fetch(`https://back-desa.vercel.app/api/soporte/mail/${userMail}`);
+      const res = await apiFetch(`${API_BASE_URL}/soporte/mail/${userMail}`);
       if (res.ok) {
         const data = await res.json();
         setMyTickets(data.reverse());
@@ -122,11 +123,8 @@ const TicketSystem = () => {
         adjuntos: []
       };
 
-      const res = await fetch("https://back-desa.vercel.app/api/soporte/", {
+      const res = await apiFetch(`${API_BASE_URL}/soporte/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
         body: JSON.stringify(payload)
       });
 

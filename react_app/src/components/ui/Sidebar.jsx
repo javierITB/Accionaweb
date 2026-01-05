@@ -3,6 +3,7 @@ import Icon from '../AppIcon'; // Se mantiene la ruta a '../AppIcon'
 import Button from './Button'; // CORRECCIÓN: Se ajusta la ruta a './Button' (asumiendo que es un componente hermano en 'ui')
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { apiFetch, API_BASE_URL } from '../../utils/api';
 
 // Agregamos los props isMobileOpen y onNavigate, que se pasan desde FormCenter.jsx
 const Sidebar = ({
@@ -58,12 +59,15 @@ const Sidebar = ({
       // Solo poner isLoading true si NO tenemos cache
       if (!cachedMenu) setIsLoading(true);
 
+      if (!mail || !token) {
+        console.warn("Sidebar: Missing auth data, skipping menu fetch.");
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const response = await fetch(`https://back-desa.vercel.app/api/menu/filter`, {
+        const response = await apiFetch(`${API_BASE_URL}/menu/filter`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify({
             mail: mail,
             token: token,

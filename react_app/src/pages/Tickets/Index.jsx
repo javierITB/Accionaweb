@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { apiFetch, API_BASE_URL } from '../../utils/api';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
@@ -114,7 +115,7 @@ const RequestTracking = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const resResp = await fetch('https://back-desa.vercel.app/api/soporte/mini');
+        const resResp = await apiFetch(`${API_BASE_URL}/soporte/mini`);
 
         if (!resResp.ok) {
           throw new Error('Error al obtener datos del servidor');
@@ -301,7 +302,7 @@ const RequestTracking = () => {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`https://back-desa.vercel.app/api/soporte/${requestId}`, {
+      const res = await apiFetch(`${API_BASE_URL}/soporte/${requestId}`, {
         method: 'DELETE',
       });
 
