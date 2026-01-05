@@ -60,7 +60,7 @@ const CompanyReg = () => {
 
   const fetchEmpresas = async () => {
     try {
-      const response = await fetch('https://back-vercel-iota.vercel.app/api/auth/empresas/todas');
+      const response = await fetch('https://back-desa.vercel.app/api/auth/empresas/todas');
       if (response.ok) {
         const empresasData = await response.json();
         const transformedData = empresasData.map(empresa => ({
@@ -95,7 +95,7 @@ const CompanyReg = () => {
       sortableItems.sort((a, b) => {
         const aValue = a[sortConfig.key] ? String(a[sortConfig.key]).toLowerCase() : '';
         const bValue = b[sortConfig.key] ? String(b[sortConfig.key]).toLowerCase() : '';
-        
+
         if (aValue < bValue) {
           return sortConfig.direction === 'asc' ? -1 : 1;
         }
@@ -123,7 +123,7 @@ const CompanyReg = () => {
     setIsLoading(true);
     setActiveTab('register');
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/empresas/${empresaId}`);
+      const response = await fetch(`https://back-desa.vercel.app/api/auth/empresas/${empresaId}`);
       if (!response.ok) throw new Error('Error al cargar la empresa');
       const empresa = await response.json();
       const logoDataURL = createDataURL(empresa.logo);
@@ -151,7 +151,7 @@ const CompanyReg = () => {
     if (!window.confirm("¿Estás seguro de que deseas eliminar esta empresa?")) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/empresas/${empresaId}`, { method: 'DELETE' });
+      const response = await fetch(`https://back-desa.vercel.app/api/auth/empresas/${empresaId}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Error al eliminar');
       alert('Empresa eliminada exitosamente');
       clearForm();
@@ -180,9 +180,9 @@ const CompanyReg = () => {
       });
 
       const isUpdating = !!editingEmpresa;
-      const url = isUpdating 
-        ? `https://back-vercel-iota.vercel.app/api/auth/empresas/${editingEmpresa._id}` 
-        : 'https://back-vercel-iota.vercel.app/api/auth/empresas/register';
+      const url = isUpdating
+        ? `https://back-desa.vercel.app/api/auth/empresas/${editingEmpresa._id}`
+        : 'https://back-desa.vercel.app/api/auth/empresas/register';
 
       const response = await fetch(url, {
         method: isUpdating ? 'PUT' : 'POST',
@@ -202,7 +202,7 @@ const CompanyReg = () => {
 
   const renderSortIcon = (key) => {
     if (sortConfig.key !== key) return <Icon name="ChevronsUpDown" size={14} className="ml-1 inline opacity-30" />;
-    return sortConfig.direction === 'asc' 
+    return sortConfig.direction === 'asc'
       ? <Icon name="ChevronUp" size={14} className="ml-1 inline text-primary" />
       : <Icon name="ChevronDown" size={14} className="ml-1 inline text-primary" />;
   };
@@ -313,7 +313,7 @@ const CompanyReg = () => {
           onNavigate={handleNavigation}
         />
       )}
-      
+
       {isMobileScreen && isMobileOpen && (
         <div className="fixed inset-0 bg-foreground/50 z-40" onClick={toggleSidebar}></div>
       )}
@@ -352,18 +352,16 @@ const CompanyReg = () => {
             <div className="flex gap-2 p-4 bg-muted/20 border-b border-border">
               <button
                 onClick={() => setActiveTab('register')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  activeTab === 'register' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'register' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                  }`}
               >
                 <Icon name="Plus" size={16} className="inline mr-2" />
                 {editingEmpresa ? 'Modificar' : 'Registrar'}
               </button>
               <button
                 onClick={() => setActiveTab('list')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  activeTab === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                  }`}
               >
                 <Icon name="List" size={16} className="inline mr-2" />
                 Lista ({empresas.length})

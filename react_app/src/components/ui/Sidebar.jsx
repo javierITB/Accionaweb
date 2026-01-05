@@ -59,7 +59,7 @@ const Sidebar = ({
       if (!cachedMenu) setIsLoading(true);
 
       try {
-        const response = await fetch(`https://back-vercel-iota.vercel.app/api/menu/filter`, {
+        const response = await fetch(`https://back-desa.vercel.app/api/menu/filter`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

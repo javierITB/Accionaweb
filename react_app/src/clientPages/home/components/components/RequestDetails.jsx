@@ -136,7 +136,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       const token = sessionStorage.getItem("token");
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`, {
+      const response = await fetch(`https://back-desa.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`, {
         headers
       });
 
@@ -183,7 +183,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       const token = sessionStorage.getItem("token");
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${responseId}/client-signature`, {
+      const response = await fetch(`https://back-desa.vercel.app/api/respuestas/${responseId}/client-signature`, {
         headers
       });
 
@@ -239,7 +239,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
       const token = sessionStorage.getItem("token");
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/download-approved-pdf/${responseId}?index=${index}`, {
+      const response = await fetch(`https://back-desa.vercel.app/api/respuestas/download-approved-pdf/${responseId}?index=${index}`, {
         headers
       });
 
@@ -290,7 +290,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
     formData.append('signedPdf', file);
 
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}/upload-client-signature`, {
+      const response = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}/upload-client-signature`, {
         method: 'POST',
         body: formData,
       });
@@ -302,7 +302,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
         setUploadMessage('PDF firmado subido exitosamente');
 
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }

@@ -15,12 +15,12 @@ const WelcomeCard = ({ user }) => {
         console.log('Buscando logo para usuario:', userMail);
 
         // 1. Obtener datos del usuario para saber su empresa
-        const userResponse = await fetch(`https://back-vercel-iota.vercel.app/api/auth/full/${userMail}`);
+        const userResponse = await fetch(`https://back-desa.vercel.app/api/auth/full/${userMail}`);
         if (!userResponse.ok) {
           console.log('Error obteniendo datos del usuario');
           return;
         }
-        
+
         const userData = await userResponse.json();
         const userCompany = userData.empresa;
         console.log('Empresa del usuario:', userCompany);
@@ -31,36 +31,36 @@ const WelcomeCard = ({ user }) => {
         }
 
         // 2. Obtener todas las empresas para buscar la del usuario
-        const companiesResponse = await fetch(`https://back-vercel-iota.vercel.app/api/auth/empresas/todas`);
+        const companiesResponse = await fetch(`https://back-desa.vercel.app/api/auth/empresas/todas`);
         if (!companiesResponse.ok) {
           console.log('Error obteniendo empresas');
           return;
         }
-        
+
         const companies = await companiesResponse.json();
         console.log('Empresas encontradas:', companies.length);
-        
+
         // 3. Buscar la empresa del usuario (búsqueda más flexible)
         const userCompanyData = companies.find(company => {
           const companyName = company.nombre?.toLowerCase().trim();
           const userCompanyName = userCompany?.toLowerCase().trim();
-          return companyName === userCompanyName || 
-                 companyName?.includes(userCompanyName) ||
-                 userCompanyName?.includes(companyName);
+          return companyName === userCompanyName ||
+            companyName?.includes(userCompanyName) ||
+            userCompanyName?.includes(companyName);
         });
 
         console.log('Empresa encontrada:', userCompanyData);
 
         if (userCompanyData && userCompanyData.logo) {
           console.log('Logo encontrado:', userCompanyData.logo);
-          
+
           // 4. Verificar la estructura del logo
           if (userCompanyData.logo.fileData) {
             const logoData = userCompanyData.logo.fileData;
-            
+
             // Diferentes formas de manejar el buffer según la estructura
             let base64String;
-            
+
             if (logoData.data) {
               // Si es un objeto con propiedad data (ArrayBuffer)
               base64String = btoa(
@@ -90,7 +90,7 @@ const WelcomeCard = ({ user }) => {
                 return;
               }
             }
-            
+
             const logoUrl = `data:${userCompanyData.logo.mimeType || 'image/png'};base64,${base64String}`;
             console.log('Logo URL generada');
             setCompanyLogo(logoUrl);
@@ -129,11 +129,11 @@ const WelcomeCard = ({ user }) => {
             <div className="flex items-center space-x-2 text-white">
               <Icon name="Calendar" size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
               <span className="break-words">
-                {new Date()?.toLocaleDateString('es-ES', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+                {new Date()?.toLocaleDateString('es-ES', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
                 })}
               </span>
             </div>
@@ -143,13 +143,13 @@ const WelcomeCard = ({ user }) => {
             </div>
           </div>
         </div>
-        
+
         {/* Logo de empresa - CORREGIDO: Siempre visible pero con tamaño responsive */}
         <div className="ml-4 flex-shrink-0">
           <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center overflow-hidden">
             {companyLogo ? (
-              <img 
-                src={companyLogo} 
+              <img
+                src={companyLogo}
                 alt="Logo de la empresa"
                 className="w-full h-full object-cover"
                 onError={(e) => {

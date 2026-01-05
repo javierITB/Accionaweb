@@ -13,14 +13,14 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
         const token = sessionStorage.getItem('token');
 
         // Cargar usuarios
-        const usersRes = await fetch('https://back-vercel-iota.vercel.app/api/auth/', {
+        const usersRes = await fetch('https://back-desa.vercel.app/api/auth/', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const users = await usersRes.json();
         setUsuarios(Array.isArray(users) ? users : []);
 
         // Cargar empresas
-        const empresasRes = await fetch('https://back-vercel-iota.vercel.app/api/auth/empresas/todas', {
+        const empresasRes = await fetch('https://back-desa.vercel.app/api/auth/empresas/todas', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const empresasData = await empresasRes.json();
@@ -150,46 +150,40 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
         <button
           type="button"
           onClick={() => handleTipoChange('todos')}
-          className={`p-4 rounded-lg border text-center transition-colors ${
-            formData.destinatarios.tipo === 'todos' 
-              ? 'border-primary bg-primary/10 text-card-foreground' 
+          className={`p-4 rounded-lg border text-center transition-colors ${formData.destinatarios.tipo === 'todos'
+              ? 'border-primary bg-primary/10 text-card-foreground'
               : 'border-border hover:border-primary/50 bg-card text-card-foreground'
-          }`}
+            }`}
         >
           <div className="font-medium">Todos los usuarios</div>
-          <div className={`text-sm mt-1 ${
-            formData.destinatarios.tipo === 'todos' ? 'text-muted-foreground' : 'text-muted-foreground'
-          }`}>{usuarios.length} usuarios activos</div>
+          <div className={`text-sm mt-1 ${formData.destinatarios.tipo === 'todos' ? 'text-muted-foreground' : 'text-muted-foreground'
+            }`}>{usuarios.length} usuarios activos</div>
         </button>
 
         <button
           type="button"
           onClick={() => handleTipoChange('filtro')}
-          className={`p-4 rounded-lg border text-center transition-colors ${
-            formData.destinatarios.tipo === 'filtro' 
-              ? 'border-primary bg-primary/10 text-card-foreground' 
+          className={`p-4 rounded-lg border text-center transition-colors ${formData.destinatarios.tipo === 'filtro'
+              ? 'border-primary bg-primary/10 text-card-foreground'
               : 'border-border hover:border-primary/50 bg-card text-card-foreground'
-          }`}
+            }`}
         >
           <div className="font-medium">Por filtros</div>
-          <div className={`text-sm mt-1 ${
-            formData.destinatarios.tipo === 'filtro' ? 'text-muted-foreground' : 'text-muted-foreground'
-          }`}>Empresa, cargo, rol</div>
+          <div className={`text-sm mt-1 ${formData.destinatarios.tipo === 'filtro' ? 'text-muted-foreground' : 'text-muted-foreground'
+            }`}>Empresa, cargo, rol</div>
         </button>
 
         <button
           type="button"
           onClick={() => handleTipoChange('manual')}
-          className={`p-4 rounded-lg border text-center transition-colors ${
-            formData.destinatarios.tipo === 'manual' 
-              ? 'border-primary bg-primary/10 text-card-foreground' 
+          className={`p-4 rounded-lg border text-center transition-colors ${formData.destinatarios.tipo === 'manual'
+              ? 'border-primary bg-primary/10 text-card-foreground'
               : 'border-border hover:border-primary/50 bg-card text-card-foreground'
-          }`}
+            }`}
         >
           <div className="font-medium">Selección manual</div>
-          <div className={`text-sm mt-1 ${
-            formData.destinatarios.tipo === 'manual' ? 'text-muted-foreground' : 'text-muted-foreground'
-          }`}>Usuarios específicos</div>
+          <div className={`text-sm mt-1 ${formData.destinatarios.tipo === 'manual' ? 'text-muted-foreground' : 'text-muted-foreground'
+            }`}>Usuarios específicos</div>
         </button>
       </div>
 
@@ -284,11 +278,10 @@ const DestinatariosSelector = ({ formData, setFormData }) => {
             {usuariosFiltrados.map(user => (
               <div
                 key={user._id}
-                className={`p-3 border-b border-border hover:bg-muted cursor-pointer transition-colors ${
-                  formData.destinatarios.usuariosManuales.includes(user._id) 
-                    ? 'bg-primary/10' 
+                className={`p-3 border-b border-border hover:bg-muted cursor-pointer transition-colors ${formData.destinatarios.usuariosManuales.includes(user._id)
+                    ? 'bg-primary/10'
                     : 'bg-card'
-                }`}
+                  }`}
                 onClick={() => toggleUsuario(user._id)}
               >
                 <div className="flex justify-between items-center">

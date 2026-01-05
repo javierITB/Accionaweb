@@ -52,7 +52,7 @@ const Header = ({ className = '' }) => {
 
     const fetchUnreadCount = async (isInitialLoad = false) => {
       try {
-        const response = await fetch(`https://back-vercel-iota.vercel.app/api/noti/${userMail}/unread-count`);
+        const response = await fetch(`https://back-desa.vercel.app/api/noti/${userMail}/unread-count`);
         const data = await response.json();
 
         const newUnreadCount = data.unreadCount || 0;

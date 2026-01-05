@@ -21,14 +21,14 @@ const PublicPreview = () => {
             }
 
             try {
-                const res = await fetch(`https://back-vercel-iota.vercel.app/api/respuestas/${id}`);
+                const res = await fetch(`https://back-desa.vercel.app/api/respuestas/${id}`);
                 if (!res.ok) throw new Error("No se pudo cargar la información de la solicitud.");
 
                 const data = await res.json();
 
                 if (data.formId) {
                     try {
-                        const formRes = await fetch(`https://back-vercel-iota.vercel.app/api/forms/${data.formId}`);
+                        const formRes = await fetch(`https://back-desa.vercel.app/api/forms/${data.formId}`);
                         if (formRes.ok) {
                             const formData = await formRes.json();
                             data.formDef = formData;

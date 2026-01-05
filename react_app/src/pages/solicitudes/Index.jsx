@@ -4,8 +4,10 @@ import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 
+import { apiFetch, API_BASE_URL } from '../../utils/api';
+
 // Definimos la URL base (ajusta esto si la variable viene de un archivo de configuración)
-const IP_API = "https://back-vercel-iota.vercel.app"; // O la URL que estés usando
+const IP_API = API_BASE_URL; // Usamos la constante importada
 
 // --- FUNCIÓN PARA OBTENER DATOS DEL ADMIN/REMITENTE DESDE SESSION STORAGE ---
 // Usado para la trazabilidad y la token del usuario logeado
@@ -113,7 +115,7 @@ const MessageForm = () => {
     setIsLoadingRecipients(true);
     try {
       // Endpoint para obtener la lista de posibles destinatarios (usuarios)
-      const response = await fetch(`${IP_API}/api/auth/solicitud`);
+      const response = await apiFetch(`${IP_API}/auth/solicitud`);
 
       if (!response.ok) {
         throw new Error('Error al obtener la lista de usuarios');
@@ -212,12 +214,12 @@ const MessageForm = () => {
     try {
       // --- 1. Obtener Datos del Remitente y Destinatario ---
       const senderData = getSenderData(); // <<< DATOS DEL ADMINISTRADOR LOGEADO
-      
+
       // Asegurarse de que el administrador tenga token para la validación
       if (!senderData.token) {
-         throw new Error("Token de sesión de administrador no encontrado. Por favor, vuelva a iniciar sesión.");
+        throw new Error("Token de sesión de administrador no encontrado. Por favor, vuelva a iniciar sesión.");
       }
-      
+
       const senderInfo = `Nombre: ${senderData.nombre || 'Desconocido'}, Email: ${senderData.mail || 'Desconocido'}, Cargo: ${senderData.cargo || 'N/A'}, UID: ${senderData.uid || 'N/A'}`;
 
       const selectedRecipient = recipients.find(r => r.value === formData.destino);
@@ -227,7 +229,7 @@ const MessageForm = () => {
 
       // Perfil del Destinatario (usado para inyectar en DB)
       const recipientProfile = selectedRecipient.profileData;
-      
+
       // --- EXTRACCIÓN Y SEPARACIÓN CLAVE PARA EL BACKEND ---
       const destinatarioNombreCompleto = recipientProfile.nombre;
       const destinatarioEmpresa = recipientProfile.empresa;
@@ -238,7 +240,7 @@ const MessageForm = () => {
         // CAMPOS REQUERIDOS POR EL BACKEND ADMINISTRATIVO para buscar al usuario
         "Destinatario": destinatarioNombreCompleto,
         "EmpresaDestino": destinatarioEmpresa,
-        
+
         // Contenido y trazabilidad
         [Q_NOMBRE_TRABAJADOR_TITLE]: formData.asunto,
         "Cuerpo del Mensaje (Información Adicional)": formData.mensaje,
@@ -250,21 +252,21 @@ const MessageForm = () => {
       const payloadBase = {
         formId: FORM_ID_SIMULADO,
         formTitle: FORM_TITLE_SIMULADO,
-        responses: cleanAnswers, 
+        responses: cleanAnswers,
         mail: recipientProfile.correo,
         submittedAt: new Date().toISOString(),
-        
+
         // *** CAMBIO CLAVE AQUÍ ***
         // El campo 'user' debe ser el objeto del ADMINISTRADOR (con token) para la validación del endpoint /admin
-        user: senderData, 
-        
+        user: senderData,
+
         adjuntos: []
       };
 
       console.log('Enviando respuestas base a /admin (Para validación de token)...');
 
       // Se mantiene la URL correcta
-      const res = await fetch(`${IP_API}/api/respuestas/admin`, {
+      const res = await apiFetch(`${IP_API}/respuestas/admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -277,9 +279,9 @@ const MessageForm = () => {
         // Intentar parsear el JSON para mostrar el error específico del backend (401 o 400)
         let errorBody = { error: errorText };
         try {
-            errorBody = JSON.parse(errorText);
+          errorBody = JSON.parse(errorText);
         } catch (e) { /* no es JSON */ }
-        
+
         throw new Error(`Error al enviar respuestas base: ${errorBody.error || errorText}`);
       }
 
@@ -324,7 +326,7 @@ const MessageForm = () => {
             const archivoData = todosLosArchivos[i];
 
             try {
-              const uploadRes = await fetch(`${IP_API}/api/respuestas/${responseId}/adjuntos`, {
+              const uploadRes = await apiFetch(`${IP_API}/respuestas/${responseId}/adjuntos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(archivoData),

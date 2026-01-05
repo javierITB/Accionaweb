@@ -5,6 +5,7 @@ import RequestCard from './components/RequestCard';
 import FilterPanel from './components/FilterPanel';
 import MessageModal from './components/MessageModal';
 import RequestDetails from './components/RequestDetails';
+import { apiFetch, API_BASE_URL } from '../../../utils/api';
 
 const RequestTracking = () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -55,8 +56,8 @@ const RequestTracking = () => {
 
         // 1) Traer ambas colecciones en paralelo
         const [resResp, resForms] = await Promise.all([
-          fetch(`https://back-vercel-iota.vercel.app/api/respuestas/mail/${mail}`),
-          fetch('https://back-vercel-iota.vercel.app/api/forms/')
+          apiFetch(`${API_BASE_URL}/respuestas/mail/${mail}`),
+          fetch('https://back-desa.vercel.app/api/forms/') // Forms might be public, but keep eye on it
         ]);
 
         if (!resResp.ok || !resForms.ok) {
@@ -77,7 +78,9 @@ const RequestTracking = () => {
         });
 
         // 4) Normalizar responses uniendo con su form
-        const normalized = responses.map(r => {
+        const responsesList = Array.isArray(responses) ? responses : (responses.data || []);
+
+        const normalized = responsesList.map(r => {
           const formIdKey = r.formId ? String(r.formId) : null;
           const matchedForm = formIdKey ? formsMap.get(formIdKey) || null : null;
 
@@ -133,11 +136,11 @@ const RequestTracking = () => {
         request?.trabajador,
         request?.formTitle,
       ];
-      
-      const hasMatch = searchableFields.some(field => 
+
+      const hasMatch = searchableFields.some(field =>
         field && field.toString().toLowerCase().includes(searchTerm)
       );
-      
+
       if (!hasMatch) return false;
     }
 
@@ -150,10 +153,10 @@ const RequestTracking = () => {
       const requestDate = new Date(request.submittedAt || request.createdAt);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       let startDate = new Date();
       let endDate = new Date();
-      
+
       switch (filters.dateRange) {
         case 'today':
           startDate = new Date(today);
@@ -185,7 +188,7 @@ const RequestTracking = () => {
         default:
           break;
       }
-      
+
       if (filters.dateRange !== '') {
         if (requestDate < startDate || requestDate > endDate) return false;
       }
@@ -286,7 +289,7 @@ const RequestTracking = () => {
           <Icon name="Activity" size={20} className="text-accent flex-shrink-0 ml-4 sm:w-6 sm:h-6" />
         </div>
       </div>
-      
+
       <main className={``}>
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
 
@@ -301,48 +304,48 @@ const RequestTracking = () => {
 
           {/* Controls - MEJORADO PARA MÓVIL */}
           {filteredRequests?.length > 0 && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-card border border-border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-0">
-            <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-4">
-              {/* View Mode Toggle */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
-                <div className="flex items-center border border-border rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-card border border-border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-0">
+              <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-4">
+                {/* View Mode Toggle */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
+                  <div className="flex items-center border border-border rounded-lg">
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('grid')}
+                      iconName="Grid3X3"
+                      iconSize={14}
+                      className="rounded-r-none px-2 sm:px-3"
+                    />
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      iconName="List"
+                      iconSize={14}
+                      className="rounded-l-none border-l px-2 sm:px-3"
+                    />
+                  </div>
                   <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    iconName="Grid3X3"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    iconName={sortOrder === 'asc' ? "ArrowUp" : "ArrowDown"}
                     iconSize={14}
-                    className="rounded-r-none px-2 sm:px-3"
-                  />
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    iconName="List"
-                    iconSize={14}
-                    className="rounded-l-none border-l px-2 sm:px-3"
+                    className="w-8 h-8 sm:w-9 sm:h-9"
                   />
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  iconName={sortOrder === 'asc' ? "ArrowUp" : "ArrowDown"}
-                  iconSize={14}
-                  className="w-8 h-8 sm:w-9 sm:h-9"
-                />
+
+
               </div>
 
-              
+              {/* Results Count */}
+              <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground justify-center sm:justify-end">
+                <Icon name="FileText" size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">{filteredRequests?.length} solicitudes encontradas</span>
+              </div>
             </div>
-
-            {/* Results Count */}
-            <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground justify-center sm:justify-end">
-              <Icon name="FileText" size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
-              <span className="whitespace-nowrap">{filteredRequests?.length} solicitudes encontradas</span>
-            </div>
-          </div>
           )}
           {/* Requests List - RESPONSIVE GRID */}
           <div className={
@@ -371,10 +374,10 @@ const RequestTracking = () => {
             )}
           </div>
 
-          
+
         </div>
       </main>
-      
+
       {/* Modals */}
       <MessageModal
         isOpen={showMessageModal}

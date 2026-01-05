@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Loader, CheckCircle, XCircle, KeyRound, ArrowLeft } from 'lucide-react';
 
 // Endpoints de la API
-const API_URL_EMAIL = 'https://back-vercel-iota.vercel.app/api/auth/recuperacion';
-const API_URL_CODE = 'https://back-vercel-iota.vercel.app/api/auth/borrarpass';
+const API_URL_EMAIL = 'https://back-desa.vercel.app/api/auth/recuperacion';
+const API_URL_CODE = 'https://back-desa.vercel.app/api/auth/borrarpass';
 
 
 
@@ -16,11 +16,11 @@ const App = () => {
   // Estados del formulario
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
-  
+
   // Control de estado y pasos
   const [step, setStep] = useState(1); // 1: Email, 2: Código, 3: Éxito/Error
-  const [loading, setLoading] = useState(false); 
-  const [message, setMessage] = useState(''); 
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
   const ORANGE_COLOR = '#f97316'; // Color semi-anaranjado
@@ -75,7 +75,7 @@ const App = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // Enviar el email y el código de verificación
-        body: JSON.stringify({ email, code }), 
+        body: JSON.stringify({ email, code }),
       });
 
       const data = await response.json();
@@ -84,7 +84,7 @@ const App = () => {
         // Éxito: Redirigir al componente de establecer nueva contraseña
         setIsSuccess(true);
         setStep(3);
-        
+
         // Redirección con el uid retornado
         const userId = data.uid;
         navigate(`/set-password?userId=${userId}`, { replace: true });
@@ -203,9 +203,9 @@ const App = () => {
         )}
       </button>
       <div className="text-center mt-4">
-        <a 
-          href="#" 
-          onClick={resetForm} 
+        <a
+          href="#"
+          onClick={resetForm}
           className={`text-sm font-medium text-gray-500 hover:text-[${ORANGE_COLOR}] transition duration-150`}
         >
           Solicitar un nuevo código
@@ -216,10 +216,10 @@ const App = () => {
 
   // Paso 3: Mensaje de Éxito o Error
   const renderMessageStep = () => {
-    const statusColor = isSuccess 
-      ? 'text-green-600 border-green-200 bg-green-50' 
+    const statusColor = isSuccess
+      ? 'text-green-600 border-green-200 bg-green-50'
       : 'text-red-600 border-red-200 bg-red-50';
-    
+
     // Si es éxito, el componente se habrá redirigido (navigate). 
     // Esta pantalla solo se muestra en caso de error en el paso 1 o 2.
     const title = isSuccess ? 'Redireccionando...' : 'Error';
@@ -256,20 +256,20 @@ const App = () => {
             Recuperar Contraseña
           </h1>
         </div>
-        
+
         {step === 1 && renderEmailStep()}
         {step === 2 && renderCodeStep()}
         {step === 3 && renderMessageStep()}
 
         {/* Solo mostrar enlace a Login en los pasos de formulario */}
         {(step === 1 || step === 2) && (
-            <div className="mt-6 text-center text-sm">
+          <div className="mt-6 text-center text-sm">
             <p className="text-gray-500">
-                <a href="/" className={`font-medium text-[${ORANGE_COLOR}] hover:text-orange-500`}>
+              <a href="/" className={`font-medium text-[${ORANGE_COLOR}] hover:text-orange-500`}>
                 Volver al inicio de sesión
-                </a>
+              </a>
             </p>
-            </div>
+          </div>
         )}
       </div>
     </div>

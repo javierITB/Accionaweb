@@ -62,7 +62,7 @@ const FormReg = () => {
     const fetchEmpresas = async () => {
       try {
         setLoadingEmpresas(true);
-        const response = await fetch('https://back-vercel-iota.vercel.app/api/auth/empresas/todas');
+        const response = await fetch('https://back-desa.vercel.app/api/auth/empresas/todas');
         if (!response.ok) throw new Error('Error al cargar empresas');
         const empresasData = await response.json();
         const empresasOptions = empresasData.map(empresa => ({
@@ -97,7 +97,7 @@ const FormReg = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`https://back-vercel-iota.vercel.app/api/auth/`);
+      const res = await fetch(`https://back-desa.vercel.app/api/auth/`);
       if (!res.ok) throw new Error('Usuarios no encontrados');
       const data = await res.json();
       setUsers(data);
@@ -151,8 +151,8 @@ const FormReg = () => {
 
     const method = isUpdating ? 'PUT' : 'POST';
     const url = isUpdating
-      ? `https://back-vercel-iota.vercel.app/api/auth/users/${editingUser._id}`
-      : 'https://back-vercel-iota.vercel.app/api/auth/register';
+      ? `https://back-desa.vercel.app/api/auth/users/${editingUser._id}`
+      : 'https://back-desa.vercel.app/api/auth/register';
 
     try {
       setIsLoading(true);
@@ -167,7 +167,7 @@ const FormReg = () => {
       if (!isUpdating) {
         const saved = await response.json();
         const savedUser = saved?.userId;
-        await fetch('https://back-vercel-iota.vercel.app/api/mail/send', {
+        await fetch('https://back-desa.vercel.app/api/mail/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -225,7 +225,7 @@ const FormReg = () => {
     if (!window.confirm("¿Estás seguro?")) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/users/${userId}`, { method: 'DELETE' });
+      const response = await fetch(`https://back-desa.vercel.app/api/auth/users/${userId}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Error al eliminar');
       alert('Usuario eliminado');
       fetchUsers();
@@ -367,7 +367,7 @@ const FormReg = () => {
                           <span
                             onClick={() => handleFilter('estado', u.estado)}
                             className={`px-2 py-1 text-xs rounded-full cursor-pointer ${u.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                                u.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                              u.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                               }`}
                           >
                             {u.estado}

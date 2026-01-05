@@ -5,7 +5,7 @@ import DestinatariosSelector from './DestinatariosSelector';
 
 const AnuncioCreator = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
@@ -29,17 +29,17 @@ const AnuncioCreator = ({ onSuccess }) => {
       return;
     }
 
-    
+
     if (formData.destinatarios.tipo === 'manual' && formData.destinatarios.usuariosManuales.length === 0) {
       alert('Por favor, selecciona al menos un destinatario');
       return;
     }
-    
+
     setLoading(true);
 
     try {
       const token = sessionStorage.getItem('token');
-      
+
       // 🔥 PAYLOAD SIMPLE - SOLO DATOS PARA NOTIFICACIONES
       const payload = {
         titulo: formData.titulo.trim(),
@@ -47,17 +47,17 @@ const AnuncioCreator = ({ onSuccess }) => {
         prioridad: formData.prioridad,
         color: formData.color,
         actionUrl: formData.actionUrl?.trim() || null,
-      
+
         // Asegurar que sean boolean puro
         enviarNotificacion: Boolean(formData.enviarNotificacion),
         enviarCorreo: Boolean(formData.enviarCorreo),
-      
+
         destinatarios: formData.destinatarios,
       };
 
       console.log('📤 Enviando anuncio (solo notificaciones):', payload);
 
-      const response = await fetch('https://back-vercel-iota.vercel.app/api/anuncios', {
+      const response = await fetch('https://back-desa.vercel.app/api/anuncios', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ const AnuncioCreator = ({ onSuccess }) => {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         alert(`${result.message}`);
         if (onSuccess) onSuccess();
@@ -97,35 +97,35 @@ const AnuncioCreator = ({ onSuccess }) => {
           {/* Sección de Contenido */}
           <div className="space-y-6">
             <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">Contenido del Anuncio</h3>
-            
+
             <div>
               <label className="block text-sm font-medium mb-2 text-foreground">Título *</label>
               <Input
                 value={formData.titulo}
-                onChange={e => setFormData({...formData, titulo: e.target.value})}
+                onChange={e => setFormData({ ...formData, titulo: e.target.value })}
                 placeholder="Asunto de la notificación"
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-2 text-foreground">Mensaje *</label>
               <textarea
                 value={formData.descripcion}
-                onChange={e => setFormData({...formData, descripcion: e.target.value})}
+                onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
                 rows={5}
                 className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="Describe el anuncio en detalle..."
                 required
               />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-2 text-foreground">Prioridad</label>
                 <select
                   value={formData.prioridad}
-                  onChange={e => setFormData({...formData, prioridad: parseInt(e.target.value)})}
+                  onChange={e => setFormData({ ...formData, prioridad: parseInt(e.target.value) })}
                   className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg"
                 >
                   <option value="1">Baja</option>
@@ -133,7 +133,7 @@ const AnuncioCreator = ({ onSuccess }) => {
                   <option value="3">Alta</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-2 text-foreground">Color de notificación</label>
                 <div className="flex gap-2">
@@ -141,10 +141,9 @@ const AnuncioCreator = ({ onSuccess }) => {
                     <button
                       key={color}
                       type="button"
-                      onClick={() => setFormData({...formData, color})}
-                      className={`w-8 h-8 rounded-full border-2 ${
-                        formData.color === color ? 'border-foreground' : 'border-transparent'
-                      }`}
+                      onClick={() => setFormData({ ...formData, color })}
+                      className={`w-8 h-8 rounded-full border-2 ${formData.color === color ? 'border-foreground' : 'border-transparent'
+                        }`}
                       style={{ backgroundColor: color }}
                       title={color}
                     />
@@ -152,12 +151,12 @@ const AnuncioCreator = ({ onSuccess }) => {
                 </div>
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-2 text-foreground">URL de acción (opcional)</label>
               <Input
                 value={formData.actionUrl}
-                onChange={e => setFormData({...formData, actionUrl: e.target.value})}
+                onChange={e => setFormData({ ...formData, actionUrl: e.target.value })}
                 placeholder="/ruta/destino"
               />
               <p className="text-sm text-muted-foreground mt-1">Los usuarios serán redirigidos aquí al hacer clic</p>
@@ -167,7 +166,7 @@ const AnuncioCreator = ({ onSuccess }) => {
           {/* Sección de Destinatarios */}
           <div className="space-y-6 pt-6 border-t border-border">
             <h3 className="text-lg font-medium text-foreground">Destinatarios</h3>
-            
+
             <DestinatariosSelector
               formData={formData}
               setFormData={setFormData}
@@ -178,7 +177,7 @@ const AnuncioCreator = ({ onSuccess }) => {
 
           <div className="space-y-3 pt-6 border-t border-border">
             <h3 className="text-lg font-medium text-foreground">Método de envío</h3>
-            
+
             <div className="space-y-2">
               {/* Checkbox Notificación */}
               <label className="flex items-center gap-3 cursor-pointer p-3 hover:bg-muted rounded-lg">
@@ -219,7 +218,7 @@ const AnuncioCreator = ({ onSuccess }) => {
             {!formData.enviarNotificacion && !formData.enviarCorreo && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800">
                 <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-                   Debes seleccionar al menos un método de envío
+                  Debes seleccionar al menos un método de envío
                 </p>
               </div>
             )}

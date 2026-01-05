@@ -126,7 +126,7 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
       try {
         setLoadingCompanies(true);
 
-        const response = await fetch('https://back-vercel-iota.vercel.app/api/auth/empresas/todas');
+        const response = await fetch('https://back-desa.vercel.app/api/auth/empresas/todas');
 
         if (!response.ok) {
           throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -308,8 +308,8 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
               onChange={(e) => handleDescriptionChange(e.target.value)}
               maxLength={50}
               className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.description?.length || 0) >= 50
-                  ? 'border-red-500 focus-visible:ring-red-200'
-                  : 'border-input focus-visible:ring-blue-200'
+                ? 'border-red-500 focus-visible:ring-red-200'
+                : 'border-input focus-visible:ring-blue-200'
                 }`}
             />
             {(formData?.description?.length || 0) >= 50 && (

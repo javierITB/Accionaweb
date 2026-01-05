@@ -62,7 +62,7 @@ const CompanyReg = () => {
 
   const fetchLogins = async () => {
     try {
-      const response = await fetch('https://back-vercel-iota.vercel.app/api/auth/logins/todos');
+      const response = await fetch('https://back-desa.vercel.app/api/auth/logins/todos');
       if (response.ok) {
         const loginsData = await response.json();
         setLogins(loginsData);
@@ -110,7 +110,7 @@ const CompanyReg = () => {
                     <td className="px-4 py-2">
                       {empresa.now.replace("T", " ").split(".")[0] || '—'}
                     </td>
-                    
+
                   </tr>
                 ))}
               </tbody>

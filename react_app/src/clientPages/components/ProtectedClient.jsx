@@ -9,7 +9,7 @@ export default function ProtectedRoute({ children }) {
   useEffect(() => {
     const validarToken = async () => {
       const token = sessionStorage.getItem("token");
-      const email = sessionStorage.getItem("email"); 
+      const email = sessionStorage.getItem("email");
       const cargo = sessionStorage.getItem("cargo");
 
       if (!token || !email) {
@@ -19,12 +19,12 @@ export default function ProtectedRoute({ children }) {
       }
 
       try {
-        const res = await fetch("https://back-vercel-iota.vercel.app/api/auth/validate", {
+        const res = await fetch("https://back-desa.vercel.app/api/auth/validate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token, email, cargo }),
         });
-        if (cargo == "user" || cargo == "cliente" || cargo == "Admin" || cargo == "admin"){
+        if (cargo == "user" || cargo == "cliente" || cargo == "Admin" || cargo == "admin") {
           setIsAuth(res.ok);
         } else {
           alert("Sesión inactiva o expirada...")

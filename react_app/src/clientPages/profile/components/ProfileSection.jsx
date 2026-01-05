@@ -95,7 +95,7 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
 
     try {
       const token = sessionStorage.getItem('token');
-      const response = await fetch(`https://back-vercel-iota.vercel.app/api/auth/users/${userId}`, {
+      const response = await fetch(`https://back-desa.vercel.app/api/auth/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -324,10 +324,10 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
           </div>
         </div>
 
-    </div>
-    <div className="p-4 sm:p-6">
+      </div>
+      <div className="p-4 sm:p-6">
         <div className="flex flex-col lg:flex-row gap-6">
-    {/* Botones de acción - MEJORADOS PARA MÓVIL */}
+          {/* Botones de acción - MEJORADOS PARA MÓVIL */}
           {!isEditing ? (
             <Button
               variant="outline"
@@ -363,8 +363,8 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
               </Button>
             </div>
           )}
-          </div >
-          </div >
+        </div >
+      </div >
     </div >
   );
 };

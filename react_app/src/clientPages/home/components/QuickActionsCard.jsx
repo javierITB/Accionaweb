@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 
-const QuickActionsCard = ({ orientation = 'horizontal' }) => { // 💡 Agregamos la prop orientation
+const QuickActionsCard = ({ orientation = 'horizontal' }) => { // Agregamos la prop orientation
   const quickActions = [
     {
       id: 1,
@@ -36,7 +36,7 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => { // 💡 Agregamos
       path: '/otras'
     },
     {
-      id: 5, 
+      id: 5,
       title: 'Envío de documentos',
       description: '',
       icon: 'FileText',
@@ -50,7 +50,7 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => { // 💡 Agregamos
   };
 
   // 💡 Definimos las clases de layout según la orientación
-  const gridClasses = orientation === 'vertical' 
+  const gridClasses = orientation === 'vertical'
     ? 'space-y-3 sm:space-y-4' // Lista vertical simple con espacio
     : 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4'; // Grid original
 
@@ -68,7 +68,7 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => { // 💡 Agregamos
           <Icon name="Zap" size={20} className="text-secondary flex-shrink-0 ml-4 sm:w-6 sm:h-6" />
         </div>
       </div>
-      
+
       {/* Actions Grid / List */}
       <div className="p-4 sm:p-6">
         {/* Aplicamos las clases dinámicas */}
@@ -78,13 +78,13 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => { // 💡 Agregamos
               key={action?.id}
               onClick={() => handleActionClick(action?.path)}
               className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg border border-border hover:border-primary hover:shadow-brand-hover transition-brand text-left group w-full"
-              title = {action.title}
+              title={action.title}
             >
               {/* Icon */}
               <div className={`w-10 h-10 sm:w-12 sm:h-12 ${action?.color} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
                 <Icon name={action?.icon} size={18} color="white" className="sm:w-5 sm:h-5" />
               </div>
-              
+
               {/* Text Content */}
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-foreground group-hover:text-primary transition-colors text-sm sm:text-base">
@@ -97,12 +97,12 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => { // 💡 Agregamos
                   </p>
                 )}
               </div>
-              
+
               {/* Chevron */}
-              <Icon 
-                name="ChevronRight" 
-                size={14} 
-                className="text-muted-foreground group-hover:text-primary transition-colors mt-1 flex-shrink-0 sm:w-4 sm:h-4" 
+              <Icon
+                name="ChevronRight"
+                size={14}
+                className="text-muted-foreground group-hover:text-primary transition-colors mt-1 flex-shrink-0 sm:w-4 sm:h-4"
               />
             </button>
           ))}

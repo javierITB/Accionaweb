@@ -10,13 +10,13 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
     newPassword: '',
     confirmPassword: ''
   });
-  
+
   // Eliminamos el estado local de twoFactorEnabled y lo controlamos por props.
   // const [twoFactorEnabled, setTwoFactorEnabled] = useState(twoFactorEnabledProp); 
-  
+
   // ESTADO PARA CONTROLAR LAS FASES DE ACTIVACIÓN 2FA POR EMAIL
   const [twoFAStage, setTwoFAStage] = useState(twoFactorEnabled ? 'active' : 'initial'); // 'initial', 'code_sent', 'active'
-  
+
   const [verificationCode, setVerificationCode] = useState('');
   const [errors, setErrors] = useState({});
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -33,7 +33,7 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
       ...prev,
       [field]: value
     }));
-    
+
     // Clear errors when user types
     if (errors?.[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -45,23 +45,23 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
 
   const validatePasswordForm = () => {
     const newErrors = {};
-    
+
     if (!passwordForm?.currentPassword) {
       newErrors.currentPassword = 'La contraseña actual es obligatoria';
     }
-    
+
     if (!passwordForm?.newPassword) {
       newErrors.newPassword = 'La nueva contraseña es obligatoria';
     } else if (passwordForm?.newPassword?.length < 8) {
       newErrors.newPassword = 'La contraseña debe tener al menos 8 caracteres';
     }
-    
+
     if (!passwordForm?.confirmPassword) {
       newErrors.confirmPassword = 'Confirme la nueva contraseña';
     } else if (passwordForm?.newPassword !== passwordForm?.confirmPassword) {
       newErrors.confirmPassword = 'Las contraseñas no coinciden';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors)?.length === 0;
   };
@@ -73,18 +73,18 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
     setApiMessage(null);
 
     try {
-      const token = sessionStorage.getItem('token'); 
-      
+      const token = sessionStorage.getItem('token');
+
 
       if (!userEmail) {
         throw new Error("No se pudo identificar al usuario (Email no encontrado en sesión)");
       }
 
-      const response = await fetch('https://back-vercel-iota.vercel.app/api/auth/change-password', {
+      const response = await fetch('https://back-desa.vercel.app/api/auth/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           email: userEmail, // Usamos la prop
@@ -122,28 +122,28 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
     // 1. DESACTIVAR 2FA
     if (twoFactorEnabled) {
       if (!window.confirm("¿Seguro que deseas desactivar la Autenticación de Dos Factores?")) return;
-      
+
       setIsDisabling2FA(true);
       setApiMessage(null);
-      
+
       try {
         const token = sessionStorage.getItem('token');
-        const response = await fetch('https://back-vercel-iota.vercel.app/api/auth/disable-2fa', {
+        const response = await fetch('https://back-desa.vercel.app/api/auth/disable-2fa', {
           method: 'POST',
           headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ email: userEmail })
         });
         const data = await response.json();
 
         if (data.success) {
-            onUpdate2FAStatus(false); // 🔑 Actualizar el estado en el componente padre
-            setTwoFAStage('initial');
-            setApiMessage({ type: 'success', text: data.message || '2FA desactivada correctamente.' });
+          onUpdate2FAStatus(false); // 🔑 Actualizar el estado en el componente padre
+          setTwoFAStage('initial');
+          setApiMessage({ type: 'success', text: data.message || '2FA desactivada correctamente.' });
         } else {
-            setApiMessage({ type: 'error', text: data.message || 'No se pudo desactivar 2FA.' });
+          setApiMessage({ type: 'error', text: data.message || 'No se pudo desactivar 2FA.' });
         }
       } catch (err) {
         console.error("Error al desactivar 2FA:", err);
@@ -160,11 +160,11 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
     const token = sessionStorage.getItem('token');
 
     try {
-      const response = await fetch('https://back-vercel-iota.vercel.app/api/auth/send-2fa-code', {
+      const response = await fetch('https://back-desa.vercel.app/api/auth/send-2fa-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ email: userEmail })
       });
@@ -194,13 +194,13 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
     const token = sessionStorage.getItem('token');
 
     try {
-      const response = await fetch('https://back-vercel-iota.vercel.app/api/auth/verify-2fa-activation', {
+      const response = await fetch('https://back-desa.vercel.app/api/auth/verify-2fa-activation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           verificationCode: verificationCode,
           email: userEmail // Usamos el email como identificador único
         })
@@ -241,12 +241,11 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
 
         <div className="p-4 sm:p-6">
           <div className="max-w-md space-y-3 sm:space-y-4">
-            
+
             {/* Mensajes de feedback de la API */}
             {apiMessage && (
-              <div className={`p-3 rounded-md text-sm ${
-                apiMessage.type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-              }`}>
+              <div className={`p-3 rounded-md text-sm ${apiMessage.type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                }`}>
                 {apiMessage.text}
               </div>
             )}
@@ -311,7 +310,7 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
 
       {/* Two-Factor Authentication SECTION - CLAVE */}
       <div className="bg-card rounded-lg border border-border shadow-subtle">
-         <div className="p-4 sm:p-6 border-b border-border">
+        <div className="p-4 sm:p-6 border-b border-border">
           <div className="flex items-center space-x-3">
             <Icon name="Smartphone" size={18} className="text-primary sm:w-5 sm:h-5" />
             <h2 className="text-base sm:text-lg font-semibold text-foreground">Autenticación de Dos Factores (2FA)</h2>
@@ -345,11 +344,11 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
               )}
             </div>
           </div>
-          
+
           {/* SECCIÓN DE VERIFICACIÓN DE CÓDIGO POR EMAIL */}
           {twoFAStage === 'code_sent' && (
             <div className="mt-4 sm:mt-6 p-3 sm:p-4 border border-border rounded-lg bg-yellow-50">
-              
+
               <div className="flex items-start space-x-3 mb-4">
                 <Icon name="Mail" size={18} className="text-amber-600 flex-shrink-0 mt-1" />
                 <div className="min-w-0">
@@ -361,7 +360,7 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
                   </p>
                 </div>
               </div>
-              
+
               <div className="max-w-xs mx-auto">
                 <Input
                   label="Código de Verificación (6 dígitos)"
@@ -380,7 +379,7 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
                 >
                   Verificar y Activar
                 </Button>
-                
+
                 <Button
                   variant="link"
                   onClick={() => setTwoFAStage('initial')} // Permite al usuario cancelar el proceso
@@ -394,7 +393,7 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
           )}
         </div>
       </div>
-      
+
     </div>
   );
 };

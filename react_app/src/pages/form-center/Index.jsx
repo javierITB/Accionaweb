@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import Header from '../../components/ui/Header'; 
+import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
-import Button from '../../components/ui/Button'; 
+import Button from '../../components/ui/Button';
 import FormCard from './components/FormCard';
 import CategoryFilter from './components/CategoryFilter';
 import SearchBar from './components/SearchBar';
@@ -13,7 +13,7 @@ const FormCenter = () => {
   const [filters, setFilters] = useState({});
   const [filteredForms, setFilteredForms] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
-  
+
   // Estado del Sidebar - RESPONSIVE
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -21,15 +21,15 @@ const FormCenter = () => {
 
   const [allForms, setAllForms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Efecto para manejar el estado del Sidebar - RESPONSIVE
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
       setIsMobileScreen(isMobile);
-      
+
       if (isMobile) {
-        setIsMobileOpen(false); 
+        setIsMobileOpen(false);
       }
     };
 
@@ -37,7 +37,7 @@ const FormCenter = () => {
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
+
   // Lógica de Toggle Unificada - RESPONSIVE
   const toggleSidebar = () => {
     if (isMobileScreen) {
@@ -46,7 +46,7 @@ const FormCenter = () => {
       setIsDesktopOpen(!isDesktopOpen);
     }
   };
-  
+
   // Función de navegación
   const handleNavigation = (path) => {
     if (isMobileScreen) {
@@ -59,7 +59,7 @@ const FormCenter = () => {
     const fetchForms = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch('https://back-vercel-iota.vercel.app/api/forms');
+        const res = await fetch('https://back-desa.vercel.app/api/forms');
         const data = await res.json();
 
         const normalizedForms = data.map(f => ({
@@ -100,7 +100,7 @@ const FormCenter = () => {
     let filtered = [...allForms];
 
     if (activeCategory !== 'all') {
-      filtered = filtered.filter(form => form.section === activeCategory); 
+      filtered = filtered.filter(form => form.section === activeCategory);
     }
 
     if (searchQuery) {
@@ -111,18 +111,18 @@ const FormCenter = () => {
         form.tags?.some(tag => tag?.toLowerCase()?.includes(searchQuery?.toLowerCase()))
       );
     }
-    
+
     if (filters.status && filters.status.length > 0) {
       filtered = filtered.filter(form => filters.status.includes(form.status));
     }
-    
+
     if (filters.isRecent) {
-        filtered = filtered.filter(form => {
-            if (!form.lastModified) return false;
-            const lastModDate = new Date(form.lastModified);
-            const now = new Date();
-            return (now - lastModDate) <= 7 * 24 * 60 * 60 * 1000;
-        });
+      filtered = filtered.filter(form => {
+        if (!form.lastModified) return false;
+        const lastModDate = new Date(form.lastModified);
+        const now = new Date();
+        return (now - lastModDate) <= 7 * 24 * 60 * 60 * 1000;
+      });
     }
 
     if (filters.priority && filters.priority.length > 0) {
@@ -160,14 +160,14 @@ const FormCenter = () => {
   const handleCategoryChange = (categoryId) => {
     setActiveCategory(categoryId);
   };
-  
+
   const handleStatusFilter = (statusValue) => {
     setFilters(prevFilters => {
       const currentStatus = prevFilters.status || [];
       const isAlreadyActive = currentStatus.includes(statusValue);
-      
+
       const newStatus = isAlreadyActive ? [] : [statusValue];
-      
+
       return {
         ...prevFilters,
         status: newStatus,
@@ -177,15 +177,15 @@ const FormCenter = () => {
       };
     });
   };
-  
+
   const handleRecentFilter = () => {
-      setFilters(prevFilters => ({
-          ...prevFilters,
-          isRecent: !prevFilters.isRecent,
-          status: [],
-          search: '',
-          activeCategory: 'all'
-      }));
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      isRecent: !prevFilters.isRecent,
+      status: [],
+      search: '',
+      activeCategory: 'all'
+    }));
   };
 
   const toggleViewMode = () => {
@@ -194,38 +194,38 @@ const FormCenter = () => {
 
   const borradorCount = allForms.filter(f => f.status === 'borrador').length;
   const publicadoCount = allForms.filter(f => f.status === 'publicado').length;
-  
+
   const recentCount = allForms.filter(f => {
     if (!f.lastModified) return false;
     const lastModDate = new Date(f.lastModified);
     const now = new Date();
     return (now - lastModDate) <= 7 * 24 * 60 * 60 * 1000;
   }).length;
-  
+
   // Clase de Margen para el contenido principal - RESPONSIVE
-  const mainMarginClass = isMobileScreen 
+  const mainMarginClass = isMobileScreen
     ? 'ml-0'
     : isDesktopOpen ? 'lg:ml-64' : 'lg:ml-16';
-  
+
   const isStatusFilterActive = (statusValue) => filters.status && filters.status.includes(statusValue);
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       {/* IMPLEMENTACIÓN UNIFICADA DEL SIDEBAR - RESPONSIVE */}
       {(isMobileOpen || !isMobileScreen) && (
         <>
-          <Sidebar 
+          <Sidebar
             isCollapsed={!isDesktopOpen}
-            onToggleCollapse={toggleSidebar} 
+            onToggleCollapse={toggleSidebar}
             isMobileOpen={isMobileOpen}
             onNavigate={handleNavigation}
           />
-          
+
           {isMobileScreen && isMobileOpen && (
-            <div 
-              className="fixed inset-0 bg-foreground/50 z-40 lg:hidden" 
+            <div
+              className="fixed inset-0 bg-foreground/50 z-40 lg:hidden"
               onClick={toggleSidebar}
             ></div>
           )}
@@ -249,7 +249,7 @@ const FormCenter = () => {
       <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-8 max-w-7xl mx-auto">
           <div className="space-y-3 lg:space-y-4">
-            
+
             {/* Título y Botones - RESPONSIVE */}
             <div className="flex flex-col md:flex-row md:items-center justify-between">
               <div className="mb-3 md:mb-0 min-w-0 flex-1">
@@ -299,11 +299,11 @@ const FormCenter = () => {
 
             {/* Tarjetas de Resumen - RESPONSIVE */}
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              
+
               {/* Tarjeta 1: Todos los Formularios */}
               <div className={`bg-card border rounded-lg p-3 sm:p-4 cursor-pointer transition-all duration-300
                             ${!isStatusFilterActive('borrador') && !isStatusFilterActive('publicado') && !filters.isRecent ? 'border-primary shadow-lg' : 'border-border hover:shadow-md'}`}
-                   onClick={() => setFilters({ status: [] })}>
+                onClick={() => setFilters({ status: [] })}>
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className="p-2 bg-primary/10 rounded-lg min-touch-target">
                     <Icon name="FileText" size={16} className="text-primary sm:w-5 sm:h-5" />
@@ -318,7 +318,7 @@ const FormCenter = () => {
               {/* Tarjeta 2: Borradores */}
               <div className={`bg-card border rounded-lg p-3 sm:p-4 cursor-pointer transition-all duration-300
                             ${isStatusFilterActive('borrador') ? 'border-warning shadow-lg' : 'border-border hover:shadow-md'}`}
-                   onClick={() => handleStatusFilter("borrador")}>
+                onClick={() => handleStatusFilter("borrador")}>
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className="p-2 bg-warning/10 rounded-lg min-touch-target">
                     <Icon name="Edit" size={16} className="text-warning sm:w-5 sm:h-5" />
@@ -333,7 +333,7 @@ const FormCenter = () => {
               {/* Tarjeta 3: Publicados */}
               <div className={`bg-card border rounded-lg p-3 sm:p-4 cursor-pointer transition-all duration-300
                             ${isStatusFilterActive('publicado') ? 'border-secondary shadow-lg' : 'border-border hover:shadow-md'}`}
-                   onClick={() => handleStatusFilter("publicado")}>
+                onClick={() => handleStatusFilter("publicado")}>
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className="p-2 bg-secondary/10 rounded-lg min-touch-target">
                     <Icon name="Clock" size={16} className="text-secondary sm:w-5 sm:h-5" />
@@ -350,7 +350,7 @@ const FormCenter = () => {
               {/* Tarjeta 4: Modificaciones Recientes */}
               <div className={`bg-card border rounded-lg p-3 sm:p-4 cursor-pointer transition-all duration-300
                             ${filters.isRecent ? 'border-success shadow-lg' : 'border-border hover:shadow-md'}`}
-                   onClick={handleRecentFilter}>
+                onClick={handleRecentFilter}>
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className="p-2 bg-success/10 rounded-lg min-touch-target">
                     <Icon name="CheckCircle" size={16} className="text-success sm:w-5 sm:h-5" />
@@ -363,7 +363,7 @@ const FormCenter = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="space-y-3 lg:space-y-4">
             <SearchBar
               onSearch={handleSearch}

@@ -44,4 +44,4 @@ export const apiFetch = async (url, options = {}) => {
     }
 };
 
-export const API_BASE_URL = "https://back-vercel-iota.vercel.app/api";
+export const API_BASE_URL = "https://back-desa.vercel.app/api";
