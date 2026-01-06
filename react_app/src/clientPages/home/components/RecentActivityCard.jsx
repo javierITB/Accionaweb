@@ -54,11 +54,18 @@ const RequestTracking = () => {
       try {
         setIsLoading(true);
 
-        // 1) Traer ambas colecciones en paralelo
-        const [resResp, resForms] = await Promise.all([
+        // 1) Traer ambas colecciones en paralelo + SOPORTE
+        const [resResp, resForms, resSoporte] = await Promise.all([
           apiFetch(`${API_BASE_URL}/respuestas/mail/${mail}`),
-          fetch(`${API_BASE_URL}/forms`) // Forms might be public, but keep eye on it
+          fetch(`${API_BASE_URL}/forms`), // Forms might be public, but keep eye on it
+          apiFetch(`${API_BASE_URL}/soporte/mail/${mail}`)
         ]);
+
+        console.log('RecentActivityCard - Fetch Status:', {
+          resp: resResp.status,
+          forms: resForms.status,
+          soporte: resSoporte.status
+        });
 
         if (!resResp.ok || !resForms.ok) {
           throw new Error('Error al obtener datos del servidor');
@@ -67,6 +74,13 @@ const RequestTracking = () => {
         // 2) Convertir a JSON
         const responses = await resResp.json(); // lista de respuestas
         const forms = await resForms.json();    // lista de formularios
+        const soporteTickets = resSoporte.ok ? await resSoporte.json() : [];
+
+        console.log('RecentActivityCard - Data:', {
+          responsesCount: Array.isArray(responses) ? responses.length : responses?.data?.length,
+          formsCount: forms.length,
+          soporteCount: soporteTickets.length
+        });
 
         // 3) Construir mapa de forms para lookup rápido (mapeamos _id e id si existen)
         const formsMap = new Map();
@@ -80,7 +94,7 @@ const RequestTracking = () => {
         // 4) Normalizar responses uniendo con su form
         const responsesList = Array.isArray(responses) ? responses : (responses.data || []);
 
-        const normalized = responsesList.map(r => {
+        const normalizedResponses = responsesList.map(r => {
           const formIdKey = r.formId ? String(r.formId) : null;
           const matchedForm = formIdKey ? formsMap.get(formIdKey) || null : null;
 
@@ -106,13 +120,34 @@ const RequestTracking = () => {
             hasMessages: false,
 
             // aquí va el objeto form asociado (o null si no se encuentra)
-            form: matchedForm
+            form: matchedForm,
+            type: 'form_response'
           };
         });
 
-        // 5) Actualizar estados
-        setAllForms(forms);    // lista de formularios tal cual vino del backend
-        setResp(normalized);   // respuestas ya unidas con su form
+        // 4.5) Normalizar soporte tickets
+        const normalizedSoporte = soporteTickets.map(t => ({
+          _id: t._id,
+          formId: t.formId,
+          title: t.formTitle || t.responses?.Asunto || 'Ticket de Soporte',
+          responses: t.responses || {},
+          submittedAt: t.submittedAt || t.createdAt,
+          createdAt: t.createdAt,
+          updatedAt: t.updatedAt,
+          status: t.status,
+          formTitle: t.formTitle,
+          trabajador: t.assignedTo,
+          submittedBy: t.user?.nombre || 'Usuario',
+          company: t.user?.empresa || 'Empresa',
+          lastUpdated: t.updatedAt || t.lastUpdated,
+          assignedTo: t.assignedTo || " - ", // Soporte usa assignedTo directamente
+          hasMessages: t.hasMessages || false, // Asumiendo que el endpoint lo devuelve o false
+          type: 'support_ticket'
+        }));
+
+        // 5) Actualizar estados (MERGE)
+        setAllForms(forms);
+        setResp([...normalizedResponses, ...normalizedSoporte]);   // respuestas ya unidas con su form
 
       } catch (err) {
         console.error('Error cargando formularios:', err);
