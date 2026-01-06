@@ -57,7 +57,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
           color: n.color
         }));
 
-        setNotifications(normalizedNotis.reverse());
+        setNotifications(normalizedNotis);
         setFilteredNotifications(normalizedNotis.reverse());
       } catch (err) {
         console.error("Error cargando notificaciones:", err);
