@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { API_BASE_URL } from "../../../utils/api";
 
 const SetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -65,7 +66,7 @@ const SetPassword = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://back-desa.vercel.app/api/auth/set-password`, {
+      const response = await fetch(`${API_BASE_URL}/auth/set-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

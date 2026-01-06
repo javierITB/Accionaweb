@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import DestinatariosSelector from './DestinatariosSelector';
+import { API_BASE_URL } from '../../../utils/api';
 
 const AnuncioCreator = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -57,7 +58,7 @@ const AnuncioCreator = ({ onSuccess }) => {
 
       console.log('📤 Enviando anuncio (solo notificaciones):', payload);
 
-      const response = await fetch('https://back-desa.vercel.app/api/anuncios', {
+      const response = await fetch(`${API_BASE_URL}/anuncios`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

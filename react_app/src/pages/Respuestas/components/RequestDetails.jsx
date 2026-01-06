@@ -162,7 +162,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       setCorrectedFiles([{
         name: request.correctedFile.fileName,
         size: request.correctedFile.fileSize,
-        url: `https://back-desa.vercel.app/api/respuestas/${request._id}/corrected-file`,
+        url: `${API_BASE_URL}/respuestas/${request._id}/corrected-file`,
         isServerFile: true
       }]);
     } else {
@@ -333,7 +333,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         alert('No hay documento generado disponible para vista previa');
         return;
       }
-      const documentUrl = `https://back-desa.vercel.app/api/generador/download/${info.IDdoc}`;
+      const documentUrl = `${API_BASE_URL}/generador/download/${info.IDdoc}`;
       const extension = info.tipo || 'docx';
       handlePreviewDocument(documentUrl, extension);
     } catch (error) {
@@ -367,7 +367,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         documentUrl = URL.createObjectURL(file);
       }
       else if (approvedData || request?.status === 'aprobado' || request?.status === 'firmado') {
-        const pdfUrl = `https://back-desa.vercel.app/api/respuestas/download-approved-pdf/${request._id}?index=${index}`;
+        const pdfUrl = `${API_BASE_URL}/respuestas/download-approved-pdf/${request._id}?index=${index}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
       }
       else if (request?.correctedFile) {
@@ -394,7 +394,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     }
     try {
       setIsLoadingPreviewSignature(true);
-      const pdfUrl = `https://back-desa.vercel.app/api/respuestas/${request._id}/client-signature`;
+      const pdfUrl = `${API_BASE_URL}/respuestas/${request._id}/client-signature`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
@@ -413,7 +413,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         alert('Solo disponible para PDF');
         return;
       }
-      const pdfUrl = `https://back-desa.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`;
+      const pdfUrl = `${API_BASE_URL}/respuestas/${responseId}/adjuntos/${index}`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
@@ -457,7 +457,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         alert('No hay documento disponible');
         return;
       }
-      window.open(`https://back-desa.vercel.app/api/generador/download/${info.IDdoc}`, '_blank');
+      window.open(`${API_BASE_URL}/generador/download/${info.IDdoc}`, '_blank');
     } catch (error) {
       console.error('Error:', error);
       alert('Error al descargar');
@@ -472,7 +472,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       const token = sessionStorage.getItem("token");
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-      const response = await fetch(`https://back-desa.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`, {
+      const response = await fetch(`${API_BASE_URL}/respuestas/${responseId}/adjuntos/${index}`, {
         headers
       });
 
@@ -502,7 +502,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       const token = sessionStorage.getItem("token");
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-      const response = await fetch(`https://back-desa.vercel.app/api/respuestas/${responseId}/client-signature`, {
+      const response = await fetch(`${API_BASE_URL}/respuestas/${responseId}/client-signature`, {
         headers
       });
 
@@ -616,7 +616,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
         // Si onUpdate está disponible, actualizar el request
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -657,7 +657,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
         console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
 
-        const response = await fetch('https://back-desa.vercel.app/api/respuestas/upload-corrected-files', {
+        const response = await fetch(`${API_BASE_URL}/respuestas/upload-corrected-files`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -750,7 +750,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       // 3. APROBAR DESPUÉS DE SUBIR LOS ARCHIVOS
       const token = localStorage.getItem('token');
 
-      const approveResponse = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}/approve`, {
+      const approveResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}/approve`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -763,7 +763,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         const result = await approveResponse.json();
 
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
           fetchApprovedData(request._id);
@@ -788,7 +788,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
           if (retry) {
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            const retryResponse = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}/approve`, {
+            const retryResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}/approve`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${token}`,
@@ -800,7 +800,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
             if (retryResponse.ok) {
               // Éxito en el reintento
               if (onUpdate) {
-                const updatedResponse = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}`);
+                const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
                 const updatedRequest = await updatedResponse.json();
                 onUpdate(updatedRequest);
               }
@@ -832,10 +832,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}/finalized`);
+      const approveResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}/finalized`);
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }
@@ -857,10 +857,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     if (!confirm('¿Estás seguro de que quieres archivar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}/archived`);
+      const approveResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}/archived`);
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}`);
+          const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
           onUpdate(updatedRequest);
         }

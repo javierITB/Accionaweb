@@ -109,7 +109,7 @@ const CompanyReg = () => {
                     <td className="px-4 py-2 text-sm">{empresa.browser || '—'}</td>
                     <td className="px-4 py-2 text-sm">{empresa.os || '—'}</td>
                     <td className="px-4 py-2">
-                      {empresa.now.replace("T", " ").split(".")[0] || '—'}
+                      {empresa.now ? empresa.now.replace("T", " ").split(".")[0] : '—'}
                     </td>
 
                   </tr>

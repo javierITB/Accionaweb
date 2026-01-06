@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import { API_BASE_URL } from '../../../utils/api';
 
 // Aceptamos las props pasadas desde UserProfileSettings
 const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) => {
@@ -80,7 +81,7 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
         throw new Error("No se pudo identificar al usuario (Email no encontrado en sesión)");
       }
 
-      const response = await fetch('https://back-desa.vercel.app/api/auth/change-password', {
+      const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,7 +129,7 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
 
       try {
         const token = sessionStorage.getItem('token');
-        const response = await fetch('https://back-desa.vercel.app/api/auth/disable-2fa', {
+        const response = await fetch(`${API_BASE_URL}/auth/disable-2fa`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -160,7 +161,7 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
     const token = sessionStorage.getItem('token');
 
     try {
-      const response = await fetch('https://back-desa.vercel.app/api/auth/send-2fa-code', {
+      const response = await fetch(`${API_BASE_URL}/auth/send-2fa-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -194,7 +195,7 @@ const SecuritySettings = ({ twoFactorEnabled, onUpdate2FAStatus, userEmail }) =>
     const token = sessionStorage.getItem('token');
 
     try {
-      const response = await fetch('https://back-desa.vercel.app/api/auth/verify-2fa-activation', {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-2fa-activation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

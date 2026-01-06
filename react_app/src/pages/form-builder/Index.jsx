@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import FormProperties from './components/FormProperties';
 import QuestionBuilder from './components/QuestionBuilder';
 import FormPreview from './components/FormPreview';
+import { API_BASE_URL } from '../../utils/api';
 
 const FormBuilder = () => {
   // Estados para el sidebar - ACTUALIZADOS
@@ -108,7 +109,7 @@ const FormBuilder = () => {
 
     const fetchForm = async () => {
       try {
-        const res = await fetch(`https://back-desa.vercel.app/api/forms/${formId}`);
+        const res = await fetch(`${API_BASE_URL}/forms/${formId}`);
         if (!res.ok) throw new Error('Formulario no encontrado');
         const data = await res.json();
 
@@ -290,7 +291,7 @@ const FormBuilder = () => {
 
     setIsSaving(true);
     try {
-      const response = await fetch("https://back-desa.vercel.app/api/forms", {
+      const response = await fetch(`${API_BASE_URL}/forms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
@@ -332,7 +333,7 @@ const FormBuilder = () => {
 
   const deleteForm = async () => {
     try {
-      const response = await fetch(`https://back-desa.vercel.app/api/forms/${formData.id}`, {
+      const response = await fetch(`${API_BASE_URL}/forms/${formData.id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         cache: "no-cache",
@@ -370,7 +371,7 @@ const FormBuilder = () => {
 
     setIsPublishing(true);
     try {
-      const response = await fetch(`https://back-desa.vercel.app/api/forms/public/${formData.id}`, {
+      const response = await fetch(`${API_BASE_URL}/forms/public/${formData.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

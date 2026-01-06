@@ -844,7 +844,7 @@ const FormPreview = ({ formData }) => {
       };
 
       console.log('Enviando respuestas base...');
-      const res = await fetch(`https://back-desa.vercel.app/api/respuestas`, {
+      const res = await fetch(`${API_BASE_URL}/respuestas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadBase),
@@ -921,7 +921,7 @@ const FormPreview = ({ formData }) => {
             try {
               console.log(`Enviando archivo ${i + 1} de ${todosLosArchivos.length}:`, archivoData.adjunto.fileName);
 
-              const uploadRes = await fetch(`https://back-desa.vercel.app/api/respuestas/${responseId}/adjuntos`, {
+              const uploadRes = await fetch(`${API_BASE_URL}/respuestas/${responseId}/adjuntos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(archivoData),

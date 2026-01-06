@@ -57,7 +57,7 @@ const RequestTracking = () => {
         // 1) Traer ambas colecciones en paralelo
         const [resResp, resForms] = await Promise.all([
           apiFetch(`${API_BASE_URL}/respuestas/mail/${mail}`),
-          fetch('https://back-desa.vercel.app/api/forms/') // Forms might be public, but keep eye on it
+          fetch(`${API_BASE_URL}/forms`) // Forms might be public, but keep eye on it
         ]);
 
         if (!resResp.ok || !resForms.ok) {

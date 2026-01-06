@@ -5,6 +5,7 @@ import Icon from '../AppIcon';
 import Button from './Button';
 // 💡 Ruta ajustada: Asume que NotificationsCard es un componente hermano.
 import NotificationsCard from '../../../components/ui/NotificationsCard';
+import { API_BASE_URL } from '../../../utils/api';
 
 // 💡 Constante para usar la ruta del logo en JSX
 const logoPath = "/logo2.png";
@@ -52,7 +53,7 @@ const Header = ({ className = '' }) => {
 
     const fetchUnreadCount = async (isInitialLoad = false) => {
       try {
-        const response = await fetch(`https://back-desa.vercel.app/api/noti/${userMail}/unread-count`);
+        const response = await fetch(`${API_BASE_URL}/noti/${userMail}/unread-count`);
         const data = await response.json();
 
         const newUnreadCount = data.unreadCount || 0;

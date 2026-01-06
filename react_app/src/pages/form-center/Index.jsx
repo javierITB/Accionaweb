@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import FormCard from './components/FormCard';
 import CategoryFilter from './components/CategoryFilter';
 import SearchBar from './components/SearchBar';
+import { API_BASE_URL } from '../../utils/api';
 
 const FormCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,7 +60,7 @@ const FormCenter = () => {
     const fetchForms = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch('https://back-desa.vercel.app/api/forms');
+        const res = await fetch(`${API_BASE_URL}/forms`);
         const data = await res.json();
 
         const normalizedForms = data.map(f => ({

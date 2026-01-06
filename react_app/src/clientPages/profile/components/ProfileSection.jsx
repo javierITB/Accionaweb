@@ -4,6 +4,7 @@ import Image from '../../components/AppImage';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
+import { API_BASE_URL } from '../../../utils/api';
 
 // Recibimos los datos del usuario como props
 const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading }) => {
@@ -95,7 +96,7 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
 
     try {
       const token = sessionStorage.getItem('token');
-      const response = await fetch(`https://back-desa.vercel.app/api/auth/users/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

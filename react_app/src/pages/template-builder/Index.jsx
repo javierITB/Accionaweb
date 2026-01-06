@@ -5,6 +5,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import TemplateList from './components/FormProperties';
 import DocumentTemplateEditor from './components/TemplateBuilder';
+import { API_BASE_URL } from '../../utils/api';
 
 const FormBuilder = () => {
   // ESTADOS DEL SIDEBAR - AGREGADOS
@@ -78,7 +79,7 @@ const FormBuilder = () => {
     if (formData.formId && formData.questions.length === 0) {
       const fetchBaseFormQuestions = async () => {
         try {
-          const res = await fetch(`https://back-desa.vercel.app/api/forms/${formData.formId}`);
+          const res = await fetch(`${API_BASE_URL}/forms/${formData.formId}`);
           if (!res.ok) throw new Error('Formulario base no encontrado');
           const data = await res.json();
 
@@ -102,7 +103,7 @@ const FormBuilder = () => {
 
     const fetchForm = async () => {
       try {
-        const res = await fetch(`https://back-desa.vercel.app/api/plantillas/${templateId}`);
+        const res = await fetch(`${API_BASE_URL}/plantillas/${templateId}`);
         if (!res.ok) throw new Error('Plantilla no encontrada');
         const data = await res.json();
 
@@ -189,7 +190,7 @@ const FormBuilder = () => {
     // CASO EDICIÓN NORMAL: Buscar plantilla existente
     let existingTemplateData = null;
     try {
-      const url = `https://back-desa.vercel.app/api/plantillas/${selectedFormId}`;
+      const url = `${API_BASE_URL}/plantillas/${selectedFormId}`;
       const res = await fetch(url);
 
       if (res.ok) {
@@ -290,7 +291,7 @@ const FormBuilder = () => {
     setIsSaving(true);
 
     const isUpdating = !!formData.id;
-    const url = "https://back-desa.vercel.app/api/plantillas";
+    const url = `${API_BASE_URL}/plantillas`;
     const method = "POST";
 
     try {

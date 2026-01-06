@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { API_BASE_URL } from '../../../utils/api';
 
 const PublicRequestDetails = ({ request }) => {
     // Inicializar con el estado actual del request
@@ -21,7 +22,7 @@ const PublicRequestDetails = ({ request }) => {
 
         const interval = setInterval(async () => {
             try {
-                const response = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}`);
+                const response = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
                 if (response.ok) {
                     const updatedRequest = await response.json();
                     // Aqui podriamos actualizar el estado si cambia, pero por ahora solo logueamos
@@ -43,7 +44,7 @@ const PublicRequestDetails = ({ request }) => {
 
         const checkSignedPdf = async () => {
             try {
-                const response = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}/has-client-signature`);
+                const response = await fetch(`${API_BASE_URL}/respuestas/${request._id}/has-client-signature`);
                 if (response.ok) {
                     const data = await response.json();
                     setHasSignedPdf(data.exists);
@@ -84,7 +85,7 @@ const PublicRequestDetails = ({ request }) => {
     const fetchAttachments = async (responseId) => {
         setAttachmentsLoading(true);
         try {
-            const response = await fetch(`https://back-desa.vercel.app/api/respuestas/${responseId}/adjuntos`);
+            const response = await fetch(`${API_BASE_URL}/respuestas/${responseId}/adjuntos`);
 
             if (response.ok) {
                 const data = await response.json();
@@ -112,7 +113,7 @@ const PublicRequestDetails = ({ request }) => {
     const fetchApprovedFiles = async (responseId) => {
         setLoadingApprovedFiles(true);
         try {
-            const response = await fetch(`https://back-desa.vercel.app/api/respuestas/data-approved/${responseId}`);
+            const response = await fetch(`${API_BASE_URL}/respuestas/data-approved/${responseId}`);
             if (response.ok) {
                 const data = await response.json();
                 setApprovedFilesData(data);
@@ -127,7 +128,7 @@ const PublicRequestDetails = ({ request }) => {
     const handleDownloadAdjunto = async (responseId, index) => {
         setDownloadingAttachmentIndex(index);
         try {
-            const response = await fetch(`https://back-desa.vercel.app/api/respuestas/${responseId}/adjuntos/${index}`);
+            const response = await fetch(`${API_BASE_URL}/respuestas/${responseId}/adjuntos/${index}`);
             if (response.ok) {
                 const blob = await response.blob();
                 const adjunto = fullRequestData.adjuntos[index];
@@ -155,7 +156,7 @@ const PublicRequestDetails = ({ request }) => {
             setIsUploading(true);
             setUploadMessage('Descargando documento firmado...');
 
-            const metaResponse = await fetch(`https://back-desa.vercel.app/api/respuestas/${responseId}/has-client-signature`);
+            const metaResponse = await fetch(`${API_BASE_URL}/respuestas/${responseId}/has-client-signature`);
 
             let fileName = 'documento_firmado.pdf';
 
@@ -167,7 +168,7 @@ const PublicRequestDetails = ({ request }) => {
             }
 
             // Descargar el archivo
-            const response = await fetch(`https://back-desa.vercel.app/api/respuestas/${responseId}/client-signature`);
+            const response = await fetch(`${API_BASE_URL}/respuestas/${responseId}/client-signature`);
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -214,7 +215,7 @@ const PublicRequestDetails = ({ request }) => {
 
             const finalFileName = fileName || `documento_aprobado_${index + 1}.pdf`;
 
-            const response = await fetch(`https://back-desa.vercel.app/api/respuestas/download-approved-pdf/${responseId}?index=${index}`);
+            const response = await fetch(`${API_BASE_URL}/respuestas/download-approved-pdf/${responseId}?index=${index}`);
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -263,7 +264,7 @@ const PublicRequestDetails = ({ request }) => {
         formData.append('signedPdf', file);
 
         try {
-            const response = await fetch(`https://back-desa.vercel.app/api/respuestas/${request._id}/upload-client-signature`, {
+            const response = await fetch(`${API_BASE_URL}/respuestas/${request._id}/upload-client-signature`, {
                 method: 'POST',
                 body: formData,
             });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon.jsx';
 import Button from '../../components/ui/Button';
+import { API_BASE_URL } from '../../utils/api';
 
 const NotificationsCard = ({ user, onUnreadChange }) => {
   const [notifications, setNotifications] = useState([]);
@@ -40,7 +41,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`https://back-desa.vercel.app/api/noti/${user}`);
+        const res = await fetch(`${API_BASE_URL}/noti/${user}`);
         const data = await res.json();
 
         const normalizedNotis = data.map(n => ({
@@ -138,7 +139,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
       setFilteredNotifications([]);
       setActiveFilter('all');
 
-      const res = await fetch(`https://back-desa.vercel.app/api/noti/${mail}`, {
+      const res = await fetch(`${API_BASE_URL}/noti/${mail}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -166,7 +167,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      const res = await fetch(`https://back-desa.vercel.app/api/noti/${mail}/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/noti/${mail}/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -244,7 +245,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
         return;
       }
 
-      const res = await fetch(`https://back-desa.vercel.app/api/noti/${mail}/leido-todas`, {
+      const res = await fetch(`${API_BASE_URL}/noti/${mail}/leido-todas`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
       });
@@ -277,7 +278,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
     } else {
       try {
         const response = await fetch(
-          `https://back-desa.vercel.app/api/noti/${mail}/${notiId}/leido`,
+          `${API_BASE_URL}/noti/${mail}/${notiId}/leido`,
           {
             method: 'PUT',
             headers: {

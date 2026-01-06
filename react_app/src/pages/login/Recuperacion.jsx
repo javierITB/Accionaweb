@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 // IMPORTACIONES REALES: Necesitas tener 'react-router-dom' instalado
 import { useNavigate } from 'react-router-dom';
 import { Mail, Loader, CheckCircle, XCircle, KeyRound, ArrowLeft } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/api';
 
 // Endpoints de la API
-const API_URL_EMAIL = 'https://back-desa.vercel.app/api/auth/recuperacion';
-const API_URL_CODE = 'https://back-desa.vercel.app/api/auth/borrarpass';
+const API_URL_EMAIL = `${API_BASE_URL}/auth/recuperacion`;
+const API_URL_CODE = `${API_BASE_URL}/auth/borrarpass`;
 
 
 
