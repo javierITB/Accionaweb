@@ -18,10 +18,12 @@ const WelcomeCard = ({ user }) => {
         // 1. Obtener datos del usuario para saber su empresa
         const userResponse = await apiFetch(`${API_BASE_URL}/auth/full/${userMail}`);
 
-        // Con apiFetch, si hay error lanza excepción, así que simplificamos la lógica
-        const userData = userResponse; // apiFetch retorna userResponse.json() o similar dependiendo de la implementación
-        // EDIT: Revisando apiFetch implementation. 
-        // apiFetch retorna la respuesta parseada si es JSON.
+        if (!userResponse.ok) {
+          console.error('Error fetching user full data');
+          return;
+        }
+
+        const userData = await userResponse.json();
 
         const userCompany = userData.empresa;
         console.log('Empresa del usuario:', userCompany);
@@ -33,7 +35,13 @@ const WelcomeCard = ({ user }) => {
 
         // 2. Obtener todas las empresas para buscar la del usuario
         // NOTA: Endpoint protegido requiere token
-        const companies = await apiFetch(`${API_BASE_URL}/auth/empresas/todas`);
+        const companiesResponse = await apiFetch(`${API_BASE_URL}/auth/empresas/todas`);
+        if (!companiesResponse.ok) {
+          console.error('Error fetching companies');
+          return;
+        }
+        const companies = await companiesResponse.json();
+
         console.log('Empresas encontradas:', companies.length);
 
         // 3. Buscar la empresa del usuario (búsqueda más flexible)

@@ -15,7 +15,8 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode
 
     const interval = setInterval(async () => {
       try {
-        const response = await apiFetch(`${API_BASE_URL}/respuestas/${currentRequest._id}`);
+        const endpoint = 'respuestas';
+        const response = await apiFetch(`${API_BASE_URL}/${endpoint}/${currentRequest._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
 

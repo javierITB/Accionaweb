@@ -22,7 +22,8 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
     const interval = setInterval(async () => {
       try {
-        const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+        const endpoint = 'respuestas';
+        const response = await apiFetch(`${API_BASE_URL}/${endpoint}/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
 
@@ -47,7 +48,8 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
 
     const checkSignedPdf = async () => {
       try {
-        const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/has-client-signature`);
+        const endpoint = 'respuestas';
+        const response = await apiFetch(`${API_BASE_URL}/${endpoint}/${request._id}/has-client-signature`);
         if (response.ok) {
           const data = await response.json();
           setHasSignedPdf(data.exists);
@@ -90,14 +92,15 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
     try {
-      const response = await apiFetch(`${API_BASE_URL}/respuestas/${responseId}/adjuntos`);
+      const endpoint = 'respuestas';
+      const response = await apiFetch(`${API_BASE_URL}/${endpoint}/${responseId}/adjuntos`);
 
       if (response.ok) {
         const data = await response.json();
         let extractedAdjuntos = [];
-        if (Array.isArray(data) && data.length > 0 && data[0].adjuntos) {
+        if (Array.isArray(data) && data.length > 0 && data[0]?.adjuntos) {
           extractedAdjuntos = data[0].adjuntos;
-        } else if (data.adjuntos) {
+        } else if (data && data.adjuntos) {
           extractedAdjuntos = data.adjuntos;
         } else if (Array.isArray(data)) {
           extractedAdjuntos = data;
@@ -118,7 +121,8 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
   const fetchApprovedFiles = async (responseId) => {
     setLoadingApprovedFiles(true);
     try {
-      const response = await apiFetch(`${API_BASE_URL}/respuestas/data-approved/${responseId}`);
+      const endpoint = 'respuestas';
+      const response = await apiFetch(`${API_BASE_URL}/${endpoint}/data-approved/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setApprovedFilesData(data);
