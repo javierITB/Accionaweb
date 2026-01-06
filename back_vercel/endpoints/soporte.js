@@ -393,10 +393,6 @@ router.post("/", uploadMultiple.array('adjuntos'), async (req, res) => {
     // Descifrar nombre para notificaciones si está cifrado
     let nombreUsuarioDescifrado = usuario?.nombre || 'Usuario';  // ← SOLO CAMBIA ESTA LÍNEA
 
-    if (typeof nombreUsuarioDescifrado === 'string' && nombreUsuarioDescifrado.includes(':')) {
-      nombreUsuarioDescifrado = decrypt(nombreUsuarioDescifrado);
-    }
-
     const notifData = {
       titulo: `${nombreUsuarioDescifrado} de la empresa ${empresaDescifrada} ha levantado un ticket de soporte`,
       descripcion: adjuntosFiles.length > 0 ? `Incluye ${adjuntosFiles.length} archivo(s)` : "Revisar en panel.",
