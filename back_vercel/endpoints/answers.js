@@ -799,55 +799,65 @@ router.get("/mail/:mail", async (req, res) => {
 });
 
 // Obtener respuestas en formato mini
+// Obtener respuestas en formato mini con PAGINACIÓN
 router.get("/mini", async (req, res) => {
   try {
-    // Verificar token
     const auth = await verifyRequest(req);
     if (!auth.ok) return res.status(401).json({ error: auth.error });
 
-    const answers = await req.db.collection("respuestas")
-      .find({})
-      .project({
-        _id: 1,
-        formId: 1,
-        formTitle: 1,
-        "responses": 1,
-        submittedAt: 1,
-        "user.nombre": 1,
-        "user.empresa": 1,
-        status: 1,
-        createdAt: 1,
-        adjuntosCount: 1
-      })
-      .toArray();
+    // Obtener parámetros de query
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 30;
+    const skip = (page - 1) * limit;
 
-    // Procesar las respuestas en JavaScript
+    const collection = req.db.collection("respuestas");
+
+    // Ejecutamos la cuenta total y la búsqueda en paralelo para mayor velocidad
+    const [answers, totalCount] = await Promise.all([
+      collection.find({})
+        .sort({ createdAt: -1 }) // Importante: traer los más nuevos primero
+        .skip(skip)
+        .limit(limit)
+        .project({
+          _id: 1,
+          formId: 1,
+          formTitle: 1,
+          "responses": 1,
+          submittedAt: 1,
+          "user.nombre": 1,
+          "user.empresa": 1,
+          status: 1,
+          createdAt: 1,
+          adjuntosCount: 1
+        })
+        .toArray(),
+      collection.countDocuments({})
+    ]);
+
+    const { decrypt } = require('../utils/seguridad.helper');
+
     const answersProcessed = answers.map(answer => {
-      let trabajador = "No especificado";
+      // Helper para descifrar campos de respuestas (reutilizando tu lógica)
+      const getDecryptedResponse = (keys) => {
+        for (let key of keys) {
+          if (answer.responses && answer.responses[key]) {
+            try {
+              return decrypt(answer.responses[key]);
+            } catch (e) { return answer.responses[key]; }
+          }
+        }
+        return "No especificado";
+      };
 
-      if (answer.responses) {
-        trabajador = decrypt(
-          answer.responses["Nombre del trabajador"] ||
-          answer.responses["NOMBRE DEL TRABAJADOR"] ||
-          answer.responses["nombre del trabajador"] ||
-          answer.responses["Nombre del Trabajador"] ||
-          answer.responses["Nombre Del trabajador "] ||
-          "No especificado"
-        );
-      }
+      const trabajador = getDecryptedResponse([
+        "Nombre del trabajador", "NOMBRE DEL TRABAJADOR", "nombre del trabajador", 
+        "Nombre del Trabajador", "Nombre Del trabajador "
+      ]);
 
-      let rutTrabajador = "No especificado";
-
-      if (answer.responses) {
-        rutTrabajador = decrypt(
-          answer.responses["RUT del trabajador"] ||
-          answer.responses["RUT DEL TRABAJADOR"] ||
-          answer.responses["rut del trabajador"] ||
-          answer.responses["Rut del Trabajador"] ||
-          answer.responses["Rut Del trabajador "] ||
-          "No especificado"
-        );
-      }
+      const rutTrabajador = getDecryptedResponse([
+        "RUT del trabajador", "RUT DEL TRABAJADOR", "rut del trabajador", 
+        "Rut del Trabajador", "Rut Del trabajador "
+      ]);
 
       return {
         _id: answer._id,
@@ -866,7 +876,16 @@ router.get("/mini", async (req, res) => {
       };
     });
 
-    res.json(answersProcessed);
+    res.json({
+      success: true,
+      data: answersProcessed,
+      pagination: {
+        total: totalCount,
+        page: page,
+        limit: limit,
+        totalPages: Math.ceil(totalCount / limit)
+      }
+    });
   } catch (err) {
     console.error("Error en /mini:", err);
     res.status(500).json({ error: "Error al obtener formularios" });
