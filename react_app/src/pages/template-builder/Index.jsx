@@ -5,7 +5,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import TemplateList from './components/FormProperties';
 import DocumentTemplateEditor from './components/TemplateBuilder';
-import { API_BASE_URL } from '../../utils/api';
+import { API_BASE_URL, apiFetch} from '../../utils/api';
 
 const FormBuilder = () => {
   // ESTADOS DEL SIDEBAR - AGREGADOS
@@ -79,7 +79,7 @@ const FormBuilder = () => {
     if (formData.formId && formData.questions.length === 0) {
       const fetchBaseFormQuestions = async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/forms/${formData.formId}`);
+          const res = await apiFetch(`${API_BASE_URL}/forms/${formData.formId}`);
           if (!res.ok) throw new Error('Formulario base no encontrado');
           const data = await res.json();
 
@@ -103,7 +103,7 @@ const FormBuilder = () => {
 
     const fetchForm = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/plantillas/${templateId}`);
+        const res = await apiFetch(`${API_BASE_URL}/plantillas/${templateId}`);
         if (!res.ok) throw new Error('Plantilla no encontrada');
         const data = await res.json();
 
@@ -191,7 +191,7 @@ const FormBuilder = () => {
     let existingTemplateData = null;
     try {
       const url = `${API_BASE_URL}/plantillas/${selectedFormId}`;
-      const res = await fetch(url);
+      const res = await apiFetch(url);
 
       if (res.ok) {
         existingTemplateData = await res.json();
@@ -295,7 +295,7 @@ const FormBuilder = () => {
     const method = "POST";
 
     try {
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),

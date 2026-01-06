@@ -1,6 +1,6 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
-import { API_BASE_URL } from '../../../utils/api';
+import { API_BASE_URL, apiFetch } from '../../../utils/api';
 import { useState, useEffect } from 'react';
 
 const QuickActionsCard = ({ section }) => {
@@ -20,7 +20,7 @@ const QuickActionsCard = ({ section }) => {
         }
 
         // Enviar mail como query param
-        const res = await fetch(`${API_BASE_URL}/forms/section/${section}/${encodeURIComponent(mail)}`);
+        const res = await apiFetch(`${API_BASE_URL}/forms/section/${section}/${encodeURIComponent(mail)}`);
 
         if (!res.ok) {
           throw new Error(`Error en la respuesta del servidor: ${res.status}`);

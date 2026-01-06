@@ -3,7 +3,7 @@ import Header from '../components/ui/Header';
 import QuickActionsCard from './components/QuickActionsCard';
 import Icon from '../components/AppIcon';
 import Button from '../components/ui/Button';
-import { API_BASE_URL } from '../../utils/api';
+import { API_BASE_URL, apiFetch} from '../../utils/api';
 
 const DashboardHome = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -28,7 +28,7 @@ const DashboardHome = () => {
 
     const fetchForm = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/forms/${formId}`);
+        const res = await apiFetch(`${API_BASE_URL}/forms/${formId}`);
         if (!res.ok) throw new Error('Formulario no encontrado');
         const data = await res.json();
 

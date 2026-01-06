@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PublicRequestDetails from './components/PublicRequestDetails';
 import PublicMessageView from './components/PublicMessageView';
 import Icon from '../../components/AppIcon';
-import { API_BASE_URL } from '../../utils/api';
+import { API_BASE_URL, apiFetch } from '../../utils/api';
 
 const PublicPreview = () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -22,14 +22,14 @@ const PublicPreview = () => {
             }
 
             try {
-                const res = await fetch(`${API_BASE_URL}/respuestas/${id}`);
+                const res = await apiFetch(`${API_BASE_URL}/respuestas/${id}`);
                 if (!res.ok) throw new Error("No se pudo cargar la información de la solicitud.");
 
                 const data = await res.json();
 
                 if (data.formId) {
                     try {
-                        const formRes = await fetch(`${API_BASE_URL}/forms/${data.formId}`);
+                        const formRes = await apiFetch(`${API_BASE_URL}/forms/${data.formId}`);
                         if (formRes.ok) {
                             const formData = await formRes.json();
                             data.formDef = formData;
