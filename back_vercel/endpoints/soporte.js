@@ -461,32 +461,6 @@ router.get("/data-approved/:responseId", async (req, res) => {
   }
 });
 
-// Verificar si existe PDF firmado
-router.get("/:responseId/has-client-signature", async (req, res) => {
-  try {
-    const auth = await verifyRequest(req);
-    if (!auth.ok) return res.status(401).json({ error: auth.error });
-
-    const { responseId } = req.params;
-    const signature = await req.db.collection("firmados").findOne({ responseId: responseId }, {
-      projection: { "clientSignedPdf.fileName": 1, "clientSignedPdf.uploadedAt": 1, status: 1 }
-    });
-
-    if (!signature) return res.json({ exists: false });
-
-    res.json({
-      exists: true,
-      signature: {
-        fileName: signature.clientSignedPdf.fileName,
-        uploadedAt: signature.clientSignedPdf.uploadedAt,
-        status: signature.status
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Error verificando firma: " + err.message });
-  }
-});
-
 // Obtener adjuntos de una respuesta específica
 router.get("/:id/adjuntos", async (req, res) => {
   try {

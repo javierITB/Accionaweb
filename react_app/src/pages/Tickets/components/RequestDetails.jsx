@@ -14,7 +14,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
   const [correctedFiles, setCorrectedFiles] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [clientSignature, setClientSignature] = useState(null);
+
   const [isApproving, setIsApproving] = useState(false);
   const fileInputRef = useRef(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -24,7 +24,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   // Estados de carga para vistas previas
   const [isLoadingPreviewGenerated, setIsLoadingPreviewGenerated] = useState(false);
   const [isLoadingPreviewCorrected, setIsLoadingPreviewCorrected] = useState(false);
-  const [isLoadingPreviewSignature, setIsLoadingPreviewSignature] = useState(false);
+
   const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(false);
 
   const [documentInfo, setDocumentInfo] = useState(null);
@@ -43,10 +43,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   // Estados de carga de secciones
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
-  const [isCheckingSignature, setIsCheckingSignature] = useState(false);
+
 
   const [downloadingAttachmentIndex, setDownloadingAttachmentIndex] = useState(null);
-  const [isDownloadingSignature, setIsDownloadingSignature] = useState(false);
+
 
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
@@ -87,27 +87,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
   };
 
-  const checkClientSignature = async () => {
-    setIsCheckingSignature(true);
-    try {
-      const response = await apiFetch(`${API_BASE_URL}/soporte/${request._id}/has-client-signature`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.exists) {
-          setClientSignature(data.signature);
-        } else {
-          setClientSignature(null);
-        }
-      } else {
-        setClientSignature(null);
-      }
-    } catch (error) {
-      console.error('Error verificando firma del cliente:', error);
-      setClientSignature(null);
-    } finally {
-      setIsCheckingSignature(false);
-    }
-  };
+
 
   const getDocumentInfo = async (responseId) => {
     try {
@@ -124,9 +104,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
   };
 
-  const refreshClientSignature = async () => {
-    await checkClientSignature();
-  };
+
 
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
@@ -169,7 +147,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
 
     if (request?._id) {
-      checkClientSignature();
+
       getDocumentInfo(request._id);
     }
   }, [request]);
@@ -210,7 +188,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
       }
     });
     fetchAttachments(responseId);
-    checkClientSignature(responseId);
+
 
   }, [isVisible, request?._id]);
 
