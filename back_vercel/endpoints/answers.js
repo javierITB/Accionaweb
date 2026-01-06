@@ -651,10 +651,28 @@ router.get("/mail/:mail", async (req, res) => {
       }
     }
 
-    // Buscar respuestas por el UID del usuario (campo no cifrado)
-    const answers = await req.db.collection("respuestas").find({
-      "user.uid": user._id.toString()
-    }).toArray();
+    // Modificación: Traer todas las respuestas y filtrar en memoria desencriptando el UID
+    const allAnswers = await req.db.collection("respuestas").find({}).toArray();
+
+    const answers = allAnswers.filter(answer => {
+      // Verificar si existe el objeto user y uid
+      if (!answer.user || !answer.user.uid) return false;
+
+      let uidToCheck = answer.user.uid;
+
+      // Si el UID está encriptado (contiene :), desencriptarlo
+      if (typeof uidToCheck === 'string' && uidToCheck.includes(':')) {
+        try {
+          uidToCheck = decrypt(uidToCheck);
+        } catch (e) {
+          // Si falla la desencriptación, ignorar este registro
+          return false;
+        }
+      }
+
+      // Comparar con el ID del usuario encontrado
+      return uidToCheck === user._id.toString();
+    });
 
     if (!answers || answers.length === 0) {
       return res.json({
