@@ -133,13 +133,15 @@ const RequestTracking = () => {
             reviewedAt: r.reviewedAt,
             approvedAt: r.approvedAt,
             finalizedAt: r.finalizedAt,
+            assignedAt: r.assignedAt,
+            estimatedCompletionAt: r.estimatedCompletionAt,
             formTitle: r.formTitle,
             status: r.status,
             trabajador: r.trabajador,
             rutTrabajador: r.rutTrabajador,
             submittedBy: r.user?.nombre || 'Usuario Desconocido',
             lastUpdated: r.updatedAt || null,
-            assignedTo: r.updatedAt || " - ",
+            assignedTo: r.assignedTo || " - ",
             hasMessages: false,
             company: r.user?.empresa || 'desconocida'
           };
