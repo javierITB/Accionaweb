@@ -716,9 +716,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
             <p className={`text-sm font-semibold ${(fullRequestData?.assignedTo && fullRequestData?.assignedTo !== '-') ? 'text-accent' : 'text-muted-foreground italic'}`}>
               {displayAssignedUsers()}
             </p>
-            {fullRequestData?.assignedAt && (
-              <p className="text-xs text-muted-foreground">{formatDate(fullRequestData?.assignedAt)}</p>
-            )}
           </div>
         </div>
 
@@ -969,7 +966,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Icon name="Clock" size={16} />
-              <span>Última actualización: {formatDate(fullRequestData?.submittedAt)}</span>
+              <span>Última actualización: {formatDate(fullRequestData?.updatedAt || fullRequestData?.submittedAt)}</span>
             </div>
             <div className="flex items-center space-x-3">
 
