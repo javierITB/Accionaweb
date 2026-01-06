@@ -172,11 +172,11 @@ router.post("/", async (req, res) => {
 
     // 1. Cifrar objeto 'user' campo por campo
     const userCifrado = cifrarObjeto(user);
-    console.log("✓ Objeto 'user' cifrado");
+    console.log("Objeto 'user' cifrado");
 
     // 2. Cifrar objeto 'responses' campo por campo
     const responsesCifrado = cifrarObjeto(responses);
-    console.log("✓ Objeto 'responses' cifrado");
+    console.log("Objeto 'responses' cifrado");
 
     // Guardar respuesta con datos CIFRADOS
     const result = await req.db.collection("respuestas").insertOne({
@@ -190,7 +190,7 @@ router.post("/", async (req, res) => {
       updatedAt: new Date()
     });
 
-    console.log(`✅ Respuesta guardada con ID: ${result.insertedId}`);
+    console.log(`Respuesta guardada con ID: ${result.insertedId}`);
 
     // Manejar adjuntos si existen
     if (adjuntos.length > 0) {
@@ -199,7 +199,7 @@ router.post("/", async (req, res) => {
         submittedAt: new Date().toISOString(),
         adjuntos: []
       });
-      console.log(`✅ Documento adjuntos creado`);
+      console.log(`Documento adjuntos creado`);
     }
 
     // Enviar correo de respaldo (usamos datos descifrados del user original)
@@ -232,7 +232,7 @@ router.post("/", async (req, res) => {
       color: "#006e13ff",
       actionUrl: `/?id=${result.insertedId}`,
     });
-    console.log("✓ Notificación al usuario enviada");
+    console.log("Notificación al usuario enviada");
 
     // Generar documento anexo (usar datos descifrados)
     try {
@@ -1001,7 +1001,7 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ error: "Formulario no encontrado" });
     }
 
-    console.log("✅ Respuesta actualizada exitosamente");
+    console.log("Respuesta actualizada exitosamente");
 
     // Función para descifrar para la respuesta al frontend
     const descifrarObjeto = (obj) => {
@@ -1396,7 +1396,7 @@ router.post("/chat", async (req, res) => {
 
           await sendEmail({
             to: userEmail,
-            subject: `📋 Nuevo mensaje - Plataforma RRHH - ${formName}`,
+            subject: `Nuevo mensaje - Plataforma RRHH - ${formName}`,
             html: emailHtml
           });
 
@@ -1772,11 +1772,11 @@ router.post("/upload-corrected-files", async (req, res) => {
             userName = response.user.nombre || "Usuario";
             userId = response.user.uid;
 
-            console.log("✅ Email obtenido de response.user.mail:", userEmail);
-            console.log("✅ Nombre obtenido:", userName);
-            console.log("✅ User ID obtenido:", userId);
+            console.log("Email obtenido de response.user.mail:", userEmail);
+            console.log("Nombre obtenido:", userName);
+            console.log("User ID obtenido:", userId);
           } else {
-            console.log("⚠️ No se encontró response.user.mail en la respuesta");
+            console.log("No se encontró response.user.mail en la respuesta");
             console.log("Estructura de response.user:", response.user);
           }
 
@@ -1788,21 +1788,21 @@ router.post("/upload-corrected-files", async (req, res) => {
 
             if (form && form.title) {
               formName = form.title;
-              console.log("✅ Nombre del formulario obtenido de DB:", formName);
+              console.log("Nombre del formulario obtenido de DB:", formName);
             } else {
               // Fallback: usar formTitle del _contexto si existe
               if (response._contexto && response._contexto.formTitle) {
                 formName = response._contexto.formTitle;
-                console.log("✅ Usando formTitle de _contexto:", formName);
+                console.log("Usando formTitle de _contexto:", formName);
               }
             }
           } else if (response._contexto && response._contexto.formTitle) {
             // Si no hay formId, usar el del contexto
             formName = response._contexto.formTitle;
-            console.log("✅ Usando formTitle de _contexto (sin formId):", formName);
+            console.log("Usando formTitle de _contexto (sin formId):", formName);
           }
         } else {
-          console.log("❌ No se encontró la respuesta con ID:", responseId);
+          console.log("No se encontró la respuesta con ID:", responseId);
         }
       } catch (userInfoError) {
         console.error("Error obteniendo información del usuario/formulario:", userInfoError);
@@ -1836,7 +1836,7 @@ router.post("/upload-corrected-files", async (req, res) => {
             },
             { returnDocument: 'after' }
           );
-          console.log(`✅ Archivo agregado a DB. Total ahora:`, result.value?.correctedFiles?.length);
+          console.log(`Archivo agregado a DB. Total ahora:`, result.value?.correctedFiles?.length);
         } else {
           await req.db.collection("aprobados").insertOne({
             responseId: responseId,
@@ -1846,11 +1846,11 @@ router.post("/upload-corrected-files", async (req, res) => {
             approvedAt: null,
             approvedBy: null
           });
-          console.log(`✅ Nuevo documento creado en DB con 1 archivo`);
+          console.log(`Nuevo documento creado en DB con 1 archivo`);
         }
       }
 
-      // ✅ ENVIAR CORREO AL USUARIO DESPUÉS DE SUBIR A LA DB
+      // ENVIAR CORREO AL USUARIO DESPUÉS DE SUBIR A LA DB
       let emailSent = false;
       if (userEmail) {
         try {
@@ -2907,7 +2907,7 @@ router.get("/mantenimiento/migrar-respuestas-pqc", async (req, res) => {
     let errores = 0;
 
     console.log(`Iniciando migración PQC de ${respuestas.length} respuestas...`);
-    console.log("⚠️  Solo se cifrarán los objetos 'user' y 'responses'\n");
+    console.log("Solo se cifrarán los objetos 'user' y 'responses'\n");
 
     // Función para cifrar todos los strings en un objeto/array
     const cifrarObjetoCompleto = (obj) => {
@@ -2976,9 +2976,9 @@ router.get("/mantenimiento/migrar-respuestas-pqc", async (req, res) => {
             updates.user = userCifrado;
             cambios = true;
             camposEstaRespuesta += userCifrados;
-            console.log(`  ✓ user: ${userCifrados} campos cifrados`);
+            console.log(`  user: ${userCifrados} campos cifrados`);
           } else {
-            console.log(`  ⚠ user: ya cifrado o sin texto`);
+            console.log(`  user: ya cifrado o sin texto`);
           }
         }
 
@@ -2991,15 +2991,15 @@ router.get("/mantenimiento/migrar-respuestas-pqc", async (req, res) => {
             updates.responses = responsesCifrado;
             cambios = true;
             camposEstaRespuesta += responsesCifrados;
-            console.log(`  ✓ responses: ${responsesCifrados} campos cifrados`);
+            console.log(`  responses: ${responsesCifrados} campos cifrados`);
           } else {
-            console.log(`  ⚠ responses: ya cifrado o sin texto`);
+            console.log(`  responses: ya cifrado o sin texto`);
           }
         }
 
         // 3. NO CIFRAR '_contexto' (si existe, lo dejamos igual)
         if (respuesta._contexto) {
-          console.log(`  ⏭️ _contexto: NO se cifra (se mantiene igual)`);
+          console.log(` _contexto: NO se cifra (se mantiene igual)`);
           // No hacemos nada con _contexto
         }
 
@@ -3018,13 +3018,13 @@ router.get("/mantenimiento/migrar-respuestas-pqc", async (req, res) => {
 
           cont++;
           totalCamposCifrados += camposEstaRespuesta;
-          console.log(`  ✅ Guardado: ${camposEstaRespuesta} campos cifrados en total`);
+          console.log(` Guardado: ${camposEstaRespuesta} campos cifrados en total`);
         } else {
-          console.log(`  ⏭️ Sin cambios necesarios`);
+          console.log(` Sin cambios necesarios`);
         }
 
       } catch (error) {
-        console.error(`  ❌ Error procesando respuesta:`, error.message);
+        console.error(` Error procesando respuesta:`, error.message);
         errores++;
       }
     }
