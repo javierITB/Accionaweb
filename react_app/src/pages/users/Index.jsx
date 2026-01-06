@@ -3,6 +3,7 @@ import { apiFetch, API_BASE_URL } from '../../utils/api';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import RegisterForm from './components/RegisterForm';
+import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 
 const FormReg = () => {
@@ -18,7 +19,7 @@ const FormReg = () => {
     cargo: '',
     rol: 'user'
   });
-  const [activeTab, setActiveTab] = useState('properties');
+  const [activeTab, setActiveTab] = useState('register');
 
   // ESTADO PARA FILTROS
   const [filters, setFilters] = useState({
@@ -235,19 +236,115 @@ const FormReg = () => {
     }
   };
 
-  const getTabContent = () => (
-    <RegisterForm
-      formData={formData}
-      empresas={empresas}
-      cargos={cargos}
-      roles={roles}
-      onUpdateFormData={updateFormData}
-      onRegister={handleSave}
-      isLoading={isLoading}
-      isEditing={!!editingUser}
-      onCancelEdit={clearForm}
-    />
-  );
+  const getTabContent = () => {
+    if (activeTab === 'register') {
+      return (
+        <RegisterForm
+          formData={formData}
+          empresas={empresas}
+          cargos={cargos}
+          roles={roles}
+          onUpdateFormData={updateFormData}
+          onRegister={handleSave}
+          isLoading={isLoading}
+          isEditing={!!editingUser}
+          onCancelEdit={clearForm}
+        />
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Usuarios registrados {filters.field && `(Filtrado por ${filters.field})`}</h2>
+          {filters.field && (
+            <button
+              onClick={() => setFilters({ field: null, value: null })}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+
+        {users.length === 0 ? (
+          <p className="text-muted-foreground">No hay usuarios registrados.</p>
+        ) : (
+          <div>
+            <table className="min-w-full border border-border rounded-lg">
+              <thead className="bg-muted text-sm text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2 text-left">ID</th>
+                  <th className="px-4 py-2 text-left">Nombre</th>
+                  <th className="px-4 py-2 text-left">Empresa</th>
+                  <th className="px-4 py-2 text-left">Email</th>
+                  <th className="px-4 py-2 text-left">Cargo</th>
+                  <th className="px-4 py-2 text-left">Rol</th>
+                  <th className="px-4 py-2 text-left">Estado</th>
+                  <th className="px-4 py-2 text-left">Creado</th>
+                  <th className="px-4 py-2 text-left">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {filteredUsers.map((u) => (
+                  <tr key={u._id} className="border-t hover:bg-muted/30 transition">
+                    <td className="px-4 py-2 text-xs font-mono text-muted-foreground">{u._id}</td>
+                    <td
+                      className="px-4 py-2 cursor-pointer hover:text-blue-500"
+                      onClick={() => handleFilter('nombre', u.nombre)}
+                    >
+                      {u.nombre} {u.apellido}
+                    </td>
+                    <td
+                      className="px-4 py-2 cursor-pointer hover:text-blue-500 font-medium"
+                      onClick={() => handleFilter('empresa', u.empresa)}
+                    >
+                      {u.empresa || '—'}
+                    </td>
+                    <td className="px-4 py-2">{u.mail}</td>
+                    <td
+                      className="px-4 py-2 cursor-pointer hover:text-blue-500"
+                      onClick={() => handleFilter('cargo', u.cargo)}
+                    >
+                      {u.cargo || '—'}
+                    </td>
+                    <td
+                      className="px-4 py-2 cursor-pointer hover:text-blue-500"
+                      onClick={() => handleFilter('rol', u.rol)}
+                    >
+                      {u.rol || '—'}
+                    </td>
+                    <td className="px-4 py-2">
+                      <span
+                        onClick={() => handleFilter('estado', u.estado)}
+                        className={`px-2 py-1 text-xs rounded-full cursor-pointer ${u.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                          u.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}
+                      >
+                        {u.estado}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex gap-2">
+                        <button onClick={() => { handleEditUser(u); setActiveTab('register'); }} className="text-blue-600 hover:text-blue-800">Editar</button>
+                        <button onClick={() => handleRemoveUser(u._id)} className="text-red-600 hover:text-red-800">Borrar</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredUsers.length === 0 && (
+              <div className="p-4 text-center text-muted-foreground">No hay resultados para este filtro.</div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const mainMarginClass = isMobileScreen ? 'ml-0' : isDesktopOpen ? 'ml-64' : 'ml-16';
 
@@ -298,98 +395,26 @@ const FormReg = () => {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-lg p-6">
-            {getTabContent()}
-          </div>
-
-          <div className="bg-card border border-border rounded-lg mt-8 p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Usuarios registrados {filters.field && `(Filtrado por ${filters.field})`}</h2>
-              {filters.field && (
-                <button
-                  onClick={() => setFilters({ field: null, value: null })}
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  Limpiar filtros
-                </button>
-              )}
+          <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+            <div className="flex gap-2 p-4 bg-muted/20 border-b border-border">
+              <button
+                onClick={() => setActiveTab('register')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'register' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+              >
+                <Icon name="Plus" size={16} className="inline mr-2" />
+                {editingUser ? 'Modificar' : 'Registrar'}
+              </button>
+              <button
+                onClick={() => setActiveTab('list')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+              >
+                <Icon name="List" size={16} className="inline mr-2" />
+                Lista ({users.length})
+              </button>
             </div>
-
-            {users.length === 0 ? (
-              <p className="text-muted-foreground">No hay usuarios registrados.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full border border-border rounded-lg">
-                  <thead className="bg-muted text-sm text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-2 text-left">ID</th>
-                      <th className="px-4 py-2 text-left">Nombre</th>
-                      <th className="px-4 py-2 text-left">Empresa</th>
-                      <th className="px-4 py-2 text-left">Email</th>
-                      <th className="px-4 py-2 text-left">Cargo</th>
-                      <th className="px-4 py-2 text-left">Rol</th>
-                      <th className="px-4 py-2 text-left">Estado</th>
-                      <th className="px-4 py-2 text-left">Creado</th>
-                      <th className="px-4 py-2 text-left">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {filteredUsers.map((u) => (
-                      <tr key={u._id} className="border-t hover:bg-muted/30 transition">
-                        <td className="px-4 py-2 text-xs font-mono text-muted-foreground">{u._id}</td>
-                        <td
-                          className="px-4 py-2 cursor-pointer hover:text-blue-500"
-                          onClick={() => handleFilter('nombre', u.nombre)}
-                        >
-                          {u.nombre} {u.apellido}
-                        </td>
-                        <td
-                          className="px-4 py-2 cursor-pointer hover:text-blue-500 font-medium"
-                          onClick={() => handleFilter('empresa', u.empresa)}
-                        >
-                          {u.empresa || '—'}
-                        </td>
-                        <td className="px-4 py-2">{u.mail}</td>
-                        <td
-                          className="px-4 py-2 cursor-pointer hover:text-blue-500"
-                          onClick={() => handleFilter('cargo', u.cargo)}
-                        >
-                          {u.cargo || '—'}
-                        </td>
-                        <td
-                          className="px-4 py-2 cursor-pointer hover:text-blue-500"
-                          onClick={() => handleFilter('rol', u.rol)}
-                        >
-                          {u.rol || '—'}
-                        </td>
-                        <td className="px-4 py-2">
-                          <span
-                            onClick={() => handleFilter('estado', u.estado)}
-                            className={`px-2 py-1 text-xs rounded-full cursor-pointer ${u.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                              u.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                              }`}
-                          >
-                            {u.estado}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-muted-foreground">
-                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
-                        </td>
-                        <td className="px-4 py-2">
-                          <div className="flex gap-2">
-                            <button onClick={() => handleEditUser(u)} className="text-blue-600 hover:text-blue-800">Editar</button>
-                            <button onClick={() => handleRemoveUser(u._id)} className="text-red-600 hover:text-red-800">Borrar</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {filteredUsers.length === 0 && (
-                  <div className="p-4 text-center text-muted-foreground">No hay resultados para este filtro.</div>
-                )}
-              </div>
-            )}
+            <div className="p-6">
+              {getTabContent()}
+            </div>
           </div>
         </div>
       </main>
