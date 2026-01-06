@@ -391,13 +391,14 @@ router.post("/", uploadMultiple.array('adjuntos'), async (req, res) => {
     }
 
     // Descifrar nombre para notificaciones si está cifrado
-    let nombreUsuarioDescifrado = typeof usuario === 'object' ? usuario.nombre : usuario;
-    if (typeof usuario === 'string' && usuario.includes(':')) {
-      nombreUsuarioDescifrado = decrypt(usuario);
+    let nombreUsuarioDescifrado = usuario?.nombre || 'Usuario';  // ← SOLO CAMBIA ESTA LÍNEA
+
+    if (typeof nombreUsuarioDescifrado === 'string' && nombreUsuarioDescifrado.includes(':')) {
+      nombreUsuarioDescifrado = decrypt(nombreUsuarioDescifrado);
     }
 
     const notifData = {
-      titulo: `${(typeof nombreUsuarioDescifrado === 'string' ? nombreUsuarioDescifrado : nombreUsuarioDescifrado?.nombre || 'Usuario')} de la empresa ${empresaDescifrada} ha levantado un ticket de soporte`,     
+      titulo: `${nombreUsuarioDescifrado} de la empresa ${empresaDescifrada} ha levantado un ticket de soporte`,
       descripcion: adjuntosFiles.length > 0 ? `Incluye ${adjuntosFiles.length} archivo(s)` : "Revisar en panel.",
       prioridad: 2,
       color: "#bb8900ff",
