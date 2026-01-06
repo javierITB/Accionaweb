@@ -843,7 +843,7 @@ const FormPreview = ({ formData }) => {
         adjuntos: []
       };
 
-      console.log('Enviando respuestas base...');
+      console.log('Enviando respuestas base... User Payload:', user);
       const res = await fetch(`${API_BASE_URL}/respuestas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

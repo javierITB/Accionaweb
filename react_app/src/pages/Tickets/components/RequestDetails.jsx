@@ -722,14 +722,53 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
           </div>
         </div>
 
-        {/* Date Info */}
+        {/* Creation Date */}
         <div className="bg-muted/30 p-3 rounded-lg border border-border/50 flex items-start gap-3">
-          <div className="p-2 bg-foreground/5 rounded-full text-foreground">
+          <div className="p-2 bg-primary/10 rounded-full text-primary shrink-0">
             <Icon name="Calendar" size={16} />
           </div>
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Fecha de Creación</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Creado</p>
             <p className="text-sm font-semibold text-foreground">{formatDate(fullRequestData?.submittedAt)}</p>
+          </div>
+        </div>
+
+        {/* Taken Date */}
+        <div className="bg-muted/30 p-3 rounded-lg border border-border/50 flex items-start gap-3">
+          <div className="p-2 bg-blue-500/10 rounded-full text-blue-600 shrink-0">
+            <Icon name="UserCheck" size={16} />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tomado</p>
+            <p className="text-sm font-semibold text-foreground">
+              {fullRequestData?.assignedAt ? formatDate(fullRequestData.assignedAt) : '-'}
+            </p>
+          </div>
+        </div>
+
+        {/* Estimated Date */}
+        <div className="bg-muted/30 p-3 rounded-lg border border-border/50 flex items-start gap-3">
+          <div className="p-2 bg-amber-500/10 rounded-full text-amber-600 shrink-0">
+            <Icon name="Timer" size={16} />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Est. Término</p>
+            <p className="text-sm font-semibold text-foreground">
+              {fullRequestData?.estimatedCompletionAt ? formatDate(fullRequestData.estimatedCompletionAt) : '-'}
+            </p>
+          </div>
+        </div>
+
+        {/* Completion Date */}
+        <div className="bg-muted/30 p-3 rounded-lg border border-border/50 flex items-start gap-3">
+          <div className="p-2 bg-green-500/10 rounded-full text-green-600 shrink-0">
+            <Icon name="CheckCircle" size={16} />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Término Real</p>
+            <p className="text-sm font-semibold text-foreground">
+              {fullRequestData?.finalizedAt ? formatDate(fullRequestData.finalizedAt) : (fullRequestData?.approvedAt ? formatDate(fullRequestData.approvedAt) : '-')}
+            </p>
           </div>
         </div>
       </div>
@@ -797,9 +836,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
     </div>
   );
-
-
-
 
   const renderResponsesTab = () => {
     const responses = fullRequestData?.responses || {};
@@ -936,9 +972,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
               <span>Última actualización: {formatDate(fullRequestData?.submittedAt)}</span>
             </div>
             <div className="flex items-center space-x-3">
-
-
-
 
               {(fullRequestData?.status === 'pendiente' || (fullRequestData?.status === 'en_revision' && !isUserAssigned())) && (
                 <Button

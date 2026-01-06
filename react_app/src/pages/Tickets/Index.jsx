@@ -133,13 +133,15 @@ const RequestTracking = () => {
             reviewedAt: r.reviewedAt,
             approvedAt: r.approvedAt,
             finalizedAt: r.finalizedAt,
+            assignedAt: r.assignedAt,
+            estimatedCompletionAt: r.estimatedCompletionAt,
             formTitle: r.formTitle,
             status: r.status,
             trabajador: r.trabajador,
             rutTrabajador: r.rutTrabajador,
             submittedBy: r.user?.nombre || 'Usuario Desconocido',
             lastUpdated: r.updatedAt || null,
-            assignedTo: r.updatedAt || " - ",
+            assignedTo: r.assignedTo || " - ",
             hasMessages: false,
             company: r.user?.empresa || 'desconocida'
           };
@@ -467,11 +469,11 @@ const RequestTracking = () => {
                   onClick={() => window.location.href = "/ticket-builder"}
                   className="mb-2 md:mb-0 text-xs sm:text-sm"
                 >
-                  Crear Formulario
+                  Crear Ticket
                 </Button>
               </div>
 
-              
+
 
             </div>
           </div>

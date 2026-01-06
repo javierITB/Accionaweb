@@ -768,6 +768,7 @@ router.get("/mini", async (req, res) => {
         estimatedCompletionAt: 1,
         approvedAt: 1,
         finalizedAt: 1,
+        updatedAt: 1,
         adjuntosCount: 1
       })
       .toArray();
@@ -809,6 +810,7 @@ router.get("/mini", async (req, res) => {
         estimatedCompletionAt: answer.estimatedCompletionAt,
         approvedAt: answer.approvedAt,
         finalizedAt: answer.finalizedAt,
+        updatedAt: answer.updatedAt,
         adjuntosCount: answer.adjuntosCount || 0
       };
     });
