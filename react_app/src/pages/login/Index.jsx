@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 // IMPORTACIONES REALES: Necesitas tener 'react-router-dom' instalado
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, Loader, Shield } from 'lucide-react';
+import { apiFetch, API_BASE_URL } from '../../utils/api';
 
 // NOTA IMPORTANTE: Para que la navegación funcione, este componente debe
 // estar envuelto en un componente <BrowserRouter> (o equivalente) en tu aplicación.
@@ -30,9 +31,8 @@ export default function App() {
     setError("");
 
     try {
-      const res = await fetch("https://back-desa.vercel.app/api/auth/verify-login-2fa", {
+      const res = await apiFetch(`${API_BASE_URL}/auth/verify-login-2fa`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email, // Usamos el email guardado del primer paso
           verificationCode: twoFACode
@@ -67,9 +67,8 @@ export default function App() {
     setError("");
 
     try {
-      const res = await fetch("https://back-desa.vercel.app/api/auth/login", {
+      const res = await apiFetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
