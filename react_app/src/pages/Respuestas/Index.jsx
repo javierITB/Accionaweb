@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import { apiFetch, API_BASE_URL } from '../../utils/api';
@@ -14,28 +14,33 @@ const RequestTracking = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const formId = urlParams?.get('id');
 
-  // ESTADOS DEL SIDEBAR
+  // --- ESTADOS DE UI ---
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
-
-  // Estados de la Aplicación
-  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const [resp, setResp] = useState([]);
+
+  // --- ESTADOS DE DATOS ---
+  const [resp, setResp] = useState([]); 
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [messageRequest, setMessageRequest] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showRequestDetails, setShowRequestDetails] = useState(false);
-  const [messageRequest, setMessageRequest] = useState(null);
-  const [viewMode, setViewMode] = useState('grid');
-  const [isLoading, setIsLoading] = useState(false);
 
-  // --- NUEVOS ESTADOS DE PAGINACIÓN ---
+  // --- ESTADOS DE PAGINACIÓN Y FILTROS ---
   const [currentPage, setCurrentPage] = useState(1);
-  const requestsPerPage = 30; // Máximo de solicitudes por página
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [archivedCountServer, setArchivedCountServer] = useState(0);
+  const requestsPerPage = 30;
+  
+  const loadedPages = useRef(new Set());
 
   const [filters, setFilters] = useState({
     search: '',
-    status: '', // Se mantiene como string para filtro único
+    status: '',
     category: '',
     dateRange: '',
     startDate: '',
@@ -44,556 +49,263 @@ const RequestTracking = () => {
     submittedBy: ''
   });
 
-  // EFECTO DE RESIZE
+  // --- EFECTOS DE REDIMENSIONAMIENTO ---
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
       setIsMobileScreen(isMobile);
-
-      if (isMobile) {
-        setIsMobileOpen(false);
-      }
+      if (isMobile) setIsMobileOpen(false);
     };
-
     window.addEventListener('resize', handleResize);
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const toggleSidebar = () => {
-    if (isMobileScreen) {
-      setIsMobileOpen(!isMobileOpen);
-    } else {
-      setIsDesktopOpen(!isDesktopOpen);
+  // --- LÓGICA DE CARGA DE DATOS (ACTIVOS VS ARCHIVADOS) ---
+  const fetchData = async (pageNumber, isBackground = false) => {
+    if (!isBackground && loadedPages.current.has(pageNumber)) return;
+
+    try {
+      if (!isBackground) setIsLoading(true);
+
+      // Determinamos el endpoint según si el filtro "archivado" está activo
+      const isArchivedMode = filters.status === 'archivado';
+      const endpoint = isArchivedMode ? 'archivados' : 'mini';
+      
+      const url = `${API_BASE_URL}/respuestas/${endpoint}?page=${pageNumber}&limit=${requestsPerPage}`;
+      const res = await apiFetch(url);
+
+      if (!res.ok) throw new Error('Error al obtener datos');
+      const result = await res.json();
+
+      // Sincronizamos el contador de archivados si viene en la respuesta del mini
+      if (result.archivedTotal !== undefined) {
+        setArchivedCountServer(result.archivedTotal);
+      }
+
+      // Normalización de datos para RequestCard
+      const normalized = result.data.map(r => ({
+        _id: r._id,
+        formId: r.formId,
+        title: r.title || r.formTitle || "Formulario",
+        formTitle: r.formTitle || r.title,
+        description: r.formTitle || "Formulario de solicitud",
+        submittedAt: r.submittedAt || r.createdAt || null,
+        createdAt: r.createdAt,
+        status: r.status,
+        trabajador: r.trabajador || "",
+        rutTrabajador: r.rutTrabajador || "",
+        submittedBy: r.user?.nombre || r.submittedBy || 'Usuario Desconocido',
+        company: r.user?.empresa || r.company || 'Empresa Desconocida',
+        hasMessages: r.adjuntosCount > 0,
+        updatedAt: r.updatedAt
+      }));
+
+      setResp(prev => {
+        const combined = isBackground && pageNumber === 1 
+          ? [...normalized, ...prev] 
+          : [...prev, ...normalized];
+        const unique = Array.from(new Map(combined.map(item => [item._id, item])).values());
+        return unique.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      });
+
+      setTotalPages(result.pagination.totalPages);
+      setTotalItems(result.pagination.total);
+      loadedPages.current.add(pageNumber);
+
+      // Pre-carga silenciosa de la página siguiente
+      if (!isBackground && pageNumber < result.pagination.totalPages) {
+        const next = pageNumber + 1;
+        if (!loadedPages.current.has(next)) {
+          setTimeout(() => fetchData(next, true), 1000);
+        }
+      }
+
+    } catch (err) {
+      console.error(`Error en fetch:`, err);
+    } finally {
+      if (!isBackground) setIsLoading(false);
     }
   };
 
-  const removeUrlParameter = () => {
-    // 1. Obtiene la URL actual y la elimina de la historia del navegador
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.delete('id');
+  // Reiniciar lista cuando cambia el filtro de estado (Switch entre activos/archivados)
+  useEffect(() => {
+    setResp([]);
+    loadedPages.current.clear();
+    setCurrentPage(1);
+    fetchData(1);
+  }, [filters.status]);
 
-    // 2. Usa history.replaceState para actualizar la URL sin recargar
-    window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search);
-  };
+  // Cargar más datos si cambia la página manualmente
+  useEffect(() => {
+    if (currentPage > 1) fetchData(currentPage);
+  }, [currentPage]);
 
+  // Polling silencioso (solo para activos)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (filters.status !== 'archivado') fetchData(1, true);
+    }, 45000);
+    return () => clearInterval(interval);
+  }, [filters.status]);
 
-  const handleCloseRequestDetails = () => {
-    setShowRequestDetails(false);
-    setSelectedRequest(null); // Limpiar la solicitud seleccionada
-    removeUrlParameter();    // Eliminar el parámetro 'id' de la URL
-  };
-
-  const handleNavigation = (path) => {
-    if (isMobileScreen) {
-      setIsMobileOpen(false);
-    }
-    console.log(`Navegando a: ${path}`);
-  };
-
-  const updateRequest = (updatedRequest) => {
-    setResp(prevResp =>
-      prevResp.map(req =>
-        req._id === updatedRequest._id ? updatedRequest : req
-      )
-    );
-    setSelectedRequest(updatedRequest);
-  };
-
+  // Manejo de ID por URL
   useEffect(() => {
     if (!formId || resp.length === 0) return;
-
-    const found = resp.find(
-      (r) => String(r._id) === formId || String(r.formId) === formId
-    );
-
+    const found = resp.find(r => String(r._id) === formId || String(r.formId) === formId);
     if (found) {
       setSelectedRequest(found);
       setShowRequestDetails(true);
     }
   }, [formId, resp]);
 
-  useEffect(() => {
-    // 1. Definimos la función con la lógica (fuera del intervalo)
-    const fetchData = async () => {
-      try {
-        const resResp = await apiFetch(`${API_BASE_URL}/respuestas/mini`);
-
-        if (!resResp.ok) {
-          throw new Error('Error al obtener datos del servidor');
-        }
-
-        const responses = await resResp.json();
-
-        const normalized = responses.map(r => {
-          return {
-            _id: r._id,
-            formId: r.formId,
-            title: r.title || r.formTitle || "formulario",
-            submittedAt: r.submittedAt || r.createdAt || null,
-            createdAt: r.createdAt,
-            reviewedAt: r.reviewedAt,
-            approvedAt: r.approvedAt,
-            finalizedAt: r.finalizedAt,
-            formTitle: r.formTitle,
-            status: r.status,
-            trabajador: r.trabajador,
-            rutTrabajador: r.rutTrabajador,
-            submittedBy: r.user?.nombre || 'Usuario Desconocido',
-            lastUpdated: r.updatedAt || null,
-            assignedTo: r.updatedAt || " - ",
-            hasMessages: false,
-            company: r.user?.empresa || 'desconocida'
-          };
-        });
-
-        setResp(normalized);
-
-      } catch (err) {
-        console.error('Error cargando formularios:', err);
-      }
-    };
-
-    fetchData();
-    const intervalId = setInterval(fetchData, 30000);
-    return () => clearInterval(intervalId);
-
-  }, []);
-
-  const mockStats = {
-    total: resp?.length || 0,
-    pending: resp?.filter(r => r.status === 'pendiente')?.length || 0,
-    inReview: resp?.filter(r => r.status === 'en_revision')?.length || 0,
-    approved: resp?.filter(r => r.status === 'aprobado')?.length || 0,
-    rejected: resp?.filter(r => r.status === 'firmado')?.length || 0, // Ajustado 'rechazado' a 'firmado' según tu StatsOverview
-    finalized: resp?.filter(r => r.status === 'finalizado')?.length || 0,
-    archived: resp?.filter(r => r.status === 'archivado')?.length || 0,
-  };
-
-  // --- NUEVA LÓGICA: Manejo de filtro desde las tarjetas de estadísticas ---
-  const handleStatusFilter = (statusValue) => {
-    // Si es null (click en tarjeta Total), limpiamos el filtro de estado
-    if (statusValue === null) {
-      setFilters(prev => ({ ...prev, status: '' }));
-    } else {
-      setFilters(prev => ({
-        ...prev,
-        // Toggle: Si ya está seleccionado, lo quitamos. Si no, lo ponemos.
-        status: prev.status === statusValue ? '' : statusValue
-      }));
-    }
-    setCurrentPage(1); // Resetear a la página 1 al cambiar el filtro
-  };
-
-  // --- LÓGICA DE FILTRADO (Ahora con useMemo para optimización) ---
-  const filteredRequests = useMemo(() => {
-    // Es buena práctica revertir el array antes de filtrar para que el nuevo aparezca primero
-    // Y luego aplicar el filtro
-    const requestsToFilter = [...resp].reverse();
-
-    return requestsToFilter.filter(request => {
-      if (filters?.search) {
-        const searchTerm = filters.search.toLowerCase();
-        const matchesSearch =
-          request?.title?.toLowerCase()?.includes(searchTerm) ||
-          request?.company?.toLowerCase()?.includes(searchTerm) ||
-          request?.submittedBy?.toLowerCase()?.includes(searchTerm) ||
-          request?.trabajador?.toLowerCase()?.includes(searchTerm) ||
-          request?.rutTrabajador?.toLowerCase()?.includes(searchTerm) ||
-          request?.userEmail?.toLowerCase()?.includes(searchTerm) ||
-          request?._id?.toLowerCase()?.includes(searchTerm) ||
-          request?.detalles?.toLowerCase()?.includes(searchTerm) ||
-          request?.searchData?.includes(searchTerm);
-
-        if (!matchesSearch) return false;
-      }
-
-      // Filtro de Status
-      // Si el filtro de estado está vacío, mostramos todos (incluyendo 'archivado' si no hay otro filtro)
-      if (filters?.status) {
-        if (request?.status !== filters?.status) return false;
-      } else {
-        // Por defecto, si no hay filtro de estado, no mostramos 'archivado'
-        if (request.status === 'archivado') return false;
-      }
-
-
-      if (filters?.category) {
-        const requestCategory = request?.form?.category || '';
-        if (requestCategory.toLowerCase() !== filters.category.toLowerCase()) return false;
-      }
-
-      if (filters?.company && (!request?.company || !request?.company?.toLowerCase()?.includes(filters?.company?.toLowerCase()))) {
-        return false;
-      }
-
-      if (filters?.submittedBy && (!request?.submittedBy || !request?.submittedBy?.toLowerCase()?.includes(filters?.submittedBy?.toLowerCase()))) {
-        return false;
-      }
-
-      const requestDate = new Date(request.submittedAt || request.createdAt);
-
-      if (filters?.dateRange) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        let startPeriod, endPeriod;
-
-        switch (filters.dateRange) {
-          case 'today':
-            startPeriod = new Date(today);
-            endPeriod = new Date(today);
-            endPeriod.setHours(23, 59, 59, 999);
-            break;
-          case 'week':
-            startPeriod = new Date(today);
-            startPeriod.setDate(today.getDate() - today.getDay());
-            endPeriod = new Date(today);
-            endPeriod.setDate(today.getDate() + (6 - today.getDay()));
-            endPeriod.setHours(23, 59, 59, 999);
-            break;
-          case 'month':
-            startPeriod = new Date(today.getFullYear(), today.getMonth(), 1);
-            endPeriod = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-            endPeriod.setHours(23, 59, 59, 999);
-            break;
-          case 'quarter':
-            const quarter = Math.floor(today.getMonth() / 3);
-            startPeriod = new Date(today.getFullYear(), quarter * 3, 1);
-            endPeriod = new Date(today.getFullYear(), (quarter + 1) * 3, 0);
-            endPeriod.setHours(23, 59, 59, 999);
-            break;
-          case 'year':
-            startPeriod = new Date(today.getFullYear(), 0, 1);
-            endPeriod = new Date(today.getFullYear(), 11, 31);
-            endPeriod.setHours(23, 59, 59, 999);
-            break;
-          default:
-            startPeriod = null;
-            endPeriod = null;
-        }
-
-        if (startPeriod && endPeriod && (requestDate < startPeriod || requestDate > endPeriod)) {
-          return false;
-        }
-      }
-
-      if (filters?.startDate) {
-        const startDate = new Date(filters.startDate);
-        if (requestDate < startDate) return false;
-      }
-
-      if (filters?.endDate) {
-        const endDate = new Date(filters.endDate);
-        endDate.setHours(23, 59, 59, 999);
-        if (requestDate > endDate) return false;
-      }
-
-      return true;
-    });
-  }, [resp, filters]); // Se recalcula si resp o filters cambian
-
-  const handleRemove = async (request) => {
-    const requestId = request?._id
-    if (!requestId) return alert("ID no válido para eliminar.");
-
-    const confirmDelete = window.confirm("¿Seguro que deseas eliminar esta solicitud?");
-    if (!confirmDelete) return;
-
-    try {
-      setIsLoading(true);
-      const res = await apiFetch(`${API_BASE_URL}/respuestas/${requestId}`, {
-        method: 'DELETE',
-      });
-
-      if (!res.ok) throw new Error('Error al eliminar la solicitud.');
-
-      setResp((prev) => prev.filter((r) => r._id !== requestId));
-
-    } catch (err) {
-      console.error(err);
-      alert("No se pudo eliminar la solicitud.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleViewDetails = (request) => {
-    setSelectedRequest(request);
-    setShowRequestDetails(true);
-  };
-
-  const handleSendMessage = (request) => {
-    setMessageRequest(request);
-    setShowMessageModal(true);
-  };
-
-  const handleSendMessageSubmit = async (messageData) => {
-    console.log('Sending message:', messageData);
+  // --- HANDLERS ---
+  const handleStatusFilter = (status) => {
+    setFilters(prev => ({ ...prev, status: prev.status === status ? '' : status }));
   };
 
   const handleClearFilters = () => {
-    setFilters({
-      search: '',
-      trabajador: '',
-      rutTrabajador: '',
-      status: '',
-      category: '',
-      dateRange: '',
-      startDate: '',
-      endDate: '',
-      company: '',
-      submittedBy: ''
-    });
-    setCurrentPage(1); // Resetear a la página 1 al limpiar filtros
+    setFilters({ search: '', status: '', category: '', dateRange: '', startDate: '', endDate: '', company: '', submittedBy: '' });
   };
 
-  // --- LÓGICA DE PAGINACIÓN ---
+  const updateRequest = (updatedRequest) => {
+    setResp(prev => prev.map(req => req._id === updatedRequest._id ? updatedRequest : req));
+    setSelectedRequest(updatedRequest);
+  };
 
-  // Calcula el total de páginas
-  const totalPages = Math.ceil(filteredRequests.length / requestsPerPage);
+  const handleCloseRequestDetails = () => {
+    setShowRequestDetails(false);
+    setSelectedRequest(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('id');
+    window.history.replaceState({}, document.title, url.pathname + url.search);
+  };
 
-  // Calcula los índices de inicio y fin para la página actual
-  const indexOfLastRequest = currentPage * requestsPerPage;
-  const indexOfFirstRequest = indexOfLastRequest - requestsPerPage;
-
-  // Aplica la paginación para obtener las solicitudes actuales a mostrar
-  const currentRequests = filteredRequests.slice(indexOfFirstRequest, indexOfLastRequest);
-
-  // Funciones para cambiar de página
-  const paginate = (pageNumber) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
+  const handleRemove = async (request) => {
+    if (!window.confirm("¿Seguro que deseas eliminar esta solicitud?")) return;
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`, { method: 'DELETE' });
+      if (res.ok) setResp(prev => prev.filter(r => r._id !== request._id));
+    } catch (err) {
+      alert("Error al eliminar.");
     }
   };
 
-  const nextPage = () => paginate(currentPage + 1);
-  const prevPage = () => paginate(currentPage - 1);
+  // --- FILTRADO Y PAGINACIÓN DE UI ---
+  const currentRequests = useMemo(() => {
+    const filtered = resp.filter(req => {
+      if (filters.search) {
+        const s = filters.search.toLowerCase();
+        return req.trabajador?.toLowerCase().includes(s) || 
+               req.title?.toLowerCase().includes(s) ||
+               req.company?.toLowerCase().includes(s);
+      }
+      if (filters.status) return req.status === filters.status;
+      return true;
+    });
 
+    const start = (currentPage - 1) * requestsPerPage;
+    return filtered.slice(start, start + requestsPerPage);
+  }, [resp, filters, currentPage]);
 
-  const mainMarginClass = isMobileScreen
-    ? 'ml-0'
-    : isDesktopOpen ? 'lg:ml-64' : 'lg:ml-16';
+  const mockStats = {
+    total: totalItems + (filters.status === 'archivado' ? 0 : archivedCountServer),
+    pending: resp.filter(r => r.status === 'pendiente').length,
+    inReview: resp.filter(r => r.status === 'en_revision').length,
+    approved: resp.filter(r => r.status === 'aprobado').length,
+    rejected: resp.filter(r => r.status === 'firmado').length,
+    finalized: resp.filter(r => r.status === 'finalizado').length,
+    archived: archivedCountServer
+  };
+
+  const mainMarginClass = isMobileScreen ? 'ml-0' : isDesktopOpen ? 'lg:ml-64' : 'lg:ml-16';
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      <Sidebar isCollapsed={!isDesktopOpen} onToggleCollapse={() => setIsDesktopOpen(!isDesktopOpen)} isMobileOpen={isMobileOpen} onNavigate={() => isMobileScreen && setIsMobileOpen(false)} />
 
-      {/* SIDEBAR - RESPONSIVE */}
-      {(isMobileOpen || !isMobileScreen) && (
-        <>
-          <Sidebar
-            isCollapsed={!isDesktopOpen}
-            onToggleCollapse={toggleSidebar}
-            isMobileOpen={isMobileOpen}
-            onNavigate={handleNavigation}
-          />
-
-          {isMobileScreen && isMobileOpen && (
-            <div
-              className="fixed inset-0 bg-foreground/50 z-40 lg:hidden"
-              onClick={toggleSidebar}
-            ></div>
-          )}
-        </>
+      {isMobileScreen && isMobileOpen && (
+        <div className="fixed inset-0 bg-foreground/50 z-40 lg:hidden" onClick={() => setIsMobileOpen(false)}></div>
       )}
 
-      {/* BOTÓN FLOTANTE MÓVIL */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
-          <Button
-            variant="default"
-            size="icon"
-            onClick={toggleSidebar}
-            iconName="Menu"
-            className="w-12 h-12 rounded-full shadow-brand-active"
-          />
+          <Button variant="default" size="icon" onClick={() => setIsMobileOpen(true)} iconName="Menu" className="w-12 h-12 rounded-full shadow-lg" />
         </div>
       )}
 
-      {/* CONTENIDO PRINCIPAL */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
-        <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto">
-
-          {/* HEADER */}
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
-            <div className="min-w-0 flex-1 mb-3 md:mb-0">
-              <div className="flex flex-col">
-                {/* Contenedor del Título y el Badge alineados */}
-                <div className="flex items-center gap-3">
-                  {/* Badge Circular */}
-                  <span className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
-                    {filteredRequests.length}
-                  </span>
-
-                  {/* Título */}
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight">
-                    Seguimiento de Solicitudes
-                  </h1>
-                </div>
-
-                {/* Subtítulo (opcional, para que quede igual a tu foto) */}
-                <p className="text-muted-foreground mt-1 text-sm lg:text-base ml-11">
-                  Monitorea el estado de todas tus solicitudes con cronología detallada
-                </p>
+        <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
+          
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center justify-center min-w-8 h-8 px-2 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
+                  {totalItems}
+                </span>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
+                  Seguimiento de Solicitudes
+                </h1>
               </div>
+              <p className="text-muted-foreground mt-1 text-sm lg:text-base ml-11">
+                {filters.status === 'archivado' ? 'Historial de solicitudes archivadas' : 'Monitorea el estado de tus solicitudes activas'}
+              </p>
             </div>
 
-            {/* BOTONES DE CONTROL (Paginación + Vista) */}
-            <div className="hidden lg:flex items-center space-x-4">
-
-              {/* CONTROL DE PAGINACIÓN */}
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground border border-border rounded-lg p-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={prevPage}
-                  disabled={currentPage === 1}
-                  iconName="ChevronLeft"
-                  iconSize={14}
-                  className="px-2"
-                />
-                <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={nextPage}
-                  disabled={currentPage === totalPages || totalPages === 0}
-                  iconName="ChevronRight"
-                  iconSize={14}
-                  className="px-2"
-                />
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground border border-border rounded-lg p-1 bg-card">
+                <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} iconName="ChevronLeft" />
+                <span className="font-medium">{currentPage} / {totalPages}</span>
+                <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} iconName="ChevronRight" />
               </div>
-
-              {/* VISTA GRID/LISTA */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
-                <div className="flex items-center border border-border rounded-lg">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    iconName="Grid3X3"
-                    iconSize={14}
-                    className="rounded-r-none px-2 sm:px-3"
-                  />
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    iconName="List"
-                    iconSize={14}
-                    className="rounded-l-none border-l px-2 sm:px-3"
-                  />
-                </div>
+              <div className="flex items-center border border-border rounded-lg bg-card">
+                <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')} iconName="Grid3X3" className="rounded-r-none" />
+                <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('list')} iconName="List" className="rounded-l-none border-l" />
               </div>
-
             </div>
           </div>
 
-          {/* STATS OVERVIEW (Ahora con filtros) */}
-          <StatsOverview
-            stats={mockStats}
-            allForms={resp}
-            filters={filters} // Pasamos los filtros actuales
-            onFilterChange={handleStatusFilter} // Pasamos la función de cambio
-          />
+          <StatsOverview stats={mockStats} allForms={resp} filters={filters} onFilterChange={handleStatusFilter} />
 
-          {/* FILTER PANEL */}
-          <FilterPanel
-            filters={filters}
-            onFilterChange={setFilters}
-            onClearFilters={handleClearFilters}
-            isVisible={showFilters}
-            onToggle={() => setShowFilters(!showFilters)}
-          />
+          <FilterPanel filters={filters} onFilterChange={setFilters} onClearFilters={handleClearFilters} isVisible={showFilters} onToggle={() => setShowFilters(!showFilters)} />
 
-          {/* LISTA DE SOLICITUDES (PAGINADAS) */}
-          <div className={
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6'
-              : 'space-y-2 lg:space-y-4 '
-          }>
-            {isLoading && (
-              <div className="text-center py-8 lg:py-12 col-span-full">
-                <Icon name="Loader2" size={32} className="mx-auto mb-3 lg:mb-4 text-accent animate-spin" />
-                <h3 className="text-lg font-semibold text-foreground">Cargando Solicitudes...</h3>
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
+            {isLoading && resp.length < (currentPage * requestsPerPage) ? (
+              <div className="col-span-full py-12 text-center">
+                <Icon name="Loader2" size={32} className="mx-auto text-accent animate-spin mb-4" />
+                <p className="text-muted-foreground">Cargando solicitudes...</p>
               </div>
-            )}
-
-            {!isLoading && currentRequests?.length > 0 ? (
-              currentRequests?.map((request) => (
-                <RequestCard
-                  key={request?._id || request?.id}
-                  request={request}
-                  onRemove={handleRemove}
-                  onViewDetails={handleViewDetails}
-                  onSendMessage={handleSendMessage}
-                  viewMode={viewMode}
+            ) : currentRequests.length > 0 ? (
+              currentRequests.map(request => (
+                <RequestCard 
+                  key={request._id} 
+                  request={request} 
+                  onRemove={handleRemove} 
+                  onViewDetails={(req) => { setSelectedRequest(req); setShowRequestDetails(true); }} 
+                  onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }} 
                 />
               ))
             ) : (
-              !isLoading && (
-                <div className="text-center py-8 lg:py-12 bg-card border border-border rounded-lg col-span-full">
-                  <Icon name="Search" size={32} className="mx-auto mb-3 lg:mb-4 text-muted-foreground opacity-50 sm:w-12 sm:h-12" />
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-2">No se encontraron solicitudes</h3>
-                  <p className="text-muted-foreground mb-4 text-sm lg:text-base px-4">
-                    Intenta ajustar los filtros o crear una nueva solicitud
-                  </p>
-                </div>
-              ))}
+              <div className="col-span-full py-12 text-center bg-card border border-border rounded-xl">
+                <Icon name="Search" size={40} className="mx-auto text-muted-foreground opacity-20 mb-4" />
+                <p className="text-muted-foreground">No se encontraron solicitudes</p>
+              </div>
+            )}
           </div>
 
-          {/* CONTROL DE PAGINACIÓN INFERIOR (Opcional) */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-4 pt-4 pb-8">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={prevPage}
-                disabled={currentPage === 1}
-                iconName="ChevronLeft"
-                iconSize={16}
-              >
-                Anterior
-              </Button>
-              <span className="text-sm font-medium text-foreground">
-                Página {currentPage} de {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={nextPage}
-                disabled={currentPage === totalPages}
-                iconName="ChevronRight"
-                iconSize={16}
-                iconPosition="right"
-              >
-                Siguiente
-              </Button>
+            <div className="flex justify-center items-center space-x-4 py-8">
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1}>Anterior</Button>
+              <span className="text-sm font-medium">Página {currentPage} de {totalPages}</span>
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages}>Siguiente</Button>
             </div>
           )}
-
         </div>
       </main>
 
-      {/* MODALES */}
-      <MessageModal
-        isOpen={showMessageModal}
-        onClose={() => setShowMessageModal(false)}
-        request={messageRequest}
-        onSendMessage={handleSendMessageSubmit}
-        formId={formId}
-      />
-      <RequestDetails
-        request={selectedRequest}
-        isVisible={showRequestDetails}
-        onClose={handleCloseRequestDetails}
-        onUpdate={updateRequest}
-        onSendMessage={handleSendMessage}
-      />
+      <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} request={messageRequest} formId={formId} onSendMessage={console.log} />
+      <RequestDetails request={selectedRequest} isVisible={showRequestDetails} onClose={handleCloseRequestDetails} onUpdate={updateRequest} onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }} />
     </div>
   );
 };
