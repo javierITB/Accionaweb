@@ -56,7 +56,7 @@ const RequestTracking = () => {
 
         const [resResp, resForms] = await Promise.all([
           apiFetch(`${API_BASE_URL}/respuestas/mail/${mail}`),
-          fetch(`${API_BASE_URL}/forms`)
+          apiFetch(`${API_BASE_URL}/forms`)
         ]);
 
         console.log('RecentActivityCard - Fetch Status:', {

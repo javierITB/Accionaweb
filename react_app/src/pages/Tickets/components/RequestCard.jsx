@@ -196,6 +196,26 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
         </div>
       </div>
 
+      {/* Dates Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4 pt-3 border-t border-border text-xs text-muted-foreground">
+        <div>
+          <span className="font-semibold block">Creado:</span>
+          {formatDate(currentRequest?.submittedAt)}
+        </div>
+        <div>
+          <span className="font-semibold block">Tomado:</span>
+          {currentRequest?.assignedAt ? formatDate(currentRequest.assignedAt) : '-'}
+        </div>
+        <div>
+          <span className="font-semibold block">Est. Término:</span>
+          {currentRequest?.estimatedCompletionAt ? formatDate(currentRequest.estimatedCompletionAt) : '-'}
+        </div>
+        <div>
+          <span className="font-semibold block">Término Real:</span>
+          {currentRequest?.finalizedAt ? formatDate(currentRequest.finalizedAt) : (currentRequest?.approvedAt ? formatDate(currentRequest.approvedAt) : '-')}
+        </div>
+      </div>
+
       {/* Actions - RESPONSIVE */}
       <div className="flex items-center justify-between mt-4 sm:mt-3">
         <div className="flex-1">

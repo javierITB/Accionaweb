@@ -467,11 +467,11 @@ const RequestTracking = () => {
                   onClick={() => window.location.href = "/ticket-builder"}
                   className="mb-2 md:mb-0 text-xs sm:text-sm"
                 >
-                  Crear Formulario
+                  Crear Ticket
                 </Button>
               </div>
 
-              
+
 
             </div>
           </div>
