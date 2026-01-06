@@ -639,10 +639,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       return false;
     }
 
-    try {
-      const token = localStorage.getItem('token'); // Ajusta según tu auth
-      let successfulUploads = 0;
+    let successfulUploads = 0;
 
+    try {
       for (let i = 0; i < correctedFiles.length; i++) {
         const file = correctedFiles[i];
         const formData = new FormData();
@@ -657,11 +656,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
         console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
 
-        const response = await fetch(`${API_BASE_URL}/respuestas/upload-corrected-files`, {
+        const response = await apiFetch(`${API_BASE_URL}/respuestas/upload-corrected-files`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
           body: formData
         });
 
@@ -748,12 +744,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // 3. APROBAR DESPUÉS DE SUBIR LOS ARCHIVOS
-      const token = localStorage.getItem('token');
-
-      const approveResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}/approve`, {
+      const approveResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/approve`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({})
@@ -788,10 +781,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
           if (retry) {
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            const retryResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}/approve`, {
+            const retryResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/approve`, {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({})
