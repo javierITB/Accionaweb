@@ -813,7 +813,7 @@ router.get("/mini", async (req, res) => {
     const collection = req.db.collection("respuestas");
 
     // Ejecutamos la cuenta total y la búsqueda en paralelo para mayor velocidad
-    const [answers, totalCount] = await Promise.all([
+    const [answers, totalCount, statusCounts] = await Promise.all([
       collection.find({})
         .sort({ createdAt: -1 }) // Importante: traer los más nuevos primero
         .skip(skip)
@@ -831,7 +831,10 @@ router.get("/mini", async (req, res) => {
           adjuntosCount: 1
         })
         .toArray(),
-      collection.countDocuments({})
+      collection.countDocuments({}),
+      collection.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } }
+      ]).toArray()
     ]);
 
     const { decrypt } = require('../utils/seguridad.helper');
@@ -884,6 +887,15 @@ router.get("/mini", async (req, res) => {
         page: page,
         limit: limit,
         totalPages: Math.ceil(totalCount / limit)
+      },
+      stats: {
+        total: totalCount,
+        pending: statusCounts.find(s => s._id === 'pendiente')?.count || 0,
+        inReview: statusCounts.find(s => s._id === 'en_revision')?.count || 0,
+        approved: statusCounts.find(s => s._id === 'aprobado')?.count || 0,
+        rejected: statusCounts.find(s => s._id === 'firmado')?.count || 0,
+        finalized: statusCounts.find(s => s._id === 'finalizado')?.count || 0,
+        archived: statusCounts.find(s => s._id === 'archivado')?.count || 0
       }
     });
   } catch (err) {
