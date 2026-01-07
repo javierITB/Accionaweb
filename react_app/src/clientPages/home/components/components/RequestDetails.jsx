@@ -30,7 +30,13 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
           // Solo actualizar si el status cambió
           if (updatedRequest.status !== request.status) {
             if (onUpdate) {
-              onUpdate(updatedRequest);
+              const normalizedRequest = {
+                ...updatedRequest,
+                submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || request.submittedBy || 'Usuario Desconocido',
+                company: updatedRequest.user?.empresa || updatedRequest.company || request.company || 'Empresa Desconocida',
+                submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt || request.submittedAt
+              };
+              onUpdate(normalizedRequest);
             }
           }
         }
@@ -308,7 +314,13 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
         if (onUpdate) {
           const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
           const updatedRequest = await updatedResponse.json();
-          onUpdate(updatedRequest);
+          const normalizedRequest = {
+            ...updatedRequest,
+            submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || request.submittedBy || 'Usuario Desconocido',
+            company: updatedRequest.user?.empresa || updatedRequest.company || request.company || 'Empresa Desconocida',
+            submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt || request.submittedAt
+          };
+          onUpdate(normalizedRequest);
         }
 
         event.target.value = '';

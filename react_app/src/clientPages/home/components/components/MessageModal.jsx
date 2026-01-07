@@ -58,6 +58,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
     if (!isOpen || !id) return;
 
     // Resetear estados al abrir el modal (COPIADO)
+    setMessages([]);
     shouldAutoScroll.current = true;
     lastMessageCount.current = 0;
     isFirstLoad.current = true;
