@@ -137,7 +137,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       if (response.ok) {
         const data = await response.json();
         let extractedAdjuntos = [];
-        if (data && Array.isArray(data) && data.length > 0 && data[0].adjuntos) {
+        if (data && Array.isArray(data) && data.length > 0 && data[0]?.adjuntos) {
           extractedAdjuntos = data[0].adjuntos;
         } else if (data && data.adjuntos) {
           extractedAdjuntos = data.adjuntos;
@@ -288,8 +288,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       if (response.ok) {
         const result = await response.json();
         if (onUpdate && result.updatedRequest) {
-          onUpdate(result.updatedRequest);
-          setFullRequestData(result.updatedRequest);
+          const normalizedRequest = {
+            ...result.updatedRequest,
+            submittedBy: result.updatedRequest.user?.nombre || result.updatedRequest.submittedBy || 'Usuario Desconocido',
+            company: result.updatedRequest.user?.empresa || result.updatedRequest.company || 'Empresa Desconocida',
+            submittedAt: result.updatedRequest.submittedAt || result.updatedRequest.createdAt
+          };
+          onUpdate(normalizedRequest);
+          setFullRequestData(normalizedRequest);
         }
         alert(`Estado cambiado a "${newStatus}"`);
       } else {
@@ -794,7 +800,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
               if (onUpdate) {
                 const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
                 const updatedRequest = await updatedResponse.json();
-                onUpdate(updatedRequest);
+                const normalizedRequest = {
+                  ...updatedRequest,
+                  submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
+                  company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
+                  submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
+                };
+                onUpdate(normalizedRequest);
               }
               alert('Aprobado en reintento');
             } else {
@@ -824,12 +836,20 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}/finalized`);
+      const approveResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/finalized`);
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
-          const updatedRequest = await updatedResponse.json();
-          onUpdate(updatedRequest);
+          const updatedResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+          if (updatedResponse.ok) {
+            const updatedRequest = await updatedResponse.json();
+            const normalizedRequest = {
+              ...updatedRequest,
+              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
+              company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
+              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
+            };
+            onUpdate(normalizedRequest);
+          }
         }
         alert('Finalizado correctamente');
       } else {
@@ -849,12 +869,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     if (!confirm('¿Estás seguro de que quieres archivar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}/archived`);
+      const approveResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/archived`);
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
-          const updatedRequest = await updatedResponse.json();
-          onUpdate(updatedRequest);
+          const updatedResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+          if (updatedResponse.ok) {
+            const updatedRequest = await updatedResponse.json();
+            onUpdate(updatedRequest);
+          }
         }
         alert('Archivado correctamente');
       } else {
@@ -1525,7 +1547,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     <div className={containerClass}>
       <div className={modalClass}>
 
-        <div className="sticky top-0 bg-card border-b border-border z-10">2
+        <div className="sticky top-0 bg-card border-b border-border z-10">
           <div className="flex items-center justify-between p-6 pb-2">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
