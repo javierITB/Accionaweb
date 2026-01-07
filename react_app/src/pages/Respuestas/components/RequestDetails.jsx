@@ -137,7 +137,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       if (response.ok) {
         const data = await response.json();
         let extractedAdjuntos = [];
-        if (data && Array.isArray(data) && data.length > 0 && data[0].adjuntos) {
+        if (data && Array.isArray(data) && data.length > 0 && data[0]?.adjuntos) {
           extractedAdjuntos = data[0].adjuntos;
         } else if (data && data.adjuntos) {
           extractedAdjuntos = data.adjuntos;
