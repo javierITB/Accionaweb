@@ -1547,7 +1547,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     <div className={containerClass}>
       <div className={modalClass}>
 
-        <div className="sticky top-0 bg-card border-b border-border z-10">2
+        <div className="sticky top-0 bg-card border-b border-border z-10">
           <div className="flex items-center justify-between p-6 pb-2">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
