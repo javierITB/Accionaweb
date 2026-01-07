@@ -22,7 +22,7 @@ const RequestTracking = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   // --- ESTADOS DE DATOS ---
-  const [resp, setResp] = useState([]); 
+  const [resp, setResp] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [messageRequest, setMessageRequest] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,8 +34,9 @@ const RequestTracking = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [archivedCountServer, setArchivedCountServer] = useState(0);
+  const [serverStats, setServerStats] = useState(null);
   const requestsPerPage = 30;
-  
+
   const loadedPages = useRef(new Set());
 
   const [filters, setFilters] = useState({
@@ -71,7 +72,7 @@ const RequestTracking = () => {
       // Determinamos el endpoint según si el filtro "archivado" está activo
       const isArchivedMode = filters.status === 'archivado';
       const endpoint = isArchivedMode ? 'archivados' : 'mini';
-      
+
       const url = `${API_BASE_URL}/respuestas/${endpoint}?page=${pageNumber}&limit=${requestsPerPage}`;
       const res = await apiFetch(url);
 
@@ -81,6 +82,9 @@ const RequestTracking = () => {
       // Sincronizamos el contador de archivados si viene en la respuesta del mini
       if (result.archivedTotal !== undefined) {
         setArchivedCountServer(result.archivedTotal);
+      }
+      if (result.stats) {
+        setServerStats(result.stats);
       }
 
       // Normalización de datos para RequestCard
@@ -102,8 +106,8 @@ const RequestTracking = () => {
       }));
 
       setResp(prev => {
-        const combined = isBackground && pageNumber === 1 
-          ? [...normalized, ...prev] 
+        const combined = isBackground && pageNumber === 1
+          ? [...normalized, ...prev]
           : [...prev, ...normalized];
         const unique = Array.from(new Map(combined.map(item => [item._id, item])).values());
         return unique.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -196,9 +200,9 @@ const RequestTracking = () => {
     const filtered = resp.filter(req => {
       if (filters.search) {
         const s = filters.search.toLowerCase();
-        return req.trabajador?.toLowerCase().includes(s) || 
-               req.title?.toLowerCase().includes(s) ||
-               req.company?.toLowerCase().includes(s);
+        return req.trabajador?.toLowerCase().includes(s) ||
+          req.title?.toLowerCase().includes(s) ||
+          req.company?.toLowerCase().includes(s);
       }
       if (filters.status) return req.status === filters.status;
       return true;
@@ -208,7 +212,7 @@ const RequestTracking = () => {
     return filtered.slice(start, start + requestsPerPage);
   }, [resp, filters, currentPage]);
 
-  const mockStats = {
+  const mockStats = serverStats || {
     total: totalItems + (filters.status === 'archivado' ? 0 : archivedCountServer),
     pending: resp.filter(r => r.status === 'pendiente').length,
     inReview: resp.filter(r => r.status === 'en_revision').length,
@@ -237,7 +241,7 @@ const RequestTracking = () => {
 
       <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
-          
+
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-3">
@@ -278,12 +282,12 @@ const RequestTracking = () => {
               </div>
             ) : currentRequests.length > 0 ? (
               currentRequests.map(request => (
-                <RequestCard 
-                  key={request._id} 
-                  request={request} 
-                  onRemove={handleRemove} 
-                  onViewDetails={(req) => { setSelectedRequest(req); setShowRequestDetails(true); }} 
-                  onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }} 
+                <RequestCard
+                  key={request._id}
+                  request={request}
+                  onRemove={handleRemove}
+                  onViewDetails={(req) => { setSelectedRequest(req); setShowRequestDetails(true); }}
+                  onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }}
                 />
               ))
             ) : (

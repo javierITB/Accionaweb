@@ -266,7 +266,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
         const result = await response.json();
         if (onUpdate && result.updatedRequest) {
           onUpdate(result.updatedRequest);
-          setFullRequestData(result.updatedRequest);
+          setFullRequestData(prev => ({
+            ...prev,
+            ...result.updatedRequest,
+            adjuntos: prev.adjuntos // Preserve attachments
+          }));
         }
         alert(`Estado cambiado a "${newStatus}"`);
       } else {
@@ -501,7 +505,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
         const result = await response.json();
         if (onUpdate && result.updatedRequest) {
           onUpdate(result.updatedRequest);
-          setFullRequestData(result.updatedRequest);
+          setFullRequestData(prev => ({
+            ...prev,
+            ...result.updatedRequest,
+            adjuntos: prev.adjuntos // Preserve attachments
+          }));
         }
         alert(`Ticket tomado exitosamente`);
       } else {
