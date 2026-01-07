@@ -850,12 +850,12 @@ router.get("/mini", async (req, res) => {
       };
 
       const trabajador = getDecryptedResponse([
-        "Nombre del trabajador", "NOMBRE DEL TRABAJADOR", "nombre del trabajador", 
+        "Nombre del trabajador", "NOMBRE DEL TRABAJADOR", "nombre del trabajador",
         "Nombre del Trabajador", "Nombre Del trabajador "
       ]);
 
       const rutTrabajador = getDecryptedResponse([
-        "RUT del trabajador", "RUT DEL TRABAJADOR", "rut del trabajador", 
+        "RUT del trabajador", "RUT DEL TRABAJADOR", "rut del trabajador",
         "Rut del Trabajador", "Rut Del trabajador "
       ]);
 
@@ -2907,12 +2907,57 @@ router.put("/:id/status", async (req, res) => {
       _id: new ObjectId(id)
     });
 
+    const descifrarObjeto = (obj) => {
+      if (!obj || typeof obj !== 'object') return obj;
+
+      if (Array.isArray(obj)) {
+        return obj.map(item => {
+          if (typeof item === 'string' && item.includes(':')) {
+            try { return decrypt(item); } catch (error) { return item; }
+          } else if (typeof item === 'object' && item !== null) {
+            return descifrarObjeto(item);
+          }
+          return item;
+        });
+      }
+
+      const resultado = {};
+      for (const key in obj) {
+        const valor = obj[key];
+        if (typeof valor === 'string' && valor.includes(':')) {
+          try { resultado[key] = decrypt(valor); } catch (error) { resultado[key] = valor; }
+        } else if (typeof valor === 'object' && valor !== null) {
+          resultado[key] = descifrarObjeto(valor);
+        } else {
+          resultado[key] = valor;
+        }
+      }
+      return resultado;
+    };
+
+    // Descifrar campos sensibles antes de enviar al frontend
+    if (updatedResponse) {
+      if (updatedResponse.user && typeof updatedResponse.user === 'object') {
+        updatedResponse.user = descifrarObjeto(updatedResponse.user);
+      }
+      if (updatedResponse.responses && typeof updatedResponse.responses === 'object') {
+        updatedResponse.responses = descifrarObjeto(updatedResponse.responses);
+      }
+      if (updatedResponse.mail && typeof updatedResponse.mail === 'string' && updatedResponse.mail.includes(':')) {
+        try { updatedResponse.mail = decrypt(updatedResponse.mail); } catch (e) { }
+      }
+    }
+
     // Enviar notificación al usuario si aplica
     if (status === 'en_revision') {
       await addNotification(req.db, {
-        userId: respuesta?.user?.uid,
+        userId: respuesta?.user?.uid, // Usar el original 'respuesta' que puede tener uid sin descifrar, pero uid suele no estar cifrado en user.uid si es root? 
+        // Nota: Si respuesta.user.uid estaba cifrado, necesitamos usar el descifrado.
+        // Pero respuesta original (antes del update) tenía los datos raw.
+        // Mejor usamos updatedResponse.user.uid que ya intentamos descifrar.
+        userId: updatedResponse?.user?.uid || respuesta?.user?.uid,
         titulo: "Respuestas En Revisión",
-        descripcion: `Formulario ${respuesta.formTitle} ha cambiado su estado a En Revisión.`,
+        descripcion: `Formulario ${updatedResponse.formTitle} ha cambiado su estado a En Revisión.`,
         prioridad: 2,
         icono: 'FileText',
         color: '#00c6f8ff',
