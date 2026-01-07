@@ -1,387 +1,397 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
-import { apiFetch, API_BASE_URL } from '../../../utils/api';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import Icon from "../../../components/AppIcon";
+import Button from "../../../components/ui/Button";
+import { apiFetch, API_BASE_URL } from "../../../utils/api";
 
 const MessageModal = ({ isOpen, onClose, request, formId }) => {
-  const [message, setMessage] = useState('');
-  const [isSending, setIsSending] = useState(false);
-  const [sendToEmail, setSendToEmail] = useState(false);
-  const [user, setUser] = useState(sessionStorage.getItem("user"));
-  const [messages, setMessages] = useState([]);
-  const [activeTab, setActiveTab] = useState('general');
-  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-  const [hasNewMessages, setHasNewMessages] = useState(false);
-  const [userEmail, setUserEmail] = useState(null);
-  const [formName, setFormName] = useState('');
+   const [message, setMessage] = useState("");
+   const [isSending, setIsSending] = useState(false);
+   const [sendToEmail, setSendToEmail] = useState(false);
+   const [user, setUser] = useState(sessionStorage.getItem("user"));
+   const [messages, setMessages] = useState([]);
+   const [activeTab, setActiveTab] = useState("general");
+   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+   const [hasNewMessages, setHasNewMessages] = useState(false);
+   const [userEmail, setUserEmail] = useState(null);
+   const [formName, setFormName] = useState("");
 
-  const chatRef = useRef(null);
-  const shouldAutoScroll = useRef(true);
-  const lastMessageCount = useRef(0);
-  const isFirstLoad = useRef(true);
-  const isTabChange = useRef(false);
+   const chatRef = useRef(null);
+   const shouldAutoScroll = useRef(true);
+   const lastMessageCount = useRef(0);
+   const isFirstLoad = useRef(true);
+   const isTabChange = useRef(false);
 
-  const id = formId || request?._id;
+   const id = formId || request?._id;
 
-  useEffect(() => {
-    if (!id || !request) return;
+   useEffect(() => {
+      if (!id || !request) return;
 
-    if (request.user && request.user.mail) {
-      setUserEmail(request.user.mail);
-    }
-
-    if (request._contexto && request._contexto.formTitle) {
-      setFormName(request._contexto.formTitle);
-    } else if (request.title || request.formTitle) {
-      setFormName(request.title || request.formTitle);
-    }
-  }, [id, request]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setMessages([]);
-    }
-  }, [isOpen, id]);
-
-  const fetchMessages = useCallback(async () => {
-    if (!id) return;
-    try {
-      const res = await apiFetch(`${API_BASE_URL}/respuestas/${id}/chat/admin`);
-      if (!res.ok) throw new Error("Error al obtener chat");
-      const data = await res.json();
-
-      const currentCount = data?.length || 0;
-      const hadNewMessages = currentCount > lastMessageCount.current;
-
-      if (hadNewMessages && !isFirstLoad.current && !isTabChange.current) {
-        setHasNewMessages(true);
+      if (request.user && request.user.mail) {
+         setUserEmail(request.user.mail);
       }
 
-      setMessages(data || []);
-      lastMessageCount.current = currentCount;
-    } catch (err) {
-      console.error("Error cargando mensajes:", err);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (!isOpen || !id) return;
-
-    shouldAutoScroll.current = true;
-    lastMessageCount.current = 0;
-    isFirstLoad.current = true;
-    isTabChange.current = false;
-    setHasNewMessages(false);
-    setShowScrollToBottom(false);
-    setSendToEmail(false);
-
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 3000);
-    return () => clearInterval(interval);
-  }, [isOpen, id, fetchMessages]);
-
-  useEffect(() => {
-    if (isOpen && chatRef.current && messages.length > 0) {
-      if (isFirstLoad.current || isTabChange.current) {
-        setTimeout(() => {
-          if (chatRef.current) {
-            chatRef.current.scrollTop = chatRef.current.scrollHeight;
-            isFirstLoad.current = false;
-            isTabChange.current = false;
-            setHasNewMessages(false);
-          }
-        }, 100);
-      } else if (shouldAutoScroll.current) {
-        const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
-        const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 100;
-
-        if (isNearBottom) {
-          setTimeout(() => {
-            if (chatRef.current) {
-              chatRef.current.scrollTop = chatRef.current.scrollHeight;
-              setHasNewMessages(false);
-            }
-          }, 50);
-        }
-        shouldAutoScroll.current = false;
+      if (request._contexto && request._contexto.formTitle) {
+         setFormName(request._contexto.formTitle);
+      } else if (request.title || request.formTitle) {
+         setFormName(request.title || request.formTitle);
       }
-    }
-  }, [messages, isOpen]);
+   }, [id, request]);
 
-  const handleScroll = useCallback(() => {
-    if (!chatRef.current) return;
+   useEffect(() => {
+      if (isOpen) {
+         setMessages([]);
+      }
+   }, [isOpen, id]);
 
-    const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
-    const isAtBottom = Math.abs(scrollHeight - (scrollTop + clientHeight)) < 10;
+   const fetchMessages = useCallback(async () => {
+      if (!id) return;
+      try {
+         const res = await apiFetch(`${API_BASE_URL}/respuestas/${id}/chat/admin`);
+         if (!res.ok) throw new Error("Error al obtener chat");
+         const data = await res.json();
 
-    setShowScrollToBottom(!isAtBottom);
+         const currentCount = data?.length || 0;
+         const hadNewMessages = currentCount > lastMessageCount.current;
 
-    if (!isAtBottom) {
-      shouldAutoScroll.current = false;
-    } else {
+         if (hadNewMessages && !isFirstLoad.current && !isTabChange.current) {
+            setHasNewMessages(true);
+         }
+
+         setMessages(data || []);
+         lastMessageCount.current = currentCount;
+      } catch (err) {
+         console.error("Error cargando mensajes:", err);
+      }
+   }, [id]);
+
+   useEffect(() => {
+      if (!isOpen || !id) return;
+
+      shouldAutoScroll.current = true;
+      lastMessageCount.current = 0;
+      isFirstLoad.current = true;
+      isTabChange.current = false;
       setHasNewMessages(false);
-    }
-  }, []);
+      setShowScrollToBottom(false);
+      setSendToEmail(false);
 
-  const handleTabChange = (tab) => {
-    isTabChange.current = true;
-    shouldAutoScroll.current = true;
-    setActiveTab(tab);
-    setHasNewMessages(false);
-    setSendToEmail(false);
-  };
+      fetchMessages();
+      const interval = setInterval(fetchMessages, 3000);
+      return () => clearInterval(interval);
+   }, [isOpen, id, fetchMessages]);
 
-  const handleClose = () => {
-    onClose();
-  };
+   useEffect(() => {
+      if (isOpen && chatRef.current && messages.length > 0) {
+         if (isFirstLoad.current || isTabChange.current) {
+            setTimeout(() => {
+               if (chatRef.current) {
+                  chatRef.current.scrollTop = chatRef.current.scrollHeight;
+                  isFirstLoad.current = false;
+                  isTabChange.current = false;
+                  setHasNewMessages(false);
+               }
+            }, 100);
+         } else if (shouldAutoScroll.current) {
+            const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
+            const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 100;
 
-  const filteredMessages = messages.filter(msg => {
-    if (activeTab === 'admin') {
-      return msg.admin === true;
-    }
-    return !msg.admin;
-  });
+            if (isNearBottom) {
+               setTimeout(() => {
+                  if (chatRef.current) {
+                     chatRef.current.scrollTop = chatRef.current.scrollHeight;
+                     setHasNewMessages(false);
+                  }
+               }, 50);
+            }
+            shouldAutoScroll.current = false;
+         }
+      }
+   }, [messages, isOpen]);
 
-  const handleSend = async () => {
-    if (!message.trim() || !id) return;
+   const handleScroll = useCallback(() => {
+      if (!chatRef.current) return;
 
-    setIsSending(true);
+      const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
+      const isAtBottom = Math.abs(scrollHeight - (scrollTop + clientHeight)) < 10;
 
-    try {
-      const autor = sessionStorage.getItem("user") || "Anónimo";
-      const payload = {
-        formId: id,
-        autor,
-        mensaje: message.trim(),
-        admin: activeTab === 'admin',
-        sendToEmail: activeTab !== 'admin' && sendToEmail
-      };
+      setShowScrollToBottom(!isAtBottom);
 
-      const res = await apiFetch(`${API_BASE_URL}/respuestas/chat`, {
-        method: "POST",
-        body: JSON.stringify(payload),
+      if (!isAtBottom) {
+         shouldAutoScroll.current = false;
+      } else {
+         setHasNewMessages(false);
+      }
+   }, []);
+
+   const handleTabChange = (tab) => {
+      isTabChange.current = true;
+      shouldAutoScroll.current = true;
+      setActiveTab(tab);
+      setHasNewMessages(false);
+      setSendToEmail(false);
+   };
+
+   const handleClose = () => {
+      onClose();
+   };
+
+   const filteredMessages = messages.filter((msg) => {
+      if (activeTab === "admin") {
+         return msg.admin === true;
+      }
+      return !msg.admin;
+   });
+
+   const handleSend = async () => {
+      if (!message.trim() || !id) return;
+
+      setIsSending(true);
+
+      try {
+         const autor = sessionStorage.getItem("user") || "Anónimo";
+         const payload = {
+            formId: id,
+            autor,
+            mensaje: message.trim(),
+            admin: activeTab === "admin",
+            sendToEmail: activeTab !== "admin" && sendToEmail,
+         };
+
+         const res = await apiFetch(`${API_BASE_URL}/respuestas/chat`, {
+            method: "POST",
+            body: JSON.stringify(payload),
+         });
+
+         const data = await res.json();
+
+         if (res.ok && data?.data) {
+            shouldAutoScroll.current = true;
+            setMessages((prev) => [...prev, data.data]);
+            setMessage("");
+            setHasNewMessages(false);
+
+            if (sendToEmail) {
+               console.log("Solicitud de envío por correo enviada al backend");
+            }
+
+            setSendToEmail(false);
+         } else {
+            console.error("Error enviando mensaje:", data.error || data);
+         }
+      } catch (err) {
+         console.error("Error enviando mensaje:", err);
+      } finally {
+         setIsSending(false);
+      }
+   };
+
+   const handleKeyPress = (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+         e.preventDefault();
+         handleSend();
+      }
+   };
+
+   const scrollToBottom = () => {
+      shouldAutoScroll.current = true;
+      setHasNewMessages(false);
+      if (chatRef.current) {
+         chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      }
+   };
+
+   const formatMessageTime = (timestamp) =>
+      new Date(timestamp).toLocaleString("es-CL", {
+         day: "2-digit",
+         month: "2-digit",
+         hour: "2-digit",
+         minute: "2-digit",
       });
 
-      const data = await res.json();
+   if (!isOpen || !request) return null;
 
-      if (res.ok && data?.data) {
-        shouldAutoScroll.current = true;
-        setMessages(prev => [...prev, data.data]);
-        setMessage('');
-        setHasNewMessages(false);
+   return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
+         <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl h-[80vh] sm:h-[70vh] flex flex-col">
+            <div className="border-b border-border bg-card rounded-t-lg">
+               <div className="flex items-center justify-between p-4 sm:px-6 pb-2">
+                  <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                     <Icon name="MessageSquare" size={20} className="text-accent flex-shrink-0" />
+                     <div className="min-w-0 flex-1">
+                        <h2 className="text-lg sm:text-xl font-semibold text-foreground truncate">Mensajes</h2>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                           {formName || request?.title || request?.formTitle} {request?.trabajador}
+                        </p>
+                     </div>
+                  </div>
+                  <Button
+                     variant="ghost"
+                     size="icon"
+                     onClick={handleClose}
+                     iconName="X"
+                     iconSize={20}
+                     className="flex-shrink-0 ml-2"
+                  />
+               </div>
 
-        if (sendToEmail) {
-          console.log('Solicitud de envío por correo enviada al backend');
-        }
-
-        setSendToEmail(false);
-      } else {
-        console.error("Error enviando mensaje:", data.error || data);
-      }
-    } catch (err) {
-      console.error("Error enviando mensaje:", err);
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const scrollToBottom = () => {
-    shouldAutoScroll.current = true;
-    setHasNewMessages(false);
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
-    }
-  };
-
-  const formatMessageTime = (timestamp) =>
-    new Date(timestamp).toLocaleString('es-CL', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-  if (!isOpen || !request) return null;
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
-      <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl h-[80vh] sm:h-[70vh] flex flex-col">
-
-        <div className="border-b border-border bg-card rounded-t-lg">
-          <div className="flex items-center justify-between p-4 sm:px-6 pb-2">
-            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-              <Icon name="MessageSquare" size={20} className="text-accent flex-shrink-0" />
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg sm:text-xl font-semibold text-foreground truncate">
-                  Mensajes
-                </h2>
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                  {formName || request?.title || request?.formTitle} {request?.trabajador}
-                </p>
-              </div>
+               <div className="flex px-6 space-x-6">
+                  <button
+                     onClick={() => handleTabChange("general")}
+                     className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 ${
+                        activeTab === "general"
+                           ? "border-primary text-primary"
+                           : "border-transparent text-muted-foreground hover:text-foreground"
+                     }`}
+                     title="Ver mensajes generales"
+                  >
+                     General
+                  </button>
+                  <button
+                     onClick={() => handleTabChange("admin")}
+                     className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+                        activeTab === "admin"
+                           ? "border-error text-error"
+                           : "border-transparent text-muted-foreground hover:text-foreground"
+                     }`}
+                     title="Ver mensajes internos"
+                  >
+                     <Icon name="Lock" size={12} />
+                     Interno
+                  </button>
+               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              iconName="X"
-              iconSize={20}
-              className="flex-shrink-0 ml-2"
-            />
-          </div>
 
-          <div className="flex px-6 space-x-6">
-            <button
-              onClick={() => handleTabChange('general')}
-              className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 ${activeTab === 'general'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              title="Ver mensajes generales"
-            >
-              General
-            </button>
-            <button
-              onClick={() => handleTabChange('admin')}
-              className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${activeTab === 'admin'
-                ? 'border-error text-error'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              title="Ver mensajes internos"
-            >
-              <Icon name="Lock" size={12} />
-              Interno
-            </button>
-          </div>
-        </div>
+            {/* Contenedor de mensajes con altura fija */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+               <div
+                  ref={chatRef}
+                  onScroll={handleScroll}
+                  className={`h-full overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 ${
+                     activeTab === "admin" ? "bg-error/5" : ""
+                  }`}
+               >
+                  {filteredMessages.length > 0 ? (
+                     filteredMessages.map((msg, i) => (
+                        <div key={i} className={`flex ${msg.autor === user ? "justify-end" : "justify-start"}`}>
+                           <div
+                              className={`max-w-[90%] sm:max-w-[85%] rounded-lg px-3 py-2 ${
+                                 msg.autor === user
+                                    ? activeTab === "admin"
+                                       ? "bg-error text-error-foreground"
+                                       : "bg-primary text-primary-foreground"
+                                    : "bg-muted text-muted-foreground"
+                              }`}
+                           >
+                              {msg.autor !== user && (
+                                 <div className="flex items-center justify-between mb-1 sm:mb-2">
+                                    <span className="text-xs sm:text-sm font-medium truncate">{msg.autor}</span>
+                                 </div>
+                              )}
 
-        {/* Contenedor de mensajes con altura fija */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <div
-            ref={chatRef}
-            onScroll={handleScroll}
-            className={`h-full overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 ${activeTab === 'admin' ? 'bg-error/5' : ''}`}
-          >
-            {filteredMessages.length > 0 ? filteredMessages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[90%] sm:max-w-[85%] rounded-lg px-3 py-2 ${msg.autor === user
-                  ? (activeTab === 'admin' ? 'bg-error text-error-foreground' : 'bg-primary text-primary-foreground')
-                  : 'bg-muted text-muted-foreground'
-                  }`}>
-                  {msg.autor !== user && (
-                    <div className="flex items-center justify-between mb-1 sm:mb-2">
-                      <span className="text-xs sm:text-sm font-medium truncate">
-                        {msg.autor}
-                      </span>
-                    </div>
+                              <p className="text-sm sm:text-base mb-1 sm:mb-2 break-words">{msg.mensaje}</p>
+
+                              <span className="text-xs opacity-75 block text-right">{formatMessageTime(msg.fecha)}</span>
+                           </div>
+                        </div>
+                     ))
+                  ) : (
+                     <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                        <Icon
+                           name={activeTab === "admin" ? "Lock" : "MessageCircle"}
+                           size={32}
+                           className="mb-2 opacity-50"
+                        />
+                        <p className="text-sm">No hay mensajes {activeTab === "admin" ? "internos" : "generales"} aún</p>
+                        <p className="text-xs mt-1">Escribe algo para comenzar</p>
+                     </div>
+                  )}
+               </div>
+            </div>
+
+            <div className="border-t border-border bg-card rounded-b-lg">
+               <div className="p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-end space-y-2 sm:space-y-0 sm:space-x-2">
+                     <div className="flex-1 min-w-0">
+                        <textarea
+                           value={message}
+                           onChange={(e) => setMessage(e.target.value)}
+                           onKeyPress={handleKeyPress}
+                           placeholder={
+                              activeTab === "admin"
+                                 ? "Escribir nota interna (solo admins)..."
+                                 : "Escribe tu mensaje aquí..."
+                           }
+                           className="w-full min-h-[60px] sm:min-h-[80px] p-3 border border-border rounded-lg resize-none bg-input text-foreground focus:ring-2 focus:ring-ring text-sm sm:text-base"
+                           disabled={isSending}
+                           rows={3}
+                        />
+                     </div>
+                     <Button
+                        variant={activeTab === "admin" ? "danger" : "default"}
+                        onClick={handleSend}
+                        disabled={!message.trim() || isSending}
+                        loading={isSending}
+                        iconName="Send"
+                        iconPosition="left"
+                        iconSize={16}
+                        className="w-full sm:w-auto sm:min-w-[100px] h-12 sm:h-auto"
+                     >
+                        <span className="hidden xs:inline">Enviar</span>
+                        <span className="xs:hidden">Enviar</span>
+                     </Button>
+                     {/* AGREGADO: Botón para bajar rápido a la derecha del enviar */}
+                     {showScrollToBottom && (
+                        <div className="flex-shrink-0">
+                           <Button
+                              onClick={scrollToBottom}
+                              className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-white"
+                              iconName="ArrowDown"
+                              size="sm"
+                           >
+                              {hasNewMessages && "Nuevos"}
+                           </Button>
+                        </div>
+                     )}
+                  </div>
+
+                  {activeTab !== "admin" && (
+                     <div className="mt-3 flex items-center space-x-2">
+                        <div className="flex items-center">
+                           <input
+                              type="checkbox"
+                              id="send-to-email"
+                              checked={sendToEmail}
+                              onChange={(e) => setSendToEmail(e.target.checked)}
+                              disabled={isSending}
+                              className="h-4 w-4 rounded border-border text-primary focus:ring-primary focus:ring-2 cursor-pointer transition-colors"
+                           />
+                           <label
+                              htmlFor="send-to-email"
+                              className="ml-2 text-sm text-muted-foreground cursor-pointer flex items-center gap-2"
+                           >
+                              <Icon name="Mail" size={14} />
+                              Enviar al correo
+                           </label>
+                        </div>
+                     </div>
                   )}
 
-                  <p className="text-sm sm:text-base mb-1 sm:mb-2 break-words">
-                    {msg.mensaje}
-                  </p>
+                  {activeTab === "admin" && (
+                     <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
+                        <Icon name="Info" size={12} />
+                        Los mensajes internos no se envian por correo
+                     </div>
+                  )}
 
-                  <span className="text-xs opacity-75 block text-right">
-                    {formatMessageTime(msg.fecha)}
-                  </span>
-                </div>
-              </div>
-            )) : (
-              <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                <Icon name={activeTab === 'admin' ? "Lock" : "MessageCircle"} size={32} className="mb-2 opacity-50" />
-                <p className="text-sm">No hay mensajes {activeTab === 'admin' ? 'internos' : 'generales'} aún</p>
-                <p className="text-xs mt-1">Escribe algo para comenzar</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="border-t border-border bg-card rounded-b-lg">
-          <div className="p-3 sm:p-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-end space-y-2 sm:space-y-0 sm:space-x-2">
-              <div className="flex-1 min-w-0">
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={activeTab === 'admin' ? "Escribir nota interna (solo admins)..." : "Escribe tu mensaje aquí..."}
-                  className="w-full min-h-[60px] sm:min-h-[80px] p-3 border border-border rounded-lg resize-none bg-input text-foreground focus:ring-2 focus:ring-ring text-sm sm:text-base"
-                  disabled={isSending}
-                  rows={3}
-                />
-              </div>
-              <Button
-                variant={activeTab === 'admin' ? 'destructive' : 'default'}
-                onClick={handleSend}
-                disabled={!message.trim() || isSending}
-                loading={isSending}
-                iconName="Send"
-                iconPosition="left"
-                iconSize={16}
-                className="w-full sm:w-auto sm:min-w-[100px] h-12 sm:h-auto"
-              >
-                <span className="hidden xs:inline">Enviar</span>
-                <span className="xs:hidden">Enviar</span>
-              </Button>
-              {/* AGREGADO: Botón para bajar rápido a la derecha del enviar */}
-              {showScrollToBottom && (
-                <div className="flex-shrink-0">
-                  <Button
-                    onClick={scrollToBottom}
-                    className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-white"
-                    iconName="ArrowDown"
-                    size="sm"
-                  >
-                    {hasNewMessages && "Nuevos"}
-                  </Button>
-                </div>
-              )}
+                  <div className="mt-2 text-xs text-muted-foreground text-center sm:text-left">
+                     <span className="hidden sm:inline">Presiona Enter para enviar, Shift+Enter para nueva linea</span>
+                     {activeTab === "admin" && <span className="ml-2 text-error font-medium">(Modo Interno)</span>}
+                  </div>
+               </div>
             </div>
-
-            {activeTab !== 'admin' && (
-              <div className="mt-3 flex items-center space-x-2">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="send-to-email"
-                    checked={sendToEmail}
-                    onChange={(e) => setSendToEmail(e.target.checked)}
-                    disabled={isSending}
-                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary focus:ring-2 cursor-pointer transition-colors"
-                  />
-                  <label
-                    htmlFor="send-to-email"
-                    className="ml-2 text-sm text-muted-foreground cursor-pointer flex items-center gap-2"
-                  >
-                    <Icon name="Mail" size={14} />
-                    Enviar al correo
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'admin' && (
-              <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
-                <Icon name="Info" size={12} />
-                Los mensajes internos no se envian por correo
-              </div>
-            )}
-
-            <div className="mt-2 text-xs text-muted-foreground text-center sm:text-left">
-              <span className="hidden sm:inline">Presiona Enter para enviar, Shift+Enter para nueva linea</span>
-              {activeTab === 'admin' && <span className="ml-2 text-error font-medium">(Modo Interno)</span>}
-            </div>
-          </div>
-        </div>
+         </div>
       </div>
-    </div>
-  );
+   );
 };
 
 export default MessageModal;
