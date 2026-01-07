@@ -21,9 +21,15 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode
           const updatedRequest = await response.json();
 
           if (updatedRequest.status !== currentRequest.status) {
-            setCurrentRequest(updatedRequest);
+            const normalizedRequest = {
+              ...updatedRequest,
+              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || currentRequest.submittedBy || 'Usuario Desconocido',
+              company: updatedRequest.user?.empresa || updatedRequest.company || currentRequest.company || 'Empresa Desconocida',
+              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt || currentRequest.submittedAt
+            };
+            setCurrentRequest(normalizedRequest);
             if (onUpdate) {
-              onUpdate(updatedRequest);
+              onUpdate(normalizedRequest);
             }
           }
         }
