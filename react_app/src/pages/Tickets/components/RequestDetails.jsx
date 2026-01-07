@@ -355,13 +355,48 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     try {
       setIsLoadingPreviewAdjunto(true);
       const adjunto = fullRequestData.adjuntos[index];
-      if (adjunto.mimeType !== 'application/pdf') {
-        alert('Solo disponible para PDF');
+
+      // Si tenemos la data en base64 directamente
+      // Si tenemos la data en base64 directamente
+      if (adjunto.fileData) {
+        // ... (Base64 logic stays same but logging added above) ...
+        const base64Data = adjunto.fileData.includes('base64,')
+          ? adjunto.fileData.split('base64,')[1]
+          : adjunto.fileData;
+
+        try {
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: adjunto.mimeType || 'application/pdf' });
+          const url = URL.createObjectURL(blob);
+
+          handlePreviewDocument(url, adjunto.mimeType?.includes('image') ? 'image' : 'pdf');
+        } catch (e) {
+          console.error("Error creating blob:", e);
+          alert("Error procesando el archivo para vista previa.");
+        }
         return;
       }
-      const pdfUrl = `${API_BASE_URL}/soporte/${responseId}/adjuntos/${index}`;
+
+      console.warn("No hay fileData local para adjunto", index);
+      alert("El contenido de este archivo no está disponible para vista previa.");
+      return;
+
+      // Fallback a descarga si no hay data local
+      if (adjunto.mimeType !== 'application/pdf' && !adjunto.mimeType?.includes('image')) {
+        alert('Vista previa solo disponible para PDF e Imágenes');
+        return;
+      }
+
+      const pdfUrl = `${API_BASE_URL}/respuestas/${responseId}/adjuntos/${index}`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
-      handlePreviewDocument(documentUrl, 'pdf');
+
+      handlePreviewDocument(documentUrl, adjunto.mimeType?.includes('image') ? 'image' : 'pdf');
+
     } catch (error) {
       console.error('Error:', error);
       alert('Error: ' + error.message);
@@ -374,21 +409,42 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const handleDownloadAdjunto = async (responseId, index) => {
     setDownloadingAttachmentIndex(index);
     try {
-      const response = await apiFetch(`${API_BASE_URL}/soporte/${responseId}/adjuntos/${index}`);
-      if (response.ok) {
-        const blob = await response.blob();
-        const adjunto = fullRequestData.adjuntos[index];
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = adjunto.fileName;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        alert('Error al descargar');
+      const adjunto = fullRequestData.adjuntos[index];
+
+      // Intentar descarga local primero si existe fileData
+      if (adjunto.fileData) {
+        const base64Data = adjunto.fileData.includes('base64,')
+          ? adjunto.fileData.split('base64,')[1]
+          : adjunto.fileData;
+
+        try {
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: adjunto.mimeType || 'application/octet-stream' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = adjunto.fileName || `archivo-${index}`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        } catch (e) {
+          console.error("Error creating download blob:", e);
+          alert("Error procesando el archivo para descarga.");
+        }
+        return;
       }
+
+      // Si no hay data local, avisar y no llamar al endpoint (que daría 404)
+      console.warn("No hay fileData local para descarga adjunto", index);
+      alert("El contenido de este archivo no está disponible para descarga.");
+      return;
+
     } catch (error) {
       console.error('Error:', error);
       alert('Error al descargar');

@@ -191,6 +191,23 @@ const CleanDocumentPreview = ({
                     </div>
                 );
 
+
+
+            case 'image':
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+            case 'gif':
+                return (
+                    <div className="h-full flex flex-col items-center justify-center bg-gray-100 overflow-auto p-4">
+                        <img
+                            src={documentUrl}
+                            alt="Vista previa"
+                            className="max-w-full max-h-full object-contain shadow-lg rounded"
+                        />
+                    </div>
+                );
+
             default:
                 return (
                     <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-gray-500 p-4 sm:p-8 text-center">
@@ -221,8 +238,8 @@ const CleanDocumentPreview = ({
                             <button
                                 onClick={() => setActiveTab('preview')}
                                 className={`h-full flex items-center space-x-2 border-b-2 px-1 transition-colors ${activeTab === 'preview'
-                                        ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                                     }`}
                                 title="Vista Previa del Documento"
                             >
