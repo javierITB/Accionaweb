@@ -622,9 +622,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
         // Si onUpdate está disponible, actualizar el request
         if (onUpdate) {
-          const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
-          const updatedRequest = await updatedResponse.json();
-          onUpdate(updatedRequest);
+          const updatedResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+          if (updatedResponse.ok) {
+            const updatedRequest = await updatedResponse.json();
+            const normalizedRequest = {
+              ...updatedRequest,
+              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
+              company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
+              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
+            };
+            onUpdate(normalizedRequest);
+          }
         }
       } else {
         const errorData = await response.json();
@@ -762,9 +770,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         const result = await approveResponse.json();
 
         if (onUpdate) {
-          const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
-          const updatedRequest = await updatedResponse.json();
-          onUpdate(updatedRequest);
+          const updatedResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+          if (updatedResponse.ok) {
+            const updatedRequest = await updatedResponse.json();
+            const normalizedRequest = {
+              ...updatedRequest,
+              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
+              company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
+              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
+            };
+            onUpdate(normalizedRequest);
+          }
           fetchApprovedData(request._id);
         }
 
@@ -798,15 +814,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
             if (retryResponse.ok) {
               // Éxito en el reintento
               if (onUpdate) {
-                const updatedResponse = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
-                const updatedRequest = await updatedResponse.json();
-                const normalizedRequest = {
-                  ...updatedRequest,
-                  submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
-                  company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
-                  submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
-                };
-                onUpdate(normalizedRequest);
+                const updatedResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+                if (updatedResponse.ok) {
+                  const updatedRequest = await updatedResponse.json();
+                  const normalizedRequest = {
+                    ...updatedRequest,
+                    submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
+                    company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
+                    submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
+                  };
+                  onUpdate(normalizedRequest);
+                }
               }
               alert('Aprobado en reintento');
             } else {
