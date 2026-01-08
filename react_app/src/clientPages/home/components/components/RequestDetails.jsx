@@ -300,7 +300,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
     formData.append('signedPdf', file);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/respuestas/${request._id}/upload-client-signature`, {
+      const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/upload-client-signature`, {
         method: 'POST',
         body: formData,
       });
