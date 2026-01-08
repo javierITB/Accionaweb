@@ -62,17 +62,12 @@ const RequestTracking = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // --- LÓGICA DE CARGA DE DATOS (MIGRADA A /respuestas/filtros) ---
+  // --- LÓGICA DE CARGA DE DATOS (CON FILTROS POR BACKEND) ---
   const fetchData = async (pageNumber, isBackground = false, overrideFilters = filters) => {
-    // Solo bloqueamos si es background polling. Si es click manual (isBackground=false), permitimos cargar.
-    if (isBackground && loadedPages.current.has(pageNumber)) return;
-
     try {
       if (!isBackground) setIsLoading(true);
 
-      // CAMBIO DE RUTA: Ahora siempre apuntamos a 'filtros' en lugar de 'mini'
       const endpoint = 'filtros';
-
       const params = new URLSearchParams({
         page: pageNumber,
         limit: requestsPerPage,
@@ -91,7 +86,21 @@ const RequestTracking = () => {
       const result = await res.json();
 
       if (result.archivedTotal !== undefined) setArchivedCountServer(result.archivedTotal);
-      if (result.stats) setServerStats(result.stats);
+      
+      // --- CORRECCIÓN DE STATS ---
+      if (result.stats) {
+        setServerStats(prevStats => {
+          // Si el usuario está filtrando por un estado específico, el servidor mandará 0 en los otros estados.
+          // Para evitar que las tarjetas de arriba se queden vacías, mantenemos los stats previos si ya existían.
+          const isFilteringByStatus = overrideFilters.status && overrideFilters.status !== '';
+          
+          if (isFilteringByStatus && prevStats) {
+            return prevStats;
+          }
+          // Si no hay filtro de estado (carga global), actualizamos los números para ver lo más reciente.
+          return result.stats;
+        });
+      }
 
       const normalized = result.data.map(r => ({
         _id: r._id,
@@ -110,17 +119,12 @@ const RequestTracking = () => {
         updatedAt: r.updatedAt
       }));
 
-      setResp(prev => {
-        const combined = (pageNumber === 1 && !isBackground) 
-          ? normalized 
-          : [...prev, ...normalized];
-        const unique = Array.from(new Map(combined.map(item => [item._id, item])).values());
-        return unique.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      });
+      setResp(normalized);
 
-      setTotalPages(result.pagination.totalPages);
-      setTotalItems(result.pagination.total);
-      loadedPages.current.add(pageNumber);
+      setTotalPages(result.pagination.totalPages || 1);
+      setTotalItems(result.pagination.total || 0);
+
+      if (!isBackground) window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (err) {
       console.error(`Error en fetch:`, err);
@@ -129,22 +133,17 @@ const RequestTracking = () => {
     }
   };
 
-  // --- EFECTO DE CARGA INICIAL ---
   useEffect(() => {
-    fetchData(1);
-  }, []);
-
-  useEffect(() => {
-    if (currentPage > 1) fetchData(currentPage);
+    fetchData(currentPage);
   }, [currentPage]);
 
   // Polling silencioso
   useEffect(() => {
     const interval = setInterval(() => {
-      if (filters.status !== 'archivado') fetchData(1, true);
+      if (filters.status !== 'archivado') fetchData(currentPage, true);
     }, 45000);
     return () => clearInterval(interval);
-  }, [filters.status]);
+  }, [filters.status, currentPage]);
 
   useEffect(() => {
     if (!formId || resp.length === 0) return;
@@ -157,8 +156,6 @@ const RequestTracking = () => {
 
   // --- HANDLERS ---
   const handleApplyFilters = () => {
-    setResp([]); 
-    loadedPages.current.clear(); 
     setCurrentPage(1);
     fetchData(1); 
   };
@@ -167,8 +164,6 @@ const RequestTracking = () => {
     const newStatus = filters.status === status ? '' : status;
     const newFilters = { ...filters, status: newStatus };
     setFilters(newFilters);
-    setResp([]);
-    loadedPages.current.clear();
     setCurrentPage(1);
     fetchData(1, false, newFilters);
   };
@@ -176,8 +171,6 @@ const RequestTracking = () => {
   const handleClearFilters = () => {
     const cleared = { search: '', status: '', category: '', dateRange: '', startDate: '', endDate: '', company: '', submittedBy: '' };
     setFilters(cleared);
-    setResp([]);
-    loadedPages.current.clear();
     setCurrentPage(1);
     fetchData(1, false, cleared);
   };
@@ -205,18 +198,18 @@ const RequestTracking = () => {
     }
   };
 
-  // --- FILTRADO DE UI (LIMPIADO: AHORA DEPENDE DEL SERVER) ---
   const currentRequests = useMemo(() => {
     return resp;
   }, [resp]);
 
+  // Si no hay serverStats cargados aún, calculamos un objeto base
   const mockStats = serverStats || {
-    total: totalItems + (filters.status === 'archivado' ? 0 : archivedCountServer),
-    pending: resp.filter(r => r.status === 'pendiente').length,
-    inReview: resp.filter(r => r.status === 'en_revision').length,
-    approved: resp.filter(r => r.status === 'aprobado').length,
-    rejected: resp.filter(r => r.status === 'firmado').length,
-    finalized: resp.filter(r => r.status === 'finalizado').length,
+    total: totalItems,
+    pending: 0,
+    inReview: 0,
+    approved: 0,
+    rejected: 0,
+    finalized: 0,
     archived: archivedCountServer
   };
 
@@ -231,16 +224,40 @@ const RequestTracking = () => {
         <div className="fixed inset-0 bg-foreground/50 z-40 lg:hidden" onClick={() => setIsMobileOpen(false)}></div>
       )}
 
+      {!isMobileOpen && isMobileScreen && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <Button variant="default" size="icon" onClick={() => setIsMobileOpen(true)} iconName="Menu" className="w-12 h-12 rounded-full shadow-lg" />
+        </div>
+      )}
+
       <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
+          
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center justify-center min-w-8 h-8 px-2 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
-                {totalItems}
-              </span>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
-                Seguimiento de Solicitudes
-              </h1>
+            <div>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center justify-center min-w-8 h-8 px-2 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
+                  {totalItems}
+                </span>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
+                  Seguimiento de Solicitudes
+                </h1>
+              </div>
+              <p className="text-muted-foreground mt-1 text-sm lg:text-base ml-11">
+                {filters.status === 'archivado' ? 'Historial de solicitudes archivadas' : 'Monitorea el estado de tus solicitudes activas'}
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground border border-border rounded-lg p-1 bg-card">
+                <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 || isLoading} iconName="ChevronLeft" />
+                <span className="font-medium">{currentPage} / {totalPages}</span>
+                <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || isLoading} iconName="ChevronRight" />
+              </div>
+              <div className="flex items-center border border-border rounded-lg bg-card">
+                <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')} iconName="Grid3X3" className="rounded-r-none" />
+                <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('list')} iconName="List" className="rounded-l-none border-l" />
+              </div>
             </div>
           </div>
 
@@ -256,10 +273,10 @@ const RequestTracking = () => {
           />
 
           <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
-            {isLoading && resp.length === 0 ? (
+            {isLoading ? (
               <div className="col-span-full py-12 text-center">
                 <Icon name="Loader2" size={32} className="mx-auto text-accent animate-spin mb-4" />
-                <p className="text-muted-foreground">Buscando solicitudes...</p>
+                <p className="text-muted-foreground">Cargando solicitudes...</p>
               </div>
             ) : currentRequests.length > 0 ? (
               currentRequests.map(request => (
@@ -278,6 +295,18 @@ const RequestTracking = () => {
               </div>
             )}
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center space-x-4 py-8">
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 || isLoading}>
+                Anterior
+              </Button>
+              <span className="text-sm font-medium">Página {currentPage} de {totalPages}</span>
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || isLoading}>
+                Siguiente
+              </Button>
+            </div>
+          )}
         </div>
       </main>
 
