@@ -837,7 +837,7 @@ router.get("/mini", async (req, res) => {
       ]).toArray()
     ]);
 
-  
+
     const { decrypt } = require('../utils/seguridad.helper');
 
     const answersProcessed = answers.map(answer => {
@@ -920,7 +920,7 @@ router.get("/respuestas/filtros", async (req, res) => {
 
     let query = {};
     if (status && status !== "") query["status"] = status; // o _contexto.status según tu DB
-    
+
     if (company) {
       // Nota: Si 'empresa' está cifrada en la DB, el $regex no funcionará directo.
       // Se asume que buscas por campos no cifrados o que la DB permite esta búsqueda.
@@ -3228,6 +3228,86 @@ router.get("/mantenimiento/migrar-respuestas-pqc", async (req, res) => {
       error: err.message,
       stack: err.stack
     });
+  }
+});
+
+// Endpoint para guardar en colección 'domicilio_virtual'
+router.post("/domicilio-virtual", async (req, res) => {
+  try {
+    const { formId, user, responses, formTitle, adjuntos = [], mail: correoRespaldo } = req.body;
+
+    const { encrypt } = require('../utils/seguridad.helper');
+    const { enviarCorreoRespaldo } = require("../utils/mailrespaldo.helper");
+    const { generarAnexoDesdeRespuesta } = require("../utils/generador.helper");
+    const { addNotification } = require("../utils/notificaciones.helper");
+    const { validarToken } = require("../utils/validarToken.js");
+
+    console.log("=== INICIO GUARDAR DOMICILIO VIRTUAL ===");
+
+    // Verificar formulario
+    const form = await req.db.collection("forms").findOne({ _id: new ObjectId(formId) });
+    if (!form) return res.status(404).json({ error: "Formulario no encontrado" });
+
+    // CIFRAR LOS DATOS SENSIBLES (Reutilizando lógica de cifrado simple)
+    const cifrarObjeto = (obj) => {
+      if (!obj || typeof obj !== 'object') return obj;
+      const { encrypt } = require('../utils/seguridad.helper');
+      const resultado = {};
+      for (const key in obj) {
+        const valor = obj[key];
+        if (typeof valor === 'string' && valor.trim() !== '' && !valor.includes(':')) {
+          resultado[key] = encrypt(valor);
+        } else if (typeof valor === 'object' && valor !== null) {
+          if (Array.isArray(valor)) {
+            resultado[key] = valor.map(item => (typeof item === 'string' && !item.includes(':')) ? encrypt(item) : item);
+          } else {
+            resultado[key] = cifrarObjeto(valor);
+          }
+        } else {
+          resultado[key] = valor;
+        }
+      }
+      return resultado;
+    };
+
+    const userCifrado = cifrarObjeto(user);
+    const responsesCifrado = cifrarObjeto(responses);
+
+    // Insertar en colección 'domicilio_virtual'
+    const result = await req.db.collection("domicilio_virtual").insertOne({
+      formId,
+      user: userCifrado,
+      responses: responsesCifrado,
+      formTitle,
+      mail: correoRespaldo,
+      status: "pendiente",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    console.log(`Domicilio Virtual guardado con ID: ${result.insertedId}`);
+
+    if (adjuntos.length > 0) {
+      await req.db.collection("adjuntos").insertOne({
+        responseId: result.insertedId,
+        submittedAt: new Date().toISOString(),
+        adjuntos: []
+      });
+    }
+
+    // Respuesta exitosa
+    res.json({
+      _id: result.insertedId,
+      formId,
+      user,
+      responses,
+      formTitle,
+      message: "Guardado en Domicilio Virtual exitosamente"
+    });
+
+  } catch (err) {
+    console.error("Error guardar domicilio virtual:", err);
+    res.status(500).json({ error: "Error interno: " + err.message });
   }
 });
 
