@@ -5,12 +5,11 @@ import { apiFetch, API_BASE_URL } from '../../utils/api';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 
-// Reusing components from Respuestas
-import RequestCard from '../Respuestas/components/RequestCard';
-import FilterPanel from '../Respuestas/components/FilterPanel';
-import MessageModal from '../Respuestas/components/MessageModal';
-import RequestDetails from '../Respuestas/components/RequestDetails';
-import StatsOverview from '../Respuestas/components/StatsOverview';
+// Usar componentes locales de Domicilio Virtual
+import RequestCard from './components/RequestCard';
+import FilterPanel from './components/FilterPanel';
+import RequestDetails from './components/RequestDetails';
+import StatsOverview from './components/StatsOverview';
 
 const DomicilioVirtualIndex = () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -26,9 +25,7 @@ const DomicilioVirtualIndex = () => {
     // --- ESTADOS DE DATOS ---
     const [resp, setResp] = useState([]);
     const [selectedRequest, setSelectedRequest] = useState(null);
-    const [messageRequest, setMessageRequest] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [showMessageModal, setShowMessageModal] = useState(false);
     const [showRequestDetails, setShowRequestDetails] = useState(false);
 
     // --- ESTADOS DE PAGINACIÓN Y FILTROS ---
@@ -71,13 +68,11 @@ const DomicilioVirtualIndex = () => {
         try {
             if (!isBackground) setIsLoading(true);
 
-            // CAMBIO DE RUTA: Apuntamos al endpoint de domicilio virtual
             const endpoint = 'domicilio-virtual/mini';
 
             const params = new URLSearchParams({
                 page: pageNumber,
                 limit: requestsPerPage,
-                // search/filtros adicionales se enviarán pero el backend podría ignorarlos si no están implementados
                 search: overrideFilters.search || '',
                 status: overrideFilters.status || '',
                 company: overrideFilters.company || '',
@@ -140,7 +135,6 @@ const DomicilioVirtualIndex = () => {
         if (currentPage > 1) fetchData(currentPage);
     }, [currentPage]);
 
-    // Polling silencioso
     useEffect(() => {
         const interval = setInterval(() => {
             if (filters.status !== 'archivado') fetchData(1, true);
@@ -157,7 +151,6 @@ const DomicilioVirtualIndex = () => {
         }
     }, [formId, resp]);
 
-    // --- HANDLERS ---
     const handleApplyFilters = () => {
         setResp([]);
         loadedPages.current.clear();
@@ -269,7 +262,6 @@ const DomicilioVirtualIndex = () => {
                                     request={request}
                                     onRemove={handleRemove}
                                     onViewDetails={(req) => { setSelectedRequest(req); setShowRequestDetails(true); }}
-                                    onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }}
                                 />
                             ))
                         ) : (
@@ -282,14 +274,11 @@ const DomicilioVirtualIndex = () => {
                 </div>
             </main>
 
-            <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} request={messageRequest} formId={formId} onSendMessage={console.log} />
-
             <RequestDetails
                 request={selectedRequest}
                 isVisible={showRequestDetails}
                 onClose={handleCloseRequestDetails}
                 onUpdate={updateRequest}
-                onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }}
                 endpointPrefix="respuestas/domicilio-virtual"
             />
         </div>

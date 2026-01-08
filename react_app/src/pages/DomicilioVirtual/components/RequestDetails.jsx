@@ -8,7 +8,7 @@ import { apiFetch, API_BASE_URL } from '../../../utils/api';
 const MAX_FILES = 5; // Máximo de archivos
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
 
-const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, isStandalone = false, endpointPrefix = 'respuestas', onGenerateDoc }) => {
+const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = false, endpointPrefix = 'respuestas', onGenerateDoc }) => {
   // --- ESTADOS DE UI ---
   const [activeTab, setActiveTab] = useState('details');
 
@@ -964,9 +964,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'pending': case 'pendiente': return 'bg-error text-error-foreground';
-      case 'in_review': case 'en_revision': return 'bg-secondary text-secondary-foreground';
-      case 'approved': case 'aprobado': return 'bg-warning text-warning-foreground';
-      case 'signed': case 'firmado': return 'bg-success text-success-foreground';
+      case 'documento_generado': return 'bg-error/10 text-error'; // Similar a pendiente
+      case 'solicitud_firmada': return 'bg-warning text-warning-foreground';
+      case 'informado_sii': return 'bg-info text-info-foreground';
+      case 'dicom': return 'bg-secondary text-secondary-foreground';
+      case 'dado_de_baja': return 'bg-muted text-muted-foreground';
       case 'finalizado': return 'bg-accent text-accent-foreground';
       default: return 'bg-muted text-muted-foreground';
     }
@@ -974,13 +976,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
-      case 'approved': case 'aprobado': return 'CheckCircle';
       case 'pending': case 'pendiente': return 'Clock';
-      case 'in_review': case 'en_revision': return 'Eye';
-      case 'rejected': case 'rechazado': return 'XCircle';
-      case 'borrador': return 'FileText';
-      case 'signed': case 'firmado': return 'CheckSquare';
-      default: return 'Circle';
+      case 'documento_generado': return 'FileText';
+      case 'solicitud_firmada': return 'PenTool';
+      case 'informado_sii': return 'Building';
+      case 'dicom': return 'AlertTriangle';
+      case 'dado_de_baja': return 'XCircle';
+      case 'finalizado': return 'Timer';
+      default: return 'HelpCircle';
     }
   };
 
@@ -1675,52 +1678,23 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
             <div className="flex items-center space-x-3">
               {!isStandalone && (
                 <>
-                  <Button
-                    variant="outline"
-                    iconName="MessageSquare"
-                    iconPosition="left"
-                    onClick={() => onSendMessage(fullRequestData)}
-                    iconSize={16}
-                  >
-                    Mensajes
-                  </Button>
+                  {/* Botón Mensajes eliminado para Domicilio Virtual */}
 
-                  {(fullRequestData?.status === 'en_revision' || fullRequestData?.status === 'pendiente') && (
-                    <Button
-                      variant="default"
-                      iconName={isApproving ? "Loader" : "CheckCircle"}
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={handleApprove}
-                      disabled={correctedFiles.length === 0 || isApproving || correctedFiles.length > MAX_FILES || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Cambiar Estado:</span>
+                    <select
+                      value={fullRequestData?.status || ''}
+                      onChange={(e) => handleStatusChange(e.target.value)}
+                      className="h-9 px-3 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent"
                     >
-                      {isApproving ? 'Aprobando...' : `Aprobar (${correctedFiles.length}/${MAX_FILES})`}
-                    </Button>
-                  )}
-
-                  {fullRequestData?.status !== 'finalizado' && (
-                    <Button
-                      variant="default"
-                      iconName={isApproving ? "Loader" : "CheckCircle"}
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={handleApprovewithoutFile}
-                    >
-                      {isApproving ? 'Finalizando...' : 'Finalizar'}
-                    </Button>
-                  )}
-
-                  {fullRequestData?.status == 'finalizado' && (
-                    <Button
-                      variant="default"
-                      iconName={isApproving ? "Loader" : "Folder"}
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={handleArchieve}
-                    >
-                      {isApproving ? 'Archivando...' : 'Archivar'}
-                    </Button>
-                  )}
+                      <option value="pendiente">Pendiente</option>
+                      <option value="documento_generado">Documento Generado</option>
+                      <option value="solicitud_firmada">Solicitud Firmada</option>
+                      <option value="informado_sii">Informado al SII</option>
+                      <option value="dicom">DICOM</option>
+                      <option value="dado_de_baja">Dado de baja</option>
+                    </select>
+                  </div>
                 </>
               )}
               {!isStandalone && (
