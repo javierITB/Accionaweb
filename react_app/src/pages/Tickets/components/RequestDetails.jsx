@@ -269,7 +269,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
           setFullRequestData(prev => ({
             ...prev,
             ...result.updatedRequest,
-            adjuntos: prev.adjuntos // Preserve attachments
+            adjuntos: prev.adjuntos
           }));
         }
         alert(`Estado cambiado a "${newStatus}"`);
