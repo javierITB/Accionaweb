@@ -8,10 +8,10 @@ const FilterPanel = ({
   filters, 
   onFilterChange, 
   onClearFilters, 
+  onApplyFilters, // <-- Nueva prop
   isVisible, 
   onToggle 
 }) => {
-  // Opciones de estado basadas en los estados reales del sistema
   const statusOptions = [
     { value: '', label: 'Todos los Estados' },
     { value: 'pendiente', label: 'Pendiente' },
@@ -41,7 +41,6 @@ const FilterPanel = ({
 
   return (
     <div className="bg-card border border-border rounded-lg">
-      {/* Filter Header - RESPONSIVE */}
       <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
         <div className="flex items-center space-x-2">
           <Icon name="Filter" size={18} className="text-accent sm:w-5 sm:h-5" />
@@ -55,33 +54,16 @@ const FilterPanel = ({
         
         <div className="flex items-center space-x-1 sm:space-x-2">
           {getActiveFilterCount() > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearFilters}
-              iconName="X"
-              iconPosition="left"
-              iconSize={14}
-              className="text-xs sm:text-sm"
-            >
+            <Button variant="ghost" size="sm" onClick={onClearFilters} iconName="X" iconPosition="left" iconSize={14} className="text-xs sm:text-sm">
               Limpiar
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggle}
-            iconName={isVisible ? "ChevronUp" : "ChevronDown"}
-            iconSize={16}
-            className="w-8 h-8 sm:w-9 sm:h-9"
-          />
+          <Button variant="ghost" size="icon" onClick={onToggle} iconName={isVisible ? "ChevronUp" : "ChevronDown"} iconSize={16} className="w-8 h-8 sm:w-9 sm:h-9" />
         </div>
       </div>
 
-      {/* Filter Content - RESPONSIVE */}
       {isVisible && (
         <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
-          {/* Search */}
           <div>
             <Input
               label="Buscar Solicitudes"
@@ -93,59 +75,33 @@ const FilterPanel = ({
             />
           </div>
 
-          {/* Filter Grid - RESPONSIVE */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <Select
-              label="Estado"
-              options={statusOptions}
-              value={filters?.status || ''}
-              onChange={(value) => handleInputChange('status', value)}
-            />
-
-            <Select
-              label="Período"
-              options={dateRangeOptions}
-              value={filters?.dateRange || ''}
-              onChange={(value) => handleInputChange('dateRange', value)}
-            />
+            <Select label="Estado" options={statusOptions} value={filters?.status || ''} onChange={(value) => handleInputChange('status', value)} />
+            <Select label="Período" options={dateRangeOptions} value={filters?.dateRange || ''} onChange={(value) => handleInputChange('dateRange', value)} />
           </div>
 
-          {/* Date Range Inputs - RESPONSIVE */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <Input
-              label="Fecha Desde"
-              type="date"
-              value={filters?.startDate || ''}
-              onChange={(e) => handleInputChange('startDate', e?.target?.value)}
-            />
-
-            <Input
-              label="Fecha Hasta"
-              type="date"
-              value={filters?.endDate || ''}
-              onChange={(e) => handleInputChange('endDate', e?.target?.value)}
-            />
+            <Input label="Fecha Desde" type="date" value={filters?.startDate || ''} onChange={(e) => handleInputChange('startDate', e?.target?.value)} />
+            <Input label="Fecha Hasta" type="date" value={filters?.endDate || ''} onChange={(e) => handleInputChange('endDate', e?.target?.value)} />
           </div>
 
-          {/* Advanced Filters - RESPONSIVE */}
           <div className="pt-3 sm:pt-4 border-t border-border">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <Input
-                label="Empresa"
-                type="text"
-                placeholder="Filtrar por empresa..."
-                value={filters?.company || ''}
-                onChange={(e) => handleInputChange('company', e?.target?.value)}
-              />
-
-              <Input
-                label="Enviado por"
-                type="text"
-                placeholder="Nombre del usuario..."
-                value={filters?.submittedBy || ''}
-                onChange={(e) => handleInputChange('submittedBy', e?.target?.value)}
-              />
+              <Input label="Empresa" type="text" placeholder="Filtrar por empresa..." value={filters?.company || ''} onChange={(e) => handleInputChange('company', e?.target?.value)} />
+              <Input label="Enviado por" type="text" placeholder="Nombre del usuario..." value={filters?.submittedBy || ''} onChange={(e) => handleInputChange('submittedBy', e?.target?.value)} />
             </div>
+          </div>
+
+          {/* BOTÓN FILTRAR: Aquí se añade la acción manual */}
+          <div className="flex justify-end pt-2">
+            <Button
+              variant="default"
+              onClick={onApplyFilters}
+              iconName="Search"
+              className="bg-accent text-accent-foreground px-8 w-full sm:w-auto font-bold shadow-sm"
+            >
+              Filtrar
+            </Button>
           </div>
         </div>
       )}
