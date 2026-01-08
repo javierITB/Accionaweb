@@ -8,7 +8,7 @@ import { apiFetch, API_BASE_URL } from '../../../utils/api';
 const MAX_FILES = 5; // Máximo de archivos
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
 
-const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, isStandalone = false }) => {
+const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, isStandalone = false, endpointPrefix = 'respuestas', onGenerateDoc }) => {
   // --- ESTADOS DE UI ---
   const [activeTab, setActiveTab] = useState('details');
 
@@ -72,7 +72,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     setIsLoadingApprovedData(true);
     setIsLoadingApprovedData(true);
     try {
-      const response = await apiFetch(`${API_BASE_URL}/respuestas/data-approved/${responseId}`);
+      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/data-approved/${responseId}`);
       if (response.ok) {
         const data = await response.json();
         setApprovedData(data);
@@ -91,7 +91,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     setIsCheckingSignature(true);
     setIsCheckingSignature(true);
     try {
-      const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/has-client-signature`);
+      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/has-client-signature`);
       if (response.ok) {
         const data = await response.json();
         if (data.exists) {
@@ -132,7 +132,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
     try {
-      const response = await apiFetch(`${API_BASE_URL}/respuestas/${responseId}/adjuntos`);
+      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos`);
 
       if (response.ok) {
         const data = await response.json();
@@ -162,7 +162,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       setCorrectedFiles([{
         name: request.correctedFile.fileName,
         size: request.correctedFile.fileSize,
-        url: `${API_BASE_URL}/respuestas/${request._id}/corrected-file`,
+        url: `${API_BASE_URL}/${endpointPrefix}/${request._id}/corrected-file`,
         isServerFile: true
       }]);
     } else {
@@ -187,7 +187,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     const fetchFullDetailsAndDocs = async () => {
       setIsDetailLoading(true);
       try {
-        const response = await apiFetch(`${API_BASE_URL}/respuestas/${responseId}`);
+        const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}`);
         if (response.ok) {
           const data = await response.json();
           setFullRequestData(prev => ({
@@ -249,7 +249,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
     const interval = setInterval(async () => {
       try {
-        const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+        const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
         if (response.ok) {
           const updatedRequest = await response.json();
           if (updatedRequest.status !== request.status) {
@@ -280,7 +280,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
 
     try {
-      const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/status`, {
+      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status: newStatus })
       });
@@ -373,7 +373,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         documentUrl = URL.createObjectURL(file);
       }
       else if (approvedData || request?.status === 'aprobado' || request?.status === 'firmado') {
-        const pdfUrl = `${API_BASE_URL}/respuestas/download-approved-pdf/${request._id}?index=${index}`;
+        const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
       }
       else if (request?.correctedFile) {
@@ -400,7 +400,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     }
     try {
       setIsLoadingPreviewSignature(true);
-      const pdfUrl = `${API_BASE_URL}/respuestas/${request._id}/client-signature`;
+      const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/client-signature`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
@@ -419,7 +419,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         alert('Solo disponible para PDF');
         return;
       }
-      const pdfUrl = `${API_BASE_URL}/respuestas/${responseId}/adjuntos/${index}`;
+      const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
@@ -435,7 +435,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
     setIsRegenerating(true);
     try {
-      const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/regenerate-document`, {
+      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/regenerate-document`, {
         method: 'POST'
       });
 
@@ -478,7 +478,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       const token = sessionStorage.getItem("token");
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-      const response = await fetch(`${API_BASE_URL}/respuestas/${responseId}/adjuntos/${index}`, {
+      const response = await fetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`, {
         headers
       });
 
@@ -508,7 +508,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       const token = sessionStorage.getItem("token");
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-      const response = await fetch(`${API_BASE_URL}/respuestas/${responseId}/client-signature`, {
+      const response = await fetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/client-signature`, {
         headers
       });
 
@@ -578,14 +578,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     }
 
     try {
-      const signatureCheck = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/has-client-signature`);
+      const signatureCheck = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/has-client-signature`);
       const signatureData = await signatureCheck.json();
       const hasSignature = signatureData.exists;
       let warningMessage = '¿Eliminar corrección y volver a revisión?';
       if (hasSignature) warningMessage = 'ADVERTENCIA: Existe documento firmado. ¿Continuar?';
       if (!confirm(warningMessage)) return;
 
-      const response = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/remove-correction`, { method: 'DELETE' });
+      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/remove-correction`, { method: 'DELETE' });
       const result = await response.json();
       if (response.ok) {
         if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
@@ -608,7 +608,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
     setIsDeletingFile(index);
     try {
-      const response = await apiFetch(`${API_BASE_URL}/respuestas/delete-corrected-file/${request._id}`, {
+      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/delete-corrected-file/${request._id}`, {
         method: 'DELETE',
         body: JSON.stringify({ fileName })
       });
@@ -622,7 +622,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
         // Si onUpdate está disponible, actualizar el request
         if (onUpdate) {
-          const updatedResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+          const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
           if (updatedResponse.ok) {
             const updatedRequest = await updatedResponse.json();
             const normalizedRequest = {
@@ -670,7 +670,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
         console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
 
-        const response = await apiFetch(`${API_BASE_URL}/respuestas/upload-corrected-files`, {
+        const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
           method: 'POST',
           body: formData
         });
@@ -758,7 +758,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // 3. APROBAR DESPUÉS DE SUBIR LOS ARCHIVOS
-      const approveResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/approve`, {
+      const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -770,7 +770,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         const result = await approveResponse.json();
 
         if (onUpdate) {
-          const updatedResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+          const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
           if (updatedResponse.ok) {
             const updatedRequest = await updatedResponse.json();
             const normalizedRequest = {
@@ -803,7 +803,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
           if (retry) {
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            const retryResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/approve`, {
+            const retryResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -814,7 +814,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
             if (retryResponse.ok) {
               // Éxito en el reintento
               if (onUpdate) {
-                const updatedResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+                const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
                 if (updatedResponse.ok) {
                   const updatedRequest = await updatedResponse.json();
                   const normalizedRequest = {
@@ -854,10 +854,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/finalized`);
+      const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/finalized`);
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+          const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
           if (updatedResponse.ok) {
             const updatedRequest = await updatedResponse.json();
             const normalizedRequest = {
@@ -887,10 +887,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     if (!confirm('¿Estás seguro de que quieres archivar este trabajo?')) return;
     setIsApproving(true);
     try {
-      const approveResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}/archived`);
+      const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/archived`);
       if (approveResponse.ok) {
         if (onUpdate) {
-          const updatedResponse = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`);
+          const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
           if (updatedResponse.ok) {
             const updatedRequest = await updatedResponse.json();
             onUpdate(updatedRequest);
@@ -1484,7 +1484,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
       // Obtener token si es necesario (ajusta según tu auth)
       // Usar apiFetch para upload (automáticamente maneja headers y formData)
-      const response = await apiFetch(`${API_BASE_URL}/respuestas/upload-corrected-files`, {
+      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
         method: 'POST',
         body: formData
       });

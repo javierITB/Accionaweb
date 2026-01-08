@@ -24,6 +24,7 @@ import Empresas from './pages/empresas/Index.jsx';
 import Ingresos from './pages/Ingresos/Index.jsx';
 import SetPassword from './pages/users/components/SetPassword.jsx';
 import Solicitudes from './pages/solicitudes/Index.jsx';
+import DomicilioVirtualIndex from './pages/DomicilioVirtual/Index.jsx';
 
 import Anuncios from './pages/anuncios/Index.jsx';
 
@@ -58,6 +59,7 @@ const Routes = () => {
           <Route path="/form-builder" element={<ProtectedRoute><FormBuilder /></ProtectedRoute>} />
           <Route path="/template-builder" element={<ProtectedRoute><TemplateBuilder /></ProtectedRoute>} />
           <Route path="/form-center" element={<ProtectedRoute><FormCenter /></ProtectedRoute>} />
+          <Route path="/DomicilioVirtual" element={<ProtectedRoute><DomicilioVirtualIndex /></ProtectedRoute>} />
           <Route path="/RespuestasForms" element={<ProtectedRoute><RespuestasForms /></ProtectedRoute>} />
           <Route path="/Tickets" element={<ProtectedRoute><AdminTickets /></ProtectedRoute>} />
           <Route path="/registro-ingresos" element={<ProtectedRoute><Ingresos /></ProtectedRoute>} />
