@@ -45,6 +45,17 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefres
       filterKey: 'documento_generado'
     },
     {
+      title: 'Enviado',
+      value: stats?.documento_enviado,
+      icon: 'Sent', // O FileSignature si existe
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
+      borderColor: 'border-warning',
+      change: '+0',
+      changeType: 'positive',
+      filterKey: 'documento_enviado'
+    },
+    {
       title: 'Firmada',
       value: stats?.solicitud_firmada,
       icon: 'PenTool', // O FileSignature si existe
