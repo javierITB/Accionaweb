@@ -140,10 +140,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
 
           {/* Meta Info - RESPONSIVE */}
           <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-3 sm:space-x-4 text-xs text-muted-foreground">
-            <div className="flex items-center space-x-1">
-              <Icon name="Briefcase" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
-              <span className="truncate">Empresa: {currentRequest?.tuNombre || currentRequest?.company}</span>
-            </div>
+
             <div className="flex items-center space-x-1">
               <Icon name="User" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
               <span className="truncate">Por: {currentRequest?.user?.nombre || currentRequest?.submittedBy}</span>

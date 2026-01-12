@@ -101,7 +101,8 @@ const DomicilioVirtualIndex = () => {
                 status: r.status,
                 trabajador: r.trabajador || "",
                 rutTrabajador: r.rutTrabajador || "",
-                submittedBy: r.user?.nombre || r.submittedBy || 'Usuario Desconocido',
+                tuNombre: r.tuNombre || "",
+                submittedBy: r.user?.nombre || r.tuNombre || r.submittedBy || 'Usuario Desconocido',
                 company: r.user?.empresa || r.company || 'Empresa Desconocida',
                 hasMessages: r.adjuntosCount > 0,
                 updatedAt: r.updatedAt
