@@ -37,8 +37,6 @@ const RequestTracking = () => {
   const [serverStats, setServerStats] = useState(null);
   const requestsPerPage = 30;
 
-  const loadedPages = useRef(new Set());
-
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -62,12 +60,31 @@ const RequestTracking = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // --- LÓGICA DE CARGA DE DATOS (CON FILTROS POR BACKEND) ---
+  // --- FUNCIÓN DE NORMALIZACIÓN (Para reutilizar en fetch y búsqueda) ---
+  const normalizeData = (data) => {
+    return data.map(r => ({
+      _id: r._id,
+      formId: r.formId,
+      title: r.formTitle || r.title || "Formulario",
+      formTitle: r.formTitle || r.title,
+      description: r.formTitle || "Formulario de solicitud",
+      submittedAt: r.submittedAt || r.createdAt || null,
+      createdAt: r.createdAt,
+      status: r.status,
+      trabajador: r.trabajador || "",
+      rutTrabajador: r.rutTrabajador || "",
+      submittedBy: r.user?.nombre || r.submittedBy || 'Usuario Desconocido',
+      company: r.user?.empresa || r.company || 'Empresa Desconocida',
+      hasMessages: r.adjuntosCount > 0,
+      updatedAt: r.updatedAt
+    }));
+  };
+
+  // --- LÓGICA DE CARGA DE DATOS ---
   const fetchData = async (pageNumber, isBackground = false, overrideFilters = filters) => {
     try {
       if (!isBackground) setIsLoading(true);
 
-      const endpoint = 'filtros';
       const params = new URLSearchParams({
         page: pageNumber,
         limit: requestsPerPage,
@@ -79,7 +96,7 @@ const RequestTracking = () => {
         endDate: overrideFilters.endDate || '' 
       });
 
-      const url = `${API_BASE_URL}/respuestas/${endpoint}?${params.toString()}`;
+      const url = `${API_BASE_URL}/respuestas/filtros?${params.toString()}`;
       const res = await apiFetch(url);
 
       if (!res.ok) throw new Error('Error al obtener datos');
@@ -87,40 +104,15 @@ const RequestTracking = () => {
 
       if (result.archivedTotal !== undefined) setArchivedCountServer(result.archivedTotal);
       
-      // --- CORRECCIÓN DE STATS ---
       if (result.stats) {
         setServerStats(prevStats => {
-          // Si el usuario está filtrando por un estado específico, el servidor mandará 0 en los otros estados.
-          // Para evitar que las tarjetas de arriba se queden vacías, mantenemos los stats previos si ya existían.
           const isFilteringByStatus = overrideFilters.status && overrideFilters.status !== '';
-          
-          if (isFilteringByStatus && prevStats) {
-            return prevStats;
-          }
-          // Si no hay filtro de estado (carga global), actualizamos los números para ver lo más reciente.
-          return result.stats;
+          return (isFilteringByStatus && prevStats) ? prevStats : result.stats;
         });
       }
 
-      const normalized = result.data.map(r => ({
-        _id: r._id,
-        formId: r.formId,
-        title: r.formTitle || r.title || "Formulario",
-        formTitle: r.formTitle || r.title,
-        description: r.formTitle || "Formulario de solicitud",
-        submittedAt: r.submittedAt || r.createdAt || null,
-        createdAt: r.createdAt,
-        status: r.status,
-        trabajador: r.trabajador || "",
-        rutTrabajador: r.rutTrabajador || "",
-        submittedBy: r.user?.nombre || r.submittedBy || 'Usuario Desconocido',
-        company: r.user?.empresa || r.company || 'Empresa Desconocida',
-        hasMessages: r.adjuntosCount > 0,
-        updatedAt: r.updatedAt
-      }));
-
+      const normalized = normalizeData(result.data);
       setResp(normalized);
-
       setTotalPages(result.pagination.totalPages || 1);
       setTotalItems(result.pagination.total || 0);
 
@@ -133,9 +125,62 @@ const RequestTracking = () => {
     }
   };
 
+  // --- NUEVA LÓGICA: BÚSQUEDA GLOBAL POR TODAS LAS PÁGINAS ---
+  const findRequestGlobally = async (idToFind) => {
+    setIsLoading(true);
+    let page = 1;
+    let maxPages = totalPages || 1;
+
+    try {
+      while (page <= maxPages) {
+        const params = new URLSearchParams({ page, limit: requestsPerPage });
+        const url = `${API_BASE_URL}/respuestas/filtros?${params.toString()}`;
+        const res = await apiFetch(url);
+        const result = await res.json();
+
+        const found = result.data.find(r => String(r._id) === idToFind || String(r.formId) === idToFind);
+
+        if (found) {
+          const normalizedPage = normalizeData(result.data);
+          const normalizedTarget = normalizedPage.find(r => String(r._id) === idToFind || String(r.formId) === idToFind);
+          
+          setResp(normalizedPage);
+          setSelectedRequest(normalizedTarget);
+          setShowRequestDetails(true);
+          setCurrentPage(page);
+          setTotalPages(result.pagination.totalPages);
+          break;
+        }
+
+        maxPages = result.pagination.totalPages;
+        page++;
+        if (page > maxPages) break;
+      }
+    } catch (err) {
+      console.error("Error en búsqueda global:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData(currentPage);
   }, [currentPage]);
+
+  // Manejo de redirección por ID (Notificaciones)
+  useEffect(() => {
+    if (!formId) return;
+
+    const foundInState = resp.find(r => String(r._id) === formId || String(r.formId) === formId);
+    
+    if (foundInState) {
+      setSelectedRequest(foundInState);
+      setShowRequestDetails(true);
+    } else {
+      findRequestGlobally(formId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formId]);
 
   // Polling silencioso
   useEffect(() => {
@@ -144,15 +189,6 @@ const RequestTracking = () => {
     }, 45000);
     return () => clearInterval(interval);
   }, [filters.status, currentPage]);
-
-  useEffect(() => {
-    if (!formId || resp.length === 0) return;
-    const found = resp.find(r => String(r._id) === formId || String(r.formId) === formId);
-    if (found) {
-      setSelectedRequest(found);
-      setShowRequestDetails(true);
-    }
-  }, [formId, resp]);
 
   // --- HANDLERS ---
   const handleApplyFilters = () => {
@@ -198,11 +234,6 @@ const RequestTracking = () => {
     }
   };
 
-  const currentRequests = useMemo(() => {
-    return resp;
-  }, [resp]);
-
-  // Si no hay serverStats cargados aún, calculamos un objeto base
   const mockStats = serverStats || {
     total: totalItems,
     pending: 0,
@@ -276,10 +307,10 @@ const RequestTracking = () => {
             {isLoading ? (
               <div className="col-span-full py-12 text-center">
                 <Icon name="Loader2" size={32} className="mx-auto text-accent animate-spin mb-4" />
-                <p className="text-muted-foreground">Cargando solicitudes...</p>
+                <p className="text-muted-foreground">Buscando solicitud...</p>
               </div>
-            ) : currentRequests.length > 0 ? (
-              currentRequests.map(request => (
+            ) : resp.length > 0 ? (
+              resp.map(request => (
                 <RequestCard
                   key={request._id}
                   request={request}
