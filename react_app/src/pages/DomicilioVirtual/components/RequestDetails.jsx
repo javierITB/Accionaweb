@@ -1470,9 +1470,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                       onChange={(e) => handleStatusChange(e.target.value)}
                       className="h-9 px-3 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent"
                     >
-                      <option value="pendiente">Pendiente</option>
                       <option value="documento_generado">Documento Generado</option>
-                      <option value="solicitud_firmada">Solicitud Firmada</option>
+                      <option value="enviado">Enviado</option>
+                      <option value="solicitud_firmada">Firmada</option>
                       <option value="informado_sii">Informado al SII</option>
                       <option value="dicom">DICOM</option>
                       <option value="dado_de_baja">Dado de baja</option>
