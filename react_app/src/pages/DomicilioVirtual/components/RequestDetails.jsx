@@ -1049,10 +1049,23 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         <div className="flex justify-between">
           <span className="text-sm text-muted-foreground">Enviado por:</span>
           <span className="text-sm font-medium text-foreground">
-            {endpointPrefix.includes('domicilio-virtual') && fullRequestData?.user
-              ? `${fullRequestData.user.nombre}`
-              : `${fullRequestData?.submittedBy}, ${fullRequestData?.company}`
-            }
+            <span className="text-sm font-medium text-foreground">
+              {endpointPrefix.includes('domicilio-virtual')
+                ? (
+                  fullRequestData?.user?.nombre ||
+                  (() => {
+                    const keys = Object.keys(fullRequestData?.responses || {});
+                    // Busca una key que contenga "nombre" pero NO "empresa" ni "trabajador" (para evitar "Nombre empresa", "Nombre trabajador")
+                    // Prioriza la coincidencia exacta de "tu nombre" o "nombre"
+                    const exactKey = keys.find(k => k.trim().toLowerCase() === 'tu nombre' || k.trim().toLowerCase() === 'nombre' || k.trim().toLowerCase() === 'nombre completo');
+                    const fuzzyKey = keys.find(k => k.toLowerCase().includes('nombre') && !k.toLowerCase().includes('empresa') && !k.toLowerCase().includes('trabajador') && !k.toLowerCase().includes('social'));
+
+                    return fullRequestData?.responses?.[exactKey || fuzzyKey] || "Usuario Desconocido";
+                  })()
+                )
+                : `${fullRequestData?.submittedBy}, ${fullRequestData?.company}`
+              }
+            </span>
           </span>
         </div>
         <div className="flex justify-between">
@@ -1062,18 +1075,22 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
       </div>
 
       <div>
-        {attachmentsLoading &&
-          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-            Archivos Adjuntos
-            {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-          </h3>
-        }
-        {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 &&
-          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-            Archivos Adjuntos
-          </h3>
-        }
-        {fullRequestData?.adjuntos?.length > 0 && (
+        {!endpointPrefix.includes('domicilio-virtual') && (
+          <>
+            {attachmentsLoading &&
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                Archivos Adjuntos
+                {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+              </h3>
+            }
+            {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 &&
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                Archivos Adjuntos
+              </h3>
+            }
+          </>
+        )}
+        {!endpointPrefix.includes('domicilio-virtual') && fullRequestData?.adjuntos?.length > 0 && (
           <div className="space-y-2">
             {fullRequestData.adjuntos.map((adjunto, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
