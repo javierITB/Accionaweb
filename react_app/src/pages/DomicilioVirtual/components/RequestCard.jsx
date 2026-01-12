@@ -113,9 +113,12 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
 
   const getCombinedTitle = () => {
     const formTitle = currentRequest?.formTitle || 'Formulario';
-    const trabajador = request?.trabajador || "";
+    const trabajador = request?.trabajador;
 
-    return `${formTitle} ${trabajador}`;
+    if (trabajador && trabajador !== "No especificado") {
+      return `${formTitle} ${trabajador}`;
+    }
+    return formTitle;
   };
 
   return (
