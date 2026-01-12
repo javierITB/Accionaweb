@@ -170,8 +170,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     }
 
     if (request?._id) {
-      checkClientSignature();
-      getDocumentInfo(request._id);
+      // Solo llamar a checkClientSignature si NO es Domicilio Virtual
+      if (!endpointPrefix.includes('domicilio-virtual')) {
+        checkClientSignature();
+        getDocumentInfo(request._id);
+      }
     }
   }, [request]);
 
@@ -194,7 +197,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
             ...prev,
             ...data
           }));
-          await getDocumentInfo(responseId);
+          // Solo buscar info de generador si NO es domicilio virtual
+          if (!endpointPrefix.includes('domicilio-virtual')) {
+            await getDocumentInfo(responseId);
+          }
         }
       } catch (error) {
         console.error('Error cargando detalles completos:', error);
@@ -204,9 +210,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     };
 
     fetchFullDetailsAndDocs();
+
+    // Adjuntos y firma
     fetchAttachments(responseId);
-    checkClientSignature(responseId);
-    fetchApprovedData(responseId);
+
+    if (!endpointPrefix.includes('domicilio-virtual')) {
+      checkClientSignature(responseId);
+      fetchApprovedData(responseId);
+    }
 
   }, [isVisible, request?._id]);
 
@@ -1039,7 +1050,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
           <span className="text-sm text-muted-foreground">Enviado por:</span>
           <span className="text-sm font-medium text-foreground">
             {endpointPrefix.includes('domicilio-virtual') && fullRequestData?.user
-              ? `${fullRequestData.user.nombre}, ${fullRequestData.user.empresa}`
+              ? `${fullRequestData.user.nombre}`
               : `${fullRequestData?.submittedBy}, ${fullRequestData?.company}`
             }
           </span>
