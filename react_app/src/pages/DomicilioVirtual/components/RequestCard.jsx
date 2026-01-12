@@ -15,6 +15,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
     switch (status?.toLowerCase()) {
       case 'pending': case 'pendiente': return 'bg-error text-error-foreground';
       case 'documento_generado': return 'bg-error/10 text-error';
+      case 'enviado': return 'bg-blue-100 text-blue-700';
       case 'solicitud_firmada': return 'bg-warning text-warning-foreground';
       case 'informado_sii': return 'bg-info text-info-foreground';
       case 'dicom': return 'bg-secondary text-secondary-foreground';
@@ -28,6 +29,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
     switch (status?.toLowerCase()) {
       case 'pending': case 'pendiente': return 'Clock';
       case 'documento_generado': return 'FileText';
+      case 'enviado': return 'Send';
       case 'solicitud_firmada': return 'PenTool';
       case 'informado_sii': return 'Building';
       case 'dicom': return 'AlertTriangle';
@@ -41,8 +43,9 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
     const statusMap = {
       'pending': 'PENDIENTE',
       'pendiente': 'PENDIENTE',
+      'enviado': 'ENVIADO',
       'documento_generado': 'DOC. GENERADO',
-      'solicitud_firmada': 'SOLICITUD FIRMADA',
+      'solicitud_firmada': 'FIRMADA',
       'informado_sii': 'INFORMADO SII',
       'dicom': 'DICOM',
       'dado_de_baja': 'DADO DE BAJA',
