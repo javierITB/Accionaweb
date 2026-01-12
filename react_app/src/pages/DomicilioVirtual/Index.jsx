@@ -38,6 +38,7 @@ const DomicilioVirtualIndex = () => {
 
     const loadedPages = useRef(new Set());
 
+    // Corregido: Limpiamos filtros innecesarios y nos quedamos con la lógica de RUT (usando la llave company)
     const [filters, setFilters] = useState({
         search: '',
         status: '',
@@ -45,8 +46,7 @@ const DomicilioVirtualIndex = () => {
         dateRange: '',
         startDate: '',
         endDate: '',
-        company: '',
-        submittedBy: ''
+        company: '', // Este campo ahora representará el RUT en la búsqueda
     });
 
     // --- EFECTOS DE REDIMENSIONAMIENTO ---
@@ -70,13 +70,13 @@ const DomicilioVirtualIndex = () => {
 
             const endpoint = 'domicilio-virtual/mini';
 
+            // Corregido: Enviamos solo los parámetros que la nueva API procesa
             const params = new URLSearchParams({
                 page: pageNumber,
                 limit: requestsPerPage,
                 search: overrideFilters.search || '',
                 status: overrideFilters.status || '',
-                company: overrideFilters.company || '',
-                submittedBy: overrideFilters.submittedBy || '',
+                company: overrideFilters.company || '', // Enviamos el RUT ingresado
                 startDate: overrideFilters.startDate || '',
                 endDate: overrideFilters.endDate || ''
             });
@@ -90,20 +90,21 @@ const DomicilioVirtualIndex = () => {
             if (result.archivedTotal !== undefined) setArchivedCountServer(result.archivedTotal);
             if (result.stats) setServerStats(result.stats);
 
+            // Corregido: Mapeo de datos desde r.tuNombre y r.rutEmpresa
             const normalized = result.data.map(r => ({
                 _id: r._id,
                 formId: r.formId,
-                title: r.formTitle || r.title || "Formulario",
-                formTitle: r.formTitle || r.title,
-                description: r.formTitle || "Domicilio Virtual",
+                title: r.formTitle || "Formulario",
+                formTitle: r.formTitle,
+                description: "Domicilio Virtual",
                 submittedAt: r.submittedAt || r.createdAt || null,
                 createdAt: r.createdAt,
                 status: r.status,
-                trabajador: r.trabajador || "",
-                rutTrabajador: r.rutTrabajador || "",
+                // El cambiazo: Usamos los datos de las respuestas del formulario
                 tuNombre: r.tuNombre || "",
-                submittedBy: r.user?.nombre || r.tuNombre || r.submittedBy || 'Usuario Desconocido',
-                company: r.user?.empresa || r.company || 'Empresa Desconocida',
+                rutEmpresa: r.rutEmpresa || "",
+                submittedBy: r.tuNombre || 'Sin nombre', // Autor de la respuesta
+                company: r.rutEmpresa || 'Sin RUT',      // RUT de la respuesta
                 hasMessages: r.adjuntosCount > 0,
                 updatedAt: r.updatedAt
             }));
@@ -170,7 +171,8 @@ const DomicilioVirtualIndex = () => {
     };
 
     const handleClearFilters = () => {
-        const cleared = { search: '', status: '', category: '', dateRange: '', startDate: '', endDate: '', company: '', submittedBy: '' };
+        // Corregido: Limpiamos los campos específicos
+        const cleared = { search: '', status: '', category: '', dateRange: '', startDate: '', endDate: '', company: '' };
         setFilters(cleared);
         setResp([]);
         loadedPages.current.clear();
@@ -193,7 +195,7 @@ const DomicilioVirtualIndex = () => {
 
     const handleRemove = async (request) => {
         if (!window.confirm("¿Seguro que deseas eliminar esta solicitud?")) return;
-        alert("Funcionalidad de eliminar pendiente de implementación en backend para Domicilio Virtual");
+        alert("Funcionalidad de eliminar pendiente de implementación");
     };
 
     const currentRequests = useMemo(() => {
@@ -201,7 +203,7 @@ const DomicilioVirtualIndex = () => {
     }, [resp]);
 
     const mockStats = serverStats || {
-        total: totalItems + (filters.status === 'archivado' ? 0 : archivedCountServer),
+        total: totalItems,
         pending: resp.filter(r => r.status === 'pendiente').length,
         inReview: resp.filter(r => r.status === 'en_revision').length,
         approved: resp.filter(r => r.status === 'aprobado').length,
@@ -263,7 +265,7 @@ const DomicilioVirtualIndex = () => {
                         ) : (
                             <div className="col-span-full py-12 text-center bg-card border border-border rounded-xl">
                                 <Icon name="Search" size={40} className="mx-auto text-muted-foreground opacity-20 mb-4" />
-                                <p className="text-muted-foreground">No se encontraron solicitudes en Domicilio Virtual</p>
+                                <p className="text-muted-foreground">No se encontraron solicitudes</p>
                             </div>
                         )}
                     </div>
