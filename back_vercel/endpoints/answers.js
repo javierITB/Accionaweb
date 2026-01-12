@@ -938,7 +938,11 @@ router.get("/filtros", async (req, res) => {
     if (search) {
       query.$or = [
         { "formTitle": { $regex: search, $options: "i" } },
-        { "user.nombre": { $regex: search, $options: "i" } }
+        { "user.nombre": { $regex: search, $options: "i" } },
+        { "responses.Nombre del trabajador": { $regex: worker, $options: "i" } },
+        { "responses.NOMBRE DEL TRABAJADOR": { $regex: worker, $options: "i" } },
+        { "responses.Nombre Del Trabajador": { $regex: worker, $options: "i" } },
+        { "responses.Nombre del Trabajador": { $regex: worker, $options: "i" } }
       ];
     }
 
@@ -3574,7 +3578,7 @@ router.get("/domicilio-virtual/:id", async (req, res) => {
 
   } catch (err) {
     console.error("Error en GET /domicilio-virtual/:id:", err);
-    res.status(500).json({ error: "Error interno" });
+    res.status(500).json({ error: "Error interno: " + err.message });
   }
 });
 
@@ -3647,7 +3651,6 @@ router.post("/domicilio-virtual/:id/adjuntos", async (req, res) => {
 
     // Guardar archivo físico en GridFS si viene fileData
     if (adjunto.fileData) {
-      // En un caso real necesitaríamos validación de base64 antes de buffer
       const buffer = Buffer.from(adjunto.fileData.split(',')[1], 'base64');
       const bucket = new GridFSBucket(req.db, { bucketName: 'adjuntos' });
 
@@ -3767,6 +3770,17 @@ router.post("/domicilio-virtual/upload-corrected-files", async (req, res) => {
   }
 });
 
+// 7. Remove correction
+router.delete("/domicilio-virtual/:id/remove-correction", async (req, res) => {
+  res.status(501).json({ error: "No implementado" });
+});
+
+// 8. Delete uploaded file
+router.delete("/domicilio-virtual/delete-corrected-file/:id", async (req, res) => {
+  res.status(501).json({ error: "No implementado" });
+});
+
+// 9. Approve (POST)
 router.post("/domicilio-virtual/:id/approve", async (req, res) => {
   try {
     const { ObjectId } = require("mongodb");
