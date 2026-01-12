@@ -81,7 +81,7 @@ const DomicilioVirtualIndex = () => {
                 endDate: overrideFilters.endDate || ''
             });
 
-            const url = `${API_BASE_URL}/respuestas/${endpoint}?${params.toString()}`;
+            const url = `${API_BASE_URL}/${endpoint}?${params.toString()}`;
             const res = await apiFetch(url);
 
             if (!res.ok) throw new Error('Error al obtener datos');
@@ -190,14 +190,9 @@ const DomicilioVirtualIndex = () => {
         window.history.replaceState({}, document.title, url.pathname + url.search);
     };
 
-    // Para borrar una solicitud (INCOMPLETO)
     const handleRemove = async (request) => {
         if (!window.confirm("¿Seguro que deseas eliminar esta solicitud?")) return;
-        try {
-            alert("Funcionalidad de eliminar pendiente de implementación en backend para Domicilio Virtual");
-        } catch (err) {
-            alert("Error al eliminar.");
-        }
+        alert("Funcionalidad de eliminar pendiente de implementación en backend para Domicilio Virtual");
     };
 
     const currentRequests = useMemo(() => {
@@ -279,7 +274,7 @@ const DomicilioVirtualIndex = () => {
                 isVisible={showRequestDetails}
                 onClose={handleCloseRequestDetails}
                 onUpdate={updateRequest}
-                endpointPrefix="respuestas/domicilio-virtual"
+                endpointPrefix="domicilio-virtual"
             />
         </div>
     );
