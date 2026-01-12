@@ -1,13 +1,87 @@
-
 body {
-  margin: 0;
-  padding: 0;
-  font-family: Inter;
+   margin: 0;
+   padding: 0;
+   font-family: Inter;
 }
 
 * {
-  box-sizing: border-box;
-  line-height: normal;
-  font-family: inherit;
-  margin: unset;
+   box-sizing: border-box;
+   line-height: normal;
+   font-family: inherit;
+   margin: unset;
+}
+
+/* =========================================================
+   Scrollbar fino SOLO para Chromium
+   Firefox usa scrollbar nativo
+   ========================================================= */
+
+/* Sidebar expandido */
+.scrollbar-thin {
+   scrollbar-gutter: stable;
+}
+
+/* Sidebar collapsed: sin espacio reservado */
+.sidebar-collapsed {
+   overflow-y: overlay;
+   scrollbar-gutter: auto;
+}
+
+/* Sidebar collapsed + hover: reservar espacio */
+.sidebar-collapsed:hover {
+   scrollbar-gutter: stable;
+}
+/* Sidebar expandido (Chromium) */
+.scrollbar-thin::-webkit-scrollbar {
+   width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+   background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+   background-color: rgba(100, 100, 100, 0.4);
+   border-radius: 9999px;
+}
+
+.scrollbar-thin:hover::-webkit-scrollbar-thumb {
+   background-color: rgba(100, 100, 100, 0.6);
+}
+
+/* =========================================================
+   Sidebar COLLAPSED
+   ========================================================= */
+
+/* --- Firefox: oculto cuando está collapsed --- */
+.sidebar-collapsed {
+   scrollbar-width: none;
+}
+
+/* Firefox: vuelve scrollbar NATIVO en hover */
+.sidebar-collapsed:hover {
+   scrollbar-width: auto;
+}
+
+/* --- Chromium: oculto cuando está collapsed --- */
+.sidebar-collapsed::-webkit-scrollbar {
+   width: 0px;
+}
+
+/* Chromium: scrollbar fino en hover */
+.sidebar-collapsed:hover::-webkit-scrollbar {
+   width: 6px;
+}
+
+.sidebar-collapsed:hover::-webkit-scrollbar-track {
+   background: transparent;
+}
+
+.sidebar-collapsed:hover::-webkit-scrollbar-thumb {
+   background-color: rgba(100, 100, 100, 0.4);
+   border-radius: 9999px;
+}
+
+.sidebar-collapsed:hover::-webkit-scrollbar-thumb:hover {
+   background-color: rgba(100, 100, 100, 0.6);
 }
