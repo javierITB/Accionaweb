@@ -60,7 +60,7 @@ const RequestTracking = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // --- FUNCIÓN DE NORMALIZACIÓN (Para reutilizar en fetch y búsqueda) ---
+  // --- FUNCIÓN DE NORMALIZACIÓN ---
   const normalizeData = (data) => {
     return data.map(r => ({
       _id: r._id,
@@ -81,20 +81,19 @@ const RequestTracking = () => {
   };
 
   // --- LÓGICA DE CARGA DE DATOS ---
-  const fetchData = async (pageNumber, isBackground = false) => {
+  const fetchData = async (pageNumber, isBackground = false, overrideFilters = filters) => {
     try {
       if (!isBackground) setIsLoading(true);
 
-      // Construimos los params basándonos exclusivamente en el estado 'filters'
       const params = new URLSearchParams({
         page: pageNumber,
         limit: requestsPerPage,
-        search: filters.search || '',
-        status: filters.status || '',
-        company: filters.company || '',
-        submittedBy: filters.submittedBy || '',
-        startDate: filters.startDate || '',
-        endDate: filters.endDate || ''
+        search: overrideFilters.search || '',
+        status: overrideFilters.status || '',
+        company: overrideFilters.company || '',
+        submittedBy: overrideFilters.submittedBy || '',
+        startDate: overrideFilters.startDate || '',
+        endDate: overrideFilters.endDate || ''
       });
 
       const url = `${API_BASE_URL}/respuestas/filtros?${params.toString()}`;
@@ -103,16 +102,16 @@ const RequestTracking = () => {
       if (!res.ok) throw new Error('Error al obtener datos');
       const result = await res.json();
 
-      // Seteamos los datos tal cual vienen de la API (ya filtrados y paginados)
-      const normalized = normalizeData(result.data);
-      setResp(normalized);
-
-      // Actualizamos estados de paginación con la info de la API
+      setResp(normalizeData(result.data));
       setTotalPages(result.pagination.totalPages || 1);
       setTotalItems(result.pagination.total || 0);
 
       if (result.stats) {
-        setServerStats(result.stats);
+        setServerStats(prevStats => {
+          const isFilteringByStatus = overrideFilters.status && overrideFilters.status !== '';
+          if (isFilteringByStatus && prevStats) return prevStats;
+          return result.stats;
+        });
       }
 
       if (!isBackground) window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -124,25 +123,21 @@ const RequestTracking = () => {
     }
   };
 
-  // --- NUEVA LÓGICA: BÚSQUEDA GLOBAL POR TODAS LAS PÁGINAS ---
+  // --- BÚSQUEDA GLOBAL ---
   const findRequestGlobally = async (idToFind) => {
     setIsLoading(true);
     let page = 1;
     let maxPages = totalPages || 1;
-
     try {
       while (page <= maxPages) {
         const params = new URLSearchParams({ page, limit: requestsPerPage });
         const url = `${API_BASE_URL}/respuestas/filtros?${params.toString()}`;
         const res = await apiFetch(url);
         const result = await res.json();
-
         const found = result.data.find(r => String(r._id) === idToFind || String(r.formId) === idToFind);
-
         if (found) {
           const normalizedPage = normalizeData(result.data);
           const normalizedTarget = normalizedPage.find(r => String(r._id) === idToFind || String(r.formId) === idToFind);
-
           setResp(normalizedPage);
           setSelectedRequest(normalizedTarget);
           setShowRequestDetails(true);
@@ -150,7 +145,6 @@ const RequestTracking = () => {
           setTotalPages(result.pagination.totalPages);
           break;
         }
-
         maxPages = result.pagination.totalPages;
         page++;
         if (page > maxPages) break;
@@ -166,22 +160,17 @@ const RequestTracking = () => {
     fetchData(currentPage);
   }, [currentPage]);
 
-  // Manejo de redirección por ID (Notificaciones)
   useEffect(() => {
     if (!formId) return;
-
     const foundInState = resp.find(r => String(r._id) === formId || String(r.formId) === formId);
-
     if (foundInState) {
       setSelectedRequest(foundInState);
       setShowRequestDetails(true);
     } else {
       findRequestGlobally(formId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formId]);
 
-  // Polling silencioso
   useEffect(() => {
     const interval = setInterval(() => {
       if (filters.status !== 'archivado') fetchData(currentPage, true);
@@ -197,31 +186,10 @@ const RequestTracking = () => {
 
   const handleStatusFilter = (status) => {
     const newStatus = filters.status === status ? '' : status;
-
-    // Actualizamos el estado de filtros
     const newFilters = { ...filters, status: newStatus };
     setFilters(newFilters);
-
-    // Reseteamos página y disparamos la petición inmediatamente
     setCurrentPage(1);
-
-    fetchDataWithParams(1, newFilters);
-  };
-
-  const fetchDataWithParams = async (pageNumber, currentFilters) => {
-    setIsLoading(true);
-    const params = new URLSearchParams({
-      page: pageNumber,
-      limit: requestsPerPage,
-      ...currentFilters
-    });
-    const res = await apiFetch(`${API_BASE_URL}/respuestas/filtros?${params.toString()}`);
-    const result = await res.json();
-    setResp(normalizeData(result.data));
-    setTotalPages(result.pagination.totalPages);
-    setTotalItems(result.pagination.total);
-    setServerStats(result.stats);
-    setIsLoading(false);
+    fetchData(1, false, newFilters);
   };
 
   const handleClearFilters = () => {
@@ -232,7 +200,7 @@ const RequestTracking = () => {
     };
     setFilters(cleared);
     setCurrentPage(1);
-    fetchDataWithParams(1, cleared);
+    fetchData(1, false, cleared);
   };
 
   const updateRequest = (updatedRequest) => {
@@ -258,14 +226,24 @@ const RequestTracking = () => {
     }
   };
 
+  // --- CORRECCIÓN SOLICITADA: Filtrado de archivados en Front ---
+  const currentRequests = useMemo(() => {
+    // Si el filtro de estado NO es 'archivado', ocultamos cualquier archivado
+    if (filters.status !== 'archivado') {
+      return resp.filter(request => request.status !== 'archivado');
+    }
+    // Si el usuario seleccionó 'archivado', mostramos todo el resultado
+    return resp;
+  }, [resp, filters.status]);
+
   const mockStats = serverStats || {
     total: totalItems,
-    pending: 0,
-    inReview: 0,
-    approved: 0,
-    rejected: 0,
-    finalized: 0,
-    archived: archivedCountServer
+    pendiente: 0,
+    en_revision: 0,
+    aprobado: 0,
+    firmado: 0,
+    finalizado: 0,
+    archivado: 0
   };
 
   const mainMarginClass = isMobileScreen ? 'ml-0' : isDesktopOpen ? 'lg:ml-64' : 'lg:ml-16';
@@ -292,7 +270,7 @@ const RequestTracking = () => {
             <div>
               <div className="flex items-center gap-3">
                 <span className="flex items-center justify-center min-w-8 h-8 px-2 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
-                  {totalItems}
+                  {filters.status === 'archivado' ? totalItems : (totalItems - (serverStats?.archivado || 0))}
                 </span>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
                   Seguimiento de Solicitudes
@@ -333,8 +311,8 @@ const RequestTracking = () => {
                 <Icon name="Loader2" size={32} className="mx-auto text-accent animate-spin mb-4" />
                 <p className="text-muted-foreground">Buscando solicitud...</p>
               </div>
-            ) : resp.length > 0 ? (
-              resp.map(request => (
+            ) : currentRequests.length > 0 ? (
+              currentRequests.map(request => (
                 <RequestCard
                   key={request._id}
                   request={request}

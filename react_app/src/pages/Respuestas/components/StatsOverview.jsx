@@ -3,10 +3,12 @@ import Icon from '../../../components/AppIcon';
 
 const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange }) => {
   
+  // Función para determinar si una tarjeta está activa visualmente
   const isStatusFilterActive = (statusValue) => {
     return filters.status === statusValue;
   };
 
+  // Cálculos de variación (24h) basados en los datos cargados en memoria
   const calculate24hChange = (dateField) => {
     if (!allForms || !Array.isArray(allForms)) return 0;
     return allForms.filter(r => {
@@ -23,10 +25,11 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange }) => {
   const last24hApprovedCount = calculate24hChange('approvedAt');
   const last24hFinalizedCount = calculate24hChange('finalizedAt');
 
+  // Configuración de tarjetas mapeadas a los nombres del Backend
   const statCards = [
     {
       title: 'Pendientes',
-      value: stats?.pending,
+      value: stats?.pendiente,
       icon: 'Clock',
       color: 'text-error',
       bgColor: 'bg-error/10',
@@ -37,7 +40,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange }) => {
     },
     {
       title: 'En Revisión',
-      value: stats?.inReview,
+      value: stats?.en_revision,
       icon: 'Eye',
       color: 'text-secondary',
       bgColor: 'bg-secondary/10',
@@ -48,7 +51,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange }) => {
     },
     {
       title: 'Aprobadas',
-      value: stats?.approved,
+      value: stats?.aprobado,
       icon: 'CheckCircle',
       color: 'text-warning',
       bgColor: 'bg-warning/10',
@@ -59,18 +62,18 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange }) => {
     },
     {
       title: 'Firmadas',
-      value: stats?.rejected, 
+      value: stats?.firmado, 
       icon: 'CheckSquare',
       color: 'text-success',
       bgColor: 'bg-success/10',
       borderColor: 'border-success',
-      change: '+3%',
+      change: '+3%', // Valor estático según tu código original
       changeType: 'positive',
       filterKey: 'firmado'
     },
     {
       title: 'Finalizados',
-      value: stats?.finalized,
+      value: stats?.finalizado,
       icon: 'Timer',
       color: 'text-accent',
       bgColor: 'bg-accent/10',
@@ -81,7 +84,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange }) => {
     },
     {
       title: 'Archivados',
-      value: stats?.archived,
+      value: stats?.archivado,
       icon: 'Folder',
       color: 'text-card-foreground',
       bgColor: 'bg-card/10',
@@ -105,6 +108,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange }) => {
               }`}
             onClick={() => onFilterChange(stat.filterKey)}
           >
+            {/* Header de la tarjeta */}
             <div className="flex items-center justify-between mb-2 sm:mb-3">
               <div className={`p-1.5 sm:p-2 rounded-lg ${stat.bgColor}`}>
                 <Icon name={stat.icon} size={16} className={`${stat.color} sm:w-5 sm:h-5`} />
@@ -117,6 +121,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange }) => {
               </div>
             </div>
 
+            {/* Contenido de la tarjeta */}
             <div>
               <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground mb-1 leading-tight">
                 {stat.value || 0}
