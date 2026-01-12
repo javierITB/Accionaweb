@@ -3522,8 +3522,152 @@ router.get("/domicilio-virtual/:id", async (req, res) => {
 
   } catch (err) {
     console.error("Error en GET /domicilio-virtual/:id:", err);
-    res.status(500).json({ error: "Error interno" });
+    res.status(500).json({ error: "Error interno: " + err.message });
   }
+});
+
+// --- ENDPOINTS AUXILIARES PARA DOMICILIO VIRTUAL ---
+
+// 1. Obtener adjuntos
+router.get("/domicilio-virtual/:id/adjuntos", async (req, res) => {
+  try {
+    const { ObjectId } = require("mongodb");
+    const adjuntosDoc = await req.db.collection("adjuntos").findOne({
+      responseId: new ObjectId(req.params.id)
+    });
+
+    if (!adjuntosDoc || !adjuntosDoc.adjuntos) {
+      return res.json([]);
+    }
+    res.json(adjuntosDoc.adjuntos);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al obtener adjuntos" });
+  }
+});
+
+// 2. Descargar adjunto específico
+router.get("/domicilio-virtual/:id/adjuntos/:index", async (req, res) => {
+  try {
+    const { ObjectId, GridFSBucket } = require("mongodb");
+    const index = parseInt(req.params.index);
+
+    const adjuntosDoc = await req.db.collection("adjuntos").findOne({
+      responseId: new ObjectId(req.params.id)
+    });
+
+    if (!adjuntosDoc || !adjuntosDoc.adjuntos || !adjuntosDoc.adjuntos[index]) {
+      return res.status(404).json({ error: "Adjunto no encontrado" });
+    }
+
+    const adjunto = adjuntosDoc.adjuntos[index];
+    const bucket = new GridFSBucket(req.db, { bucketName: 'adjuntos' });
+
+    if (!adjunto.fileId) {
+      return res.status(404).json({ error: "Archivo físico no encontrado" });
+    }
+
+    const downloadStream = bucket.openDownloadStream(new ObjectId(adjunto.fileId));
+
+    res.set('Content-Type', adjunto.mimeType || 'application/octet-stream');
+    res.set('Content-Disposition', `attachment; filename="${adjunto.fileName}"`);
+
+    downloadStream.pipe(res);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al descargar adjunto" });
+  }
+});
+
+// 3. Cambiar estado
+router.put("/domicilio-virtual/:id/status", async (req, res) => {
+  try {
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
+    const { ObjectId } = require("mongodb");
+    const { status } = req.body;
+
+    await req.db.collection("domicilio_virtual").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      {
+        $set: {
+          status: status,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    const updatedRequest = await req.db.collection("domicilio_virtual").findOne({ _id: new ObjectId(req.params.id) });
+
+    const { decrypt } = require('../utils/seguridad.helper');
+    if (updatedRequest.user) {
+      try { updatedRequest.user.nombre = decrypt(updatedRequest.user.nombre); } catch (e) { }
+      try { updatedRequest.user.empresa = decrypt(updatedRequest.user.empresa); } catch (e) { }
+    }
+
+    res.json({ success: true, updatedRequest });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error actualizando estado" });
+  }
+});
+
+// 4. Client Signature Check (Mock)
+router.get("/domicilio-virtual/:id/has-client-signature", async (req, res) => {
+  res.json({ exists: false });
+});
+
+// 5. Data Approved (Mock)
+router.get("/domicilio-virtual/data-approved/:id", async (req, res) => {
+  res.json(null);
+});
+
+// 6. Upload Corrected Files (for Domicilio Virtual we save them to 'adjuntos' or 'corrected_files' linked to responseId)
+//    Reusing logic mostly, but targeting 'domicilio_virtual' ID.
+router.post("/domicilio-virtual/upload-corrected-files", async (req, res) => {
+  try {
+    // Ideally use same upload logic as /respuestas/upload-corrected-files
+    // forcing responseId to be valid in domicilio_virtual
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
+    // Implementation skipped for brevity unless requested, returning success mock
+    // to prevent 404 if frontend calls it.
+    // In a real scenario, we'd need multer and gridfs logic here.
+    // For now, let's assume we won't use the full 'correction' flow on Domicilio Virtual 
+    // unless user explicitly asks for 'Subir Correcciones'.
+    // But to avoid 404:
+    res.status(501).json({ error: "Subida de correcciones no implementada para Domicilio Virtual" });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7. Remove correction
+router.delete("/domicilio-virtual/:id/remove-correction", async (req, res) => {
+  res.status(501).json({ error: "No implementado" });
+});
+
+// 8. Delete uploaded file
+router.delete("/domicilio-virtual/delete-corrected-file/:id", async (req, res) => {
+  res.status(501).json({ error: "No implementado" });
+});
+
+// 9. Approve (POST)
+router.post("/domicilio-virtual/:id/approve", async (req, res) => {
+  // Just update status to 'solicitud_firmada' or 'aprobado'
+  try {
+    const { ObjectId } = require("mongodb");
+    await req.db.collection("domicilio_virtual").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { status: 'aprobado', updatedAt: new Date() } } // Or custom logic
+    );
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 module.exports = router;
