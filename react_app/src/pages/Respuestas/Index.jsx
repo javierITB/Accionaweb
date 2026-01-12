@@ -81,19 +81,20 @@ const RequestTracking = () => {
   };
 
   // --- LÓGICA DE CARGA DE DATOS ---
-  const fetchData = async (pageNumber, isBackground = false, overrideFilters = filters) => {
+  const fetchData = async (pageNumber, isBackground = false) => {
     try {
       if (!isBackground) setIsLoading(true);
 
+      // Construimos los params basándonos exclusivamente en el estado 'filters'
       const params = new URLSearchParams({
         page: pageNumber,
         limit: requestsPerPage,
-        search: overrideFilters.search || '',
-        status: overrideFilters.status || '',
-        company: overrideFilters.company || '',
-        submittedBy: overrideFilters.submittedBy || '',
-        startDate: overrideFilters.startDate || '',
-        endDate: overrideFilters.endDate || '' 
+        search: filters.search || '',
+        status: filters.status || '',
+        company: filters.company || '',
+        submittedBy: filters.submittedBy || '',
+        startDate: filters.startDate || '',
+        endDate: filters.endDate || ''
       });
 
       const url = `${API_BASE_URL}/respuestas/filtros?${params.toString()}`;
@@ -102,19 +103,17 @@ const RequestTracking = () => {
       if (!res.ok) throw new Error('Error al obtener datos');
       const result = await res.json();
 
-      if (result.archivedTotal !== undefined) setArchivedCountServer(result.archivedTotal);
-      
-      if (result.stats) {
-        setServerStats(prevStats => {
-          const isFilteringByStatus = overrideFilters.status && overrideFilters.status !== '';
-          return (isFilteringByStatus && prevStats) ? prevStats : result.stats;
-        });
-      }
-
+      // Seteamos los datos tal cual vienen de la API (ya filtrados y paginados)
       const normalized = normalizeData(result.data);
       setResp(normalized);
+
+      // Actualizamos estados de paginación con la info de la API
       setTotalPages(result.pagination.totalPages || 1);
       setTotalItems(result.pagination.total || 0);
+
+      if (result.stats) {
+        setServerStats(result.stats);
+      }
 
       if (!isBackground) window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -143,7 +142,7 @@ const RequestTracking = () => {
         if (found) {
           const normalizedPage = normalizeData(result.data);
           const normalizedTarget = normalizedPage.find(r => String(r._id) === idToFind || String(r.formId) === idToFind);
-          
+
           setResp(normalizedPage);
           setSelectedRequest(normalizedTarget);
           setShowRequestDetails(true);
@@ -172,7 +171,7 @@ const RequestTracking = () => {
     if (!formId) return;
 
     const foundInState = resp.find(r => String(r._id) === formId || String(r.formId) === formId);
-    
+
     if (foundInState) {
       setSelectedRequest(foundInState);
       setShowRequestDetails(true);
@@ -193,22 +192,47 @@ const RequestTracking = () => {
   // --- HANDLERS ---
   const handleApplyFilters = () => {
     setCurrentPage(1);
-    fetchData(1); 
+    fetchData(1);
   };
 
   const handleStatusFilter = (status) => {
     const newStatus = filters.status === status ? '' : status;
+
+    // Actualizamos el estado de filtros
     const newFilters = { ...filters, status: newStatus };
     setFilters(newFilters);
+
+    // Reseteamos página y disparamos la petición inmediatamente
     setCurrentPage(1);
-    fetchData(1, false, newFilters);
+
+    fetchDataWithParams(1, newFilters);
+  };
+
+  const fetchDataWithParams = async (pageNumber, currentFilters) => {
+    setIsLoading(true);
+    const params = new URLSearchParams({
+      page: pageNumber,
+      limit: requestsPerPage,
+      ...currentFilters
+    });
+    const res = await apiFetch(`${API_BASE_URL}/respuestas/filtros?${params.toString()}`);
+    const result = await res.json();
+    setResp(normalizeData(result.data));
+    setTotalPages(result.pagination.totalPages);
+    setTotalItems(result.pagination.total);
+    setServerStats(result.stats);
+    setIsLoading(false);
   };
 
   const handleClearFilters = () => {
-    const cleared = { search: '', status: '', category: '', dateRange: '', startDate: '', endDate: '', company: '', submittedBy: '' };
+    const cleared = {
+      search: '', status: '', category: '',
+      dateRange: '', startDate: '', endDate: '',
+      company: '', submittedBy: ''
+    };
     setFilters(cleared);
     setCurrentPage(1);
-    fetchData(1, false, cleared);
+    fetchDataWithParams(1, cleared);
   };
 
   const updateRequest = (updatedRequest) => {
@@ -263,7 +287,7 @@ const RequestTracking = () => {
 
       <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
-          
+
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-3">
@@ -294,13 +318,13 @@ const RequestTracking = () => {
 
           <StatsOverview stats={mockStats} allForms={resp} filters={filters} onFilterChange={handleStatusFilter} />
 
-          <FilterPanel 
-            filters={filters} 
-            onFilterChange={setFilters} 
-            onClearFilters={handleClearFilters} 
-            onApplyFilters={handleApplyFilters} 
-            isVisible={showFilters} 
-            onToggle={() => setShowFilters(!showFilters)} 
+          <FilterPanel
+            filters={filters}
+            onFilterChange={setFilters}
+            onClearFilters={handleClearFilters}
+            onApplyFilters={handleApplyFilters}
+            isVisible={showFilters}
+            onToggle={() => setShowFilters(!showFilters)}
           />
 
           <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>

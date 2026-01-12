@@ -8,7 +8,7 @@ const FilterPanel = ({
   filters, 
   onFilterChange, 
   onClearFilters, 
-  onApplyFilters, // <-- Nueva prop
+  onApplyFilters, 
   isVisible, 
   onToggle 
 }) => {
