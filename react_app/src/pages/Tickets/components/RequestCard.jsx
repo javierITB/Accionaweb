@@ -148,6 +148,37 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
     return category;
   };
 
+  const getCompanyDisplay = () => {
+    if (currentRequest?.origin === 'domicilio_virtual') {
+      const keys = Object.keys(currentRequest?.responses || {});
+      const normalize = k => k.toLowerCase().trim().replace(':', '');
+
+      const companyKey = keys.find(k => {
+        const n = normalize(k);
+        if (n.includes('rut') ||
+          n.includes('teléfono') || n.includes('telefono') ||
+          n.includes('celular') ||
+          n.includes('mail') || n.includes('correo') ||
+          n.includes('dirección') || n.includes('direccion') || n.includes('calle')) return false;
+
+        return ['razón social', 'razon social', 'nombre que llevará la empresa', 'empresa', 'cliente'].some(t => n.includes(t));
+      });
+
+      const rutKey = keys.find(k => {
+        const n = normalize(k);
+        return n.includes('rut de la empresa') || n.includes('rut representante');
+      });
+
+      const companyName = currentRequest?.responses?.[companyKey] || currentRequest?.nombreEmpresa || 'Empresa Desconocida';
+      const rut = currentRequest?.responses?.[rutKey] || currentRequest?.rutEmpresa;
+
+      return `${companyName}${rut ? ` (${rut})` : ''}`;
+    }
+
+    // Default behavior for other tickets
+    return currentRequest?.company || currentRequest?.user?.empresa || 'Empresa Desconocida';
+  };
+
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 hover:shadow-brand-hover transition-brand">
       {/* Header - RESPONSIVE */}
@@ -172,7 +203,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
           <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-3 sm:space-x-4 text-xs text-muted-foreground">
             <div className="flex items-center space-x-1">
               <Icon name="Briefcase" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
-              <span className="truncate">Empresa: {currentRequest?.company}</span>
+              <span className="truncate">Empresa: {getCompanyDisplay()}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Icon name="User" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
