@@ -65,7 +65,6 @@ const FilterPanel = ({
 
       {isVisible && (
         <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
-          {/* BUSCADOR GLOBAL: Filtra por Tu Nombre, RUT Empresa o Razón Social */}
           <div>
             <Input
               label="Buscar Solicitudes"
@@ -87,15 +86,21 @@ const FilterPanel = ({
             <Input label="Fecha Hasta" type="date" value={filters?.endDate || ''} onChange={(e) => handleInputChange('endDate', e?.target?.value)} />
           </div>
 
-          {/* FILTRO ESPECÍFICO DE RUT */}
           <div className="pt-3 sm:pt-4 border-t border-border">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <Input 
-                label="RUT DE LA EMPRESA / REPRESENTANTE LEGAL" 
+                label="RUT EMPRESA" 
                 type="text" 
                 placeholder="Ej: 77.123.456-k" 
                 value={filters?.company || ''} 
                 onChange={(e) => handleInputChange('company', e?.target?.value)} 
+              />
+              <Input 
+                label="ENVIADO POR" 
+                type="text" 
+                placeholder="Nombre del solicitante..." 
+                value={filters?.submittedBy || ''} 
+                onChange={(e) => handleInputChange('submittedBy', e?.target?.value)} 
               />
             </div>
           </div>
