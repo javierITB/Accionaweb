@@ -1050,23 +1050,31 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         <div className="flex justify-between">
           <span className="text-sm text-muted-foreground">Enviado por:</span>
           <span className="text-sm font-medium text-foreground">
-            <span className="text-sm font-medium text-foreground">
-              {endpointPrefix.includes('domicilio-virtual')
-                ? (
-                  fullRequestData?.user?.nombre ||
-                  (() => {
-                    const keys = Object.keys(fullRequestData?.responses || {});
-                    // Busca una key que contenga "nombre" pero NO "empresa" ni "trabajador" (para evitar "Nombre empresa", "Nombre trabajador")
-                    // Prioriza la coincidencia exacta de "tu nombre" o "nombre"
-                    const exactKey = keys.find(k => k.trim().toLowerCase() === 'tu nombre' || k.trim().toLowerCase() === 'nombre' || k.trim().toLowerCase() === 'nombre completo');
-                    const fuzzyKey = keys.find(k => k.toLowerCase().includes('nombre') && !k.toLowerCase().includes('empresa') && !k.toLowerCase().includes('trabajador') && !k.toLowerCase().includes('social'));
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-foreground">
+                {(() => {
+                  const keys = Object.keys(fullRequestData?.responses || {});
+                  const normalize = k => k.toLowerCase().trim().replace(':', '');
+                  // Busca nombre de empresa
+                  const companyKey = keys.find(k => {
+                    const n = normalize(k);
+                    // Match con keywords de empresa PERO excluyendo 'rut'
+                    return !n.includes('rut') &&
+                      ['razón social', 'razon social', 'nombre que llevará la empresa', 'empresa', 'cliente'].some(t => n.includes(t));
+                  });
+                  // Busca RUT
+                  const rutKey = keys.find(k => {
+                    const n = normalize(k);
+                    return n.includes('rut de la empresa') || n.includes('rut representante');
+                  });
 
-                    return fullRequestData?.responses?.[exactKey || fuzzyKey] || "Usuario Desconocido";
-                  })()
-                )
-                : `${fullRequestData?.submittedBy}, ${fullRequestData?.company}`
-              }
-            </span>
+                  const companyName = fullRequestData?.responses?.[companyKey] || fullRequestData?.nombreEmpresa || 'Empresa Desconocida';
+                  const rut = fullRequestData?.responses?.[rutKey] || fullRequestData?.rutEmpresa;
+
+                  return companyName + (rut ? ` (${rut})` : '');
+                })()}
+              </span>
+            </div>
           </span>
         </div>
         <div className="flex justify-between">

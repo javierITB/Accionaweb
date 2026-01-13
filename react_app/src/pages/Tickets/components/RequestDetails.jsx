@@ -720,11 +720,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
 
   const realAttachments = getRealAttachments();
 
-  const findResponseValue = (responses, keys) => {
+  const findResponseValue = (responses, searchKeys, ignore = []) => {
     if (!responses) return null;
-    const lowerKeys = keys.map(k => k.toLowerCase());
-    for (const [key, value] of Object.entries(responses)) {
-      if (lowerKeys.includes(key.toLowerCase())) return value;
+    const responseKeys = Object.keys(responses);
+
+    for (const searchKey of searchKeys) {
+      const cleanSearch = searchKey.toLowerCase().trim();
+      const foundKey = responseKeys.find(k => {
+        const cleanK = k.toLowerCase().trim().replace(':', '');
+        if (ignore.some(ign => cleanK.includes(ign))) return false;
+        return cleanK.includes(cleanSearch);
+      });
+      if (foundKey) return responses[foundKey];
     }
     return null;
   };
@@ -770,7 +777,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Enviado por</p>
             <p className="text-sm font-semibold text-foreground">
               {fullRequestData?.origin === 'domicilio_virtual'
-                ? (findResponseValue(fullRequestData?.responses, ['nombre o razón social', 'nombre que llevará la empresa', 'razón social', 'razon social', 'empresa', 'cliente']) || 'Empresa Desconocida')
+                ? (findResponseValue(fullRequestData?.responses, ['nombre o razón social', 'nombre que llevará la empresa', 'razón social', 'razon social', 'empresa', 'cliente'], ['rut']) || 'Empresa Desconocida')
                 : (fullRequestData?.submittedBy || fullRequestData?.user?.nombre || 'Usuario Desconocido')
               }
             </p>
