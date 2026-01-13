@@ -27,6 +27,9 @@ const FormReg = () => {
     value: null
   });
 
+  // ESTADO PARA ORDENAMIENTO
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
   // ESTADOS DEL SIDEBAR
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -121,12 +124,64 @@ const FormReg = () => {
     }
   };
 
-  const filteredUsers = useMemo(() => {
-    if (!filters.field || !filters.value) return users;
-    return users.filter(user =>
-      String(user[filters.field]).toLowerCase() === String(filters.value).toLowerCase()
-    );
-  }, [users, filters]);
+  // LOGICA DE ORDENAMIENTO
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <Icon name="ChevronsUpDown" size={14} className="ml-1 text-muted-foreground opacity-30" />;
+    return sortConfig.direction === 'asc'
+      ? <Icon name="ChevronUp" size={14} className="ml-1 text-primary" />
+      : <Icon name="ChevronDown" size={14} className="ml-1 text-primary" />;
+  };
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedUsers = useMemo(() => {
+    let processData = [...users];
+
+    // 1. Filtrar
+    if (filters.field && filters.value) {
+      processData = processData.filter(user =>
+        String(user[filters.field]).toLowerCase() === String(filters.value).toLowerCase()
+      );
+    }
+
+    // 2. Ordenar
+    if (sortConfig.key) {
+      processData.sort((a, b) => {
+        const key = sortConfig.key;
+        let valueA, valueB;
+
+        // Casos especiales
+        if (key === 'nombre') {
+          valueA = `${a.nombre || ''} ${a.apellido || ''}`.trim().toLowerCase();
+          valueB = `${b.nombre || ''} ${b.apellido || ''}`.trim().toLowerCase();
+        } else if (key === 'createdAt') {
+          valueA = new Date(a.createdAt || 0).getTime();
+          valueB = new Date(b.createdAt || 0).getTime();
+        } else {
+          // Caso general: strings
+          valueA = String(a[key] || '').toLowerCase();
+          valueB = String(b[key] || '').toLowerCase();
+        }
+
+        // Comparación
+        if (valueA < valueB) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (valueA > valueB) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return processData;
+  }, [users, filters, sortConfig]);
 
   const clearForm = () => {
     setFormData({
@@ -274,19 +329,35 @@ const FormReg = () => {
             <table className="min-w-full border border-border rounded-lg">
               <thead className="bg-muted text-sm text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-2 text-left">ID</th>
-                  <th className="px-4 py-2 text-left">Nombre</th>
-                  <th className="px-4 py-2 text-left">Empresa</th>
-                  <th className="px-4 py-2 text-left">Email</th>
-                  <th className="px-4 py-2 text-left">Cargo</th>
-                  <th className="px-4 py-2 text-left">Rol</th>
-                  <th className="px-4 py-2 text-left">Estado</th>
-                  <th className="px-4 py-2 text-left">Creado</th>
+                  <th className="px-4 py-2 text-left cursor-pointer hover:bg-muted/80 transition-colors select-none" onClick={() => handleSort('_id')}>
+                    <div className="flex items-center">ID {getSortIcon('_id')}</div>
+                  </th>
+                  <th className="px-4 py-2 text-left cursor-pointer hover:bg-muted/80 transition-colors select-none" onClick={() => handleSort('nombre')}>
+                    <div className="flex items-center">Nombre {getSortIcon('nombre')}</div>
+                  </th>
+                  <th className="px-4 py-2 text-left cursor-pointer hover:bg-muted/80 transition-colors select-none" onClick={() => handleSort('empresa')}>
+                    <div className="flex items-center">Empresa {getSortIcon('empresa')}</div>
+                  </th>
+                  <th className="px-4 py-2 text-left cursor-pointer hover:bg-muted/80 transition-colors select-none" onClick={() => handleSort('mail')}>
+                    <div className="flex items-center">Email {getSortIcon('mail')}</div>
+                  </th>
+                  <th className="px-4 py-2 text-left cursor-pointer hover:bg-muted/80 transition-colors select-none" onClick={() => handleSort('cargo')}>
+                    <div className="flex items-center">Cargo {getSortIcon('cargo')}</div>
+                  </th>
+                  <th className="px-4 py-2 text-left cursor-pointer hover:bg-muted/80 transition-colors select-none" onClick={() => handleSort('rol')}>
+                    <div className="flex items-center">Rol {getSortIcon('rol')}</div>
+                  </th>
+                  <th className="px-4 py-2 text-left cursor-pointer hover:bg-muted/80 transition-colors select-none" onClick={() => handleSort('estado')}>
+                    <div className="flex items-center">Estado {getSortIcon('estado')}</div>
+                  </th>
+                  <th className="px-4 py-2 text-left cursor-pointer hover:bg-muted/80 transition-colors select-none" onClick={() => handleSort('createdAt')}>
+                    <div className="flex items-center">Creado {getSortIcon('createdAt')}</div>
+                  </th>
                   <th className="px-4 py-2 text-left">Acciones</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {filteredUsers.map((u) => (
+                {sortedUsers.map((u) => (
                   <tr key={u._id} className="border-t hover:bg-muted/30 transition">
                     <td className="px-4 py-2 text-xs font-mono text-muted-foreground">{u._id}</td>
                     <td
@@ -337,7 +408,7 @@ const FormReg = () => {
                 ))}
               </tbody>
             </table>
-            {filteredUsers.length === 0 && (
+            {sortedUsers.length === 0 && (
               <div className="p-4 text-center text-muted-foreground">No hay resultados para este filtro.</div>
             )}
           </div>
