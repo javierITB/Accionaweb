@@ -515,17 +515,21 @@ router.put("/:id/status", async (req, res) => {
         if (updatedRequest.responses) {
             
             const responses = updatedRequest.responses || {};
-           
-            
-                Object.keys(responses).forEach(key => {
 
-                    if(typeof responses[key] === 'string') return requests[key] = decrypt(responses[key]) || " - ";
-                    
-                    // if (Array.isArray(responses[key])) {
-                    //     responses[key] = responses[key].map(item => {
-                    //         if (typeof item === 'string') return decrypt(item) || " - ";
-                    //     });
-                    // }
+            Object.entries(responses).forEach(([key, value]) => {
+                // Si es un string, descifrar
+                if (typeof value === 'string')
+                    return responses[key] = decrypt(value) || " - ";
+                
+                // Si es un array, descifrar cada elemento si es string
+                if (Array.isArray(value)) {
+                    return responses[key] = value.map(item => {
+                        if (typeof item === 'string') return decrypt(item) || " - ";
+                        return " - ";
+                    });
+                }
+
+                     responses[key] = value;
                 });
             
             updatedRequest.responses = responses;
