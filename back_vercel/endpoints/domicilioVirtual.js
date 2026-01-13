@@ -88,7 +88,7 @@ router.get("/mini", async (req, res) => {
             const getVal = (keys) => {
                 const responseKeys = Object.keys(answer.responses || {});
                 for (let searchKey of keys) {
-                    const actualKey = responseKeys.find(k => 
+                    const actualKey = responseKeys.find(k =>
                         k.toLowerCase().trim().replace(":", "") === searchKey.toLowerCase()
                     );
                     if (actualKey && answer.responses[actualKey]) {
@@ -107,7 +107,7 @@ router.get("/mini", async (req, res) => {
                 _id: answer._id,
                 formId: answer.formId,
                 formTitle: answer.formTitle,
-                trabajador: nombreCliente, 
+                trabajador: nombreCliente,
                 rutTrabajador: rutCliente,
                 tuNombre: nombreCliente,
                 submittedAt: answer.submittedAt || answer.createdAt,
@@ -124,15 +124,15 @@ router.get("/mini", async (req, res) => {
         // 4. APLICACIÓN DE FILTROS EN MEMORIA (Esto es lo que faltaba para que funcione el RUT)
         if (company && company.trim() !== "") {
             const term = company.toLowerCase().trim();
-            answersProcessed = answersProcessed.filter(a => 
+            answersProcessed = answersProcessed.filter(a =>
                 a.rutTrabajador.toLowerCase().includes(term)
             );
         }
 
         if (search && search.trim() !== "") {
             const term = search.toLowerCase().trim();
-            answersProcessed = answersProcessed.filter(a => 
-                a.tuNombre.toLowerCase().includes(term) || 
+            answersProcessed = answersProcessed.filter(a =>
+                a.tuNombre.toLowerCase().includes(term) ||
                 a.rutTrabajador.toLowerCase().includes(term) ||
                 a.formTitle.toLowerCase().includes(term)
             );
@@ -235,7 +235,7 @@ router.get("/:id", async (req, res) => {
 // 3. Crear solicitud (POST /)
 router.post("/", async (req, res) => {
     try {
-        const { formId, responses, formTitle, adjuntos = [] } = req.body;
+        const { formId, responses, formTitle, adjuntos = [], user } = req.body;
 
         // Verificar formulario
         const form = await req.db.collection("forms").findOne({ _id: new ObjectId(formId) });
