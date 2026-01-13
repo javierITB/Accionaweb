@@ -16,7 +16,8 @@ const FilterPanel = ({
     { value: '', label: 'Todos los Estados' },
     { value: 'pendiente', label: 'Pendiente' },
     { value: 'documento_generado', label: 'Documento Generado' },
-    { value: 'documento_enviado', label: 'Documento Enviado' },
+    // CORRECCIÓN PERTINENTE: Cambiado 'documento_enviado' por 'enviado' para coincidir con BD
+    { value: 'enviado', label: 'Documento Enviado' },
     { value: 'solicitud_firmada', label: 'Solicitud Firmada' },
     { value: 'informado_sii', label: 'Informado al SII' },
     { value: 'dicom', label: 'DICOM' },
