@@ -10,33 +10,33 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          name: "Gestión Principal",
          icon: "LayoutDashboard",
          isAccordion: true,
-         roles: ["Admin", "RRHH"], // Solo estos cargos ven el acordeón completo
+         roles: ["admin", "RRHH"], // Solo estos cargos ven el acordeón completo
          children: [
-            { name: "Respuestas", path: "/RespuestasForms", icon: "FileText", roles: ["Admin", "RRHH"] },
-            { name: "Solicitudes", path: "/Solicitudes", icon: "Pencil", roles: ["Admin", "RRHH"] },
-            { name: "Tickets", path: "/Tickets", icon: "FileText", roles: ["Admin", "RRHH", "soporte"] },
-            { name: "Domicilio Virtual", path: "/DomicilioVirtual", icon: "Home", roles: ["Admin"] },
+            { name: "Respuestas", path: "/RespuestasForms", icon: "FileText", roles: ["admin", "RRHH"] },
+            { name: "Solicitudes", path: "/Solicitudes", icon: "Pencil", roles: ["admin", "RRHH"] },
+            { name: "Tickets", path: "/Tickets", icon: "FileText", roles: ["admin", "RRHH", "soporte"] },
+            { name: "Domicilio Virtual", path: "/DomicilioVirtual", icon: "Home", roles: ["admin"] },
          ]
       },
       {
          name: "Configuración",
          icon: "Settings",
          isAccordion: true,
-         roles: ["Admin"], // Solo admin ve configuraciones
+         roles: ["admin"], // Solo admin ve configuraciones
          children: [
-            { name: "Formularios", path: "/form-center", icon: "FileText", roles: ["Admin"] },
-            { name: "Plantillas", path: "/template-builder", icon: "FileText", roles: ["Admin"] },
-            { name: "Anuncios", path: "/anuncios", icon: "Megaphone", roles: ["Admin"] },
+            { name: "Formularios", path: "/form-center", icon: "FileText", roles: ["admin"] },
+            { name: "Plantillas", path: "/template-builder", icon: "FileText", roles: ["admin"] },
+            { name: "Anuncios", path: "/anuncios", icon: "Megaphone", roles: ["admin"] },
          ]
       },
       {
          name: "Administración",
          icon: "Shield",
          isAccordion: true,
-         roles: ["Admin"],
+         roles: ["admin"],
          children: [
-            { name: "Usuarios", path: "/users", icon: "User", roles: ["Admin"] },
-            { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["Admin"] },
+            { name: "Usuarios", path: "/users", icon: "User", roles: ["admin"] },
+            { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["admin"] },
          ]
       },
       {
@@ -45,7 +45,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          icon: "User",
          description: "Perfil de usuario",
          isAccordion: false,
-         roles: ["Admin", "RRHH", "soporte", "Desarrollador"] // Acceso más amplio
+         roles: ["admin", "RRHH", "soporte", "Desarrollador"] // Acceso más amplio
       }
    ];
 
@@ -57,7 +57,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
 
    // Obtenemos los datos del usuario para el filtro de permisos
    const user = sessionStorage.getItem("user") || "Usuario";
-   const userRole = sessionStorage.getItem("cargo") || "guest"; // Cargo actual del usuario
+   const userRole = sessionStorage.getItem("rol") || "guest"; // Cargo actual del usuario
 
    useEffect(() => {
       // Buscamos si la ruta actual pertenece a algún hijo de un acordeón
