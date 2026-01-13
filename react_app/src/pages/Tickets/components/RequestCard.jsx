@@ -149,7 +149,9 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
   };
 
   const getCompanyDisplay = () => {
-    if (currentRequest?.origin === 'domicilio_virtual') {
+    // Intentar extraer de responses siempre si existen, ya que puede ser Domicilio Virtual u otro formulario
+    // y la data en 'company' puede venir sucia (ej: RUT en vez de nombre)
+    if (currentRequest?.responses) {
       const keys = Object.keys(currentRequest?.responses || {});
       const normalize = k => k.toLowerCase().trim().replace(':', '');
 
@@ -169,13 +171,16 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
         return n.includes('rut de la empresa') || n.includes('rut representante');
       });
 
-      const companyName = currentRequest?.responses?.[companyKey] || currentRequest?.nombreEmpresa || 'Empresa Desconocida';
-      const rut = currentRequest?.responses?.[rutKey] || currentRequest?.rutEmpresa;
-
-      return `${companyName}${rut ? ` (${rut})` : ''}`;
+      if (companyKey) {
+        const companyName = currentRequest?.responses?.[companyKey];
+        const rut = currentRequest?.responses?.[rutKey] || currentRequest?.rutEmpresa;
+        if (companyName) {
+          return `${companyName}${rut ? ` (${rut})` : ''}`;
+        }
+      }
     }
 
-    // Default behavior for other tickets
+    // Default behavior fallback
     return currentRequest?.company || currentRequest?.user?.empresa || 'Empresa Desconocida';
   };
 
