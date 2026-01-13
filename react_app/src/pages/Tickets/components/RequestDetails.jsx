@@ -740,15 +740,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     <div className="space-y-6">
 
       {/* Subject Section */}
-      <div className="bg-muted/10 p-5 rounded-lg border border-border/60 shadow-sm">
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Icon name="Type" size={16} className="text-accent" />
-          Asunto
-        </h3>
-        <p className="text-lg font-bold text-foreground leading-tight">
-          {findResponseValue(fullRequestData?.responses, ['Asunto', 'Título', 'Title', 'Subject', 'Tema']) || "Sin Asunto"}
-        </p>
-      </div>
+      {fullRequestData?.origin !== 'domicilio_virtual' && (
+        <div className="bg-muted/10 p-5 rounded-lg border border-border/60 shadow-sm">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Icon name="Type" size={16} className="text-accent" />
+            Asunto
+          </h3>
+          <p className="text-lg font-bold text-foreground leading-tight">
+            {findResponseValue(fullRequestData?.responses, ['Asunto', 'Título', 'Title', 'Subject', 'Tema']) || "Sin Asunto"}
+          </p>
+        </div>
+      )}
 
       {/* Description Section */}
       {fullRequestData?.origin !== 'domicilio_virtual' && (
