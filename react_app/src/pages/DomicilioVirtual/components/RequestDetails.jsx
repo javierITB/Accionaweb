@@ -1,16 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
-import CleanDocumentPreview from './CleanDocumentPreview';
-import { apiFetch, API_BASE_URL } from '../../../utils/api';
+import React, { useState, useEffect, useRef } from "react";
+import Icon from "../../../components/AppIcon";
+import Button from "../../../components/ui/Button";
+import CleanDocumentPreview from "./CleanDocumentPreview";
+import { apiFetch, API_BASE_URL } from "../../../utils/api";
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
 
-const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = false, endpointPrefix = 'respuestas', onGenerateDoc }) => {
+const RequestDetails = ({
+  request,
+  isVisible,
+  onClose,
+  onUpdate,
+  isStandalone = false,
+  endpointPrefix = "respuestas",
+  onGenerateDoc,
+}) => {
   // --- ESTADOS DE UI ---
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState("details");
 
   const [correctedFiles, setCorrectedFiles] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -52,7 +60,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   useEffect(() => {
     if (request) {
-      setFullRequestData(prev => {
+      setFullRequestData((prev) => {
         if (prev?._id === request._id) {
           return { ...prev, ...request };
         }
@@ -64,7 +72,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   useEffect(() => {
     if (isVisible) {
-      setActiveTab('details');
+      setActiveTab("details");
     }
   }, [isVisible, request?._id]);
 
@@ -80,7 +88,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         setApprovedData(null);
       }
     } catch (error) {
-      console.error('Error obteniendo datos de aprobado:', error);
+      console.error("Error obteniendo datos de aprobado:", error);
       setApprovedData(null);
     } finally {
       setIsLoadingApprovedData(false);
@@ -103,7 +111,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         setClientSignature(null);
       }
     } catch (error) {
-      console.error('Error verificando firma del cliente:', error);
+      console.error("Error verificando firma del cliente:", error);
       setClientSignature(null);
     } finally {
       setIsCheckingSignature(false);
@@ -120,7 +128,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
       }
       return null;
     } catch (error) {
-      console.error('Error obteniendo información del documento:', error);
+      console.error("Error obteniendo información del documento:", error);
       return null;
     }
   };
@@ -145,13 +153,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
           extractedAdjuntos = data;
         }
 
-        setFullRequestData(prev => ({
+        setFullRequestData((prev) => ({
           ...prev,
-          adjuntos: extractedAdjuntos
+          adjuntos: extractedAdjuntos,
         }));
       }
     } catch (error) {
-      console.error('Error cargando adjuntos:', error);
+      console.error("Error cargando adjuntos:", error);
     } finally {
       setAttachmentsLoading(false);
     }
@@ -159,19 +167,21 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   useEffect(() => {
     if (request?.correctedFile) {
-      setCorrectedFiles([{
-        name: request.correctedFile.fileName,
-        size: request.correctedFile.fileSize,
-        url: `${API_BASE_URL}/${endpointPrefix}/${request._id}/corrected-file`,
-        isServerFile: true
-      }]);
+      setCorrectedFiles([
+        {
+          name: request.correctedFile.fileName,
+          size: request.correctedFile.fileSize,
+          url: `${API_BASE_URL}/${endpointPrefix}/${request._id}/corrected-file`,
+          isServerFile: true,
+        },
+      ]);
     } else {
       setCorrectedFiles([]);
     }
 
     if (request?._id) {
       // Solo llamar a checkClientSignature si NO es Domicilio Virtual
-      if (!endpointPrefix.includes('domicilio-virtual')) {
+      if (!endpointPrefix.includes("domicilio-virtual")) {
         checkClientSignature();
         getDocumentInfo(request._id);
       }
@@ -193,17 +203,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}`);
         if (response.ok) {
           const data = await response.json();
-          setFullRequestData(prev => ({
+          setFullRequestData((prev) => ({
             ...prev,
-            ...data
+            ...data,
           }));
           // Solo buscar info de generador si NO es domicilio virtual
-          if (!endpointPrefix.includes('domicilio-virtual')) {
+          if (!endpointPrefix.includes("domicilio-virtual")) {
             await getDocumentInfo(responseId);
           }
         }
       } catch (error) {
-        console.error('Error cargando detalles completos:', error);
+        console.error("Error cargando detalles completos:", error);
       } finally {
         setIsDetailLoading(false);
       }
@@ -214,31 +224,30 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     // Adjuntos y firma
     fetchAttachments(responseId);
 
-    if (!endpointPrefix.includes('domicilio-virtual')) {
+    if (!endpointPrefix.includes("domicilio-virtual")) {
       checkClientSignature(responseId);
       fetchApprovedData(responseId);
     }
-
   }, [isVisible, request?._id]);
 
   const downloadPdfForPreview = async (url) => {
     try {
       const token = sessionStorage.getItem("token");
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       const response = await fetch(url, { headers });
       if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
       const blob = await response.blob();
-      if (blob.type !== 'application/pdf') throw new Error('El archivo no es un PDF válido');
+      if (blob.type !== "application/pdf") throw new Error("El archivo no es un PDF válido");
       return URL.createObjectURL(blob);
     } catch (error) {
-      console.error('Error descargando PDF para vista previa:', error);
+      console.error("Error descargando PDF para vista previa:", error);
       throw error;
     }
   };
 
   const cleanupPreviewUrl = (url) => {
-    if (url && url.startsWith('blob:')) {
+    if (url && url.startsWith("blob:")) {
       URL.revokeObjectURL(url);
     }
   };
@@ -247,12 +256,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     const handleBeforeUnload = (e) => {
       if (correctedFiles.length > 0 && !isApproving) {
         e.preventDefault();
-        e.returnValue = 'Tienes archivos cargados sin guardar. ¿Deseas salir?';
+        e.returnValue = "Tienes archivos cargados sin guardar. ¿Deseas salir?";
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [correctedFiles.length, isApproving]);
 
   useEffect(() => {
@@ -265,12 +274,12 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
           const updatedRequest = await response.json();
           if (updatedRequest.status !== request.status) {
             if (onUpdate) onUpdate(updatedRequest);
-            setFullRequestData(prev => ({ ...prev, status: updatedRequest.status }));
+            setFullRequestData((prev) => ({ ...prev, status: updatedRequest.status }));
             fetchApprovedData(request._id);
           }
         }
       } catch (error) {
-        console.error('Error verificando actualización del request:', error);
+        console.error("Error verificando actualización del request:", error);
       }
     }, 30000);
 
@@ -279,7 +288,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   useEffect(() => {
     return () => {
-      if (previewDocument?.url && previewDocument?.type === 'pdf') {
+      if (previewDocument?.url && previewDocument?.type === "pdf") {
         cleanupPreviewUrl(previewDocument.url);
       }
     };
@@ -292,19 +301,20 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
     try {
       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/status`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: newStatus })
+        method: "PUT",
+        body: JSON.stringify({ status: newStatus }),
       });
 
       if (response.ok) {
         const result = await response.json();
-        console.log(result)
+        console.log(result);
         if (onUpdate && result.updatedRequest) {
           const normalizedRequest = {
             ...result.updatedRequest,
-            submittedBy: result.updatedRequest.user?.nombre || result.updatedRequest.submittedBy || 'Usuario Desconocido',
-            company: result.updatedRequest.user?.empresa || result.updatedRequest.company || 'Empresa Desconocida',
-            submittedAt: result.updatedRequest.submittedAt || result.updatedRequest.createdAt
+            submittedBy:
+              result.updatedRequest.user?.nombre || result.updatedRequest.submittedBy || "Usuario Desconocido",
+            company: result.updatedRequest.user?.empresa || result.updatedRequest.company || "Empresa Desconocida",
+            submittedAt: result.updatedRequest.submittedAt || result.updatedRequest.createdAt,
           };
           onUpdate(normalizedRequest);
           setFullRequestData(normalizedRequest);
@@ -312,22 +322,22 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         alert(`Estado cambiado a "${newStatus}"`);
       } else {
         const errorData = await response.json();
-        alert('Error: ' + (errorData.error || 'No se pudo cambiar el estado'));
+        alert("Error: " + (errorData.error || "No se pudo cambiar el estado"));
       }
     } catch (error) {
-      console.error('Error cambiando estado:', error);
-      alert('Error cambiando estado: ' + error.message);
+      console.error("Error cambiando estado:", error);
+      alert("Error cambiando estado: " + error.message);
     }
   };
 
   const getPreviousStatus = (currentStatus) => {
-    const statusFlow = ['pendiente', 'en_revision', 'aprobado', 'firmado', 'finalizado', 'archivado'];
+    const statusFlow = ["pendiente", "en_revision", "aprobado", "firmado", "finalizado", "archivado"];
     const currentIndex = statusFlow.indexOf(currentStatus);
     return currentIndex > 0 ? statusFlow[currentIndex - 1] : null;
   };
 
   const getNextStatus = (currentStatus) => {
-    const statusFlow = ['pendiente', 'en_revision', 'aprobado', 'firmado', 'finalizado', 'archivado'];
+    const statusFlow = ["pendiente", "en_revision", "aprobado", "firmado", "finalizado", "archivado"];
     const currentIndex = statusFlow.indexOf(currentStatus);
     return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
   };
@@ -336,7 +346,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   const handlePreviewDocument = (documentUrl, documentType) => {
     if (!documentUrl) {
-      alert('No hay documento disponible para vista previa');
+      alert("No hay documento disponible para vista previa");
       return;
     }
     setPreviewDocument({ url: documentUrl, type: documentType });
@@ -346,17 +356,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
   const handlePreviewGenerated = async () => {
     try {
       setIsLoadingPreviewGenerated(true);
-      const info = documentInfo || await getDocumentInfo(request._id);
+      const info = documentInfo || (await getDocumentInfo(request._id));
       if (!info || !info.IDdoc) {
-        alert('No hay documento generado disponible para vista previa');
+        alert("No hay documento generado disponible para vista previa");
         return;
       }
       const documentUrl = `${API_BASE_URL}/generador/download/${info.IDdoc}`;
-      const extension = info.tipo || 'docx';
+      const extension = info.tipo || "docx";
       handlePreviewDocument(documentUrl, extension);
     } catch (error) {
-      console.error('Error en vista previa:', error);
-      alert('Error: ' + error.message);
+      console.error("Error en vista previa:", error);
+      alert("Error: " + error.message);
     } finally {
       setIsLoadingPreviewGenerated(false);
     }
@@ -366,7 +376,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     const hasFiles = correctedFiles.length > 0 || approvedData || fullRequestData?.correctedFile;
 
     if (!hasFiles) {
-      alert('No hay documentos corregidos para vista previa');
+      alert("No hay documentos corregidos para vista previa");
       return;
     }
 
@@ -378,28 +388,26 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
       if (correctedFiles.length > 0) {
         if (index < 0 || index >= correctedFiles.length) {
-          alert('Índice de archivo inválido');
+          alert("Índice de archivo inválido");
           return;
         }
         const file = correctedFiles[index];
         documentUrl = URL.createObjectURL(file);
-      }
-      else if (approvedData || request?.status === 'aprobado' || request?.status === 'firmado') {
+      } else if (approvedData || request?.status === "aprobado" || request?.status === "firmado") {
         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
-      }
-      else if (request?.correctedFile) {
-        alert('El documento corregido está en proceso de revisión.');
+      } else if (request?.correctedFile) {
+        alert("El documento corregido está en proceso de revisión.");
         return;
       } else {
-        alert('No hay documentos corregidos disponibles');
+        alert("No hay documentos corregidos disponibles");
         return;
       }
 
-      handlePreviewDocument(documentUrl, 'pdf');
+      handlePreviewDocument(documentUrl, "pdf");
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
+      console.error("Error:", error);
+      alert("Error: " + error.message);
     } finally {
       setIsLoadingPreviewCorrected(false);
     }
@@ -407,17 +415,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   const handlePreviewClientSignature = async () => {
     if (!clientSignature) {
-      alert('No hay documento firmado para vista previa');
+      alert("No hay documento firmado para vista previa");
       return;
     }
     try {
       setIsLoadingPreviewSignature(true);
       const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/client-signature`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
-      handlePreviewDocument(documentUrl, 'pdf');
+      handlePreviewDocument(documentUrl, "pdf");
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
+      console.error("Error:", error);
+      alert("Error: " + error.message);
     } finally {
       setIsLoadingPreviewSignature(false);
     }
@@ -427,16 +435,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     try {
       setIsLoadingPreviewAdjunto(true);
       const adjunto = fullRequestData.adjuntos[index];
-      if (adjunto.mimeType !== 'application/pdf') {
-        alert('Solo disponible para PDF');
+      if (adjunto.mimeType !== "application/pdf") {
+        alert("Solo disponible para PDF");
         return;
       }
       const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`;
       const documentUrl = await downloadPdfForPreview(pdfUrl);
-      handlePreviewDocument(documentUrl, 'pdf');
+      handlePreviewDocument(documentUrl, "pdf");
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
+      console.error("Error:", error);
+      alert("Error: " + error.message);
     } finally {
       setIsLoadingPreviewAdjunto(false);
     }
@@ -448,20 +456,20 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     setIsRegenerating(true);
     try {
       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/regenerate-document`, {
-        method: 'POST'
+        method: "POST",
       });
 
       if (response.ok) {
         const result = await response.json();
-        alert('Documento regenerado exitosamente');
+        alert("Documento regenerado exitosamente");
         await getDocumentInfo(request._id); // Recargar info del documento
       } else {
         const error = await response.json();
-        alert('Error regenerando documento: ' + (error.error || 'Desconocido'));
+        alert("Error regenerando documento: " + (error.error || "Desconocido"));
       }
     } catch (error) {
-      console.error('Error regenerando documento:', error);
-      alert('Error regenerando documento');
+      console.error("Error regenerando documento:", error);
+      alert("Error regenerando documento");
     } finally {
       setIsRegenerating(false);
     }
@@ -470,15 +478,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
   const handleDownload = async () => {
     try {
       setIsDownloading(true);
-      const info = documentInfo || await getDocumentInfo(request._id);
+      const info = documentInfo || (await getDocumentInfo(request._id));
       if (!info || !info.IDdoc) {
-        alert('No hay documento disponible');
+        alert("No hay documento disponible");
         return;
       }
-      window.open(`${API_BASE_URL}/generador/download/${info.IDdoc}`, '_blank');
+      window.open(`${API_BASE_URL}/generador/download/${info.IDdoc}`, "_blank");
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error al descargar');
+      console.error("Error:", error);
+      alert("Error al descargar");
     } finally {
       setIsDownloading(false);
     }
@@ -488,18 +496,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     setDownloadingAttachmentIndex(index);
     try {
       const token = sessionStorage.getItem("token");
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       const response = await fetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`, {
-        headers
+        headers,
       });
 
-      if (!response.ok) throw new Error('Error descargando archivo');
+      if (!response.ok) throw new Error("Error descargando archivo");
 
       const blob = await response.blob();
       const adjunto = fullRequestData.adjuntos[index];
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = adjunto.fileName;
       document.body.appendChild(a);
@@ -507,8 +515,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error al descargar');
+      console.error("Error:", error);
+      alert("Error al descargar");
     } finally {
       setDownloadingAttachmentIndex(null);
     }
@@ -518,17 +526,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     setIsDownloadingSignature(true);
     try {
       const token = sessionStorage.getItem("token");
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       const response = await fetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/client-signature`, {
-        headers
+        headers,
       });
 
-      if (!response.ok) throw new Error('Error descargando firma');
+      if (!response.ok) throw new Error("Error descargando firma");
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = clientSignature.fileName;
       document.body.appendChild(a);
@@ -536,8 +544,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error descargando: ' + (error.message || 'Desconocido'));
+      console.error("Error:", error);
+      alert("Error descargando: " + (error.message || "Desconocido"));
     } finally {
       setIsDownloadingSignature(false);
     }
@@ -545,36 +553,38 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   const handleFileSelect = (event) => {
     const files = Array.from(event.target.files);
-    const pdfFiles = files.filter(file => file.type === 'application/pdf');
+    const pdfFiles = files.filter((file) => file.type === "application/pdf");
 
     if (pdfFiles.length === 0) {
-      alert('Por favor, sube solo archivos PDF');
-      event.target.value = '';
+      alert("Por favor, sube solo archivos PDF");
+      event.target.value = "";
       return;
     }
 
     // Validar límite de cantidad de archivos
     if (correctedFiles.length + pdfFiles.length > MAX_FILES) {
-      alert(`Máximo ${MAX_FILES} archivos permitidos. Ya tienes ${correctedFiles.length} archivo(s) seleccionado(s).`);
-      event.target.value = '';
+      alert(
+        `Máximo ${MAX_FILES} archivos permitidos. Ya tienes ${correctedFiles.length} archivo(s) seleccionado(s).`
+      );
+      event.target.value = "";
       return;
     }
 
     // Validar tamaño de cada archivo
-    const oversizedFiles = pdfFiles.filter(file => file.size > MAX_FILE_SIZE);
+    const oversizedFiles = pdfFiles.filter((file) => file.size > MAX_FILE_SIZE);
     if (oversizedFiles.length > 0) {
-      const oversizedNames = oversizedFiles.map(f => f.name).join(', ');
+      const oversizedNames = oversizedFiles.map((f) => f.name).join(", ");
       alert(`Los siguientes archivos exceden el límite de 1MB: ${oversizedNames}`);
-      event.target.value = '';
+      event.target.value = "";
       return;
     }
 
-    setCorrectedFiles(prev => [...prev, ...pdfFiles]);
-    event.target.value = '';
+    setCorrectedFiles((prev) => [...prev, ...pdfFiles]);
+    event.target.value = "";
   };
 
   const handleRemoveFile = (index) => {
-    setCorrectedFiles(prev => prev.filter((_, i) => i !== index));
+    setCorrectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleUploadClick = () => {
@@ -583,9 +593,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   const handleRemoveCorrection = async () => {
     if (correctedFiles.length > 0) {
-      if (!confirm('¿Eliminar todos los archivos seleccionados?')) return;
+      if (!confirm("¿Eliminar todos los archivos seleccionados?")) return;
       setCorrectedFiles([]);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
@@ -593,24 +603,26 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
       const signatureCheck = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/has-client-signature`);
       const signatureData = await signatureCheck.json();
       const hasSignature = signatureData.exists;
-      let warningMessage = '¿Eliminar corrección y volver a revisión?';
-      if (hasSignature) warningMessage = 'ADVERTENCIA: Existe documento firmado. ¿Continuar?';
+      let warningMessage = "¿Eliminar corrección y volver a revisión?";
+      if (hasSignature) warningMessage = "ADVERTENCIA: Existe documento firmado. ¿Continuar?";
       if (!confirm(warningMessage)) return;
 
-      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/remove-correction`, { method: 'DELETE' });
+      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/remove-correction`, {
+        method: "DELETE",
+      });
       const result = await response.json();
       if (response.ok) {
         if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
         setCorrectedFiles([]);
         setApprovedData(null);
-        if (result.hasExistingSignature) alert('Corrección eliminada. Estado volverá a firmado al subir nueva.');
-        else alert('Corrección eliminada, vuelve a revisión.');
+        if (result.hasExistingSignature) alert("Corrección eliminada. Estado volverá a firmado al subir nueva.");
+        else alert("Corrección eliminada, vuelve a revisión.");
       } else {
-        alert(result.error || 'Error al eliminar');
+        alert(result.error || "Error al eliminar");
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error al eliminar');
+      console.error("Error:", error);
+      alert("Error al eliminar");
     }
   };
 
@@ -621,8 +633,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     setIsDeletingFile(index);
     try {
       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/delete-corrected-file/${request._id}`, {
-        method: 'DELETE',
-        body: JSON.stringify({ fileName })
+        method: "DELETE",
+        body: JSON.stringify({ fileName }),
       });
 
       if (response.ok) {
@@ -639,9 +651,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
             const updatedRequest = await updatedResponse.json();
             const normalizedRequest = {
               ...updatedRequest,
-              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
-              company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
-              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
+              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
+              company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
+              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
             };
             onUpdate(normalizedRequest);
           }
@@ -651,8 +663,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         alert(`Error eliminando archivo: ${errorData.error}`);
       }
     } catch (error) {
-      console.error('Error eliminando archivo:', error);
-      alert('Error eliminando archivo: ' + error.message);
+      console.error("Error eliminando archivo:", error);
+      alert("Error eliminando archivo: " + error.message);
     } finally {
       setIsDeletingFile(null);
     }
@@ -661,7 +673,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
   // Función para subir archivos uno por uno (igual que adjuntos)
   const uploadFilesOneByOne = async () => {
     if (correctedFiles.length === 0) {
-      alert('No hay archivos para subir');
+      alert("No hay archivos para subir");
       return false;
     }
 
@@ -673,18 +685,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         const formData = new FormData();
 
         // Agregar el archivo individual
-        formData.append('files', file);
+        formData.append("files", file);
 
         // Agregar metadata como en adjuntos
-        formData.append('responseId', request._id);
-        formData.append('index', i.toString());
-        formData.append('total', correctedFiles.length.toString());
+        formData.append("responseId", request._id);
+        formData.append("index", i.toString());
+        formData.append("total", correctedFiles.length.toString());
 
         console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
 
         const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
-          method: 'POST',
-          body: formData
+          method: "POST",
+          body: formData,
         });
 
         if (response.ok) {
@@ -698,7 +710,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
           // Pequeña pausa entre archivos
           if (i < correctedFiles.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise((resolve) => setTimeout(resolve, 300));
           }
         } else {
           const error = await response.json();
@@ -717,10 +729,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
       console.log(`Subida completada: ${successfulUploads}/${correctedFiles.length} archivos exitosos`);
       return successfulUploads > 0; // Retorna true si al menos uno se subió
-
     } catch (error) {
-      console.error('Error en proceso de subida:', error);
-      alert('Error subiendo archivos: ' + error.message);
+      console.error("Error en proceso de subida:", error);
+      alert("Error subiendo archivos: " + error.message);
       return false;
     }
   };
@@ -728,7 +739,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
   const handleApprove = async () => {
     // Validar que haya archivos
     if (correctedFiles.length === 0) {
-      alert('Debe subir al menos un archivo PDF para aprobar');
+      alert("Debe subir al menos un archivo PDF para aprobar");
       return;
     }
 
@@ -739,14 +750,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     }
 
     // Validar tamaño de cada archivo
-    const oversizedFiles = correctedFiles.filter(file => file.size > MAX_FILE_SIZE);
+    const oversizedFiles = correctedFiles.filter((file) => file.size > MAX_FILE_SIZE);
     if (oversizedFiles.length > 0) {
-      const oversizedNames = oversizedFiles.map(f => f.name).join(', ');
+      const oversizedNames = oversizedFiles.map((f) => f.name).join(", ");
       alert(`No se puede aprobar. Los siguientes archivos exceden 1MB: ${oversizedNames}`);
       return;
     }
 
-    if (isApproving || request?.status === 'aprobado' || request?.status === 'firmado') {
+    if (isApproving || request?.status === "aprobado" || request?.status === "firmado") {
       return;
     }
 
@@ -762,20 +773,20 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
       const uploadSuccess = await uploadFilesOneByOne();
 
       if (!uploadSuccess) {
-        alert('Error subiendo archivos. No se pudo aprobar.');
+        alert("Error subiendo archivos. No se pudo aprobar.");
         return;
       }
 
       // 2. ESPERAR UN MOMENTO PARA ASEGURAR QUE LOS ARCHIVOS SE GUARDARON
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // 3. APROBAR DESPUÉS DE SUBIR LOS ARCHIVOS
       const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
       });
 
       if (approveResponse.ok) {
@@ -787,9 +798,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
             const updatedRequest = await updatedResponse.json();
             const normalizedRequest = {
               ...updatedRequest,
-              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
-              company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
-              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
+              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
+              company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
+              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
             };
             onUpdate(normalizedRequest);
           }
@@ -807,20 +818,20 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         const errorData = await approveResponse.json();
 
         // Si el error es que no hay archivos, podría ser un delay en la BD
-        if (errorData.error && errorData.error.includes('No hay archivos corregidos')) {
+        if (errorData.error && errorData.error.includes("No hay archivos corregidos")) {
           const retry = window.confirm(
-            'El backend no encontró los archivos recién subidos.\n¿Reintentar aprobación en 3 segundos?'
+            "El backend no encontró los archivos recién subidos.\n¿Reintentar aprobación en 3 segundos?"
           );
 
           if (retry) {
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise((resolve) => setTimeout(resolve, 3000));
 
             const retryResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`, {
-              method: 'POST',
+              method: "POST",
               headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
               },
-              body: JSON.stringify({})
+              body: JSON.stringify({}),
             });
 
             if (retryResponse.ok) {
@@ -831,26 +842,26 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                   const updatedRequest = await updatedResponse.json();
                   const normalizedRequest = {
                     ...updatedRequest,
-                    submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
-                    company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
-                    submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
+                    submittedBy:
+                      updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
+                    company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
+                    submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
                   };
                   onUpdate(normalizedRequest);
                 }
               }
-              alert('Aprobado en reintento');
+              alert("Aprobado en reintento");
             } else {
-              alert('Error en reintento: ' + (await retryResponse.json()).error);
+              alert("Error en reintento: " + (await retryResponse.json()).error);
             }
           }
         } else {
           alert(`Error aprobando: ${errorData.error}`);
         }
       }
-
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
+      console.error("Error:", error);
+      alert("Error: " + error.message);
     } finally {
       setIsApproving(false);
       setIsUploading(false);
@@ -862,8 +873,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
   };
 
   const handleApprovewithoutFile = async () => {
-    if (isApproving || request?.status === 'finalizado') return;
-    if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) return;
+    if (isApproving || request?.status === "finalizado") return;
+    if (!confirm("¿Estás seguro de que quieres finalizar este trabajo?")) return;
     setIsApproving(true);
     try {
       const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/finalized`);
@@ -874,21 +885,21 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
             const updatedRequest = await updatedResponse.json();
             const normalizedRequest = {
               ...updatedRequest,
-              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
-              company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
-              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
+              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
+              company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
+              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
             };
             onUpdate(normalizedRequest);
           }
         }
-        alert('Finalizado correctamente');
+        alert("Finalizado correctamente");
       } else {
         const errorData = await approveResponse.json();
         alert(`Error: ${errorData.error}`);
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
+      console.error("Error:", error);
+      alert("Error: " + error.message);
     } finally {
       setIsApproving(false);
     }
@@ -896,7 +907,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   const handleArchieve = async () => {
     if (isApproving) return;
-    if (!confirm('¿Estás seguro de que quieres archivar este trabajo?')) return;
+    if (!confirm("¿Estás seguro de que quieres archivar este trabajo?")) return;
     setIsApproving(true);
     try {
       const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/archived`);
@@ -908,14 +919,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
             onUpdate(updatedRequest);
           }
         }
-        alert('Archivado correctamente');
+        alert("Archivado correctamente");
       } else {
         const errorData = await approveResponse.json();
         alert(`Error: ${errorData.error}`);
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
+      console.error("Error:", error);
+      alert("Error: " + error.message);
     } finally {
       setIsApproving(false);
     }
@@ -923,8 +934,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   const getRealAttachments = () => {
     // Si es Domicilio Virtual, usamos los adjuntos como "Documento Generado" (que en realidad son adjuntos)
-    if (endpointPrefix.includes('domicilio-virtual') && fullRequestData?.adjuntos?.length > 0) {
-      return fullRequestData.adjuntos.map(adj => ({
+    if (endpointPrefix.includes("domicilio-virtual") && fullRequestData?.adjuntos?.length > 0) {
+      return fullRequestData.adjuntos.map((adj) => ({
         id: adj._id || Math.random(), // fallback id
         name: adj.fileName,
         size: formatFileSize(adj.size),
@@ -937,84 +948,109 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     if (documentInfo && documentInfo.IDdoc) {
       let fileName = documentInfo.fileName;
       if (!fileName) {
-        const formTitle = fullRequestData?.formTitle || 'Documento';
-        const nombreTrabajador = fullRequestData?.responses?.["Nombre del trabajador"] || 'Trabajador';
-        fileName = `${formTitle}_${nombreTrabajador}`.normalize('NFD')
-          .replace(/ñ/g, 'n')
-          .replace(/Ñ/g, 'N')
-          .replace(/á/g, 'a')
-          .replace(/é/g, 'e')
-          .replace(/í/g, 'i')
-          .replace(/ó/g, 'o')
-          .replace(/ú/g, 'u')
-          .replace(/Á/g, 'A')
-          .replace(/É/g, 'E')
-          .replace(/Í/g, 'I')
-          .replace(/Ó/g, 'O')
-          .replace(/Ú/g, 'U')
-          .replace(/ü/g, 'u')
-          .replace(/Ü/g, 'U')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-zA-Z0-9\s._-]/g, '')
-          .replace(/\s+/g, '_')
+        const formTitle = fullRequestData?.formTitle || "Documento";
+        const nombreTrabajador = fullRequestData?.responses?.["Nombre del trabajador"] || "Trabajador";
+        fileName = `${formTitle}_${nombreTrabajador}`
+          .normalize("NFD")
+          .replace(/ñ/g, "n")
+          .replace(/Ñ/g, "N")
+          .replace(/á/g, "a")
+          .replace(/é/g, "e")
+          .replace(/í/g, "i")
+          .replace(/ó/g, "o")
+          .replace(/ú/g, "u")
+          .replace(/Á/g, "A")
+          .replace(/É/g, "E")
+          .replace(/Í/g, "I")
+          .replace(/Ó/g, "O")
+          .replace(/Ú/g, "U")
+          .replace(/ü/g, "u")
+          .replace(/Ü/g, "U")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9\s._-]/g, "")
+          .replace(/\s+/g, "_")
           .substring(0, 100)
           .toUpperCase();
       }
-      const tipo = documentInfo.tipo || 'docx';
-      return [{
-        id: documentInfo.IDdoc,
-        name: `${fileName}.${tipo}`,
-        size: "Calculando...",
-        type: tipo,
-        uploadedAt: documentInfo.createdAt || fullRequestData?.submittedAt,
-        downloadUrl: `/api/documents/download/${documentInfo.IDdoc}`
-      }];
+      const tipo = documentInfo.tipo || "docx";
+      return [
+        {
+          id: documentInfo.IDdoc,
+          name: `${fileName}.${tipo}`,
+          size: "Calculando...",
+          type: tipo,
+          uploadedAt: documentInfo.createdAt || fullRequestData?.submittedAt,
+          downloadUrl: `/api/documents/download/${documentInfo.IDdoc}`,
+        },
+      ];
     }
     return [];
   };
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'pending': case 'pendiente': return 'bg-error text-error-foreground';
-      case 'documento_generado': return 'bg-error/10 text-error'; // Similar a pendiente
-      case 'solicitud_firmada': return 'bg-warning text-warning-foreground';
-      case 'informado_sii': return 'bg-info text-info-foreground';
-      case 'dicom': return 'bg-secondary text-secondary-foreground';
-      case 'dado_de_baja': return 'bg-muted text-muted-foreground';
-      case 'finalizado': return 'bg-accent text-accent-foreground';
-      default: return 'bg-muted text-muted-foreground';
+      case "pending":
+      case "pendiente":
+        return "bg-error text-error-foreground";
+      case "documento_generado":
+        return "bg-error/10 text-error"; // Similar a pendiente
+      case "solicitud_firmada":
+        return "bg-warning text-warning-foreground";
+      case "informado_sii":
+        return "bg-info text-info-foreground";
+      case "dicom":
+        return "bg-secondary text-secondary-foreground";
+      case "dado_de_baja":
+        return "bg-muted text-muted-foreground";
+      case "finalizado":
+        return "bg-accent text-accent-foreground";
+      default:
+        return "bg-muted text-muted-foreground";
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
-      case 'pending': case 'pendiente': return 'Clock';
-      case 'documento_generado': return 'FileText';
-      case 'solicitud_firmada': return 'PenTool';
-      case 'informado_sii': return 'Building';
-      case 'dicom': return 'AlertTriangle';
-      case 'dado_de_baja': return 'XCircle';
-      case 'finalizado': return 'Timer';
-      default: return 'HelpCircle';
+      case "pending":
+      case "pendiente":
+        return "Clock";
+      case "documento_generado":
+        return "FileText";
+      case "solicitud_firmada":
+        return "PenTool";
+      case "informado_sii":
+        return "Building";
+      case "dicom":
+        return "AlertTriangle";
+      case "dado_de_baja":
+        return "XCircle";
+      case "finalizado":
+        return "Timer";
+      default:
+        return "HelpCircle";
     }
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Fecha no disponible';
-    return new Date(dateString)?.toLocaleDateString('es-CL', {
-      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    if (!dateString) return "Fecha no disponible";
+    return new Date(dateString)?.toLocaleDateString("es-CL", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const formatFileSize = (bytes) => {
-    if (!bytes) return '0 KB';
-    if (bytes < 1024) return bytes + ' B';
+    if (!bytes) return "0 KB";
+    if (bytes < 1024) return bytes + " B";
     if (bytes < 1048576) {
       const kb = (bytes / 1024).toFixed(2);
       if (bytes > 900 * 1024) {
         return `${kb} KB (cerca del límite)`;
       }
-      return kb + ' KB';
+      return kb + " KB";
     }
     const mb = (bytes / 1048576).toFixed(2);
     return `${mb} MB (EXCEDE LÍMITE)`;
@@ -1022,27 +1058,34 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   const getFileIcon = (type) => {
     switch (type?.toLowerCase()) {
-      case 'pdf': return 'FileText';
-      case 'docx': case 'doc': return 'FileText';
-      case 'xlsx': case 'xls': return 'FileSpreadsheet';
-      case 'jpg': case 'jpeg': case 'png': return 'Image';
-      default: return 'File';
+      case "pdf":
+        return "FileText";
+      case "docx":
+      case "doc":
+        return "FileText";
+      case "xlsx":
+      case "xls":
+        return "FileSpreadsheet";
+      case "jpg":
+      case "jpeg":
+      case "png":
+        return "Image";
+      default:
+        return "File";
     }
   };
 
   const getMimeTypeIcon = (mimeType) => {
-    if (mimeType?.includes('pdf')) return 'FileText';
-    if (mimeType?.includes('word') || mimeType?.includes('document')) return 'FileText';
-    if (mimeType?.includes('excel') || mimeType?.includes('spreadsheet')) return 'FileSpreadsheet';
-    if (mimeType?.includes('image')) return 'Image';
-    return 'File';
+    if (mimeType?.includes("pdf")) return "FileText";
+    if (mimeType?.includes("word") || mimeType?.includes("document")) return "FileText";
+    if (mimeType?.includes("excel") || mimeType?.includes("spreadsheet")) return "FileSpreadsheet";
+    if (mimeType?.includes("image")) return "Image";
+    return "File";
   };
 
-  const canPreviewAdjunto = (mimeType) => mimeType === 'application/pdf';
+  const canPreviewAdjunto = (mimeType) => mimeType === "application/pdf";
 
   const realAttachments = getRealAttachments();
-
-
 
   const renderDetailsTab = () => (
     <div className="space-y-6">
@@ -1050,31 +1093,28 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         <div className="flex justify-between">
           <span className="text-sm text-muted-foreground">Enviado por:</span>
           <span className="text-sm font-medium text-foreground">
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-foreground">
-                {(() => {
-                  const keys = Object.keys(fullRequestData?.responses || {});
-                  const normalize = k => k.toLowerCase().trim().replace(':', '');
-                  // Busca nombre de empresa
-                  const companyKey = keys.find(k => {
-                    const n = normalize(k);
-                    // Match con keywords de empresa PERO excluyendo 'rut'
-                    return !n.includes('rut') &&
-                      ['razón social', 'razon social', 'nombre que llevará la empresa', 'empresa', 'cliente'].some(t => n.includes(t));
-                  });
-                  // Busca RUT
-                  const rutKey = keys.find(k => {
-                    const n = normalize(k);
-                    return n.includes('rut de la empresa') || n.includes('rut representante');
-                  });
+            <span className="text-sm font-medium text-foreground">
+              {(() => {
+                const keys = Object.keys(fullRequestData?.responses || {});
+                const normalize = k => k.toLowerCase().trim().replace(':', '');
+                // Busca nombre de empresa (excluyendo RUT)
+                const companyKey = keys.find(k => {
+                  const n = normalize(k);
+                  return !n.includes('rut') &&
+                    ['razón social', 'razon social', 'nombre que llevará la empresa', 'empresa', 'cliente'].some(t => n.includes(t));
+                });
+                // Busca RUT
+                const rutKey = keys.find(k => {
+                  const n = normalize(k);
+                  return n.includes('rut de la empresa') || n.includes('rut representante');
+                });
 
-                  const companyName = fullRequestData?.responses?.[companyKey] || fullRequestData?.nombreEmpresa || 'Empresa Desconocida';
-                  const rut = fullRequestData?.responses?.[rutKey] || fullRequestData?.rutEmpresa;
+                const companyName = fullRequestData?.responses?.[companyKey] || fullRequestData?.nombreEmpresa || 'Empresa Desconocida';
+                const rut = fullRequestData?.responses?.[rutKey] || fullRequestData?.rutEmpresa;
 
-                  return companyName + (rut ? ` (${rut})` : '');
-                })()}
-              </span>
-            </div>
+                return companyName + (rut ? ` (${rut})` : '');
+              })()}
+            </span>
           </span>
         </div>
         <div className="flex justify-between">
@@ -1084,22 +1124,22 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
       </div>
 
       <div>
-        {!endpointPrefix.includes('domicilio-virtual') && (
+        {!endpointPrefix.includes("domicilio-virtual") && (
           <>
-            {attachmentsLoading &&
+            {attachmentsLoading && (
               <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                 Archivos Adjuntos
                 {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
               </h3>
-            }
-            {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 &&
+            )}
+            {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
               <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                 Archivos Adjuntos
               </h3>
-            }
+            )}
           </>
         )}
-        {!endpointPrefix.includes('domicilio-virtual') && fullRequestData?.adjuntos?.length > 0 && (
+        {!endpointPrefix.includes("domicilio-virtual") && fullRequestData?.adjuntos?.length > 0 && (
           <div className="space-y-2">
             {fullRequestData.adjuntos.map((adjunto, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -1122,7 +1162,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                     onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
                     disabled={downloadingAttachmentIndex !== null}
                   >
-                    {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
+                    {downloadingAttachmentIndex === index ? "Descargando..." : "Descargar"}
                   </Button>
                   {canPreviewAdjunto(adjunto.mimeType) && (
                     <Button
@@ -1134,7 +1174,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                       onClick={() => handlePreviewAdjunto(fullRequestData._id, index)}
                       disabled={isLoadingPreviewAdjunto}
                     >
-                      {isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}
+                      {isLoadingPreviewAdjunto ? "Cargando..." : "Vista Previa"}
                     </Button>
                   )}
                 </div>
@@ -1146,7 +1186,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-          {endpointPrefix.includes('domicilio-virtual') ? 'Documentos Adjuntos' : 'Documento Generado'}
+          {endpointPrefix.includes("domicilio-virtual") ? "Documentos Adjuntos" : "Documento Generado"}
           {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
         </h3>
         {realAttachments?.length > 0 ? (
@@ -1171,21 +1211,29 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                     iconName={isDownloading ? "Loader" : "Download"}
                     iconPosition="left"
                     iconSize={16}
-                    onClick={endpointPrefix.includes('domicilio-virtual') ? () => handleDownloadAdjunto(fullRequestData._id, 0) : handleDownload}
+                    onClick={
+                      endpointPrefix.includes("domicilio-virtual")
+                        ? () => handleDownloadAdjunto(fullRequestData._id, 0)
+                        : handleDownload
+                    }
                     disabled={isDownloading}
                   >
-                    {isDownloading ? 'Descargando...' : 'Descargar'}
+                    {isDownloading ? "Descargando..." : "Descargar"}
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={endpointPrefix.includes('domicilio-virtual') ? () => handlePreviewAdjunto(fullRequestData._id, 0) : handlePreviewGenerated}
+                    onClick={
+                      endpointPrefix.includes("domicilio-virtual")
+                        ? () => handlePreviewAdjunto(fullRequestData._id, 0)
+                        : handlePreviewGenerated
+                    }
                     iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
                     iconPosition="left"
                     iconSize={16}
                     disabled={isLoadingPreviewGenerated}
                   >
-                    {isLoadingPreviewGenerated ? 'Cargando...' : 'Vista Previa'}
+                    {isLoadingPreviewGenerated ? "Cargando..." : "Vista Previa"}
                   </Button>
                   <Button
                     variant="outline"
@@ -1196,7 +1244,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                     iconSize={16}
                     disabled={isRegenerating}
                   >
-                    {isRegenerating ? 'Regenerando...' : 'Regenerar'}
+                    {isRegenerating ? "Regenerando..." : "Regenerar"}
                   </Button>
                 </div>
               </div>
@@ -1205,28 +1253,27 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             <p className="text-sm">
-              {endpointPrefix.includes('domicilio-virtual')
-                ? 'No hay archivos adjuntos'
-                : 'No hay documentos generados para este formulario'}
+              {endpointPrefix.includes("domicilio-virtual")
+                ? "No hay archivos adjuntos"
+                : "No hay documentos generados para este formulario"}
             </p>
           </div>
         )}
       </div>
 
-
-      {(fullRequestData?.status !== 'pendiente' && fullRequestData?.status !== 'en_revision') && (
+      {fullRequestData?.status !== "pendiente" && fullRequestData?.status !== "en_revision" && (
         <div>
-          {isCheckingSignature &&
+          {isCheckingSignature && (
             <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
               Documento Firmado por Cliente
               {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
             </h3>
-          }
-          {!isCheckingSignature && clientSignature &&
+          )}
+          {!isCheckingSignature && clientSignature && (
             <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
               Documento Firmado por Cliente
             </h3>
-          }
+          )}
 
           {clientSignature && (
             <div className="bg-success/10 rounded-lg p-4">
@@ -1236,7 +1283,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                   <div>
                     <p className="text-sm font-medium text-foreground">{clientSignature.fileName}</p>
                     <p className="text-xs text-muted-foreground">
-                      Subido el {formatDate(clientSignature.uploadedAt)} • {formatFileSize(clientSignature.fileSize)}
+                      Subido el {formatDate(clientSignature.uploadedAt)} •{" "}
+                      {formatFileSize(clientSignature.fileSize)}
                     </p>
                   </div>
                 </div>
@@ -1250,7 +1298,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                     onClick={() => handleDownloadClientSignature(fullRequestData._id)}
                     disabled={isDownloadingSignature}
                   >
-                    {isDownloadingSignature ? 'Descargando...' : 'Descargar'}
+                    {isDownloadingSignature ? "Descargando..." : "Descargar"}
                   </Button>
                   <Button
                     variant="ghost"
@@ -1261,7 +1309,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                     iconSize={16}
                     disabled={isLoadingPreviewSignature}
                   >
-                    {isLoadingPreviewSignature ? 'Cargando...' : 'Vista Previa'}
+                    {isLoadingPreviewSignature ? "Cargando..." : "Vista Previa"}
                   </Button>
                   <Button
                     variant="ghost"
@@ -1282,7 +1330,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
   const handleUploadFiles = async () => {
     if (correctedFiles.length === 0) {
-      alert('No hay archivos para subir');
+      alert("No hay archivos para subir");
       return;
     }
 
@@ -1291,22 +1339,22 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
       // Agregar cada archivo
       correctedFiles.forEach((file) => {
-        formData.append('files', file);
+        formData.append("files", file);
       });
 
       // Agregar responseId
-      formData.append('responseId', request._id);
+      formData.append("responseId", request._id);
 
       // Obtener token si es necesario (ajusta según tu auth)
       // Usar apiFetch para upload (automáticamente maneja headers y formData)
       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
-        method: 'POST',
-        body: formData
+        method: "POST",
+        body: formData,
       });
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Archivos subidos exitosamente:', result);
+        console.log("Archivos subidos exitosamente:", result);
         alert(`${correctedFiles.length} archivo(s) subido(s) exitosamente`);
         return true;
       } else {
@@ -1315,15 +1363,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
         return false;
       }
     } catch (error) {
-      console.error('Error subiendo archivos:', error);
-      alert('Error subiendo archivos: ' + error.message);
+      console.error("Error subiendo archivos:", error);
+      alert("Error subiendo archivos: " + error.message);
       return false;
     }
   };
 
   const renderResponsesTab = () => {
     const responses = fullRequestData?.responses || {};
-    const entries = Object.entries(responses).filter(([key]) => key !== '_CONTEXTO' && key !== '_contexto');
+    const entries = Object.entries(responses).filter(([key]) => key !== "_CONTEXTO" && key !== "_contexto");
 
     if (entries.length === 0) {
       return (
@@ -1351,10 +1399,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                   {pregunta}
                 </h4>
                 <div className="text-sm font-medium text-foreground leading-relaxed whitespace-pre-wrap break-words">
-                  {respuesta !== null && typeof respuesta === 'object'
-                    ? JSON.stringify(respuesta)
-                    : String(respuesta || '-')
-                  }
+                  {respuesta !== null && typeof respuesta === "object"
+                    ? respuesta.join(", ")
+                    : String(respuesta || "-")}
                 </div>
               </div>
             ))}
@@ -1364,9 +1411,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
     );
   };
 
-  const totalFiles = correctedFiles.length > 0
-    ? correctedFiles.length
-    : approvedData?.correctedFiles?.length || 1;
+  const totalFiles = correctedFiles.length > 0 ? correctedFiles.length : approvedData?.correctedFiles?.length || 1;
 
   const containerClass = isStandalone
     ? "w-full h-full flex flex-col bg-card"
@@ -1379,14 +1424,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
   return (
     <div className={containerClass}>
       <div className={modalClass}>
-
         <div className="sticky top-0 bg-card border-b border-border z-10">
           <div className="flex items-center justify-between p-6 pb-2">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">{fullRequestData?.formTitle || fullRequestData?.title}</h2>
+                  <h2 className="text-xl font-semibold text-foreground">
+                    {fullRequestData?.formTitle || fullRequestData?.title}
+                  </h2>
                   <p className="text-sm text-muted-foreground">ID: {fullRequestData?._id}</p>
                 </div>
               </div>
@@ -1404,9 +1450,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                   />
                 )}
 
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fullRequestData?.status)}`}>
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                    fullRequestData?.status
+                  )}`}
+                >
                   <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
-                  {fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
+                  {fullRequestData?.status?.replace("_", " ")?.toUpperCase()}
                 </span>
 
                 {!isStandalone && (
@@ -1422,33 +1472,25 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                 )}
               </div>
             </div>
-            {!isStandalone && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                iconName="X"
-                iconSize={20}
-              />
-            )}
+            {!isStandalone && <Button variant="ghost" size="icon" onClick={onClose} iconName="X" iconSize={20} />}
           </div>
 
           <div className="px-6 flex space-x-6 ">
             <button
-              onClick={() => setActiveTab('details')}
-              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'details'
-                ? 'border-accent text-accent'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+              onClick={() => setActiveTab("details")}
+              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "details"
+                ? "border-accent text-accent"
+                : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               title="Ver detalles de la solicitud"
             >
               Detalles
             </button>
             <button
-              onClick={() => setActiveTab('responses')}
-              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'responses'
-                ? 'border-accent text-accent'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+              onClick={() => setActiveTab("responses")}
+              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "responses"
+                ? "border-accent text-accent"
+                : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               title="Ver respuestas del formulario"
             >
@@ -1457,9 +1499,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
           </div>
         </div>
 
-        <div className="p-6">
-          {activeTab === 'details' ? renderDetailsTab() : renderResponsesTab()}
-        </div>
+        <div className="p-6">{activeTab === "details" ? renderDetailsTab() : renderResponsesTab()}</div>
 
         <div className="sticky bottom-0 bg-card border-t border-border p-6">
           <div className="flex items-center justify-between">
@@ -1475,7 +1515,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Cambiar Estado:</span>
                     <select
-                      value={fullRequestData?.status || ''}
+                      value={fullRequestData?.status || ""}
                       onChange={(e) => handleStatusChange(e.target.value)}
                       className="h-9 px-3 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent"
                     >
@@ -1490,10 +1530,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
                 </>
               )}
               {!isStandalone && (
-                <Button
-                  variant="default"
-                  onClick={onClose}
-                >
+                <Button variant="default" onClick={onClose}>
                   Cerrar
                 </Button>
               )}
@@ -1505,7 +1542,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
       <CleanDocumentPreview
         isVisible={showPreview}
         onClose={() => {
-          if (previewDocument?.url && previewDocument?.type === 'pdf') {
+          if (previewDocument?.url && previewDocument?.type === "pdf") {
             cleanupPreviewUrl(previewDocument.url);
           }
           setShowPreview(false);
