@@ -535,19 +535,18 @@ router.put("/:id/status", async (req, res) => {
 
         const responses = updatedRequest.responses || {};
 
-
         // Descifrar user si existe para devolver
         if (updatedRequest.responses) {
-
-
-
             Object.keys(responses).forEach(key => {
-                responses[key] = decrypt(responses[key]) || " - ";
+                if (typeof responses[key] === 'string') {
+                    try {
+                        responses[key] = decrypt(responses[key]);
+                    } catch (e) {
+                        // Mantener valor original si falla
+                    }
+                }
             });
-
             updatedRequest.responses = responses;
-
-
         }
 
         res.json({ success: true, updatedRequest });
