@@ -571,7 +571,6 @@ router.put("/:id/status", async (req, res) => {
         );
         const updatedRequest = await req.db.collection("domicilio_virtual").findOne({ _id: new ObjectId(req.params.id) });
 
-        const responses = updatedRequest.responses || {};
 
         // Descifrar user si existe para devolver
         if (updatedRequest.responses) {
