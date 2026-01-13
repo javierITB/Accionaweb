@@ -70,7 +70,6 @@ const DomicilioVirtualIndex = () => {
 
             const endpoint = 'domicilio-virtual/mini';
 
-            // AGREGADO: Se incluyó 'dateRange' para que la API procese "Hoy", "Mes", etc.
             const params = new URLSearchParams({
                 page: pageNumber,
                 limit: requestsPerPage,
@@ -78,7 +77,7 @@ const DomicilioVirtualIndex = () => {
                 status: overrideFilters.status || '',
                 company: overrideFilters.company || '',
                 submittedBy: overrideFilters.submittedBy || '',
-                dateRange: overrideFilters.dateRange || '', // <--- IMPORTANTE
+                dateRange: overrideFilters.dateRange || '', 
                 startDate: overrideFilters.startDate || '',
                 endDate: overrideFilters.endDate || ''
             });
@@ -197,14 +196,33 @@ const DomicilioVirtualIndex = () => {
         window.history.replaceState({}, document.title, url.pathname + url.search);
     };
 
+    // --- LÓGICA DE ELIMINACIÓN AGREGADA ---
     const handleRemove = async (request) => {
-        if (!window.confirm("¿Seguro que deseas eliminar esta solicitud?")) return;
-        alert("Funcionalidad de eliminar pendiente de implementación");
+        if (!window.confirm(`¿Seguro que deseas eliminar la solicitud de ${request.nombreEmpresa || 'este cliente'}?`)) return;
+        
+        try {
+            const res = await apiFetch(`${API_BASE_URL}/domicilio-virtual/${request._id}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                setResp(prev => prev.filter(r => r._id !== request._id));
+                setTotalItems(prev => Math.max(0, prev - 1));
+                if (selectedRequest?._id === request._id) {
+                    handleCloseRequestDetails();
+                }
+            } else {
+                const errorData = await res.json();
+                alert(errorData.error || "No se pudo eliminar la solicitud.");
+            }
+        } catch (err) {
+            console.error("Error al eliminar:", err);
+            alert("Error de conexión al intentar eliminar.");
+        }
     };
 
     const currentRequests = useMemo(() => resp, [resp]);
 
-    // CORREGIDO: mockStats ahora usa las llaves que devuelve la API corregida
     const mockStats = serverStats || {
         total: totalItems,
         documento_generado: 0,
