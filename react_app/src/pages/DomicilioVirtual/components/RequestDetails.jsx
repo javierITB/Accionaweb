@@ -1097,11 +1097,16 @@ const RequestDetails = ({
               {(() => {
                 const keys = Object.keys(fullRequestData?.responses || {});
                 const normalize = k => k.toLowerCase().trim().replace(':', '');
-                // Busca nombre de empresa (excluyendo RUT)
+                // Busca nombre de empresa (excluyendo RUT y datos de contacto)
                 const companyKey = keys.find(k => {
                   const n = normalize(k);
-                  return !n.includes('rut') &&
-                    ['razón social', 'razon social', 'nombre que llevará la empresa', 'empresa', 'cliente'].some(t => n.includes(t));
+                  if (n.includes('rut') ||
+                    n.includes('teléfono') || n.includes('telefono') ||
+                    n.includes('celular') ||
+                    n.includes('mail') || n.includes('correo') ||
+                    n.includes('dirección') || n.includes('direccion') || n.includes('calle')) return false;
+
+                  return ['razón social', 'razon social', 'nombre que llevará la empresa', 'empresa', 'cliente'].some(t => n.includes(t));
                 });
                 // Busca RUT
                 const rutKey = keys.find(k => {

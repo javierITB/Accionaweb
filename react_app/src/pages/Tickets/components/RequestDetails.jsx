@@ -777,7 +777,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Enviado por</p>
             <p className="text-sm font-semibold text-foreground">
               {fullRequestData?.origin === 'domicilio_virtual'
-                ? (findResponseValue(fullRequestData?.responses, ['nombre o razón social', 'nombre que llevará la empresa', 'razón social', 'razon social', 'empresa', 'cliente'], ['rut']) || 'Empresa Desconocida')
+                ? (findResponseValue(fullRequestData?.responses, ['nombre o razón social', 'nombre que llevará la empresa', 'razón social', 'razon social', 'empresa', 'cliente'], ['rut', 'teléfono', 'telefono', 'celular', 'mail', 'correo', 'dirección', 'direccion', 'calle']) || 'Empresa Desconocida')
                 : (fullRequestData?.submittedBy || fullRequestData?.user?.nombre || 'Usuario Desconocido')
               }
             </p>
