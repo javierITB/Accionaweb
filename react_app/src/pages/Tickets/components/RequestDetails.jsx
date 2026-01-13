@@ -955,8 +955,21 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
               <div className="flex items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    {fullRequestData?.formTitle || fullRequestData?.title}
+                  <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                    {fullRequestData?.origin === 'domicilio_virtual' && fullRequestData?.relatedRequestId ? (
+                      <a
+                        href={`/DomicilioVirtual?id=${fullRequestData.relatedRequestId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-accent hover:underline decoration-2 underline-offset-4 flex items-center gap-2 transition-colors"
+                        title="Ver solicitud original en Domicilio Virtual"
+                      >
+                        {fullRequestData?.formTitle || fullRequestData?.title}
+                        <Icon name="ExternalLink" size={16} className="text-muted-foreground" />
+                      </a>
+                    ) : (
+                      fullRequestData?.formTitle || fullRequestData?.title
+                    )}
                   </h2>
                   <p className="text-sm text-muted-foreground">ID: {fullRequestData?._id}</p>
                 </div>
@@ -1009,16 +1022,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
             >
               Detalles
             </button>
-            <button
-              onClick={() => setActiveTab('responses')}
-              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'responses'
-                ? 'border-accent text-accent'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              title="Ver respuestas del formulario"
-            >
-              Respuestas
-            </button>
+            {fullRequestData?.origin !== 'domicilio_virtual' && (
+              <button
+                onClick={() => setActiveTab('responses')}
+                className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'responses'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                title="Ver respuestas del formulario"
+              >
+                Respuestas
+              </button>
+            )}
           </div>
         </div>
 
