@@ -768,8 +768,18 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Enviado por</p>
-            <p className="text-sm font-semibold text-foreground">{fullRequestData?.submittedBy || fullRequestData?.user?.nombre || 'Usuario Desconocido'}</p>
-            <p className="text-xs text-muted-foreground">{fullRequestData?.company || fullRequestData?.user?.empresa || 'Empresa Desconocida'}</p>
+            <p className="text-sm font-semibold text-foreground">
+              {fullRequestData?.origin === 'domicilio_virtual'
+                ? (findResponseValue(fullRequestData?.responses, ['nombre o razón social', 'nombre que llevará la empresa', 'razón social', 'razon social', 'empresa', 'cliente']) || 'Empresa Desconocida')
+                : (fullRequestData?.submittedBy || fullRequestData?.user?.nombre || 'Usuario Desconocido')
+              }
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {fullRequestData?.origin === 'domicilio_virtual'
+                ? (findResponseValue(fullRequestData?.responses, ['rut de la empresa', 'rut representante legal']) || 'Sin RUT')
+                : (fullRequestData?.company || fullRequestData?.user?.empresa || 'Empresa Desconocida')
+              }
+            </p>
           </div>
         </div>
 

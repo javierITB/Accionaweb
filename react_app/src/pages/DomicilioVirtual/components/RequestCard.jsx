@@ -116,10 +116,10 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
 
   const getCombinedTitle = () => {
     const formTitle = currentRequest?.formTitle || 'Formulario';
-    const trabajador = request?.trabajador;
+    const company = currentRequest?.nombreEmpresa || currentRequest?.rutEmpresa;
 
-    if (trabajador && trabajador !== "No especificado") {
-      return `${formTitle} ${trabajador}`;
+    if (company && company !== "No especificado") {
+      return `${formTitle} - ${company}`;
     }
     return formTitle;
   };
@@ -148,8 +148,11 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
           <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-3 sm:space-x-4 text-xs text-muted-foreground">
 
             <div className="flex items-center space-x-1">
-              <Icon name="User" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
-              <span className="truncate">Por: {currentRequest?.user?.nombre || currentRequest?.submittedBy}</span>
+              <Icon name="Building" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
+              <span className="truncate">
+                {currentRequest?.nombreEmpresa || 'Empresa'}
+                {currentRequest?.rutEmpresa ? ` (${currentRequest.rutEmpresa})` : ''}
+              </span>
             </div>
           </div>
         </div>
