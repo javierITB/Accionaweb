@@ -43,6 +43,7 @@ export default function App() {
 
       if (res.ok && data?.success) {
         // LOGIN FINALIZADO EXITOSAMENTE
+        sessionStorage.setItem("rol", data?.usr?.rol);
         sessionStorage.setItem("cargo", data?.usr?.cargo);
         sessionStorage.setItem("email", data?.usr?.email);
         sessionStorage.setItem("user", data?.usr?.name);
@@ -84,6 +85,7 @@ export default function App() {
 
         } else {
           // LOGIN DIRECTO (2FA NO ACTIVA)
+          sessionStorage.setItem("rol", data?.usr?.rol);
           sessionStorage.setItem("cargo", data?.usr?.cargo);
           sessionStorage.setItem("email", data?.usr?.email);
           sessionStorage.setItem("user", data?.usr?.name);
