@@ -60,8 +60,8 @@ const RequestDetails = ({
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
 
-const [dialogOpen, setDialogOpen] = useState(false);
-const [pendingStatus, setPendingStatus] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
 
 
   useEffect(() => {
@@ -299,51 +299,52 @@ const [pendingStatus, setPendingStatus] = useState(null);
     };
   }, [previewDocument]);
 
-const handleStatusChange = async (newStatus) => {
-  try {
-    const response = await apiFetch(
-      `${API_BASE_URL}/${endpointPrefix}/${request._id}/status`,
-      {
-        method: "PUT",
-        body: JSON.stringify({ status: newStatus }),
+  const handleStatusChange = async (newStatus) => {
+    try {
+      const response = await apiFetch(
+        `${API_BASE_URL}/${endpointPrefix}/${request._id}/status`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "No se pudo cambiar el estado");
       }
-    );
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "No se pudo cambiar el estado");
+      const result = await response.json();
+
+      if (onUpdate && result.updatedRequest) {
+        const normalizedRequest = {
+          ...fullRequestData,
+          ...result.updatedRequest,
+          submittedBy:
+            result.updatedRequest.user?.nombre ||
+            fullRequestData.user?.nombre ||
+            "Usuario Desconocido",
+          company:
+            result.updatedRequest.user?.empresa ||
+            fullRequestData.user?.empresa ||
+            "Empresa Desconocida",
+        };
+
+        onUpdate(normalizedRequest);
+
+        setFullRequestData(prev => ({
+          ...prev,
+          ...normalizedRequest,
+          adjuntos: prev.adjuntos || []
+        }));
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error cambiando estado:", error);
+      throw error;
     }
-
-    const result = await response.json();
-
-    if (onUpdate && result.updatedRequest) {
-      const normalizedRequest = {
-        ...result.updatedRequest,
-        submittedBy:
-          result.updatedRequest.user?.nombre ||
-          result.updatedRequest.submittedBy ||
-          "Usuario Desconocido",
-        company:
-          result.updatedRequest.user?.empresa ||
-          result.updatedRequest.company ||
-          "Empresa Desconocida",
-        submittedAt:
-          result.updatedRequest.submittedAt ||
-          result.updatedRequest.createdAt,
-      };
-
-      onUpdate(normalizedRequest);
-      setFullRequestData(normalizedRequest);
-    }
-
-    // 🔑 éxito → simplemente termina
-    return true;
-  } catch (error) {
-    console.error("Error cambiando estado:", error);
-    // 🔑 error → lo propagamos al dialog
-    throw error;
-  }
-};
+  };
 
 
   const getPreviousStatus = (currentStatus) => {
@@ -1556,13 +1557,13 @@ const handleStatusChange = async (newStatus) => {
       />
 
       <AsyncActionDialog
-          open={dialogOpen}
-          title={`¿Está seguro de que quiere cambiar el estado a "${pendingStatus}"?`}
-          loadingText={`Cambiando estado a "${pendingStatus}"...`}
-          successText="Estado cambiado correctamente"
-          onConfirm={() => handleStatusChange(pendingStatus)}
-          onClose={() => setDialogOpen(false)}
-        />
+        open={dialogOpen}
+        title={`¿Está seguro de que quiere cambiar el estado a "${pendingStatus}"?`}
+        loadingText={`Cambiando estado a "${pendingStatus}"...`}
+        successText="Estado cambiado correctamente"
+        onConfirm={() => handleStatusChange(pendingStatus)}
+        onClose={() => setDialogOpen(false)}
+      />
     </div>
   );
 };
