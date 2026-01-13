@@ -45,8 +45,8 @@ const DomicilioVirtualIndex = () => {
         dateRange: '', // Coincide con Select en FilterPanel
         startDate: '',
         endDate: '',
-        company: '',     
-        submittedBy: ''  
+        company: '',
+        submittedBy: ''
     });
 
     // --- EFECTOS DE REDIMENSIONAMIENTO ---
@@ -76,7 +76,7 @@ const DomicilioVirtualIndex = () => {
                 limit: requestsPerPage,
                 search: overrideFilters.search || '',
                 status: overrideFilters.status || '',
-                company: overrideFilters.company || '', 
+                company: overrideFilters.company || '',
                 submittedBy: overrideFilters.submittedBy || '',
                 dateRange: overrideFilters.dateRange || '', // <--- IMPORTANTE
                 startDate: overrideFilters.startDate || '',
@@ -102,9 +102,10 @@ const DomicilioVirtualIndex = () => {
                 createdAt: r.createdAt,
                 status: r.status,
                 tuNombre: r.tuNombre || "",
+                nombreEmpresa: r.nombreEmpresa,
                 rutEmpresa: r.rutEmpresa || "",
                 submittedBy: r.tuNombre || 'Sin nombre',
-                company: r.rutEmpresa || 'Sin RUT',      
+                company: r.rutEmpresa || 'Sin RUT',
                 hasMessages: r.adjuntosCount > 0,
                 updatedAt: r.updatedAt
             }));
@@ -166,15 +167,15 @@ const DomicilioVirtualIndex = () => {
     };
 
     const handleClearFilters = () => {
-        const cleared = { 
-            search: '', 
-            status: '', 
-            category: '', 
-            dateRange: '', 
-            startDate: '', 
-            endDate: '', 
+        const cleared = {
+            search: '',
+            status: '',
+            category: '',
+            dateRange: '',
+            startDate: '',
+            endDate: '',
             company: '',
-            submittedBy: '' 
+            submittedBy: ''
         };
         setFilters(cleared);
         setResp([]);
@@ -220,11 +221,11 @@ const DomicilioVirtualIndex = () => {
     return (
         <div className="min-h-screen bg-background">
             <Header />
-            <Sidebar 
-                isCollapsed={!isDesktopOpen} 
-                onToggleCollapse={() => setIsDesktopOpen(!isDesktopOpen)} 
-                isMobileOpen={isMobileOpen} 
-                onNavigate={() => isMobileScreen && setIsMobileOpen(false)} 
+            <Sidebar
+                isCollapsed={!isDesktopOpen}
+                onToggleCollapse={() => setIsDesktopOpen(!isDesktopOpen)}
+                isMobileOpen={isMobileOpen}
+                onNavigate={() => isMobileScreen && setIsMobileOpen(false)}
             />
 
             {isMobileScreen && isMobileOpen && (
