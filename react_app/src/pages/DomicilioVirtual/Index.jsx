@@ -15,14 +15,14 @@ const DomicilioVirtualIndex = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const formId = urlParams?.get('id');
 
-    // --- ESTADOS DE UI ---
+    // --- ESTADOS DE UI (Mantener idénticos) ---
     const [isDesktopOpen, setIsDesktopOpen] = useState(true);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
     const [viewMode, setViewMode] = useState('grid');
     const [showFilters, setShowFilters] = useState(false);
 
-    // --- ESTADOS DE DATOS ---
+    // --- ESTADOS DE DATOS (Mantener idénticos) ---
     const [resp, setResp] = useState([]);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -38,6 +38,7 @@ const DomicilioVirtualIndex = () => {
 
     const loadedPages = useRef(new Set());
 
+    // CAMBIO 1: Añadido 'submittedBy' para que el FilterPanel pueda controlarlo
     const [filters, setFilters] = useState({
         search: '',
         status: '',
@@ -45,11 +46,11 @@ const DomicilioVirtualIndex = () => {
         dateRange: '',
         startDate: '',
         endDate: '',
-        company: '',
-        submittedBy: ''
+        company: '',     // Este es el RUT
+        submittedBy: ''  // Nuevo campo para el nombre
     });
 
-    // --- EFECTOS DE REDIMENSIONAMIENTO ---
+    // --- EFECTOS DE REDIMENSIONAMIENTO (Sin cambios) ---
     useEffect(() => {
         const handleResize = () => {
             const isMobile = window.innerWidth < 768;
@@ -70,13 +71,14 @@ const DomicilioVirtualIndex = () => {
 
             const endpoint = 'domicilio-virtual/mini';
 
+            // CAMBIO 2: Incluir submittedBy en los parámetros enviados a la API
             const params = new URLSearchParams({
                 page: pageNumber,
                 limit: requestsPerPage,
                 search: overrideFilters.search || '',
                 status: overrideFilters.status || '',
-                company: overrideFilters.company || '',
-                submittedBy: overrideFilters.submittedBy || '',
+                company: overrideFilters.company || '', 
+                submittedBy: overrideFilters.submittedBy || '', // Nuevo parámetro
                 startDate: overrideFilters.startDate || '',
                 endDate: overrideFilters.endDate || ''
             });
@@ -90,20 +92,21 @@ const DomicilioVirtualIndex = () => {
             if (result.archivedTotal !== undefined) setArchivedCountServer(result.archivedTotal);
             if (result.stats) setServerStats(result.stats);
 
+            // CAMBIO 3: Mantenemos tu lógica de normalización pero aseguramos el mapeo correcto
             const normalized = result.data.map(r => ({
                 _id: r._id,
                 formId: r.formId,
-                title: r.formTitle || r.title || "Formulario",
-                formTitle: r.formTitle || r.title,
-                description: r.formTitle || "Domicilio Virtual",
+                title: r.formTitle || "Formulario",
+                formTitle: r.formTitle,
+                description: "Domicilio Virtual",
                 submittedAt: r.submittedAt || r.createdAt || null,
                 createdAt: r.createdAt,
                 status: r.status,
-                trabajador: r.trabajador || "",
-                rutTrabajador: r.rutTrabajador || "",
                 tuNombre: r.tuNombre || "",
-                submittedBy: r.user?.nombre || r.tuNombre || r.submittedBy || 'Usuario Desconocido',
-                company: r.user?.empresa || r.company || 'Empresa Desconocida',
+                rutEmpresa: r.rutEmpresa || "",
+                // Asignamos para que la RequestCard los muestre bien
+                submittedBy: r.tuNombre || 'Sin nombre',
+                company: r.rutEmpresa || 'Sin RUT',      
                 hasMessages: r.adjuntosCount > 0,
                 updatedAt: r.updatedAt
             }));
@@ -127,14 +130,9 @@ const DomicilioVirtualIndex = () => {
         }
     };
 
-    // --- EFECTO DE CARGA INICIAL ---
-    useEffect(() => {
-        fetchData(1);
-    }, []);
-
-    useEffect(() => {
-        if (currentPage > 1) fetchData(currentPage);
-    }, [currentPage]);
+    // --- EFECTOS DE CONTROL (Sin cambios de lógica) ---
+    useEffect(() => { fetchData(1); }, []);
+    useEffect(() => { if (currentPage > 1) fetchData(currentPage); }, [currentPage]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -170,7 +168,17 @@ const DomicilioVirtualIndex = () => {
     };
 
     const handleClearFilters = () => {
-        const cleared = { search: '', status: '', category: '', dateRange: '', startDate: '', endDate: '', company: '', submittedBy: '' };
+        // CAMBIO 4: Limpiamos también el campo submittedBy
+        const cleared = { 
+            search: '', 
+            status: '', 
+            category: '', 
+            dateRange: '', 
+            startDate: '', 
+            endDate: '', 
+            company: '',
+            submittedBy: '' 
+        };
         setFilters(cleared);
         setResp([]);
         loadedPages.current.clear();
@@ -178,6 +186,7 @@ const DomicilioVirtualIndex = () => {
         fetchData(1, false, cleared);
     };
 
+    // --- RESTO DE FUNCIONES (Sin cambios) ---
     const updateRequest = (updatedRequest) => {
         setResp(prev => prev.map(req => req._id === updatedRequest._id ? updatedRequest : req));
         setSelectedRequest(updatedRequest);
@@ -193,15 +202,13 @@ const DomicilioVirtualIndex = () => {
 
     const handleRemove = async (request) => {
         if (!window.confirm("¿Seguro que deseas eliminar esta solicitud?")) return;
-        alert("Funcionalidad de eliminar pendiente de implementación en backend para Domicilio Virtual");
+        alert("Funcionalidad de eliminar pendiente de implementación");
     };
 
-    const currentRequests = useMemo(() => {
-        return resp;
-    }, [resp]);
+    const currentRequests = useMemo(() => resp, [resp]);
 
     const mockStats = serverStats || {
-        total: totalItems + (filters.status === 'archivado' ? 0 : archivedCountServer),
+        total: totalItems,
         pending: resp.filter(r => r.status === 'pendiente').length,
         inReview: resp.filter(r => r.status === 'en_revision').length,
         approved: resp.filter(r => r.status === 'aprobado').length,
@@ -215,7 +222,12 @@ const DomicilioVirtualIndex = () => {
     return (
         <div className="min-h-screen bg-background">
             <Header />
-            <Sidebar isCollapsed={!isDesktopOpen} onToggleCollapse={() => setIsDesktopOpen(!isDesktopOpen)} isMobileOpen={isMobileOpen} onNavigate={() => isMobileScreen && setIsMobileOpen(false)} />
+            <Sidebar 
+                isCollapsed={!isDesktopOpen} 
+                onToggleCollapse={() => setIsDesktopOpen(!isDesktopOpen)} 
+                isMobileOpen={isMobileOpen} 
+                onNavigate={() => isMobileScreen && setIsMobileOpen(false)} 
+            />
 
             {isMobileScreen && isMobileOpen && (
                 <div className="fixed inset-0 bg-foreground/50 z-40 lg:hidden" onClick={() => setIsMobileOpen(false)}></div>
@@ -263,7 +275,7 @@ const DomicilioVirtualIndex = () => {
                         ) : (
                             <div className="col-span-full py-12 text-center bg-card border border-border rounded-xl">
                                 <Icon name="Search" size={40} className="mx-auto text-muted-foreground opacity-20 mb-4" />
-                                <p className="text-muted-foreground">No se encontraron solicitudes en Domicilio Virtual</p>
+                                <p className="text-muted-foreground">No se encontraron solicitudes</p>
                             </div>
                         )}
                     </div>

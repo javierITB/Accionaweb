@@ -68,93 +68,130 @@ router.get("/mini", async (req, res) => {
 
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 30;
-        const skip = (page - 1) * limit;
+        const { status, company, search, submittedBy, dateRange, startDate, endDate } = req.query; 
 
         const collection = req.db.collection("domicilio_virtual");
 
+        // 1. CONSTRUCCIÓN DEL FILTRO DE BASE DE DATOS
         const filter = {};
-        if (req.query.status) filter.status = req.query.status;
+        if (status && status !== "") filter.status = status;
 
-        const [answers, totalCount, statusCounts] = await Promise.all([
-            collection.find(filter)
-                .sort({ createdAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .toArray(),
-            collection.countDocuments({}),
-            collection.aggregate([
-                { $group: { _id: "$status", count: { $sum: 1 } } }
-            ]).toArray()
-        ]);
+        // Lógica de Fechas (startDate / endDate)
+        if (startDate || endDate) {
+            filter.createdAt = {};
+            if (startDate) filter.createdAt.$gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                filter.createdAt.$lte = end;
+            }
+        } 
+        // Lógica de Período Predefinido (dateRange)
+        else if (dateRange && dateRange !== "") {
+            const now = new Date();
+            const startOfPeriod = new Date();
+            startOfPeriod.setHours(0, 0, 0, 0);
 
-        const answersProcessed = answers.map(answer => {
-            const getDecryptedResponse = (keys) => {
-                for (let key of keys) {
-                    if (answer.responses && answer.responses[key]) {
+            if (dateRange === 'today') {
+                filter.createdAt = { $gte: startOfPeriod };
+            } else if (dateRange === 'week') {
+                const day = startOfPeriod.getDay();
+                const diff = startOfPeriod.getDate() - day + (day === 0 ? -6 : 1);
+                filter.createdAt = { $gte: new Date(startOfPeriod.setDate(diff)) };
+            } else if (dateRange === 'month') {
+                filter.createdAt = { $gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+            } else if (dateRange === 'year') {
+                filter.createdAt = { $gte: new Date(now.getFullYear(), 0, 1) };
+            }
+        }
+
+        // 2. EJECUCIÓN EN DB (Ya filtrado por fecha y estado)
+        const answers = await collection.find(filter)
+            .sort({ createdAt: -1 })
+            .toArray();
+
+        // 3. PROCESAMIENTO Y DESENCRIPTACIÓN
+        let answersProcessed = answers.map(answer => {
+            const getVal = (keys) => {
+                const responseKeys = Object.keys(answer.responses || {});
+                for (let searchKey of keys) {
+                    const actualKey = responseKeys.find(k => 
+                        k.toLowerCase().trim().replace(":", "") === searchKey.toLowerCase()
+                    );
+                    if (actualKey && answer.responses[actualKey]) {
                         try {
-                            return decrypt(answer.responses[key]);
-                        } catch (e) { return answer.responses[key]; }
+                            return decrypt(answer.responses[actualKey]);
+                        } catch (e) { return answer.responses[actualKey]; }
                     }
                 }
-                return "No especificado";
+                return "";
             };
 
-            const trabajador = getDecryptedResponse(["Nombre del trabajador", "NOMBRE DEL TRABAJADOR", "nombre del trabajador"]);
-            const rutTrabajador = getDecryptedResponse(["RUT del trabajador", "RUT DEL TRABAJADOR", "rut del trabajador"]);
-            const tuNombre = (() => {
-                const keys = Object.keys(answer.responses || {});
-                const exactKey = keys.find(k => k.trim().toLowerCase() === 'tu nombre' || k.trim().toLowerCase() === 'nombre' || k.trim().toLowerCase() === 'nombre completo');
-                const fuzzyKey = keys.find(k => k.toLowerCase().includes('nombre') && !k.toLowerCase().includes('empresa') && !k.toLowerCase().includes('trabajador'));
-                const key = exactKey || fuzzyKey;
-                if (key && answer.responses[key]) {
-                    try { return decrypt(answer.responses[key]); } catch (e) { return answer.responses[key]; }
-                }
-                return "No especificado";
-            })();
+            const nombreCliente = getVal(["tu nombre", "nombre o razón social", "nombre"]);
+            const rutCliente = getVal(["rut de la empresa", "rut representante legal"]);
 
             return {
                 _id: answer._id,
                 formId: answer.formId,
                 formTitle: answer.formTitle,
-                trabajador,
-                rutTrabajador,
-                tuNombre,
+                tuNombre: nombreCliente, 
+                rutEmpresa: rutCliente,
                 submittedAt: answer.submittedAt || answer.createdAt,
-                user: answer.user ? {
-                    nombre: decrypt(answer.user.nombre),
-                    empresa: decrypt(answer.user.empresa)
-                } : answer.user,
                 status: answer.status,
                 createdAt: answer.createdAt,
                 adjuntosCount: 0
             };
         });
 
+        // 4. FILTROS EN MEMORIA (Texto desencriptado)
+        if (company && company.trim() !== "") {
+            const term = company.toLowerCase().trim();
+            answersProcessed = answersProcessed.filter(a => a.rutEmpresa.toLowerCase().includes(term));
+        }
+
+        if (submittedBy && submittedBy.trim() !== "") {
+            const term = submittedBy.toLowerCase().trim();
+            answersProcessed = answersProcessed.filter(a => a.tuNombre.toLowerCase().includes(term));
+        }
+
+        if (search && search.trim() !== "") {
+            const term = search.toLowerCase().trim();
+            answersProcessed = answersProcessed.filter(a => 
+                a.tuNombre.toLowerCase().includes(term) || a.rutEmpresa.toLowerCase().includes(term)
+            );
+        }
+
+        // 5. RESPUESTA Y PAGINACIÓN
+        const totalFiltered = answersProcessed.length;
+        const paginatedData = answersProcessed.slice((page - 1) * limit, page * limit);
+
+        const statusCounts = await collection.aggregate([
+            { $group: { _id: "$status", count: { $sum: 1 } } }
+        ]).toArray();
+
         res.json({
             success: true,
-            data: answersProcessed,
+            data: paginatedData,
             pagination: {
-                total: totalCount,
+                total: totalFiltered,
                 page: page,
                 limit: limit,
-                totalPages: Math.ceil(totalCount / limit)
+                totalPages: Math.ceil(totalFiltered / limit)
             },
             stats: {
-                total: totalCount,
+                total: totalFiltered,
                 documento_generado: statusCounts.find(s => s._id === 'documento_generado')?.count || 0,
                 solicitud_firmada: statusCounts.find(s => s._id === 'solicitud_firmada')?.count || 0,
                 informado_sii: statusCounts.find(s => s._id === 'informado_sii')?.count || 0,
-                dicom: statusCounts.find(s => s._id === 'dicom')?.count || 0,
-                dado_de_baja: statusCounts.find(s => s._id === 'dado_de_baja')?.count || 0,
                 pending: statusCounts.find(s => s._id === 'pendiente')?.count || 0
             }
         });
+
     } catch (err) {
-        console.error("Error en GET /mini:", err);
-        res.status(500).json({ error: "Error interno al obtener domicilio virtual" });
+        console.error("Error en /mini:", err);
+        res.status(500).json({ error: "Error interno al filtrar" });
     }
 });
-
 // 2. Obtener detalle (GET /:id)
 router.get("/:id", async (req, res) => {
     try {
@@ -217,7 +254,7 @@ router.get("/:id", async (req, res) => {
 // 3. Crear solicitud (POST /)
 router.post("/", async (req, res) => {
     try {
-        const { formId, responses, formTitle, adjuntos = [] } = req.body;
+        const { formId, responses, formTitle, adjuntos = [], user } = req.body;
 
         // Verificar formulario
         const form = await req.db.collection("forms").findOne({ _id: new ObjectId(formId) });
@@ -298,7 +335,7 @@ router.post("/", async (req, res) => {
 
             // Insertar ticket en soporte
             await req.db.collection("soporte").insertOne({
-                formId: "ticket-automatico-dv",
+                formId: formId, // Usar ID real del formulario para que aparezca en panel admin
                 user: user, // Se guarda el usuario asociado
                 responses: responses, // Se guardan las respuestas en texto plano para el ticket
                 formTitle: ticketTitle,

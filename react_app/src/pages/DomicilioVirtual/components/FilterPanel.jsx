@@ -8,7 +8,7 @@ const FilterPanel = ({
   filters,
   onFilterChange,
   onClearFilters,
-  onApplyFilters, // <-- Nueva prop
+  onApplyFilters,
   isVisible,
   onToggle
 }) => {
@@ -41,7 +41,7 @@ const FilterPanel = ({
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg">
+    <div className="bg-card border border-border rounded-lg shadow-sm">
       <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
         <div className="flex items-center space-x-2">
           <Icon name="Filter" size={18} className="text-accent sm:w-5 sm:h-5" />
@@ -69,7 +69,7 @@ const FilterPanel = ({
             <Input
               label="Buscar Solicitudes"
               type="search"
-              placeholder="Buscar por título, empresa o usuario..."
+              placeholder="Buscar por nombre, razón social o rut..."
               value={filters?.search || ''}
               onChange={(e) => handleInputChange('search', e?.target?.value)}
               className="w-full"
@@ -88,12 +88,23 @@ const FilterPanel = ({
 
           <div className="pt-3 sm:pt-4 border-t border-border">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <Input label="Empresa" type="text" placeholder="Filtrar por empresa..." value={filters?.company || ''} onChange={(e) => handleInputChange('company', e?.target?.value)} />
-              <Input label="Enviado por" type="text" placeholder="Nombre del usuario..." value={filters?.submittedBy || ''} onChange={(e) => handleInputChange('submittedBy', e?.target?.value)} />
+              <Input 
+                label="RUT EMPRESA" 
+                type="text" 
+                placeholder="Ej: 77.123.456-k" 
+                value={filters?.company || ''} 
+                onChange={(e) => handleInputChange('company', e?.target?.value)} 
+              />
+              <Input 
+                label="ENVIADO POR" 
+                type="text" 
+                placeholder="Nombre del solicitante..." 
+                value={filters?.submittedBy || ''} 
+                onChange={(e) => handleInputChange('submittedBy', e?.target?.value)} 
+              />
             </div>
           </div>
 
-          {/* BOTÓN FILTRAR: Aquí se añade la acción manual */}
           <div className="flex justify-end pt-2">
             <Button
               variant="default"
