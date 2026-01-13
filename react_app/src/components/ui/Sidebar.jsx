@@ -1,228 +1,175 @@
-import React from "react";
-import Icon from "../AppIcon"; // Se mantiene la ruta a '../AppIcon'
-import Button from "./Button"; // CORRECCIÓN: Se ajusta la ruta a './Button' (asumiendo que es un componente hermano en 'ui')
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { apiFetch, API_BASE_URL } from "../../utils/api";
+import Icon from "../AppIcon";
+import Button from "./Button";
 
-// Agregamos los props isMobileOpen y onNavigate, que se pasan desde FormCenter.jsx
 const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobileOpen = false, onNavigate }) => {
+
+   const MENU_STRUCTURE = [
+      {
+         name: "Gestión Principal",
+         icon: "LayoutDashboard",
+         isAccordion: true,
+         roles: ["Admin", "RRHH"], // Solo estos cargos ven el acordeón completo
+         children: [
+            { name: "Respuestas", path: "/RespuestasForms", icon: "FileText", roles: ["Admin", "RRHH"] },
+            { name: "Solicitudes", path: "/Solicitudes", icon: "Pencil", roles: ["Admin", "RRHH"] },
+            { name: "Tickets", path: "/Tickets", icon: "FileText", roles: ["Admin", "RRHH", "soporte"] },
+            { name: "Domicilio Virtual", path: "/DomicilioVirtual", icon: "Home", roles: ["Admin"] },
+         ]
+      },
+      {
+         name: "Configuración",
+         icon: "Settings",
+         isAccordion: true,
+         roles: ["Admin"], // Solo admin ve configuraciones
+         children: [
+            { name: "Formularios", path: "/form-center", icon: "FileText", roles: ["Admin"] },
+            { name: "Plantillas", path: "/template-builder", icon: "FileText", roles: ["Admin"] },
+            { name: "Anuncios", path: "/anuncios", icon: "Megaphone", roles: ["Admin"] },
+         ]
+      },
+      {
+         name: "Administración",
+         icon: "Shield",
+         isAccordion: true,
+         roles: ["Admin"],
+         children: [
+            { name: "Usuarios", path: "/users", icon: "User", roles: ["Admin"] },
+            { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["Admin"] },
+         ]
+      },
+      {
+         name: "Perfil",
+         path: "/Perfil",
+         icon: "User",
+         description: "Perfil de usuario",
+         isAccordion: false,
+         roles: ["Admin", "RRHH", "soporte", "Desarrollador"] // Acceso más amplio
+      }
+   ];
+
+
    const location = useLocation();
    const navigate = useNavigate();
 
-   // 1. Estados para la navegación dinámica y el estado de carga
-   const [navigationItems, setNavigationItems] = useState([]);
-   const [isLoading, setIsLoading] = useState(true);
+   const [openMenus, setOpenMenus] = useState({ "Gestión Principal": true });
 
-   // Obtener datos del usuario
-   const user = sessionStorage.getItem("user");
-   const mail = sessionStorage.getItem("email");
-   const token = sessionStorage.getItem("token");
-   const cargo = sessionStorage.getItem("cargo");
+   // Obtenemos los datos del usuario para el filtro de permisos
+   const user = sessionStorage.getItem("user") || "Usuario";
+   const userRole = sessionStorage.getItem("cargo") || "guest"; // Cargo actual del usuario
 
-   // CORRECCIÓN CRÍTICA: La navegación real siempre usa navigate(path).
-   // onNavigate (si se pasa) solo se usa para el efecto secundario (cerrar el menú).
-   const handleNavigation = (path) => {
-      // 1. ASEGURAMOS LA REDIRECCIÓN DE REACT ROUTER SIEMPRE
-      navigate(path);
+   useEffect(() => {
+      // Buscamos si la ruta actual pertenece a algún hijo de un acordeón
+      MENU_STRUCTURE.forEach(item => {
+         if (item.isAccordion && item.children) {
+            const hasActiveChild = item.children.some(child => child.path === location.pathname);
 
-      // 2. Ejecutar la acción de cierre (si el padre la proporcionó, lo cual ocurre en móvil)
-      if (onNavigate) {
-         onNavigate(path);
-      }
+            if (hasActiveChild) {
+               setOpenMenus(prev => ({
+                  ...prev,
+                  [item.name]: true // Abrimos el acordeón padre
+               }));
+            }
+         }
+      });
+   }, [location.pathname]);
+
+   // --- SISTEMA DE GESTIÓN DE PERMISOS ---
+   const hasPermission = (itemRoles) => {
+      if (!itemRoles) return true; // Si no hay roles definidos, es público
+      return itemRoles.includes(userRole);
    };
 
-   // 2. useEffect para la llamada a la API (sin cambios)
-   useEffect(() => {
-      if (!mail || !token || !cargo) {
-         console.error("Datos de usuario insuficientes para filtrar el menú.");
-         setIsLoading(false);
-         return;
-      }
+   const toggleAccordion = (name) => {
+      setOpenMenus(prev => ({ ...prev, [name]: !prev[name] }));
+   };
 
-      // 1. Intentar cargar desde cache primero
-      const cachedMenu = sessionStorage.getItem("adminMenuData");
-      if (cachedMenu) {
-         setNavigationItems(JSON.parse(cachedMenu));
-         setIsLoading(false);
-         // Opcional: Podríamos hacer fetch en background para actualizar,
-         // pero para velocidad, confiamos en el cache por esta sesión.
-      }
+   const handleNavigation = (path) => {
+      navigate(path);
+      if (onNavigate) onNavigate(path);
+   };
 
-      const fetchMenu = async () => {
-         // Solo poner isLoading true si NO tenemos cache
-         if (!cachedMenu) setIsLoading(true);
+   const isTextVisible = !(isCollapsed && !isMobileOpen);
 
-         if (!mail || !token) {
-            console.warn("Sidebar: Missing auth data, skipping menu fetch.");
-            setIsLoading(false);
-            return;
-         }
+   const renderNavLink = (item, isChild = false) => {
+      // Validamos permiso antes de renderizar
+      if (!hasPermission(item.roles)) return null;
 
-         try {
-            const response = await apiFetch(`${API_BASE_URL}/menu/filter`, {
-               method: "POST",
-               body: JSON.stringify({
-                  mail: mail,
-                  token: token,
-                  cargo: cargo,
-               }),
-            });
-
-            if (!response.ok) {
-               throw new Error(`Error en la respuesta del servidor: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-
-            // Verificar si los datos han cambiado antes de actualizar el estado para evitar re-renders
-            if (JSON.stringify(data) !== cachedMenu) {
-               setNavigationItems(data);
-               sessionStorage.setItem("adminMenuData", JSON.stringify(data));
-            }
-         } catch (error) {
-            console.error("Fallo al obtener el menú filtrado:", error);
-         } finally {
-            setIsLoading(false);
-         }
-      };
-
-      fetchMenu();
-   }, [mail, token, cargo]);
-
-   const quickActions = [
-      { name: "Tiempo de respuesta", icon: "Calendar", path: "/form-center?type=timeoff" },
-      { name: "Reporte de gastos", icon: "Receipt", path: "/form-center?type=expense" },
-      { name: "Soporte de TI", icon: "Monitor", path: "/support-portal?category=it" },
-   ];
-
-   // Lógica de Clases Condicionales (Desktop vs Mobile)
-
-   // 1. Visibilidad y posición: En móvil abierto, debe ser fixed y z-60.
-   const mobileOpenClasses = isMobileOpen
-      ? "fixed inset-y-0 left-0 h-screen w-64 z-[60] shadow-2xl"
-      : "hidden md:block fixed left-0 top-16 bottom-0 z-40"; // Oculto en móvil por defecto, fijo en desktop
-
-   // 2. Ancho: W-64 en móvil abierto o desktop expandido, W-16 en desktop colapsado.
-   const widthClasses = isCollapsed && !isMobileOpen ? "w-16" : "w-64";
-
-   const finalClasses = `bg-card border-r border-border transition-all duration-300 ${widthClasses} ${mobileOpenClasses} ${className}`;
-
-   if (isLoading) {
-      // Ajuste en la vista de carga para que sea responsive
+      const isActive = location.pathname === item.path;
       return (
-         <aside
-            className={`fixed left-0 top-16 bottom-0 z-40 bg-card border-r border-border flex items-center justify-center ${
-               isCollapsed && !isMobileOpen ? "w-16" : "w-64"
-            } hidden md:flex ${className}`}
+         <button
+            key={item.path}
+            onClick={() => handleNavigation(item.path)}
+            className={`w-full flex items-center rounded-lg transition-all duration-200 mb-1
+               ${isActive ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-muted hover:text-foreground"}
+               ${!isTextVisible ? "justify-center px-2 py-3" : isChild ? "pl-10 pr-3 py-2" : "px-3 py-3"}
+            `}
+            title={!isTextVisible ? item.name : ""}
          >
-            <span className="text-muted-foreground text-sm">Cargando menú...</span>
-         </aside>
+            <Icon name={item.icon} size={isChild ? 16 : 20} className={isTextVisible && !isChild ? "mr-2" : ""} />
+            {isTextVisible && (
+               <div className="flex-1 text-left min-w-0">
+                  <div className={`${isChild ? "text-xs ml-2" : "text-sm"} font-medium truncate`}> {item.name}</div>
+               </div>
+            )}
+         </button>
       );
-   }
+   };
 
    return (
-      <aside className={finalClasses}>
-         <div className="flex flex-col h-full ">
-            {/* Botón de Cierre para Móvil (cuando está isMobileOpen) */}
-            {isMobileOpen && (
-               <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onToggleCollapse}
-                  className="absolute top-4 right-4 z-[70] text-foreground hover:bg-muted min-touch-target"
-               >
-                  <Icon name="X" size={24} />
-               </Button>
-            )}
+      <aside className={`bg-card border-r border-border transition-all duration-300 
+         ${isTextVisible ? "w-64" : "w-16"} 
+         ${isMobileOpen ? "fixed inset-y-0 left-0 z-[60] shadow-2xl" : "hidden md:flex fixed left-0 top-16 bottom-0 z-40"} 
+         ${className} flex flex-col`}>
 
-            {/* Main navigation - Added top spacing for mobile to avoid X overlap */}
-            <nav
-               className={`
-    flex-1
-    ${isMobileOpen ? "mt-16" : "mt-4"}
-    p-4 space-y-2 overflow-x-hidden
-    ${
-       isMobileOpen
-          ? "overflow-y-auto scrollbar-thin"
-          : isCollapsed
-          ? "overflow-y-auto sidebar-collapsed"
-          : "overflow-y-auto scrollbar-thin"
-    }
-  `}
-            >
-               {navigationItems.map((item) => {
-                  const isActive =
-                     location.pathname === item.path ||
-                     (location.pathname == "/form-builder" && item.path == "/form-center");
+         <div className="flex flex-col h-full">
+            <nav className={`flex-1 ${isMobileOpen ? "mt-16" : "mt-4"} p-3 space-y-1 overflow-y-auto overflow-x-hidden`}>
+               {MENU_STRUCTURE.map((item) => {
+                  // Validar si el usuario tiene permiso para ver el ítem principal o acordeón
+                  if (!hasPermission(item.roles)) return null;
 
-                  const isTextVisible = !(isCollapsed && !isMobileOpen); // Es visible si no está colapsado Y no está en móvil
+                  if (!item.isAccordion) return renderNavLink(item);
+
+                  const isOpen = openMenus[item.name];
 
                   return (
-                     <button
-                        key={item.path}
-                        onClick={() => handleNavigation(item.path)}
-                        className={`w-full flex items-center rounded-lg transition-all duration-300 min-touch-target
-                  ${
-                     isActive
-                        ? "bg-primary text-primary-foreground shadow-brand"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }
-                  ${!isTextVisible ? "justify-center px-2 py-3" : "justify-start px-3 py-3"}
-                `}
-                        title={!isTextVisible ? item.name : ""}
-                     >
-                        <Icon
-                           name={item.icon}
-                           size={!isTextVisible ? 24 : 20}
-                           className={`${isActive ? "text-primary-foreground" : ""} ${
-                              isTextVisible ? "mr-3" : ""
-                           } transition-transform duration-300`}
-                        />
-                        {isTextVisible && (
-                           <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium truncate">{item.name}</div>
-                              <div className="text-xs opacity-75 truncate">{item.description}</div>
+                     <div key={item.name} className="space-y-1">
+                        <button
+                           onClick={() => toggleAccordion(item.name)}
+                           className={`w-full flex items-center rounded-lg px-3 py-3 text-muted-foreground hover:bg-muted transition-all
+                              ${!isTextVisible ? "justify-center" : "justify-between"}`}
+                        >
+                           <div className="flex items-center">
+                              <Icon name={item.icon} size={20} className={isTextVisible ? "mr-3" : ""} />
+                              {isTextVisible && <span className="text-sm font-semibold">{item.name}</span>}
+                           </div>
+                           {isTextVisible && (
+                              <Icon name={isOpen ? "ChevronDown" : "ChevronRight"} size={14} className="opacity-50" />
+                           )}
+                        </button>
+
+                        {isOpen && isTextVisible && (
+                           <div className="space-y-1 mx-2 mt-1 animate-in fade-in slide-in-from-top-1">
+                              {item.children.map(child => renderNavLink(child, true))}
                            </div>
                         )}
-                        {isTextVisible && isActive && (
-                           <div className="w-2 h-2 bg-primary-foreground rounded-full ml-2"></div>
-                        )}
-                     </button>
+                     </div>
                   );
                })}
             </nav>
 
-            {/* User Status */}
-            <div className="p-4 border-t border-border flex items-center justify-center">
-               <div className="w-8 h-8 bg-gradient-to-br from-success to-accent rounded-full flex items-center justify-center">
-                  <Icon name="User" size={!isCollapsed ? 20 : 24} color="white" />
+            {/* User Info Footer */}
+            <div className="p-4 border-t border-border flex items-center">
+               <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold text-xs uppercase">
+                  {userRole.substring(0, 2)}
                </div>
-               {!(isCollapsed && !isMobileOpen) && (
-                  <div className="flex-1 min-w-0 ml-3">
-                     <p className="text-sm font-medium text-foreground truncate">{user}</p>
-                     <div className="flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-success rounded-full"></div>
-                        <span className="text-xs text-muted-foreground">Online</span>
-                     </div>
+               {isTextVisible && (
+                  <div className="ml-3 overflow-hidden">
+                     <p className="text-sm font-medium truncate">{user}</p>
+                     <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{userRole}</p>
                   </div>
                )}
-            </div>
-
-            {/* Collapse Toggle */}
-            <div className="p-4 border-t border-border hidden md:block">
-               <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onToggleCollapse}
-                  iconName={isCollapsed ? "ChevronRight" : "ChevronLeft"}
-                  iconSize={16}
-                  className={`w-full ${
-                     isCollapsed ? "px-2" : "px-3"
-                  } py-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-300 min-touch-target`}
-               >
-                  {!isCollapsed && "Collapse"}
-               </Button>
             </div>
          </div>
       </aside>
