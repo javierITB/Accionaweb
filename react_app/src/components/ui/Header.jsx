@@ -141,7 +141,7 @@ const Header = ({ className = '' }) => {
             <img src={logo} alt="Logo Acciona" className="max-w-full max-h-full" style={{ objectFit: 'contain' }} />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-lg font-semibold text-foreground leading-tight">Acciona RRHH Portal</h1>
+            <h1 className="text-lg font-semibold text-foreground leading-tight">NexoDesk Acciona</h1> 
             <span className="text-xs text-muted-foreground font-mono hidden sm:block">Panel de administración</span>
           </div>
         </button>
