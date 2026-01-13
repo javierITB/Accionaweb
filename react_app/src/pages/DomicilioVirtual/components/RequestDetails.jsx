@@ -298,6 +298,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, isStandalone = 
 
       if (response.ok) {
         const result = await response.json();
+        console.log(result)
         if (onUpdate && result.updatedRequest) {
           const normalizedRequest = {
             ...result.updatedRequest,
