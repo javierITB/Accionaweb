@@ -89,14 +89,14 @@ const FilterPanel = ({
           <div className="pt-3 sm:pt-4 border-t border-border">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <Input 
-                label="RUT EMPRESA" 
+                label="Rut Empresa" 
                 type="text" 
                 placeholder="Ej: 77.123.456-k" 
                 value={filters?.company || ''} 
                 onChange={(e) => handleInputChange('company', e?.target?.value)} 
               />
               <Input 
-                label="ENVIADO POR" 
+                label="Enviado Por" 
                 type="text" 
                 placeholder="Nombre del solicitante..." 
                 value={filters?.submittedBy || ''} 
