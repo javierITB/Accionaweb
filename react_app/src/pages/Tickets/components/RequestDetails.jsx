@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { apiFetch, API_BASE_URL } from '../../../utils/api';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
@@ -957,16 +958,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
                 <div>
                   <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
                     {fullRequestData?.origin === 'domicilio_virtual' && fullRequestData?.relatedRequestId ? (
-                      <a
-                        href={`/DomicilioVirtual?id=${fullRequestData.relatedRequestId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        to={`/DomicilioVirtual?id=${fullRequestData.relatedRequestId}`}
                         className="hover:text-accent hover:underline decoration-2 underline-offset-4 flex items-center gap-2 transition-colors"
                         title="Ver solicitud original en Domicilio Virtual"
                       >
                         {fullRequestData?.formTitle || fullRequestData?.title}
                         <Icon name="ExternalLink" size={16} className="text-muted-foreground" />
-                      </a>
+                      </Link>
                     ) : (
                       fullRequestData?.formTitle || fullRequestData?.title
                     )}
