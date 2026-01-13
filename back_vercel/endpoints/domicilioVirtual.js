@@ -86,7 +86,7 @@ router.get("/mini", async (req, res) => {
             dbQuery.createdAt = {};
             if (startDate) dbQuery.createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
             if (endDate) dbQuery.createdAt.$lte = new Date(`${endDate}T23:59:59.999Z`);
-        } 
+        }
         else if (dateRange && dateRange !== "") {
             const now = new Date();
             // Reset de horas para comparación local precisa
@@ -95,7 +95,7 @@ router.get("/mini", async (req, res) => {
             if (dateRange === 'today') {
                 const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
                 dbQuery.createdAt = { $gte: startOfToday, $lte: endOfToday };
-            } 
+            }
             else if (dateRange === 'week') {
                 // Lunes de esta semana a las 00:00:00
                 const day = now.getDay();
@@ -103,7 +103,7 @@ router.get("/mini", async (req, res) => {
                 const monday = new Date(now.setDate(diff));
                 monday.setHours(0, 0, 0, 0);
                 dbQuery.createdAt = { $gte: monday };
-            } 
+            }
             else if (dateRange === 'month') {
                 dbQuery.createdAt = { $gte: new Date(now.getFullYear(), now.getMonth(), 1) };
             }
@@ -122,7 +122,7 @@ router.get("/mini", async (req, res) => {
             const getVal = (keys) => {
                 const responseKeys = Object.keys(answer.responses || {});
                 for (let searchKey of keys) {
-                    const actualKey = responseKeys.find(k => 
+                    const actualKey = responseKeys.find(k =>
                         k.toLowerCase().trim().replace(":", "") === searchKey.toLowerCase()
                     );
                     if (actualKey && answer.responses[actualKey]) {
@@ -141,7 +141,7 @@ router.get("/mini", async (req, res) => {
                 _id: answer._id,
                 formId: answer.formId,
                 formTitle: answer.formTitle,
-                tuNombre: nombreCliente, 
+                tuNombre: nombreCliente,
                 rutEmpresa: rutCliente,
                 submittedAt: answer.submittedAt || answer.createdAt,
                 status: answer.status,
@@ -153,24 +153,22 @@ router.get("/mini", async (req, res) => {
         // 5. Filtrado en Memoria (Texto desencriptado)
         if (company && company.trim() !== "") {
             const term = company.toLowerCase().trim();
-            answersProcessed = answersProcessed.filter(a => 
+            answersProcessed = answersProcessed.filter(a =>
                 a.rutEmpresa.toLowerCase().includes(term)
             );
         }
 
         if (submittedBy && submittedBy.trim() !== "") {
             const term = submittedBy.toLowerCase().trim();
-            answersProcessed = answersProcessed.filter(a => 
+            answersProcessed = answersProcessed.filter(a =>
                 a.tuNombre.toLowerCase().includes(term)
             );
         }
 
         if (search && search.trim() !== "") {
             const term = search.toLowerCase().trim();
-            answersProcessed = answersProcessed.filter(a => 
-                a.tuNombre.toLowerCase().includes(term) || 
-                a.rutEmpresa.toLowerCase().includes(term) ||
-                a.formTitle.toLowerCase().includes(term)
+            answersProcessed = answersProcessed.filter(a =>
+                a.tuNombre.toLowerCase().includes(term) || a.rutEmpresa.toLowerCase().includes(term)
             );
         }
 
@@ -474,6 +472,32 @@ router.post("/:id/adjuntos", async (req, res) => {
             );
         }
 
+        // --- SINCRONIZACIÓN CON TICKET DE SOPORTE AUTOMÁTICO ---
+        // Buscar si existe un ticket en soporte vinculado a esta solicitud
+        try {
+            const linkedTicket = await req.db.collection("soporte").findOne({ relatedRequestId: new ObjectId(id) });
+
+            if (linkedTicket) {
+                const ticketAdjuntos = await req.db.collection("adjuntos").findOne({ responseId: linkedTicket._id });
+                if (!ticketAdjuntos) {
+                    await req.db.collection("adjuntos").insertOne({
+                        responseId: linkedTicket._id,
+                        submittedAt: new Date().toISOString(),
+                        adjuntos: [adjuntoNormalizado]
+                    });
+                } else {
+                    await req.db.collection("adjuntos").updateOne(
+                        { responseId: linkedTicket._id },
+                        { $push: { adjuntos: adjuntoNormalizado } }
+                    );
+                }
+                console.log(`Adjunto sincronizado con ticket de soporte ${linkedTicket._id}`);
+            }
+        } catch (syncError) {
+            console.error("Error sincronizando adjunto con soporte:", syncError);
+        }
+        // -------------------------------------------------------
+
         if (adjunto.fileData) {
             const buffer = Buffer.from(adjunto.fileData.split(',')[1], 'base64');
             const bucket = new GridFSBucket(req.db, { bucketName: 'adjuntos' });
@@ -511,16 +535,16 @@ router.put("/:id/status", async (req, res) => {
 
         const responses = updatedRequest.responses || {};
 
-        
+
         // Descifrar user si existe para devolver
         if (updatedRequest.responses) {
 
-           
-            
-                Object.keys(responses).forEach(key => {
-                    responses[key] = decrypt(responses[key]) || " - ";
-                });
-            
+
+
+            Object.keys(responses).forEach(key => {
+                responses[key] = decrypt(responses[key]) || " - ";
+            });
+
             updatedRequest.responses = responses;
 
 
