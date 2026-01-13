@@ -1495,12 +1495,12 @@ const RequestDetails = ({
               <Icon name="Clock" size={16} />
               <span>Última actualización: {formatDate(fullRequestData?.submittedAt)}</span>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 w-full justify-end">
               {!isStandalone && (
                 <>
                   {/* Botón Mensajes eliminado para Domicilio Virtual */}
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-3/4 justify-end">
                     <span className="text-sm font-medium">Cambiar Estado:</span>
                     <select
                       value={fullRequestData?.status || ""}
@@ -1508,7 +1508,7 @@ const RequestDetails = ({
                         setPendingStatus(e.target.value);
                         setDialogOpen(true);
                       }}
-                      className="h-9 px-3 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="h-9 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent w-2/5"
                     >
                       <option value="documento_generado">Documento Generado</option>
                       <option value="enviado">Enviado</option>
