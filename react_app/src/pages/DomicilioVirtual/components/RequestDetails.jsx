@@ -1194,6 +1194,18 @@ const RequestDetails = ({
         <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
           Documento Generado
           {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+          {endpointPrefix.includes("domicilio-virtual") && realAttachments?.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 ml-2 text-muted-foreground hover:text-accent"
+              onClick={handleRegenerateDocument}
+              disabled={isRegenerating}
+              title="Regenerar Documento"
+            >
+              <Icon name={isRegenerating ? "Loader" : "RefreshCw"} size={14} className={isRegenerating ? "animate-spin" : ""} />
+            </Button>
+          )}
         </h3>
         {realAttachments?.length > 0 ? (
           <div className="space-y-2">
