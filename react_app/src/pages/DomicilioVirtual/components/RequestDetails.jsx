@@ -3,6 +3,8 @@ import Icon from "../../../components/AppIcon";
 import Button from "../../../components/ui/Button";
 import CleanDocumentPreview from "./CleanDocumentPreview";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
+import LoadingCard from "clientPages/components/LoadingCard";
+import AsyncActionDialog from "components/AsyncActionDialog";
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
@@ -57,6 +59,10 @@ const RequestDetails = ({
 
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
+
+const [dialogOpen, setDialogOpen] = useState(false);
+const [pendingStatus, setPendingStatus] = useState(null);
+
 
   useEffect(() => {
     if (request) {
@@ -294,41 +300,52 @@ const RequestDetails = ({
     };
   }, [previewDocument]);
 
-  const handleStatusChange = async (newStatus) => {
-    if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
-
-    if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
-
-    try {
-      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/status`, {
+const handleStatusChange = async (newStatus) => {
+  try {
+    const response = await apiFetch(
+      `${API_BASE_URL}/${endpointPrefix}/${request._id}/status`,
+      {
         method: "PUT",
         body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log(result);
-        if (onUpdate && result.updatedRequest) {
-          const normalizedRequest = {
-            ...result.updatedRequest,
-            submittedBy:
-              result.updatedRequest.user?.nombre || result.updatedRequest.submittedBy || "Usuario Desconocido",
-            company: result.updatedRequest.user?.empresa || result.updatedRequest.company || "Empresa Desconocida",
-            submittedAt: result.updatedRequest.submittedAt || result.updatedRequest.createdAt,
-          };
-          onUpdate(normalizedRequest);
-          setFullRequestData(normalizedRequest);
-        }
-        alert(`Estado cambiado a "${newStatus}"`);
-      } else {
-        const errorData = await response.json();
-        alert("Error: " + (errorData.error || "No se pudo cambiar el estado"));
       }
-    } catch (error) {
-      console.error("Error cambiando estado:", error);
-      alert("Error cambiando estado: " + error.message);
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "No se pudo cambiar el estado");
     }
-  };
+
+    const result = await response.json();
+
+    if (onUpdate && result.updatedRequest) {
+      const normalizedRequest = {
+        ...result.updatedRequest,
+        submittedBy:
+          result.updatedRequest.user?.nombre ||
+          result.updatedRequest.submittedBy ||
+          "Usuario Desconocido",
+        company:
+          result.updatedRequest.user?.empresa ||
+          result.updatedRequest.company ||
+          "Empresa Desconocida",
+        submittedAt:
+          result.updatedRequest.submittedAt ||
+          result.updatedRequest.createdAt,
+      };
+
+      onUpdate(normalizedRequest);
+      setFullRequestData(normalizedRequest);
+    }
+
+    // 🔑 éxito → simplemente termina
+    return true;
+  } catch (error) {
+    console.error("Error cambiando estado:", error);
+    // 🔑 error → lo propagamos al dialog
+    throw error;
+  }
+};
+
 
   const getPreviousStatus = (currentStatus) => {
     const statusFlow = ["pendiente", "en_revision", "aprobado", "firmado", "finalizado", "archivado"];
@@ -1521,7 +1538,10 @@ const RequestDetails = ({
                     <span className="text-sm font-medium">Cambiar Estado:</span>
                     <select
                       value={fullRequestData?.status || ""}
-                      onChange={(e) => handleStatusChange(e.target.value)}
+                      onChange={(e) => {
+                        setPendingStatus(e.target.value);
+                        setDialogOpen(true);
+                      }}
                       className="h-9 px-3 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent"
                     >
                       <option value="documento_generado">Documento Generado</option>
@@ -1532,6 +1552,7 @@ const RequestDetails = ({
                       <option value="dado_de_baja">Dado de baja</option>
                     </select>
                   </div>
+
                 </>
               )}
               {!isStandalone && (
@@ -1568,6 +1589,15 @@ const RequestDetails = ({
           handlePreviewCorrectedFile(prevIndex);
         }}
       />
+
+      <AsyncActionDialog
+          open={dialogOpen}
+          title={`¿Está seguro de que quiere cambiar el estado a "${pendingStatus}"?`}
+          loadingText={`Cambiando estado a "${pendingStatus}"...`}
+          successText="Estado cambiado correctamente"
+          onConfirm={() => handleStatusChange(pendingStatus)}
+          onClose={() => setDialogOpen(false)}
+        />
     </div>
   );
 };
