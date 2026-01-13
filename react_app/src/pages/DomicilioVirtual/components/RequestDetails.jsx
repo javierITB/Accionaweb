@@ -183,8 +183,9 @@ const RequestDetails = ({
       // Solo llamar a checkClientSignature si NO es Domicilio Virtual
       if (!endpointPrefix.includes("domicilio-virtual")) {
         checkClientSignature();
-        getDocumentInfo(request._id);
       }
+      // getDocumentInfo se debe llamar siempre si hay request._id
+      getDocumentInfo(request._id);
     }
   }, [request]);
 
@@ -207,10 +208,8 @@ const RequestDetails = ({
             ...prev,
             ...data,
           }));
-          // Solo buscar info de generador si NO es domicilio virtual
-          if (!endpointPrefix.includes("domicilio-virtual")) {
-            await getDocumentInfo(responseId);
-          }
+          // Buscar info de generador para todos los tipos
+          await getDocumentInfo(responseId);
         }
       } catch (error) {
         console.error("Error cargando detalles completos:", error);
@@ -933,16 +932,6 @@ const RequestDetails = ({
   };
 
   const getRealAttachments = () => {
-    // Si es Domicilio Virtual, usamos los adjuntos como "Documento Generado" (que en realidad son adjuntos)
-    if (endpointPrefix.includes("domicilio-virtual") && fullRequestData?.adjuntos?.length > 0) {
-      return fullRequestData.adjuntos.map((adj) => ({
-        id: adj._id || Math.random(), // fallback id
-        name: adj.fileName,
-        size: formatFileSize(adj.size),
-        type: adj.mimeType,
-        uploadedAt: adj.uploadedAt,
-      }));
-    }
 
     if (!fullRequestData) return [];
     if (documentInfo && documentInfo.IDdoc) {
@@ -1129,22 +1118,16 @@ const RequestDetails = ({
       </div>
 
       <div>
-        {!endpointPrefix.includes("domicilio-virtual") && (
-          <>
-            {attachmentsLoading && (
-              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                Archivos Adjuntos
-                {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-              </h3>
-            )}
-            {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
-              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                Archivos Adjuntos
-              </h3>
-            )}
-          </>
+        {/* Archivos Adjuntos Header - Always visible if loading or has attachments */}
+        {(attachmentsLoading || fullRequestData?.adjuntos?.length > 0) && (
+          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+            Archivos Adjuntos
+            {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+          </h3>
         )}
-        {!endpointPrefix.includes("domicilio-virtual") && fullRequestData?.adjuntos?.length > 0 && (
+
+        {/* Archivos Adjuntos List */}
+        {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
           <div className="space-y-2">
             {fullRequestData.adjuntos.map((adjunto, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -1191,7 +1174,7 @@ const RequestDetails = ({
 
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-          {endpointPrefix.includes("domicilio-virtual") ? "Documentos Adjuntos" : "Documento Generado"}
+          Documento Generado
           {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
         </h3>
         {realAttachments?.length > 0 ? (
@@ -1216,11 +1199,7 @@ const RequestDetails = ({
                     iconName={isDownloading ? "Loader" : "Download"}
                     iconPosition="left"
                     iconSize={16}
-                    onClick={
-                      endpointPrefix.includes("domicilio-virtual")
-                        ? () => handleDownloadAdjunto(fullRequestData._id, 0)
-                        : handleDownload
-                    }
+                    onClick={handleDownload}
                     disabled={isDownloading}
                   >
                     {isDownloading ? "Descargando..." : "Descargar"}
@@ -1228,11 +1207,7 @@ const RequestDetails = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={
-                      endpointPrefix.includes("domicilio-virtual")
-                        ? () => handlePreviewAdjunto(fullRequestData._id, 0)
-                        : handlePreviewGenerated
-                    }
+                    onClick={handlePreviewGenerated}
                     iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
                     iconPosition="left"
                     iconSize={16}
@@ -1240,26 +1215,16 @@ const RequestDetails = ({
                   >
                     {isLoadingPreviewGenerated ? "Cargando..." : "Vista Previa"}
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRegenerateDocument}
-                    iconName={isRegenerating ? "Loader" : "RefreshCw"}
-                    iconPosition="left"
-                    iconSize={16}
-                    disabled={isRegenerating}
-                  >
-                    {isRegenerating ? "Regenerando..." : "Regenerar"}
-                  </Button>
+
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            <p className="text-sm">
+            <p className="text-sm mb-4">
               {endpointPrefix.includes("domicilio-virtual")
-                ? "No hay archivos adjuntos"
+                ? "No hay documento generado"
                 : "No hay documentos generados para este formulario"}
             </p>
           </div>
@@ -1540,9 +1505,9 @@ const RequestDetails = ({
                 </Button>
               )}
             </div>
-          </div>
-        </div>
-      </div>
+          </div >
+        </div >
+      </div >
 
       <CleanDocumentPreview
         isVisible={showPreview}
@@ -1568,7 +1533,7 @@ const RequestDetails = ({
           handlePreviewCorrectedFile(prevIndex);
         }}
       />
-    </div>
+    </div >
   );
 };
 
