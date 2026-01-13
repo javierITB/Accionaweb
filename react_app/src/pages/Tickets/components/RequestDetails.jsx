@@ -744,17 +744,19 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
       </div>
 
       {/* Description Section */}
-      <div className="bg-muted/10 p-5 rounded-lg border border-border/60 shadow-sm">
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Icon name="AlignLeft" size={16} className="text-accent" />
-          Descripción del Ticket
-        </h3>
-        <div className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed bg-background p-3 rounded border border-border/50">
-          {findResponseValue(fullRequestData?.responses, ['Descripción', 'Descripcion', 'Description', 'Detalle', 'Mensaje']) ||
-            fullRequestData?.description ||
-            "Sin descripción proporcionada."}
+      {fullRequestData?.origin !== 'domicilio_virtual' && (
+        <div className="bg-muted/10 p-5 rounded-lg border border-border/60 shadow-sm">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Icon name="AlignLeft" size={16} className="text-accent" />
+            Descripción del Ticket
+          </h3>
+          <div className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed bg-background p-3 rounded border border-border/50">
+            {findResponseValue(fullRequestData?.responses, ['Descripción', 'Descripcion', 'Description', 'Detalle', 'Mensaje']) ||
+              fullRequestData?.description ||
+              "Sin descripción proporcionada."}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Meta Info Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
