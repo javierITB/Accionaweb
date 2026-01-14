@@ -5,7 +5,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import TemplateList from './components/FormProperties';
 import DocumentTemplateEditor from './components/TemplateBuilder';
-import { API_BASE_URL, apiFetch} from '../../utils/api';
+import { API_BASE_URL, apiFetch } from '../../utils/api';
 
 const FormBuilder = () => {
   // ESTADOS DEL SIDEBAR - AGREGADOS
@@ -341,6 +341,9 @@ const FormBuilder = () => {
 
     const staticVariables = [
       { type: "Date", title: "FECHA ACTUAL" },
+      { type: "Date", title: "FECHA ACTUAL 1 ANIO" },
+      { type: "Date", title: "FECHA ACTUAL 6 MESES" },
+      { type: "Date", title: "FECHA ACTUAL 1 MES" },
       { type: "time", title: "HORA ACTUAL" },
       { type: "text", title: "NOMBRE EMPRESA" },
       { type: "text", title: "RUT EMPRESA" },

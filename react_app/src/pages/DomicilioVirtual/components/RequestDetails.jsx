@@ -3,6 +3,8 @@ import Icon from "../../../components/AppIcon";
 import Button from "../../../components/ui/Button";
 import CleanDocumentPreview from "./CleanDocumentPreview";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
+import LoadingCard from "clientPages/components/LoadingCard";
+import AsyncActionDialog from "components/AsyncActionDialog";
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
@@ -57,6 +59,10 @@ const RequestDetails = ({
 
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
+
 
   useEffect(() => {
     if (request) {
@@ -183,8 +189,9 @@ const RequestDetails = ({
       // Solo llamar a checkClientSignature si NO es Domicilio Virtual
       if (!endpointPrefix.includes("domicilio-virtual")) {
         checkClientSignature();
-        getDocumentInfo(request._id);
       }
+      // getDocumentInfo se debe llamar siempre si hay request._id
+      getDocumentInfo(request._id);
     }
   }, [request]);
 
@@ -207,10 +214,8 @@ const RequestDetails = ({
             ...prev,
             ...data,
           }));
-          // Solo buscar info de generador si NO es domicilio virtual
-          if (!endpointPrefix.includes("domicilio-virtual")) {
-            await getDocumentInfo(responseId);
-          }
+          // Buscar info de generador para todos los tipos
+          await getDocumentInfo(responseId);
         }
       } catch (error) {
         console.error("Error cargando detalles completos:", error);
@@ -295,40 +300,52 @@ const RequestDetails = ({
   }, [previewDocument]);
 
   const handleStatusChange = async (newStatus) => {
-    if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
-
-    if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
-
     try {
-      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/status`, {
-        method: "PUT",
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log(result);
-        if (onUpdate && result.updatedRequest) {
-          const normalizedRequest = {
-            ...result.updatedRequest,
-            submittedBy:
-              result.updatedRequest.user?.nombre || result.updatedRequest.submittedBy || "Usuario Desconocido",
-            company: result.updatedRequest.user?.empresa || result.updatedRequest.company || "Empresa Desconocida",
-            submittedAt: result.updatedRequest.submittedAt || result.updatedRequest.createdAt,
-          };
-          onUpdate(normalizedRequest);
-          setFullRequestData(normalizedRequest);
+      const response = await apiFetch(
+        `${API_BASE_URL}/${endpointPrefix}/${request._id}/status`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ status: newStatus }),
         }
-        alert(`Estado cambiado a "${newStatus}"`);
-      } else {
+      );
+
+      if (!response.ok) {
         const errorData = await response.json();
-        alert("Error: " + (errorData.error || "No se pudo cambiar el estado"));
+        throw new Error(errorData.error || "No se pudo cambiar el estado");
       }
+
+      const result = await response.json();
+
+      if (onUpdate && result.updatedRequest) {
+        const normalizedRequest = {
+          ...fullRequestData,
+          ...result.updatedRequest,
+          submittedBy:
+            result.updatedRequest.user?.nombre ||
+            fullRequestData.user?.nombre ||
+            "Usuario Desconocido",
+          company:
+            result.updatedRequest.user?.empresa ||
+            fullRequestData.user?.empresa ||
+            "Empresa Desconocida",
+        };
+
+        onUpdate(normalizedRequest);
+
+        setFullRequestData(prev => ({
+          ...prev,
+          ...normalizedRequest,
+          adjuntos: prev.adjuntos || []
+        }));
+      }
+
+      return true;
     } catch (error) {
       console.error("Error cambiando estado:", error);
-      alert("Error cambiando estado: " + error.message);
+      throw error;
     }
   };
+
 
   const getPreviousStatus = (currentStatus) => {
     const statusFlow = ["pendiente", "en_revision", "aprobado", "firmado", "finalizado", "archivado"];
@@ -933,16 +950,6 @@ const RequestDetails = ({
   };
 
   const getRealAttachments = () => {
-    // Si es Domicilio Virtual, usamos los adjuntos como "Documento Generado" (que en realidad son adjuntos)
-    if (endpointPrefix.includes("domicilio-virtual") && fullRequestData?.adjuntos?.length > 0) {
-      return fullRequestData.adjuntos.map((adj) => ({
-        id: adj._id || Math.random(), // fallback id
-        name: adj.fileName,
-        size: formatFileSize(adj.size),
-        type: adj.mimeType,
-        uploadedAt: adj.uploadedAt,
-      }));
-    }
 
     if (!fullRequestData) return [];
     if (documentInfo && documentInfo.IDdoc) {
@@ -1129,22 +1136,16 @@ const RequestDetails = ({
       </div>
 
       <div>
-        {!endpointPrefix.includes("domicilio-virtual") && (
-          <>
-            {attachmentsLoading && (
-              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                Archivos Adjuntos
-                {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-              </h3>
-            )}
-            {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
-              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                Archivos Adjuntos
-              </h3>
-            )}
-          </>
+        {/* Archivos Adjuntos Header - Always visible if loading or has attachments */}
+        {(attachmentsLoading || fullRequestData?.adjuntos?.length > 0) && (
+          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+            Archivos Adjuntos
+            {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+          </h3>
         )}
-        {!endpointPrefix.includes("domicilio-virtual") && fullRequestData?.adjuntos?.length > 0 && (
+
+        {/* Archivos Adjuntos List */}
+        {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
           <div className="space-y-2">
             {fullRequestData.adjuntos.map((adjunto, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -1191,8 +1192,20 @@ const RequestDetails = ({
 
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-          {endpointPrefix.includes("domicilio-virtual") ? "Documentos Adjuntos" : "Documento Generado"}
+          Documento Generado
           {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+          {endpointPrefix.includes("domicilio-virtual") && realAttachments?.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 ml-2 text-muted-foreground hover:text-accent"
+              onClick={handleRegenerateDocument}
+              disabled={isRegenerating}
+              title="Regenerar Documento"
+            >
+              <Icon name={isRegenerating ? "Loader" : "RefreshCw"} size={14} className={isRegenerating ? "animate-spin" : ""} />
+            </Button>
+          )}
         </h3>
         {realAttachments?.length > 0 ? (
           <div className="space-y-2">
@@ -1216,11 +1229,7 @@ const RequestDetails = ({
                     iconName={isDownloading ? "Loader" : "Download"}
                     iconPosition="left"
                     iconSize={16}
-                    onClick={
-                      endpointPrefix.includes("domicilio-virtual")
-                        ? () => handleDownloadAdjunto(fullRequestData._id, 0)
-                        : handleDownload
-                    }
+                    onClick={handleDownload}
                     disabled={isDownloading}
                   >
                     {isDownloading ? "Descargando..." : "Descargar"}
@@ -1228,11 +1237,7 @@ const RequestDetails = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={
-                      endpointPrefix.includes("domicilio-virtual")
-                        ? () => handlePreviewAdjunto(fullRequestData._id, 0)
-                        : handlePreviewGenerated
-                    }
+                    onClick={handlePreviewGenerated}
                     iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
                     iconPosition="left"
                     iconSize={16}
@@ -1240,26 +1245,16 @@ const RequestDetails = ({
                   >
                     {isLoadingPreviewGenerated ? "Cargando..." : "Vista Previa"}
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRegenerateDocument}
-                    iconName={isRegenerating ? "Loader" : "RefreshCw"}
-                    iconPosition="left"
-                    iconSize={16}
-                    disabled={isRegenerating}
-                  >
-                    {isRegenerating ? "Regenerando..." : "Regenerar"}
-                  </Button>
+
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            <p className="text-sm">
+            <p className="text-sm mb-4">
               {endpointPrefix.includes("domicilio-virtual")
-                ? "No hay archivos adjuntos"
+                ? "No hay documento generado"
                 : "No hay documentos generados para este formulario"}
             </p>
           </div>
@@ -1512,17 +1507,20 @@ const RequestDetails = ({
               <Icon name="Clock" size={16} />
               <span>Última actualización: {formatDate(fullRequestData?.submittedAt)}</span>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 w-full justify-end">
               {!isStandalone && (
                 <>
                   {/* Botón Mensajes eliminado para Domicilio Virtual */}
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-3/4 justify-end">
                     <span className="text-sm font-medium">Cambiar Estado:</span>
                     <select
                       value={fullRequestData?.status || ""}
-                      onChange={(e) => handleStatusChange(e.target.value)}
-                      className="h-9 px-3 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                      onChange={(e) => {
+                        setPendingStatus(e.target.value);
+                        setDialogOpen(true);
+                      }}
+                      className="h-9 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent w-2/5"
                     >
                       <option value="documento_generado">Documento Generado</option>
                       <option value="enviado">Enviado</option>
@@ -1532,6 +1530,7 @@ const RequestDetails = ({
                       <option value="dado_de_baja">Dado de baja</option>
                     </select>
                   </div>
+
                 </>
               )}
               {!isStandalone && (
@@ -1540,9 +1539,9 @@ const RequestDetails = ({
                 </Button>
               )}
             </div>
-          </div>
-        </div>
-      </div>
+          </div >
+        </div >
+      </div >
 
       <CleanDocumentPreview
         isVisible={showPreview}
@@ -1567,6 +1566,15 @@ const RequestDetails = ({
           setPreviewIndex(prevIndex);
           handlePreviewCorrectedFile(prevIndex);
         }}
+      />
+
+      <AsyncActionDialog
+        open={dialogOpen}
+        title={`¿Está seguro de que quiere cambiar el estado a "${pendingStatus}"?`}
+        loadingText={`Cambiando estado a "${pendingStatus}"...`}
+        successText="Estado cambiado correctamente"
+        onConfirm={() => handleStatusChange(pendingStatus)}
+        onClose={() => setDialogOpen(false)}
       />
     </div>
   );
