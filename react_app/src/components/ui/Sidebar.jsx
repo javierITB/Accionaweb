@@ -21,7 +21,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          name: "Configuración",
          icon: "Settings",
          isAccordion: true,
-         roles: ["admin", "RRHH"], // Solo admin ve configuraciones
+         roles: ["admin", "RRHH"], 
          children: [
             { name: "Formularios", path: "/form-center", icon: "FileText", roles: ["admin", "RRHH"] },
             { name: "Plantillas", path: "/template-builder", icon: "FileText", roles: ["admin", "RRHH"] },
@@ -33,10 +33,10 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          name: "Administración",
          icon: "Shield",
          isAccordion: true,
-         roles: ["admin"],
+         roles: ["admin", "RRHH"],
          children: [
-            { name: "Usuarios", path: "/users", icon: "User", roles: ["admin"] },
-            { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["admin"] },
+            { name: "Usuarios", path: "/users", icon: "User", roles: ["admin", "RRHH"] },
+            { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["admin", "RRHH"] },
          ]
       },
       {
