@@ -21,7 +21,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          name: "Configuración",
          icon: "Settings",
          isAccordion: true,
-         roles: ["admin"], // Solo admin ve configuraciones
+         roles: ["admin", "RRHH"], // Solo admin ve configuraciones
          children: [
             { name: "Formularios", path: "/form-center", icon: "FileText", roles: ["admin", "RRHH"] },
             { name: "Plantillas", path: "/template-builder", icon: "FileText", roles: ["admin", "RRHH"] },
