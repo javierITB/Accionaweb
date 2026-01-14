@@ -977,18 +977,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
               <div className="flex items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                    {fullRequestData?.origin === 'domicilio_virtual' && fullRequestData?.relatedRequestId ? (
+                <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                    {/* Priorizamos la Subcategoría de la base de datos */}
+                    {fullRequestData?.responses?.['Subcategoría'] || fullRequestData?.formTitle || fullRequestData?.title}
+                    
+                    {fullRequestData?.origin === 'domicilio_virtual' && fullRequestData?.relatedRequestId && (
                       <Link
                         to={`/DomicilioVirtual?id=${fullRequestData.relatedRequestId}`}
-                        className="hover:text-accent hover:underline decoration-2 underline-offset-4 flex items-center gap-2 transition-colors"
-                        title="Ver solicitud original en Domicilio Virtual"
+                        className="ml-2 inline-flex items-center text-muted-foreground hover:text-accent"
                       >
-                        {fullRequestData?.formTitle || fullRequestData?.title}
-                        <Icon name="ExternalLink" size={16} className="text-muted-foreground" />
+                        <Icon name="ExternalLink" size={16} />
                       </Link>
-                    ) : (
-                      fullRequestData?.formTitle || fullRequestData?.title
                     )}
                   </h2>
                   <p className="text-sm text-muted-foreground">ID: {fullRequestData?._id}</p>
