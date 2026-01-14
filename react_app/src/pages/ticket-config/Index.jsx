@@ -14,6 +14,15 @@ const TicketConfig = () => {
     const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
 
     useEffect(() => {
+        const checkAccess = () => {
+            const rol = sessionStorage.getItem('rol');
+            if (rol !== 'admin') {
+                alert("Acceso denegado: Se requieren permisos de administrador.");
+                window.location.href = '/dashboard';
+            }
+        };
+        checkAccess();
+
         const handleResize = () => {
             const isMobile = window.innerWidth < 768;
             setIsMobileScreen(isMobile);
