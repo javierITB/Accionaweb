@@ -33,10 +33,10 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          name: "Administración",
          icon: "Shield",
          isAccordion: true,
-         roles: ["admin"],
+         roles: ["admin", "RRHH"],
          children: [
-            { name: "Usuarios", path: "/users", icon: "User", roles: ["admin"] },
-            { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["admin"] },
+            { name: "Usuarios", path: "/users", icon: "User", roles: ["admin", "RRHH"] },
+            { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["admin", "RRHH"] },
          ]
       },
       {

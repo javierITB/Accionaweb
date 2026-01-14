@@ -76,6 +76,17 @@ const FormReg = () => {
     fetchUsers();
   }, []);
 
+const cargos = [
+    { value: 'admin', label: 'Administrador' },
+    { value: 'RRHH', label: 'Recursos Humanos' },
+    { value: 'Cliente', label: 'Cliente' },
+  ];
+
+  const roles = [
+    { value: 'Admin', label: 'Administrador' },
+    { value: 'user', label: 'Cliente' },
+  ];
+
   const fetchUsers = async () => {
     try {
       const res = await apiFetch(`${API_BASE_URL}/auth/`);
@@ -86,6 +97,7 @@ const FormReg = () => {
       console.error('Error cargando los usuarios:', err);
     }
   };
+
 
   const handleFilter = (field, value) => {
     if (filters.field === field && filters.value === value) {
@@ -145,6 +157,88 @@ const FormReg = () => {
     return processData;
   }, [users, filters, sortConfig, searchTerm]);
 
+
+  const updateFormData = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    const isUpdating = !!editingUser;
+    if (!formData.nombre || !formData.apellido || !formData.mail || !formData.empresa || !formData.cargo || !formData.rol) {
+      alert('Por favor completa todos los campos obligatorios');
+      return;
+    }
+
+    const method = isUpdating ? 'PUT' : 'POST';
+    const url = isUpdating
+      ? `${API_BASE_URL}/auth/users/${editingUser._id}`
+      : `${API_BASE_URL}/auth/register`;
+
+    try {
+      setIsLoading(true);
+      const response = await apiFetch(url, {
+        method: method,
+        body: JSON.stringify(isUpdating ? { ...formData, estado: formData.estado } : { ...formData, pass: "", estado: "pendiente" }),
+      });
+
+      if (!response.ok) throw new Error('Error en la operación');
+
+      if (!isUpdating) {
+        const saved = await response.json();
+        const savedUser = saved?.userId;
+        await apiFetch(`${API_BASE_URL}/mail/send`, {
+          method: 'POST',
+          body: JSON.stringify({
+            accessKey: "wBlL283JH9TqdEJRxon1QOBuI0A6jGVEwpUYchnyMGz",
+            to: [formData.mail],
+            subject: "Completa tu registro",
+            html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #3B82F6;">¡Bienvenido a la plataforma!</h2>
+              <p>Hola <strong>${formData.nombre} ${formData.apellido}</strong>,</p>
+              <p>Has sido registrado en nuestra plataforma. Para completar tu registro y establecer tu contraseña, haz clic en el siguiente botón:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="https://infodesa.vercel.app/set-password?userId=${savedUser}" 
+                   style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                  Establecer Contraseña
+                </a>
+              </div>
+              <p><strong>Datos de tu cuenta:</strong></p>
+              <ul>
+                <li><strong>Empresa:</strong> ${formData.empresa}</li>
+                <li><strong>Cargo:</strong> ${formData.cargo}</li>
+              </ul>
+              <p style="color: #666; font-size: 12px;">Si no solicitaste este registro, por favor ignora este correo.</p>
+            </div>
+          `
+          }),
+        });
+        alert('Usuario registrado y correo enviado.');
+      } else {
+        alert('Usuario actualizado exitosamente.');
+      }
+      clearForm();
+      await fetchUsers();
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setFormData({
+      nombre: user.nombre || '',
+      apellido: user.apellido || '',
+      mail: user.mail || '',
+      empresa: user.empresa || '',
+      cargo: user.cargo || '',
+      rol: user.rol || 'user',
+      estado: user.estado || 'pendiente'
+    });
+  };
+
   const clearForm = () => {
     setFormData({ nombre: '', apellido: '', mail: '', empresa: '', cargo: '', rol: 'user' });
     setEditingUser(null);
@@ -169,6 +263,8 @@ const FormReg = () => {
         <RegisterForm
           formData={formData}
           empresas={empresas}
+          cargos={cargos}
+          roles={roles}
           onUpdateFormData={(f, v) => setFormData(p => ({ ...p, [f]: v }))}
           onRegister={async () => { /* lógica handleSave */ }}
           isLoading={isLoading}
@@ -256,7 +352,7 @@ const FormReg = () => {
                   <td className="px-4 py-3 text-muted-foreground text-xs">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-3">
-                      <button onClick={() => { setEditingUser(u); setActiveTab('register'); }} className="text-primary hover:underline">Editar</button>
+                      <button onClick={() => { handleEditUser(u); setActiveTab('register'); }} className="text-primary hover:underline">Editar</button>
                       <button onClick={() => handleRemoveUser(u._id)} className="text-destructive hover:underline">Borrar</button>
                     </div>
                   </td>

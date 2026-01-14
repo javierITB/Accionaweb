@@ -28,11 +28,9 @@ const CompanyReg = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('register');
 
-  // ESTADO PARA BÚSQUEDA Y ORDENAMIENTO
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'asc' });
 
-  // ESTADOS DEL SIDEBAR
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
@@ -90,11 +88,9 @@ const CompanyReg = () => {
     setSortConfig({ key, direction });
   };
 
-  // LÓGICA FILTRADO Y ORDENAMIENTO COMBINADA
   const sortedEmpresas = useMemo(() => {
     let processData = [...empresas].filter(e => e.nombre !== "Todas");
 
-    // 1. Buscador Dinámico
     if (searchTerm.trim() !== '') {
       const term = searchTerm.toLowerCase();
       processData = processData.filter(e => 
@@ -105,7 +101,6 @@ const CompanyReg = () => {
       );
     }
 
-    // 2. Ordenamiento
     if (sortConfig.key !== null) {
       processData.sort((a, b) => {
         const aValue = a[sortConfig.key] ? String(a[sortConfig.key]).toLowerCase() : '';
@@ -124,29 +119,43 @@ const CompanyReg = () => {
     setActiveTab('register');
   };
 
+  // REESTABLECIMIENTO DE FUNCIONALIDAD DE EDICIÓN
   const handleEditEmpresa = async (empresaId) => {
     setIsLoading(true);
-    setActiveTab('register');
+    // Cambiamos a la pestaña de registro para mostrar el formulario relleno
+    setActiveTab('register'); 
+    
     try {
       const response = await apiFetch(`${API_BASE_URL}/auth/empresas/${empresaId}`);
       if (!response.ok) throw new Error('Error al cargar la empresa');
       const empresa = await response.json();
+      
       const logoDataURL = createDataURL(empresa.logo);
+      
       setEditingEmpresa(empresa);
       setFormData({
-        nombre: empresa.nombre || '', rut: empresa.rut || '', direccion: empresa.direccion || '',
-        encargado: empresa.encargado || '', rut_encargado: empresa.rut_encargado || '',
-        logo: null, logoUrl: logoDataURL
+        nombre: empresa.nombre || '', 
+        rut: empresa.rut || '', 
+        direccion: empresa.direccion || '',
+        encargado: empresa.encargado || '', 
+        rut_encargado: empresa.rut_encargado || '',
+        logo: null, 
+        logoUrl: logoDataURL
       });
+      
+      // Scroll hacia arriba para que el usuario vea el inicio del formulario
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
     } catch (error) {
-      alert(error.message);
+      alert("Error al cargar datos para edición: " + error.message);
+      setActiveTab('list'); // Volver a la lista si falla
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRemoveEmpresa = async (empresaId) => {
-    if (!window.confirm("¿Seguro?")) return;
+    if (!window.confirm("¿Seguro que deseas eliminar esta empresa?")) return;
     setIsLoading(true);
     try {
       const response = await apiFetch(`${API_BASE_URL}/auth/empresas/${empresaId}`, { method: 'DELETE' });
@@ -176,16 +185,28 @@ const CompanyReg = () => {
           submitData.append(key, formData[key] || '');
         }
       });
+      
       const isUpdating = !!editingEmpresa;
-      const url = isUpdating ? `${API_BASE_URL}/auth/empresas/${editingEmpresa._id}` : `${API_BASE_URL}/auth/empresas/register`;
-      const response = await apiFetch(url, { method: isUpdating ? 'PUT' : 'POST', body: submitData });
+      const url = isUpdating 
+        ? `${API_BASE_URL}/auth/empresas/${editingEmpresa._id}` 
+        : `${API_BASE_URL}/auth/empresas/register`;
+
+      const response = await apiFetch(url, { 
+        method: isUpdating ? 'PUT' : 'POST', 
+        body: submitData 
+      });
+
       if (response.ok) {
-        alert(`Empresa ${isUpdating ? 'actualizada' : 'registrada'}`);
+        alert(`Empresa ${isUpdating ? 'actualizada' : 'registrada'} exitosamente`);
         clearForm();
         fetchEmpresas();
+        setActiveTab('list'); // Volver a la lista tras guardar con éxito
+      } else {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Error en el servidor');
       }
     } catch (error) {
-      alert(error.message);
+      alert("Error al guardar: " + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -214,7 +235,6 @@ const CompanyReg = () => {
 
     return (
       <div className="space-y-4">
-        {/* CABECERA CON BUSCADOR DINÁMICO */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
           <h3 className="text-lg font-semibold text-foreground">Empresas Registradas</h3>
           
@@ -238,10 +258,7 @@ const CompanyReg = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             {searchTerm && (
-              <button 
-                onClick={() => setSearchTerm('')} 
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 hover:text-foreground transition-colors"
-              >
+              <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 hover:text-foreground">
                 <Icon name="X" size={14} />
               </button>
             )}
@@ -276,7 +293,7 @@ const CompanyReg = () => {
                   <tr key={empresa._id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3">
                       {empresa.logo ? (
-                        <img src={empresa.logo} alt="" className="w-10 h-10 object-contain rounded" />
+                        <img src={empresa.logo} alt="" className="w-10 h-10 object-contain rounded p-0.5 bg-white shadow-sm" />
                       ) : (
                         <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
                           <Icon name="Building2" size={16} className="text-muted-foreground" />
@@ -289,7 +306,13 @@ const CompanyReg = () => {
                     <td className="px-4 py-3 text-sm">{empresa.encargado || '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-center items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEditEmpresa(empresa._id)} iconName="Edit" className="h-8">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleEditEmpresa(empresa._id)} 
+                          iconName="Edit" 
+                          className="h-8"
+                        >
                           Editar
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => handleRemoveEmpresa(empresa._id)} className="h-8 w-8 text-red-600">
@@ -301,9 +324,6 @@ const CompanyReg = () => {
                 ))}
               </tbody>
             </table>
-            {sortedEmpresas.length === 0 && (
-              <div className="p-8 text-center text-muted-foreground">No se encontraron empresas con esos criterios.</div>
-            )}
           </div>
         )}
       </div>
@@ -343,17 +363,17 @@ const CompanyReg = () => {
             <div className="flex gap-2 p-4 bg-muted/20 border-b border-border">
               <button
                 onClick={() => setActiveTab('register')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'register' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'register' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 <Icon name="Plus" size={16} className="inline mr-2" />
-                {editingEmpresa ? 'Modificar' : 'Registrar'}
+                {editingEmpresa ? 'Modificar Empresa' : 'Registrar Empresa'}
               </button>
               <button
                 onClick={() => setActiveTab('list')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'list' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 <Icon name="List" size={16} className="inline mr-2" />
-                Lista ({empresas.length})
+                Lista de Empresas ({empresas.length})
               </button>
             </div>
             <div className="p-6">
