@@ -290,6 +290,7 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
     }
 
     variables['FECHA_ACTUAL'] = formatearFechaEspanol(new Date().toISOString().split("T")[0]);
+    variables['FECHA_ACTUAL'] = formatearFechaEspanol(new Date().toISOString().split("T")[0]);
     variables['HORA_ACTUAL'] = new Date().toLocaleTimeString('es-CL', { timeZone: 'America/Santiago' });
 
     console.log("=== VARIABLES EXTRAÍDAS ===");
