@@ -25,6 +25,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          children: [
             { name: "Formularios", path: "/form-center", icon: "FileText", roles: ["admin", "RRHH"] },
             { name: "Plantillas", path: "/template-builder", icon: "FileText", roles: ["admin", "RRHH"] },
+            { name: "Config. Tickets", path: "/config-tickets", icon: "Settings", roles: ["admin"] },
             { name: "Anuncios", path: "/anuncios", icon: "Megaphone", roles: ["admin", "RRHH"] },
          ]
       },

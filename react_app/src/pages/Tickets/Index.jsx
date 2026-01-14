@@ -124,10 +124,16 @@ const RequestTracking = () => {
         const responses = await resResp.json();
 
         const normalized = responses.map(r => {
+          // Extraemos Subcategoría y Categoría de responses para tickets de Sistema/Domicilio
+          const subcat = r.responses?.['Subcategoría'];
+          const cat = r.responses?.['Categoría'];
+
           return {
             _id: r._id,
             formId: r.formId,
-            title: r.title || r.formTitle || "formulario",
+            // Cambiado: Mostrar subcategoría como título si existe
+            title: subcat || r.title || r.formTitle || "formulario",
+            categoryData: cat || "", // Guardamos categoría para el filtro
             submittedAt: r.submittedAt || r.createdAt || null,
             createdAt: r.createdAt,
             reviewedAt: r.reviewedAt,
@@ -143,7 +149,8 @@ const RequestTracking = () => {
             lastUpdated: r.updatedAt || null,
             assignedTo: r.assignedTo || " - ",
             hasMessages: false,
-            company: r.user?.empresa || 'desconocida'
+            company: r.user?.empresa || 'desconocida',
+            responses: r.responses // Mantener responses original
           };
         });
 
@@ -221,7 +228,8 @@ const RequestTracking = () => {
 
 
       if (filters?.category) {
-        const requestCategory = request?.form?.category || '';
+        // Modificado: Verificar tanto en formId como en la categoría enviada por el constructor
+        const requestCategory = request?.categoryData || request?.form?.category || '';
         if (requestCategory.toLowerCase() !== filters.category.toLowerCase()) return false;
       }
 

@@ -9,8 +9,6 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
     setCurrentRequest(request);
   }, [request]);
 
-
-
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'pending':
@@ -24,11 +22,11 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
         return 'bg-warning text-warning-foreground';
       case 'signed':
       case 'firmado':
-        return 'bg-success text-success-foreground'
+        return 'bg-success text-success-foreground';
       case 'finalizado':
-        return 'bg-accent text-accent-foreground'
+        return 'bg-accent text-accent-foreground';
       case 'archivado':
-        return 'bg-card bg-primary-foreground'
+        return 'bg-card bg-primary-foreground';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -50,11 +48,11 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
         return 'XCircle';
       case 'borrador':
         return 'FileText';
-      default:
-        return 'Circle';
       case 'signed':
       case 'firmado':
         return 'CheckSquare';
+      default:
+        return 'Circle';
     }
   };
 
@@ -133,24 +131,26 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
     }
   };
 
-
-
   const getCombinedTitle = () => {
-    const category = currentRequest?.formTitle || 'Ticket';
-    // Intentar obtener el asunto de las respuestas, si existe.
-    // La estructura puede variar dependiendo de cómo se guarde en responses.
-    // En soporte.js vemos que se guarda como responses.Asunto
+    // Extraemos la información de las respuestas del ticket
+    const subcategory = currentRequest?.responses?.['Subcategoría'];
     const subject = currentRequest?.responses?.['Asunto'] || '';
+    const formTitle = currentRequest?.formTitle || 'Ticket';
 
-    if (subject) {
-      return `${category} - ${subject}`;
+    // Si existe una subcategoría (casos Sistema o Domicilio Virtual), se usa como título principal
+    if (subcategory) {
+      return subject ? `${subcategory} - ${subject}` : subcategory;
     }
-    return category;
+
+    // Fallback para otros formularios que no tienen el campo subcategoría definido en responses
+    if (subject) {
+      return `${formTitle} - ${subject}`;
+    }
+    
+    return formTitle;
   };
 
   const getCompanyDisplay = () => {
-    // Intentar extraer de responses siempre si existen, ya que puede ser Domicilio Virtual u otro formulario
-    // y la data en 'company' puede venir sucia (ej: RUT en vez de nombre)
     if (currentRequest?.responses) {
       const keys = Object.keys(currentRequest?.responses || {});
       const normalize = k => k.toLowerCase().trim().replace(':', '');
@@ -180,16 +180,13 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
       }
     }
 
-    // Default behavior fallback
     return currentRequest?.company || currentRequest?.user?.empresa || 'Empresa Desconocida';
   };
 
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 hover:shadow-brand-hover transition-brand">
-      {/* Header - RESPONSIVE */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
         <div className="flex-1 min-w-0">
-          {/* Title and Time - RESPONSIVE */}
           <div className="flex flex-col xs:flex-row xs:items-center xs:space-x-3 space-y-1 xs:space-y-0 mb-2">
             <h3 className="text-base sm:text-lg font-semibold text-foreground break-words">
               {getCombinedTitle()}
@@ -199,12 +196,8 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
             </span>
           </div>
 
-          {/* Description */}
-          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-            {currentRequest?.responses?.['Descripción'] || currentRequest?.description}
-          </p>
+          
 
-          {/* Meta Info - RESPONSIVE */}
           <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-3 sm:space-x-4 text-xs text-muted-foreground">
             <div className="flex items-center space-x-1">
               <Icon name="Briefcase" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
@@ -217,7 +210,6 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
           </div>
         </div>
 
-        {/* Status Badge - RESPONSIVE */}
         <div className="flex items-center space-x-2 self-start sm:self-auto sm:ml-4">
           {currentRequest?.hasMessages && (
             <div className="relative">
@@ -232,7 +224,6 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
         </div>
       </div>
 
-      {/* Dates Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4 pt-3 border-t border-border text-xs text-muted-foreground">
         <div>
           <span className="font-semibold block">Creado:</span>
@@ -252,14 +243,10 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
         </div>
       </div>
 
-      {/* Actions - RESPONSIVE */}
       <div className="flex items-center justify-between mt-4 sm:mt-3">
-        <div className="flex-1">
-          {/* Empty space for alignment */}
-        </div>
+        <div className="flex-1"></div>
 
         <div className="flex items-center space-x-1 sm:space-x-2">
-          {/* Delete Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -270,19 +257,15 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
             <Icon name="Trash2" size={12} className="sm:w-3.5 sm:h-3.5" />
           </Button>
 
-
-
-          {/* Details Button - ICON ONLY ON MOBILE */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onViewDetails(currentRequest)}
-            className="h-7 w-7 sm:h-8 sm:w-8 sm:!hidden" // Hidden on desktop, icon only on mobile
+            className="h-7 w-7 sm:h-8 sm:w-8 sm:!hidden"
           >
             <Icon name="Info" size={12} className="sm:w-3.5 sm:h-3.5" />
           </Button>
 
-          {/* Details Button - WITH TEXT ON DESKTOP */}
           <Button
             variant="ghost"
             size="sm"
@@ -291,7 +274,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
             iconName="Info"
             iconPosition="left"
             iconSize={14}
-            className="hidden sm:flex" // Hidden on mobile, shown on desktop
+            className="hidden sm:flex"
           >
             Detalles
           </Button>

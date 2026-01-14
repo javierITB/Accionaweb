@@ -60,4 +60,37 @@ router.get("/", async (req, res) => {
     }
 });
 
+
+// Actualizar configuración de una categoría de tickets
+router.put("/:key", async (req, res) => {
+    try {
+        const auth = await verifyRequest(req);
+        if (!auth.ok) return res.status(401).json({ error: auth.error });
+
+        const { key } = req.params;
+        const { statuses } = req.body;
+
+        if (!statuses || !Array.isArray(statuses)) {
+            return res.status(400).json({ error: "Formato inválido. 'statuses' debe ser un array." });
+        }
+
+        const db = req.db;
+        const collection = db.collection("config_tickets");
+
+        const result = await collection.updateOne(
+            { key: key },
+            { $set: { statuses: statuses, updatedAt: new Date() } }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "Categoría no encontrada" });
+        }
+
+        res.json({ success: true, message: "Configuración actualizada" });
+    } catch (err) {
+        console.error("Error updating ticket config:", err);
+        res.status(500).json({ error: "Error al actualizar configuración" });
+    }
+});
+
 module.exports = router;
