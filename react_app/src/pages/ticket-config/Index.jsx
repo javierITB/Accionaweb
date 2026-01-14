@@ -16,8 +16,7 @@ const TicketConfig = () => {
     useEffect(() => {
         const checkAccess = () => {
             const rol = sessionStorage.getItem('rol');
-            if (rol !== 'admin') {
-                alert("Acceso denegado: Se requieren permisos de administrador.");
+            if (rol?.toLowerCase() !== 'admin') {
                 window.location.href = '/dashboard';
             }
         };
