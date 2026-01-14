@@ -318,7 +318,7 @@ const TicketConfig = () => {
                                     iconName="Settings"
                                     onClick={() => handleEditClick(cat)}
                                 >
-                                    Editar Estados
+                                    Editar Categoría
                                 </Button>
                             </div>
                         ))}
