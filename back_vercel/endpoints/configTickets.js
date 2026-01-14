@@ -60,6 +60,57 @@ router.get("/", async (req, res) => {
     }
 });
 
+// Crear nueva configuración de categoría
+router.post("/", async (req, res) => {
+    try {
+        const auth = await verifyRequest(req);
+        if (!auth.ok) return res.status(401).json({ error: auth.error });
+
+        const { name, icon } = req.body;
+
+        if (!name || typeof name !== 'string') {
+            return res.status(400).json({ error: "El nombre es requerido." });
+        }
+
+        const db = req.db;
+        const collection = db.collection("config_tickets");
+
+        // Generar key a partir del nombre
+        const key = name.toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '_')
+            .replace(/^-+|-+$/g, '');
+
+        if (!key) {
+            return res.status(400).json({ error: "Nombre inválido para generar clave." });
+        }
+
+        const existing = await collection.findOne({ key });
+        if (existing) {
+            return res.status(400).json({ error: "Ya existe una categoría con esa clave." });
+        }
+
+        const newConfig = {
+            name,
+            key,
+            icon: icon || "FileText",
+            statuses: [],
+            subcategories: [],
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        await collection.insertOne(newConfig);
+
+        res.json({ success: true, message: "Categoría creada", config: newConfig });
+
+    } catch (err) {
+        console.error("Error creating ticket config:", err);
+        res.status(500).json({ error: "Error al crear configuración" });
+    }
+});
+
 
 // Actualizar configuración de una categoría de tickets
 router.put("/:key", async (req, res) => {
@@ -68,18 +119,30 @@ router.put("/:key", async (req, res) => {
         if (!auth.ok) return res.status(401).json({ error: auth.error });
 
         const { key } = req.params;
-        const { statuses } = req.body;
+        const { statuses, subcategories, icon } = req.body;
 
         if (!statuses || !Array.isArray(statuses)) {
             return res.status(400).json({ error: "Formato inválido. 'statuses' debe ser un array." });
         }
 
+        if (subcategories && !Array.isArray(subcategories)) {
+            return res.status(400).json({ error: "Formato inválido. 'subcategories' debe ser un array." });
+        }
+
         const db = req.db;
         const collection = db.collection("config_tickets");
 
+        const updateData = { statuses, updatedAt: new Date() };
+        if (subcategories !== undefined) {
+            updateData.subcategories = subcategories;
+        }
+        if (icon !== undefined) {
+            updateData.icon = icon;
+        }
+
         const result = await collection.updateOne(
             { key: key },
-            { $set: { statuses: statuses, updatedAt: new Date() } }
+            { $set: updateData }
         );
 
         if (result.matchedCount === 0) {
@@ -90,6 +153,29 @@ router.put("/:key", async (req, res) => {
     } catch (err) {
         console.error("Error updating ticket config:", err);
         res.status(500).json({ error: "Error al actualizar configuración" });
+    }
+});
+
+// Eliminar categoría
+router.delete("/:key", async (req, res) => {
+    try {
+        const auth = await verifyRequest(req);
+        if (!auth.ok) return res.status(401).json({ error: auth.error });
+
+        const { key } = req.params;
+        const db = req.db;
+        const collection = db.collection("config_tickets");
+
+        const result = await collection.deleteOne({ key });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ error: "Categoría no encontrada" });
+        }
+
+        res.json({ success: true, message: "Categoría eliminada" });
+    } catch (err) {
+        console.error("Error deleting ticket config:", err);
+        res.status(500).json({ error: "Error al eliminar categoría" });
     }
 });
 

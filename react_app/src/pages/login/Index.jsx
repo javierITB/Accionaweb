@@ -23,6 +23,14 @@ export default function App() {
 
   // --- LÓGICA DE PERSISTENCIA DE INTENTOS ---
   useEffect(() => {
+
+    // RECUPERAR ERROR: Si existe un mensaje guardado, lo ponemos en el estado
+    const savedError = localStorage.getItem('pendingLoginError');
+    if (savedError) {
+      setError(savedError);
+      localStorage.removeItem('pendingLoginError');
+    }
+
     const checkLockout = () => {
       const savedLockoutUntil = localStorage.getItem('lockoutUntil');
       if (savedLockoutUntil) {
@@ -127,16 +135,23 @@ export default function App() {
           navigate(from, { replace: true });
         }
       } else {
-        registerFailedAttempt(); // Error de credenciales, registrar intento
-        setError(data.message || "Credenciales incorrectas.");
+        registerFailedAttempt(); 
+        const msg = data.message || "Credenciales incorrectas.";
+        
+        // Guardamos el mensaje antes de que clear() reinicie la app
+        localStorage.setItem('pendingLoginError', msg);
+        setError(msg);
+        
         sessionStorage.clear();
       }
     } catch (err) {
       console.error(err);
-      setError("Error de conexión con el servidor.");
+      const msg = "Error de conexión con el servidor.";
+      
+      localStorage.setItem('pendingLoginError', msg);
+      setError(msg);
+      
       sessionStorage.clear();
-    } finally {
-      setLoading(false);
     }
   };
 
