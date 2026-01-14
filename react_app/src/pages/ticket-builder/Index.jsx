@@ -38,6 +38,7 @@ const TicketBuilder = () => {
   const [ticketData, setTicketData] = useState({
     subject: '',
     category: '',
+    subcategory: '',
     priority: 'Media',
     description: '',
     files: [],
@@ -69,7 +70,7 @@ const TicketBuilder = () => {
             uniqueUsersMap.set(key, {
               value: key,
               label: `${item.nombre} (${item.empresa || 'Sin empresa'})`,
-              nombre: item.nombre // We need this for the assignment logic
+              nombre: item.nombre 
             });
           }
         });
@@ -85,18 +86,31 @@ const TicketBuilder = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Constantes configuración
   const MAX_FILES = 5;
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
+  // Categorías
   const categories = [
-    { value: 'error_acceso', label: 'Error de Inicio de Sesión' },
-    { value: 'error_visualizacion', label: 'Problema de Visualización' },
-    { value: 'error_guardado', label: 'Error al Guardar Datos' },
-    { value: 'lentitud', label: 'Lentitud del Sistema' },
-    { value: 'funcionalidad_rota', label: 'Funcionalidad No Responde' },
-    { value: 'otro', label: 'Otro' }
+    { value: 'sistema', label: 'Sistema' },
+    { value: 'domicilio_virtual', label: 'Domicilio Virtual' }
   ];
+
+  // Mapeo de subcategorías
+  const subcategoriesMap = {
+    sistema: [
+      { value: 'error_acceso', label: 'Error de Inicio de Sesión' },
+      { value: 'error_visualizacion', label: 'Problema de Visualización' },
+      { value: 'error_guardado', label: 'Error al Guardar Datos' },
+      { value: 'lentitud', label: 'Lentitud del Sistema' },
+      { value: 'funcionalidad_rota', label: 'Funcionalidad No Responde' },
+      { value: 'otro', label: 'Otro' }
+    ],
+    domicilio_virtual: [
+      { value: 'anual', label: 'Domicilio Virtual Anual' },
+      { value: 'semestral', label: 'Domicilio Virtual Semestral' },
+      { value: 'constitucion', label: 'Constitucion De Empresa' }
+    ]
+  };
 
   const priorities = [
     { value: 'Baja', label: 'Baja' },
@@ -106,12 +120,17 @@ const TicketBuilder = () => {
   ];
 
   const handleInputChange = (field, value) => {
-    setTicketData(prev => ({ ...prev, [field]: value }));
+    setTicketData(prev => {
+      const newData = { ...prev, [field]: value };
+      if (field === 'category') {
+        newData.subcategory = '';
+      }
+      return newData;
+    });
   };
 
   const handleFileSelect = (event) => {
     const files = Array.from(event.target.files);
-    // Validaciones
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 
     const invalidFiles = files.filter(file => !allowedTypes.includes(file.type));
@@ -168,7 +187,6 @@ const TicketBuilder = () => {
         if (res.ok) {
           const userData = await res.json();
           setCurrentUser(userData);
-          // Opcional: Actualizar sessionStorage por si acaso
           if (userData._id) sessionStorage.setItem("uid", userData._id);
         }
       } catch (err) {
@@ -182,7 +200,7 @@ const TicketBuilder = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!ticketData.subject || !ticketData.category || !ticketData.description) {
+    if (!ticketData.subject || !ticketData.category || !ticketData.subcategory || !ticketData.description) {
       alert('Por favor completa todos los campos obligatorios.');
       return;
     }
@@ -201,7 +219,11 @@ const TicketBuilder = () => {
           throw new Error("No se pudo identificar al usuario. Por favor recarga la página.");
         }
 
-        formData.append('mail', userEmail);
+        // --- CAMPOS PARA TU API ---
+        formData.append('formId', 'ticket_constructor'); 
+        formData.append('formTitle', 'Constructor de Tickets'); 
+        formData.append('mail', userEmail); 
+
         if (ticketData.assignedTo) {
           const assignedUser = users.find(u => u.value === ticketData.assignedTo);
           if (assignedUser) {
@@ -221,11 +243,15 @@ const TicketBuilder = () => {
           token: sessionStorage.getItem("token")
         }));
 
+        const categoryLabel = categories.find(c => c.value === ticketData.category)?.label;
+        const subcategoryLabel = subcategoriesMap[ticketData.category]?.find(s => s.value === ticketData.subcategory)?.label;
+
         formData.append('responses', JSON.stringify({
           Asunto: ticketData.subject,
           Descripción: ticketData.description,
           Prioridad: ticketData.priority,
-          Categoría: categories.find(c => c.value === ticketData.category)?.label
+          Categoría: categoryLabel,
+          Subcategoría: subcategoryLabel
         }));
 
         if (ticketData.files && ticketData.files.length > 0) {
@@ -241,10 +267,10 @@ const TicketBuilder = () => {
 
         if (res.ok) {
           alert('Ticket creado exitosamente');
-          // Reset form
           setTicketData({
             subject: '',
             category: '',
+            subcategory: '',
             priority: 'Media',
             description: '',
             files: [],
@@ -269,7 +295,6 @@ const TicketBuilder = () => {
     <div className="min-h-screen bg-background text-foreground font-sans">
       <Header />
 
-      {/* SIDEBAR LOGIC */}
       {(isMobileOpen || !isMobileScreen) && (
         <>
           <Sidebar
@@ -284,7 +309,6 @@ const TicketBuilder = () => {
         </>
       )}
 
-      {/* MOBILE MENU TOGGLE */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
           <Button
@@ -297,10 +321,8 @@ const TicketBuilder = () => {
         </div>
       )}
 
-      {/* MAIN CONTENT */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-20 px-6 pb-10`}>
 
-        {/* PAGE HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Constructor de Tickets</h1>
@@ -310,13 +332,8 @@ const TicketBuilder = () => {
           </div>
         </div>
 
-        {/* FORM CONTAINER */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-          {/* LEFT COLUMN: MAIN FORM */}
           <div className="lg:col-span-2 space-y-6">
-
-            {/* DETAILS CARD */}
             <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
               <h2 className="text-xl font-semibold mb-4 flex items-center">
                 <Icon name="FileText" className="mr-2 text-primary" size={20} />
@@ -342,7 +359,7 @@ const TicketBuilder = () => {
                   options={[{ value: '', label: 'Sin Asignar' }, ...users]}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Select
                     label="Categoría"
                     options={categories}
@@ -350,6 +367,17 @@ const TicketBuilder = () => {
                     onChange={(val) => handleInputChange('category', val)}
                     placeholder="Selecciona una categoría"
                   />
+                  <Select
+                    label="Subcategoría"
+                    options={ticketData.category ? subcategoriesMap[ticketData.category] : []}
+                    value={ticketData.subcategory}
+                    onChange={(val) => handleInputChange('subcategory', val)}
+                    placeholder="Selecciona subcategoría"
+                    disabled={!ticketData.category}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Select
                     label="Prioridad"
                     name="priority"
@@ -379,7 +407,6 @@ const TicketBuilder = () => {
               </div>
             </div>
 
-            {/* ATTACHMENTS SECTION */}
             <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
               <h2 className="text-xl font-semibold mb-4 flex items-center">
                 <Icon name="Paperclip" className="mr-2 text-primary" size={20} />
@@ -403,7 +430,6 @@ const TicketBuilder = () => {
                 <p className="text-xs text-muted-foreground mt-1">PDF, PNG, JPG (Máx 5MB)</p>
               </div>
 
-              {/* FILE LIST */}
               {ticketData.files.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {ticketData.files.map((file, idx) => (
@@ -428,7 +454,6 @@ const TicketBuilder = () => {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: ACTIONS & INFO */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-card border border-border rounded-xl p-6 shadow-sm sticky top-24">
               <h3 className="font-semibold text-lg mb-4">Acciones</h3>
