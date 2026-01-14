@@ -44,6 +44,7 @@ const TicketConfig = () => {
     const [statusesToEdit, setStatusesToEdit] = useState([]); // Array temporal de estados
     const [isSaving, setIsSaving] = useState(false);
     const [openDropdownIndex, setOpenDropdownIndex] = useState(null);
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0, placement: 'bottom' });
 
     // Cargar Configuraciones
     const fetchConfigs = async () => {
@@ -302,8 +303,25 @@ const TicketConfig = () => {
                                         <div className="relative">
                                             <button
                                                 className="flex items-center justify-between w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                                                onClick={() => {
-                                                    setOpenDropdownIndex(openDropdownIndex === index ? null : index);
+                                                onClick={(e) => {
+                                                    if (openDropdownIndex === index) {
+                                                        setOpenDropdownIndex(null);
+                                                        return;
+                                                    }
+
+                                                    // Calculate position
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    const spaceBelow = window.innerHeight - rect.bottom;
+                                                    const dropdownHeight = 240; // Approx max height
+                                                    const placeTop = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+
+                                                    setDropdownPos({
+                                                        top: placeTop ? rect.top - dropdownHeight - 5 : rect.bottom + 5,
+                                                        left: rect.left,
+                                                        width: rect.width,
+                                                        placement: placeTop ? 'top' : 'bottom'
+                                                    });
+                                                    setOpenDropdownIndex(index);
                                                 }}
                                             >
                                                 <div className="flex items-center gap-2 max-w-[85%]">
@@ -314,25 +332,35 @@ const TicketConfig = () => {
                                             </button>
 
                                             {openDropdownIndex === index && (
-                                                <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover text-popover-foreground shadow-md max-h-60 overflow-y-auto">
-                                                    {iconOptions.map(option => (
-                                                        <div
-                                                            key={option.value}
-                                                            className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-muted ${status.icon === option.value ? 'bg-muted font-medium' : ''}`}
-                                                            onClick={() => {
-                                                                updateStatusField(index, 'icon', option.value);
-                                                                setOpenDropdownIndex(null);
-                                                            }}
-                                                        >
-                                                            <Icon name={option.value} size={16} className="shrink-0" />
-                                                            <span className="truncate">{option.label}</span>
-                                                        </div>
-                                                    ))}
+                                                <div
+                                                    className="fixed z-[60] rounded-md border border-border bg-popover text-popover-foreground shadow-md overflow-hidden"
+                                                    style={{
+                                                        top: dropdownPos.top,
+                                                        left: dropdownPos.left,
+                                                        width: dropdownPos.width,
+                                                        maxHeight: '240px'
+                                                    }}
+                                                >
+                                                    <div className="flex flex-col max-h-60 overflow-y-auto bg-popover">
+                                                        {iconOptions.map(option => (
+                                                            <div
+                                                                key={option.value}
+                                                                className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-muted ${status.icon === option.value ? 'bg-muted font-medium' : ''}`}
+                                                                onClick={() => {
+                                                                    updateStatusField(index, 'icon', option.value);
+                                                                    setOpenDropdownIndex(null);
+                                                                }}
+                                                            >
+                                                                <Icon name={option.value} size={16} className="shrink-0" />
+                                                                <span className="truncate">{option.label}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
                                             {/* Overlay to close dropdown when clicking outside */}
                                             {openDropdownIndex === index && (
-                                                <div className="fixed inset-0 z-40 bg-transparent" onClick={(e) => {
+                                                <div className="fixed inset-0 z-[55] bg-transparent" onClick={(e) => {
                                                     e.stopPropagation();
                                                     setOpenDropdownIndex(null);
                                                 }}></div>
