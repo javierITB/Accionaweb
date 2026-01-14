@@ -8,6 +8,7 @@ import ProtectedClient from "./clientPages/components/ProtectedClient.jsx";
 
 import NotFound from "./pages/NotFound";
 import FormCenter from './pages/form-center/Index.jsx';
+import TicketConfig from './pages/ticket-config/Index.jsx';
 import TicketBuilder from './pages/ticket-builder/Index.jsx';
 import FormBuilder from './pages/form-builder/Index.jsx';
 import TemplateBuilder from './pages/template-builder/Index.jsx';
@@ -71,6 +72,7 @@ const Routes = () => {
           <Route path="/solicitudes" element={<ProtectedRoute> <Solicitudes /> </ProtectedRoute>} />
           <Route path="/anuncios" element={<ProtectedRoute> <Anuncios /> </ProtectedRoute>} />
           <Route path="/ticket-builder" element={<ProtectedRoute><TicketBuilder /></ProtectedRoute>} />
+          <Route path="/config-tickets" element={<ProtectedRoute><TicketConfig /></ProtectedRoute>} />
 
 
 
