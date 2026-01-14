@@ -239,6 +239,9 @@ const TicketConfig = () => {
         { value: 'CreditCard', label: 'Tarjeta Crédito' },
         { value: 'ShoppingCart', label: 'Carrito' },
         { value: 'Clock', label: 'Reloj' },
+        { value: 'Eye', label: 'Ojo' },
+        { value: 'CheckSquare', label: 'Check Cuadrado' },
+        { value: 'Folder', label: 'Carpeta' },
         { value: 'FileText', label: 'Archivo' },
         { value: 'Send', label: 'Enviar' },
         { value: 'PenTool', label: 'Pluma' },
@@ -417,20 +420,52 @@ const TicketConfig = () => {
                                         </div>
                                     </details>
 
-                                    <details className="group" open>
-                                        <summary className="list-none cursor-pointer flex items-center justify-between text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 border-t pt-2">
-                                            <span>Estados</span>
-                                            <Icon name="ChevronDown" size={14} className="transition-transform group-open:rotate-180" />
-                                        </summary>
-                                        <div className="flex flex-wrap gap-2 pt-1 pb-3">
-                                            {cat.statuses?.map((st, idx) => (
-                                                <span key={idx} className={`px-2 py-1 rounded-full text-xs font-medium uppercase flex items-center gap-1 ${getStatusColorClass(st.color)}`}>
-                                                    {st.icon && <Icon name={st.icon} size={12} />}
-                                                    {st.label}
-                                                </span>
-                                            ))}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                                            <span>Flujo de Estados</span>
                                         </div>
-                                    </details>
+                                        <div className="flex w-full overflow-x-auto pb-4 pt-2 px-1 snap-x scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                                            {cat.statuses?.map((st, idx) => {
+                                                const isFirst = idx === 0;
+                                                const isLast = idx === (cat.statuses.length - 1);
+
+                                                const colorMap = {
+                                                    slate: 'bg-slate-500', gray: 'bg-gray-500', zinc: 'bg-zinc-500',
+                                                    neutral: 'bg-neutral-500', stone: 'bg-stone-500', red: 'bg-red-500',
+                                                    orange: 'bg-orange-500', amber: 'bg-amber-500', yellow: 'bg-yellow-500',
+                                                    lime: 'bg-lime-500', green: 'bg-green-500', emerald: 'bg-emerald-500',
+                                                    teal: 'bg-teal-500', cyan: 'bg-cyan-500', sky: 'bg-sky-500',
+                                                    blue: 'bg-blue-500', indigo: 'bg-indigo-500', violet: 'bg-violet-500',
+                                                    purple: 'bg-purple-500', fuchsia: 'bg-fuchsia-500', pink: 'bg-pink-500',
+                                                    rose: 'bg-rose-500'
+                                                };
+                                                const bgClass = colorMap[st.color] || 'bg-gray-500';
+
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        className={`
+                                                            relative flex flex-col items-center justify-center
+                                                            h-16 min-w-[140px] px-6
+                                                            ${bgClass} text-white
+                                                            text-xs font-bold uppercase tracking-wider
+                                                            snap-start flex-shrink-0 shadow-md transition-transform hover:scale-105
+                                                        `}
+                                                        style={{
+                                                            clipPath: isFirst
+                                                                ? 'polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%)'
+                                                                : 'polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%, 15px 50%)',
+                                                            marginRight: '-5px', // Small overlapping for tighter flow
+                                                            filter: 'drop-shadow(0 4px 3px rgb(0 0 0 / 0.07))'
+                                                        }}
+                                                    >
+                                                        {st.icon && <Icon name={st.icon} size={20} className="mb-1" />}
+                                                        <span className="text-center leading-tight">{st.label}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <Button
