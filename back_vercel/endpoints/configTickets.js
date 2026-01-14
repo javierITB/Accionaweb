@@ -30,8 +30,6 @@ router.get("/", async (req, res) => {
                     name: "Domicilio Virtual",
                     key: "domicilio_virtual",
                     statuses: [
-                        { label: "Pendiente", value: "pendiente", color: "yellow" },
-                        { label: "En Revisión", value: "en_revision", color: "blue" },
                         { label: "Documento Generado", value: "documento_generado", color: "indigo" },
                         { label: "Enviado", value: "enviado", color: "blue" },
                         { label: "Aprobado", value: "aprobado", color: "green" },
