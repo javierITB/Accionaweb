@@ -298,88 +298,98 @@ const RequestTracking = () => {
       });
     };
 
-    // Mapa completo de colores para estadísticas
+    // Mapa completo de colores para estadísticas (SIMPLIFIED TO 8)
     const colorMap = {
-      // Basic Colors (Consolidated for Simplicity)
+      // Basic Colors (Strictly 8)
       white: { text: 'text-foreground', bg: 'bg-background border', border: 'border-border' },
-      gray_light: { text: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200' },
 
-      // Basic Groups
-      red: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
-      orange: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
-      yellow: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
-      green: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
-      cyan: { text: 'text-[#0891b2]', bg: 'bg-[#cffafe]', border: 'border-[#a5f3fc]' }, // JIT for safety
-      blue: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
-      purple: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' }, // JIT for safety
-      pink: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      // Gray Group
       gray: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
-
-      // Mappings (Unifying all variations to Basic Groups)
-      rose: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
-      maroon: { text: 'text-red-900', bg: 'bg-red-900/10', border: 'border-red-900' },
-      amber: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
-      gold: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
-      emerald: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
-      lime: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
-      teal: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
-      sky: { text: 'text-[#0891b2]', bg: 'bg-[#cffafe]', border: 'border-[#a5f3fc]' },
-      indigo: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
-      navy: { text: 'text-blue-800', bg: 'bg-blue-800/10', border: 'border-blue-800' },
-      violet: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
-      fuchsia: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
-      magenta: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      gray_light: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
       slate: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
       zinc: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
       neutral: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
       stone: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
-
-      // Dark Variants
-      blue_dark: { text: 'text-blue-400', bg: 'bg-blue-900/20', border: 'border-blue-800' },
-
-      // Spanish Variants (Mapped to Basics)
-      rojo: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
-      naranja: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
-      ambar: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
-      amarillo: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
-      lima: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
-      verde: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
-      esmeralda: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
-      verde_azulado: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
-      celeste: { text: 'text-[#0891b2]', bg: 'bg-[#cffafe]', border: 'border-[#a5f3fc]' },
-      cielo: { text: 'text-[#0891b2]', bg: 'bg-[#cffafe]', border: 'border-[#a5f3fc]' },
-      azul: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
-      indigo: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
-      violeta: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
-      morado: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
-      purpura: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
-      fucsia: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
-      rosa: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
-      rosado: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
       gris: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
       pizarra: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
+      gris_claro: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
 
-      // Spanish Light variants (Mapped)
-      blanco: { text: 'text-foreground', bg: 'bg-background border', border: 'border-border' },
-      gris_claro: { text: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200' },
-      rojo_claro: { text: 'text-red-700', bg: 'bg-red-100', border: 'border-red-200' },
-      naranja_claro: { text: 'text-orange-700', bg: 'bg-orange-100', border: 'border-orange-200' },
-      ambar_claro: { text: 'text-orange-700', bg: 'bg-orange-100', border: 'border-orange-200' },
-      amarillo_claro: { text: 'text-yellow-700', bg: 'bg-yellow-100', border: 'border-yellow-200' },
-      lima_claro: { text: 'text-green-700', bg: 'bg-green-100', border: 'border-green-200' },
-      verde_claro: { text: 'text-green-700', bg: 'bg-green-100', border: 'border-green-200' },
-      esmeralda_claro: { text: 'text-green-700', bg: 'bg-green-100', border: 'border-green-200' },
-      verde_azulado_claro: { text: 'text-green-700', bg: 'bg-green-100', border: 'border-green-200' },
-      celeste_claro: { text: 'text-[#0e7490]', bg: 'bg-[#ecfeff]', border: 'border-[#cffafe]' }, // cyan-700
-      cielo_claro: { text: 'text-[#0e7490]', bg: 'bg-[#ecfeff]', border: 'border-[#cffafe]' },
-      azul_claro: { text: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-200' },
-      indigo_claro: { text: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-200' },
-      violeta_claro: { text: 'text-[#7e22ce]', bg: 'bg-[#faf5ff]', border: 'border-[#f3e8ff]' }, // purple-700
-      morado_claro: { text: 'text-[#7e22ce]', bg: 'bg-[#faf5ff]', border: 'border-[#f3e8ff]' }, // purple-700
-      purpura_claro: { text: 'text-[#7e22ce]', bg: 'bg-[#faf5ff]', border: 'border-[#f3e8ff]' },
-      fucsia_claro: { text: 'text-[#7e22ce]', bg: 'bg-[#faf5ff]', border: 'border-[#f3e8ff]' },
-      rosa_claro: { text: 'text-pink-700', bg: 'bg-pink-100', border: 'border-pink-200' },
-      rosado_claro: { text: 'text-pink-700', bg: 'bg-pink-100', border: 'border-pink-200' },
+      // Red Group
+      red: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+      rose: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+      maroon: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+      rojo: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+      rojo_claro: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+      red_light: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+
+      // Orange Group
+      orange: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      amber: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      naranja: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      naranja_claro: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      ambar: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      ambar_claro: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      orange_light: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+
+      // Yellow Group
+      yellow: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
+      gold: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
+      amarillo: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
+      amarillo_claro: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
+      yellow_light: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
+
+      // Green Group
+      green: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      emerald: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      lime: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      teal: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      verde: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      lima: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      esmeralda: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      verde_azulado: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      verde_claro: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      lima_claro: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      esmeralda_claro: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      green_light: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      green_dark: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+
+      // Blue Group (Incorporating Cyan/Celeste -> Blue)
+      blue: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      indigo: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      navy: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      cyan: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      sky: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      celeste: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      azul: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      cielo: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      celeste_claro: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      cielo_claro: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      azul_claro: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      indigo_claro: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      blue_dark: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      blue_light: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+
+      // Purple Group
+      purple: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' }, // JIT Purple
+      violet: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      fuchsia: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      morado: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      purpura: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      violeta: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      fucsia: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      purpura_claro: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      morado_claro: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      purple_light: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      purple_dark: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+
+      // Pink Group
+      pink: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      magenta: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      rosa: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      rosado: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      rosa_claro: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      rosado_claro: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      pink_light: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
     };
 
     // 1. SIEMPRE PRIMERO: Pendiente 
