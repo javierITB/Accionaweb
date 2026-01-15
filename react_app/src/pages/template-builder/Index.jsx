@@ -316,7 +316,7 @@ const FormBuilder = () => {
         status: savedData.status || newStatus,
       }));
 
-      alert(`Plantilla guardada como ${newStatus} exitosamente.`);
+      alert(`El registro de la plantilla se ha completado exitosamente.`);
 
       if (!formData.id && finalId) {
         window.history.replaceState({}, "", `?id=${finalId}`);

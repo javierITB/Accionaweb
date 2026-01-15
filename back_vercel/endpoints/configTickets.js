@@ -3,11 +3,12 @@ const router = express.Router();
 
 const { validarToken } = require("../utils/validarToken.js");
 
-// Helper para verificar token
 const verifyRequest = async (req) => {
-    let token = req.headers.authorization?.split(" ")[1];
-    if (!token && req.query?.token) token = req.query.token;
-    if (!token) return { ok: false, error: "Token no proporcionado" };
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return { ok: false, error: "No autorizado" };
+    }
+    const token = authHeader.split(" ")[1];
 
     const valid = await validarToken(req.db, token);
     if (!valid.ok) return { ok: false, error: valid.reason };

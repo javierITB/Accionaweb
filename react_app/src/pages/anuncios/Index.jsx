@@ -11,6 +11,8 @@ const AnunciosPage = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
+  // Estado para forzar el refresco del formulario
+  const [formKey, setFormKey] = useState(0); 
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,8 +46,8 @@ const AnunciosPage = () => {
   };
 
   const handleAnuncioSuccess = () => {
-    // Redirigir al dashboard después de enviar exitosamente
-    navigate('/dashboard-home');
+    // Incrementamos la key para destruir y recrear el componente (limpia los campos)
+    setFormKey(prevKey => prevKey + 1);
   };
 
   return (
@@ -88,7 +90,8 @@ const AnunciosPage = () => {
               <p className="text-muted-foreground">Completa el formulario para enviar notificaciones</p>
             </div>
             
-            <AnuncioCreator onSuccess={handleAnuncioSuccess} />
+            {/* La prop key es la que hace la magia de limpiar el formulario */}
+            <AnuncioCreator key={formKey} onSuccess={handleAnuncioSuccess} />
           </div>
         </main>
       </div>

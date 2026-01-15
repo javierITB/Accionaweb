@@ -165,6 +165,7 @@ const TicketSystem = () => {
       const formData = new FormData();
       formData.append('formId', ticketForm.category);
       formData.append('formTitle', categoryLabel);
+      formData.append('category', 'sistema'); // Categoría principal: Sistema
       formData.append('mail', currentUser.email);
 
       // User and Responses as JSON strings

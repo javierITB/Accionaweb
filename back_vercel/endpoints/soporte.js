@@ -332,7 +332,32 @@ router.post("/", uploadMultiple.array('adjuntos'), async (req, res) => {
       console.log(`Ticket creado: ${formId}`);
     }
 
-    const initialStatus = assignedTo ? "en_revision" : "pendiente";
+    // Capturar categoría del request
+    let { category } = req.body;
+
+    // Lógica para Estado Inicial Dinámico
+    let initialStatus = "pendiente";
+
+    // 1. Intentar buscar configuración para la categoría
+    if (category) {
+      try {
+        const config = await req.db.collection("config_tickets").findOne({ key: category });
+        if (config && config.statuses && config.statuses.length > 0) {
+          // Usar el primer estado definido en la configuración
+          initialStatus = config.statuses[0].value;
+        } else {
+          // Fallback para Sistema (o categoría sin config)
+          initialStatus = assignedTo ? "en_revision" : "pendiente";
+        }
+      } catch (err) {
+        console.error("Error buscando configuración de ticket:", err);
+        initialStatus = "pendiente";
+      }
+    } else {
+      // Sin categoría (comportamiento default)
+      initialStatus = assignedTo ? "en_revision" : "pendiente";
+    }
+
     const assignedAt = assignedTo ? new Date().toISOString() : null;
 
     const result = await req.db.collection("soporte").insertOne({
@@ -342,6 +367,7 @@ router.post("/", uploadMultiple.array('adjuntos'), async (req, res) => {
       formTitle,
       mail: correoRespaldo,
       status: initialStatus,
+      category: category || null,
       assignedTo,
       assignedAt,
       estimatedCompletionAt: estimatedCompletionAt || null,
@@ -956,9 +982,18 @@ router.put("/:id/status", async (req, res) => {
       return res.status(400).json({ error: "Estado requerido" });
     }
 
-    const estadosPermitidos = ['pendiente', 'en_revision', 'finalizado', 'archivado'];
+    // Obtener estados permitidos dinámicos desde config_tickets
+    let dynamicStatuses = [];
+    try {
+      const configs = await req.db.collection('config_tickets').find({}).toArray();
+      dynamicStatuses = configs.flatMap(c => c.statuses?.map(s => s.value) || []);
+    } catch (e) {
+      console.warn("Could not fetch config_tickets for validation", e);
+    }
+
+    const estadosPermitidos = ['pendiente', 'en_revaision', 'finalizado', 'archivado', ...dynamicStatuses];
     if (!estadosPermitidos.includes(status)) {
-      return res.status(400).json({ error: "Estado no válido" });
+      return res.status(400).json({ error: "Estado no válido (" + status + ")" });
     }
 
     const respuesta = await req.db.collection("soporte").findOne({
