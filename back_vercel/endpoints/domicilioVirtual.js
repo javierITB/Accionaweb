@@ -394,6 +394,7 @@ router.post("/", async (req, res) => {
                 mail: "",
                 status: "pendiente",
                 priority: "alta",
+                category: "domicilio_virtual",
                 relatedRequestId: result.insertedId, // Vinculación interna
                 origin: "domicilio_virtual",
                 createdAt: new Date(),
