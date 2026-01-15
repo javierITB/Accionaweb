@@ -127,6 +127,7 @@ const RequestTracking = () => {
         }
 
         const responses = await resResp.json();
+        console.log("Mini API Raw Response Sample:", responses.length > 0 ? responses[0] : "Empty");
 
         try {
           if (resConfig.ok) {
@@ -162,6 +163,7 @@ const RequestTracking = () => {
             assignedTo: r.assignedTo || " - ",
             hasMessages: false,
             company: r.user?.empresa || 'desconocida',
+            priority: r.priority, // <-- Added priority
             responses: r.responses // Mantener responses original
           };
         });

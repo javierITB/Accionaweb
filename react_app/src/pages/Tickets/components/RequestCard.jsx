@@ -286,6 +286,18 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
         <div className="flex-1"></div>
 
         <div className="flex items-center space-x-1 sm:space-x-2">
+          {/* Badge de Prioridad */}
+          {/* Badge de Prioridad - Estilo Refinado */}
+          {currentRequest?.priority && (
+            <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide mr-2 border ${currentRequest.priority === 'urgente' ? 'border-red-600 text-red-600 bg-red-50' :
+                currentRequest.priority === 'alta' ? 'border-orange-500 text-orange-600 bg-orange-50' :
+                  currentRequest.priority === 'media' ? 'border-amber-500 text-amber-600 bg-amber-50' :
+                    currentRequest.priority === 'baja' ? 'border-emerald-500 text-emerald-600 bg-emerald-50' :
+                      'border-slate-200 text-slate-500 bg-slate-50'
+              }`}>
+              {currentRequest.priority}
+            </div>
+          )}
           <Button
             variant="ghost"
             size="icon"

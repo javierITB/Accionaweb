@@ -278,6 +278,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
     return config.statuses?.find(s => s.value === status);
   }
 
+  /* Helper to check if status is initial */
+  const isInitialStatus = () => {
+    if (!ticketConfigs) return ['pendiente'].includes(fullRequestData?.status);
+    const category = fullRequestData?.category || fullRequestData?.categoryData || fullRequestData?.responses?.['Categoría'] || 'General';
+    const config = ticketConfigs.find(c => c.key === category) || ticketConfigs.find(c => c.key === 'domicilio_virtual');
+
+    if (!config || !config.statuses || config.statuses.length === 0) return ['pendiente'].includes(fullRequestData?.status);
+    return config.statuses[0].value === fullRequestData?.status;
+  };
+
   // ... (existing effects)
 
   const handleStatusChange = async (newStatus) => {
@@ -1108,7 +1118,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
             </div>
             <div className="flex items-center space-x-3">
 
-              {(fullRequestData?.status === 'pendiente' || (fullRequestData?.status === 'en_revision' && !isUserAssigned())) && (
+              {(isInitialStatus() || (fullRequestData?.status === 'en_revision' && !isUserAssigned())) && (
+
+
                 <Button
                   variant="default"
                   iconName={isApproving ? "Loader" : "UserCheck"}
