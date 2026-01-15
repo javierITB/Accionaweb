@@ -163,8 +163,9 @@ const RequestTracking = () => {
             assignedTo: r.assignedTo || " - ",
             hasMessages: false,
             company: r.user?.empresa || 'desconocida',
-            priority: r.priority, // <-- Added priority
-            responses: r.responses // Mantener responses original
+            priority: r.priority,
+            responses: r.responses,
+            updatedAt: r.updatedAt // Fixed: Ensure updatedAt is available for StatsOverview calculation
           };
         });
 

@@ -92,7 +92,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, customCa
                     style={stat.iconColor ? { color: stat.iconColor } : {}}
                   />
                 </div>
-                <div className={`text-[10px] font-medium ${stat?.changeType === 'positive' ? 'text-success' : 'text-error'
+                <div className={`text-xs font-bold ${stat?.changeType === 'positive' ? 'text-success' : 'text-error'
                   } whitespace-nowrap`}>
                   {stat?.change > 0 && '+'}
                   {stat?.change}
