@@ -414,7 +414,6 @@ router.post("/", async (req, res) => {
             icono: "Edit",
             actionUrl: `/RespuestasForms?id=${result.insertedId}`,
         };
-        await addNotification(req.db, { filtro: { cargo: "RRHH" }, ...notifData });
         await addNotification(req.db, { filtro: { cargo: "admin" }, ...notifData });
 
         // Anexo
