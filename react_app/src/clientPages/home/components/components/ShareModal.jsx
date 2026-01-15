@@ -32,7 +32,7 @@ const ShareModal = ({ isOpen, onClose, request }) => {
       }
 
       // Enviamos el mail como query parameter (?email=...)
-      const response = await apiFetch(`${API_BASE_URL}/auth/empresa/usuarios/${encodeURIComponent(mail)}`);
+      const response = await apiFetch(`${API_BASE_URL}/auth/empresas/usuarios/${encodeURIComponent(mail)}`);
 
       if (response.ok) {
         const data = await response.json();
