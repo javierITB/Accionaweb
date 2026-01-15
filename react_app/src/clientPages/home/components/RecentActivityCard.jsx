@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button';
 import RequestCard from './components/RequestCard';
 import FilterPanel from './components/FilterPanel';
 import MessageModal from './components/MessageModal';
+import ShareModal from './components/ShareModal';
 import RequestDetails from './components/RequestDetails';
 import { apiFetch, API_BASE_URL } from '../../../utils/api';
 
@@ -33,6 +34,14 @@ const RequestTracking = () => {
     startDate: '',
     endDate: '',
   });
+
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareRequest, setShareRequest] = useState(null);
+
+  const handleShareRequest = (request) => {
+    setShareRequest(request);
+    setShowShareModal(true);
+  };
 
   //buscar id de respuesta que se busca abrir
   useEffect(() => {
@@ -373,6 +382,7 @@ const RequestTracking = () => {
                   request={request}
                   onViewDetails={handleViewDetails}
                   onSendMessage={handleSendMessage}
+                  onShare={() => handleShareRequest(request)}
                   viewMode={viewMode}
                 />
               ))
@@ -403,6 +413,11 @@ const RequestTracking = () => {
         isVisible={showRequestDetails}
         onClose={() => setShowRequestDetails(false)}
         onSendMessage={handleSendMessage}
+      />
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        request={shareRequest}
       />
     </div>
   );

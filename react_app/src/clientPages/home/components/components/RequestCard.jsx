@@ -3,7 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { apiFetch, API_BASE_URL } from '../../../../utils/api';
 
-const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode = 'list' }) => {
+const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare, viewMode = 'list' }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
 
   useEffect(() => {
@@ -244,14 +244,24 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, viewMode
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
-            size="sm"
-            title="Chat de Mensajes"
-            onClick={() => onSendMessage(currentRequest)}
-            iconName="MessageSquare"
+            iconName="Share2"
             iconPosition="left"
+            onClick={() => onShare(request)}
             iconSize={16}
           >
           </Button>
+          {currentRequest.status !== 'archivado' && (
+            <Button
+              variant="outline"
+              size="sm"
+              title="Chat de Mensajes"
+              onClick={() => onSendMessage(currentRequest)}
+              iconName="MessageSquare"
+              iconPosition="left"
+              iconSize={16}
+            >
+            </Button>
+          )}
 
           <Button
             variant="ghost"
