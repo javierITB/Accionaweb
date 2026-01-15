@@ -163,8 +163,9 @@ const RequestTracking = () => {
             assignedTo: r.assignedTo || " - ",
             hasMessages: false,
             company: r.user?.empresa || 'desconocida',
-            priority: r.priority, // <-- Added priority
-            responses: r.responses // Mantener responses original
+            priority: r.priority,
+            responses: r.responses,
+            updatedAt: r.updatedAt // Fixed: Ensure updatedAt is available for StatsOverview calculation
           };
         });
 
@@ -601,29 +602,43 @@ const RequestTracking = () => {
                 }
               });
 
-              // 2. Define special sort order
-              const specialOrder = ['pendiente', 'en_revision', 'documento_generado', 'aprobado', 'firmado', 'enviado', 'finalizado', 'archivado'];
+              // 2. Define flow-based sort order
+              const flowIndices = {};
+              ticketConfigs.forEach(config => {
+                if (config.statuses) {
+                  config.statuses.forEach((s, idx) => {
+                    // Check if not set or if current index is lower (prioritize earlier appearance)
+                    if (flowIndices[s.value] === undefined || idx < flowIndices[s.value]) {
+                      flowIndices[s.value] = idx;
+                    }
+                  });
+                }
+              });
+
+              // Ensure 'archivado' exists in aggregation even if not in configs
+              if (!aggregatedStatuses['archivado']) {
+                aggregatedStatuses['archivado'] = {
+                  value: 'archivado',
+                  label: 'Archivado',
+                  color: '#64748b',
+                  icon: 'Folder'
+                };
+              }
+
               const statusKeys = Object.keys(aggregatedStatuses);
 
               const sortedKeys = statusKeys.sort((a, b) => {
-                const indexA = specialOrder.indexOf(a);
-                const indexB = specialOrder.indexOf(b);
-                // If both are found in special list, sort by index
-                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-                // If only A is found, A comes first (if we want explicit order to be first)
-                // Requirement: "Pendiente (inicio) y Archivado (final)"
-                // 'pendiente' is index 0. 'archivado' is last.
-
                 if (a === 'pendiente') return -1;
                 if (b === 'pendiente') return 1;
                 if (a === 'archivado') return 1;
                 if (b === 'archivado') return -1;
 
-                if (indexA !== -1) return -1; // A is special, put it earlier than unknown
-                if (indexB !== -1) return 1;  // B is special, put it earlier than unknown
+                const idxA = flowIndices[a] !== undefined ? flowIndices[a] : 50;
+                const idxB = flowIndices[b] !== undefined ? flowIndices[b] : 50;
 
-                return a.localeCompare(b);
+                return idxA - idxB;
               });
+
 
 
               return sortedKeys.map(key => {
