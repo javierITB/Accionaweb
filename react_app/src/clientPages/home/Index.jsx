@@ -32,17 +32,6 @@ const DashboardHome = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
-  const handleEmergencyContact = () => {
-    window.location.href = '/support-portal?category=emergency';
-  };
-
-  const handleQuickHelp = () => {
-    window.location.href = '/support-portal?section=help';
-  };
 
   const handleLoginRedirect = () => {
     window.location.href = '/login';

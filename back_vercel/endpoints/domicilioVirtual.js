@@ -386,14 +386,23 @@ router.post("/", async (req, res) => {
             }
 
             // Insertar ticket en soporte
+            let statusInicial = "documento_generado"; // Por defecto
+            try {
+                const config = await req.db.collection("config_tickets").findOne({ key: "domicilio_virtual" });
+                if (config && config.statuses && config.statuses.length > 0) {
+                    statusInicial = config.statuses[0].value;
+                }
+            } catch (ignore) { }
+
             await req.db.collection("soporte").insertOne({
                 formId: formId, // Usar ID real del formulario para que aparezca en panel admin
                 user: userToSave, // Se guarda el usuario con la empresa corregida
                 responses: responses, // Se guardan las respuestas en texto plano para el ticket
                 formTitle: ticketTitle,
                 mail: "",
-                status: "pendiente",
+                status: statusInicial,
                 priority: "alta",
+                category: "domicilio_virtual",
                 relatedRequestId: result.insertedId, // Vinculación interna
                 origin: "domicilio_virtual",
                 createdAt: new Date(),

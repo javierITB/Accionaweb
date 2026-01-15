@@ -621,60 +621,64 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
           {/* Sección de Documentos Corregidos */}
           {(request?.status !== 'pendiente' && request?.status !== 'en_revision') && (
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                Documentos Corregidos
-                {loadingApprovedFiles && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-              </h3>
+              {request?.status !== 'archivado' && (
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                    Documentos Corregidos
+                    {loadingApprovedFiles && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+                  </h3>
 
-              {loadingApprovedFiles ? (
-                <div className="flex justify-center py-6">
-                  <Icon name="Loader" size={24} className="animate-spin text-accent" />
-                </div>
-              ) : (
-                <>
-                  {approvedFilesData?.correctedFiles?.length > 0 && (
-                    <div className="space-y-2">
-                      {approvedFilesData.correctedFiles.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <Icon name="FileText" size={20} className="text-success" />
-                            <div>
-                              <p className="text-sm font-medium text-foreground">
-                                {file.fileName || `Documento corregido ${index + 1}`}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                PDF • {formatFileSize(file.fileSize)} • {formatDate(file.uploadedAt)}
-                              </p>
+                  {/* CORRECCIÓN: Se añadieron llaves para el operador ternario */}
+                  {loadingApprovedFiles ? (
+                    <div className="flex justify-center py-6">
+                      <Icon name="Loader" size={24} className="animate-spin text-accent" />
+                    </div>
+                  ) : (
+                    <>
+                      {approvedFilesData?.correctedFiles?.length > 0 ? (
+                        <div className="space-y-2">
+                          {approvedFilesData.correctedFiles.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                              <div className="flex items-center space-x-3">
+                                <Icon name="FileText" size={20} className="text-success" />
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">
+                                    {file.fileName || `Documento corregido ${index + 1}`}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    PDF • {formatFileSize(file.fileSize)} • {formatDate(file.uploadedAt)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  iconName={downloadingApprovedFileIndex === index ? "Loader" : "Download"}
+                                  iconPosition="left"
+                                  iconSize={16}
+                                  onClick={() => handleDownloadSingleApprovedFile(request._id, index, file.fileName)}
+                                  disabled={downloadingApprovedFileIndex !== null}
+                                >
+                                  {downloadingApprovedFileIndex === index ? 'Descargando...' : 'Descargar'}
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              iconName={downloadingApprovedFileIndex === index ? "Loader" : "Download"}
-                              iconPosition="left"
-                              iconSize={16}
-                              onClick={() => handleDownloadSingleApprovedFile(request._id, index, file.fileName)}
-                              disabled={downloadingApprovedFileIndex !== null}
-                            >
-                              {downloadingApprovedFileIndex === index ? 'Descargando...' : 'Descargar'}
-                            </Button>
-                          </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      ) : (
+                        /* CORRECCIÓN: Se simplificó la lógica del "Empty State" */
+                        <div className="text-center py-4 text-sm text-muted-foreground">
+                          <Icon name="FileText" size={20} className="mx-auto mb-2 text-muted-foreground/50" />
+                          No hay documentos corregidos disponibles
+                        </div>
+                      )}
+                    </>
                   )}
-
-                  {(!approvedFilesData?.correctedFiles || approvedFilesData.correctedFiles.length === 0) && (
-                    <div className="text-center py-4 text-sm text-muted-foreground">
-                      <Icon name="FileText" size={20} className="mx-auto mb-2 text-muted-foreground/50" />
-                      No hay documentos corregidos disponibles
-                    </div>
-                  )}
-                </>
+                </div>
               )}
 
-              {/* Sección de documento firmado - SEPARADA Y CON SU PROPIO TÍTULO */}
+              {/* Sección de documento firmado */}
               {renderSignedDocumentSection()}
             </div>
           )}

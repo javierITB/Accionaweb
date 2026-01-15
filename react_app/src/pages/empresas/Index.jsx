@@ -28,10 +28,9 @@ const CompanyReg = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('register');
 
-  // ESTADO PARA ORDENAMIENTO
+  const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'asc' });
 
-  // ESTADOS DEL SIDEBAR
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
@@ -81,7 +80,6 @@ const CompanyReg = () => {
     fetchEmpresas();
   }, []);
 
-  // LÓGICA DE ORDENAMIENTO
   const requestSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -91,72 +89,80 @@ const CompanyReg = () => {
   };
 
   const sortedEmpresas = useMemo(() => {
-    let sortableItems = [...empresas].filter(e => e.nombre !== "Todas");
+    let processData = [...empresas].filter(e => e.nombre !== "Todas");
+
+    if (searchTerm.trim() !== '') {
+      const term = searchTerm.toLowerCase();
+      processData = processData.filter(e => 
+        String(e.nombre).toLowerCase().includes(term) ||
+        String(e.rut).toLowerCase().includes(term) ||
+        String(e.direccion).toLowerCase().includes(term) ||
+        String(e.encargado).toLowerCase().includes(term)
+      );
+    }
+
     if (sortConfig.key !== null) {
-      sortableItems.sort((a, b) => {
+      processData.sort((a, b) => {
         const aValue = a[sortConfig.key] ? String(a[sortConfig.key]).toLowerCase() : '';
         const bValue = b[sortConfig.key] ? String(b[sortConfig.key]).toLowerCase() : '';
-
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
     }
-    return sortableItems;
-  }, [empresas, sortConfig]);
+    return processData;
+  }, [empresas, sortConfig, searchTerm]);
 
   const clearForm = () => {
-    setFormData({
-      nombre: '', rut: '', direccion: '', encargado: '', rut_encargado: '', logo: null, logoUrl: null
-    });
+    setFormData({ nombre: '', rut: '', direccion: '', encargado: '', rut_encargado: '', logo: null, logoUrl: null });
     setEditingEmpresa(null);
     setActiveTab('register');
-    if (window.history.replaceState) {
-      window.history.replaceState(null, null, window.location.pathname);
-    }
   };
 
+  // REESTABLECIMIENTO DE FUNCIONALIDAD DE EDICIÓN
   const handleEditEmpresa = async (empresaId) => {
     setIsLoading(true);
-    setActiveTab('register');
+    // Cambiamos a la pestaña de registro para mostrar el formulario relleno
+    setActiveTab('register'); 
+    
     try {
       const response = await apiFetch(`${API_BASE_URL}/auth/empresas/${empresaId}`);
       if (!response.ok) throw new Error('Error al cargar la empresa');
       const empresa = await response.json();
+      
       const logoDataURL = createDataURL(empresa.logo);
+      
       setEditingEmpresa(empresa);
       setFormData({
-        nombre: empresa.nombre || '',
-        rut: empresa.rut || '',
+        nombre: empresa.nombre || '', 
+        rut: empresa.rut || '', 
         direccion: empresa.direccion || '',
-        encargado: empresa.encargado || '',
+        encargado: empresa.encargado || '', 
         rut_encargado: empresa.rut_encargado || '',
-        logo: null,
+        logo: null, 
         logoUrl: logoDataURL
       });
-      if (window.history.replaceState) {
-        window.history.replaceState(null, null, `?id=${empresaId}`);
-      }
+      
+      // Scroll hacia arriba para que el usuario vea el inicio del formulario
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
     } catch (error) {
-      alert(error.message);
+      alert("Error al cargar datos para edición: " + error.message);
+      setActiveTab('list'); // Volver a la lista si falla
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRemoveEmpresa = async (empresaId) => {
-    if (!window.confirm("¿Estás seguro de que deseas eliminar esta empresa?")) return;
+    if (!window.confirm("¿Seguro que deseas eliminar esta empresa?")) return;
     setIsLoading(true);
     try {
       const response = await apiFetch(`${API_BASE_URL}/auth/empresas/${empresaId}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Error al eliminar');
-      alert('Empresa eliminada exitosamente');
-      clearForm();
-      fetchEmpresas();
+      if (response.ok) {
+        alert('Empresa eliminada');
+        fetchEmpresas();
+      }
     } catch (error) {
       alert(error.message);
     } finally {
@@ -166,7 +172,7 @@ const CompanyReg = () => {
 
   const handleRegisterEmpresa = async () => {
     if (!formData.nombre || !formData.rut) {
-      alert('Por favor completa los campos obligatorios: Nombre y RUT');
+      alert('Completa los campos obligatorios');
       return;
     }
     setIsLoading(true);
@@ -179,23 +185,28 @@ const CompanyReg = () => {
           submitData.append(key, formData[key] || '');
         }
       });
-
+      
       const isUpdating = !!editingEmpresa;
-      const url = isUpdating
-        ? `${API_BASE_URL}/auth/empresas/${editingEmpresa._id}`
+      const url = isUpdating 
+        ? `${API_BASE_URL}/auth/empresas/${editingEmpresa._id}` 
         : `${API_BASE_URL}/auth/empresas/register`;
 
-      const response = await apiFetch(url, {
-        method: isUpdating ? 'PUT' : 'POST',
-        body: submitData,
+      const response = await apiFetch(url, { 
+        method: isUpdating ? 'PUT' : 'POST', 
+        body: submitData 
       });
 
-      if (!response.ok) throw new Error('Error en el servidor');
-      alert(`Empresa ${isUpdating ? 'actualizada' : 'registrada'} exitosamente`);
-      clearForm();
-      fetchEmpresas();
+      if (response.ok) {
+        alert(`Empresa ${isUpdating ? 'actualizada' : 'registrada'} exitosamente`);
+        clearForm();
+        fetchEmpresas();
+        setActiveTab('list'); // Volver a la lista tras guardar con éxito
+      } else {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Error en el servidor');
+      }
     } catch (error) {
-      alert(error.message);
+      alert("Error al guardar: " + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -224,69 +235,87 @@ const CompanyReg = () => {
 
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Empresas Registradas</h3>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+          <h3 className="text-lg font-semibold text-foreground">Empresas Registradas</h3>
+          
+          <div className="relative w-full md:w-80">
+            <Icon 
+              name="Search" 
+              size={16} 
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" 
+            />
+            <input
+              type="text"
+              placeholder="Buscar por nombre, RUT o dirección..."
+              className="w-full pl-10 pr-10 py-2.5 
+                         bg-white border-gray-200 text-gray-900 placeholder:text-gray-400
+                         dark:bg-zinc-800/50 dark:border-zinc-700 dark:text-zinc-100 dark:placeholder:text-zinc-500 
+                         border rounded-xl text-sm 
+                         focus:ring-2 focus:ring-primary/20 focus:border-primary 
+                         dark:focus:ring-primary/40 dark:focus:border-primary/60
+                         outline-none transition-all shadow-sm dark:shadow-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 hover:text-foreground">
+                <Icon name="X" size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+
         {empresas.length <= 1 ? (
           <p className="text-muted-foreground">No hay empresas registradas.</p>
         ) : (
-          <div className="overflow-x-auto border border-border rounded-lg">
+          <div className="overflow-x-auto border border-border rounded-lg shadow-sm">
             <table className="min-w-full">
               <thead className="bg-muted text-sm text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">Logo</th>
-                  <th className="px-4 py-3 text-left font-medium cursor-pointer hover:bg-muted-foreground/10 transition-colors" onClick={() => requestSort('nombre')}>
+                  <th className="px-4 py-3 text-left font-medium cursor-pointer hover:bg-muted-foreground/10" onClick={() => requestSort('nombre')}>
                     Nombre {renderSortIcon('nombre')}
                   </th>
-                  <th className="px-4 py-3 text-left font-medium cursor-pointer hover:bg-muted-foreground/10 transition-colors" onClick={() => requestSort('rut')}>
+                  <th className="px-4 py-3 text-left font-medium cursor-pointer hover:bg-muted-foreground/10" onClick={() => requestSort('rut')}>
                     RUT {renderSortIcon('rut')}
                   </th>
-                  <th className="px-4 py-3 text-left font-medium cursor-pointer hover:bg-muted-foreground/10 transition-colors" onClick={() => requestSort('direccion')}>
+                  <th className="px-4 py-3 text-left font-medium cursor-pointer hover:bg-muted-foreground/10" onClick={() => requestSort('direccion')}>
                     Dirección {renderSortIcon('direccion')}
                   </th>
-                  <th className="px-4 py-3 text-left font-medium cursor-pointer hover:bg-muted-foreground/10 transition-colors" onClick={() => requestSort('encargado')}>
+                  <th className="px-4 py-3 text-left font-medium cursor-pointer hover:bg-muted-foreground/10" onClick={() => requestSort('encargado')}>
                     Encargado {renderSortIcon('encargado')}
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium cursor-pointer hover:bg-muted-foreground/10 transition-colors" onClick={() => requestSort('createdAt')}>
-                    Fecha {renderSortIcon('createdAt')}
                   </th>
                   <th className="px-4 py-3 text-center font-medium">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-border bg-card">
                 {sortedEmpresas.map((empresa) => (
-                  <tr key={empresa._id} className="hover:bg-muted/30 transition-colors">
+                  <tr key={empresa._id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3">
                       {empresa.logo ? (
-                        <img src={empresa.logo} alt="" className="w-10 h-10 object-contain rounded" />
+                        <img src={empresa.logo} alt="" className="w-10 h-10 object-contain rounded p-0.5 bg-white shadow-sm" />
                       ) : (
                         <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
                           <Icon name="Building2" size={16} className="text-muted-foreground" />
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium">{empresa.nombre}</td>
-                    <td className="px-4 py-3 text-sm whitespace-nowrap">{empresa.rut}</td>
+                    <td className="px-4 py-3 text-sm font-semibold">{empresa.nombre}</td>
+                    <td className="px-4 py-3 text-sm">{empresa.rut}</td>
                     <td className="px-4 py-3 text-sm max-w-xs truncate">{empresa.direccion || '—'}</td>
                     <td className="px-4 py-3 text-sm">{empresa.encargado || '—'}</td>
-                    <td className="px-4 py-3 text-sm">
-                      {empresa.createdAt ? new Date(empresa.createdAt).toLocaleDateString('es-CL') : '—'}
-                    </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-center items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditEmpresa(empresa._id)}
-                          iconName="Edit"
-                          className="h-8 px-2"
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleEditEmpresa(empresa._id)} 
+                          iconName="Edit" 
+                          className="h-8"
                         >
                           Editar
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveEmpresa(empresa._id)}
-                          className="h-8 w-8 text-red-600 hover:bg-red-50"
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveEmpresa(empresa._id)} className="h-8 w-8 text-red-600">
                           <Icon name="Trash2" size={14} />
                         </Button>
                       </div>
@@ -307,32 +336,13 @@ const CompanyReg = () => {
     <div className="min-h-screen bg-background">
       <Header />
       {(isMobileOpen || !isMobileScreen) && (
-        <Sidebar
-          isCollapsed={!isDesktopOpen}
-          onToggleCollapse={toggleSidebar}
-          isMobileOpen={isMobileOpen}
-          onNavigate={handleNavigation}
-        />
+        <Sidebar isCollapsed={!isDesktopOpen} onToggleCollapse={toggleSidebar} isMobileOpen={isMobileOpen} onNavigate={handleNavigation} />
       )}
-
       {isMobileScreen && isMobileOpen && (
         <div className="fixed inset-0 bg-foreground/50 z-40" onClick={toggleSidebar}></div>
       )}
 
-      {/* BOTÓN FLOTANTE MÓVIL */}
-      {!isMobileOpen && isMobileScreen && (
-        <div className="fixed bottom-4 left-4 z-50">
-          <Button
-            variant="default"
-            size="icon"
-            onClick={toggleSidebar}
-            iconName="Menu"
-            className="w-12 h-12 rounded-full shadow-brand-active"
-          />
-        </div>
-      )}
-
-      <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16 lg:pt-20`}>
+      <main className={`transition-all duration-300 ${mainMarginClass} pt-20`}>
         <div className="p-6 space-y-6 container-main">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
             <div>
@@ -353,19 +363,17 @@ const CompanyReg = () => {
             <div className="flex gap-2 p-4 bg-muted/20 border-b border-border">
               <button
                 onClick={() => setActiveTab('register')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'register' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                  }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'register' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 <Icon name="Plus" size={16} className="inline mr-2" />
-                {editingEmpresa ? 'Modificar' : 'Registrar'}
+                {editingEmpresa ? 'Modificar Empresa' : 'Registrar Empresa'}
               </button>
               <button
                 onClick={() => setActiveTab('list')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                  }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'list' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 <Icon name="List" size={16} className="inline mr-2" />
-                Lista ({empresas.length})
+                Lista de Empresas ({empresas.length})
               </button>
             </div>
             <div className="p-6">

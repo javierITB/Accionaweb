@@ -25,6 +25,7 @@ const RequestTracking = () => {
   const [showRequestDetails, setShowRequestDetails] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
   const [isLoading, setIsLoading] = useState(false);
+  const [ticketConfigs, setTicketConfigs] = useState([]);
 
   // --- NUEVOS ESTADOS DE PAGINACIÓN ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -115,19 +116,37 @@ const RequestTracking = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const resResp = await apiFetch(`${API_BASE_URL}/soporte/mini`);
+
+        const [resResp, resConfig] = await Promise.all([
+          apiFetch(`${API_BASE_URL}/soporte/mini`),
+          apiFetch(`${API_BASE_URL}/config-tickets`)
+        ]);
 
         if (!resResp.ok) {
           throw new Error('Error al obtener datos del servidor');
         }
 
         const responses = await resResp.json();
+        console.log("Mini API Raw Response Sample:", responses.length > 0 ? responses[0] : "Empty");
+
+        try {
+          if (resConfig.ok) {
+            const configs = await resConfig.json();
+            setTicketConfigs(configs);
+          }
+        } catch (e) { console.error("Error loading configs", e); }
 
         const normalized = responses.map(r => {
+          // Extraemos Subcategoría y Categoría de responses para tickets de Sistema/Domicilio
+          const subcat = r.responses?.['Subcategoría'];
+          const cat = r.responses?.['Categoría'];
+
           return {
             _id: r._id,
             formId: r.formId,
-            title: r.title || r.formTitle || "formulario",
+            // Cambiado: Mostrar subcategoría como título si existe
+            title: subcat || r.title || r.formTitle || "formulario",
+            categoryData: cat || r.category || "", // Guardamos categoría para el filtro
             submittedAt: r.submittedAt || r.createdAt || null,
             createdAt: r.createdAt,
             reviewedAt: r.reviewedAt,
@@ -143,7 +162,9 @@ const RequestTracking = () => {
             lastUpdated: r.updatedAt || null,
             assignedTo: r.assignedTo || " - ",
             hasMessages: false,
-            company: r.user?.empresa || 'desconocida'
+            company: r.user?.empresa || 'desconocida',
+            priority: r.priority, // <-- Added priority
+            responses: r.responses // Mantener responses original
           };
         });
 
@@ -162,15 +183,95 @@ const RequestTracking = () => {
 
   }, []);
 
-  const mockStats = {
-    total: resp?.length || 0,
-    pending: resp?.filter(r => r.status === 'pendiente')?.length || 0,
-    inReview: resp?.filter(r => r.status === 'en_revision')?.length || 0,
-    approved: resp?.filter(r => r.status === 'aprobado')?.length || 0,
-    rejected: resp?.filter(r => r.status === 'firmado')?.length || 0, // Ajustado 'rechazado' a 'firmado' según tu StatsOverview
-    finalized: resp?.filter(r => r.status === 'finalizado')?.length || 0,
-    archived: resp?.filter(r => r.status === 'archivado')?.length || 0,
-  };
+
+
+  // Calcular estadísticas dinámicas
+  const dynamicStats = useMemo(() => {
+    // 1. Mapa base de contadores
+    const stats = { total: resp?.length || 0 };
+
+    // 2. Obtener todos los estados posibles de la configuración
+    const allStatuses = new Set();
+    ticketConfigs.forEach(cfg => {
+      cfg.statuses?.forEach(st => allStatuses.add(st.value));
+    });
+    // Asegurar que los básicos existan
+    allStatuses.add('pendiente');
+    allStatuses.add('archivado');
+
+    // 3. Inicializar contadores en 0
+    allStatuses.forEach(status => stats[status] = 0);
+
+    // 4. Contar tickets por estado
+    resp?.forEach(r => {
+      const st = r.status || 'pendiente';
+      if (stats[st] !== undefined) {
+        stats[st]++;
+      } else {
+        // Si el estado del ticket no está en config, lo agregamos (fallback)
+        stats[st] = (stats[st] || 0) + 1;
+      }
+    });
+
+    return stats;
+  }, [resp, ticketConfigs]);
+
+  // Construir la lista ordenada de tarjetas para StatsOverview
+  const orderedStatusCards = useMemo(() => {
+    const cards = [];
+    const usedStatuses = new Set();
+
+    // Helper para agregar tarjeta
+    const addCard = (value, label, icon, color, bgColor, borderColor) => {
+      if (usedStatuses.has(value)) return;
+      usedStatuses.add(value);
+      cards.push({
+        title: label,
+        value: dynamicStats[value] || 0,
+        icon: icon,
+        color: color,
+        bgColor: bgColor,
+        borderColor: borderColor,
+        filterKey: value
+      });
+    };
+
+    // 1. SIEMPRE PRIMERO: Pendiente (General request from user)
+    addCard('pendiente', 'Pendientes', 'Clock', 'text-warning', 'bg-warning/10', 'border-warning');
+
+    // 2. ESTADOS DINÁMICOS (Del medio)
+    // Recorremos las configs y sus estados.
+    // Para simplificar, agregamos todos los estados únicos encontrados en el orden que aparecen.
+    // Excluimos 'pendiente' y 'archivado' que tienen lugares fijos.
+    ticketConfigs.forEach(cfg => {
+      cfg.statuses?.forEach(st => {
+        if (st.value !== 'pendiente' && st.value !== 'archivado') {
+          // Mapear colores de config (nombre) a clases tailwind si es necesario
+          // O usar getStatusColorClass si tuvieramos acceso.
+          // Aquí usamos un mapa simple o valores por defecto.
+
+          // Mapa básico de colores a estilos de tarjeta
+          let colorClass = 'text-primary';
+          let bgClass = 'bg-primary/10';
+          let borderClass = 'border-primary';
+
+          if (st.color === 'green' || st.color === 'emerald') { colorClass = 'text-success'; bgClass = 'bg-success/10'; borderClass = 'border-success'; }
+          else if (st.color === 'blue' || st.color === 'sky') { colorClass = 'text-blue-500'; bgClass = 'bg-blue-500/10'; borderClass = 'border-blue-500'; }
+          else if (st.color === 'purple' || st.color === 'violet') { colorClass = 'text-purple-500'; bgClass = 'bg-purple-500/10'; borderClass = 'border-purple-500'; }
+          else if (st.color === 'red' || st.color === 'rose') { colorClass = 'text-error'; bgClass = 'bg-error/10'; borderClass = 'border-error'; }
+          else if (st.color === 'yellow' || st.color === 'amber') { colorClass = 'text-warning'; bgClass = 'bg-warning/10'; borderClass = 'border-warning'; }
+          else if (st.color === 'gray' || st.color === 'slate') { colorClass = 'text-muted-foreground'; bgClass = 'bg-muted'; borderClass = 'border-border'; }
+
+          addCard(st.value, st.label, st.icon || 'Circle', colorClass, bgClass, borderClass);
+        }
+      });
+    });
+
+    // 3. SIEMPRE ÚLTIMO: Archivados
+    addCard('archivado', 'Archivados', 'Archive', 'text-muted-foreground', 'bg-muted', 'border-border');
+
+    return cards;
+  }, [ticketConfigs, dynamicStats]);
 
   // --- NUEVA LÓGICA: Manejo de filtro desde las tarjetas de estadísticas ---
   const handleStatusFilter = (statusValue) => {
@@ -221,7 +322,8 @@ const RequestTracking = () => {
 
 
       if (filters?.category) {
-        const requestCategory = request?.form?.category || '';
+        // Modificado: Verificar tanto en formId como en la categoría enviada por el constructor
+        const requestCategory = request?.categoryData || request?.form?.category || '';
         if (requestCategory.toLowerCase() !== filters.category.toLowerCase()) return false;
       }
 
@@ -480,10 +582,69 @@ const RequestTracking = () => {
 
           {/* STATS OVERVIEW (Ahora con filtros) */}
           <StatsOverview
-            stats={mockStats}
+            stats={dynamicStats}
             allForms={resp}
-            filters={filters} // Pasamos los filtros actuales
-            onFilterChange={handleStatusFilter} // Pasamos la función de cambio
+            filters={filters}
+            onFilterChange={handleStatusFilter}
+            customCards={(() => {
+              if (!ticketConfigs || ticketConfigs.length === 0) return null;
+
+              // 1. Collect all unique statuses from all configs
+              const aggregatedStatuses = {};
+              ticketConfigs.forEach(config => {
+                if (config.statuses) {
+                  config.statuses.forEach(statusDef => {
+                    if (!aggregatedStatuses[statusDef.value]) {
+                      aggregatedStatuses[statusDef.value] = { ...statusDef };
+                    }
+                  });
+                }
+              });
+
+              // 2. Define special sort order
+              const specialOrder = ['pendiente', 'en_revision', 'documento_generado', 'aprobado', 'firmado', 'enviado', 'finalizado', 'archivado'];
+              const statusKeys = Object.keys(aggregatedStatuses);
+
+              const sortedKeys = statusKeys.sort((a, b) => {
+                const indexA = specialOrder.indexOf(a);
+                const indexB = specialOrder.indexOf(b);
+                // If both are found in special list, sort by index
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                // If only A is found, A comes first (if we want explicit order to be first)
+                // Requirement: "Pendiente (inicio) y Archivado (final)"
+                // 'pendiente' is index 0. 'archivado' is last.
+
+                if (a === 'pendiente') return -1;
+                if (b === 'pendiente') return 1;
+                if (a === 'archivado') return 1;
+                if (b === 'archivado') return -1;
+
+                if (indexA !== -1) return -1; // A is special, put it earlier than unknown
+                if (indexB !== -1) return 1;  // B is special, put it earlier than unknown
+
+                return a.localeCompare(b);
+              });
+
+
+              return sortedKeys.map(key => {
+                const statusDef = aggregatedStatuses[key];
+                const count = dynamicStats[key] || 0;
+                const now = new Date();
+                const change = resp.filter(r => r.status === key && r.updatedAt && (now - new Date(r.updatedAt)) <= 86400000).length;
+
+                return {
+                  title: statusDef.label,
+                  value: count,
+                  icon: statusDef.icon,
+                  iconColor: statusDef.color,
+                  bgColor: statusDef.color + '20',
+                  borderColor: 'border-transparent',
+                  change: change,
+                  changeType: 'neutral',
+                  filterKey: key
+                };
+              });
+            })()}
           />
 
           {/* FILTER PANEL */}
@@ -513,6 +674,7 @@ const RequestTracking = () => {
                 <RequestCard
                   key={request?._id || request?.id}
                   request={request}
+                  ticketConfigs={ticketConfigs}
                   onRemove={handleRemove}
                   onViewDetails={handleViewDetails}
                   viewMode={viewMode}
@@ -527,51 +689,55 @@ const RequestTracking = () => {
                     Intenta ajustar los filtros o crear una nueva solicitud
                   </p>
                 </div>
-              ))}
+              )
+            )}
           </div>
 
           {/* CONTROL DE PAGINACIÓN INFERIOR (Opcional) */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-4 pt-4 pb-8">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={prevPage}
-                disabled={currentPage === 1}
-                iconName="ChevronLeft"
-                iconSize={16}
-              >
-                Anterior
-              </Button>
-              <span className="text-sm font-medium text-foreground">
-                Página {currentPage} de {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={nextPage}
-                disabled={currentPage === totalPages}
-                iconName="ChevronRight"
-                iconSize={16}
-                iconPosition="right"
-              >
-                Siguiente
-              </Button>
-            </div>
-          )}
+          {
+            totalPages > 1 && (
+              <div className="flex justify-center items-center space-x-4 pt-4 pb-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  iconName="ChevronLeft"
+                  iconSize={16}
+                >
+                  Anterior
+                </Button>
+                <span className="text-sm font-medium text-foreground">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages}
+                  iconName="ChevronRight"
+                  iconSize={16}
+                  iconPosition="right"
+                >
+                  Siguiente
+                </Button>
+              </div>
+            )
+          }
 
-        </div>
-      </main>
+        </div >
+      </main >
 
       {/* MODALES */}
       {/* MODALES */}
       <RequestDetails
         request={selectedRequest}
+        ticketConfigs={ticketConfigs}
         isVisible={showRequestDetails}
         onClose={handleCloseRequestDetails}
         onUpdate={updateRequest}
       />
-    </div>
+    </div >
   );
 };
 
