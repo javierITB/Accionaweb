@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { getStatusColorClass } from '../../../utils/ticketStatusStyles';
 
 const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
@@ -245,18 +246,15 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
             </div>
           )}
           <span
-            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${!dynamicStatus ? getStatusColor(currentRequest?.status) : ''
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${dynamicStatus
+                ? getStatusColorClass(dynamicStatus.color)
+                : getStatusColor(currentRequest?.status)
               }`}
-            style={dynamicStatus ? {
-              backgroundColor: dynamicStatus.color,
-              color: '#000000'
-            } : {}}
           >
             <Icon
               name={dynamicStatus ? dynamicStatus.icon : getStatusIcon(currentRequest?.status)}
               size={10}
               className="mr-1 sm:w-3 sm:h-3"
-              style={dynamicStatus ? { color: '#000000' } : {}}
             />
             {dynamicStatus ? dynamicStatus.label?.toUpperCase() : formatStatusText(currentRequest?.status)}
           </span>
@@ -290,10 +288,10 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
           {/* Badge de Prioridad - Estilo Refinado */}
           {currentRequest?.priority && (
             <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide mr-2 border ${currentRequest.priority === 'urgente' ? 'border-red-600 text-red-600 bg-red-50' :
-                currentRequest.priority === 'alta' ? 'border-orange-500 text-orange-600 bg-orange-50' :
-                  currentRequest.priority === 'media' ? 'border-amber-500 text-amber-600 bg-amber-50' :
-                    currentRequest.priority === 'baja' ? 'border-emerald-500 text-emerald-600 bg-emerald-50' :
-                      'border-slate-200 text-slate-500 bg-slate-50'
+              currentRequest.priority === 'alta' ? 'border-orange-500 text-orange-600 bg-orange-50' :
+                currentRequest.priority === 'media' ? 'border-amber-500 text-amber-600 bg-amber-50' :
+                  currentRequest.priority === 'baja' ? 'border-emerald-500 text-emerald-600 bg-emerald-50' :
+                    'border-slate-200 text-slate-500 bg-slate-50'
               }`}>
               {currentRequest.priority}
             </div>

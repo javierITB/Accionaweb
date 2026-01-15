@@ -4,6 +4,7 @@ import { apiFetch, API_BASE_URL } from '../../../utils/api';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import CleanDocumentPreview from './CleanDocumentPreview';
+import { getStatusColorClass } from '../../../utils/ticketStatusStyles';
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
@@ -1046,14 +1047,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                   const statusConfig = getDynamicStatusConfig(fullRequestData?.status);
                   return (
                     <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${!statusConfig ? getStatusColor(fullRequestData?.status) : ''}`}
-                      style={statusConfig ? { backgroundColor: statusConfig.color, color: '#000000' } : {}}
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusConfig
+                        ? getStatusColorClass(statusConfig.color)
+                        : getStatusColor(fullRequestData?.status)
+                        }`}
                     >
                       <Icon
                         name={statusConfig ? statusConfig.icon : getStatusIcon(fullRequestData?.status)}
                         size={14}
                         className="mr-2"
-                        style={statusConfig ? { color: '#000000' } : {}}
+                      // Icon inherits text color from parent class usually, but if parent has specific text color...
+                      // getStatusColorClass sets text color. New icons should just inherit or be currentColor.
                       />
                       {statusConfig ? statusConfig.label.toUpperCase() : fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
                     </span>
