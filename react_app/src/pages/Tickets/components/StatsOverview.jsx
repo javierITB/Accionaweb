@@ -80,8 +80,16 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, customCa
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <div className={`p-1.5 sm:p-2 rounded-lg ${stat?.bgColor}`}>
-                <Icon name={stat?.icon} size={16} className={`${stat?.color} sm:w-5 sm:h-5`} />
+              <div
+                className={`p-1.5 sm:p-2 rounded-lg ${!stat.iconColor ? stat?.bgColor : ''}`}
+                style={stat.iconColor ? { backgroundColor: stat.bgColor } : {}}
+              >
+                <Icon
+                  name={stat?.icon}
+                  size={16}
+                  className={`sm:w-5 sm:h-5 ${!stat.iconColor ? stat?.color : ''}`}
+                  style={stat.iconColor ? { color: stat.iconColor } : {}}
+                />
               </div>
               <div className={`text-xs font-medium ${stat?.changeType === 'positive' ? 'text-success' : 'text-error'
                 } whitespace-nowrap`}>

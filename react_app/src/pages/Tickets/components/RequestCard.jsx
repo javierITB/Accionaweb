@@ -2,14 +2,37 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestCard = ({ request, onRemove, onViewDetails }) => {
+const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
 
   useEffect(() => {
     setCurrentRequest(request);
   }, [request]);
 
+  /* Lógica para obtener configuración dinámica de estado */
+  const getDynamicStatusConfig = () => {
+    if (!ticketConfigs || ticketConfigs.length === 0) return null;
+
+    // 1. Obtener la categoría del ticket
+    const category = currentRequest?.categoryData || currentRequest?.responses?.['Categoría'] || 'General';
+
+    // 2. Buscar la configuración para esa categoría (o una por defecto)
+    const config = ticketConfigs.find(c => c.key === category) ||
+      ticketConfigs.find(c => c.key === 'domicilio_virtual'); // Fallback común
+
+    if (!config || !config.statuses) return null;
+
+    // 3. Buscar el estado específico
+    const statusDef = config.statuses.find(s => s.value === currentRequest?.status);
+    return statusDef;
+  };
+
+  const dynamicStatus = getDynamicStatusConfig();
+
+
+  // ... (maintain existing helper functions for fallback) ...
   const getStatusColor = (status) => {
+    // ... (existing logic) ...
     switch (status?.toLowerCase()) {
       case 'pending':
       case 'pendiente':
@@ -33,6 +56,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
   };
 
   const getStatusIcon = (status) => {
+    // ... (existing logic) ...
     switch (status?.toLowerCase()) {
       case 'approved':
       case 'aprobado':
@@ -57,6 +81,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
   };
 
   const formatStatusText = (status) => {
+    // ... (existing logic) ...
     const statusMap = {
       'approved': 'APROBADO',
       'aprobado': 'APROBADO',
@@ -73,6 +98,8 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
 
     return statusMap[status?.toLowerCase()] || status?.replace('_', ' ')?.toUpperCase() || 'DESCONOCIDO';
   };
+
+  // ... (keep other helpers) ...
 
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -146,7 +173,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
     if (subject) {
       return `${formTitle} - ${subject}`;
     }
-    
+
     return formTitle;
   };
 
@@ -196,7 +223,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
             </span>
           </div>
 
-          
+
 
           <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-3 sm:space-x-4 text-xs text-muted-foreground">
             <div className="flex items-center space-x-1">
@@ -217,9 +244,22 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-secondary rounded-full"></span>
             </div>
           )}
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(currentRequest?.status)} whitespace-nowrap`}>
-            <Icon name={getStatusIcon(currentRequest?.status)} size={10} className="mr-1 sm:w-3 sm:h-3" />
-            {formatStatusText(currentRequest?.status)}
+          <span
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${!dynamicStatus ? getStatusColor(currentRequest?.status) : ''
+              }`}
+            style={dynamicStatus ? {
+              backgroundColor: dynamicStatus.color + '20',
+              color: dynamicStatus.color
+            } : {}}
+          >
+            <Icon
+              name={dynamicStatus ? dynamicStatus.icon : getStatusIcon(currentRequest?.status)}
+              size={10}
+              className="mr-1 sm:w-3 sm:h-3"
+              // No need for style here if parent has color, typically inherits, but to be safe:
+              style={dynamicStatus ? { color: dynamicStatus.color } : {}}
+            />
+            {dynamicStatus ? dynamicStatus.label?.toUpperCase() : formatStatusText(currentRequest?.status)}
           </span>
         </div>
       </div>

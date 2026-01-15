@@ -9,7 +9,7 @@ import CleanDocumentPreview from './CleanDocumentPreview';
 const MAX_FILES = 5; // Máximo de archivos
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
 
-const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
+const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }) => {
   // --- ESTADOS DE UI ---
   const [activeTab, setActiveTab] = useState('details');
 
@@ -38,6 +38,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
 
   // Estado principal de datos
+  // IMPORTANTE: fullRequestData se usa en todo el componente
   const [fullRequestData, setFullRequestData] = useState({ ...request });
   const currentUser = sessionStorage.getItem("user");
 
@@ -88,8 +89,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     }
   };
 
-
-
   const getDocumentInfo = async (responseId) => {
     try {
       const response = await apiFetch(`${API_BASE_URL}/generador/info-by-response/${responseId}`);
@@ -104,8 +103,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
       return null;
     }
   };
-
-
 
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
@@ -254,6 +251,35 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
     };
   }, [previewDocument]);
 
+  // Función para obtener flujo de estados dinámico
+  const getDynamicStatusFlow = () => {
+    if (!ticketConfigs || ticketConfigs.length === 0) return ['pendiente', 'en_revision', 'finalizado', 'archivado'];
+
+    // Detectar categoría (similar a RequestCard)
+    // 1. Obtener la categoría del ticket
+    const category = fullRequestData?.category || fullRequestData?.categoryData || fullRequestData?.responses?.['Categoría'] || 'General';
+
+    // 2. Buscar la configuración para esa categoría
+    const config = ticketConfigs.find(c => c.key === category) ||
+      ticketConfigs.find(c => c.key === 'domicilio_virtual'); // Fallback común
+
+    if (config && config.statuses && config.statuses.length > 0) {
+      return config.statuses.map(s => s.value);
+    }
+
+    return ['pendiente', 'en_revision', 'finalizado', 'archivado'];
+  };
+
+  const getDynamicStatusConfig = (status) => {
+    if (!ticketConfigs) return null;
+    const category = fullRequestData?.category || fullRequestData?.categoryData || fullRequestData?.responses?.['Categoría'] || 'General';
+    const config = ticketConfigs.find(c => c.key === category) || ticketConfigs.find(c => c.key === 'domicilio_virtual');
+    if (!config) return null;
+    return config.statuses?.find(s => s.value === status);
+  }
+
+  // ... (existing effects)
+
   const handleStatusChange = async (newStatus) => {
     if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
 
@@ -285,13 +311,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
   };
 
   const getPreviousStatus = (currentStatus) => {
-    const statusFlow = ['pendiente', 'en_revision', 'finalizado', 'archivado'];
+    const statusFlow = getDynamicStatusFlow();
     const currentIndex = statusFlow.indexOf(currentStatus);
     return currentIndex > 0 ? statusFlow[currentIndex - 1] : null;
   };
 
   const getNextStatus = (currentStatus) => {
-    const statusFlow = ['pendiente', 'en_revision', 'finalizado', 'archivado'];
+    const statusFlow = getDynamicStatusFlow();
     const currentIndex = statusFlow.indexOf(currentStatus);
     return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
   };
@@ -977,10 +1003,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
               <div className="flex items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent" />
                 <div>
-                <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
                     {/* Priorizamos la Subcategoría de la base de datos */}
                     {fullRequestData?.responses?.['Subcategoría'] || fullRequestData?.formTitle || fullRequestData?.title}
-                    
+
                     {fullRequestData?.origin === 'domicilio_virtual' && fullRequestData?.relatedRequestId && (
                       <Link
                         to={`/DomicilioVirtual?id=${fullRequestData.relatedRequestId}`}
@@ -1005,10 +1031,24 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate }) => {
                   className="text-muted-foreground hover:text-foreground"
                 />
 
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fullRequestData?.status)}`}>
-                  <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
-                  {fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
-                </span>
+                {/* Dynamic Status Badge */}
+                {(() => {
+                  const statusConfig = getDynamicStatusConfig(fullRequestData?.status);
+                  return (
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${!statusConfig ? getStatusColor(fullRequestData?.status) : ''}`}
+                      style={statusConfig ? { backgroundColor: statusConfig.color + '20', color: statusConfig.color } : {}}
+                    >
+                      <Icon
+                        name={statusConfig ? statusConfig.icon : getStatusIcon(fullRequestData?.status)}
+                        size={14}
+                        className="mr-2"
+                        style={statusConfig ? { color: statusConfig.color } : {}}
+                      />
+                      {statusConfig ? statusConfig.label.toUpperCase() : fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
+                    </span>
+                  );
+                })()}
 
                 <Button
                   variant="ghost"

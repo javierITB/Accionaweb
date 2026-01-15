@@ -25,6 +25,7 @@ const RequestTracking = () => {
   const [showRequestDetails, setShowRequestDetails] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
   const [isLoading, setIsLoading] = useState(false);
+  const [ticketConfigs, setTicketConfigs] = useState([]);
 
   // --- NUEVOS ESTADOS DE PAGINACIÓN ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -115,13 +116,24 @@ const RequestTracking = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const resResp = await apiFetch(`${API_BASE_URL}/soporte/mini`);
+
+        const [resResp, resConfig] = await Promise.all([
+          apiFetch(`${API_BASE_URL}/soporte/mini`),
+          apiFetch(`${API_BASE_URL}/config-tickets`)
+        ]);
 
         if (!resResp.ok) {
           throw new Error('Error al obtener datos del servidor');
         }
 
         const responses = await resResp.json();
+
+        try {
+          if (resConfig.ok) {
+            const configs = await resConfig.json();
+            setTicketConfigs(configs);
+          }
+        } catch (e) { console.error("Error loading configs", e); }
 
         const normalized = responses.map(r => {
           // Extraemos Subcategoría y Categoría de responses para tickets de Sistema/Domicilio
@@ -133,7 +145,7 @@ const RequestTracking = () => {
             formId: r.formId,
             // Cambiado: Mostrar subcategoría como título si existe
             title: subcat || r.title || r.formTitle || "formulario",
-            categoryData: cat || "", // Guardamos categoría para el filtro
+            categoryData: cat || r.category || "", // Guardamos categoría para el filtro
             submittedAt: r.submittedAt || r.createdAt || null,
             createdAt: r.createdAt,
             reviewedAt: r.reviewedAt,
@@ -169,23 +181,7 @@ const RequestTracking = () => {
 
   }, []);
 
-  // --- NUEVO: Cargar configuración de tickets para estados dinámicos ---
-  const [ticketConfigs, setTicketConfigs] = useState([]);
 
-  useEffect(() => {
-    const fetchConfigs = async () => {
-      try {
-        const res = await apiFetch(`${API_BASE_URL}/config-tickets`);
-        if (res.ok) {
-          const data = await res.json();
-          setTicketConfigs(data);
-        }
-      } catch (err) {
-        console.error("Error fetching ticket configs:", err);
-      }
-    };
-    fetchConfigs();
-  }, []);
 
   // Calcular estadísticas dinámicas
   const dynamicStats = useMemo(() => {
@@ -584,11 +580,69 @@ const RequestTracking = () => {
 
           {/* STATS OVERVIEW (Ahora con filtros) */}
           <StatsOverview
-            customCards={orderedStatusCards}
             stats={dynamicStats}
             allForms={resp}
-            filters={filters} // Pasamos los filtros actuales
-            onFilterChange={handleStatusFilter} // Pasamos la función de cambio
+            filters={filters}
+            onFilterChange={handleStatusFilter}
+            customCards={(() => {
+              if (!ticketConfigs || ticketConfigs.length === 0) return null;
+
+              // 1. Collect all unique statuses from all configs
+              const aggregatedStatuses = {};
+              ticketConfigs.forEach(config => {
+                if (config.statuses) {
+                  config.statuses.forEach(statusDef => {
+                    if (!aggregatedStatuses[statusDef.value]) {
+                      aggregatedStatuses[statusDef.value] = { ...statusDef };
+                    }
+                  });
+                }
+              });
+
+              // 2. Define special sort order
+              const specialOrder = ['pendiente', 'en_revision', 'documento_generado', 'aprobado', 'firmado', 'enviado', 'finalizado', 'archivado'];
+              const statusKeys = Object.keys(aggregatedStatuses);
+
+              const sortedKeys = statusKeys.sort((a, b) => {
+                const indexA = specialOrder.indexOf(a);
+                const indexB = specialOrder.indexOf(b);
+                // If both are found in special list, sort by index
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                // If only A is found, A comes first (if we want explicit order to be first)
+                // Requirement: "Pendiente (inicio) y Archivado (final)"
+                // 'pendiente' is index 0. 'archivado' is last.
+
+                if (a === 'pendiente') return -1;
+                if (b === 'pendiente') return 1;
+                if (a === 'archivado') return 1;
+                if (b === 'archivado') return -1;
+
+                if (indexA !== -1) return -1; // A is special, put it earlier than unknown
+                if (indexB !== -1) return 1;  // B is special, put it earlier than unknown
+
+                return a.localeCompare(b);
+              });
+
+
+              return sortedKeys.map(key => {
+                const statusDef = aggregatedStatuses[key];
+                const count = dynamicStats[key] || 0;
+                const now = new Date();
+                const change = resp.filter(r => r.status === key && r.updatedAt && (now - new Date(r.updatedAt)) <= 86400000).length;
+
+                return {
+                  title: statusDef.label,
+                  value: count,
+                  icon: statusDef.icon,
+                  iconColor: statusDef.color,
+                  bgColor: statusDef.color + '20',
+                  borderColor: 'border-transparent',
+                  change: change,
+                  changeType: 'neutral',
+                  filterKey: key
+                };
+              });
+            })()}
           />
 
           {/* FILTER PANEL */}
@@ -618,6 +672,7 @@ const RequestTracking = () => {
                 <RequestCard
                   key={request?._id || request?.id}
                   request={request}
+                  ticketConfigs={ticketConfigs}
                   onRemove={handleRemove}
                   onViewDetails={handleViewDetails}
                   viewMode={viewMode}
@@ -632,51 +687,55 @@ const RequestTracking = () => {
                     Intenta ajustar los filtros o crear una nueva solicitud
                   </p>
                 </div>
-              ))}
+              )
+            )}
           </div>
 
           {/* CONTROL DE PAGINACIÓN INFERIOR (Opcional) */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-4 pt-4 pb-8">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={prevPage}
-                disabled={currentPage === 1}
-                iconName="ChevronLeft"
-                iconSize={16}
-              >
-                Anterior
-              </Button>
-              <span className="text-sm font-medium text-foreground">
-                Página {currentPage} de {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={nextPage}
-                disabled={currentPage === totalPages}
-                iconName="ChevronRight"
-                iconSize={16}
-                iconPosition="right"
-              >
-                Siguiente
-              </Button>
-            </div>
-          )}
+          {
+            totalPages > 1 && (
+              <div className="flex justify-center items-center space-x-4 pt-4 pb-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  iconName="ChevronLeft"
+                  iconSize={16}
+                >
+                  Anterior
+                </Button>
+                <span className="text-sm font-medium text-foreground">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages}
+                  iconName="ChevronRight"
+                  iconSize={16}
+                  iconPosition="right"
+                >
+                  Siguiente
+                </Button>
+              </div>
+            )
+          }
 
-        </div>
-      </main>
+        </div >
+      </main >
 
       {/* MODALES */}
       {/* MODALES */}
       <RequestDetails
         request={selectedRequest}
+        ticketConfigs={ticketConfigs}
         isVisible={showRequestDetails}
         onClose={handleCloseRequestDetails}
         onUpdate={updateRequest}
       />
-    </div>
+    </div >
   );
 };
 
