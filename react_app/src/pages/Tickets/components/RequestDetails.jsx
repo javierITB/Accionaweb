@@ -1037,13 +1037,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                   return (
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${!statusConfig ? getStatusColor(fullRequestData?.status) : ''}`}
-                      style={statusConfig ? { backgroundColor: statusConfig.color + '20', color: statusConfig.color } : {}}
+                      style={statusConfig ? { backgroundColor: statusConfig.color, color: '#000000' } : {}}
                     >
                       <Icon
                         name={statusConfig ? statusConfig.icon : getStatusIcon(fullRequestData?.status)}
                         size={14}
                         className="mr-2"
-                        style={statusConfig ? { color: statusConfig.color } : {}}
+                        style={statusConfig ? { color: '#000000' } : {}}
                       />
                       {statusConfig ? statusConfig.label.toUpperCase() : fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
                     </span>

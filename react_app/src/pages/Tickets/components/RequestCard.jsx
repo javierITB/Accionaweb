@@ -248,16 +248,15 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${!dynamicStatus ? getStatusColor(currentRequest?.status) : ''
               }`}
             style={dynamicStatus ? {
-              backgroundColor: dynamicStatus.color + '20',
-              color: dynamicStatus.color
+              backgroundColor: dynamicStatus.color,
+              color: '#000000'
             } : {}}
           >
             <Icon
               name={dynamicStatus ? dynamicStatus.icon : getStatusIcon(currentRequest?.status)}
               size={10}
               className="mr-1 sm:w-3 sm:h-3"
-              // No need for style here if parent has color, typically inherits, but to be safe:
-              style={dynamicStatus ? { color: dynamicStatus.color } : {}}
+              style={dynamicStatus ? { color: '#000000' } : {}}
             />
             {dynamicStatus ? dynamicStatus.label?.toUpperCase() : formatStatusText(currentRequest?.status)}
           </span>
@@ -320,7 +319,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
           </Button>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 
