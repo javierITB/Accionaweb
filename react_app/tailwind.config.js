@@ -1,3 +1,5 @@
+import colors from 'tailwindcss/colors';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -7,6 +9,18 @@ export default {
   theme: {
     extend: {
       colors: {
+        cyan: colors.cyan,
+        sky: colors.sky,
+        fuchsia: colors.fuchsia,
+        lime: colors.lime,
+        emerald: colors.emerald,
+        rose: colors.rose,
+        violet: colors.violet,
+        amber: colors.amber,
+        teal: colors.teal,
+        purple: colors.purple,
+        indigo: colors.indigo,
+
         background: "var(--color-background)",
         foreground: "var(--color-foreground)",
         border: "var(--color-border)",
@@ -59,7 +73,7 @@ export default {
     require("@tailwindcss/aspect-ratio"),
     require("@tailwindcss/container-queries"),
     require("@tailwindcss/line-clamp"),
-    
+
   ],
-  
+
 };
