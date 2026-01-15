@@ -822,7 +822,7 @@ router.post("/:id/regenerate-document", async (req, res) => {
                 form.section,
                 {
                     nombre: nombreUsuario,
-                    empresa: empresaUsuario,
+                    empresa: "Acciona Centro de Negocios Spa",
                     uid: uidUsuario,
                     mail: mailUsuario
                 },
