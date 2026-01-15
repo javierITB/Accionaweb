@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { apiFetch, API_BASE_URL } from '../../utils/api';
+import { getStatusColorClass, getColorPreviewClass, colorOptions } from '../../utils/ticketStatusStyles';
 
 const TicketConfig = () => {
     // Estado del Sidebar
@@ -266,71 +267,6 @@ const TicketConfig = () => {
         { value: 'Inbox', label: 'Bandeja' }
     ];
 
-    // Colores disponibles
-    const colorOptions = [
-        { value: 'slate', label: 'Pizarra' },
-        { value: 'gray', label: 'Gris' },
-        { value: 'zinc', label: 'Zinc' },
-        { value: 'neutral', label: 'Neutral' },
-        { value: 'stone', label: 'Piedra' },
-        { value: 'red', label: 'Rojo' },
-        { value: 'orange', label: 'Naranja' },
-        { value: 'amber', label: 'Ámbar' },
-        { value: 'yellow', label: 'Amarillo' },
-        { value: 'lime', label: 'Lima' },
-        { value: 'green', label: 'Verde' },
-        { value: 'emerald', label: 'Esmeralda' },
-        { value: 'teal', label: 'Verde Azulado' },
-        { value: 'cyan', label: 'Cian' },
-        { value: 'sky', label: 'Celeste' },
-        { value: 'blue', label: 'Azul' },
-        { value: 'indigo', label: 'Índigo' },
-        { value: 'violet', label: 'Violeta' },
-        { value: 'purple', label: 'Púrpura' },
-        { value: 'fuchsia', label: 'Fucsia' },
-        { value: 'pink', label: 'Rosa' },
-        { value: 'rose', label: 'Rosa Intenso' },
-    ];
-
-    const getStatusColorClass = (color) => {
-        const map = {
-            slate: 'bg-slate-600 text-black',
-            gray: 'bg-gray-600 text-black',
-            zinc: 'bg-zinc-600 text-black',
-            neutral: 'bg-neutral-600 text-black',
-            stone: 'bg-stone-600 text-black',
-            red: 'bg-red-600 text-black font-bold',
-            orange: 'bg-orange-600 text-black',
-            amber: 'bg-amber-600 text-black',
-            yellow: 'bg-yellow-600 text-black',
-            lime: 'bg-lime-600 text-black',
-            green: 'bg-green-600 text-black',
-            emerald: 'bg-emerald-600 text-black',
-            teal: 'bg-teal-600 text-black',
-            cyan: 'bg-cyan-600 text-black',
-            sky: 'bg-sky-600 text-black',
-            blue: 'bg-blue-600 text-black',
-            indigo: 'bg-indigo-600 text-black',
-            violet: 'bg-violet-600 text-black',
-            purple: 'bg-purple-600 text-black',
-            fuchsia: 'bg-fuchsia-600 text-black',
-            pink: 'bg-pink-600 text-black',
-            rose: 'bg-rose-600 text-black',
-        };
-        return map[color] || map['gray'];
-    };
-
-    // Helper para obtener el color vibrante (500) para el preview
-    const getPreviewColorClass = (color) => {
-        const map = {
-            slate: 'bg-slate-500', gray: 'bg-gray-500', zinc: 'bg-zinc-500', neutral: 'bg-neutral-500', stone: 'bg-stone-500',
-            red: 'bg-red-500', orange: 'bg-orange-500', amber: 'bg-amber-500', yellow: 'bg-yellow-500', lime: 'bg-lime-500',
-            green: 'bg-green-500', emerald: 'bg-emerald-500', teal: 'bg-teal-500', cyan: 'bg-cyan-500', sky: 'bg-sky-500',
-            blue: 'bg-blue-500', indigo: 'bg-indigo-500', violet: 'bg-violet-500', purple: 'bg-purple-500', fuchsia: 'bg-fuchsia-500',
-            pink: 'bg-pink-500', rose: 'bg-rose-500',
-        };
-        return map[color] || 'bg-gray-500';
-    };
 
     const handleCreateClick = () => {
         setStatusesToEdit([]);
@@ -429,17 +365,7 @@ const TicketConfig = () => {
                                                 const isFirst = idx === 0;
                                                 const isLast = idx === (cat.statuses.length - 1);
 
-                                                const colorMap = {
-                                                    slate: 'bg-slate-500', gray: 'bg-gray-500', zinc: 'bg-zinc-500',
-                                                    neutral: 'bg-neutral-500', stone: 'bg-stone-500', red: 'bg-red-500',
-                                                    orange: 'bg-orange-500', amber: 'bg-amber-500', yellow: 'bg-yellow-500',
-                                                    lime: 'bg-lime-500', green: 'bg-green-500', emerald: 'bg-emerald-500',
-                                                    teal: 'bg-teal-500', cyan: 'bg-cyan-500', sky: 'bg-sky-500',
-                                                    blue: 'bg-blue-500', indigo: 'bg-indigo-500', violet: 'bg-violet-500',
-                                                    purple: 'bg-purple-500', fuchsia: 'bg-fuchsia-500', pink: 'bg-pink-500',
-                                                    rose: 'bg-rose-500'
-                                                };
-                                                const bgClass = colorMap[st.color] || 'bg-gray-500';
+                                                const bgClass = getStatusColorClass(st.color);
 
                                                 return (
                                                     <div
@@ -447,7 +373,7 @@ const TicketConfig = () => {
                                                         className={`
                                                             relative flex flex-col items-center justify-center
                                                             h-16 min-w-[140px] px-6
-                                                            ${bgClass} text-white
+                                                            ${bgClass}
                                                             text-xs font-bold uppercase tracking-wider
                                                             snap-start flex-shrink-0 shadow-md transition-transform hover:scale-105
                                                         `}
@@ -718,7 +644,7 @@ const TicketConfig = () => {
                                                         }}
                                                     >
                                                         <div className="flex items-center gap-2">
-                                                            <div className={`w-4 h-4 rounded-full ${getPreviewColorClass(status.color)}`}></div>
+                                                            <div className={`w-4 h-4 rounded-full ${getColorPreviewClass(status.color)}`}></div>
                                                             <span className="truncate">{colorOptions.find(o => o.value === status.color)?.label || status.color}</span>
                                                         </div>
                                                         <Icon name="ChevronDown" size={14} className="opacity-50 shrink-0" />
@@ -746,7 +672,7 @@ const TicketConfig = () => {
                                                                                 setDropdownType(null);
                                                                             }}
                                                                         >
-                                                                            <div className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-white shadow-sm ${getPreviewColorClass(option.value)}`}>
+                                                                            <div className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-white shadow-sm ${getColorPreviewClass(option.value)}`}>
                                                                                 {status.icon ? <Icon name={status.icon} size={16} strokeWidth={3} /> : <span className="text-xs font-bold">Tx</span>}
                                                                             </div>
                                                                             <div className="flex-1">
