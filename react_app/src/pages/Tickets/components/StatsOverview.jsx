@@ -55,61 +55,63 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, customCa
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-      {cardsToRender?.map((stat, index) => {
-        const isActive = isStatusFilterActive(stat.filterKey);
+    <div className="w-full -mx-4 px-4">
+      <div className="flex overflow-x-auto py-4 px-4 gap-3 snap-x scroll-pl-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+        {cardsToRender?.map((stat, index) => {
+          const isActive = isStatusFilterActive(stat.filterKey);
 
-        return (
-          <div
-            key={index}
-            className={`bg-card border rounded-lg p-3 sm:p-4 cursor-pointer transition-all duration-300 select-none
+          return (
+            <div
+              key={index}
+              className={`flex-none w-[160px] sm:w-[180px] bg-card border rounded-lg p-3 cursor-pointer transition-all duration-300 select-none snap-start
               ${isActive
-                ? `${stat.borderColor} shadow-lg relative z-10 ring-1 ring-offset-0 ${stat.borderColor.replace('border', 'ring')}`
-                : 'border-border hover:shadow-md hover:border-muted-foreground/30'
-              }`}
-            // LÓGICA MODIFICADA AQUÍ:
-            onClick={() => {
-              if (isActive && stat.filterKey !== null) {
-                // Si ya está activa y no es la tarjeta "Total", enviamos null para limpiar
-                onFilterChange(null);
-              } else {
-                // Si no está activa, enviamos la clave correspondiente
-                onFilterChange(stat.filterKey);
-              }
-            }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <div
-                className={`p-1.5 sm:p-2 rounded-lg ${!stat.iconColor ? stat?.bgColor : ''}`}
-                style={stat.iconColor ? { backgroundColor: stat.bgColor } : {}}
-              >
-                <Icon
-                  name={stat?.icon}
-                  size={16}
-                  className={`sm:w-5 sm:h-5 ${!stat.iconColor ? stat?.color : ''}`}
-                  style={stat.iconColor ? { color: stat.iconColor } : {}}
-                />
+                  ? `${stat.borderColor} shadow-md relative z-10 ring-1 ring-offset-0 ${stat.borderColor.replace('border', 'ring')}`
+                  : 'border-border hover:shadow hover:border-muted-foreground/30'
+                }`}
+              // LÓGICA MODIFICADA AQUÍ:
+              onClick={() => {
+                if (isActive && stat.filterKey !== null) {
+                  // Si ya está activa y no es la tarjeta "Total", enviamos null para limpiar
+                  onFilterChange(null);
+                } else {
+                  // Si no está activa, enviamos la clave correspondiente
+                  onFilterChange(stat.filterKey);
+                }
+              }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-2">
+                <div
+                  className={`p-1.5 rounded-md ${!stat.iconColor ? stat?.bgColor : ''}`}
+                  style={stat.iconColor ? { backgroundColor: stat.bgColor } : {}}
+                >
+                  <Icon
+                    name={stat?.icon}
+                    size={16}
+                    className={`w-4 h-4 ${!stat.iconColor ? stat?.color : ''}`}
+                    style={stat.iconColor ? { color: stat.iconColor } : {}}
+                  />
+                </div>
+                <div className={`text-xs font-bold ${stat?.changeType === 'positive' ? 'text-success' : 'text-error'
+                  } whitespace-nowrap`}>
+                  {stat?.change > 0 && '+'}
+                  {stat?.change}
+                </div>
               </div>
-              <div className={`text-xs font-medium ${stat?.changeType === 'positive' ? 'text-success' : 'text-error'
-                } whitespace-nowrap`}>
-                {stat?.change > 0 && '+'}
-                {stat?.change}
-              </div>
-            </div>
 
-            {/* Content */}
-            <div>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground mb-1 leading-tight">
-                {stat?.value || 0}
-              </p>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-tight">
-                {stat?.title}
-              </p>
+              {/* Content */}
+              <div>
+                <p className="text-xl sm:text-2xl font-bold text-foreground mb-0.5 leading-tight">
+                  {stat?.value || 0}
+                </p>
+                <p className="text-xs text-muted-foreground leading-tight line-clamp-2 min-h-[2.5em] flex items-center">
+                  {stat?.title}
+                </p>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 };

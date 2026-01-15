@@ -9,7 +9,7 @@ const ShareModal = ({ isOpen, onClose, request }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const mail = sessionStorage.getItem("email");
+  const mailSesion = sessionStorage.getItem("email");
 
   useEffect(() => {
     if (isOpen) {
@@ -24,22 +24,21 @@ const ShareModal = ({ isOpen, onClose, request }) => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-
-      // Validamos que el mail exista antes de hacer la petición
-      if (!mail) {
+      if (!mailSesion) {
         console.error('No se encontró el email en la sesión');
         return;
       }
 
-      // Enviamos el mail como query parameter (?email=...)
-      const response = await apiFetch(`${API_BASE_URL}/auth/empresas/usuarios/${encodeURIComponent(mail)}`);
+      const response = await apiFetch(`${API_BASE_URL}/auth/empresas/usuarios/${mailSesion}`);
 
       if (response.ok) {
-        const data = await response.json();
+        const result = await response.json();
 
-        // El filtrado del usuario actual es opcional si el backend ya lo hace, 
-        // pero lo mantenemos por seguridad
-        const otherUsers = Array.isArray(data) ? data.filter(u => u.email !== mail) : [];
+        // AJUSTE: Accedemos a result.data que es donde viene el array ahora
+        const userData = result.data || [];
+        
+        // AJUSTE: Filtramos comparando con u.mail según tu nuevo formato de objeto
+        const otherUsers = userData.filter(u => u.mail !== mailSesion);
         setUsers(otherUsers);
       } else {
         console.error('Error en la respuesta del servidor');
@@ -74,7 +73,6 @@ const ShareModal = ({ isOpen, onClose, request }) => {
 
       if (response.ok) {
         onClose();
-        // Podrías agregar una notificación de éxito aquí
       } else {
         alert('Error al compartir la solicitud');
       }
@@ -88,7 +86,7 @@ const ShareModal = ({ isOpen, onClose, request }) => {
 
   const filteredUsers = users.filter(user =>
     user.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    user.mail?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (!isOpen) return null;
@@ -101,7 +99,7 @@ const ShareModal = ({ isOpen, onClose, request }) => {
         <div className="p-4 border-b border-border flex justify-between items-center">
           <div>
             <h3 className="text-lg font-semibold text-foreground">Compartir Solicitud</h3>
-            <p className="text-xs text-muted-foreground truncate max-w-[250px]">{request?.title}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[250px]">{request?.title || 'Sin título'}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} iconName="X" iconSize={20} />
         </div>
@@ -131,23 +129,25 @@ const ShareModal = ({ isOpen, onClose, request }) => {
             <div className="space-y-1">
               {filteredUsers.map((user) => (
                 <div
-                  key={user._id}
-                  onClick={() => handleToggleUser(user._id)}
-                  className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${selectedUsers.includes(user._id) ? 'bg-accent/10 border-accent/20 border' : 'hover:bg-muted/50 border border-transparent'
-                    }`}
+                  key={user.id} // AJUSTE: Ahora es 'id' según tu JSON
+                  onClick={() => handleToggleUser(user.id)}
+                  className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
+                    selectedUsers.includes(user.id) ? 'bg-accent/10 border-accent/20 border' : 'hover:bg-muted/50 border border-transparent'
+                  }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-xs">
-                      {user.nombre?.charAt(0).toUpperCase()}
+                    <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-xs uppercase">
+                      {user.nombre?.charAt(0)}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">{user.nombre}</p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                      <p className="text-sm font-medium text-foreground">{user.nombre} {user.apellido}</p>
+                      <p className="text-xs text-muted-foreground">{user.mail}</p>
                     </div>
                   </div>
-                  <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${selectedUsers.includes(user._id) ? 'bg-accent border-accent' : 'border-border'
-                    }`}>
-                    {selectedUsers.includes(user._id) && <Icon name="Check" size={14} className="text-white" />}
+                  <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${
+                    selectedUsers.includes(user.id) ? 'bg-accent border-accent' : 'border-border'
+                  }`}>
+                    {selectedUsers.includes(user.id) && <Icon name="Check" size={14} className="text-white" />}
                   </div>
                 </div>
               ))}
@@ -163,7 +163,7 @@ const ShareModal = ({ isOpen, onClose, request }) => {
         {/* Footer */}
         <div className="p-4 border-t border-border bg-card">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground font-medium">
               {selectedUsers.length} {selectedUsers.length === 1 ? 'seleccionado' : 'seleccionados'}
             </p>
             <div className="flex gap-2">
@@ -173,7 +173,6 @@ const ShareModal = ({ isOpen, onClose, request }) => {
                 onClick={handleShare}
                 disabled={selectedUsers.length === 0 || isSharing}
                 iconName={isSharing ? "Loader" : "Share2"}
-                className={isSharing ? "opacity-70" : ""}
               >
                 {isSharing ? 'Compartiendo...' : 'Compartir'}
               </Button>
