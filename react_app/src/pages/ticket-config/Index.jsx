@@ -690,7 +690,7 @@ const TicketConfig = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="w-full md:w-32">
+                                            <div className="w-full md:w-52">
                                                 <label className="text-xs font-medium mb-1 block">Color</label>
                                                 <div className="relative">
                                                     <button
@@ -710,7 +710,7 @@ const TicketConfig = () => {
                                                             setDropdownPos({
                                                                 top: placeTop ? rect.top - dropdownHeight - 5 : rect.bottom + 5,
                                                                 left: rect.left,
-                                                                width: rect.width,
+                                                                width: Math.max(rect.width, 260),
                                                                 placement: placeTop ? 'top' : 'bottom'
                                                             });
                                                             setOpenDropdownIndex(index);
@@ -746,7 +746,7 @@ const TicketConfig = () => {
                                                                                 setDropdownType(null);
                                                                             }}
                                                                         >
-                                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm ${getPreviewColorClass(option.value)}`}>
+                                                                            <div className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-white shadow-sm ${getPreviewColorClass(option.value)}`}>
                                                                                 {status.icon ? <Icon name={status.icon} size={16} strokeWidth={3} /> : <span className="text-xs font-bold">Tx</span>}
                                                                             </div>
                                                                             <div className="flex-1">
