@@ -428,7 +428,7 @@ router.post("/", async (req, res) => {
         // Anexo
         try {
             await generarAnexoDesdeRespuesta(responses, result.insertedId.toString(), req.db, form.section, {
-                nombre: null, empresa: null, uid: null,
+                nombre: null, empresa: "acciona", uid: null,
             }, formId, formTitle);
         } catch (error) {
             console.error("Error generando documento:", error.message);
