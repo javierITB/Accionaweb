@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 
-const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefresh }) => {
+const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, customCards }) => {
 
   // Función para determinar si una tarjeta está activa visualmente
   const isStatusFilterActive = (statusValue) => {
@@ -30,55 +30,33 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefres
   const last24hApprovedCount = calculate24hChange('approvedAt');
   const last24hFinalizedCount = calculate24hChange('finalizedAt');
 
-  // Configuración de tarjetas con sus claves de filtro y estilos
-  const statCards = [
-    {
-      title: 'Pendientes',
-      value: stats?.pending,
-      icon: 'Clock',
-      color: 'text-error',
-      bgColor: 'bg-error/10',
-      borderColor: 'border-error',
-      change: last24hPendingCount,
-      changeType: last24hPendingCount === 0 ? 'positive' : 'negative',
-      filterKey: 'pendiente'
-    },
-    {
-      title: 'En Revisión',
-      value: stats?.inReview,
-      icon: 'Eye',
-      color: 'text-secondary',
-      bgColor: 'bg-secondary/10',
-      borderColor: 'border-secondary',
-      change: last24hReviewCount,
-      changeType: last24hApprovedCount === 0 ? 'positive' : 'negative',
-      filterKey: 'en_revision'
-    },
-    {
-      title: 'Finalizados',
-      value: stats?.finalized,
-      icon: 'Timer',
-      color: 'text-accent',
-      bgColor: 'bg-accent/10',
-      borderColor: 'border-accent',
-      change: last24hFinalizedCount,
-      changeType: 'positive',
-      filterKey: 'finalizado'
-    },
-    {
-      title: 'Archivados',
-      value: stats?.archived,
-      icon: 'Folder',
-      color: 'text-card-foreground',
-      bgColor: 'bg-card/10',
-      borderColor: 'border-card',
-      filterKey: 'archivado'
-    }
-  ];
+
+
+  // Configuración de tarjetas
+  // Si nos pasan tarjetas personalizadas (dinámicas), las usamos.
+  // De lo contrario, usamos el default.
+  let cardsToRender = customCards;
+
+  if (!cardsToRender || cardsToRender.length === 0) {
+    cardsToRender = [
+      {
+        title: 'Pendientes',
+        value: stats?.pending,
+        icon: 'Clock',
+        color: 'text-error',
+        bgColor: 'bg-error/10',
+        borderColor: 'border-error',
+        change: last24hPendingCount,
+        changeType: last24hPendingCount === 0 ? 'positive' : 'negative',
+        filterKey: 'pendiente'
+      },
+      // ... (resto de defaults si se desea mantener fallback)
+    ];
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-      {statCards?.map((stat, index) => {
+      {cardsToRender?.map((stat, index) => {
         const isActive = isStatusFilterActive(stat.filterKey);
 
         return (

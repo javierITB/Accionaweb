@@ -169,15 +169,111 @@ const RequestTracking = () => {
 
   }, []);
 
-  const mockStats = {
-    total: resp?.length || 0,
-    pending: resp?.filter(r => r.status === 'pendiente')?.length || 0,
-    inReview: resp?.filter(r => r.status === 'en_revision')?.length || 0,
-    approved: resp?.filter(r => r.status === 'aprobado')?.length || 0,
-    rejected: resp?.filter(r => r.status === 'firmado')?.length || 0, // Ajustado 'rechazado' a 'firmado' según tu StatsOverview
-    finalized: resp?.filter(r => r.status === 'finalizado')?.length || 0,
-    archived: resp?.filter(r => r.status === 'archivado')?.length || 0,
-  };
+  // --- NUEVO: Cargar configuración de tickets para estados dinámicos ---
+  const [ticketConfigs, setTicketConfigs] = useState([]);
+
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      try {
+        const res = await apiFetch(`${API_BASE_URL}/config-tickets`);
+        if (res.ok) {
+          const data = await res.json();
+          setTicketConfigs(data);
+        }
+      } catch (err) {
+        console.error("Error fetching ticket configs:", err);
+      }
+    };
+    fetchConfigs();
+  }, []);
+
+  // Calcular estadísticas dinámicas
+  const dynamicStats = useMemo(() => {
+    // 1. Mapa base de contadores
+    const stats = { total: resp?.length || 0 };
+
+    // 2. Obtener todos los estados posibles de la configuración
+    const allStatuses = new Set();
+    ticketConfigs.forEach(cfg => {
+      cfg.statuses?.forEach(st => allStatuses.add(st.value));
+    });
+    // Asegurar que los básicos existan
+    allStatuses.add('pendiente');
+    allStatuses.add('archivado');
+
+    // 3. Inicializar contadores en 0
+    allStatuses.forEach(status => stats[status] = 0);
+
+    // 4. Contar tickets por estado
+    resp?.forEach(r => {
+      const st = r.status || 'pendiente';
+      if (stats[st] !== undefined) {
+        stats[st]++;
+      } else {
+        // Si el estado del ticket no está en config, lo agregamos (fallback)
+        stats[st] = (stats[st] || 0) + 1;
+      }
+    });
+
+    return stats;
+  }, [resp, ticketConfigs]);
+
+  // Construir la lista ordenada de tarjetas para StatsOverview
+  const orderedStatusCards = useMemo(() => {
+    const cards = [];
+    const usedStatuses = new Set();
+
+    // Helper para agregar tarjeta
+    const addCard = (value, label, icon, color, bgColor, borderColor) => {
+      if (usedStatuses.has(value)) return;
+      usedStatuses.add(value);
+      cards.push({
+        title: label,
+        value: dynamicStats[value] || 0,
+        icon: icon,
+        color: color,
+        bgColor: bgColor,
+        borderColor: borderColor,
+        filterKey: value
+      });
+    };
+
+    // 1. SIEMPRE PRIMERO: Pendiente (General request from user)
+    addCard('pendiente', 'Pendientes', 'Clock', 'text-warning', 'bg-warning/10', 'border-warning');
+
+    // 2. ESTADOS DINÁMICOS (Del medio)
+    // Recorremos las configs y sus estados.
+    // Para simplificar, agregamos todos los estados únicos encontrados en el orden que aparecen.
+    // Excluimos 'pendiente' y 'archivado' que tienen lugares fijos.
+    ticketConfigs.forEach(cfg => {
+      cfg.statuses?.forEach(st => {
+        if (st.value !== 'pendiente' && st.value !== 'archivado') {
+          // Mapear colores de config (nombre) a clases tailwind si es necesario
+          // O usar getStatusColorClass si tuvieramos acceso.
+          // Aquí usamos un mapa simple o valores por defecto.
+
+          // Mapa básico de colores a estilos de tarjeta
+          let colorClass = 'text-primary';
+          let bgClass = 'bg-primary/10';
+          let borderClass = 'border-primary';
+
+          if (st.color === 'green' || st.color === 'emerald') { colorClass = 'text-success'; bgClass = 'bg-success/10'; borderClass = 'border-success'; }
+          else if (st.color === 'blue' || st.color === 'sky') { colorClass = 'text-blue-500'; bgClass = 'bg-blue-500/10'; borderClass = 'border-blue-500'; }
+          else if (st.color === 'purple' || st.color === 'violet') { colorClass = 'text-purple-500'; bgClass = 'bg-purple-500/10'; borderClass = 'border-purple-500'; }
+          else if (st.color === 'red' || st.color === 'rose') { colorClass = 'text-error'; bgClass = 'bg-error/10'; borderClass = 'border-error'; }
+          else if (st.color === 'yellow' || st.color === 'amber') { colorClass = 'text-warning'; bgClass = 'bg-warning/10'; borderClass = 'border-warning'; }
+          else if (st.color === 'gray' || st.color === 'slate') { colorClass = 'text-muted-foreground'; bgClass = 'bg-muted'; borderClass = 'border-border'; }
+
+          addCard(st.value, st.label, st.icon || 'Circle', colorClass, bgClass, borderClass);
+        }
+      });
+    });
+
+    // 3. SIEMPRE ÚLTIMO: Archivados
+    addCard('archivado', 'Archivados', 'Archive', 'text-muted-foreground', 'bg-muted', 'border-border');
+
+    return cards;
+  }, [ticketConfigs, dynamicStats]);
 
   // --- NUEVA LÓGICA: Manejo de filtro desde las tarjetas de estadísticas ---
   const handleStatusFilter = (statusValue) => {
@@ -488,7 +584,8 @@ const RequestTracking = () => {
 
           {/* STATS OVERVIEW (Ahora con filtros) */}
           <StatsOverview
-            stats={mockStats}
+            customCards={orderedStatusCards}
+            stats={dynamicStats}
             allForms={resp}
             filters={filters} // Pasamos los filtros actuales
             onFilterChange={handleStatusFilter} // Pasamos la función de cambio

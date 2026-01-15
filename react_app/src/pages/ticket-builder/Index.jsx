@@ -70,7 +70,7 @@ const TicketBuilder = () => {
             uniqueUsersMap.set(key, {
               value: key,
               label: `${item.nombre} (${item.empresa || 'Sin empresa'})`,
-              nombre: item.nombre 
+              nombre: item.nombre
             });
           }
         });
@@ -220,9 +220,9 @@ const TicketBuilder = () => {
         }
 
         // --- CAMPOS PARA TU API ---
-        formData.append('formId', 'ticket_constructor'); 
-        formData.append('formTitle', 'Constructor de Tickets'); 
-        formData.append('mail', userEmail); 
+        formData.append('formId', 'ticket_constructor');
+        formData.append('formTitle', 'Constructor de Tickets');
+        formData.append('mail', userEmail);
 
         if (ticketData.assignedTo) {
           const assignedUser = users.find(u => u.value === ticketData.assignedTo);
@@ -253,6 +253,8 @@ const TicketBuilder = () => {
           Categoría: categoryLabel,
           Subcategoría: subcategoryLabel
         }));
+
+        formData.append('category', ticketData.category);
 
         if (ticketData.files && ticketData.files.length > 0) {
           ticketData.files.forEach((file) => {
