@@ -23,17 +23,9 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => { // Agregamos la p
       id: 3,
       title: 'Finiquitos',
       description: '',
-      icon: 'FileText',
+      icon: 'Clock',
       color: 'bg-orange-500',
       path: '/Finiquitos'
-    },
-    {
-      id: 4,
-      title: 'Otras',
-      description: '',
-      icon: 'FileText',
-      color: 'bg-purple-500',
-      path: '/otras'
     },
     {
       id: 5,
@@ -42,6 +34,22 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => { // Agregamos la p
       icon: 'FileText',
       color: 'bg-blue-500',
       path: '/forms?id=6902379d46e3a2e6e0d8a57f'
+    },
+    {
+      id: 4,
+      title: 'Otras',
+      description: '',
+      icon: 'Route',
+      color: 'bg-purple-500',
+      path: '/otras'
+    },
+    {
+      id: 6,
+      title: 'Ayuda y Soporte',
+      description: 'reporte de errores y consultas',
+      icon: 'Monitor',
+      color: 'bg-blue-500', 
+      path: '/soporte'
     }
   ];
 
