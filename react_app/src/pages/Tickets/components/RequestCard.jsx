@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import { getStatusColorClass } from '../../../utils/ticketStatusStyles';
+import { getStatusColorClass, findConfigForCategory, getStatusIcon, getDefaultStatusColor, formatStatusText } from '../../../utils/ticketStatusStyles';
 
 const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
@@ -16,10 +17,11 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
 
     // 1. Obtener la categoría del ticket
     const category = currentRequest?.categoryData || currentRequest?.responses?.['Categoría'] || 'General';
+    // console.log('DEBUG RequestCard:', { id: currentRequest?._id, category, status: currentRequest?.status, configs: ticketConfigs.map(c => c.key) });
 
     // 2. Buscar la configuración para esa categoría (o una por defecto)
-    const config = ticketConfigs.find(c => c.key === category) ||
-      ticketConfigs.find(c => c.key === 'domicilio_virtual'); // Fallback común
+    const config = findConfigForCategory(ticketConfigs, category) ||
+      ticketConfigs.find(c => c.key === 'domicilio_virtual'); // Fallback último recurso
 
     if (!config || !config.statuses) return null;
 
@@ -32,73 +34,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
 
 
   // ... (maintain existing helper functions for fallback) ...
-  const getStatusColor = (status) => {
-    // ... (existing logic) ...
-    switch (status?.toLowerCase()) {
-      case 'pending':
-      case 'pendiente':
-        return 'bg-error text-error-foreground';
-      case 'in_review':
-      case 'en_revision':
-        return 'bg-secondary text-secondary-foreground';
-      case 'approved':
-      case 'aprobado':
-        return 'bg-warning text-warning-foreground';
-      case 'signed':
-      case 'firmado':
-        return 'bg-success text-success-foreground';
-      case 'finalizado':
-        return 'bg-accent text-accent-foreground';
-      case 'archivado':
-        return 'bg-card bg-primary-foreground';
-      default:
-        return 'bg-muted text-muted-foreground';
-    }
-  };
 
-  const getStatusIcon = (status) => {
-    // ... (existing logic) ...
-    switch (status?.toLowerCase()) {
-      case 'approved':
-      case 'aprobado':
-        return 'CheckCircle';
-      case 'pending':
-      case 'pendiente':
-        return 'Clock';
-      case 'in_review':
-      case 'en_revision':
-        return 'Eye';
-      case 'rejected':
-      case 'rechazado':
-        return 'XCircle';
-      case 'borrador':
-        return 'FileText';
-      case 'signed':
-      case 'firmado':
-        return 'CheckSquare';
-      default:
-        return 'Circle';
-    }
-  };
-
-  const formatStatusText = (status) => {
-    // ... (existing logic) ...
-    const statusMap = {
-      'approved': 'APROBADO',
-      'aprobado': 'APROBADO',
-      'pending': 'PENDIENTE',
-      'pendiente': 'PENDIENTE',
-      'in_review': 'EN REVISIÓN',
-      'en_revision': 'EN REVISIÓN',
-      'rejected': 'RECHAZADO',
-      'rechazado': 'RECHAZADO',
-      'borrador': 'BORRADOR',
-      'signed': 'FIRMADO',
-      'firmado': 'FIRMADO'
-    };
-
-    return statusMap[status?.toLowerCase()] || status?.replace('_', ' ')?.toUpperCase() || 'DESCONOCIDO';
-  };
 
   // ... (keep other helpers) ...
 
@@ -140,22 +76,22 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
     } else if (diffSeconds < 60) {
       return 'hace un momento';
     } else if (diffMinutes < 60) {
-      return `hace ${diffMinutes} minuto${diffMinutes > 1 ? 's' : ''}`;
+      return `hace ${diffMinutes} minuto${diffMinutes > 1 ? 's' : ''} `;
     } else if (diffHours < 24) {
-      return `hace ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+      return `hace ${diffHours} hora${diffHours > 1 ? 's' : ''} `;
     } else if (diffDays === 1) {
       return 'hace 1 día';
     } else if (diffDays < 7) {
-      return `hace ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+      return `hace ${diffDays} día${diffDays > 1 ? 's' : ''} `;
     } else if (diffDays < 30) {
       const diffWeeks = Math.floor(diffDays / 7);
-      return `hace ${diffWeeks} semana${diffWeeks > 1 ? 's' : ''}`;
+      return `hace ${diffWeeks} semana${diffWeeks > 1 ? 's' : ''} `;
     } else if (diffDays < 365) {
       const diffMonths = Math.floor(diffDays / 30);
-      return `hace ${diffMonths} mes${diffMonths > 1 ? 'es' : ''}`;
+      return `hace ${diffMonths} mes${diffMonths > 1 ? 'es' : ''} `;
     } else {
       const diffYears = Math.floor(diffDays / 365);
-      return `hace ${diffYears} año${diffYears > 1 ? 's' : ''}`;
+      return `hace ${diffYears} año${diffYears > 1 ? 's' : ''} `;
     }
   };
 
@@ -167,12 +103,12 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
 
     // Si existe una subcategoría (casos Sistema o Domicilio Virtual), se usa como título principal
     if (subcategory) {
-      return subject ? `${subcategory} - ${subject}` : subcategory;
+      return subject ? `${subcategory} - ${subject} ` : subcategory;
     }
 
     // Fallback para otros formularios que no tienen el campo subcategoría definido en responses
     if (subject) {
-      return `${formTitle} - ${subject}`;
+      return `${formTitle} - ${subject} `;
     }
 
     return formTitle;
@@ -203,7 +139,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
         const companyName = currentRequest?.responses?.[companyKey];
         const rut = currentRequest?.responses?.[rutKey] || currentRequest?.rutEmpresa;
         if (companyName) {
-          return `${companyName}${rut ? ` (${rut})` : ''}`;
+          return `${companyName}${rut ? ` (${rut})` : ''} `;
         }
       }
     }
@@ -245,18 +181,19 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-secondary rounded-full"></span>
             </div>
           )}
+          {/* Status Badge */}
           <span
             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${dynamicStatus
-                ? getStatusColorClass(dynamicStatus.color)
-                : getStatusColor(currentRequest?.status)
-              }`}
+              ? getStatusColorClass(dynamicStatus.color)
+              : getDefaultStatusColor(currentRequest?.status)
+              } `}
           >
             <Icon
-              name={dynamicStatus ? dynamicStatus.icon : getStatusIcon(currentRequest?.status)}
-              size={10}
-              className="mr-1 sm:w-3 sm:h-3"
+              name={dynamicStatus?.icon || getStatusIcon(currentRequest?.status)}
+              size={12}
+              className="mr-1.5"
             />
-            {dynamicStatus ? dynamicStatus.label?.toUpperCase() : formatStatusText(currentRequest?.status)}
+            {formatStatusText(currentRequest?.status)}
           </span>
         </div>
       </div>
@@ -287,12 +224,12 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
           {/* Badge de Prioridad */}
           {/* Badge de Prioridad - Estilo Refinado */}
           {currentRequest?.priority && (
-            <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide mr-2 border ${currentRequest.priority === 'urgente' ? 'border-red-600 text-red-600 bg-red-50' :
+            <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide mr-2 border ${currentRequest.priority === 'critica' ? 'border-red-600 text-red-600 bg-red-50' :
               currentRequest.priority === 'alta' ? 'border-orange-500 text-orange-600 bg-orange-50' :
                 currentRequest.priority === 'media' ? 'border-amber-500 text-amber-600 bg-amber-50' :
                   currentRequest.priority === 'baja' ? 'border-emerald-500 text-emerald-600 bg-emerald-50' :
                     'border-slate-200 text-slate-500 bg-slate-50'
-              }`}>
+              } `}>
               {currentRequest.priority}
             </div>
           )}
