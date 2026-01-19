@@ -784,6 +784,7 @@ router.get("/mail/:mail", async (req, res) => {
   }
 });
 
+
 router.get("/mini", async (req, res) => {
   try {
     const auth = await verifyRequest(req);
