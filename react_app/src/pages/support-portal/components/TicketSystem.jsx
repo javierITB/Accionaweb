@@ -391,7 +391,7 @@ const TicketSystem = () => {
 
             <div className="flex justify-end space-x-3">
               <Button onClick={handleSubmitTicket}>
-                Crear Ticket
+                Publicar Ticket
               </Button>
             </div>
           </div>
