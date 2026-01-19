@@ -5,6 +5,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import ProfileSection from './components/ProfileSection';
 import SecuritySettings from './components/SecuritySettings';
+import BackButton from 'clientPages/components/BackButton';
 
 // Función para obtener el email de sesión
 const getSessionEmail = () => {
@@ -161,6 +162,10 @@ const UserProfileSettings = () => {
 
           {/* Page Header */}
           <div className="mb-6 lg:mb-8">
+            <div className="button-container pb-3 text-md">
+              <BackButton />
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
               <div className="min-w-0 flex-1">
                 {/* Cambiado text-foreground por text-slate-900 */}

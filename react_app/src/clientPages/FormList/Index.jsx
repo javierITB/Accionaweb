@@ -3,6 +3,7 @@ import Header from '../components/ui/Header';
 import QuickActionsCard from './components/QuickActionsCard';
 import Icon from '../components/AppIcon';
 import Button from '../components/ui/Button';
+import BackButton from 'clientPages/components/BackButton';
 
 const DashboardHome = ( {section} ) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -37,8 +38,14 @@ const DashboardHome = ( {section} ) => {
       {/* Main Content */}
       <main className={`transition-all duration-300 pt-16 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto">
+
+          
           {/* Main Dashboard Grid */}
-          <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full my-4">
+          <div className="grid grid-cols-1 gap-3 w-full mb-4">
+
+            <div className="button-container text-md">
+              <BackButton />
+            </div>
             {/* Left Column - Primary Actions */}
             <div className="xl:col-span-2 space-y-6 lg:space-y-12 w-full">
               {/* Quick Actions */}
