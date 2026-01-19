@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import LoadingCard from "../clientPages/components/LoadingCard.jsx";
 import Icon from "./AppIcon.jsx";
 
@@ -10,15 +10,29 @@ export default function AsyncActionDialog({
   loadingText = "Procesando...",
   successText = "Acción realizada correctamente",
   errorText = "Ocurrió un error",
+  initialPhase = "confirm", // confirm | loading | success | error
+  variant = "success", // success | error | info
   onConfirm,
   onClose,
 }) {
-  const [phase, setPhase] = useState("confirm"); 
-  // confirm | loading | success | error
+  const [phase, setPhase] = useState(initialPhase);
+
+  // 🔁 sincroniza la fase cada vez que se abre
+  useEffect(() => {
+    if (open) {
+      setPhase(initialPhase);
+    }
+  }, [open, initialPhase]);
 
   if (!open) return null;
 
   const handleConfirm = async () => {
+    // Dialogs informativos
+    if (!onConfirm) {
+      handleClose();
+      return;
+    }
+
     try {
       setPhase("loading");
       await onConfirm();
@@ -29,26 +43,65 @@ export default function AsyncActionDialog({
   };
 
   const handleClose = () => {
-    setPhase("confirm");
+    setPhase(initialPhase);
     onClose();
+  };
+
+  const renderIcon = () => {
+    if (phase === "success") {
+      if (variant === "info") {
+        return (
+          <Icon
+            name="AlertCircle"
+            size={48}
+            className="mx-auto mb-3 text-accent"
+          />
+        );
+      }
+
+      return (
+        <Icon
+          name="CheckCircle"
+          size={48}
+          className="mx-auto mb-3 text-success"
+        />
+      );
+    }
+
+    if (phase === "error") {
+      return (
+        <Icon
+          name="XCircle"
+          size={48}
+          className="mx-auto mb-3 text-destructive"
+        />
+      );
+    }
+
+    return null;
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-full max-w-sm">
 
+        {/* CONFIRM */}
         {phase === "confirm" && (
           <div className="bg-card rounded-lg border border-border shadow-subtle p-6 text-center">
             <p className="text-sm text-muted-foreground mb-6">
               {title}
             </p>
+
             <div className="flex justify-center gap-3">
-              <button
-                onClick={handleClose}
-                className="px-4 py-2 border rounded-md"
-              >
-                {cancelText}
-              </button>
+              {cancelText && (
+                <button
+                  onClick={handleClose}
+                  className="px-4 py-2 border rounded-md"
+                >
+                  {cancelText}
+                </button>
+              )}
+
               <button
                 onClick={handleConfirm}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
@@ -59,34 +112,27 @@ export default function AsyncActionDialog({
           </div>
         )}
 
+        {/* LOADING */}
         {phase === "loading" && (
           <LoadingCard text={loadingText} />
         )}
 
-        {phase === "success" && (
+        {/* RESULT (SUCCESS / INFO / ERROR) */}
+        {(phase === "success" || phase === "error") && (
           <div className="bg-card rounded-lg border border-border shadow-subtle p-6 text-center">
-            <Icon name="CheckCircle" size={36} className="mx-auto mb-3 text-success" />
-            <p className="text-sm text-muted-foreground mb-4">
-              {successText}
-            </p>
-            <button
-              onClick={handleClose}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
-            >
-              Cerrar
-            </button>
-          </div>
-        )}
+            {renderIcon()}
 
-        {phase === "error" && (
-          <div className="bg-card rounded-lg border border-border shadow-subtle p-6 text-center">
-            <Icon name="XCircle" size={36} className="mx-auto mb-3 text-destructive" />
             <p className="text-sm text-muted-foreground mb-4">
-              {errorText}
+              {phase === "error" ? errorText : successText}
             </p>
+
             <button
               onClick={handleClose}
-              className="px-4 py-2 border rounded-md"
+              className={`px-4 py-2 rounded-md ${
+                phase === "error"
+                  ? "border"
+                  : "bg-primary text-primary-foreground"
+              }`}
             >
               Cerrar
             </button>

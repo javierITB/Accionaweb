@@ -3,8 +3,8 @@ import Icon from "../../../components/AppIcon";
 import Button from "../../../components/ui/Button";
 import CleanDocumentPreview from "./CleanDocumentPreview";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
-import LoadingCard from "clientPages/components/LoadingCard";
 import AsyncActionDialog from "components/AsyncActionDialog";
+import useAsyncDialog from "hooks/useAsyncDialog";
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
@@ -61,8 +61,10 @@ const RequestDetails = ({
   const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [pendingStatus, setPendingStatus] = useState(null);
+  const [dialogConfig, setDialogConfig] = useState(null);
 
+
+const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsyncDialog();
 
   useEffect(() => {
     if (request) {
@@ -363,7 +365,8 @@ const RequestDetails = ({
 
   const handlePreviewDocument = (documentUrl, documentType) => {
     if (!documentUrl) {
-      alert("No hay documento disponible para vista previa");
+      // alert("No hay documento disponible para vista previa");
+      openInfoDialog("No hay documento disponible para vista previa")
       return;
     }
     setPreviewDocument({ url: documentUrl, type: documentType });
@@ -375,7 +378,8 @@ const RequestDetails = ({
       setIsLoadingPreviewGenerated(true);
       const info = documentInfo || (await getDocumentInfo(request._id));
       if (!info || !info.IDdoc) {
-        alert("No hay documento generado disponible para vista previa");
+        // alert("No hay documento generado disponible para vista previa");
+        openInfoDialog("No hay documento generado disponible para vista previa");
         return;
       }
       const documentUrl = `${API_BASE_URL}/generador/download/${info.IDdoc}`;
@@ -383,7 +387,8 @@ const RequestDetails = ({
       handlePreviewDocument(documentUrl, extension);
     } catch (error) {
       console.error("Error en vista previa:", error);
-      alert("Error: " + error.message);
+      // alert("Error: " + error.message);
+      openErrorDialog("Error en vista previa");
     } finally {
       setIsLoadingPreviewGenerated(false);
     }
@@ -393,7 +398,8 @@ const RequestDetails = ({
     const hasFiles = correctedFiles.length > 0 || approvedData || fullRequestData?.correctedFile;
 
     if (!hasFiles) {
-      alert("No hay documentos corregidos para vista previa");
+      // alert("No hay documentos corregidos para vista previa");
+      openInfoDialog("No hay documentos corregidos para vista previa");
       return;
     }
 
@@ -405,7 +411,8 @@ const RequestDetails = ({
 
       if (correctedFiles.length > 0) {
         if (index < 0 || index >= correctedFiles.length) {
-          alert("Índice de archivo inválido");
+          // alert("Índice de archivo inválido");
+          openErrorDialog("Índice de archivo inválido");
           return;
         }
         const file = correctedFiles[index];
@@ -414,17 +421,17 @@ const RequestDetails = ({
         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
       } else if (request?.correctedFile) {
-        alert("El documento corregido está en proceso de revisión.");
+        openInfoDialog("El documento corregido está en proceso de revisión.");
         return;
       } else {
-        alert("No hay documentos corregidos disponibles");
+        openInfoDialog("No hay documentos corregidos disponibles");
         return;
       }
 
       handlePreviewDocument(documentUrl, "pdf");
     } catch (error) {
       console.error("Error:", error);
-      alert("Error: " + error.message);
+      openErrorDialog("Error: " + error.message);
     } finally {
       setIsLoadingPreviewCorrected(false);
     }
@@ -432,7 +439,7 @@ const RequestDetails = ({
 
   const handlePreviewClientSignature = async () => {
     if (!clientSignature) {
-      alert("No hay documento firmado para vista previa");
+      openInfoDialog("No hay documento firmado para vista previa");
       return;
     }
     try {
@@ -441,8 +448,8 @@ const RequestDetails = ({
       const documentUrl = await downloadPdfForPreview(pdfUrl);
       handlePreviewDocument(documentUrl, "pdf");
     } catch (error) {
-      console.error("Error:", error);
-      alert("Error: " + error.message);
+      // console.error("Error:", error);
+      openErrorDialog("Error: " + error.message);
     } finally {
       setIsLoadingPreviewSignature(false);
     }
@@ -453,7 +460,8 @@ const RequestDetails = ({
       setIsLoadingPreviewAdjunto(true);
       const adjunto = fullRequestData.adjuntos[index];
       if (adjunto.mimeType !== "application/pdf") {
-        alert("Solo disponible para PDF");
+        // alert("Solo disponible para PDF");
+        openInfoDialog("Solo disponible para PDF");
         return;
       }
       const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`;
@@ -461,49 +469,53 @@ const RequestDetails = ({
       handlePreviewDocument(documentUrl, "pdf");
     } catch (error) {
       console.error("Error:", error);
-      alert("Error: " + error.message);
+      // alert("Error: " + error.message);
+      openErrorDialog("Error en vista previa");
     } finally {
       setIsLoadingPreviewAdjunto(false);
     }
   };
 
-  const handleRegenerateDocument = async () => {
-    if (!confirm("¿Estás seguro de regenerar el documento? Esto sobrescribirá el documento generado actual.")) return;
+const handleRegenerateDocument = async () => {
+  setIsRegenerating(true);
 
-    setIsRegenerating(true);
-    try {
-      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/regenerate-document`, {
-        method: "POST",
-      });
+  try {
+    const response = await apiFetch(
+      `${API_BASE_URL}/${endpointPrefix}/${request._id}/regenerate-document`,
+      { method: "POST" }
+    );
 
-      if (response.ok) {
-        const result = await response.json();
-        alert("Documento regenerado exitosamente");
-        await getDocumentInfo(request._id); // Recargar info del documento
-      } else {
-        const error = await response.json();
-        alert("Error regenerando documento: " + (error.error || "Desconocido"));
-      }
-    } catch (error) {
-      console.error("Error regenerando documento:", error);
-      alert("Error regenerando documento");
-    } finally {
-      setIsRegenerating(false);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "No se pudo regenerar el documento");
     }
-  };
+
+    await getDocumentInfo(request._id);
+
+    return true; 
+  } catch (error) {
+    console.error("Error regenerando documento:", error);
+    throw error;
+  } finally {
+    setIsRegenerating(false);
+  }
+};
+
 
   const handleDownload = async () => {
     try {
       setIsDownloading(true);
       const info = documentInfo || (await getDocumentInfo(request._id));
       if (!info || !info.IDdoc) {
-        alert("No hay documento disponible");
+        // alert("No hay documento disponible");
+        openInfoDialog("No hay documento disponible");
         return;
       }
       window.open(`${API_BASE_URL}/generador/download/${info.IDdoc}`, "_blank");
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al descargar");
+      // alert("Error al descargar");
+      openErrorDialog("Error al descargar");
     } finally {
       setIsDownloading(false);
     }
@@ -533,7 +545,8 @@ const RequestDetails = ({
       document.body.removeChild(a);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al descargar");
+      // alert("Error al descargar");
+      openErrorDialog("Error al descargar");
     } finally {
       setDownloadingAttachmentIndex(null);
     }
@@ -562,392 +575,393 @@ const RequestDetails = ({
       document.body.removeChild(a);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error descargando: " + (error.message || "Desconocido"));
+      // alert("Error descargando: " + (error.message || "Desconocido"));
+      openErrorDialog("Error al descargar");
     } finally {
       setIsDownloadingSignature(false);
     }
   };
 
-  const handleFileSelect = (event) => {
-    const files = Array.from(event.target.files);
-    const pdfFiles = files.filter((file) => file.type === "application/pdf");
+  // const handleFileSelect = (event) => {
+  //   const files = Array.from(event.target.files);
+  //   const pdfFiles = files.filter((file) => file.type === "application/pdf");
 
-    if (pdfFiles.length === 0) {
-      alert("Por favor, sube solo archivos PDF");
-      event.target.value = "";
-      return;
-    }
+  //   if (pdfFiles.length === 0) {
+  //     alert("Por favor, sube solo archivos PDF");
+  //     event.target.value = "";
+  //     return;
+  //   }
 
-    // Validar límite de cantidad de archivos
-    if (correctedFiles.length + pdfFiles.length > MAX_FILES) {
-      alert(
-        `Máximo ${MAX_FILES} archivos permitidos. Ya tienes ${correctedFiles.length} archivo(s) seleccionado(s).`
-      );
-      event.target.value = "";
-      return;
-    }
+  //   // Validar límite de cantidad de archivos
+  //   if (correctedFiles.length + pdfFiles.length > MAX_FILES) {
+  //     alert(
+  //       `Máximo ${MAX_FILES} archivos permitidos. Ya tienes ${correctedFiles.length} archivo(s) seleccionado(s).`
+  //     );
+  //     event.target.value = "";
+  //     return;
+  //   }
 
-    // Validar tamaño de cada archivo
-    const oversizedFiles = pdfFiles.filter((file) => file.size > MAX_FILE_SIZE);
-    if (oversizedFiles.length > 0) {
-      const oversizedNames = oversizedFiles.map((f) => f.name).join(", ");
-      alert(`Los siguientes archivos exceden el límite de 1MB: ${oversizedNames}`);
-      event.target.value = "";
-      return;
-    }
+  //   // Validar tamaño de cada archivo
+  //   const oversizedFiles = pdfFiles.filter((file) => file.size > MAX_FILE_SIZE);
+  //   if (oversizedFiles.length > 0) {
+  //     const oversizedNames = oversizedFiles.map((f) => f.name).join(", ");
+  //     alert(`Los siguientes archivos exceden el límite de 1MB: ${oversizedNames}`);
+  //     event.target.value = "";
+  //     return;
+  //   }
 
-    setCorrectedFiles((prev) => [...prev, ...pdfFiles]);
-    event.target.value = "";
-  };
+  //   setCorrectedFiles((prev) => [...prev, ...pdfFiles]);
+  //   event.target.value = "";
+  // };
 
-  const handleRemoveFile = (index) => {
-    setCorrectedFiles((prev) => prev.filter((_, i) => i !== index));
-  };
+  // const handleRemoveFile = (index) => {
+  //   setCorrectedFiles((prev) => prev.filter((_, i) => i !== index));
+  // };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
+  // const handleUploadClick = () => {
+  //   fileInputRef.current?.click();
+  // };
 
-  const handleRemoveCorrection = async () => {
-    if (correctedFiles.length > 0) {
-      if (!confirm("¿Eliminar todos los archivos seleccionados?")) return;
-      setCorrectedFiles([]);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
+  // const handleRemoveCorrection = async () => {
+  //   if (correctedFiles.length > 0) {
+  //     if (!confirm("¿Eliminar todos los archivos seleccionados?")) return;
+  //     setCorrectedFiles([]);
+  //     if (fileInputRef.current) fileInputRef.current.value = "";
+  //     return;
+  //   }
 
-    try {
-      const signatureCheck = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/has-client-signature`);
-      const signatureData = await signatureCheck.json();
-      const hasSignature = signatureData.exists;
-      let warningMessage = "¿Eliminar corrección y volver a revisión?";
-      if (hasSignature) warningMessage = "ADVERTENCIA: Existe documento firmado. ¿Continuar?";
-      if (!confirm(warningMessage)) return;
+  //   try {
+  //     const signatureCheck = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/has-client-signature`);
+  //     const signatureData = await signatureCheck.json();
+  //     const hasSignature = signatureData.exists;
+  //     let warningMessage = "¿Eliminar corrección y volver a revisión?";
+  //     if (hasSignature) warningMessage = "ADVERTENCIA: Existe documento firmado. ¿Continuar?";
+  //     if (!confirm(warningMessage)) return;
 
-      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/remove-correction`, {
-        method: "DELETE",
-      });
-      const result = await response.json();
-      if (response.ok) {
-        if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
-        setCorrectedFiles([]);
-        setApprovedData(null);
-        if (result.hasExistingSignature) alert("Corrección eliminada. Estado volverá a firmado al subir nueva.");
-        else alert("Corrección eliminada, vuelve a revisión.");
-      } else {
-        alert(result.error || "Error al eliminar");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Error al eliminar");
-    }
-  };
+  //     const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/remove-correction`, {
+  //       method: "DELETE",
+  //     });
+  //     const result = await response.json();
+  //     if (response.ok) {
+  //       if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
+  //       setCorrectedFiles([]);
+  //       setApprovedData(null);
+  //       if (result.hasExistingSignature) alert("Corrección eliminada. Estado volverá a firmado al subir nueva.");
+  //       else alert("Corrección eliminada, vuelve a revisión.");
+  //     } else {
+  //       alert(result.error || "Error al eliminar");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error:", error);
+  //     alert("Error al eliminar");
+  //   }
+  // };
 
   // Función para eliminar un archivo ya subido en el backend
-  const handleDeleteUploadedFile = async (fileName, index) => {
-    if (!confirm(`¿Estás seguro de eliminar el archivo "${fileName}"?`)) return;
+  // const handleDeleteUploadedFile = async (fileName, index) => {
+  //   if (!confirm(`¿Estás seguro de eliminar el archivo "${fileName}"?`)) return;
 
-    setIsDeletingFile(index);
-    try {
-      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/delete-corrected-file/${request._id}`, {
-        method: "DELETE",
-        body: JSON.stringify({ fileName }),
-      });
+  //   setIsDeletingFile(index);
+  //   try {
+  //     const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/delete-corrected-file/${request._id}`, {
+  //       method: "DELETE",
+  //       body: JSON.stringify({ fileName }),
+  //     });
 
-      if (response.ok) {
-        const result = await response.json();
-        alert(`Archivo "${fileName}" eliminado exitosamente`);
+  //     if (response.ok) {
+  //       const result = await response.json();
+  //       alert(`Archivo "${fileName}" eliminado exitosamente`);
 
-        // Refrescar los datos aprobados
-        await fetchApprovedData(request._id);
+  //       // Refrescar los datos aprobados
+  //       await fetchApprovedData(request._id);
 
-        // Si onUpdate está disponible, actualizar el request
-        if (onUpdate) {
-          const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
-          if (updatedResponse.ok) {
-            const updatedRequest = await updatedResponse.json();
-            const normalizedRequest = {
-              ...updatedRequest,
-              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
-              company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
-              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
-            };
-            onUpdate(normalizedRequest);
-          }
-        }
-      } else {
-        const errorData = await response.json();
-        alert(`Error eliminando archivo: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error("Error eliminando archivo:", error);
-      alert("Error eliminando archivo: " + error.message);
-    } finally {
-      setIsDeletingFile(null);
-    }
-  };
+  //       // Si onUpdate está disponible, actualizar el request
+  //       if (onUpdate) {
+  //         const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
+  //         if (updatedResponse.ok) {
+  //           const updatedRequest = await updatedResponse.json();
+  //           const normalizedRequest = {
+  //             ...updatedRequest,
+  //             submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
+  //             company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
+  //             submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
+  //           };
+  //           onUpdate(normalizedRequest);
+  //         }
+  //       }
+  //     } else {
+  //       const errorData = await response.json();
+  //       alert(`Error eliminando archivo: ${errorData.error}`);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error eliminando archivo:", error);
+  //     alert("Error eliminando archivo: " + error.message);
+  //   } finally {
+  //     setIsDeletingFile(null);
+  //   }
+  // };
 
   // Función para subir archivos uno por uno (igual que adjuntos)
-  const uploadFilesOneByOne = async () => {
-    if (correctedFiles.length === 0) {
-      alert("No hay archivos para subir");
-      return false;
-    }
+  // const uploadFilesOneByOne = async () => {
+  //   if (correctedFiles.length === 0) {
+  //     alert("No hay archivos para subir");
+  //     return false;
+  //   }
 
-    let successfulUploads = 0;
+  //   let successfulUploads = 0;
 
-    try {
-      for (let i = 0; i < correctedFiles.length; i++) {
-        const file = correctedFiles[i];
-        const formData = new FormData();
+  //   try {
+  //     for (let i = 0; i < correctedFiles.length; i++) {
+  //       const file = correctedFiles[i];
+  //       const formData = new FormData();
 
-        // Agregar el archivo individual
-        formData.append("files", file);
+  //       // Agregar el archivo individual
+  //       formData.append("files", file);
 
-        // Agregar metadata como en adjuntos
-        formData.append("responseId", request._id);
-        formData.append("index", i.toString());
-        formData.append("total", correctedFiles.length.toString());
+  //       // Agregar metadata como en adjuntos
+  //       formData.append("responseId", request._id);
+  //       formData.append("index", i.toString());
+  //       formData.append("total", correctedFiles.length.toString());
 
-        console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
+  //       console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
 
-        const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
-          method: "POST",
-          body: formData,
-        });
+  //       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
+  //         method: "POST",
+  //         body: formData,
+  //       });
 
-        if (response.ok) {
-          const result = await response.json();
-          console.log(`Archivo ${i + 1} subido:`, result);
-          successfulUploads++;
+  //       if (response.ok) {
+  //         const result = await response.json();
+  //         console.log(`Archivo ${i + 1} subido:`, result);
+  //         successfulUploads++;
 
-          // Actualizar progreso
-          setUploadedFilesCount(successfulUploads);
-          setUploadProgress(Math.round((successfulUploads / correctedFiles.length) * 100));
+  //         // Actualizar progreso
+  //         setUploadedFilesCount(successfulUploads);
+  //         setUploadProgress(Math.round((successfulUploads / correctedFiles.length) * 100));
 
-          // Pequeña pausa entre archivos
-          if (i < correctedFiles.length - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 300));
-          }
-        } else {
-          const error = await response.json();
-          console.error(`Error subiendo archivo ${i + 1}:`, error);
+  //         // Pequeña pausa entre archivos
+  //         if (i < correctedFiles.length - 1) {
+  //           await new Promise((resolve) => setTimeout(resolve, 300));
+  //         }
+  //       } else {
+  //         const error = await response.json();
+  //         console.error(`Error subiendo archivo ${i + 1}:`, error);
 
-          // Preguntar si quiere continuar
-          const shouldContinue = window.confirm(
-            `Error subiendo "${file.name}": ${error.error}\n\n¿Continuar con los demás archivos?`
-          );
+  //         // Preguntar si quiere continuar
+  //         const shouldContinue = window.confirm(
+  //           `Error subiendo "${file.name}": ${error.error}\n\n¿Continuar con los demás archivos?`
+  //         );
 
-          if (!shouldContinue) {
-            return false;
-          }
-        }
-      }
+  //         if (!shouldContinue) {
+  //           return false;
+  //         }
+  //       }
+  //     }
 
-      console.log(`Subida completada: ${successfulUploads}/${correctedFiles.length} archivos exitosos`);
-      return successfulUploads > 0; // Retorna true si al menos uno se subió
-    } catch (error) {
-      console.error("Error en proceso de subida:", error);
-      alert("Error subiendo archivos: " + error.message);
-      return false;
-    }
-  };
+  //     console.log(`Subida completada: ${successfulUploads}/${correctedFiles.length} archivos exitosos`);
+  //     return successfulUploads > 0; // Retorna true si al menos uno se subió
+  //   } catch (error) {
+  //     console.error("Error en proceso de subida:", error);
+  //     alert("Error subiendo archivos: " + error.message);
+  //     return false;
+  //   }
+  // };
 
-  const handleApprove = async () => {
-    // Validar que haya archivos
-    if (correctedFiles.length === 0) {
-      alert("Debe subir al menos un archivo PDF para aprobar");
-      return;
-    }
+  // const handleApprove = async () => {
+  //   // Validar que haya archivos
+  //   if (correctedFiles.length === 0) {
+  //     alert("Debe subir al menos un archivo PDF para aprobar");
+  //     return;
+  //   }
 
-    // Validar límite de archivos
-    if (correctedFiles.length > MAX_FILES) {
-      alert(`Máximo ${MAX_FILES} archivos permitidos. Tienes ${correctedFiles.length} archivos.`);
-      return;
-    }
+  //   // Validar límite de archivos
+  //   if (correctedFiles.length > MAX_FILES) {
+  //     alert(`Máximo ${MAX_FILES} archivos permitidos. Tienes ${correctedFiles.length} archivos.`);
+  //     return;
+  //   }
 
-    // Validar tamaño de cada archivo
-    const oversizedFiles = correctedFiles.filter((file) => file.size > MAX_FILE_SIZE);
-    if (oversizedFiles.length > 0) {
-      const oversizedNames = oversizedFiles.map((f) => f.name).join(", ");
-      alert(`No se puede aprobar. Los siguientes archivos exceden 1MB: ${oversizedNames}`);
-      return;
-    }
+  //   // Validar tamaño de cada archivo
+  //   const oversizedFiles = correctedFiles.filter((file) => file.size > MAX_FILE_SIZE);
+  //   if (oversizedFiles.length > 0) {
+  //     const oversizedNames = oversizedFiles.map((f) => f.name).join(", ");
+  //     alert(`No se puede aprobar. Los siguientes archivos exceden 1MB: ${oversizedNames}`);
+  //     return;
+  //   }
 
-    if (isApproving || request?.status === "aprobado" || request?.status === "firmado") {
-      return;
-    }
+  //   if (isApproving || request?.status === "aprobado" || request?.status === "firmado") {
+  //     return;
+  //   }
 
-    if (!confirm(`¿Subir ${correctedFiles.length} archivo(s) y aprobar formulario?`)) return;
+  //   if (!confirm(`¿Subir ${correctedFiles.length} archivo(s) y aprobar formulario?`)) return;
 
-    setIsApproving(true);
-    setIsUploading(true);
-    setUploadProgress(0);
-    setUploadedFilesCount(0);
+  //   setIsApproving(true);
+  //   setIsUploading(true);
+  //   setUploadProgress(0);
+  //   setUploadedFilesCount(0);
 
-    try {
-      // 1. SUBIR ARCHIVOS UNO POR UNO
-      const uploadSuccess = await uploadFilesOneByOne();
+  //   try {
+  //     // 1. SUBIR ARCHIVOS UNO POR UNO
+  //     const uploadSuccess = await uploadFilesOneByOne();
 
-      if (!uploadSuccess) {
-        alert("Error subiendo archivos. No se pudo aprobar.");
-        return;
-      }
+  //     if (!uploadSuccess) {
+  //       alert("Error subiendo archivos. No se pudo aprobar.");
+  //       return;
+  //     }
 
-      // 2. ESPERAR UN MOMENTO PARA ASEGURAR QUE LOS ARCHIVOS SE GUARDARON
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  //     // 2. ESPERAR UN MOMENTO PARA ASEGURAR QUE LOS ARCHIVOS SE GUARDARON
+  //     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // 3. APROBAR DESPUÉS DE SUBIR LOS ARCHIVOS
-      const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
-      });
+  //     // 3. APROBAR DESPUÉS DE SUBIR LOS ARCHIVOS
+  //     const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({}),
+  //     });
 
-      if (approveResponse.ok) {
-        const result = await approveResponse.json();
+  //     if (approveResponse.ok) {
+  //       const result = await approveResponse.json();
 
-        if (onUpdate) {
-          const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
-          if (updatedResponse.ok) {
-            const updatedRequest = await updatedResponse.json();
-            const normalizedRequest = {
-              ...updatedRequest,
-              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
-              company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
-              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
-            };
-            onUpdate(normalizedRequest);
-          }
-          fetchApprovedData(request._id);
-        }
+  //       if (onUpdate) {
+  //         const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
+  //         if (updatedResponse.ok) {
+  //           const updatedRequest = await updatedResponse.json();
+  //           const normalizedRequest = {
+  //             ...updatedRequest,
+  //             submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
+  //             company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
+  //             submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
+  //           };
+  //           onUpdate(normalizedRequest);
+  //         }
+  //         fetchApprovedData(request._id);
+  //       }
 
-        setCorrectedFiles([]);
-        setUploadProgress(100);
+  //       setCorrectedFiles([]);
+  //       setUploadProgress(100);
 
-        setTimeout(() => {
-          alert(`✅ Formulario aprobado exitosamente\n${correctedFiles.length} archivo(s) subido(s)`);
-        }, 500);
+  //       setTimeout(() => {
+  //         alert(`✅ Formulario aprobado exitosamente\n${correctedFiles.length} archivo(s) subido(s)`);
+  //       }, 500);
 
-      } else {
-        const errorData = await approveResponse.json();
+  //     } else {
+  //       const errorData = await approveResponse.json();
 
-        // Si el error es que no hay archivos, podría ser un delay en la BD
-        if (errorData.error && errorData.error.includes("No hay archivos corregidos")) {
-          const retry = window.confirm(
-            "El backend no encontró los archivos recién subidos.\n¿Reintentar aprobación en 3 segundos?"
-          );
+  //       // Si el error es que no hay archivos, podría ser un delay en la BD
+  //       if (errorData.error && errorData.error.includes("No hay archivos corregidos")) {
+  //         const retry = window.confirm(
+  //           "El backend no encontró los archivos recién subidos.\n¿Reintentar aprobación en 3 segundos?"
+  //         );
 
-          if (retry) {
-            await new Promise((resolve) => setTimeout(resolve, 3000));
+  //         if (retry) {
+  //           await new Promise((resolve) => setTimeout(resolve, 3000));
 
-            const retryResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({}),
-            });
+  //           const retryResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`, {
+  //             method: "POST",
+  //             headers: {
+  //               "Content-Type": "application/json",
+  //             },
+  //             body: JSON.stringify({}),
+  //           });
 
-            if (retryResponse.ok) {
-              // Éxito en el reintento
-              if (onUpdate) {
-                const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
-                if (updatedResponse.ok) {
-                  const updatedRequest = await updatedResponse.json();
-                  const normalizedRequest = {
-                    ...updatedRequest,
-                    submittedBy:
-                      updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
-                    company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
-                    submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
-                  };
-                  onUpdate(normalizedRequest);
-                }
-              }
-              alert("Aprobado en reintento");
-            } else {
-              alert("Error en reintento: " + (await retryResponse.json()).error);
-            }
-          }
-        } else {
-          alert(`Error aprobando: ${errorData.error}`);
-        }
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Error: " + error.message);
-    } finally {
-      setIsApproving(false);
-      setIsUploading(false);
-      setTimeout(() => {
-        setUploadProgress(0);
-        setUploadedFilesCount(0);
-      }, 2000);
-    }
-  };
+  //           if (retryResponse.ok) {
+  //             // Éxito en el reintento
+  //             if (onUpdate) {
+  //               const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
+  //               if (updatedResponse.ok) {
+  //                 const updatedRequest = await updatedResponse.json();
+  //                 const normalizedRequest = {
+  //                   ...updatedRequest,
+  //                   submittedBy:
+  //                     updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
+  //                   company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
+  //                   submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
+  //                 };
+  //                 onUpdate(normalizedRequest);
+  //               }
+  //             }
+  //             alert("Aprobado en reintento");
+  //           } else {
+  //             alert("Error en reintento: " + (await retryResponse.json()).error);
+  //           }
+  //         }
+  //       } else {
+  //         alert(`Error aprobando: ${errorData.error}`);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error:", error);
+  //     alert("Error: " + error.message);
+  //   } finally {
+  //     setIsApproving(false);
+  //     setIsUploading(false);
+  //     setTimeout(() => {
+  //       setUploadProgress(0);
+  //       setUploadedFilesCount(0);
+  //     }, 2000);
+  //   }
+  // };
 
-  const handleApprovewithoutFile = async () => {
-    if (isApproving || request?.status === "finalizado") return;
-    if (!confirm("¿Estás seguro de que quieres finalizar este trabajo?")) return;
-    setIsApproving(true);
-    try {
-      const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/finalized`);
-      if (approveResponse.ok) {
-        if (onUpdate) {
-          const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
-          if (updatedResponse.ok) {
-            const updatedRequest = await updatedResponse.json();
-            const normalizedRequest = {
-              ...updatedRequest,
-              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
-              company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
-              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
-            };
-            onUpdate(normalizedRequest);
-          }
-        }
-        alert("Finalizado correctamente");
-      } else {
-        const errorData = await approveResponse.json();
-        alert(`Error: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Error: " + error.message);
-    } finally {
-      setIsApproving(false);
-    }
-  };
+  // const handleApprovewithoutFile = async () => {
+  //   if (isApproving || request?.status === "finalizado") return;
+  //   if (!confirm("¿Estás seguro de que quieres finalizar este trabajo?")) return;
+  //   setIsApproving(true);
+  //   try {
+  //     const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/finalized`);
+  //     if (approveResponse.ok) {
+  //       if (onUpdate) {
+  //         const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
+  //         if (updatedResponse.ok) {
+  //           const updatedRequest = await updatedResponse.json();
+  //           const normalizedRequest = {
+  //             ...updatedRequest,
+  //             submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
+  //             company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
+  //             submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
+  //           };
+  //           onUpdate(normalizedRequest);
+  //         }
+  //       }
+  //       alert("Finalizado correctamente");
+  //     } else {
+  //       const errorData = await approveResponse.json();
+  //       alert(`Error: ${errorData.error}`);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error:", error);
+  //     alert("Error: " + error.message);
+  //   } finally {
+  //     setIsApproving(false);
+  //   }
+  // };
 
-  const handleArchieve = async () => {
-    if (isApproving) return;
-    if (!confirm("¿Estás seguro de que quieres archivar este trabajo?")) return;
-    setIsApproving(true);
-    try {
-      const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/archived`);
-      if (approveResponse.ok) {
-        if (onUpdate) {
-          const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
-          if (updatedResponse.ok) {
-            const updatedRequest = await updatedResponse.json();
-            onUpdate(updatedRequest);
-          }
-        }
-        alert("Archivado correctamente");
-      } else {
-        const errorData = await approveResponse.json();
-        alert(`Error: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Error: " + error.message);
-    } finally {
-      setIsApproving(false);
-    }
-  };
+  // const handleArchieve = async () => {
+  //   if (isApproving) return;
+  //   if (!confirm("¿Estás seguro de que quieres archivar este trabajo?")) return;
+  //   setIsApproving(true);
+  //   try {
+  //     const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/archived`);
+  //     if (approveResponse.ok) {
+  //       if (onUpdate) {
+  //         const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
+  //         if (updatedResponse.ok) {
+  //           const updatedRequest = await updatedResponse.json();
+  //           onUpdate(updatedRequest);
+  //         }
+  //       }
+  //       alert("Archivado correctamente");
+  //     } else {
+  //       const errorData = await approveResponse.json();
+  //       alert(`Error: ${errorData.error}`);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error:", error);
+  //     alert("Error: " + error.message);
+  //   } finally {
+  //     setIsApproving(false);
+  //   }
+  // };
 
   const getRealAttachments = () => {
 
@@ -1090,6 +1104,10 @@ const RequestDetails = ({
     return "File";
   };
 
+  const handleDeleteClientSignature = async () => {
+    alert("DO SOMETHING");
+  }
+
   const canPreviewAdjunto = (mimeType) => mimeType === "application/pdf";
 
   const realAttachments = getRealAttachments();
@@ -1199,7 +1217,15 @@ const RequestDetails = ({
               variant="ghost"
               size="icon"
               className="h-6 w-6 ml-2 text-muted-foreground hover:text-accent"
-              onClick={handleRegenerateDocument}
+              onClick={() => {
+                openAsyncDialog({
+                  title: "¿Está seguro de que desea regenerar el documento?",
+                  loadingText: "Regenerando documento...",
+                  successText: "Documento regenerado con exito!",
+                  errorText: "Error al regenerar documento!",
+                  onConfirm: handleRegenerateDocument
+                })
+              }}
               disabled={isRegenerating}
               title="Regenerar Documento"
             >
@@ -1328,46 +1354,46 @@ const RequestDetails = ({
     </div>
   );
 
-  const handleUploadFiles = async () => {
-    if (correctedFiles.length === 0) {
-      alert("No hay archivos para subir");
-      return;
-    }
+  // const handleUploadFiles = async () => {
+  //   if (correctedFiles.length === 0) {
+  //     alert("No hay archivos para subir");
+  //     return;
+  //   }
 
-    try {
-      const formData = new FormData();
+  //   try {
+  //     const formData = new FormData();
 
-      // Agregar cada archivo
-      correctedFiles.forEach((file) => {
-        formData.append("files", file);
-      });
+  //     // Agregar cada archivo
+  //     correctedFiles.forEach((file) => {
+  //       formData.append("files", file);
+  //     });
 
-      // Agregar responseId
-      formData.append("responseId", request._id);
+  //     // Agregar responseId
+  //     formData.append("responseId", request._id);
 
-      // Obtener token si es necesario (ajusta según tu auth)
-      // Usar apiFetch para upload (automáticamente maneja headers y formData)
-      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
-        method: "POST",
-        body: formData,
-      });
+  //     // Obtener token si es necesario (ajusta según tu auth)
+  //     // Usar apiFetch para upload (automáticamente maneja headers y formData)
+  //     const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
+  //       method: "POST",
+  //       body: formData,
+  //     });
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Archivos subidos exitosamente:", result);
-        alert(`${correctedFiles.length} archivo(s) subido(s) exitosamente`);
-        return true;
-      } else {
-        const error = await response.json();
-        alert(`Error subiendo archivos: ${error.error}`);
-        return false;
-      }
-    } catch (error) {
-      console.error("Error subiendo archivos:", error);
-      alert("Error subiendo archivos: " + error.message);
-      return false;
-    }
-  };
+  //     if (response.ok) {
+  //       const result = await response.json();
+  //       console.log("Archivos subidos exitosamente:", result);
+  //       alert(`${correctedFiles.length} archivo(s) subido(s) exitosamente`);
+  //       return true;
+  //     } else {
+  //       const error = await response.json();
+  //       alert(`Error subiendo archivos: ${error.error}`);
+  //       return false;
+  //     }
+  //   } catch (error) {
+  //     console.error("Error subiendo archivos:", error);
+  //     alert("Error subiendo archivos: " + error.message);
+  //     return false;
+  //   }
+  // };
 
   const renderResponsesTab = () => {
     const responses = fullRequestData?.responses || {};
@@ -1517,8 +1543,15 @@ const RequestDetails = ({
                     <select
                       value={fullRequestData?.status || ""}
                       onChange={(e) => {
-                        setPendingStatus(e.target.value);
-                        setDialogOpen(true);
+                        const newStatus = e.target.value;
+
+                        openAsyncDialog({
+                          title: `¿Está seguro de que quiere cambiar el estado a "${newStatus}"?`,
+                          loadingText: `Cambiando estado a "${newStatus}"...`,
+                          successText: "Estado cambiado correctamente",
+                          errorText: "No se pudo cambiar el estado",
+                          onConfirm: () => handleStatusChange(newStatus),
+                        });
                       }}
                       className="h-9 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent w-2/5"
                     >
@@ -1568,14 +1601,25 @@ const RequestDetails = ({
         }}
       />
 
-      <AsyncActionDialog
+      {/* <AsyncActionDialog
         open={dialogOpen}
         title={`¿Está seguro de que quiere cambiar el estado a "${pendingStatus}"?`}
         loadingText={`Cambiando estado a "${pendingStatus}"...`}
         successText="Estado cambiado correctamente"
         onConfirm={() => handleStatusChange(pendingStatus)}
         onClose={() => setDialogOpen(false)}
-      />
+      /> */}
+
+      {/* <AsyncActionDialog
+  open={dialogOpen}
+  {...dialogConfig}
+  onClose={() => {
+    setDialogOpen(false);
+    setDialogConfig(null);
+  }}
+/> */}
+
+<AsyncActionDialog {...dialogProps} />
     </div>
   );
 };
