@@ -116,7 +116,16 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          ${className} flex flex-col`}>
 
          <div className="flex flex-col h-full">
-            <nav className={`flex-1 ${isMobileOpen ? "mt-16" : "mt-4"} p-3 space-y-1 overflow-y-auto overflow-x-hidden`}>
+            {isMobileOpen && (
+               <div className="flex items-center justify-between p-4 border-b border-border">
+                  <span className="font-bold text-lg">Menú</span>
+                  <button onClick={onToggleCollapse} className="p-2 hover:bg-muted rounded-md">
+                     <Icon name="X" size={24} />
+                  </button>
+               </div>
+            )}
+
+            <nav className={`flex-1 ${isMobileOpen ? "mt-2" : "mt-4"} p-3 space-y-1 overflow-y-auto overflow-x-hidden`}>
                {MENU_STRUCTURE.map((item) => {
                   // Validar si el usuario tiene permiso para ver el ítem principal o acordeón
                   if (!hasPermission(item.roles)) return null;
