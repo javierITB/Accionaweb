@@ -177,10 +177,17 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
             <h3 className={`font-semibold text-foreground ${viewMode === 'grid' ? 'text-sm line-clamp-2' : 'text-lg'}`}>
               {getCombinedTitle()}
             </h3>
-            {/* ETIQUETA SOLICITUD COMPARTIDA */}
+            {/* ETIQUETA SOLICITUD COMPARTIDA (Recibida) */}
             {currentRequest?.isShared && (
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap">
                 Solicitud Compartida
+              </span>
+            )}
+
+            {/* ETIQUETA HAS COMPARTIDO (Enviada por ti) */}
+            {currentRequest?.metadata?.esPropia && currentRequest?.user?.compartidos?.length > 0 && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap">
+                Has compartido la solicitud
               </span>
             )}
           </div>
