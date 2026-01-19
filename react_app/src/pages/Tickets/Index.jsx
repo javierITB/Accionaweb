@@ -110,19 +110,29 @@ const RequestTracking = () => {
 
       // Preparar Query Params
       const activeFilters = overrideFilters || appliedFilters;
-      const params = new URLSearchParams({
+
+      // Determine if any filter is active
+      const hasActiveFilters = [
+        'search', 'status', 'category', 'company', 'submittedBy', 'startDate', 'endDate'
+      ].some(key => activeFilters[key] && activeFilters[key].trim() !== '');
+
+      let endpoint = '';
+      let params = new URLSearchParams({
         page: page,
-        limit: requestsPerPage,
-        search: activeFilters.search || '',
-        status: activeFilters.status || '',
-        category: activeFilters.category || '', // Backend handles ID resolution robustly
-        company: activeFilters.company || '',
-        submittedBy: activeFilters.submittedBy || '',
-        startDate: activeFilters.startDate || '',
-        endDate: activeFilters.endDate || ''
+        limit: requestsPerPage
       });
 
-      const res = await apiFetch(`${API_BASE_URL}/soporte/filtros?${params.toString()}`);
+      if (hasActiveFilters) {
+        endpoint = `${API_BASE_URL}/soporte/filtros`;
+        // Append filter params
+        Object.keys(activeFilters).forEach(key => {
+          if (activeFilters[key]) params.append(key, activeFilters[key]);
+        });
+      } else {
+        endpoint = `${API_BASE_URL}/soporte/mini`;
+      }
+
+      const res = await apiFetch(`${endpoint}?${params.toString()}`);
       if (!res.ok) throw new Error('Error al obtener tickets');
 
       const result = await res.json();
@@ -299,7 +309,10 @@ const RequestTracking = () => {
     return sortedKeys.map(key => {
       const statusDef = aggregatedStatuses[key];
 
-      const count = resp.filter(r => (r.status || 'pendiente') === key).length;
+      const lookupKey = key.toLowerCase();
+      const count = (serverStats && serverStats[lookupKey] !== undefined)
+        ? serverStats[lookupKey]
+        : resp.filter(r => (r.status || 'pendiente') === key).length;
 
       return {
         title: statusDef.label,
@@ -385,7 +398,7 @@ const RequestTracking = () => {
           </div>
 
           <StatsOverview
-            stats={null}
+            stats={serverStats}
             allForms={resp}
             filters={appliedFilters} // Use active filters for highlighting
             onFilterChange={handleStatusFilter}
