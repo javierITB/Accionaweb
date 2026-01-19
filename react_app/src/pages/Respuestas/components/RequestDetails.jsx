@@ -18,7 +18,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   const [isApproving, setIsApproving] = useState(false);
   const fileInputRef = useRef(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
-  const [isDownloadingCorrected, setIsDownloadingCorrected] = useState(false);
+  const [downloadingCorrectedIndex, setDownloadingCorrectedIndex] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
 
@@ -1281,13 +1281,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
                     <Button
                       variant="outline"
                       size="sm"
-                      iconName={isDownloadingCorrected ? "Loader" : "Download"}
+                      iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
                       iconPosition="left"
                       iconSize={16}
                       onClick={() => handleDownloadCorrected(index)}
-                      disabled={isDownloadingCorrected}
+                      disabled={downloadingCorrectedIndex === index}
                     >
-                      {isDownloadingCorrected ? "Descargando..." : "Descargar"}
+                      {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
                     </Button>
                     <Button
                       variant="ghost"
@@ -1540,7 +1540,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
   const handleDownloadCorrected = async (index = 0) => {
     try {
-      setIsDownloadingCorrected(true);
+      setDownloadingCorrectedIndex(index);
 
       let url;
       let filename;
@@ -1596,7 +1596,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
       // Usar alert o el dialogo de error si está disponible
       alert("Error al descargar archivo");
     } finally {
-      setIsDownloadingCorrected(false);
+      setDownloadingCorrectedIndex(null);
     }
   };
 
@@ -1693,13 +1693,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
                     <Button
                       variant="outline"
                       size="sm"
-                      iconName={isDownloadingCorrected ? "Loader" : "Download"}
+                      iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
                       iconPosition="left"
                       iconSize={16}
                       onClick={() => handleDownloadCorrected(index)}
-                      disabled={isDownloadingCorrected}
+                      disabled={downloadingCorrectedIndex === index}
                     >
-                      {isDownloadingCorrected ? "Descargando..." : "Descargar"}
+                      {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
                     </Button>
                     <Button
                       variant="ghost"
