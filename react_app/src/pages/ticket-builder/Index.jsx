@@ -89,28 +89,47 @@ const TicketBuilder = () => {
   const MAX_FILES = 5;
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-  // Categorías
-  const categories = [
-    { value: 'sistema', label: 'Sistema' },
-    { value: 'domicilio_virtual', label: 'Domicilio Virtual' }
-  ];
+  const [ticketConfigs, setTicketConfigs] = useState([]);
 
-  // Mapeo de subcategorías
-  const subcategoriesMap = {
-    sistema: [
-      { value: 'error_acceso', label: 'Error de Inicio de Sesión' },
-      { value: 'error_visualizacion', label: 'Problema de Visualización' },
-      { value: 'error_guardado', label: 'Error al Guardar Datos' },
-      { value: 'lentitud', label: 'Lentitud del Sistema' },
-      { value: 'funcionalidad_rota', label: 'Funcionalidad No Responde' },
-      { value: 'otro', label: 'Otro' }
-    ],
-    domicilio_virtual: [
-      { value: 'anual', label: 'Domicilio Virtual Anual' },
-      { value: 'semestral', label: 'Domicilio Virtual Semestral' },
-      { value: 'constitucion', label: 'Constitucion De Empresa' }
-    ]
+  useEffect(() => {
+    fetchTicketConfigs();
+  }, []);
+
+  const fetchTicketConfigs = async () => {
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/config-tickets`);
+      if (res.ok) {
+        const data = await res.json();
+        setTicketConfigs(data);
+      }
+    } catch (error) {
+      console.error("Error fetching ticket configs:", error);
+    }
   };
+
+  const categories = React.useMemo(() => {
+    return ticketConfigs.map(config => ({
+      value: config.key,
+      label: config.name
+    }));
+  }, [ticketConfigs]);
+
+  // 3. Derive Subcategories Map
+  const subcategoriesMap = React.useMemo(() => {
+    const map = {};
+    ticketConfigs.forEach(config => {
+      const catKey = config.key;
+      if (config.subcategories && Array.isArray(config.subcategories)) {
+        map[catKey] = config.subcategories.map(sub => ({
+          value: sub.value || sub.id || sub.key,
+          label: sub.label || sub.name || sub.title
+        }));
+      } else {
+        map[catKey] = [];
+      }
+    });
+    return map;
+  }, [ticketConfigs]);
 
   const priorities = [
     { value: 'Baja', label: 'Baja' },
@@ -471,7 +490,7 @@ const TicketBuilder = () => {
                 iconName="Send"
                 iconPosition="right"
               >
-                Crear Ticket
+                Publicar Ticket
               </Button>
             </div>
           </div>
