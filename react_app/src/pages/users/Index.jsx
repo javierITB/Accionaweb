@@ -266,7 +266,7 @@ const cargos = [
           cargos={cargos}
           roles={roles}
           onUpdateFormData={(f, v) => setFormData(p => ({ ...p, [f]: v }))}
-          onRegister={async () => { /* lógica handleSave */ }}
+          onRegister={handleSave}
           isLoading={isLoading}
           isEditing={!!editingUser}
           onCancelEdit={clearForm}

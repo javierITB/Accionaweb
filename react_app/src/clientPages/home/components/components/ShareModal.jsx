@@ -66,15 +66,18 @@ const ShareModal = ({ isOpen, onClose, request }) => {
       const response = await apiFetch(`${API_BASE_URL}/respuestas/compartir`, {
         method: 'POST',
         body: JSON.stringify({
-          respuestaId: request._id,
-          usuariosIds: selectedUsers
+          id: request._id,      // El backend espera 'id'
+          usuarios: selectedUsers // El backend espera 'usuarios' (array de IDs)
         })
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert("Solicitud compartida correctamente.");
         onClose();
       } else {
-        alert('Error al compartir la solicitud');
+        alert(data.message || 'Error al compartir la solicitud');
       }
     } catch (error) {
       console.error('Error sharing request:', error);

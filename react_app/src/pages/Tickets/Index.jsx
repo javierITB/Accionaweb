@@ -8,6 +8,7 @@ import RequestCard from './components/RequestCard';
 import FilterPanel from './components/FilterPanel';
 import RequestDetails from './components/RequestDetails';
 import StatsOverview from './components/StatsOverview';
+import { getStatusIcon } from '../../utils/ticketStatusStyles';
 
 const RequestTracking = () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -89,13 +90,44 @@ const RequestTracking = () => {
     console.log(`Navegando a: ${path}`);
   };
 
-  const updateRequest = (updatedRequest) => {
+  const updateRequest = (updatedData) => {
+    // Re-normalizar el objeto actualizado para que coincida con la estructura de resp
+    const r = updatedData;
+    const subcat = r.responses?.['Subcategoría'];
+    const cat = r.responses?.['Categoría'];
+
+    const normalizedReq = {
+      _id: r._id,
+      formId: r.formId,
+      title: subcat || r.title || r.formTitle || "formulario",
+      categoryData: cat || r.category || "",
+      submittedAt: r.submittedAt || r.createdAt || null,
+      createdAt: r.createdAt,
+      reviewedAt: r.reviewedAt,
+      approvedAt: r.approvedAt,
+      finalizedAt: r.finalizedAt,
+      assignedAt: r.assignedAt,
+      estimatedCompletionAt: r.estimatedCompletionAt,
+      formTitle: r.formTitle,
+      status: r.status,
+      trabajador: r.trabajador,
+      rutTrabajador: r.rutTrabajador,
+      submittedBy: r.user?.nombre || 'Usuario Desconocido',
+      lastUpdated: r.updatedAt || null,
+      assignedTo: r.assignedTo || " - ",
+      hasMessages: false,
+      company: r.user?.empresa || 'desconocida',
+      priority: r.priority,
+      responses: r.responses,
+      updatedAt: r.updatedAt
+    };
+
     setResp(prevResp =>
       prevResp.map(req =>
-        req._id === updatedRequest._id ? updatedRequest : req
+        req._id === normalizedReq._id ? normalizedReq : req
       )
     );
-    setSelectedRequest(updatedRequest);
+    setSelectedRequest(normalizedReq);
   };
 
   useEffect(() => {
@@ -222,9 +254,38 @@ const RequestTracking = () => {
     const cards = [];
     const usedStatuses = new Set();
 
-    // Helper para agregar tarjeta
+    // Helper para agregar tarjeta (mejorado para priorizar colores definidos)
     const addCard = (value, label, icon, color, bgColor, borderColor) => {
-      if (usedStatuses.has(value)) return;
+      const existingIndex = cards.findIndex(c => c.filterKey === value);
+
+      if (existingIndex !== -1) {
+        const existing = cards[existingIndex];
+        const isExistingDefault = existing.title === 'Pendientes' ? false : (
+          existing.color.includes('muted') ||
+          existing.color.includes('slate') ||
+          existing.color.includes('gray') ||
+          existing.color.includes('zinc') ||
+          existing.color.includes('stone') ||
+          existing.color.includes('neutral')
+        );
+
+        const isNewDefault = (
+          color.includes('muted') ||
+          color.includes('slate') ||
+          color.includes('gray') ||
+          color.includes('zinc')
+        );
+
+        if (isExistingDefault && !isNewDefault) {
+          cards[existingIndex] = {
+            ...existing,
+            title: label,
+            icon, color, bgColor, borderColor
+          };
+        }
+        return;
+      }
+
       usedStatuses.add(value);
       cards.push({
         title: label,
@@ -237,7 +298,101 @@ const RequestTracking = () => {
       });
     };
 
-    // 1. SIEMPRE PRIMERO: Pendiente (General request from user)
+    // Mapa completo de colores para estadísticas (SIMPLIFIED TO 8)
+    const colorMap = {
+      // Basic Colors (Strictly 8)
+      white: { text: 'text-foreground', bg: 'bg-background border', border: 'border-border' },
+
+      // Gray Group
+      gray: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
+      gray_light: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
+      slate: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
+      zinc: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
+      neutral: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
+      stone: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
+      gris: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
+      pizarra: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
+      gris_claro: { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
+
+      // Red Group
+      red: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+      rose: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+      maroon: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+      rojo: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+      rojo_claro: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+      red_light: { text: 'text-error', bg: 'bg-error/10', border: 'border-error' },
+
+      // Orange Group
+      orange: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      amber: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      naranja: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      naranja_claro: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      ambar: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      ambar_claro: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+      orange_light: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500' },
+
+      // Yellow Group
+      yellow: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
+      gold: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
+      amarillo: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
+      amarillo_claro: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
+      yellow_light: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
+
+      // Green Group
+      green: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      emerald: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      lime: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      teal: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      verde: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      lima: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      esmeralda: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      verde_azulado: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      verde_claro: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      lima_claro: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      esmeralda_claro: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      green_light: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+      green_dark: { text: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+
+      // Blue Group (Incorporating Cyan/Celeste -> Blue)
+      blue: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      indigo: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      navy: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      cyan: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      sky: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      celeste: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      azul: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      cielo: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      celeste_claro: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      cielo_claro: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      azul_claro: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      indigo_claro: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      blue_dark: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+      blue_light: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+
+      // Purple Group
+      purple: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' }, // JIT Purple
+      violet: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      fuchsia: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      morado: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      purpura: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      violeta: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      fucsia: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      purpura_claro: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      morado_claro: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      purple_light: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+      purple_dark: { text: 'text-[#9333ea]', bg: 'bg-[#f3e8ff]', border: 'border-[#e9d5ff]' },
+
+      // Pink Group
+      pink: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      magenta: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      rosa: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      rosado: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      rosa_claro: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      rosado_claro: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+      pink_light: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500' },
+    };
+
+    // 1. SIEMPRE PRIMERO: Pendiente 
     addCard('pendiente', 'Pendientes', 'Clock', 'text-warning', 'bg-warning/10', 'border-warning');
 
     // 2. ESTADOS DINÁMICOS (Del medio)
@@ -251,25 +406,25 @@ const RequestTracking = () => {
           // O usar getStatusColorClass si tuvieramos acceso.
           // Aquí usamos un mapa simple o valores por defecto.
 
-          // Mapa básico de colores a estilos de tarjeta
-          let colorClass = 'text-primary';
-          let bgClass = 'bg-primary/10';
-          let borderClass = 'border-primary';
 
-          if (st.color === 'green' || st.color === 'emerald') { colorClass = 'text-success'; bgClass = 'bg-success/10'; borderClass = 'border-success'; }
-          else if (st.color === 'blue' || st.color === 'sky') { colorClass = 'text-blue-500'; bgClass = 'bg-blue-500/10'; borderClass = 'border-blue-500'; }
-          else if (st.color === 'purple' || st.color === 'violet') { colorClass = 'text-purple-500'; bgClass = 'bg-purple-500/10'; borderClass = 'border-purple-500'; }
-          else if (st.color === 'red' || st.color === 'rose') { colorClass = 'text-error'; bgClass = 'bg-error/10'; borderClass = 'border-error'; }
-          else if (st.color === 'yellow' || st.color === 'amber') { colorClass = 'text-warning'; bgClass = 'bg-warning/10'; borderClass = 'border-warning'; }
-          else if (st.color === 'gray' || st.color === 'slate') { colorClass = 'text-muted-foreground'; bgClass = 'bg-muted'; borderClass = 'border-border'; }
+
+          // Normalizar clave de color: lowercase, trim, y espacios a guiones bajos
+          const rawColor = st.color || '';
+          const colorKey = rawColor.toLowerCase().trim().replace(/\s+/g, '_');
+
+          const style = colorMap[colorKey] || colorMap['gray'];
+          const colorClass = style.text;
+          const bgClass = style.bg;
+          const borderClass = style.border;
 
           addCard(st.value, st.label, st.icon || 'Circle', colorClass, bgClass, borderClass);
         }
       });
     });
 
-    // 3. SIEMPRE ÚLTIMO: Archivados
-    addCard('archivado', 'Archivados', 'Archive', 'text-muted-foreground', 'bg-muted', 'border-border');
+    // 3. SIEMPRE ÚLTIMO: Archivados (usando helpers para consistencia)
+    const archStyle = colorMap['slate'];
+    addCard('archivado', 'Archivados', getStatusIcon('archivado'), archStyle.text, archStyle.bg, archStyle.border);
 
     return cards;
   }, [ticketConfigs, dynamicStats]);
@@ -427,6 +582,8 @@ const RequestTracking = () => {
     setSelectedRequest(request);
     setShowRequestDetails(true);
   };
+
+
 
 
 

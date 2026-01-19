@@ -4,7 +4,14 @@ import { apiFetch, API_BASE_URL } from '../../../utils/api';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import CleanDocumentPreview from './CleanDocumentPreview';
-import { getStatusColorClass } from '../../../utils/ticketStatusStyles';
+import {
+  getStatusColorClass,
+  findConfigForCategory,
+  getStatusIcon,
+  getDefaultStatusColor,
+  formatStatusText
+} from '../../../utils/ticketStatusStyles';
+
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
@@ -13,6 +20,19 @@ const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
 const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }) => {
   // --- ESTADOS DE UI ---
   const [activeTab, setActiveTab] = useState('details');
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const statusDropdownRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
+        setIsStatusDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [correctedFiles, setCorrectedFiles] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -274,7 +294,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
   const getDynamicStatusConfig = (status) => {
     if (!ticketConfigs) return null;
     const category = fullRequestData?.category || fullRequestData?.categoryData || fullRequestData?.responses?.['Categoría'] || 'General';
-    const config = ticketConfigs.find(c => c.key === category) || ticketConfigs.find(c => c.key === 'domicilio_virtual');
+
+    const config = findConfigForCategory(ticketConfigs, category) ||
+      ticketConfigs.find(c => c.key === 'domicilio_virtual'); // Final fallback
+
     if (!config) return null;
     return config.statuses?.find(s => s.value === status);
   }
@@ -283,7 +306,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
   const isInitialStatus = () => {
     if (!ticketConfigs) return ['pendiente'].includes(fullRequestData?.status);
     const category = fullRequestData?.category || fullRequestData?.categoryData || fullRequestData?.responses?.['Categoría'] || 'General';
-    const config = ticketConfigs.find(c => c.key === category) || ticketConfigs.find(c => c.key === 'domicilio_virtual');
+
+    const config = findConfigForCategory(ticketConfigs, category) ||
+      ticketConfigs.find(c => c.key === 'domicilio_virtual');
 
     if (!config || !config.statuses || config.statuses.length === 0) return ['pendiente'].includes(fullRequestData?.status);
     return config.statuses[0].value === fullRequestData?.status;
@@ -701,28 +726,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
     return [];
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pending': case 'pendiente': return 'bg-error text-error-foreground';
-      case 'in_review': case 'en_revision': return 'bg-secondary text-secondary-foreground';
-      case 'approved': case 'aprobado': return 'bg-warning text-warning-foreground';
-      case 'signed': case 'firmado': return 'bg-success text-success-foreground';
-      case 'finalizado': return 'bg-accent text-accent-foreground';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
 
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'approved': case 'aprobado': return 'CheckCircle';
-      case 'pending': case 'pendiente': return 'Clock';
-      case 'in_review': case 'en_revision': return 'Eye';
-      case 'rejected': case 'rechazado': return 'XCircle';
-      case 'borrador': return 'FileText';
-      case 'signed': case 'firmado': return 'CheckSquare';
-      default: return 'Circle';
-    }
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Fecha no disponible';
@@ -1042,37 +1046,83 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                   className="text-muted-foreground hover:text-foreground"
                 />
 
-                {/* Dynamic Status Badge */}
-                {(() => {
-                  const statusConfig = getDynamicStatusConfig(fullRequestData?.status);
-                  return (
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusConfig
-                        ? getStatusColorClass(statusConfig.color)
-                        : getStatusColor(fullRequestData?.status)
-                        }`}
-                    >
-                      <Icon
-                        name={statusConfig ? statusConfig.icon : getStatusIcon(fullRequestData?.status)}
-                        size={14}
-                        className="mr-2"
-                      // Icon inherits text color from parent class usually, but if parent has specific text color...
-                      // getStatusColorClass sets text color. New icons should just inherit or be currentColor.
-                      />
-                      {statusConfig ? statusConfig.label.toUpperCase() : fullRequestData?.status?.replace('_', ' ')?.toUpperCase()}
-                    </span>
-                  );
-                })()}
+                {/* Dynamic Status Dropdown */}
+                <div className="relative" ref={statusDropdownRef}>
+                  {(() => {
+                    const currentStatus = fullRequestData?.status;
+                    const category = fullRequestData?.category || fullRequestData?.categoryData || fullRequestData?.responses?.['Categoría'] || 'General';
+                    const config = findConfigForCategory(ticketConfigs, category) ||
+                      ticketConfigs?.find(c => c.key === 'domicilio_virtual');
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleStatusChange(getNextStatus(fullRequestData?.status))}
-                  disabled={!getNextStatus(fullRequestData?.status)}
-                  iconName="ChevronRight"
-                  iconSize={16}
-                  className="text-muted-foreground hover:text-foreground"
-                />
+                    // Fallback configuration if none found or for default statuses
+                    const statusDef = config?.statuses?.find(s => s.value === currentStatus);
+
+                    const triggerColorClass = statusDef
+                      ? getStatusColorClass(statusDef.color)
+                      : getDefaultStatusColor(currentStatus);
+
+                    const triggerIconName = statusDef ? statusDef.icon : getStatusIcon(currentStatus);
+                    const triggerLabel = statusDef ? statusDef.label : formatStatusText(currentStatus);
+
+                    return (
+                      <>
+                        <button
+                          onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-opacity hover:opacity-80 ${triggerColorClass}`}
+                          title="Cambiar estado"
+                        >
+                          <Icon name={triggerIconName} size={14} className="mr-2" />
+                          <span className="uppercase">{triggerLabel}</span>
+                          <Icon name="ChevronDown" size={14} className="ml-2 opacity-50" />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {isStatusDropdownOpen && (
+                          <div className="absolute top-full left-0 mt-2 w-56 bg-popover border border-border rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                            <div className="p-1">
+                              {(() => {
+                                // Combine configured statuses with global "Archivado"
+                                const baseStatuses = config?.statuses || [];
+                                const hasArchived = baseStatuses.some(s => s.value === 'archivado');
+
+                                const allStatuses = [...baseStatuses];
+                                if (!hasArchived) {
+                                  allStatuses.push({
+                                    value: 'archivado',
+                                    label: 'Archivado',
+                                    color: 'slate', // Default color, has text-white
+                                    icon: 'Folder'
+                                  });
+                                }
+
+                                return allStatuses.map((st) => (
+                                  <button
+                                    key={st.value}
+                                    onClick={() => {
+                                      handleStatusChange(st.value);
+                                      setIsStatusDropdownOpen(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${currentStatus === st.value
+                                      ? 'bg-accent/10 text-accent font-medium'
+                                      : 'hover:bg-accent/5 text-foreground'
+                                      }`}
+                                  >
+                                    {/* Dot indicator matching the status color */}
+                                    <span className={`w-2.5 h-2.5 rounded-full ${getStatusColorClass(st.color).split(' ')[0]}`}></span>
+                                    <span>{st.label}</span>
+                                    {currentStatus === st.value && <Icon name="Check" size={14} className="ml-auto opacity-70" />}
+                                  </button>
+                                ));
+                              })()}
+                            </div>
+                          </div>
+                        )}
+
+
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
             <Button
