@@ -401,7 +401,7 @@ const MessageForm = () => {
 
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
             <div className="mb-4 md:mb-0">
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Inyección de Solicitud (Administrativo)</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground mt-4">Inyección de Solicitud (Administrativo)</h1>
               <p className="text-muted-foreground mt-1 text-sm md:text-base">
                 Envía un documento/solicitud que aparecerá en el menú del usuario destinatario.
               </p>

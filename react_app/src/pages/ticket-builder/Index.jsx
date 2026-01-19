@@ -344,7 +344,7 @@ const TicketBuilder = () => {
 
       <main className={`transition-all duration-300 ${mainMarginClass} pt-20 px-6 pb-10`}>
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 mt-4 gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Constructor de Tickets</h1>
             <p className="text-muted-foreground mt-1">
@@ -488,7 +488,7 @@ const TicketBuilder = () => {
                 onClick={handleSubmit}
                 loading={isSubmitting}
                 iconName="Send"
-                iconPosition="right"
+                iconPosition="left"
               >
                 Publicar Ticket
               </Button>
