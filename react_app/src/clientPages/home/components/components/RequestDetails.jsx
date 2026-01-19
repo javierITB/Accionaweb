@@ -518,7 +518,15 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
               <div className="flex items-start sm:items-center space-x-3">
                 <Icon name="FileText" size={24} className="text-accent mt-1 sm:mt-0 flex-shrink-0" />
                 <div className="min-w-0">
-                  <h2 className="text-lg sm:text-xl font-semibold text-foreground break-words">{request?.title}</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold text-foreground break-words">
+                    {request?.title}
+                    {/* ETIQUETA SOLICITUD COMPARTIDA */}
+                    {request?.isShared && (
+                      <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap align-middle">
+                        Solicitud Compartida
+                      </span>
+                    )}
+                  </h2>
                   <p className="text-xs sm:text-sm text-muted-foreground break-all">ID: {request?._id}</p>
                 </div>
               </div>
@@ -628,7 +636,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                     {loadingApprovedFiles && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
                   </h3>
 
-                  {/* CORRECCIÓN: Se añadieron llaves para el operador ternario */}
                   {loadingApprovedFiles ? (
                     <div className="flex justify-center py-6">
                       <Icon name="Loader" size={24} className="animate-spin text-accent" />
@@ -667,7 +674,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                           ))}
                         </div>
                       ) : (
-                        /* CORRECCIÓN: Se simplificó la lógica del "Empty State" */
                         <div className="text-center py-4 text-sm text-muted-foreground">
                           <Icon name="FileText" size={20} className="mx-auto mb-2 text-muted-foreground/50" />
                           No hay documentos corregidos disponibles
@@ -678,7 +684,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate }
                 </div>
               )}
 
-              {/* Sección de documento firmado */}
               {renderSignedDocumentSection()}
             </div>
           )}
