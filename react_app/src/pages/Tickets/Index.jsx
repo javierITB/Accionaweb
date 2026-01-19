@@ -321,8 +321,17 @@ const RequestTracking = () => {
         iconColor: statusDef.color,
         bgColor: statusDef.color + '20',
         borderColor: 'border-transparent',
-        change: 0, // Not verified for now
-        changeType: 'neutral',
+        change: (() => {
+          if (!serverStats?.changes) return 0;
+          switch (lookupKey) {
+            case 'pendiente': return serverStats.changes.submitted || 0;
+            case 'aprobado': return serverStats.changes.approved || 0;
+            case 'en_revision': return serverStats.changes.reviewed || 0;
+            case 'finalizado': return serverStats.changes.finalized || 0;
+            default: return 0;
+          }
+        })(),
+        changeType: 'positive',
         filterKey: key
       };
     });

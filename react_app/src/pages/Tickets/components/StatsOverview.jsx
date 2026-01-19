@@ -14,21 +14,12 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, customCa
   };
 
   // Cálculos de variación (últimas 24h)
-  const calculate24hChange = (dateField) => {
-    return allForms.filter(r => {
-      const dateToCheck = r[dateField];
-      if (!dateToCheck) return false;
-      const lastUpdateDate = new Date(dateToCheck);
-      const now = new Date();
-      return (now - lastUpdateDate) <= 24 * 60 * 60 * 1000;
-    }).length;
-  };
-
-  const last24hCreateCount = calculate24hChange('createdAt');
-  const last24hPendingCount = calculate24hChange('submittedAt');
-  const last24hReviewCount = calculate24hChange('reviewedAt');
-  const last24hApprovedCount = calculate24hChange('approvedAt');
-  const last24hFinalizedCount = calculate24hChange('finalizedAt');
+  // Cálculos de variación (últimas 24h) - AHORA DESDE SERVER (stats.last24h)
+  const last24hCreateCount = stats?.last24h?.last24hCreateCount || 0;
+  const last24hPendingCount = stats?.last24h?.last24hPendingCount || 0;
+  const last24hReviewCount = stats?.last24h?.last24hReviewCount || 0;
+  const last24hApprovedCount = stats?.last24h?.last24hApprovedCount || 0;
+  const last24hFinalizedCount = stats?.last24h?.last24hFinalizedCount || 0;
 
 
 

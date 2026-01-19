@@ -1111,7 +1111,8 @@ const handleArchieve = async () => {
                                       }`}
                                   >
                                     {/* Dot indicator matching the status color */}
-                                    <span className={`w-2.5 h-2.5 rounded-full ${getStatusColorClass(st.color).split(' ')[0]}`}></span>
+                                    {/* Icon matching the status */}
+                                    <Icon name={st.icon || 'Circle'} size={14} className={`${getStatusColorClass(st.color).replace('bg-', 'text-').replace('/10', '').split(' ')[0]}`} />
                                     <span>{st.label}</span>
                                     {currentStatus === st.value && <Icon name="Check" size={14} className="ml-auto opacity-70" />}
                                   </button>
