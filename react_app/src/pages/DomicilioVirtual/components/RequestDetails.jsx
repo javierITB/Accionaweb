@@ -42,9 +42,9 @@ const RequestDetails = ({
   // --- NUEVO ESTADO PARA DATOS APROBADOS ---
   const [approvedData, setApprovedData] = useState(null);
   const [isLoadingApprovedData, setIsLoadingApprovedData] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
+  // const [uploadProgress, setUploadProgress] = useState(0);
+  // const [isUploading, setIsUploading] = useState(false);
+  // const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
 
   // Estado principal de datos
   const [fullRequestData, setFullRequestData] = useState({ ...request });
@@ -59,6 +59,9 @@ const RequestDetails = ({
 
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
+
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const statusDropdownRef = useRef(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogConfig, setDialogConfig] = useState(null);
@@ -141,9 +144,9 @@ const RequestDetails = ({
     }
   };
 
-  const refreshClientSignature = async () => {
-    await checkClientSignature();
-  };
+  // const refreshClientSignature = async () => {
+  //   await checkClientSignature();
+  // };
 
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
@@ -1600,24 +1603,6 @@ const RequestDetails = ({
           handlePreviewCorrectedFile(prevIndex);
         }}
       />
-
-      {/* <AsyncActionDialog
-        open={dialogOpen}
-        title={`¿Está seguro de que quiere cambiar el estado a "${pendingStatus}"?`}
-        loadingText={`Cambiando estado a "${pendingStatus}"...`}
-        successText="Estado cambiado correctamente"
-        onConfirm={() => handleStatusChange(pendingStatus)}
-        onClose={() => setDialogOpen(false)}
-      /> */}
-
-      {/* <AsyncActionDialog
-  open={dialogOpen}
-  {...dialogConfig}
-  onClose={() => {
-    setDialogOpen(false);
-    setDialogConfig(null);
-  }}
-/> */}
 
       <AsyncActionDialog {...dialogProps} />
     </div>

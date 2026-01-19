@@ -12,6 +12,8 @@ import {
   formatStatusText
 } from '../../../utils/ticketStatusStyles';
 
+import AsyncActionDialog from 'components/AsyncActionDialog';
+import useAsyncDialog from 'hooks/useAsyncDialog';
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
@@ -35,16 +37,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
   }, []);
 
   const [correctedFiles, setCorrectedFiles] = useState([]);
-  const [isDownloading, setIsDownloading] = useState(false);
+  // const [isDownloading, setIsDownloading] = useState(false);
 
   const [isApproving, setIsApproving] = useState(false);
-  const fileInputRef = useRef(null);
-  const [isRegenerating, setIsRegenerating] = useState(false);
+  // const fileInputRef = useRef(null);
+  // const [isRegenerating, setIsRegenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
 
   // Estados de carga para vistas previas
-  const [isLoadingPreviewGenerated, setIsLoadingPreviewGenerated] = useState(false);
+  // const [isLoadingPreviewGenerated, setIsLoadingPreviewGenerated] = useState(false);
   const [isLoadingPreviewCorrected, setIsLoadingPreviewCorrected] = useState(false);
 
   const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(false);
@@ -53,10 +55,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
   // --- NUEVO ESTADO PARA DATOS APROBADOS ---
   const [approvedData, setApprovedData] = useState(null);
-  const [isLoadingApprovedData, setIsLoadingApprovedData] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
+  // const [isLoadingApprovedData, setIsLoadingApprovedData] = useState(false);
+  // const [uploadProgress, setUploadProgress] = useState(0);
+  // const [isUploading, setIsUploading] = useState(false);
+  // const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
 
   // Estado principal de datos
   // IMPORTANTE: fullRequestData se usa en todo el componente
@@ -64,7 +66,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
   const currentUser = sessionStorage.getItem("user");
 
   // Estados de carga de secciones
-  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  // const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
 
 
@@ -72,7 +74,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
 
   const [previewIndex, setPreviewIndex] = useState(0);
-  const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
+  // const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
+
+  const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsyncDialog();
 
   useEffect(() => {
     if (request) {
@@ -316,35 +320,33 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
   // ... (existing effects)
 
-  const handleStatusChange = async (newStatus) => {
-    if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
-
-    try {
-      const response = await apiFetch(`${API_BASE_URL}/soporte/${request._id}/status`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: newStatus })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (onUpdate && result.updatedRequest) {
-          onUpdate(result.updatedRequest);
-          setFullRequestData(prev => ({
-            ...prev,
-            ...result.updatedRequest,
-            adjuntos: prev.adjuntos
-          }));
-        }
-        alert(`Estado cambiado a "${newStatus}"`);
-      } else {
-        const errorData = await response.json();
-        alert('Error: ' + (errorData.error || 'No se pudo cambiar el estado'));
-      }
-    } catch (error) {
-      console.error('Error cambiando estado:', error);
-      alert('Error cambiando estado: ' + error.message);
+const handleStatusChange = async (newStatus) => {
+  const response = await apiFetch(
+    `${API_BASE_URL}/soporte/${request._id}/status`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ status: newStatus }),
     }
-  };
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "No se pudo cambiar el estado");
+  }
+
+  const result = await response.json();
+
+  if (onUpdate && result.updatedRequest) {
+    onUpdate(result.updatedRequest);
+
+    setFullRequestData((prev) => ({
+      ...prev,
+      ...result.updatedRequest,
+      adjuntos: prev.adjuntos,
+    }));
+  }
+};
+
 
   const getPreviousStatus = (currentStatus) => {
     const statusFlow = getDynamicStatusFlow();
@@ -521,71 +523,72 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
   };
 
 
-  const handleTakeTicket = async () => {
-    if (!currentUser) {
-      alert("Error: No se pudo identificar al usuario actual. Por favor, recarga la página o inicia sesión nuevamente.");
-      return;
+const handleTakeTicket = async () => {
+  if (!currentUser) {
+    throw new Error(
+      "No se pudo identificar al usuario actual. Por favor, recarga la página o inicia sesión nuevamente."
+    );
+  }
+
+  const currentAssigned = fullRequestData?.assignedTo;
+
+  const isAssigned = Array.isArray(currentAssigned)
+    ? currentAssigned.includes(currentUser)
+    : currentAssigned === currentUser;
+
+  // Seguridad extra (aunque el botón esté oculto)
+  if (isAssigned) return;
+
+  // Normalizar asignaciones previas
+  let previousAssignments = [];
+
+  if (Array.isArray(currentAssigned)) {
+    previousAssignments = currentAssigned;
+  } else if (
+    currentAssigned &&
+    currentAssigned !== "Sin asignar" &&
+    currentAssigned !== "-"
+  ) {
+    previousAssignments = [currentAssigned];
+  }
+
+  previousAssignments = previousAssignments.filter((u) => {
+    if (!u) return false;
+    const clean = String(u).trim();
+    return clean !== "-" && clean !== "Sin asignar" && clean !== "";
+  });
+
+  const newAssignedTo = [...new Set([...previousAssignments, currentUser])];
+
+  const response = await apiFetch(
+    `${API_BASE_URL}/soporte/${request._id}/status`,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        status: "en_revision",
+        assignedTo: newAssignedTo,
+      }),
     }
+  );
 
-    // Check if user is already assigned
-    const currentAssigned = fullRequestData?.assignedTo;
-    const isAssigned = Array.isArray(currentAssigned)
-      ? currentAssigned.includes(currentUser)
-      : currentAssigned === currentUser;
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "No se pudo tomar el ticket");
+  }
 
-    if (isAssigned) {
-      return; // Should not happen if button is hidden, but safety check
-    }
+  const result = await response.json();
 
-    if (!confirm('¿Tomar este ticket para revisión?')) return;
+  if (onUpdate && result.updatedRequest) {
+    onUpdate(result.updatedRequest);
 
-    setIsApproving(true);
-    try {
-      // Logic to append user
-      let previousAssignments = [];
-      if (Array.isArray(currentAssigned)) {
-        previousAssignments = currentAssigned;
-      } else if (currentAssigned && currentAssigned !== 'Sin asignar' && currentAssigned !== '-') {
-        previousAssignments = [currentAssigned];
-      }
+    setFullRequestData((prev) => ({
+      ...prev,
+      ...result.updatedRequest,
+      adjuntos: prev.adjuntos, // preservar adjuntos
+    }));
+  }
+};
 
-      previousAssignments = previousAssignments.filter(u => {
-        if (!u) return false;
-        const clean = String(u).trim();
-        return clean !== '-' && clean !== 'Sin asignar' && clean !== '';
-      });
-
-      let newAssignedTo = [...previousAssignments, currentUser];
-
-      newAssignedTo = [...new Set(newAssignedTo)];
-
-      const response = await apiFetch(`${API_BASE_URL}/soporte/${request._id}/status`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: 'en_revision', assignedTo: newAssignedTo })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (onUpdate && result.updatedRequest) {
-          onUpdate(result.updatedRequest);
-          setFullRequestData(prev => ({
-            ...prev,
-            ...result.updatedRequest,
-            adjuntos: prev.adjuntos // Preserve attachments
-          }));
-        }
-        alert(`Ticket tomado exitosamente`);
-      } else {
-        const errorData = await response.json();
-        alert('Error: ' + (errorData.error || 'No se pudo tomar el ticket'));
-      }
-    } catch (error) {
-      console.error('Error tomando ticket:', error);
-      alert('Error tomando ticket: ' + error.message);
-    } finally {
-      setIsApproving(false);
-    }
-  };
 
   // Helper to displaying assigned users
   const displayAssignedUsers = () => {
@@ -627,63 +630,56 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
   // Actually, I'll do separate replace calls to be safe.
 
 
-  const handleApprovewithoutFile = async () => {
-    if (isApproving || request?.status === 'finalizado') return;
-    if (!confirm('¿Estás seguro de que quieres finalizar este trabajo?')) return;
-    setIsApproving(true);
-    try {
-      const approveResponse = await apiFetch(`${API_BASE_URL}/soporte/${request._id}/status`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: 'finalizado' })
-      });
+const handleApprovewithoutFile = async () => {
+  // guard lógico (no UI)
+  if (request?.status === "finalizado") return;
 
-      if (approveResponse.ok) {
-        if (onUpdate) {
-          const updatedResponse = await apiFetch(`${API_BASE_URL}/soporte/${request._id}`);
-          const updatedRequest = await updatedResponse.json();
-          onUpdate(updatedRequest);
-        }
-        alert('Finalizado correctamente');
-      } else {
-        const errorData = await approveResponse.json();
-        alert(`Error: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
-    } finally {
-      setIsApproving(false);
+  const response = await apiFetch(
+    `${API_BASE_URL}/soporte/${request._id}/status`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ status: "finalizado" }),
     }
-  };
+  );
 
-  const handleArchieve = async () => {
-    if (isApproving) return;
-    if (!confirm('¿Estás seguro de que quieres archivar este trabajo?')) return;
-    setIsApproving(true);
-    try {
-      const approveResponse = await apiFetch(`${API_BASE_URL}/soporte/${request._id}/status`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: 'archivado' })
-      });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Error al finalizar el trabajo");
+  }
 
-      if (approveResponse.ok) {
-        if (onUpdate) {
-          const updatedResponse = await apiFetch(`${API_BASE_URL}/soporte/${request._id}`);
-          const updatedRequest = await updatedResponse.json();
-          onUpdate(updatedRequest);
-        }
-        alert('Archivado correctamente');
-      } else {
-        const errorData = await approveResponse.json();
-        alert(`Error: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
-    } finally {
-      setIsApproving(false);
+  if (onUpdate) {
+    const updatedResponse = await apiFetch(
+      `${API_BASE_URL}/soporte/${request._id}`
+    );
+    const updatedRequest = await updatedResponse.json();
+    onUpdate(updatedRequest);
+  }
+};
+
+
+const handleArchieve = async () => {
+  const response = await apiFetch(
+    `${API_BASE_URL}/soporte/${request._id}/status`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ status: "archivado" }),
     }
-  };
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Error al archivar ticket");
+  }
+
+  if (onUpdate) {
+    const updatedResponse = await apiFetch(
+      `${API_BASE_URL}/soporte/${request._id}`
+    );
+    const updatedRequest = await updatedResponse.json();
+    onUpdate(updatedRequest);
+  }
+};
+
 
   const getRealAttachments = () => {
     if (!fullRequestData) return [];
@@ -1099,7 +1095,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                                   <button
                                     key={st.value}
                                     onClick={() => {
-                                      handleStatusChange(st.value);
+                                      // handleStatusChange(st.value);
+                                      openAsyncDialog({
+                                        title: `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
+                                        loadingText: `Cambiando estado a "${st.label}"...`,
+                                        successText: "Estado cambiado correctamente",
+                                        errorText: "No se pudo cambiar el estado",
+                                        onConfirm: () => handleStatusChange(st.value)
+                                      });
                                       setIsStatusDropdownOpen(false);
                                     }}
                                     className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${currentStatus === st.value
@@ -1181,7 +1184,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                   iconName={isApproving ? "Loader" : "UserCheck"}
                   iconPosition="left"
                   iconSize={16}
-                  onClick={handleTakeTicket}
+                  onClick={() => {
+                    openAsyncDialog({
+                      title: `¿Está seguro de que quiere tomar este ticket?`,
+                      loadingText: `Tomando ticket...`,
+                      successText: "Ticket tomado exitosamente",
+                      errorText: "Error al tomar ticket",
+                      onConfirm: handleTakeTicket
+                    });
+                  }}
                   disabled={isApproving}
                 >
                   {isApproving ? 'Procesando...' : `Tomar Ticket`}
@@ -1194,7 +1205,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                   iconName={isApproving ? "Loader" : "CheckCircle"}
                   iconPosition="left"
                   iconSize={16}
-                  onClick={handleApprovewithoutFile}
+                  onClick={() => {
+                    openAsyncDialog({
+                      title: `¿Está seguro de que quiere finalizar este ticket?`,
+                      loadingText: `Finalizando ticket...`,
+                      successText: "Ticket finalizado exitosamente",
+                      errorText: "Error al finalizar ticket",
+                      onConfirm: handleApprovewithoutFile
+                    });
+                  }}
                   disabled={isApproving}
                 >
                   {isApproving ? 'Finalizando...' : 'Finalizar'}
@@ -1207,7 +1226,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                   iconName={isApproving ? "Loader" : "Folder"}
                   iconPosition="left"
                   iconSize={16}
-                  onClick={handleArchieve}
+                  onClick={() => {
+                    openAsyncDialog({
+                      title: `¿Está seguro de que quiere archivar este ticket?`,
+                      loadingText: `Archivando ticket...`,
+                      successText: "Ticket archivado exitosamente",
+                      errorText: "Error al archivar ticket",
+                      onConfirm: handleArchieve
+                    });
+                  }}
                 >
                   {isApproving ? 'Archivando...' : 'Archivar'}
                 </Button>
@@ -1247,6 +1274,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
           handlePreviewCorrectedFile(prevIndex);
         }}
       />
+      <AsyncActionDialog {...dialogProps} />
     </div>
   );
 };
