@@ -42,9 +42,9 @@ const RequestDetails = ({
   // --- NUEVO ESTADO PARA DATOS APROBADOS ---
   const [approvedData, setApprovedData] = useState(null);
   const [isLoadingApprovedData, setIsLoadingApprovedData] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
+  // const [uploadProgress, setUploadProgress] = useState(0);
+  // const [isUploading, setIsUploading] = useState(false);
+  // const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
 
   // Estado principal de datos
   const [fullRequestData, setFullRequestData] = useState({ ...request });
@@ -58,10 +58,7 @@ const RequestDetails = ({
   const [isDownloadingSignature, setIsDownloadingSignature] = useState(false);
 
   const [previewIndex, setPreviewIndex] = useState(0);
-  const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogConfig, setDialogConfig] = useState(null);
+  // const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
 
 
 const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsyncDialog();
@@ -141,9 +138,9 @@ const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsy
     }
   };
 
-  const refreshClientSignature = async () => {
-    await checkClientSignature();
-  };
+  // const refreshClientSignature = async () => {
+  //   await checkClientSignature();
+  // };
 
   const fetchAttachments = async (responseId) => {
     setAttachmentsLoading(true);
@@ -1600,24 +1597,6 @@ const handleRegenerateDocument = async () => {
           handlePreviewCorrectedFile(prevIndex);
         }}
       />
-
-      {/* <AsyncActionDialog
-        open={dialogOpen}
-        title={`¿Está seguro de que quiere cambiar el estado a "${pendingStatus}"?`}
-        loadingText={`Cambiando estado a "${pendingStatus}"...`}
-        successText="Estado cambiado correctamente"
-        onConfirm={() => handleStatusChange(pendingStatus)}
-        onClose={() => setDialogOpen(false)}
-      /> */}
-
-      {/* <AsyncActionDialog
-  open={dialogOpen}
-  {...dialogConfig}
-  onClose={() => {
-    setDialogOpen(false);
-    setDialogConfig(null);
-  }}
-/> */}
 
 <AsyncActionDialog {...dialogProps} />
     </div>
