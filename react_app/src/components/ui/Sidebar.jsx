@@ -21,7 +21,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          name: "Configuración",
          icon: "Settings",
          isAccordion: true,
-         roles: ["admin", "RRHH"], 
+         roles: ["admin", "RRHH"],
          children: [
             { name: "Formularios", path: "/form-center", icon: "FileText", roles: ["admin", "RRHH"] },
             { name: "Plantillas", path: "/template-builder", icon: "FileText", roles: ["admin", "RRHH"] },
@@ -39,14 +39,6 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
             { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["admin", "RRHH"] },
          ]
       },
-      {
-         name: "Perfil",
-         path: "/Perfil",
-         icon: "User",
-         description: "Perfil de usuario",
-         isAccordion: false,
-         roles: ["admin", "RRHH", "soporte", "Desarrollador"] // Acceso más amplio
-      }
    ];
 
 
@@ -159,8 +151,26 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                })}
             </nav>
 
+            {/* Profile Link Pinned to Bottom */}
+            <div className="p-3 border-t border-border mt-auto">
+               <button
+                  onClick={() => handleNavigation("/perfil")}
+                  className={`w-full flex items-center rounded-lg transition-all duration-200 px-3 py-3 text-muted-foreground hover:bg-muted hover:text-foreground
+                     ${!isTextVisible ? "justify-center" : ""}
+                  `}
+                  title={!isTextVisible ? "Ir a mi Perfil" : ""}
+               >
+                  <Icon name="User" size={20} className={isTextVisible ? "mr-2" : ""} />
+                  {isTextVisible && (
+                     <div className="flex-1 text-left min-w-0">
+                        <div className="text-sm font-medium truncate">Ir a mi Perfil</div>
+                     </div>
+                  )}
+               </button>
+            </div>
+
             {/* User Info Footer */}
-            <div className="p-4 border-t border-border flex items-center">
+            <div className="p-4 pt-0 flex items-center">
                <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold text-xs uppercase">
                   {userRole.substring(0, 2)}
                </div>
