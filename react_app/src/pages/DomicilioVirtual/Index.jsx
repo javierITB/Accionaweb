@@ -77,7 +77,7 @@ const DomicilioVirtualIndex = () => {
                 status: overrideFilters.status || '',
                 company: overrideFilters.company || '',
                 submittedBy: overrideFilters.submittedBy || '',
-                dateRange: overrideFilters.dateRange || '', 
+                dateRange: overrideFilters.dateRange || '',
                 startDate: overrideFilters.startDate || '',
                 endDate: overrideFilters.endDate || ''
             });
@@ -199,7 +199,7 @@ const DomicilioVirtualIndex = () => {
     // --- LÓGICA DE ELIMINACIÓN AGREGADA ---
     const handleRemove = async (request) => {
         if (!window.confirm(`¿Seguro que deseas eliminar la solicitud de ${request.nombreEmpresa || 'este cliente'}?`)) return;
-        
+
         try {
             const res = await apiFetch(`${API_BASE_URL}/domicilio-virtual/${request._id}`, {
                 method: 'DELETE'
@@ -241,13 +241,28 @@ const DomicilioVirtualIndex = () => {
             <Header />
             <Sidebar
                 isCollapsed={!isDesktopOpen}
-                onToggleCollapse={() => setIsDesktopOpen(!isDesktopOpen)}
+                onToggleCollapse={() => {
+                    if (isMobileScreen) setIsMobileOpen(!isMobileOpen);
+                    else setIsDesktopOpen(!isDesktopOpen);
+                }}
                 isMobileOpen={isMobileOpen}
                 onNavigate={() => isMobileScreen && setIsMobileOpen(false)}
             />
 
             {isMobileScreen && isMobileOpen && (
                 <div className="fixed inset-0 bg-foreground/50 z-40 lg:hidden" onClick={() => setIsMobileOpen(false)}></div>
+            )}
+
+            {!isMobileOpen && isMobileScreen && (
+                <div className="fixed bottom-4 left-4 z-50">
+                    <Button
+                        variant="default"
+                        size="icon"
+                        onClick={() => setIsMobileOpen(true)}
+                        iconName="Menu"
+                        className="w-12 h-12 rounded-full shadow-lg"
+                    />
+                </div>
             )}
 
             <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>

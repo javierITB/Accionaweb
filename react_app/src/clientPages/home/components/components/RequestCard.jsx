@@ -25,7 +25,8 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
               ...updatedRequest,
               submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || currentRequest.submittedBy || 'Usuario Desconocido',
               company: updatedRequest.user?.empresa || updatedRequest.company || currentRequest.company || 'Empresa Desconocida',
-              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt || currentRequest.submittedAt
+              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt || currentRequest.submittedAt,
+              isShared: updatedRequest.isShared || updatedRequest.compartida || currentRequest.isShared
             };
             setCurrentRequest(normalizedRequest);
             if (onUpdate) {
@@ -54,9 +55,9 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
         return 'bg-secondary text-secondary-foreground';
       case 'signed':
       case 'firmado':
-        return 'bg-success text-success-foreground'
+        return 'bg-success text-success-foreground';
       case 'finalizado':
-        return 'bg-accent text-accent-foreground'
+        return 'bg-accent text-accent-foreground';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -78,11 +79,11 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
         return 'XCircle';
       case 'borrador':
         return 'FileText';
-      default:
-        return 'Circle';
       case 'signed':
       case 'firmado':
         return 'CheckSquare';
+      default:
+        return 'Circle';
     }
   };
 
@@ -176,6 +177,19 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
             <h3 className={`font-semibold text-foreground ${viewMode === 'grid' ? 'text-sm line-clamp-2' : 'text-lg'}`}>
               {getCombinedTitle()}
             </h3>
+            {/* ETIQUETA SOLICITUD COMPARTIDA (Recibida) */}
+            {currentRequest?.isShared && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap">
+                Solicitud Compartida
+              </span>
+            )}
+
+            {/* ETIQUETA HAS COMPARTIDO (Enviada por ti) */}
+            {currentRequest?.metadata?.esPropia && currentRequest?.user?.compartidos?.length > 0 && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap">
+                Has compartido la solicitud
+              </span>
+            )}
           </div>
           <p className={`text-muted-foreground ${viewMode === 'grid' ? 'text-xs line-clamp-2' : 'text-sm'} mb-3`}>
             {currentRequest?.description}

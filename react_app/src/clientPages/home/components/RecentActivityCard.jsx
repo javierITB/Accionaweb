@@ -121,6 +121,13 @@ const RequestTracking = () => {
             // tus campos normalizados/auxiliares
             submittedBy: r.user?.nombre || r.submittedBy || 'Usuario',
             company: r.user?.empresa || 'Empresa',
+            
+            // --- AGREGADO PARA SOLICITUDES COMPARTIDAS ---
+            user: r.user, // Incluimos el objeto user para validación de UID y compartidos
+            metadata: r.metadata, // Agregado para validación de esPropia
+            isShared: r.isShared || r.compartida || false, // Normalizamos el flag de compartida
+            // ---------------------------------------------
+
             lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
             assignedTo: r.trabajador || " - ",
             hasMessages: false,

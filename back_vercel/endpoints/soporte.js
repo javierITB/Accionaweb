@@ -784,6 +784,7 @@ router.get("/mail/:mail", async (req, res) => {
   }
 });
 
+
 router.get("/mini", async (req, res) => {
   try {
     const auth = await verifyRequest(req);
@@ -816,31 +817,36 @@ router.get("/mini", async (req, res) => {
 
     // Procesar y descifrar las respuestas
     const answersProcessed = answers.map(answer => {
-      // Descifrar campos de usuario
-      let nombreDescifrado = answer.user?.nombre || "No especificado";
-      let empresaDescifrada = answer.user?.empresa || "No especificado";
+      // Helper para desencriptar
+      const safeDecrypt = (val) => {
+        if (!val) return "";
+        try {
+          if (val.includes(':')) return decrypt(val);
+          return val;
+        } catch (e) { return val; }
+      };
 
-      try {
-        if (nombreDescifrado.includes(':')) {
-          nombreDescifrado = decrypt(nombreDescifrado);
-        }
-        if (empresaDescifrada.includes(':')) {
-          empresaDescifrada = decrypt(empresaDescifrada);
-        }
-      } catch (error) {
-        console.error('Error descifrando datos en /mini:', error);
-      }
+      // Descifrar campos de usuario
+      const nombreUsuario = safeDecrypt(answer.user?.nombre || "No especificado");
+      const empresaUsuario = safeDecrypt(answer.user?.empresa || "No especificado");
+
+      const trabajadorEncrypted = answer.responses?.['Nombre del trabajador'];
+      const rutEncrypted = answer.responses?.['RUT del trabajador'] || answer.responses?.['RUT'];
+
+      const trabajador = trabajadorEncrypted ? safeDecrypt(trabajadorEncrypted) : nombreUsuario;
+      const rutTrabajador = rutEncrypted ? safeDecrypt(rutEncrypted) : "No especificado";
+
 
       return {
         _id: answer._id,
         formId: answer.formId,
-        formTitle: answer.formTitle,
-        trabajador: "No especificado",
-        rutTrabajador: "No especificado",
+        formTitle: answer.formTitle || 'Sin Título',
+        trabajador: trabajador,
+        rutTrabajador: rutTrabajador,
         submittedAt: answer.submittedAt,
         user: {
-          nombre: nombreDescifrado,
-          empresa: empresaDescifrada,
+          nombre: nombreUsuario,
+          empresa: empresaUsuario,
           uid: answer.user?.uid
         },
         status: answer.status,
@@ -855,19 +861,222 @@ router.get("/mini", async (req, res) => {
         updatedAt: answer.updatedAt,
         adjuntosCount: answer.adjuntosCount || 0,
         category: answer.category,
-        origin: answer.origin,
-        origin: answer.origin,
-        priority: (answer.priority || answer.responses?.['Prioridad'] || answer.responses?.['priority'] || 'media').toLowerCase()
+
+        // Campos extra para facilitar búsqueda en frontend
+        company: empresaUsuario,
+        submittedBy: nombreUsuario,
+        priority: (answer.priority || answer.responses?.['Prioridad'] || answer.responses?.['priority'] || 'media').toLowerCase(),
+        origin: answer.origin
       };
     });
 
     res.json(answersProcessed);
+
   } catch (err) {
     console.error("Error en /mini:", err);
-    res.status(500).json({ error: "Error al obtener formularios" });
+    res.status(500).json({ error: "Error al obtener tickets" });
   }
 });
 
+// 15. GET /filtros - Filtrado y Paginación Server-Side (Simil Respuestas)
+router.get("/filtros", async (req, res) => {
+  try {
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
+    // 1. Obtener parámetros de Query
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 30;
+    const skip = (page - 1) * limit;
+
+    const { status, company, search, startDate, endDate, category, submittedBy } = req.query;
+
+    // 2. Query Inicial de Base de Datos (Campos indexados/no cifrados)
+    let query = {};
+
+    // A. Filtro por Estado (Exacto)
+    if (status && status !== "") {
+      query["status"] = status;
+    }
+
+    // B. Filtro por Categoría (Robusto: Category OR Origin OR FormId)
+    if (category && category !== "") {
+      const catRegex = new RegExp(category, 'i');
+      query.$or = [
+        { category: catRegex },
+        { origin: catRegex },
+        { formId: catRegex },
+        { formTitle: catRegex },
+        { "responses.Categoría": catRegex },
+        { "responses.Subcategoría": catRegex },
+        { "responses.category": catRegex },
+        { "responses.subcategory": catRegex }
+      ];
+    }
+
+    // C. Filtro por Rango de Fechas
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+
+    const collection = req.db.collection("soporte");
+
+    // 3. Ejecutar Query BD (Sin paginar aún, para poder filtrar en memoria después)
+    const rawTickets = await collection.find(query)
+      .sort({ createdAt: -1 })
+      .project({
+        _id: 1,
+        formId: 1,
+        formTitle: 1,
+        "responses": 1,
+        submittedAt: 1,
+        "user.nombre": 1,
+        "user.empresa": 1,
+        status: 1,
+        assignedTo: 1,
+        createdAt: 1,
+        assignedAt: 1,
+        estimatedCompletionAt: 1,
+        reviewedAt: 1,
+        approvedAt: 1,
+        finalizedAt: 1,
+        updatedAt: 1,
+        adjuntosCount: 1,
+        category: 1,
+        origin: 1,
+        priority: 1
+      })
+      .toArray();
+
+    // 4. Procesamiento y Desencriptación en Memoria
+    const { decrypt } = require('../utils/seguridad.helper');
+
+    // Helper seguro
+    const safeDecrypt = (val) => {
+      if (!val) return "";
+      try {
+        if (val.includes(':')) return decrypt(val);
+        return val;
+      } catch (e) { return val; }
+    };
+
+    const processedTickets = rawTickets.map(ticket => {
+      // Desencriptar Usuario y Empresa
+      const nombreUsuario = safeDecrypt(ticket.user?.nombre || "No especificado");
+      const empresaUsuario = safeDecrypt(ticket.user?.empresa || "No especificado");
+
+      // Desencriptar Trabajador/RUT desde responses (si existen)
+      const trabajadorEncrypted = ticket.responses?.['Nombre del trabajador'];
+      const rutEncrypted = ticket.responses?.['RUT del trabajador'] || ticket.responses?.['RUT'];
+
+      const trabajador = trabajadorEncrypted ? safeDecrypt(trabajadorEncrypted) : nombreUsuario;
+      const rutTrabajador = rutEncrypted ? safeDecrypt(rutEncrypted) : "No especificado";
+
+      const priority = (ticket.priority || ticket.responses?.['Prioridad'] || ticket.responses?.['priority'] || 'media').toLowerCase();
+
+      return {
+        ...ticket,
+        user: {
+          ...ticket.user,
+          nombre: nombreUsuario,
+          empresa: empresaUsuario
+        },
+        trabajador,
+        rutTrabajador,
+        company: empresaUsuario, // Alias para filtro
+        submittedBy: nombreUsuario, // Alias para filtro
+        priority
+      };
+    });
+
+    // 5. Filtrado en Memoria (Búsqueda por Texto y Campos Desencriptados)
+    let filteredTickets = processedTickets;
+
+    // Filtro Search Global
+    if (search && search.trim() !== "") {
+      const term = search.toLowerCase();
+      filteredTickets = filteredTickets.filter(t => {
+        // 1. Campos directos / Base
+        if (
+          String(t.formTitle || '').toLowerCase().includes(term) ||
+          String(t.formId || '').toLowerCase().includes(term) ||
+          String(t.trabajador || '').toLowerCase().includes(term) ||
+          String(t.rutTrabajador || '').toLowerCase().includes(term) ||
+          String(t.company || '').toLowerCase().includes(term) ||
+          String(t.submittedBy || '').toLowerCase().includes(term) ||
+          String(t.user?.email || '').toLowerCase().includes(term) ||
+          String(t.mail || '').toLowerCase().includes(term)
+        ) return true;
+
+        // 2. Busqueda profunda en respuestas (Asunto, Descripción, Subcategoría, etc.)
+        if (t.responses && typeof t.responses === 'object') {
+          const values = Object.values(t.responses);
+          for (const val of values) {
+            if (val && String(val).toLowerCase().includes(term)) return true;
+          }
+        }
+
+        return false;
+      });
+    }
+
+    // Filtro Company Específico
+    if (company && company.trim() !== "") {
+      const term = company.toLowerCase();
+      filteredTickets = filteredTickets.filter(t =>
+        String(t.company || '').toLowerCase().includes(term)
+      );
+    }
+
+    // Filtro SubmittedBy Específico
+    if (submittedBy && submittedBy.trim() !== "") {
+      const term = submittedBy.toLowerCase();
+      filteredTickets = filteredTickets.filter(t =>
+        String(t.submittedBy || '').toLowerCase().includes(term)
+      );
+    }
+
+    const stats = {
+      total: filteredTickets.length,
+      pendiente: filteredTickets.filter(t => t.status === 'pendiente').length,
+      en_proceso: filteredTickets.filter(t => t.status === 'en_proceso').length,
+      resuelto: filteredTickets.filter(t => t.status === 'resuelto').length,
+      archivado: filteredTickets.filter(t => t.status === 'archivado').length,
+    };
+
+    // APLICAR FILTRO DE VISTA 
+    if (!status || status === "") {
+      filteredTickets = filteredTickets.filter(t => t.status !== 'archivado');
+    }
+
+    // 6. Paginación final
+    const totalCount = filteredTickets.length;
+    const totalPages = Math.ceil(totalCount / limit);
+    const paginatedTickets = filteredTickets.slice(skip, skip + limit);
+
+
+    res.json({
+      data: paginatedTickets,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages
+      },
+      stats
+    });
+
+  } catch (err) {
+    console.error("Error en /filtros:", err);
+    res.status(500).json({ error: "Error al obtener tickets filtrados" });
+  }
+});
 router.get("/:id", async (req, res) => {
   try {
     const auth = await verifyRequest(req);
@@ -1094,5 +1303,6 @@ router.put("/:id/status", async (req, res) => {
     res.status(500).json({ error: "Error cambiando estado: " + err.message });
   }
 });
+
 
 module.exports = router;
