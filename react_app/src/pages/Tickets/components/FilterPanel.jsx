@@ -207,26 +207,6 @@ const FilterPanel = ({
             />
           </div>
 
-          {/* Advanced Filters */}
-          <div className="pt-3 sm:pt-4 border-t border-border">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <Input
-                label="Empresa"
-                type="text"
-                placeholder="Filtrar por empresa..."
-                value={filters?.company || ''}
-                onChange={(e) => handleInputChange('company', e?.target?.value)}
-              />
-
-              <Input
-                label="Enviado por"
-                type="text"
-                placeholder="Nombre del usuario..."
-                value={filters?.submittedBy || ''}
-                onChange={(e) => handleInputChange('submittedBy', e?.target?.value)}
-              />
-            </div>
-          </div>
 
           {/* BOTÓN FILTRAR */}
           <div className="flex justify-end pt-4">
