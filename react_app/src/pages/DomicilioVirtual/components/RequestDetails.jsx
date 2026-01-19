@@ -3,6 +3,7 @@ import Icon from "../../../components/AppIcon";
 import Button from "../../../components/ui/Button";
 import CleanDocumentPreview from "./CleanDocumentPreview";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
+import { getStatusColorClass } from "../../../utils/ticketStatusStyles";
 import AsyncActionDialog from "components/AsyncActionDialog";
 import useAsyncDialog from "hooks/useAsyncDialog";
 
@@ -60,11 +61,14 @@ const RequestDetails = ({
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
 
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const statusDropdownRef = useRef(null);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogConfig, setDialogConfig] = useState(null);
 
 
-const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsyncDialog();
+  const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsyncDialog();
 
   useEffect(() => {
     if (request) {
@@ -77,6 +81,17 @@ const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsy
       });
     }
   }, [request]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
+        setIsStatusDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (isVisible) {
@@ -476,30 +491,30 @@ const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsy
     }
   };
 
-const handleRegenerateDocument = async () => {
-  setIsRegenerating(true);
+  const handleRegenerateDocument = async () => {
+    setIsRegenerating(true);
 
-  try {
-    const response = await apiFetch(
-      `${API_BASE_URL}/${endpointPrefix}/${request._id}/regenerate-document`,
-      { method: "POST" }
-    );
+    try {
+      const response = await apiFetch(
+        `${API_BASE_URL}/${endpointPrefix}/${request._id}/regenerate-document`,
+        { method: "POST" }
+      );
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "No se pudo regenerar el documento");
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "No se pudo regenerar el documento");
+      }
+
+      await getDocumentInfo(request._id);
+
+      return true;
+    } catch (error) {
+      console.error("Error regenerando documento:", error);
+      throw error;
+    } finally {
+      setIsRegenerating(false);
     }
-
-    await getDocumentInfo(request._id);
-
-    return true; 
-  } catch (error) {
-    console.error("Error regenerando documento:", error);
-    throw error;
-  } finally {
-    setIsRegenerating(false);
-  }
-};
+  };
 
 
   const handleDownload = async () => {
@@ -1476,14 +1491,79 @@ const handleRegenerateDocument = async () => {
                   />
                 )}
 
-                <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                    fullRequestData?.status
-                  )}`}
-                >
-                  <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
-                  {fullRequestData?.status?.replace("_", " ")?.toUpperCase()}
-                </span>
+                {/* Dynamic Status Dropdown */}
+                <div className="relative" ref={statusDropdownRef}>
+                  {(() => {
+                    const currentStatus = fullRequestData?.status;
+
+                    const DOMICILIO_STATUSES = [
+                      { value: "documento_generado", label: "Doc. Generado", color: "red", iconClass: "text-error", icon: "FileText" },
+                      { value: "enviado", label: "Enviado", color: "blue", iconClass: "text-blue-600", icon: "Send" },
+                      { value: "solicitud_firmada", label: "Firmada", color: "orange", iconClass: "text-warning", icon: "PenTool" },
+                      { value: "informado_sii", label: "Info. SII", color: "cyan", iconClass: "text-info", icon: "Building" },
+                      { value: "dicom", label: "DICOM", color: "purple", iconClass: "text-secondary", icon: "AlertTriangle" },
+                      { value: "dado_de_baja", label: "De Baja", color: "gray", iconClass: "text-muted-foreground", icon: "XCircle" }
+                    ];
+
+                    const activeStatusDef = DOMICILIO_STATUSES.find(s => s.value === currentStatus);
+                    const triggerColorClass = activeStatusDef
+                      ? getStatusColorClass(activeStatusDef.color)
+                      : getStatusColor(currentStatus);
+
+                    const triggerIconName = activeStatusDef ? activeStatusDef.icon : getStatusIcon(currentStatus);
+                    const triggerLabel = activeStatusDef ? activeStatusDef.label : (fullRequestData?.status?.replace("_", " ")?.toUpperCase() || "DESCONOCIDO");
+
+                    return (
+                      <>
+                        <button
+                          onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                          className={`inline-flex items-center px-3 py-1 min-h-[28px] rounded-full text-sm font-medium transition-all shadow-sm hover:opacity-90 ${triggerColorClass}`}
+                          title="Cambiar estado"
+                        >
+                          <Icon name={triggerIconName} size={14} className="mr-2" />
+                          <span className="uppercase whitespace-nowrap">{triggerLabel}</span>
+                          <Icon name="ChevronDown" size={14} className="ml-2 opacity-50" />
+                        </button>
+
+                        {isStatusDropdownOpen && (
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 bg-popover border border-border rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                            <div className="p-1">
+                              {DOMICILIO_STATUSES.map((st) => (
+                                <button
+                                  key={st.value}
+                                  onClick={() => {
+                                    openAsyncDialog({
+                                      title: `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
+                                      loadingText: `Cambiando estado a "${st.label}"...`,
+                                      successText: "Estado cambiado correctamente",
+                                      errorText: "No se pudo cambiar el estado",
+                                      onConfirm: async () => {
+                                        await handleStatusChange(st.value);
+                                        setIsStatusDropdownOpen(false);
+                                      },
+                                    });
+                                  }}
+                                  className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${currentStatus === st.value
+                                    ? 'bg-accent/10 text-accent font-medium'
+                                    : 'hover:bg-accent/5 text-foreground'
+                                    }`}
+                                >
+                                  <Icon
+                                    name={st.icon}
+                                    size={14}
+                                    className={st.iconClass || getStatusColorClass(st.color).replace('bg-', 'text-').replace('/10', '').split(' ')[0]}
+                                  />
+                                  <span>{st.label}</span>
+                                  {currentStatus === st.value && <Icon name="Check" size={14} className="ml-auto opacity-70" />}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
 
                 {!isStandalone && (
                   <Button
@@ -1538,31 +1618,6 @@ const handleRegenerateDocument = async () => {
                 <>
                   {/* Botón Mensajes eliminado para Domicilio Virtual */}
 
-                  <div className="flex items-center gap-2 w-3/4 justify-end">
-                    <span className="text-sm font-medium">Cambiar Estado:</span>
-                    <select
-                      value={fullRequestData?.status || ""}
-                      onChange={(e) => {
-                        const newStatus = e.target.value;
-
-                        openAsyncDialog({
-                          title: `¿Está seguro de que quiere cambiar el estado a "${newStatus}"?`,
-                          loadingText: `Cambiando estado a "${newStatus}"...`,
-                          successText: "Estado cambiado correctamente",
-                          errorText: "No se pudo cambiar el estado",
-                          onConfirm: () => handleStatusChange(newStatus),
-                        });
-                      }}
-                      className="h-9 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent w-2/5"
-                    >
-                      <option value="documento_generado">Documento Generado</option>
-                      <option value="enviado">Enviado</option>
-                      <option value="solicitud_firmada">Firmada</option>
-                      <option value="informado_sii">Informado al SII</option>
-                      <option value="dicom">DICOM</option>
-                      <option value="dado_de_baja">Dado de baja</option>
-                    </select>
-                  </div>
 
                 </>
               )}
@@ -1619,7 +1674,7 @@ const handleRegenerateDocument = async () => {
   }}
 /> */}
 
-<AsyncActionDialog {...dialogProps} />
+      <AsyncActionDialog {...dialogProps} />
     </div>
   );
 };
