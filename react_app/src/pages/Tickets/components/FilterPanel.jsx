@@ -11,12 +11,10 @@ const FilterPanel = ({
   onApplyFilters,
   isVisible,
   onToggle,
-  ticketConfigs = [] // Receive dynamic configs
+  ticketConfigs = []
 }) => {
 
   // 1. DYNAMIC STATUS OPTIONS
-  // Extract all unique statuses from all configs, ensuring no duplicates.
-  // Add 'archivado' explicitly if not present.
   const statusOptions = React.useMemo(() => {
     const uniqueStatuses = new Map();
 
@@ -33,12 +31,10 @@ const FilterPanel = ({
       }
     });
 
-    // Ensure 'archivado' exists
     if (!uniqueStatuses.has('archivado')) {
       uniqueStatuses.set('archivado', 'Archivado');
     }
 
-    // Convert to array
     uniqueStatuses.forEach((label, value) => {
       options.push({ value, label });
     });
@@ -48,13 +44,10 @@ const FilterPanel = ({
 
 
   // 2. DYNAMIC CATEGORY OPTIONS
-  // Extract all unique Category IDs (formIds) or Names
   const categoryOptions = React.useMemo(() => {
     const options = [{ value: '', label: 'Todas las Categorías' }];
 
     ticketConfigs.forEach(config => {
-      // Use config.id or fallback to config.name or config.title
-      // The system relies on 'category' field in ticket matching this value.
       const val = config.id || config.category || config.name;
       if (val) {
         options.push({ value: val, label: config.title || config.name || val });
@@ -75,7 +68,44 @@ const FilterPanel = ({
   ];
 
   const handleInputChange = (field, value) => {
-    onFilterChange({ ...filters, [field]: value });
+    let newFilters = { ...filters, [field]: value };
+
+    if (field === 'dateRange') {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const todayString = `${yyyy}-${mm}-${dd}`;
+
+      let start = '';
+      let end = todayString;
+
+      if (value === 'today') {
+        start = todayString;
+      } else if (value === 'week') {
+        const d = new Date(today);
+        const day = d.getDay() || 7; // Lunes=1, Dom=7
+        if (day !== 1) d.setHours(-24 * (day - 1));
+        const smm = String(d.getMonth() + 1).padStart(2, '0');
+        const sdd = String(d.getDate()).padStart(2, '0');
+        start = `${d.getFullYear()}-${smm}-${sdd}`;
+      } else if (value === 'month') {
+        start = `${yyyy}-${mm}-01`;
+      } else if (value === 'quarter') {
+        const quarterMonth = Math.floor(today.getMonth() / 3) * 3;
+        const qmm = String(quarterMonth + 1).padStart(2, '0');
+        start = `${yyyy}-${qmm}-01`;
+      } else if (value === 'year') {
+        start = `${yyyy}-01-01`;
+      } else {
+        start = '';
+        end = '';
+      }
+      newFilters.startDate = start;
+      newFilters.endDate = end;
+    }
+
+    onFilterChange(newFilters);
   };
 
   const getActiveFilterCount = () => {
