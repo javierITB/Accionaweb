@@ -18,6 +18,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   const [isApproving, setIsApproving] = useState(false);
   const fileInputRef = useRef(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isDownloadingCorrected, setIsDownloadingCorrected] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
 
@@ -1278,6 +1279,17 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
+                      variant="outline"
+                      size="sm"
+                      iconName={isDownloadingCorrected ? "Loader" : "Download"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={() => handleDownloadCorrected(index)}
+                      disabled={isDownloadingCorrected}
+                    >
+                      {isDownloadingCorrected ? "Descargando..." : "Descargar"}
+                    </Button>
+                    <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handlePreviewCorrectedFile(index)}
@@ -1526,18 +1538,102 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     }
   };
 
+  const handleDownloadCorrected = async (index = 0) => {
+    try {
+      setIsDownloadingCorrected(true);
+
+      let url;
+      let filename;
+
+      // Caso 1: Archivos locales (aún no subidos, si se habilitara la subida)
+      if (correctedFiles.length > 0) {
+        if (index < 0 || index >= correctedFiles.length) return;
+        const file = correctedFiles[index];
+        url = URL.createObjectURL(file);
+        filename = file.name;
+      }
+      // Caso 2: Archivos aprobados (desde el servidor)
+      else if (approvedData || fullRequestData?.status === "aprobado" || fullRequestData?.status === "firmado") {
+        url = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${fullRequestData._id}?index=${index}`;
+        filename = approvedData?.correctedFiles?.[index]?.fileName || `documento_corregido_${index + 1}.pdf`;
+      }
+      // Caso 3: Formato antiguo (un solo archivo)
+      else if (fullRequestData?.correctedFile) {
+        // Fallback para archivo único
+        url = `${API_BASE_URL}/${endpointPrefix}/${fullRequestData._id}/corrected-file`;
+        filename = fullRequestData.correctedFile.fileName;
+      } else {
+        return;
+      }
+
+      if (correctedFiles.length > 0) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        const token = sessionStorage.getItem("token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const response = await fetch(url, { headers });
+
+        if (!response.ok) throw new Error("Error en descarga");
+
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
+      }
+
+    } catch (error) {
+      console.error("Error descargando archivo corregido:", error);
+      // Usar alert o el dialogo de error si está disponible
+      alert("Error al descargar archivo");
+    } finally {
+      setIsDownloadingCorrected(false);
+    }
+  };
+
   const renderResponsesTab = () => {
     const responses = fullRequestData?.responses || {};
     const entries = Object.entries(responses);
 
-    if (entries.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center p-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border">
-          <Icon name="FileText" size={32} className="mb-2 opacity-50" />
-          <p>No hay respuestas registradas en este formulario.</p>
-        </div>
-      );
+    // Preparar lista de archivos corregidos para mostrar
+    let filesToShow = [];
+    let isLocal = false;
+
+    if (correctedFiles.length > 0) {
+      filesToShow = correctedFiles.map(f => ({
+        name: f.name,
+        size: f.size,
+        uploadedAt: new Date().toISOString()
+      }));
+      isLocal = true;
+    } else if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
+      filesToShow = approvedData.correctedFiles.map(f => ({
+        name: f.fileName,
+        size: f.fileSize,
+        uploadedAt: f.uploadedAt
+      }));
+    } else if (fullRequestData?.correctedFile) {
+      filesToShow = [{
+        name: fullRequestData.correctedFile.fileName,
+        size: fullRequestData.correctedFile.fileSize,
+        uploadedAt: fullRequestData.submittedAt // Fallback
+      }];
     }
+
+    /* 
+       Si no hay respuestas y no hay archivos corregidos, mostramos mensaje de vacío.
+       Pero si hay archivos corregidos, queremos mostrarlos aunque no haya respuestas (o mostrarlos junto con el mensaje de no respuestas).
+       Mantendremos la estructura original pero agregamos la sección de documentos abajo.
+    */
 
     return (
       <div className="space-y-6">
@@ -1546,25 +1642,89 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
             <Icon name="List" size={20} className="text-accent" />
             Respuestas del Formulario
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {entries.map(([pregunta, respuesta], index) => (
-              <div
-                key={index}
-                className="bg-muted/30 rounded-lg p-4 border border-border/50 hover:bg-muted/50 transition-colors"
-              >
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 break-words">
-                  {pregunta}
-                </h4>
-                <div className="text-sm font-medium text-foreground leading-relaxed whitespace-pre-wrap break-words">
-                  {respuesta !== null && typeof respuesta === 'object'
-                    ? JSON.stringify(respuesta)
-                    : String(respuesta || '-')
-                  }
+
+          {entries.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border mb-6">
+              <Icon name="FileText" size={32} className="mb-2 opacity-50" />
+              <p>No hay respuestas registradas en este formulario.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {entries.map(([pregunta, respuesta], index) => (
+                <div
+                  key={index}
+                  className="bg-muted/30 rounded-lg p-4 border border-border/50 hover:bg-muted/50 transition-colors"
+                >
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 break-words">
+                    {pregunta}
+                  </h4>
+                  <div className="text-sm font-medium text-foreground leading-relaxed whitespace-pre-wrap break-words">
+                    {respuesta !== null && typeof respuesta === 'object'
+                      ? JSON.stringify(respuesta)
+                      : String(respuesta || '-')
+                    }
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Sección Documento Corregido */}
+        {(filesToShow.length > 0) && (
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+              Documento Corregido
+              {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+            </h3>
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              {filesToShow.map((file, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-card rounded border border-border">
+                  <div className="flex items-center space-x-3">
+                    <Icon name="FileText" size={20} className="text-accent" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.size)} • {isLocal ? 'Local' : (file.uploadedAt ? `Subido el ${formatDate(file.uploadedAt)}` : 'Archivo del servidor')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      iconName={isDownloadingCorrected ? "Loader" : "Download"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={() => handleDownloadCorrected(index)}
+                      disabled={isDownloadingCorrected}
+                    >
+                      {isDownloadingCorrected ? "Descargando..." : "Descargar"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={() => handlePreviewCorrectedFile(index)}
+                      disabled={isLoadingPreviewCorrected}
+                    >
+                      {isLoadingPreviewCorrected && previewIndex === index ? "Cargando..." : "Vista Previa"}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+
+              {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
+                <p className="text-xs text-success font-medium mt-2">
+                  ✓ Documento aprobado y listo
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     );
   };
