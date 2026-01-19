@@ -156,7 +156,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
               {getCombinedTitle()}
             </h3>
             <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {getRelativeTime(currentRequest?.submittedAt)}
+              {getRelativeTime(currentRequest?.submittedAt || currentRequest?.createdAt)}
             </span>
           </div>
 
@@ -201,7 +201,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4 pt-3 border-t border-border text-xs text-muted-foreground">
         <div>
           <span className="font-semibold block">Creado:</span>
-          {formatDate(currentRequest?.submittedAt)}
+          {formatDate(currentRequest?.submittedAt || currentRequest?.createdAt)}
         </div>
         <div>
           <span className="font-semibold block">Tomado:</span>

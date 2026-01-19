@@ -28,11 +28,15 @@ const RequestTracking = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [ticketConfigs, setTicketConfigs] = useState([]);
 
-  // --- PAGINACIÓN CLIENT-SIDE ---
+  // --- PAGINACIÓN Y FILTROS SERVER-SIDE ---
   const [currentPage, setCurrentPage] = useState(1);
-  const requestsPerPage = 30; // 30 por página
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [serverStats, setServerStats] = useState(null);
+  const requestsPerPage = 30;
 
-  const [filters, setFilters] = useState({
+  // ESTADO 1: Filtros Aplicados (Para Fetch)
+  const [appliedFilters, setAppliedFilters] = useState({
     search: '',
     status: '',
     category: '',
@@ -42,6 +46,9 @@ const RequestTracking = () => {
     company: '',
     submittedBy: ''
   });
+
+  // ESTADO 2: Filtros Temporales (UI)
+  const [tempFilters, setTempFilters] = useState(appliedFilters);
 
   // EFECTO DE RESIZE
   useEffect(() => {
@@ -86,38 +93,51 @@ const RequestTracking = () => {
     setSelectedRequest(prev => prev?._id === updatedData._id ? { ...prev, ...updatedData } : prev);
   };
 
-  // FETCH DATA GLOBAL (Client-Side Filtering Base)
-  // Usamos /mini para traer todo y filtrarlo en cliente
-  const fetchData = async (isBackground = false) => {
+  // FETCH DATA SERVER-SIDE
+  const fetchData = async (page = 1, isBackground = false, overrideFilters = null) => {
     try {
       if (!isBackground) setIsLoading(true);
 
-      // Fetch TICKET CONFIGURATIONS (Statuses)
-      // Lo hacemos una vez o junto con los tickets si es posible, pero son entidades distintas.
-      // Si ya los tenemos, quizás no necesitemos recargarlos siempre, pero para updates en tiempo real...
-      // Lo ideal es tener un endpoint master. Por ahora seguimos lógica anterior.
       if (!isBackground && ticketConfigs.length === 0) {
-        const resConfig = await apiFetch(`${API_BASE_URL}/config-tickets`);
-        if (resConfig.ok) {
-          const configs = await resConfig.json();
-          setTicketConfigs(configs);
-        }
+        try {
+          const resConfig = await apiFetch(`${API_BASE_URL}/config-tickets`);
+          if (resConfig.ok) {
+            const configs = await resConfig.json();
+            setTicketConfigs(configs);
+          }
+        } catch (e) { console.warn("Error loading configs", e); }
       }
 
-      const res = await apiFetch(`${API_BASE_URL}/soporte/mini`);
+      // Preparar Query Params
+      const activeFilters = overrideFilters || appliedFilters;
+      const params = new URLSearchParams({
+        page: page,
+        limit: requestsPerPage,
+        search: activeFilters.search || '',
+        status: activeFilters.status || '',
+        category: activeFilters.category || '', // Backend handles ID resolution robustly
+        company: activeFilters.company || '',
+        submittedBy: activeFilters.submittedBy || '',
+        startDate: activeFilters.startDate || '',
+        endDate: activeFilters.endDate || ''
+      });
+
+      const res = await apiFetch(`${API_BASE_URL}/soporte/filtros?${params.toString()}`);
       if (!res.ok) throw new Error('Error al obtener tickets');
-      const data = await res.json();
 
-      // Ordenar por fecha descendente por defecto si no viene ordenado
-      // data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      // El backend ya ordena, pero asegurando:
-      // data.sort((a, b) => (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)));
+      const result = await res.json();
 
-      setResp(data);
+      setResp(result.data || []);
+      setTotalItems(result.pagination?.total || 0);
+      setTotalPages(result.pagination?.totalPages || 1);
 
-      // Si hay un ID en la URL y estamos cargándolo por primera vez
+      if (result.stats) setServerStats(result.stats);
+
+
       if (formId && !selectedRequest) {
-        const found = data.find(r => r._id === formId || r.formId === formId);
+        // Si estamos buscando un ID específico que podría no estar en esta página,
+        // idealmente deberíamos hacer un fetch específico por ID, pero por ahora:
+        const found = (result.data || []).find(r => r._id === formId || r.formId === formId);
         if (found) {
           setSelectedRequest(found);
           setShowRequestDetails(true);
@@ -131,141 +151,45 @@ const RequestTracking = () => {
     }
   };
 
-  // Carga inicial
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Polling
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (!showRequestDetails) {
-        fetchData(true);
-      }
-    }, 30000);
-    return () => clearInterval(intervalId);
-  }, [showRequestDetails]);
-
-
-  // --- LÓGICA DE FILTRADO CLIENT-SIDE ---
-  const filteredRequests = useMemo(() => {
-    return resp.filter(req => {
-      // 1. Search (Texto)
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        const matchesSearch =
-          String(req.formTitle || '').toLowerCase().includes(searchTerm) ||
-          String(req.formId || '').toLowerCase().includes(searchTerm) ||
-          String(req.trabajador || '').toLowerCase().includes(searchTerm) ||
-          String(req.rutTrabajador || '').toLowerCase().includes(searchTerm) ||
-          String(req.user?.nombre || '').toLowerCase().includes(searchTerm) ||
-          String(req.user?.empresa || '').toLowerCase().includes(searchTerm) ||
-          String(req.company || '').toLowerCase().includes(searchTerm) || // Si data trae company
-          String(req.submittedBy || '').toLowerCase().includes(searchTerm);
-
-        if (!matchesSearch) return false;
-      }
-
-      // 2. Status
-      if (filters.status && req.status !== filters.status) {
-        return false;
-      }
-
-      // 3. Category
-      // Si el ticket no tiene categoria, que hacemos?
-      // req.categoryData o req.category
-      if (filters.category && req.category !== filters.category) {
-        return false;
-      }
-
-      // 4. Company (Exact match or includes?)
-      if (filters.company) {
-        const userEmpresa = req.user?.empresa || req.company || '';
-        if (!userEmpresa.toLowerCase().includes(filters.company.toLowerCase())) {
-          return false;
-        }
-      }
-
-      // 5. Date Range
-      if (filters.startDate) {
-        const reqDate = new Date(req.createdAt);
-        const startDate = new Date(filters.startDate);
-        // Reset hours for fair comparison
-        startDate.setHours(0, 0, 0, 0);
-        if (reqDate < startDate) return false;
-      }
-
-      if (filters.endDate) {
-        const reqDate = new Date(req.createdAt);
-        const endDate = new Date(filters.endDate);
-        endDate.setHours(23, 59, 59, 999);
-        if (reqDate > endDate) return false;
-      }
-
-      // Date Range Presets (Today, Week, Month)
-      if (filters.dateRange) {
-        const now = new Date();
-        const reqDate = new Date(req.createdAt);
-
-        if (filters.dateRange === 'today') {
-          if (reqDate.toDateString() !== now.toDateString()) return false;
-        } else if (filters.dateRange === 'week') {
-          const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          if (reqDate < oneWeekAgo) return false;
-        } else if (filters.dateRange === 'month') {
-          const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Aprox
-          if (reqDate < oneMonthAgo) return false;
-        } else if (filters.dateRange === 'year') {
-          const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-          if (reqDate < oneYearAgo) return false;
-        }
-      }
-
-      // 6. Submitted By
-      if (filters.submittedBy) {
-        const submitter = req.user?.nombre || req.submittedBy || '';
-        if (!submitter.toLowerCase().includes(filters.submittedBy.toLowerCase())) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [resp, filters]);
-
-
   // --- PAGINACIÓN DE LOS FILTRADOS ---
-  const totalItems = filteredRequests.length;
-  const totalPages = Math.ceil(totalItems / requestsPerPage);
-
-  // Resetear página si cambia el filtro y la página actual queda fuera
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [totalItems, currentPage, totalPages]);
+  // Ahora manejada por el backend. 'resp' contiene solo los items de la página actual.
 
   const currentRequests = useMemo(() => {
-    const indexOfLastRequest = currentPage * requestsPerPage;
-    const indexOfFirstRequest = indexOfLastRequest - requestsPerPage;
-    return filteredRequests.slice(indexOfFirstRequest, indexOfLastRequest);
-  }, [filteredRequests, currentPage, requestsPerPage]);
+    return resp; // Ya viene paginado del servidor
+  }, [resp]);
 
 
   // --- HANDLERS ---
+
+  const handleTempFilterChange = (newTempFilters) => {
+    setTempFilters(newTempFilters);
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedFilters(tempFilters);
+    setCurrentPage(1); // Reset page
+    fetchData(1, false, tempFilters); // Force fetch with new filters immediately
+  };
+
   const handleClearFilters = () => {
-    setFilters({
+    const empty = {
       search: '', status: '', category: '',
       dateRange: '', startDate: '', endDate: '',
       company: '', submittedBy: ''
-    });
+    };
+    setTempFilters(empty);
+    setAppliedFilters(empty);
     setCurrentPage(1);
+    fetchData(1, false, empty);
   };
 
   const handleStatusFilter = (statusValue) => {
-    const newStatus = statusValue === null || filters.status === statusValue ? '' : statusValue;
-    setFilters(prev => ({ ...prev, status: newStatus }));
+    const newStatus = statusValue === null || appliedFilters.status === statusValue ? '' : statusValue;
+    const newFilters = { ...appliedFilters, status: newStatus };
+    setAppliedFilters(newFilters);
+    setTempFilters(newFilters);
     setCurrentPage(1);
+    fetchData(1, false, newFilters);
   };
 
   const handleRemove = async (request) => {
@@ -302,10 +226,34 @@ const RequestTracking = () => {
     if (currentPage > 1) setCurrentPage(c => c - 1);
   };
 
-  // Logic for Custom Cards (Stats Overview) based on CLIENT filtered or UNFILTERED data?
-  // Usually StatsOverview shows global stats or stats relative to current filter context (minus status itself).
-  // Let's pass 'resp' (all tickets) to StatsOverview so it can calculate counts.
-  // Wait, if it calculates based on 'allForms', we need to pass 'resp'.
+  // Carga inicial
+  useEffect(() => {
+    fetchData(currentPage);
+  }, [currentPage]); // Recargar al cambiar página
+
+  // Polling
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (!showRequestDetails) {
+        // Polling usa filtros actuales
+        fetchData(currentPage, true);
+      }
+    }, 30000);
+    return () => clearInterval(intervalId);
+  }, [showRequestDetails, currentPage, appliedFilters]);
+
+  // MOCK STATS FALLBACK (O usar serverStats directamente)
+  const mockStats = serverStats || {
+    total: totalItems,
+    // Si no tenemos stats del server aun, mostrar 0 para evitar confusión
+    pendiente: 0,
+    en_revision: 0,
+    aprobado: 0,
+    firmado: 0,
+    finalizado: 0,
+    archivado: 0,
+    // O intentar inferir de resp actual si es muy poco
+  };
 
   const customCards = useMemo(() => {
     if (!ticketConfigs || ticketConfigs.length === 0) return null;
@@ -351,9 +299,6 @@ const RequestTracking = () => {
     return sortedKeys.map(key => {
       const statusDef = aggregatedStatuses[key];
 
-      // Count from FULL list 'resp' to show global counts by status
-      // OR count from 'filteredRequests' (minus status filter)?
-      // Usually dashboards show GLOBAL counts in the stats cards.
       const count = resp.filter(r => (r.status || 'pendiente') === key).length;
 
       return {
@@ -440,19 +385,21 @@ const RequestTracking = () => {
           </div>
 
           <StatsOverview
-            stats={null} // Pasamos null para que use su lógica interna o customCards
-            allForms={resp} // Pasamos todos los datos para que calcule
-            filters={filters}
+            stats={null}
+            allForms={resp}
+            filters={appliedFilters} // Use active filters for highlighting
             onFilterChange={handleStatusFilter}
-            customCards={customCards} // Usamos nuestras cartas pre-calculadas
+            customCards={customCards}
           />
 
           <FilterPanel
-            filters={filters}
-            onFilterChange={setFilters}
+            filters={tempFilters} // Bind to temporary state
+            onFilterChange={handleTempFilterChange}
             onClearFilters={handleClearFilters}
+            onApplyFilters={handleApplyFilters} // Trigger commit
             isVisible={showFilters}
             onToggle={() => setShowFilters(!showFilters)}
+            ticketConfigs={ticketConfigs}
           />
 
           <div className={

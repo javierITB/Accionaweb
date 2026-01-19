@@ -8,17 +8,62 @@ const FilterPanel = ({
   filters,
   onFilterChange,
   onClearFilters,
+  onApplyFilters,
   isVisible,
-  onToggle
+  onToggle,
+  ticketConfigs = [] // Receive dynamic configs
 }) => {
-  // Opciones de estado basadas en los estados reales del sistema
-  const statusOptions = [
-    { value: '', label: 'Todos los Estados' },
-    { value: 'pendiente', label: 'Pendiente' },
-    { value: 'en_revision', label: 'En Revisión' },
-    { value: 'finalizado', label: 'Finalizado' },
-    { value: 'archivado', label: 'Archivado' },
-  ];
+
+  // 1. DYNAMIC STATUS OPTIONS
+  // Extract all unique statuses from all configs, ensuring no duplicates.
+  // Add 'archivado' explicitly if not present.
+  const statusOptions = React.useMemo(() => {
+    const uniqueStatuses = new Map();
+
+    // Default 'Todos'
+    const options = [{ value: '', label: 'Todos los Estados' }];
+
+    ticketConfigs.forEach(config => {
+      if (config.statuses) {
+        config.statuses.forEach(s => {
+          if (!uniqueStatuses.has(s.value)) {
+            uniqueStatuses.set(s.value, s.label);
+          }
+        });
+      }
+    });
+
+    // Ensure 'archivado' exists
+    if (!uniqueStatuses.has('archivado')) {
+      uniqueStatuses.set('archivado', 'Archivado');
+    }
+
+    // Convert to array
+    uniqueStatuses.forEach((label, value) => {
+      options.push({ value, label });
+    });
+
+    return options;
+  }, [ticketConfigs]);
+
+
+  // 2. DYNAMIC CATEGORY OPTIONS
+  // Extract all unique Category IDs (formIds) or Names
+  const categoryOptions = React.useMemo(() => {
+    const options = [{ value: '', label: 'Todas las Categorías' }];
+
+    ticketConfigs.forEach(config => {
+      // Use config.id or fallback to config.name or config.title
+      // The system relies on 'category' field in ticket matching this value.
+      const val = config.id || config.category || config.name;
+      if (val) {
+        options.push({ value: val, label: config.title || config.name || val });
+      }
+    });
+
+    return options;
+  }, [ticketConfigs]);
+
 
   const dateRangeOptions = [
     { value: '', label: 'Cualquier Fecha' },
@@ -39,7 +84,7 @@ const FilterPanel = ({
 
   return (
     <div className="bg-card border border-border rounded-lg">
-      {/* Filter Header - RESPONSIVE */}
+      {/* Filter Header */}
       <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
         <div className="flex items-center space-x-2">
           <Icon name="Filter" size={18} className="text-accent sm:w-5 sm:h-5" />
@@ -76,7 +121,7 @@ const FilterPanel = ({
         </div>
       </div>
 
-      {/* Filter Content - RESPONSIVE */}
+      {/* Filter Content */}
       {isVisible && (
         <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
           {/* Search */}
@@ -91,13 +136,20 @@ const FilterPanel = ({
             />
           </div>
 
-          {/* Filter Grid - RESPONSIVE */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          {/* Filter Grid: STATUS & CATEGORY */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <Select
               label="Estado"
               options={statusOptions}
               value={filters?.status || ''}
               onChange={(value) => handleInputChange('status', value)}
+            />
+
+            <Select
+              label="Categoría"
+              options={categoryOptions}
+              value={filters?.category || ''}
+              onChange={(value) => handleInputChange('category', value)}
             />
 
             <Select
@@ -108,7 +160,7 @@ const FilterPanel = ({
             />
           </div>
 
-          {/* Date Range Inputs - RESPONSIVE */}
+          {/* Date Range Inputs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Input
               label="Fecha Desde"
@@ -125,7 +177,7 @@ const FilterPanel = ({
             />
           </div>
 
-          {/* Advanced Filters - RESPONSIVE */}
+          {/* Advanced Filters */}
           <div className="pt-3 sm:pt-4 border-t border-border">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <Input
@@ -144,6 +196,18 @@ const FilterPanel = ({
                 onChange={(e) => handleInputChange('submittedBy', e?.target?.value)}
               />
             </div>
+          </div>
+
+          {/* BOTÓN FILTRAR */}
+          <div className="flex justify-end pt-4">
+            <Button
+              variant="default"
+              onClick={onApplyFilters}
+              iconName="Search"
+              className="bg-accent text-accent-foreground px-8 w-full sm:w-auto font-bold shadow-sm"
+            >
+              Filtrar
+            </Button>
           </div>
         </div>
       )}
