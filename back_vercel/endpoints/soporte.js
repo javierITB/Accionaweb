@@ -314,7 +314,6 @@ router.post("/", uploadMultiple.array('adjuntos'), async (req, res) => {
     let empresaDescifrada = empresa;
     if (empresa && empresa.includes(':')) {
       empresaDescifrada = decrypt(empresa);
-      console.log("Empresa descifrada para validación:", empresaDescifrada);
     }
 
     let form = null;
@@ -329,7 +328,7 @@ router.post("/", uploadMultiple.array('adjuntos'), async (req, res) => {
         return res.status(403).json({ error: `La empresa ${empresaDescifrada} no está autorizada.` });
       }
     } else {
-      console.log(`Ticket creado: ${formId}`);
+      console.log(`Ticket creado`);
     }
 
     // Capturar categoría del request
@@ -521,7 +520,6 @@ router.post("/:id/adjuntos", async (req, res) => {
     const { id } = req.params;
     const { adjunto, index, total } = req.body;
 
-    console.log(`Subiendo adjunto ${index + 1} de ${total} para respuesta:`, id);
 
     if (!adjunto || typeof index === 'undefined' || !total) {
       return res.status(400).json({
@@ -548,10 +546,7 @@ router.post("/:id/adjuntos", async (req, res) => {
       uploadedAt: new Date().toISOString()
     };
 
-    console.log(`Procesando adjunto ${index + 1}:`, {
-      fileName: adjuntoNormalizado.fileName,
-      size: adjuntoNormalizado.size
-    });
+    
 
     // Buscar el documento de adjuntos
     const documentoAdjuntos = await req.db.collection("adjuntos").findOne({
@@ -576,7 +571,6 @@ router.post("/:id/adjuntos", async (req, res) => {
           $push: { adjuntos: adjuntoNormalizado }
         }
       );
-      console.log(`Adjunto ${index + 1} agregado al documento existente`);
     }
 
     res.json({
@@ -599,7 +593,6 @@ router.get("/:id/adjuntos/:index", async (req, res) => {
     if (!auth.ok) return res.status(401).json({ error: auth.error });
     const { id, index } = req.params;
 
-    console.log("Descargando adjunto:", { id, index });
 
     let query = {};
 
@@ -612,7 +605,6 @@ router.get("/:id/adjuntos/:index", async (req, res) => {
     const documentoAdjunto = await req.db.collection("adjuntos").findOne(query);
 
     if (!documentoAdjunto) {
-      console.log("Adjunto no encontrado con query:", query);
       return res.status(404).json({ error: "Archivo adjunto no encontrado" });
     }
 
