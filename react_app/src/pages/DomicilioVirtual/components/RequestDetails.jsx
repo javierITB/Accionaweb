@@ -10,6 +10,24 @@ import useAsyncDialog from "hooks/useAsyncDialog";
 const MAX_FILES = 5; // Máximo de archivos
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
 
+import {
+  getStatusColorClass,
+  getStatusIcon,
+  getDefaultStatusColor,
+  formatStatusText
+} from "../../../utils/ticketStatusStyles";
+
+const domicilioConfig = {
+  statuses: [
+    { value: 'documento_generado', label: 'Doc. Generado', color: 'red', icon: 'FileText' },
+    { value: 'enviado', label: 'Enviado', color: 'blue', icon: 'Send' },
+    { value: 'solicitud_firmada', label: 'Firmada', color: 'yellow', icon: 'PenTool' },
+    { value: 'informado_sii', label: 'Info. SII', color: 'white', icon: 'Building' },
+    { value: 'dicom', label: 'DICOM', color: 'orange', icon: 'AlertTriangle' },
+    { value: 'dado_de_baja', label: 'De Baja', color: 'gray', icon: 'XCircle' }
+  ]
+};
+
 const RequestDetails = ({
   request,
   isVisible,
@@ -1468,36 +1486,63 @@ const RequestDetails = ({
 
               <div className="flex items-center space-x-2">
                 {!isStandalone && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleStatusChange(getPreviousStatus(fullRequestData?.status))}
-                    disabled={!getPreviousStatus(fullRequestData?.status)}
-                    iconName="ChevronLeft"
-                    iconSize={16}
-                    className="text-muted-foreground hover:text-foreground"
-                  />
-                )}
+                  <div className="relative" ref={statusDropdownRef}>
+                    {(() => {
+                      const currentStatus = fullRequestData?.status;
+                      const statusDef = domicilioConfig.statuses.find(s => s.value === currentStatus);
 
-                <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                    fullRequestData?.status
-                  )}`}
-                >
-                  <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
-                  {fullRequestData?.status?.replace("_", " ")?.toUpperCase()}
-                </span>
+                      const triggerColorClass = statusDef
+                        ? getStatusColorClass(statusDef.color)
+                        : getDefaultStatusColor(currentStatus);
 
-                {!isStandalone && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleStatusChange(getNextStatus(fullRequestData?.status))}
-                    disabled={!getNextStatus(fullRequestData?.status)}
-                    iconName="ChevronRight"
-                    iconSize={16}
-                    className="text-muted-foreground hover:text-foreground"
-                  />
+                      const triggerIconName = statusDef ? statusDef.icon : getStatusIcon(currentStatus);
+                      const triggerLabel = statusDef ? statusDef.label : formatStatusText(currentStatus);
+
+                      return (
+                        <>
+                          <button
+                            onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-opacity hover:opacity-80 ${triggerColorClass}`}
+                            title="Cambiar estado"
+                          >
+                            <Icon name={triggerIconName} size={14} className="mr-2" />
+                            <span className="uppercase">{triggerLabel}</span>
+                            <Icon name="ChevronDown" size={14} className="ml-2 opacity-50" />
+                          </button>
+
+                          {isStatusDropdownOpen && (
+                            <div className="absolute top-full left-0 mt-2 w-56 bg-popover border border-border rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                              <div className="p-1">
+                                {domicilioConfig.statuses.map((st) => (
+                                  <button
+                                    key={st.value}
+                                    onClick={() => {
+                                      openAsyncDialog({
+                                        title: `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
+                                        loadingText: `Cambiando estado a "${st.label}"...`,
+                                        successText: "Estado cambiado correctamente",
+                                        errorText: "No se pudo cambiar el estado",
+                                        onConfirm: () => handleStatusChange(st.value)
+                                      });
+                                      setIsStatusDropdownOpen(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${currentStatus === st.value
+                                      ? 'bg-accent/10 text-accent font-medium'
+                                      : 'hover:bg-accent/5 text-foreground'
+                                      }`}
+                                  >
+                                    <Icon name={st.icon || 'Circle'} size={14} className={`${getStatusColorClass(st.color).replace('bg-', 'text-').replace('/10', '').split(' ')[0]}`} />
+                                    <span>{st.label}</span>
+                                    {currentStatus === st.value && <Icon name="Check" size={14} className="ml-auto opacity-70" />}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
                 )}
               </div>
             </div>
@@ -1541,31 +1586,7 @@ const RequestDetails = ({
                 <>
                   {/* Botón Mensajes eliminado para Domicilio Virtual */}
 
-                  <div className="flex items-center gap-2 w-3/4 justify-end">
-                    <span className="text-sm font-medium">Cambiar Estado:</span>
-                    <select
-                      value={fullRequestData?.status || ""}
-                      onChange={(e) => {
-                        const newStatus = e.target.value;
-
-                        openAsyncDialog({
-                          title: `¿Está seguro de que quiere cambiar el estado a "${newStatus}"?`,
-                          loadingText: `Cambiando estado a "${newStatus}"...`,
-                          successText: "Estado cambiado correctamente",
-                          errorText: "No se pudo cambiar el estado",
-                          onConfirm: () => handleStatusChange(newStatus),
-                        });
-                      }}
-                      className="h-9 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent w-2/5"
-                    >
-                      <option value="documento_generado">Documento Generado</option>
-                      <option value="enviado">Enviado</option>
-                      <option value="solicitud_firmada">Firmada</option>
-                      <option value="informado_sii">Informado al SII</option>
-                      <option value="dicom">DICOM</option>
-                      <option value="dado_de_baja">Dado de baja</option>
-                    </select>
-                  </div>
+                  {/* Bottom drop down removed */}
 
                 </>
               )}

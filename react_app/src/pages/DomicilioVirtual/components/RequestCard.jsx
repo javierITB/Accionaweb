@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import {
+  getStatusColorClass,
+  getStatusIcon,
+  getDefaultStatusColor,
+  formatStatusText
+} from '../../../utils/ticketStatusStyles';
+
+const domicilioConfig = {
+  statuses: [
+    { value: 'documento_generado', label: 'Doc. Generado', color: 'red', icon: 'FileText' },
+    { value: 'enviado', label: 'Enviado', color: 'blue', icon: 'Send' },
+    { value: 'solicitud_firmada', label: 'Firmada', color: 'yellow', icon: 'PenTool' },
+    { value: 'informado_sii', label: 'Info. SII', color: 'white', icon: 'Building' },
+    { value: 'dicom', label: 'DICOM', color: 'orange', icon: 'AlertTriangle' },
+    { value: 'dado_de_baja', label: 'De Baja', color: 'gray', icon: 'XCircle' }
+  ]
+};
 
 const RequestCard = ({ request, onRemove, onViewDetails }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
@@ -11,62 +28,7 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
 
 
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pending': case 'pendiente': return 'bg-error text-error-foreground';
-      case 'documento_generado': return 'bg-error/10 text-error';
-      case 'enviado': return 'bg-blue-100 text-blue-700';
-      case 'solicitud_firmada': return 'bg-warning text-warning-foreground';
-      case 'informado_sii': return 'bg-info text-info-foreground';
-      case 'dicom': return 'bg-secondary text-secondary-foreground';
-      case 'dado_de_baja': return 'bg-muted text-muted-foreground';
-      case 'finalizado': return 'bg-accent text-accent-foreground';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
 
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pending': case 'pendiente': return 'Clock';
-      case 'documento_generado': return 'FileText';
-      case 'enviado': return 'Send';
-      case 'solicitud_firmada': return 'PenTool';
-      case 'informado_sii': return 'Building';
-      case 'dicom': return 'AlertTriangle';
-      case 'dado_de_baja': return 'XCircle';
-      case 'finalizado': return 'Timer';
-      default: return 'HelpCircle';
-    }
-  };
-
-  const formatStatusText = (status) => {
-    const statusMap = {
-      'pending': 'PENDIENTE',
-      'pendiente': 'PENDIENTE',
-      'enviado': 'ENVIADO',
-      'documento_generado': 'DOC. GENERADO',
-      'solicitud_firmada': 'FIRMADA',
-      'informado_sii': 'INFORMADO SII',
-      'dicom': 'DICOM',
-      'dado_de_baja': 'DADO DE BAJA',
-      'finalizado': 'FINALIZADO'
-    };
-
-    return statusMap[status?.toLowerCase()] || status?.replace('_', ' ')?.toUpperCase() || 'DESCONOCIDO';
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority?.toLowerCase()) {
-      case 'high':
-        return 'text-error';
-      case 'medium':
-        return 'text-warning';
-      case 'low':
-        return 'text-success';
-      default:
-        return 'text-muted-foreground';
-    }
-  };
 
   const formatDate = (dateString) => {
     return new Date(dateString)?.toLocaleDateString('es-CL', {
@@ -159,11 +121,24 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
 
         {/* Status Badge - RESPONSIVE */}
         <div className="flex items-center space-x-2 self-start sm:self-auto sm:ml-4">
-          {/* Message indicator removed */}
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(currentRequest?.status)} whitespace-nowrap`}>
-            <Icon name={getStatusIcon(currentRequest?.status)} size={10} className="mr-1 sm:w-3 sm:h-3" />
-            {formatStatusText(currentRequest?.status)}
-          </span>
+          {(() => {
+            const currentStatus = currentRequest?.status;
+            const statusDef = domicilioConfig.statuses.find(s => s.value === currentStatus);
+
+            const badgeClass = statusDef
+              ? getStatusColorClass(statusDef.color)
+              : getDefaultStatusColor(currentStatus);
+
+            const iconName = statusDef ? statusDef.icon : getStatusIcon(currentStatus);
+            const label = statusDef ? statusDef.label : formatStatusText(currentStatus);
+
+            return (
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${badgeClass}`}>
+                <Icon name={iconName} size={12} className="mr-1.5" />
+                {label.toUpperCase()}
+              </span>
+            );
+          })()}
         </div>
       </div>
 
