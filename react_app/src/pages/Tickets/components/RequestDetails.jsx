@@ -1016,32 +1016,26 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                 <div>
                   <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
                     {/* Priorizamos la Subcategoría de la base de datos */}
-                    {fullRequestData?.responses?.['Subcategoría'] || fullRequestData?.formTitle || fullRequestData?.title}
-
-                    {fullRequestData?.origin === 'domicilio_virtual' && fullRequestData?.relatedRequestId && (
+                    {fullRequestData?.origin === 'domicilio_virtual' && fullRequestData?.relatedRequestId ? (
                       <Link
                         to={`/DomicilioVirtual?id=${fullRequestData.relatedRequestId}`}
-                        className="ml-2 inline-flex items-center text-muted-foreground hover:text-accent"
+                        className="flex items-center gap-2 hover:text-accent transition-colors"
+                        title="Ver detalle en Domicilio Virtual"
                       >
-                        <Icon name="ExternalLink" size={16} />
+                        {fullRequestData?.responses?.['Subcategoría'] || fullRequestData?.formTitle || fullRequestData?.title}
+                        <Icon name="ExternalLink" size={16} className="text-muted-foreground" />
                       </Link>
+                    ) : (
+                      <span>
+                        {fullRequestData?.responses?.['Subcategoría'] || fullRequestData?.formTitle || fullRequestData?.title}
+                      </span>
                     )}
                   </h2>
                   <p className="text-sm text-muted-foreground">ID: {fullRequestData?._id}</p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleStatusChange(getPreviousStatus(fullRequestData?.status))}
-                  disabled={!getPreviousStatus(fullRequestData?.status)}
-                  iconName="ChevronLeft"
-                  iconSize={16}
-                  className="text-muted-foreground hover:text-foreground"
-                />
-
+              <div className="flex items-center space-x-4">
                 {/* Dynamic Status Dropdown */}
                 <div className="relative" ref={statusDropdownRef}>
                   {(() => {
