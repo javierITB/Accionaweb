@@ -24,6 +24,12 @@ const FormCenter = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [stats, setStats] = useState({
+    total: 0,
+    recent: 0,
+    status: {},
+    section: {}
+  });
   const itemsPerPage = 15;
 
   const [allForms, setAllForms] = useState([]);
@@ -85,9 +91,11 @@ const FormCenter = () => {
         const rawForms = Array.isArray(result) ? result : (result.data || []);
         const total = result.total || rawForms.length;
         const pages = result.pages || 1;
+        const serverStats = result.stats || { total: 0, recent: 0, status: {}, section: {} };
 
         setTotalItems(total);
         setTotalPages(pages);
+        setStats(serverStats);
 
         const normalizedForms = rawForms.map(f => ({
           id: f._id,
@@ -156,11 +164,11 @@ const FormCenter = () => {
   }, [filters.isRecent, filters.priority, filters.documentsRequired, allForms]); // REMOVED searchQuery, activeCategory etc.
 
   const categories = [
-    { id: 'all', name: 'Todos', count: allForms.length },
-    { id: 'Remuneraciones', name: 'Remuneraciones', count: allForms.filter(f => f.section === 'Remuneraciones').length },
-    { id: 'Anexos', name: 'Anexos', count: allForms.filter(f => f.section === 'Anexos').length },
-    { id: 'Finiquitos', name: 'Finiquitos', count: allForms.filter(f => f.section === 'Finiquitos').length },
-    { id: 'Otras', name: 'Otras', count: allForms.filter(f => f.section === 'Otras').length }
+    { id: 'all', name: 'Todos', count: stats.total || 0 },
+    { id: 'Remuneraciones', name: 'Remuneraciones', count: stats.section['Remuneraciones'] || 0 },
+    { id: 'Anexos', name: 'Anexos', count: stats.section['Anexos'] || 0 },
+    { id: 'Finiquitos', name: 'Finiquitos', count: stats.section['Finiquitos'] || 0 },
+    { id: 'Otras', name: 'Otras', count: stats.section['Otras'] || 0 }
   ];
 
   const handleFormSelect = (form) => {
@@ -210,15 +218,9 @@ const FormCenter = () => {
     setViewMode(viewMode === 'grid' ? 'list' : 'grid');
   };
 
-  const borradorCount = allForms.filter(f => f.status === 'borrador').length;
-  const publicadoCount = allForms.filter(f => f.status === 'publicado').length;
-
-  const recentCount = allForms.filter(f => {
-    if (!f.lastModified) return false;
-    const lastModDate = new Date(f.lastModified);
-    const now = new Date();
-    return (now - lastModDate) <= 7 * 24 * 60 * 60 * 1000;
-  }).length;
+  const borradorCount = stats.status['borrador'] || 0;
+  const publicadoCount = stats.status['publicado'] || 0;
+  const recentCount = stats.recent || 0;
 
   // Clase de Margen para el contenido principal - RESPONSIVE
   const mainMarginClass = isMobileScreen
@@ -336,7 +338,7 @@ const FormCenter = () => {
                     <Icon name="FileText" size={16} className="text-primary sm:w-5 sm:h-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{allForms.length}</p>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{stats.total || 0}</p>
                     <p className="text-xs text-muted-foreground leading-tight">Formularios Disponibles</p>
                   </div>
                 </div>
