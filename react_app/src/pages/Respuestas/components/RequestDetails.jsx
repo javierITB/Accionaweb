@@ -33,9 +33,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   // --- NUEVO ESTADO PARA DATOS APROBADOS ---
   const [approvedData, setApprovedData] = useState(null);
   const [isLoadingApprovedData, setIsLoadingApprovedData] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
 
   // Estado principal de datos
   const [fullRequestData, setFullRequestData] = useState({ ...request });
@@ -50,6 +48,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
+  const [filesToDelete, setFilesToDelete] = useState([]);
 
   useEffect(() => {
     if (request) {
@@ -351,48 +350,76 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     }
   };
 
-  const handlePreviewCorrectedFile = async (index = 0) => {
-    const hasFiles = correctedFiles.length > 0 || approvedData || fullRequestData?.correctedFile;
+const handlePreviewCorrectedFile = async (index = 0, source = 'auto') => {
+  // source: 'approved' (archivos aprobados), 'new' (archivos nuevos), 'auto' (detecta automáticamente)
 
-    if (!hasFiles) {
-      alert('No hay documentos corregidos para vista previa');
-      return;
+  try {
+    setIsLoadingPreviewCorrected(true);
+    setPreviewIndex(index);
+
+    let documentUrl;
+    let useApprovedFiles = false;
+
+    // Determinar qué archivos usar
+    if (source === 'approved') {
+      useApprovedFiles = true;
+    } else if (source === 'new') {
+      useApprovedFiles = false;
+    } else {
+      // 'auto' - intentar determinar basado en contexto
+      // Si estamos en la sección de archivos aprobados, probablemente es archivo aprobado
+      // Pero esto no es confiable, mejor pasar el source explícitamente
+      useApprovedFiles = correctedFiles.length === 0;
     }
 
-    try {
-      setIsLoadingPreviewCorrected(true);
-      setPreviewIndex(index);
+    // Archivos aprobados
+    if (useApprovedFiles) {
+      const hasApprovedFiles = approvedData?.correctedFiles || fullRequestData?.correctedFile;
+      
+      if (!hasApprovedFiles) {
+        alert('No hay archivos aprobados disponibles');
+        return;
+      }
 
-      let documentUrl;
-
-      if (correctedFiles.length > 0) {
-        if (index < 0 || index >= correctedFiles.length) {
-          alert('Índice de archivo inválido');
+      // Si hay múltiples archivos aprobados
+      if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
+        if (index < 0 || index >= approvedData.correctedFiles.length) {
+          alert('Índice de archivo aprobado inválido');
           return;
         }
-        const file = correctedFiles[index];
-        documentUrl = URL.createObjectURL(file);
-      }
-      else if (approvedData || request?.status === 'aprobado' || request?.status === 'firmado') {
         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
         documentUrl = await downloadPdfForPreview(pdfUrl);
+      } 
+      // Formato antiguo (un solo archivo)
+      else if (fullRequestData?.correctedFile) {
+        const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/corrected-file`;
+        documentUrl = await downloadPdfForPreview(pdfUrl);
       }
-      else if (request?.correctedFile) {
-        alert('El documento corregido está en proceso de revisión.');
-        return;
-      } else {
-        alert('No hay documentos corregidos disponibles');
+    } 
+    // Archivos nuevos/seleccionados
+    else {
+      if (correctedFiles.length === 0) {
+        alert('No hay archivos seleccionados para previsualizar');
         return;
       }
 
-      handlePreviewDocument(documentUrl, 'pdf');
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
-    } finally {
-      setIsLoadingPreviewCorrected(false);
+      if (index < 0 || index >= correctedFiles.length) {
+        alert('Índice de archivo nuevo inválido');
+        return;
+      }
+
+      const file = correctedFiles[index];
+      documentUrl = URL.createObjectURL(file);
     }
-  };
+
+    handlePreviewDocument(documentUrl, 'pdf');
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error: ' + error.message);
+  } finally {
+    setIsLoadingPreviewCorrected(false);
+  }
+};
 
   const handlePreviewClientSignature = async () => {
     if (!clientSignature) {
@@ -532,43 +559,196 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     }
   };
 
-  const handleFileSelect = (event) => {
-    const files = Array.from(event.target.files);
-    const pdfFiles = files.filter(file => file.type === 'application/pdf');
+const handleFileSelect = (event) => {
+  const files = Array.from(event.target.files);
+  const pdfFiles = files.filter(file => file.type === 'application/pdf');
 
-    if (pdfFiles.length === 0) {
-      alert('Por favor, sube solo archivos PDF');
-      event.target.value = '';
-      return;
-    }
-
-    // Validar límite de cantidad de archivos
-    if (correctedFiles.length + pdfFiles.length > MAX_FILES) {
-      alert(`Máximo ${MAX_FILES} archivos permitidos. Ya tienes ${correctedFiles.length} archivo(s) seleccionado(s).`);
-      event.target.value = '';
-      return;
-    }
-
-    // Validar tamaño de cada archivo
-    const oversizedFiles = pdfFiles.filter(file => file.size > MAX_FILE_SIZE);
-    if (oversizedFiles.length > 0) {
-      const oversizedNames = oversizedFiles.map(f => f.name).join(', ');
-      alert(`Los siguientes archivos exceden el límite de 1MB: ${oversizedNames}`);
-      event.target.value = '';
-      return;
-    }
-
-    setCorrectedFiles(prev => [...prev, ...pdfFiles]);
+  if (pdfFiles.length === 0) {
+    alert('Por favor, sube solo archivos PDF');
     event.target.value = '';
-  };
+    return;
+  }
+
+  const totalApprovedFiles = approvedData?.correctedFiles?.length || 0;
+  const currentlySelectedFiles = correctedFiles.length;
+  const newFilesCount = pdfFiles.length;
+  const totalAfterSelection = totalApprovedFiles + currentlySelectedFiles + newFilesCount;
+
+  // 1. Validar límite de cantidad de archivos
+  if (totalAfterSelection > MAX_FILES) {
+    alert(`Máximo ${MAX_FILES} archivos permitidos. 
+Ya tienes ${totalApprovedFiles} archivo(s) aprobado(s) y ${currentlySelectedFiles} archivo(s) seleccionado(s).
+Puedes agregar máximo ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles} archivo(s) más.`);
+    event.target.value = '';
+    return;
+  }
+
+  // 2. Validar tamaño de cada archivo
+  const oversizedFiles = pdfFiles.filter(file => file.size > MAX_FILE_SIZE);
+  if (oversizedFiles.length > 0) {
+    const oversizedNames = oversizedFiles.map(f => f.name).join(', ');
+    alert(`Los siguientes archivos exceden el límite de 1MB: ${oversizedNames}`);
+    event.target.value = '';
+    return;
+  }
+
+  // 3. Validar que no exceda el límite por archivo
+  const totalFilesAfterAdding = totalApprovedFiles + currentlySelectedFiles + pdfFiles.length;
+  if (totalFilesAfterAdding > MAX_FILES) {
+    alert(`No puedes agregar ${pdfFiles.length} archivo(s). 
+Solo puedes agregar ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles} archivo(s) más.`);
+    event.target.value = '';
+    return;
+  }
+
+  setCorrectedFiles(prev => [...prev, ...pdfFiles]);
+  event.target.value = '';
+};
+
+const canAddMoreFiles = () => {
+  const totalApprovedFiles = approvedData?.correctedFiles?.length || 0;
+  const currentlySelectedFiles = correctedFiles.length;
+  const availableSlots = MAX_FILES - totalApprovedFiles - currentlySelectedFiles;
+  return availableSlots > 0;
+};
+
+const getAvailableSlots = () => {
+  const totalApprovedFiles = approvedData?.correctedFiles?.length || 0;
+  const currentlySelectedFiles = correctedFiles.length;
+  return MAX_FILES - totalApprovedFiles - currentlySelectedFiles;
+};
+
+const handleUploadAdditionalFiles = async () => {
+  if (correctedFiles.length === 0 && filesToDelete.length === 0) {
+    alert('No hay cambios para aplicar');
+    return;
+  }
+
+  const changes = [];
+  if (correctedFiles.length > 0) changes.push(`${correctedFiles.length} archivo(s) para agregar`);
+  if (filesToDelete.length > 0) changes.push(`${filesToDelete.length} archivo(s) para eliminar`);
+  
+  if (!confirm(`¿Aplicar los siguientes cambios?\n${changes.join('\n')}`)) return;
+
+  setIsUploading(true);
+
+  try {
+    const results = {
+      added: 0,
+      deleted: 0,
+      errors: []
+    };
+
+
+        // 1. PRIMERO AGREGAR ARCHIVOS NUEVOS
+    if (correctedFiles.length > 0) {
+      const uploadSuccess = await uploadFilesOneByOne();
+      if (uploadSuccess) {
+        results.added = correctedFiles.length;
+      }
+    }
+
+    // 2. LUEGO ELIMINAR ARCHIVOS
+    if (filesToDelete.length > 0) {
+      for (const fileToDelete of filesToDelete) {
+        try {
+          const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/delete-corrected-file/${request._id}`, {
+            method: 'DELETE',
+            body: JSON.stringify({ fileName: fileToDelete.fileName })
+          });
+
+          if (response.ok) {
+            results.deleted++;
+            console.log(`Archivo eliminado: ${fileToDelete.fileName}`);
+          } else {
+            const errorData = await response.json();
+            results.errors.push(`Error eliminando "${fileToDelete.fileName}": ${errorData.error}`);
+          }
+        } catch (error) {
+          results.errors.push(`Error eliminando "${fileToDelete.fileName}": ${error.message}`);
+        }
+      }
+    }
+
+
+
+    // 3. ESPERAR UN MOMENTO PARA ASEGURAR QUE LOS CAMBIOS SE GUARDARON
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // 4. REFRESCAR LOS DATOS APROBADOS
+    await fetchApprovedData(request._id);
+    
+    // 5. LIMPIAR ESTADOS
+    setCorrectedFiles([]);
+    setFilesToDelete([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    
+    // 6. MOSTRAR RESULTADO
+    let message = 'Cambios aplicados exitosamente:\n';
+    if (results.added > 0) message += `✓ ${results.added} archivo(s) agregado(s)\n`;
+    if (results.deleted > 0) message += `✓ ${results.deleted} archivo(s) eliminado(s)\n`;
+    if (results.errors.length > 0) {
+      message += '\nErrores:\n' + results.errors.join('\n');
+    }
+    
+    alert(message);
+    
+    // 7. REFRESCAR EL ESTADO SI ES NECESARIO
+    if (onUpdate) {
+      const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
+      if (updatedResponse.ok) {
+        const updatedRequest = await updatedResponse.json();
+        const normalizedRequest = {
+          ...updatedRequest,
+          submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
+          company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
+          submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
+        };
+        onUpdate(normalizedRequest);
+      }
+    }
+
+  } catch (error) {
+    console.error('Error aplicando cambios:', error);
+    alert('Error aplicando cambios: ' + error.message);
+  } finally {
+    setIsUploading(false);
+  }
+};
 
   const handleRemoveFile = (index) => {
     setCorrectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleUndoDelete = (fileName) => {
+  setFilesToDelete(prev => prev.filter(f => f.fileName !== fileName));
+  
+  // Restaurar visualmente el archivo
+  if (approvedData?.correctedFiles) {
+    const updatedApprovedFiles = approvedData.correctedFiles.map(file => 
+      file.fileName === fileName 
+        ? { ...file, markedForDelete: false }
+        : file
+    );
+    
+    setApprovedData(prev => ({
+      ...prev,
+      correctedFiles: updatedApprovedFiles
+    }));
+  }
+  
+  // alert(`Eliminación de "${fileName}" cancelada`);
+};
+
+const handleUploadClick = () => {
+  if (!canAddMoreFiles()) {
+    alert(`No puedes agregar más archivos. 
+Ya tienes ${approvedData?.correctedFiles?.length || 0} archivo(s) aprobado(s) y ${correctedFiles.length} archivo(s) seleccionado(s).
+Máximo permitido: ${MAX_FILES} archivos.`);
+    return;
+  }
+  fileInputRef.current?.click();
+};
 
   const handleRemoveCorrection = async () => {
     if (correctedFiles.length > 0) {
@@ -604,48 +784,42 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   };
 
   // Función para eliminar un archivo ya subido en el backend
-  const handleDeleteUploadedFile = async (fileName, index) => {
-    if (!confirm(`¿Estás seguro de eliminar el archivo "${fileName}"?`)) return;
+const handleDeleteUploadedFile = async (fileName, index) => {
+  // if (!confirm(`¿Estás seguro de eliminar el archivo "${fileName}"?`)) return;
 
-    setIsDeletingFile(index);
-    try {
-      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/delete-corrected-file/${request._id}`, {
-        method: 'DELETE',
-        body: JSON.stringify({ fileName })
-      });
+  setIsDeletingFile(index);
+  
+  try {
+    // En lugar de eliminar inmediatamente, agregamos a la lista de archivos a eliminar
+    setFilesToDelete(prev => [...prev, {
+      fileName,
+      index,
+      id: approvedData?.correctedFiles?.[index]?._id // Si hay ID del archivo
+    }]);
 
-      if (response.ok) {
-        const result = await response.json();
-        alert(`Archivo "${fileName}" eliminado exitosamente`);
-
-        // Refrescar los datos aprobados
-        await fetchApprovedData(request._id);
-
-        // Si onUpdate está disponible, actualizar el request
-        if (onUpdate) {
-          const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
-          if (updatedResponse.ok) {
-            const updatedRequest = await updatedResponse.json();
-            const normalizedRequest = {
-              ...updatedRequest,
-              submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
-              company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
-              submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
-            };
-            onUpdate(normalizedRequest);
-          }
-        }
-      } else {
-        const errorData = await response.json();
-        alert(`Error eliminando archivo: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Error eliminando archivo:', error);
-      alert('Error eliminando archivo: ' + error.message);
-    } finally {
-      setIsDeletingFile(null);
+    // También eliminamos visualmente el archivo de la lista aprobada
+    if (approvedData?.correctedFiles) {
+      const updatedApprovedFiles = [...approvedData.correctedFiles];
+      updatedApprovedFiles[index] = {
+        ...updatedApprovedFiles[index],
+        markedForDelete: true // Marcamos para eliminación
+      };
+      
+      setApprovedData(prev => ({
+        ...prev,
+        correctedFiles: updatedApprovedFiles
+      }));
     }
-  };
+
+    // alert(`Archivo "${fileName}" marcado para eliminación. Presiona "Actualizar" para aplicar los cambios.`);
+    
+  } catch (error) {
+    console.error('Error marcando archivo para eliminación:', error);
+    alert('Error marcando archivo: ' + error.message);
+  } finally {
+    setIsDeletingFile(null);
+  }
+};
 
   // Función para subir archivos uno por uno (igual que adjuntos)
   const uploadFilesOneByOne = async () => {
@@ -681,14 +855,13 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
           console.log(`Archivo ${i + 1} subido:`, result);
           successfulUploads++;
 
-          // Actualizar progreso
-          setUploadedFilesCount(successfulUploads);
-          setUploadProgress(Math.round((successfulUploads / correctedFiles.length) * 100));
+// Subida completada exitosamente
+successfulUploads++;
 
-          // Pequeña pausa entre archivos
-          if (i < correctedFiles.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
+// Pequeña pausa entre archivos (opcional, si quieres mantenerlo)
+if (i < correctedFiles.length - 1) {
+  await new Promise(resolve => setTimeout(resolve, 100)); // Puedes reducir el tiempo o quitarlo
+}
         } else {
           const error = await response.json();
           console.error(`Error subiendo archivo ${i + 1}:`, error);
@@ -743,8 +916,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
 
     setIsApproving(true);
     setIsUploading(true);
-    setUploadProgress(0);
-    setUploadedFilesCount(0);
 
     try {
       // 1. SUBIR ARCHIVOS UNO POR UNO
@@ -786,7 +957,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         }
 
         setCorrectedFiles([]);
-        setUploadProgress(100);
 
         setTimeout(() => {
           alert(`✅ Formulario aprobado exitosamente\n${correctedFiles.length} archivo(s) subido(s)`);
@@ -843,10 +1013,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     } finally {
       setIsApproving(false);
       setIsUploading(false);
-      setTimeout(() => {
-        setUploadProgress(0);
-        setUploadedFilesCount(0);
-      }, 2000);
     }
   };
 
@@ -1174,262 +1340,274 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         )}
       </div>
 
-      <div>
-        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-          Documento Corregido
-          {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-        </h3>
-        <div className="bg-muted/50 rounded-lg p-4">
-          {correctedFiles.length > 0 ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    Archivos seleccionados: {correctedFiles.length}/{MAX_FILES}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Límite: {MAX_FILES} archivos máximo • 1MB por archivo
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleUploadClick}
-                  iconName="Plus"
-                  iconPosition="left"
-                  disabled={correctedFiles.length >= MAX_FILES}
-                >
-                  Agregar más
-                </Button>
-              </div>
-
-              {correctedFiles.map((file, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-card rounded border border-border">
-                  <div className="flex items-center space-x-3">
-                    <Icon name="FileText" size={20} className="text-accent" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {file.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatFileSize(file.size)} • PDF • Archivo {index + 1}
-                        {file.size > MAX_FILE_SIZE && (
-                          <span className="text-red-500 font-medium ml-2">(Excede límite)</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePreviewCorrectedFile(index)}
-                      iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
-                      iconPosition="left"
-                      iconSize={16}
-                      disabled={isLoadingPreviewCorrected}
-                    >
-                      {isLoadingPreviewCorrected && previewIndex === index ? 'Cargando...' : 'Vista Previa'}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveFile(index)}
-                      className="text-error hover:bg-error/10"
-                    >
-                      <Icon name="X" size={16} />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-
-              <div className="pt-2 border-t border-border flex justify-between items-center">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRemoveCorrection}
-                  iconName="Trash2"
-                  iconPosition="left"
-                  className="text-error hover:bg-error/10"
-                >
-                  Eliminar todos ({correctedFiles.length})
-                </Button>
-
-                {correctedFiles.some(f => f.size > MAX_FILE_SIZE) && (
-                  <p className="text-xs text-red-500 font-medium">
-                    Algunos archivos exceden el límite de 1MB
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : approvedData?.correctedFiles || fullRequestData?.correctedFile ? (
-            <div className="space-y-3">
-              {approvedData?.correctedFiles?.map((file, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-card rounded border border-border">
-                  <div className="flex items-center space-x-3">
-                    <Icon name="FileText" size={20} className="text-accent" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {file.fileName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatFileSize(file.fileSize)} • Subido el {formatDate(file.uploadedAt)} • Archivo {index + 1}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={() => handleDownloadCorrected(index)}
-                      disabled={downloadingCorrectedIndex === index}
-                    >
-                      {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePreviewCorrectedFile(index)}
-                      iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
-                      iconPosition="left"
-                      iconSize={16}
-                      disabled={isLoadingPreviewCorrected}
-                    >
-                      {isLoadingPreviewCorrected && previewIndex === index ? 'Cargando...' : 'Vista Previa'}
-                    </Button>
-                    {/* NUEVO: Botón para eliminar archivo ya subido */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteUploadedFile(file.fileName, index)}
-                      className="text-error hover:bg-error/10"
-                      disabled={isDeletingFile === index}
-                    >
-                      <Icon name={isDeletingFile === index ? "Loader" : "Trash2"} size={16} className={isDeletingFile === index ? "animate-spin" : ""} />
-                    </Button>
-                  </div>
-                </div>
-              )) || (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Icon name="FileText" size={20} className="text-accent" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {approvedData?.fileName || fullRequestData?.correctedFile?.fileName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {approvedData?.fileSize
-                            ? formatFileSize(approvedData.fileSize)
-                            : fullRequestData?.correctedFile?.fileSize
-                              ? formatFileSize(fullRequestData.correctedFile.fileSize)
-                              : 'Tamaño no disponible'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handlePreviewCorrectedFile(0)}
-                        iconName={isLoadingPreviewCorrected ? "Loader" : "Eye"}
-                        iconPosition="left"
-                        iconSize={16}
-                        disabled={isLoadingPreviewCorrected}
-                      >
-                        {isLoadingPreviewCorrected ? 'Cargando...' : 'Vista Previa'}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleRemoveCorrection}
-                        className="text-error hover:bg-error/10"
-                      >
-                        <Icon name="X" size={16} />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-              {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && (
-                <p className="text-xs text-success font-medium mt-2">
-                  ✓ Formulario aprobado
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">No se han subido correcciones aún</p>
-                  <p className="text-xs text-muted-foreground">
-                    Límite: {MAX_FILES} archivos máximo • 1MB por archivo
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconName="Upload"
-                  iconPosition="left"
-                  onClick={handleUploadClick}
-                >
-                  Seleccionar archivo(s)
-                </Button>
-              </div>
-            </div>
-          )}
-
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            accept=".pdf"
-            multiple={true}
-            className="hidden"
-          />
+<div>
+  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+    Documento Corregido
+    {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+  </h3>
+  
+  <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+    {/* ===== SECCIÓN 1: ARCHIVOS YA APROBADOS ===== */}
+    {(approvedData?.correctedFiles || fullRequestData?.correctedFile) && (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Icon name="CheckCircle" size={16} className="text-success" />
+              Archivos aprobados
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              {approvedData?.correctedFiles?.length || 1} archivo(s) aprobado(s)
+            </p>
+          </div>
+          {/* <div className="flex items-center gap-2">
+            <span className="text-xs px-2 py-1 bg-success/10 text-success rounded-full">
+              {fullRequestData?.status}
+            </span>
+          </div> */}
+        </div>
+        
+{approvedData?.correctedFiles?.map((file, index) => {
+  const isMarkedForDelete = file.markedForDelete || filesToDelete.some(f => f.fileName === file.fileName);
+  
+  return (
+    <div key={index} className={`flex items-center justify-between p-3 rounded border ${
+      isMarkedForDelete 
+        ? 'bg-error/10 border-error/30' 
+        : 'bg-success/5 border-success/20'
+    }`}>
+      <div className="flex items-center space-x-3">
+        <Icon name="FileText" size={20} className={isMarkedForDelete ? "text-error" : "text-success"} />
+        <div>
+          <p className={`text-sm font-medium ${
+            isMarkedForDelete ? "text-error line-through" : "text-foreground"
+          }`}>
+            {file.fileName}
+            {isMarkedForDelete && (
+              <span className="ml-2 text-xs text-error font-medium">(Eliminar)</span>
+            )}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {formatFileSize(file.fileSize)} • Subido el {formatDate(file.uploadedAt)} • Archivo {index + 1}
+          </p>
         </div>
       </div>
-
-      {isUploading && (
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h4 className="text-sm font-semibold text-blue-800">
-                Subiendo archivos para aprobación
-              </h4>
-              <p className="text-xs text-blue-600">
-                {uploadedFilesCount} de {correctedFiles.length} completados
-              </p>
-            </div>
-            <span className="text-sm font-bold text-blue-700">
-              {uploadProgress}%
-            </span>
-          </div>
-
-          {/* Barra de progreso principal */}
-          <div className="w-full bg-blue-100 rounded-full h-2.5 mb-2">
-            <div
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
-              style={{ width: `${uploadProgress}%` }}
-            ></div>
-          </div>
-
-          {/* Indicador de archivo actual */}
-          {uploadedFilesCount < correctedFiles.length && (
-            <p className="text-xs text-blue-700 mb-1">
-              Subiendo: {correctedFiles[uploadedFilesCount]?.name || 'Archivo...'}
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
+          iconPosition="left"
+          iconSize={16}
+          onClick={() => handleDownloadCorrected(index, "approved")}
+          disabled={downloadingCorrectedIndex === index || isMarkedForDelete}
+        >
+          {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handlePreviewCorrectedFile(index, "approved")}
+          iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+          iconPosition="left"
+          iconSize={16}
+          disabled={isLoadingPreviewCorrected || isMarkedForDelete}
+        >
+          {isLoadingPreviewCorrected && previewIndex === index ? 'Cargando...' : 'Vista Previa'}
+        </Button>
+      {isMarkedForDelete ? (
+  <Button
+    variant="ghost"
+    size="icon"
+    onClick={() => handleUndoDelete(file.fileName)}
+    className="text-success hover:bg-success/10"
+  >
+    <Icon name="RotateCcw" size={16} />
+  </Button>
+) : (
+  <Button
+    variant="ghost"
+    size="icon"
+    onClick={() => handleDeleteUploadedFile(file.fileName, index)}
+    className="text-error hover:bg-error/10"
+    disabled={isDeletingFile === index}
+  >
+    <Icon name={isDeletingFile === index ? "Loader" : "Trash2"} size={16} 
+          className={isDeletingFile === index ? "animate-spin" : ""} />
+  </Button>
+)}
+      </div>
+    </div>
+  );
+})}
+      </div>
+    )}
+    
+    {/* ===== SECCIÓN 2: AGREGAR NUEVOS ARCHIVOS ===== */}
+    <div className="pt-4 border-t border-border">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-sm font-medium text-foreground">
+              {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') 
+                ? 'Agregar archivos adicionales' 
+                : 'Subir correcciones'}
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Límite: {MAX_FILES} archivos máximo • 1MB por archivo • Solo PDF
             </p>
-          )}
-
-          {/* Contador */}
-          <div className="flex justify-between text-xs text-blue-600">
-            <span>Archivo {Math.min(uploadedFilesCount + 1, correctedFiles.length)}/{correctedFiles.length}</span>
-            <span>{isApproving && !isUploading ? 'Aprobando...' : 'Subiendo...'}</span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
           </div>
         </div>
-      )}
+        
+        {/* Archivos seleccionados actualmente */}
+        {correctedFiles.length > 0 ? (
+          <div className="space-y-3">
+            {correctedFiles.map((file, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20">
+                <div className="flex items-center space-x-3">
+                  <Icon name="FileText" size={20} className="text-accent" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {file.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatFileSize(file.size)} • PDF • {file.size > MAX_FILE_SIZE ? (
+                        <span className="text-error">EXCEDE LÍMITE</span>
+                      ) : 'Válido'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePreviewCorrectedFile(index, "new")}
+                    iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                    iconPosition="left"
+                    iconSize={16}
+                    disabled={isLoadingPreviewCorrected}
+                  >
+                    Vista Previa
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveFile(index)}
+                    className="text-error hover:bg-error/10"
+                  >
+                    <Icon name="X" size={16} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            
+<div className="flex items-center justify-between pt-3 border-t border-border">
+  <Button
+    variant="ghost"
+    size="sm"
+    onClick={() => setCorrectedFiles([])}
+    iconName="Trash2"
+    iconPosition="left"
+    className="text-error hover:bg-error/10"
+    disabled={correctedFiles.length === 0}
+  >
+    Eliminar todos ({correctedFiles.length})
+  </Button>
+  
+  <div className="flex items-center gap-2">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleUploadClick}
+      iconName="Plus"
+      iconPosition="left"
+      disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
+    >
+      Agregar más
+    </Button>
+    
+  </div>
+</div>
+          </div>
+        ) : (() => {
+          // ===== ZONA DE SUBIDA COMPLETAMENTE CLICKEABLE =====
+  const canAddFiles = canAddMoreFiles();
+  const availableSlots = getAvailableSlots();
+  
+  return (
+    <div 
+      className={`p-6 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer group ${
+        canAddFiles 
+          ? 'border-border hover:border-accent/50 hover:bg-accent/5 bg-card/50' 
+          : 'border-error/30 bg-error/5 cursor-not-allowed'
+      }`}
+      onClick={canAddFiles ? handleUploadClick : () => {
+        alert(`Límite de archivos alcanzado. 
+Ya tienes ${approvedData?.correctedFiles?.length || 0} archivo(s) aprobado(s).
+Máximo permitido: ${MAX_FILES} archivos.`);
+      }}
+    >
+      <div className="flex flex-col items-center justify-center text-center space-y-3">
+        <div className={`p-3 rounded-full transition-colors ${
+          canAddFiles 
+            ? 'bg-accent/10 group-hover:bg-accent/20' 
+            : 'bg-error/10'
+        }`}>
+          <Icon 
+            name={canAddFiles ? "Upload" : "AlertCircle"} 
+            size={24} 
+            className={canAddFiles 
+              ? "text-accent group-hover:text-accent/80" 
+              : "text-error"
+            } 
+          />
+        </div>
+        <div>
+          <p className={`text-sm font-medium ${
+            canAddFiles ? "text-foreground" : "text-error"
+          }`}>
+            {canAddFiles 
+              ? "Haz clic aquí para subir archivos"
+              : "Límite de archivos alcanzado"
+            }
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {canAddFiles 
+              ? `Puedes agregar hasta ${availableSlots} archivo(s)`
+              : `Ya tienes ${approvedData?.correctedFiles?.length || 0}/${MAX_FILES} archivos. No puedes agregar más.`
+            }
+          </p>
+        </div>
+        
+        {canAddFiles ? (
+          <></>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Si necesitas subir más archivos, primero elimina alguno existente
+          </p>
+        )}
+      </div>
+    </div>
+  );
+})()}
+      </div>
+    </div>
+    
+    {/* Input de archivo oculto */}
+    <input
+      type="file"
+      ref={fileInputRef}
+      onChange={handleFileSelect}
+      accept=".pdf"
+      multiple={true}
+      className="hidden"
+    />
+  </div>
+</div>
+
 
       {(fullRequestData?.status !== 'pendiente' && fullRequestData?.status !== 'en_revision') && (
         <div>
@@ -1538,67 +1716,96 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     }
   };
 
-  const handleDownloadCorrected = async (index = 0) => {
-    try {
-      setDownloadingCorrectedIndex(index);
+const handleDownloadCorrected = async (index = 0, source = 'auto') => {
+  try {
+    setDownloadingCorrectedIndex(index);
 
-      let url;
-      let filename;
+    let url;
+    let filename;
+    let useApprovedFiles = false;
 
-      // Caso 1: Archivos locales (aún no subidos, si se habilitara la subida)
-      if (correctedFiles.length > 0) {
-        if (index < 0 || index >= correctedFiles.length) return;
-        const file = correctedFiles[index];
-        url = URL.createObjectURL(file);
-        filename = file.name;
-      }
-      // Caso 2: Archivos aprobados (desde el servidor)
-      else if (approvedData || fullRequestData?.status === "aprobado" || fullRequestData?.status === "firmado") {
-        url = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${fullRequestData._id}?index=${index}`;
-        filename = approvedData?.correctedFiles?.[index]?.fileName || `documento_corregido_${index + 1}.pdf`;
-      }
-      // Caso 3: Formato antiguo (un solo archivo)
-      else if (fullRequestData?.correctedFile) {
-        // Fallback para archivo único
-        url = `${API_BASE_URL}/${endpointPrefix}/${fullRequestData._id}/corrected-file`;
-        filename = fullRequestData.correctedFile.fileName;
-      } else {
+    // Determinar qué archivos usar
+    if (source === 'approved') {
+      useApprovedFiles = true;
+    } else if (source === 'new') {
+      useApprovedFiles = false;
+    } else {
+      useApprovedFiles = correctedFiles.length === 0;
+    }
+
+    // Archivos aprobados
+    if (useApprovedFiles) {
+      const hasApprovedFiles = approvedData?.correctedFiles || fullRequestData?.correctedFile;
+      
+      if (!hasApprovedFiles) {
+        alert('No hay archivos aprobados disponibles');
         return;
       }
 
-      if (correctedFiles.length > 0) {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else {
-        const token = sessionStorage.getItem("token");
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await fetch(url, { headers });
-
-        if (!response.ok) throw new Error("Error en descarga");
-
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(blobUrl);
-        document.body.removeChild(a);
+      // Si hay múltiples archivos aprobados
+      if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
+        if (index < 0 || index >= approvedData.correctedFiles.length) {
+          alert('Índice de archivo aprobado inválido');
+          return;
+        }
+        
+        const fileInfo = approvedData.correctedFiles[index];
+        url = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${fullRequestData._id}?index=${index}`;
+        filename = fileInfo.fileName || `documento_corregido_${index + 1}.pdf`;
+      } 
+      // Formato antiguo (un solo archivo)
+      else if (fullRequestData?.correctedFile) {
+        url = `${API_BASE_URL}/${endpointPrefix}/${fullRequestData._id}/corrected-file`;
+        filename = fullRequestData.correctedFile.fileName;
       }
 
-    } catch (error) {
-      console.error("Error descargando archivo corregido:", error);
-      // Usar alert o el dialogo de error si está disponible
-      alert("Error al descargar archivo");
-    } finally {
-      setDownloadingCorrectedIndex(null);
+      const token = sessionStorage.getItem("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await fetch(url, { headers });
+
+      if (!response.ok) throw new Error("Error en descarga");
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(blobUrl);
+      document.body.removeChild(a);
+    } 
+    // Archivos nuevos/seleccionados
+    else {
+      if (correctedFiles.length === 0) {
+        alert('No hay archivos seleccionados para descargar');
+        return;
+      }
+
+      if (index < 0 || index >= correctedFiles.length) {
+        alert('Índice de archivo nuevo inválido');
+        return;
+      }
+
+      const file = correctedFiles[index];
+      url = URL.createObjectURL(file);
+      filename = file.name;
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
-  };
+
+  } catch (error) {
+    console.error("Error descargando archivo corregido:", error);
+    alert("Error al descargar archivo: " + error.message);
+  } finally {
+    setDownloadingCorrectedIndex(null);
+  }
+};
 
   const renderResponsesTab = () => {
     const responses = fullRequestData?.responses || {};
@@ -1671,7 +1878,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
         </div>
 
         {/* Sección Documento Corregido */}
-        {(filesToShow.length > 0) && (
+        {/* {(filesToShow.length > 0) && (
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
               Documento Corregido
@@ -1696,7 +1903,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
                       iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
                       iconPosition="left"
                       iconSize={16}
-                      onClick={() => handleDownloadCorrected(index)}
+                      onClick={() => handleDownloadCorrected(index, "approved")}
                       disabled={downloadingCorrectedIndex === index}
                     >
                       {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
@@ -1707,7 +1914,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
                       iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
                       iconPosition="left"
                       iconSize={16}
-                      onClick={() => handlePreviewCorrectedFile(index)}
+                      onClick={() => handlePreviewCorrectedFile(index, "approved")}
                       disabled={isLoadingPreviewCorrected}
                     >
                       {isLoadingPreviewCorrected && previewIndex === index ? "Cargando..." : "Vista Previa"}
@@ -1723,7 +1930,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
               )}
             </div>
           </div>
-        )}
+        )} */}
 
       </div>
     );
@@ -1826,74 +2033,94 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
           {activeTab === 'details' ? renderDetailsTab() : renderResponsesTab()}
         </div>
 
-        <div className="sticky bottom-0 bg-card border-t border-border p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Icon name="Clock" size={16} />
-              <span>Última actualización: {formatDate(fullRequestData?.submittedAt)}</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              {!isStandalone && (
-                <>
-                  <Button
-                    variant="outline"
-                    iconName="MessageSquare"
-                    iconPosition="left"
-                    onClick={() => onSendMessage(fullRequestData)}
-                    iconSize={16}
-                  >
-                    Mensajes
-                  </Button>
+  <div className="sticky bottom-0 bg-card border-t border-border p-6">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+      <Icon name="Clock" size={16} />
+      <span>Última actualización: {formatDate(fullRequestData?.submittedAt)}</span>
+    </div>
+    <div className="flex items-center space-x-3">
+      {!isStandalone && (
+        <>
+          <Button
+            variant="outline"
+            iconName="MessageSquare"
+            iconPosition="left"
+            onClick={() => onSendMessage(fullRequestData)}
+            iconSize={16}
+          >
+            Mensajes
+          </Button>
 
-                  {(fullRequestData?.status === 'en_revision' || fullRequestData?.status === 'pendiente') && (
-                    <Button
-                      variant="default"
-                      iconName={isApproving ? "Loader" : "CheckCircle"}
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={handleApprove}
-                      disabled={correctedFiles.length === 0 || isApproving || correctedFiles.length > MAX_FILES || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
-                    >
-                      {isApproving ? 'Aprobando...' : `Aprobar (${correctedFiles.length}/${MAX_FILES})`}
-                    </Button>
-                  )}
+          {/* BOTÓN "ACTUALIZAR" - Para agregar archivos cuando ya está aprobado */}
+{(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && 
+ (correctedFiles.length > 0 || filesToDelete.length > 0) && (
+  <Button
+    variant="default"
+    iconName={isUploading ? "Loader" : "RefreshCw"}
+    iconPosition="left"
+    iconSize={16}
+    onClick={handleUploadAdditionalFiles}
+    disabled={isUploading || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
+  >
+    {isUploading ? 'Actualizando...' : `Actualizar (${correctedFiles.length + filesToDelete.length})`}
+  </Button>
+)}
 
-                  {fullRequestData?.status !== 'finalizado' && (
-                    <Button
-                      variant="default"
-                      iconName={isApproving ? "Loader" : "CheckCircle"}
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={handleApprovewithoutFile}
-                    >
-                      {isApproving ? 'Finalizando...' : 'Finalizar'}
-                    </Button>
-                  )}
+          {/* BOTÓN "APROBAR" - Para estados pendiente/en_revision */}
+          {(fullRequestData?.status === 'en_revision' || fullRequestData?.status === 'pendiente') && correctedFiles.length > 0 && (
+            <Button
+              variant="default"
+              iconName={isApproving ? "Loader" : "CheckCircle"}
+              iconPosition="left"
+              iconSize={16}
+              onClick={handleApprove}
+              disabled={isApproving || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
+            >
+              {isApproving ? 'Aprobando...' : `Aprobar (${correctedFiles.length})`}
+            </Button>
+          )}
 
-                  {fullRequestData?.status == 'finalizado' && (
-                    <Button
-                      variant="default"
-                      iconName={isApproving ? "Loader" : "Folder"}
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={handleArchieve}
-                    >
-                      {isApproving ? 'Archivando...' : 'Archivar'}
-                    </Button>
-                  )}
-                </>
-              )}
-              {!isStandalone && (
-                <Button
-                  variant="default"
-                  onClick={onClose}
-                >
-                  Cerrar
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
+          {/* BOTÓN "FINALIZAR" */}
+          {fullRequestData?.status !== 'finalizado' && fullRequestData?.status !== 'archivado' && (
+            <Button
+              variant="default"
+              iconName={isApproving ? "Loader" : "CheckCircle"}
+              iconPosition="left"
+              iconSize={16}
+              onClick={handleApprovewithoutFile}
+              disabled={isApproving}
+            >
+              {isApproving ? 'Finalizando...' : 'Finalizar'}
+            </Button>
+          )}
+
+          {/* BOTÓN "ARCHIVAR" */}
+          {fullRequestData?.status === 'finalizado' && (
+            <Button
+              variant="default"
+              iconName={isApproving ? "Loader" : "Folder"}
+              iconPosition="left"
+              iconSize={16}
+              onClick={handleArchieve}
+              disabled={isApproving}
+            >
+              {isApproving ? 'Archivando...' : 'Archivar'}
+            </Button>
+          )}
+        </>
+      )}
+      {!isStandalone && (
+        <Button
+          variant="default"
+          onClick={onClose}
+        >
+          Cerrar
+        </Button>
+      )}
+    </div>
+  </div>
+</div>
       </div>
 
       <CleanDocumentPreview
