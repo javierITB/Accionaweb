@@ -33,6 +33,8 @@ const RequestTracking = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(30);
+  const [isLimitOpen, setIsLimitOpen] = useState(false);
   const [archivedCountServer, setArchivedCountServer] = useState(0);
   const [serverStats, setServerStats] = useState(null);
   const requestsPerPage = 30;
@@ -47,6 +49,18 @@ const RequestTracking = () => {
     company: '',
     submittedBy: ''
   });
+
+  const limitRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (limitRef.current && !limitRef.current.contains(event.target)) {
+        setIsLimitOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // --- EFECTOS DE REDIMENSIONAMIENTO ---
   useEffect(() => {
@@ -87,7 +101,7 @@ const RequestTracking = () => {
 
       const params = new URLSearchParams({
         page: pageNumber,
-        limit: requestsPerPage,
+        limit: itemsPerPage, // Usar estado dinámico
         search: overrideFilters.search || '',
         status: overrideFilters.status || '',
         company: overrideFilters.company || '',
@@ -130,7 +144,7 @@ const RequestTracking = () => {
     let maxPages = totalPages || 1;
     try {
       while (page <= maxPages) {
-        const params = new URLSearchParams({ page, limit: requestsPerPage });
+        const params = new URLSearchParams({ page, limit: itemsPerPage });
         const url = `${API_BASE_URL}/respuestas/filtros?${params.toString()}`;
         const res = await apiFetch(url);
         const result = await res.json();
@@ -158,7 +172,7 @@ const RequestTracking = () => {
 
   useEffect(() => {
     fetchData(currentPage);
-  }, [currentPage]);
+  }, [currentPage, itemsPerPage]); // 
 
   useEffect(() => {
     if (!formId) return;
@@ -176,12 +190,18 @@ const RequestTracking = () => {
       if (filters.status !== 'archivado') fetchData(currentPage, true);
     }, 45000);
     return () => clearInterval(interval);
-  }, [filters.status, currentPage]);
+  }, [filters.status, currentPage, itemsPerPage]);
 
   // --- HANDLERS ---
   const handleApplyFilters = () => {
     setCurrentPage(1);
     fetchData(1);
+  };
+
+  const handleLimitChange = (limit) => {
+    setItemsPerPage(limit);
+    setCurrentPage(1);
+    setIsLimitOpen(false);
   };
 
   const handleStatusFilter = (status) => {
@@ -226,6 +246,7 @@ const RequestTracking = () => {
     }
   };
 
+  // --- CORRECCIÓN SOLICITADA: Filtrado de archivados en Front ---
   const currentRequests = useMemo(() => {
     return resp;
   }, [resp]);
@@ -276,6 +297,30 @@ const RequestTracking = () => {
             </div>
 
             <div className="flex items-center space-x-4">
+              <div ref={limitRef} className="relative">
+                <button
+                  onClick={() => setIsLimitOpen(!isLimitOpen)}
+                  className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors outline-none border border-border rounded-lg px-3 py-1 bg-card h-8"
+                >
+                  <span>{itemsPerPage}</span>
+                  <Icon name={isLimitOpen ? "ChevronDown" : "ChevronUp"} size={14} />
+                </button>
+
+                {isLimitOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-16 bg-card border border-border shadow-md rounded-md z-50 overflow-hidden">
+                    {[15, 30].map(limit => (
+                      <button
+                        key={limit}
+                        onClick={() => handleLimitChange(limit)}
+                        className={`w-full text-center py-1 text-sm hover:bg-muted ${itemsPerPage === limit ? 'font-bold text-primary' : 'text-muted-foreground'}`}
+                      >
+                        {limit}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center space-x-2 text-sm text-muted-foreground border border-border rounded-lg p-1 bg-card">
                 <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 || isLoading} iconName="ChevronLeft" />
                 <span className="font-medium">{currentPage} / {totalPages}</span>
