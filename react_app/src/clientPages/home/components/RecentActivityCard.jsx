@@ -63,85 +63,69 @@ const RequestTracking = () => {
       try {
         setIsLoading(true);
 
-        const [resResp, resForms] = await Promise.all([
-          apiFetch(`${API_BASE_URL}/respuestas/mail/${mail}`),
-          apiFetch(`${API_BASE_URL}/forms?limit=1000`)
+        const [resResp] = await Promise.all([
+          apiFetch(`${API_BASE_URL}/respuestas/mail/${mail}`)
         ]);
 
         console.log('RecentActivityCard - Fetch Status:', {
-          resp: resResp.status,
-          forms: resForms.status
+          resp: resResp.status
         });
 
-        if (!resResp.ok || !resForms.ok) {
+        if (!resResp.ok) {
           throw new Error('Error al obtener datos del servidor');
         }
 
         // 2) Convertir a JSON
         const responsesRaw = await resResp.json(); // lista de respuestas
+        // La estructura de respuesta esperada es { success: true, respuestas: [...] } o array directo
         const responses = Array.isArray(responsesRaw) ? responsesRaw : (responsesRaw.respuestas || responsesRaw.data || []);
 
-        const formsRaw = await resForms.json();    // lista de formularios
-        const forms = Array.isArray(formsRaw) ? formsRaw : (formsRaw.data || []);
-
         console.log('RecentActivityCard - Data:', {
-          responsesCount: responses.length,
-          formsCount: forms.length
+          responsesCount: responses.length
         });
 
-        // 3) Construir mapa de forms para lookup rápido (mapeamos _id e id si existen)
-        const formsMap = new Map();
-        forms.forEach(f => {
-          const keyA = f._id ? String(f._id) : null;
-          const keyB = f.id ? String(f.id) : null;
-          if (keyA) formsMap.set(keyA, f);
-          if (keyB) formsMap.set(keyB, f);
-        });
-
-        // 4) Normalizar responses uniendo con su form
+        // 3) Normalizar responses (Ya vienen con formTitle, icon, color desde el backend)
         const responsesList = responses;
 
         const normalizedResponses = responsesList.map(r => {
-          const formIdKey = r.formId ? String(r.formId) : null;
-          const matchedForm = formIdKey ? formsMap.get(formIdKey) || null : null;
+          // El backend ahora inyecta 'form' dentro de cada respuesta con { title, icon, primaryColor, ... }
+          const matchedForm = r.form || null;
 
           return {
-            // campos originales de la respuesta - INCLUIR TODOS LOS CAMPOS
+            // campos originales de la respuesta
             _id: r._id,
             formId: r.formId,
-            title: r.title || (matchedForm ? matchedForm.title : ''),
+
+            // Usar titulo de form si el request no tiene titulo propio
+            title: r.title || r.formTitle || (matchedForm ? matchedForm.title : 'Solicitud sin título'),
+
             responses: r.responses || {},
             submittedAt: r.submittedAt || r.createdAt || null,
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,
-            // ESTOS CAMPOS SON CRÍTICOS - INCLUIRLOS
             status: r.status || 'pendiente',
             correctedFile: r.correctedFile,
             formTitle: r.formTitle,
             trabajador: r.trabajador,
-            // tus campos normalizados/auxiliares
+
             submittedBy: r.user?.nombre || r.submittedBy || 'Usuario',
             company: r.user?.empresa || 'Empresa',
 
-            // --- AGREGADO PARA SOLICITUDES COMPARTIDAS ---
-            user: r.user, // Incluimos el objeto user para validación de UID y compartidos
-            metadata: r.metadata, // Agregado para validación de esPropia
-            isShared: r.isShared || r.compartida || false, // Normalizamos el flag de compartida
-            // ---------------------------------------------
+            user: r.user,
+            metadata: r.metadata,
+            isShared: r.isShared || r.compartida || false,
 
             lastUpdated: r.updatedAt || matchedForm?.updatedAt || null,
             assignedTo: r.trabajador || " - ",
             hasMessages: false,
 
-            // aquí va el objeto form asociado (o null si no se encuentra)
+            // El objeto form ya viene listo del backend
             form: matchedForm,
             type: 'form_response'
           };
         });
 
-
-        // 5) Actualizar estados (SOLO RESPUESTAS)
-        setAllForms(forms);
+        // 4) Actualizar estados (SOLO RESPUESTAS)
         setResp(normalizedResponses);
 
       } catch (err) {
