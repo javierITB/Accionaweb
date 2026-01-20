@@ -124,6 +124,7 @@ export default function App() {
 
       if (res.ok && data?.success) {
         if (data?.twoFA) {
+          setLoading(false); // Detener carga antes de cambiar vista
           setView('2fa');
         } else {
           resetAttempts(); // Login exitoso directo
@@ -152,6 +153,8 @@ export default function App() {
       setError(msg);
       
       sessionStorage.clear();
+    } finally {
+      setLoading(false);
     }
   };
 
