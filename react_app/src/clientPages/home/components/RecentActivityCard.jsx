@@ -65,7 +65,7 @@ const RequestTracking = () => {
 
         const [resResp, resForms] = await Promise.all([
           apiFetch(`${API_BASE_URL}/respuestas/mail/${mail}`),
-          apiFetch(`${API_BASE_URL}/forms`)
+          apiFetch(`${API_BASE_URL}/forms?limit=1000`)
         ]);
 
         console.log('RecentActivityCard - Fetch Status:', {
@@ -81,7 +81,8 @@ const RequestTracking = () => {
         const responsesRaw = await resResp.json(); // lista de respuestas
         const responses = Array.isArray(responsesRaw) ? responsesRaw : (responsesRaw.respuestas || responsesRaw.data || []);
 
-        const forms = await resForms.json();    // lista de formularios
+        const formsRaw = await resForms.json();    // lista de formularios
+        const forms = Array.isArray(formsRaw) ? formsRaw : (formsRaw.data || []);
 
         console.log('RecentActivityCard - Data:', {
           responsesCount: responses.length,
@@ -121,7 +122,7 @@ const RequestTracking = () => {
             // tus campos normalizados/auxiliares
             submittedBy: r.user?.nombre || r.submittedBy || 'Usuario',
             company: r.user?.empresa || 'Empresa',
-            
+
             // --- AGREGADO PARA SOLICITUDES COMPARTIDAS ---
             user: r.user, // Incluimos el objeto user para validación de UID y compartidos
             metadata: r.metadata, // Agregado para validación de esPropia
