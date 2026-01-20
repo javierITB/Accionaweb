@@ -367,6 +367,7 @@ router.post("/", uploadMultiple.array('adjuntos'), async (req, res) => {
       mail: correoRespaldo,
       status: initialStatus,
       category: category || null,
+      origin: req.body.origin || null,
       assignedTo,
       assignedAt,
       estimatedCompletionAt: estimatedCompletionAt || null,
@@ -393,29 +394,33 @@ router.post("/", uploadMultiple.array('adjuntos'), async (req, res) => {
 
     // Enviar correo de respaldo
     if (correoRespaldo && correoRespaldo.trim() !== '') {
-      const fechaHora = new Date().toLocaleString('es-CL', {
-        timeZone: 'America/Santiago',
-        dateStyle: 'full',
-        timeStyle: 'medium'
-      });
-      const questions = form?.questions || [];
-      const contenido = generarContenidoCorreoRespaldo(
-        formTitle,
-        usuario,
-        fechaHora,
-        responses,
-        questions
-      );
+      try {
+        const fechaHora = new Date().toLocaleString('es-CL', {
+          timeZone: 'America/Santiago',
+          dateStyle: 'full',
+          timeStyle: 'medium'
+        });
+        const questions = form?.questions || [];
+        const contenido = generarContenidoCorreoRespaldo(
+          formTitle,
+          usuario,
+          fechaHora,
+          responses,
+          questions
+        );
 
-      const mailPayload = {
-        accessKey: "wBlL283JH9TqdEJRxon1QOBuI0A6jGVEwpUYchnyMGz", // Reemplaza con tu clave real
-        to: correoRespaldo.trim(),
-        subject: `Ticket levantado`,
-        text: contenido.texto,
-        html: contenido.html
-      };
+        const mailPayload = {
+          accessKey: "wBlL283JH9TqdEJRxon1QOBuI0A6jGVEwpUYchnyMGz", // Reemplaza con tu clave real
+          to: correoRespaldo.trim(),
+          subject: `Ticket levantado`,
+          text: contenido.texto,
+          html: contenido.html
+        };
 
-      await sendEmail(mailPayload);
+        await sendEmail(mailPayload);
+      } catch (e) {
+        console.error("Error generando/enviando correo de respaldo:", e);
+      }
     }
 
     // Descifrar nombre para notificaciones si está cifrado
@@ -546,7 +551,7 @@ router.post("/:id/adjuntos", async (req, res) => {
       uploadedAt: new Date().toISOString()
     };
 
-    
+
 
     // Buscar el documento de adjuntos
     const documentoAdjuntos = await req.db.collection("adjuntos").findOne({
@@ -705,8 +710,15 @@ router.get("/mail/:mail", async (req, res) => {
     if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
 
     // Ahora buscamos en respuestas por el UID del usuario usando aggregate para traer adjuntos
+    const matchStage = { "user.uid": user._id.toString() };
+
+    // Filtro opcional por origen
+    if (req.query.origin) {
+      matchStage.origin = req.query.origin;
+    }
+
     const answers = await req.db.collection("soporte").aggregate([
-      { $match: { "user.uid": user._id.toString() } },
+      { $match: matchStage },
       {
         $lookup: {
           from: "adjuntos",
