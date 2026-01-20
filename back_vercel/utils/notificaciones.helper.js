@@ -109,18 +109,11 @@ async function addNotification(
     }
   }
 
-  console.log("🔍 Query para buscar usuarios:", JSON.stringify(query, null, 2));
   
   const result = await db.collection("usuarios").updateMany(query, {
     $push: { notificaciones: notificacion },
   });
   
-  console.log("📊 Resultado de updateMany:", {
-    matchedCount: result.matchedCount,
-    modifiedCount: result.modifiedCount,
-    acknowledged: result.acknowledged
-  });
-
   return { notificacion, modifiedCount: result.modifiedCount };
 }
 
