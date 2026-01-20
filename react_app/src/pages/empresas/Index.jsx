@@ -248,12 +248,10 @@ const CompanyReg = () => {
               type="text"
               placeholder="Buscar por nombre, RUT o dirección..."
               className="w-full pl-10 pr-10 py-2.5 
-                         bg-white border-gray-200 text-gray-900 placeholder:text-gray-400
-                         dark:bg-zinc-800/50 dark:border-zinc-700 dark:text-zinc-100 dark:placeholder:text-zinc-500 
-                         border rounded-xl text-sm 
+                         bg-card text-foreground border border-border placeholder:text-muted-foreground
+                         rounded-xl text-sm 
                          focus:ring-2 focus:ring-primary/20 focus:border-primary 
-                         dark:focus:ring-primary/40 dark:focus:border-primary/60
-                         outline-none transition-all shadow-sm dark:shadow-none"
+                         outline-none transition-all shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
