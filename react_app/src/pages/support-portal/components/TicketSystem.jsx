@@ -95,13 +95,7 @@ const TicketSystem = () => {
     };
 
     fetchData();
-  }, [userMail, token]); // Dependencies
-
-  // ... (keeping fetchTickets and other functions)
-
-  // Update Select usage in render
-  // ...
-
+  }, [userMail, token]);
 
   const fetchTickets = async () => {
     if (!userMail) return;
@@ -140,8 +134,6 @@ const TicketSystem = () => {
   const handleFileSelect = (event) => {
     const files = Array.from(event.target.files);
 
-    // Filter for allowed types if needed (currently images and PDF based on backend filter)
-    // Backend supports: pdf, jpg, jpeg, png, webp
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
     const invalidFiles = files.filter(file => !allowedTypes.includes(file.type));
 
@@ -200,7 +192,6 @@ const TicketSystem = () => {
       const formData = new FormData();
       formData.append('formId', ticketForm.category);
       formData.append('formTitle', categoryLabel);
-      formData.append('formTitle', categoryLabel);
       formData.append('category', 'sistema'); // Categoría principal: Sistema
       formData.append('origin', 'portal_cliente'); // Identificador de origen
       formData.append('mail', currentUser.email);
@@ -214,9 +205,11 @@ const TicketSystem = () => {
       }));
 
       formData.append('responses', JSON.stringify({
-        Asunto: ticketForm.subject,
-        Descripción: ticketForm.description,
-        Prioridad: 'Media'
+        'Asunto': ticketForm.subject,
+        'Descripción': ticketForm.description,
+        'Prioridad': 'Media',
+        'Categoría': 'Sistema',
+        'Subcategoría': categoryLabel
       }));
 
       ticketForm.attachments.forEach(file => {
