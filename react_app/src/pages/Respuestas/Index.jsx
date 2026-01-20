@@ -226,15 +226,9 @@ const RequestTracking = () => {
     }
   };
 
-  // --- CORRECCIÓN SOLICITADA: Filtrado de archivados en Front ---
   const currentRequests = useMemo(() => {
-    // Si el filtro de estado NO es 'archivado', ocultamos cualquier archivado
-    if (filters.status !== 'archivado') {
-      return resp.filter(request => request.status !== 'archivado');
-    }
-    // Si el usuario seleccionó 'archivado', mostramos todo el resultado
     return resp;
-  }, [resp, filters.status]);
+  }, [resp]);
 
   const mockStats = serverStats || {
     total: totalItems,

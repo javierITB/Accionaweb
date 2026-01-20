@@ -944,6 +944,8 @@ router.get("/filtros", async (req, res) => {
 
     if (status && status !== "") {
       query["status"] = status;
+    } else {
+      query["status"] = { $ne: "archivado" };
     }
 
     if (startDate || endDate) {
