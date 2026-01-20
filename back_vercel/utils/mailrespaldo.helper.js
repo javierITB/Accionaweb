@@ -208,7 +208,6 @@ const enviarCorreoRespaldo = async (correoRespaldo, formTitle, usuario, response
     });
 
     if (mailResponse.ok) {
-      console.log(`Correo de respaldo enviado a: ${correoRespaldo}`);
       return { enviado: true };
     } else {
       const errorData = await mailResponse.json();
