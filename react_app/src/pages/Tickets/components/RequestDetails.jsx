@@ -320,32 +320,32 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
   // ... (existing effects)
 
-const handleStatusChange = async (newStatus) => {
-  const response = await apiFetch(
-    `${API_BASE_URL}/soporte/${request._id}/status`,
-    {
-      method: "PUT",
-      body: JSON.stringify({ status: newStatus }),
+  const handleStatusChange = async (newStatus) => {
+    const response = await apiFetch(
+      `${API_BASE_URL}/soporte/${request._id}/status`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ status: newStatus }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "No se pudo cambiar el estado");
     }
-  );
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || "No se pudo cambiar el estado");
-  }
+    const result = await response.json();
 
-  const result = await response.json();
+    if (onUpdate && result.updatedRequest) {
+      onUpdate(result.updatedRequest);
 
-  if (onUpdate && result.updatedRequest) {
-    onUpdate(result.updatedRequest);
-
-    setFullRequestData((prev) => ({
-      ...prev,
-      ...result.updatedRequest,
-      adjuntos: prev.adjuntos,
-    }));
-  }
-};
+      setFullRequestData((prev) => ({
+        ...prev,
+        ...result.updatedRequest,
+        adjuntos: prev.adjuntos,
+      }));
+    }
+  };
 
 
   const getPreviousStatus = (currentStatus) => {
@@ -523,71 +523,71 @@ const handleStatusChange = async (newStatus) => {
   };
 
 
-const handleTakeTicket = async () => {
-  if (!currentUser) {
-    throw new Error(
-      "No se pudo identificar al usuario actual. Por favor, recarga la página o inicia sesión nuevamente."
-    );
-  }
-
-  const currentAssigned = fullRequestData?.assignedTo;
-
-  const isAssigned = Array.isArray(currentAssigned)
-    ? currentAssigned.includes(currentUser)
-    : currentAssigned === currentUser;
-
-  // Seguridad extra (aunque el botón esté oculto)
-  if (isAssigned) return;
-
-  // Normalizar asignaciones previas
-  let previousAssignments = [];
-
-  if (Array.isArray(currentAssigned)) {
-    previousAssignments = currentAssigned;
-  } else if (
-    currentAssigned &&
-    currentAssigned !== "Sin asignar" &&
-    currentAssigned !== "-"
-  ) {
-    previousAssignments = [currentAssigned];
-  }
-
-  previousAssignments = previousAssignments.filter((u) => {
-    if (!u) return false;
-    const clean = String(u).trim();
-    return clean !== "-" && clean !== "Sin asignar" && clean !== "";
-  });
-
-  const newAssignedTo = [...new Set([...previousAssignments, currentUser])];
-
-  const response = await apiFetch(
-    `${API_BASE_URL}/soporte/${request._id}/status`,
-    {
-      method: "PUT",
-      body: JSON.stringify({
-        status: "en_revision",
-        assignedTo: newAssignedTo,
-      }),
+  const handleTakeTicket = async () => {
+    if (!currentUser) {
+      throw new Error(
+        "No se pudo identificar al usuario actual. Por favor, recarga la página o inicia sesión nuevamente."
+      );
     }
-  );
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || "No se pudo tomar el ticket");
-  }
+    const currentAssigned = fullRequestData?.assignedTo;
 
-  const result = await response.json();
+    const isAssigned = Array.isArray(currentAssigned)
+      ? currentAssigned.includes(currentUser)
+      : currentAssigned === currentUser;
 
-  if (onUpdate && result.updatedRequest) {
-    onUpdate(result.updatedRequest);
+    // Seguridad extra (aunque el botón esté oculto)
+    if (isAssigned) return;
 
-    setFullRequestData((prev) => ({
-      ...prev,
-      ...result.updatedRequest,
-      adjuntos: prev.adjuntos, // preservar adjuntos
-    }));
-  }
-};
+    // Normalizar asignaciones previas
+    let previousAssignments = [];
+
+    if (Array.isArray(currentAssigned)) {
+      previousAssignments = currentAssigned;
+    } else if (
+      currentAssigned &&
+      currentAssigned !== "Sin asignar" &&
+      currentAssigned !== "-"
+    ) {
+      previousAssignments = [currentAssigned];
+    }
+
+    previousAssignments = previousAssignments.filter((u) => {
+      if (!u) return false;
+      const clean = String(u).trim();
+      return clean !== "-" && clean !== "Sin asignar" && clean !== "";
+    });
+
+    const newAssignedTo = [...new Set([...previousAssignments, currentUser])];
+
+    const response = await apiFetch(
+      `${API_BASE_URL}/soporte/${request._id}/status`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          status: "en_revision",
+          assignedTo: newAssignedTo,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "No se pudo tomar el ticket");
+    }
+
+    const result = await response.json();
+
+    if (onUpdate && result.updatedRequest) {
+      onUpdate(result.updatedRequest);
+
+      setFullRequestData((prev) => ({
+        ...prev,
+        ...result.updatedRequest,
+        adjuntos: prev.adjuntos, // preservar adjuntos
+      }));
+    }
+  };
 
 
   // Helper to displaying assigned users
@@ -630,55 +630,55 @@ const handleTakeTicket = async () => {
   // Actually, I'll do separate replace calls to be safe.
 
 
-const handleApprovewithoutFile = async () => {
-  // guard lógico (no UI)
-  if (request?.status === "finalizado") return;
+  const handleApprovewithoutFile = async () => {
+    // guard lógico (no UI)
+    if (request?.status === "finalizado") return;
 
-  const response = await apiFetch(
-    `${API_BASE_URL}/soporte/${request._id}/status`,
-    {
-      method: "PUT",
-      body: JSON.stringify({ status: "finalizado" }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || "Error al finalizar el trabajo");
-  }
-
-  if (onUpdate) {
-    const updatedResponse = await apiFetch(
-      `${API_BASE_URL}/soporte/${request._id}`
+    const response = await apiFetch(
+      `${API_BASE_URL}/soporte/${request._id}/status`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ status: "finalizado" }),
+      }
     );
-    const updatedRequest = await updatedResponse.json();
-    onUpdate(updatedRequest);
-  }
-};
 
-
-const handleArchieve = async () => {
-  const response = await apiFetch(
-    `${API_BASE_URL}/soporte/${request._id}/status`,
-    {
-      method: "PUT",
-      body: JSON.stringify({ status: "archivado" }),
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Error al finalizar el trabajo");
     }
-  );
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || "Error al archivar ticket");
-  }
+    if (onUpdate) {
+      const updatedResponse = await apiFetch(
+        `${API_BASE_URL}/soporte/${request._id}`
+      );
+      const updatedRequest = await updatedResponse.json();
+      onUpdate(updatedRequest);
+    }
+  };
 
-  if (onUpdate) {
-    const updatedResponse = await apiFetch(
-      `${API_BASE_URL}/soporte/${request._id}`
+
+  const handleArchieve = async () => {
+    const response = await apiFetch(
+      `${API_BASE_URL}/soporte/${request._id}/status`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ status: "archivado" }),
+      }
     );
-    const updatedRequest = await updatedResponse.json();
-    onUpdate(updatedRequest);
-  }
-};
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Error al archivar ticket");
+    }
+
+    if (onUpdate) {
+      const updatedResponse = await apiFetch(
+        `${API_BASE_URL}/soporte/${request._id}`
+      );
+      const updatedRequest = await updatedResponse.json();
+      onUpdate(updatedRequest);
+    }
+  };
 
 
   const getRealAttachments = () => {
@@ -849,7 +849,7 @@ const handleArchieve = async () => {
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Creado</p>
-            <p className="text-sm font-semibold text-foreground">{formatDate(fullRequestData?.submittedAt)}</p>
+            <p className="text-sm font-semibold text-foreground">{formatDate(fullRequestData?.submittedAt || fullRequestData?.createdAt)}</p>
           </div>
         </div>
 
@@ -874,7 +874,7 @@ const handleArchieve = async () => {
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Est. Término</p>
             <p className="text-sm font-semibold text-foreground">
-              {fullRequestData?.estimatedCompletionAt ? formatDate(fullRequestData.estimatedCompletionAt) : '-'}
+              {fullRequestData?.estimatedCompletionAt || fullRequestData?.expirationDate ? formatDate(fullRequestData?.estimatedCompletionAt || fullRequestData?.expirationDate) : '-'}
             </p>
           </div>
         </div>

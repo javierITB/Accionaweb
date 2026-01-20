@@ -209,7 +209,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
         </div>
         <div>
           <span className="font-semibold block">Est. Término:</span>
-          {currentRequest?.estimatedCompletionAt ? formatDate(currentRequest.estimatedCompletionAt) : '-'}
+          {currentRequest?.estimatedCompletionAt || currentRequest?.expirationDate ? formatDate(currentRequest.estimatedCompletionAt || currentRequest.expirationDate) : '-'}
         </div>
         <div>
           <span className="font-semibold block">Término Real:</span>
