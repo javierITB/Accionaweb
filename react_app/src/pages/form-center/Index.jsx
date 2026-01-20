@@ -20,6 +20,12 @@ const FormCenter = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
 
+  // Paginación 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 15;
+
   const [allForms, setAllForms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -60,10 +66,30 @@ const FormCenter = () => {
     const fetchForms = async () => {
       try {
         setIsLoading(true);
-        const res = await apiFetch(`${API_BASE_URL}/forms`);
-        const data = await res.json();
 
-        const normalizedForms = data.map(f => ({
+        const params = new URLSearchParams({
+          page: currentPage,
+          limit: itemsPerPage,
+          search: searchQuery,
+          category: activeCategory !== 'all' ? activeCategory : '',
+          status: filters.status ? filters.status.join(',') : ''
+        });
+
+        Array.from(params.keys()).forEach(key => {
+          if (!params.get(key)) params.delete(key);
+        });
+
+        const res = await apiFetch(`${API_BASE_URL}/forms/mini?${params.toString()}`);
+        const result = await res.json();
+
+        const rawForms = Array.isArray(result) ? result : (result.data || []);
+        const total = result.total || rawForms.length;
+        const pages = result.pages || 1;
+
+        setTotalItems(total);
+        setTotalPages(pages);
+
+        const normalizedForms = rawForms.map(f => ({
           id: f._id,
           title: f.title || 'Sin título',
           description: f.description || '',
@@ -73,7 +99,7 @@ const FormCenter = () => {
           status: f.status || 'borrador',
           priority: f.priority || 'medium',
           estimatedTime: f.responseTime || '1-5 min',
-          fields: f.questions ? f.questions.length : 0,
+          fields: f.fields !== undefined ? f.fields : (f.questions ? f.questions.length : 0),
           documentsRequired: f.documentsRequired ?? false,
           tags: f.tags || [],
           companies: f.companies || [],
@@ -82,6 +108,10 @@ const FormCenter = () => {
         }));
 
         setAllForms(normalizedForms);
+        // Direct set for filtered forms as filtering is now server-side (basic params)
+        // Client-side filtering can still apply for complex unavailable filters if needed
+        setFilteredForms(normalizedForms);
+
       } catch (err) {
         console.error('Error cargando formularios:', err);
       } finally {
@@ -90,8 +120,9 @@ const FormCenter = () => {
     };
 
     fetchForms();
-  }, []);
+  }, [currentPage, searchQuery, activeCategory, filters.status]); // Trigger on pagination/filter change
 
+  // Client-side extra filtering (only for things not handled by Server)
   useEffect(() => {
     if (allForms.length === 0) {
       setFilteredForms([]);
@@ -99,23 +130,8 @@ const FormCenter = () => {
     }
 
     let filtered = [...allForms];
-
-    if (activeCategory !== 'all') {
-      filtered = filtered.filter(form => form.section === activeCategory);
-    }
-
-    if (searchQuery) {
-      filtered = filtered.filter(form =>
-        form.title?.toLowerCase()?.includes(searchQuery?.toLowerCase()) ||
-        form.description?.toLowerCase()?.includes(searchQuery?.toLowerCase()) ||
-        form.category?.toLowerCase()?.includes(searchQuery?.toLowerCase()) ||
-        form.tags?.some(tag => tag?.toLowerCase()?.includes(searchQuery?.toLowerCase()))
-      );
-    }
-
-    if (filters.status && filters.status.length > 0) {
-      filtered = filtered.filter(form => filters.status.includes(form.status));
-    }
+    // Removed activeCategory and SearchQuery filtering here, as they are server-side now.
+    // Kept basic filters that might not be fully server implemented yet or are strictly client-side view logic
 
     if (filters.isRecent) {
       filtered = filtered.filter(form => {
@@ -134,12 +150,10 @@ const FormCenter = () => {
       filtered = filtered.filter(form => form.documentsRequired);
     }
 
-    if (filters.recentlyUsed) {
-      filtered = filtered.filter(form => form.lastModified);
-    }
-
+    // Check if we need to update state to avoid infinite loop -> only if length/content changed fundamentally
     setFilteredForms(filtered);
-  }, [searchQuery, activeCategory, filters, allForms]);
+
+  }, [filters.isRecent, filters.priority, filters.documentsRequired, allForms]); // REMOVED searchQuery, activeCategory etc.
 
   const categories = [
     { id: 'all', name: 'Todos', count: allForms.length },
@@ -156,10 +170,12 @@ const FormCenter = () => {
 
   const handleSearch = (query) => {
     setSearchQuery(query);
+    setCurrentPage(1); // Reset page on search
   };
 
   const handleCategoryChange = (categoryId) => {
     setActiveCategory(categoryId);
+    setCurrentPage(1); // Reset page on filter
   };
 
   const handleStatusFilter = (statusValue) => {
@@ -177,6 +193,7 @@ const FormCenter = () => {
         isRecent: false
       };
     });
+    setCurrentPage(1); // Reset page
   };
 
   const handleRecentFilter = () => {
@@ -209,6 +226,15 @@ const FormCenter = () => {
     : isDesktopOpen ? 'lg:ml-64' : 'lg:ml-16';
 
   const isStatusFilterActive = (statusValue) => filters.status && filters.status.includes(statusValue);
+
+  // Handlers de Paginación
+  const nextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(curr => curr + 1);
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) setCurrentPage(curr => curr - 1);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -438,6 +464,36 @@ const FormCenter = () => {
               </div>
             )}
           </div>
+
+          {/* CONTROL DE PAGINACIÓN */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center space-x-4 pt-4 pb-8">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={prevPage}
+                disabled={currentPage === 1}
+                iconName="ChevronLeft"
+                iconSize={16}
+              >
+                Anterior
+              </Button>
+              <span className="text-sm font-medium text-foreground">
+                Página {currentPage} de {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={nextPage}
+                disabled={currentPage === totalPages}
+                iconName="ChevronRight"
+                iconSize={16}
+                iconPosition="right"
+              >
+                Siguiente
+              </Button>
+            </div>
+          )}
         </div>
       </main>
     </div>
