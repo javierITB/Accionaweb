@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
-import { API_BASE_URL, apiFetch} from '../../../utils/api';
+import { API_BASE_URL, apiFetch } from '../../../utils/api';
 
 const TemplateList = ({ onUpdateFormData }) => {
   const [allForms, setAllForms] = useState([]);
@@ -31,9 +31,11 @@ const TemplateList = ({ onUpdateFormData }) => {
       setIsLoading(true);
 
       // Cargar formularios
-      const formsRes = await apiFetch(`${API_BASE_URL}/forms`);
+      // Cargar formularios (Fetch with high limit to get all)
+      const formsRes = await apiFetch(`${API_BASE_URL}/forms?limit=1000`);
       if (!formsRes.ok) throw new Error('Error al obtener formularios');
-      const formsData = await formsRes.json();
+      const result = await formsRes.json();
+      const formsData = Array.isArray(result) ? result : (result.data || []);
 
       // Cargar plantillas
       const templatesRes = await apiFetch(`${API_BASE_URL}/plantillas`);

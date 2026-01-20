@@ -14,12 +14,15 @@ const TicketSystem = () => {
     attachments: [] // Stores File objects
   });
 
+  const userMail = sessionStorage.getItem("email");
+  const token = sessionStorage.getItem("token");
+
   const fileInputRef = useRef(null);
   const MAX_FILES = 5;
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit per file
 
-  // Static categories for error reporting
-  const categories = [
+  // Static categories for error reporting (Fallback)
+  const defaultCategories = [
     { value: 'error_acceso', label: 'Error de Inicio de Sesión' },
     { value: 'error_visualizacion', label: 'Problema de Visualización' },
     { value: 'error_guardado', label: 'Error al Guardar Datos' },
@@ -28,11 +31,37 @@ const TicketSystem = () => {
     { value: 'otro', label: 'Otro' }
   ];
 
+  const [categoriesOptions, setCategoriesOptions] = useState(defaultCategories);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await apiFetch(`${API_BASE_URL}/config-tickets`);
+        if (res.ok) {
+          const configs = await res.json();
+          // Buscar configuración de 'sistema'
+          const sistemaConfig = configs.find(c => c.key === 'sistema');
+
+          if (sistemaConfig && sistemaConfig.subcategories && sistemaConfig.subcategories.length > 0) {
+            const dynamicOptions = sistemaConfig.subcategories.map(sub => ({
+              value: sub.value || sub.name || sub.label,
+              label: sub.label || sub.name || sub.value
+            }));
+            setCategoriesOptions(dynamicOptions);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching ticket config, using defaults", error);
+      }
+    };
+
+    // Solo intentar cargar si el usuario está autenticado (aunque el componente lo maneja)
+    if (token) fetchConfig();
+  }, [token]);
+
   const [myTickets, setMyTickets] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const userMail = sessionStorage.getItem("email");
-  const token = sessionStorage.getItem("token");
 
   const [selectedTicket, setSelectedTicket] = useState(null);
 
@@ -71,7 +100,7 @@ const TicketSystem = () => {
   const fetchTickets = async () => {
     if (!userMail) return;
     try {
-      const res = await apiFetch(`${API_BASE_URL}/soporte/mail/${userMail}`);
+      const res = await apiFetch(`${API_BASE_URL}/soporte/mail/${userMail}?origin=portal_cliente`);
       if (res.ok) {
         const data = await res.json();
         setMyTickets(data.reverse());
@@ -105,8 +134,6 @@ const TicketSystem = () => {
   const handleFileSelect = (event) => {
     const files = Array.from(event.target.files);
 
-    // Filter for allowed types if needed (currently images and PDF based on backend filter)
-    // Backend supports: pdf, jpg, jpeg, png, webp
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
     const invalidFiles = files.filter(file => !allowedTypes.includes(file.type));
 
@@ -159,13 +186,14 @@ const TicketSystem = () => {
 
     setIsLoading(true);
     try {
-      const selectedCategory = categories.find(c => c.value === ticketForm.category);
+      const selectedCategory = categoriesOptions.find(c => c.value === ticketForm.category);
       const categoryLabel = selectedCategory ? selectedCategory.label : 'Ticket de Soporte';
 
       const formData = new FormData();
       formData.append('formId', ticketForm.category);
       formData.append('formTitle', categoryLabel);
       formData.append('category', 'sistema'); // Categoría principal: Sistema
+      formData.append('origin', 'portal_cliente'); // Identificador de origen
       formData.append('mail', currentUser.email);
 
       // User and Responses as JSON strings
@@ -177,9 +205,11 @@ const TicketSystem = () => {
       }));
 
       formData.append('responses', JSON.stringify({
-        Asunto: ticketForm.subject,
-        Descripción: ticketForm.description,
-        Prioridad: 'Media'
+        'Asunto': ticketForm.subject,
+        'Descripción': ticketForm.description,
+        'Prioridad': 'Media',
+        'Categoría': 'Sistema',
+        'Subcategoría': categoryLabel
       }));
 
       ticketForm.attachments.forEach(file => {
@@ -285,7 +315,7 @@ const TicketSystem = () => {
               <Select
                 label="Categoría"
                 placeholder="Selecciona el tipo de error"
-                options={categories}
+                options={categoriesOptions}
                 value={ticketForm?.category}
                 onChange={(value) => handleInputChange('category', value)}
                 required

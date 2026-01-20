@@ -93,7 +93,7 @@ const CompanyReg = () => {
 
     if (searchTerm.trim() !== '') {
       const term = searchTerm.toLowerCase();
-      processData = processData.filter(e => 
+      processData = processData.filter(e =>
         String(e.nombre).toLowerCase().includes(term) ||
         String(e.rut).toLowerCase().includes(term) ||
         String(e.direccion).toLowerCase().includes(term) ||
@@ -123,26 +123,26 @@ const CompanyReg = () => {
   const handleEditEmpresa = async (empresaId) => {
     setIsLoading(true);
     // Cambiamos a la pestaña de registro para mostrar el formulario relleno
-    setActiveTab('register'); 
-    
+    setActiveTab('register');
+
     try {
       const response = await apiFetch(`${API_BASE_URL}/auth/empresas/${empresaId}`);
       if (!response.ok) throw new Error('Error al cargar la empresa');
       const empresa = await response.json();
-      
+
       const logoDataURL = createDataURL(empresa.logo);
-      
+
       setEditingEmpresa(empresa);
       setFormData({
-        nombre: empresa.nombre || '', 
-        rut: empresa.rut || '', 
+        nombre: empresa.nombre || '',
+        rut: empresa.rut || '',
         direccion: empresa.direccion || '',
-        encargado: empresa.encargado || '', 
+        encargado: empresa.encargado || '',
         rut_encargado: empresa.rut_encargado || '',
-        logo: null, 
+        logo: null,
         logoUrl: logoDataURL
       });
-      
+
       // Scroll hacia arriba para que el usuario vea el inicio del formulario
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -185,15 +185,15 @@ const CompanyReg = () => {
           submitData.append(key, formData[key] || '');
         }
       });
-      
+
       const isUpdating = !!editingEmpresa;
-      const url = isUpdating 
-        ? `${API_BASE_URL}/auth/empresas/${editingEmpresa._id}` 
+      const url = isUpdating
+        ? `${API_BASE_URL}/auth/empresas/${editingEmpresa._id}`
         : `${API_BASE_URL}/auth/empresas/register`;
 
-      const response = await apiFetch(url, { 
-        method: isUpdating ? 'PUT' : 'POST', 
-        body: submitData 
+      const response = await apiFetch(url, {
+        method: isUpdating ? 'PUT' : 'POST',
+        body: submitData
       });
 
       if (response.ok) {
@@ -237,23 +237,21 @@ const CompanyReg = () => {
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
           <h3 className="text-lg font-semibold text-foreground">Empresas Registradas</h3>
-          
+
           <div className="relative w-full md:w-80">
-            <Icon 
-              name="Search" 
-              size={16} 
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" 
+            <Icon
+              name="Search"
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
             />
             <input
               type="text"
               placeholder="Buscar por nombre, RUT o dirección..."
               className="w-full pl-10 pr-10 py-2.5 
-                         bg-white border-gray-200 text-gray-900 placeholder:text-gray-400
-                         dark:bg-zinc-800/50 dark:border-zinc-700 dark:text-zinc-100 dark:placeholder:text-zinc-500 
-                         border rounded-xl text-sm 
+                         bg-card text-foreground border border-border placeholder:text-muted-foreground
+                         rounded-xl text-sm 
                          focus:ring-2 focus:ring-primary/20 focus:border-primary 
-                         dark:focus:ring-primary/40 dark:focus:border-primary/60
-                         outline-none transition-all shadow-sm dark:shadow-none"
+                         outline-none transition-all shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -293,7 +291,7 @@ const CompanyReg = () => {
                   <tr key={empresa._id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3">
                       {empresa.logo ? (
-                        <img src={empresa.logo} alt="" className="w-10 h-10 object-contain rounded p-0.5 bg-white shadow-sm" />
+                        <img src={empresa.logo} alt="" className="w-10 h-10 object-contain rounded p-0.5" />
                       ) : (
                         <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
                           <Icon name="Building2" size={16} className="text-muted-foreground" />
@@ -306,11 +304,11 @@ const CompanyReg = () => {
                     <td className="px-4 py-3 text-sm">{empresa.encargado || '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-center items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleEditEmpresa(empresa._id)} 
-                          iconName="Edit" 
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditEmpresa(empresa._id)}
+                          iconName="Edit"
                           className="h-8"
                         >
                           Editar

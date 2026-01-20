@@ -63,14 +63,12 @@ const ORDINALES = [
 async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
     try {
         console.log("=== BUSCANDO EMPRESA EN BD ===");
-        console.log("Nombre empresa buscado:", nombreEmpresa);
 
         if (!db || typeof db.collection !== 'function') {
             throw new Error("Base de datos no disponible");
         }
 
         const nombreIndex = createBlindIndex(nombreEmpresa);
-        console.log("Blind index generado:", nombreIndex);
 
         const empresa = await db.collection('empresas').findOne({
             nombre_index: nombreIndex
@@ -88,19 +86,9 @@ async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
                 logo: empresa.logo // Mantener el logo tal cual (puede estar cifrado)
             };
 
-            console.log("Información empresa descifrada:", {
-                nombre: empresaDescifrada.nombre,
-                rut: empresaDescifrada.rut,
-                encargado: empresaDescifrada.encargado,
-                direccion: empresaDescifrada.direccion,
-                tieneLogo: !!empresaDescifrada.logo,
-                logoFileDataType: empresaDescifrada.logo?.fileData ? typeof empresaDescifrada.logo.fileData : 'null'
-            });
-
             return empresaDescifrada;
         }
 
-        console.log("No se encontró empresa en BD con índice:", nombreIndex);
         return null;
 
     } catch (error) {
@@ -117,8 +105,7 @@ function crearLogoImagen(logoData) {
 
     try {
         console.log('Procesando logo para DOCX...');
-        console.log('Tipo de fileData:', typeof logoData.fileData);
-        console.log('Es string cifrado?:', typeof logoData.fileData === 'string' && logoData.fileData.includes(':'));
+        
 
         let imageBuffer;
 
@@ -127,7 +114,6 @@ function crearLogoImagen(logoData) {
             console.log('Logo está cifrado, descifrando...');
             // Descifrar para obtener el Base64 original
             const base64Descifrado = decrypt(logoData.fileData);
-            console.log('Base64 descifrado, longitud:', base64Descifrado.length);
 
             // Verificar que sea Base64 válido
             if (!/^[A-Za-z0-9+/]+=*$/.test(base64Descifrado.substring(0, 100))) {
@@ -137,7 +123,6 @@ function crearLogoImagen(logoData) {
 
             // Convertir Base64 a Buffer
             imageBuffer = Buffer.from(base64Descifrado, 'base64');
-            console.log('Buffer creado desde Base64 descifrado, tamaño:', imageBuffer.length);
         }
         // CASO 2: Es un Binary de MongoDB (tiene buffer property)
         else if (logoData.fileData && logoData.fileData.buffer) {
@@ -170,7 +155,6 @@ function crearLogoImagen(logoData) {
             return null;
         }
 
-        console.log('Creando ImageRun con buffer de tamaño:', imageBuffer.length);
 
         return new ImageRun({
             data: imageBuffer,
@@ -200,7 +184,6 @@ function crearLogoImagen(logoData) {
 async function buscarPlantillaPorFormId(formId, db) {
     try {
         console.log("=== BUSCANDO PLANTILLA POR FORMID ===");
-        console.log("FormId:", formId);
 
         if (!db || typeof db.collection !== 'function') {
             throw new Error("Base de datos no disponible");
@@ -212,10 +195,10 @@ async function buscarPlantillaPorFormId(formId, db) {
         });
 
         if (plantilla) {
-            console.log("Plantilla encontrada:", plantilla.documentTitle);
+            console.log("Plantilla encontrada");
             return plantilla;
         } else {
-            console.log("No se encontró plantilla para formId:", formId);
+            console.log("No se encontró plantilla");
             return null;
         }
     } catch (error) {
@@ -245,18 +228,15 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
         const nombreVariable = normalizarNombreVariable(key);
         variables[nombreVariable] = valor || '';
 
-        console.log(`Variable: "${key}" → "${nombreVariable}" =`, valor);
     });
 
     if (userData && userData.empresa) {
         try {
-            console.log("userData.empresa (posiblemente cifrado):", userData.empresa);
 
             let nombreEmpresaDescifrado = userData.empresa;
 
             if (userData.empresa.includes(':')) {
                 nombreEmpresaDescifrado = decrypt(userData.empresa);
-                console.log("Empresa descifrada de userData:", nombreEmpresaDescifrado);
             }
 
             const empresaInfo = await obtenerEmpresaDesdeBD(nombreEmpresaDescifrado, db);
@@ -272,13 +252,6 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
                 variables[normalizarNombreVariable('Rut encargado empresa')] = empresaInfo.rut_encargado || '';
                 variables[normalizarNombreVariable('Direccion empresa')] = empresaInfo.direccion || '';
 
-                console.log("Información empresa obtenida y descifrada:", {
-                    nombre: empresaInfo.nombre,
-                    rut: empresaInfo.rut,
-                    encargado: empresaInfo.encargado,
-                    direccion: empresaInfo.direccion,
-                    rut_encargado: empresaInfo.rut_encargado
-                });
             } else {
                 console.log("No se pudo obtener información de la empresa, usando nombre descifrado");
                 variables[normalizarNombreVariable('Empresa')] = nombreEmpresaDescifrado;
@@ -302,23 +275,12 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
     const unMes = new Date(hoy); unMes.setMonth(hoy.getMonth() + 1);
     variables['FECHA_ACTUAL_1_MES'] = formatearFechaEspanol(unMes.toISOString().split("T")[0]);
 
-    console.log("=== VARIABLES EXTRAÍDAS ===");
-    console.log("Total variables:", Object.keys(variables).length);
-    console.log("Variables disponibles:", Object.keys(variables).sort());
-    console.log("VALORES CLAVE:");
-    console.log("NOMBRE_DEL_TRABAJADOR:", variables['NOMBRE_DEL_TRABAJADOR']);
-    console.log("EMPRESA:", variables[normalizarNombreVariable('Empresa')]);
-    console.log("ENCARGADO_EMPRESA:", variables[normalizarNombreVariable('Encargado empresa')]);
-    console.log("DIRECCION_EMPRESA:", variables[normalizarNombreVariable('Direccion empresa')]);
-    console.log("FECHA_ACTUAL:", variables['FECHA_ACTUAL']);
-    console.log("HORA_ACTUAL:", variables['HORA_ACTUAL']);
     return variables;
 }
 
 function evaluarCondicional(conditionalVar, variables) {
     console.log("=== EVALUANDO CONDICIONAL ===");
-    console.log("ConditionalVar:", conditionalVar);
-    console.log("Variables disponibles:", Object.keys(variables));
+    
 
     if (!conditionalVar || conditionalVar.trim() === '') {
         console.log("Condición vacía - SIEMPRE INCLUIR");
@@ -327,16 +289,14 @@ function evaluarCondicional(conditionalVar, variables) {
 
     if (conditionalVar.includes('||')) {
         const variablesOR = conditionalVar.split('||').map(v => v.trim());
-        console.log("Evaluando OR:", variablesOR);
+        
 
         for (const varOR of variablesOR) {
             const varName = varOR.replace(/[{}]/g, '').trim();
             const valor = variables[varName];
 
-            console.log(`Verificando ${varName}:`, valor);
 
             if (valor && valor.toString().trim() !== '') {
-                console.log(`OR: ${varName} tiene valor - INCLUIR`);
                 return true;
             }
         }
@@ -351,14 +311,11 @@ function evaluarCondicional(conditionalVar, variables) {
         const textoBuscado = textPart.replace(/"/g, '').trim();
 
         const valor = variables[varName];
-        console.log(`Evaluando CONTAINS: ${varName} contiene "${textoBuscado}"? Valor:`, valor);
 
         if (valor && valor.toString().toLowerCase().includes(textoBuscado.toLowerCase())) {
-            console.log(`CONTAINS: ${varName} contiene "${textoBuscado}" - INCLUIR`);
             return true;
         }
 
-        console.log(`CONTAINS: ${varName} NO contiene "${textoBuscado}" - NO INCLUIR`);
         return false;
     }
 
@@ -368,27 +325,21 @@ function evaluarCondicional(conditionalVar, variables) {
         const valorEsperado = valuePart.replace(/"/g, '').trim();
 
         const valorActual = variables[varName];
-        console.log(`Evaluando EQUALS: ${varName} = "${valorEsperado}"? Valor actual:`, valorActual);
 
         if (valorActual && valorActual.toString().trim() === valorEsperado) {
-            console.log(`EQUALS: ${varName} = "${valorEsperado}" - INCLUIR`);
             return true;
         }
 
-        console.log(`EQUALS: ${varName} ≠ "${valorEsperado}" - NO INCLUIR`);
         return false;
     }
 
     const varName = conditionalVar.replace(/[{}]/g, '').trim();
     const valor = variables[varName];
-    console.log(`Evaluando SIMPLE: ${varName} tiene valor?`, valor);
 
     if (valor && valor.toString().trim() !== '') {
-        console.log(`SIMPLE: ${varName} tiene valor - INCLUIR`);
         return true;
     }
 
-    console.log(`SIMPLE: ${varName} no tiene valor - NO INCLUIR`);
     return false;
 }
 
@@ -417,14 +368,12 @@ function reemplazarVariablesEnContenido(contenido, variables) {
         if (esCampoDeFecha(nombreVariable) && valor && !valor.includes('NO ENCONTRADA')) {
             try {
                 const fechaFormateada = formatearFechaEspanol(valor);
-                console.log(`Formateando fecha: ${valor} → ${fechaFormateada}`);
                 valor = fechaFormateada;
             } catch (error) {
                 console.error(`Error formateando fecha ${nombreVariable}:`, error);
             }
         }
 
-        console.log(`Reemplazando: ${variableCompleta} ->`, valor);
         textRuns.push(new TextRun({ text: valor, bold: true }));
 
         lastIndex = matchIndex + variableCompleta.length;
@@ -435,7 +384,6 @@ function reemplazarVariablesEnContenido(contenido, variables) {
         textRuns.push(new TextRun(textoFinal));
     }
 
-    console.log("Contenido procesado (TextRuns):", textRuns.length, "elementos");
     return textRuns;
 }
 
@@ -460,8 +408,7 @@ function procesarTextoFirma(textoFirma, variables) {
 async function generarDocumentoDesdePlantilla(responses, responseId, db, plantilla, userData, formTitle) {
     try {
         console.log("=== GENERANDO DOCUMENTO DESDE PLANTILLA ===");
-        console.log("Título del documento:", plantilla.documentTitle);
-        console.log("Número de párrafos:", plantilla.paragraphs.length);
+        
 
         const variables = await extraerVariablesDeRespuestas(responses, userData, db);
 
@@ -498,7 +445,6 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
         const parrafosIncluidos = [];
 
         for (const parrafo of plantilla.paragraphs) {
-            console.log(`Procesando párrafo ${parrafo.id}:`, parrafo.conditionalVar);
 
             const debeIncluir = evaluarCondicional(parrafo.conditionalVar, variables);
 
@@ -539,11 +485,10 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
                 parrafosIncluidos.push(parrafo.id);
                 contadorClausula++;
             } else {
-                console.log(`Párrafo ${parrafo.id} omitido por condición`);
+                console.log(`Párrafo omitido por condición`);
             }
         }
 
-        console.log(`Párrafos incluidos: ${parrafosIncluidos.length}/${plantilla.paragraphs.length}`);
 
         if (plantilla.signature1Text || plantilla.signature2Text) {
             children.push(new Paragraph({ text: "" }));
@@ -649,7 +594,6 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
         let IDdoc;
 
         if (existingDoc) {
-            console.log(`Sobreescribiendo documento existente: ${existingDoc.IDdoc}`);
             IDdoc = existingDoc.IDdoc;
 
             result = await db.collection('docxs').updateOne(
@@ -663,7 +607,6 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
                     }
                 }
             );
-            console.log(`Documento sobreescrito: ${IDdoc}`);
         } else {
             IDdoc = generarIdDoc();
             result = await db.collection('docxs').insertOne({
@@ -675,10 +618,8 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
-            console.log(`Nuevo documento creado: ${IDdoc}`);
         }
 
-        console.log("DOCX generado desde plantilla exitosamente:", IDdoc);
 
         return {
             IDdoc: IDdoc,
@@ -744,14 +685,12 @@ function reemplazarVariablesEnContenidoTxt(contenido, variables) {
         if (esCampoDeFecha(nombreVariable) && valor && !valor.includes('NO ENCONTRADA')) {
             try {
                 const fechaFormateada = formatearFechaEspanol(valor);
-                console.log(`Formateando fecha: ${valor} → ${fechaFormateada}`);
                 valor = fechaFormateada;
             } catch (error) {
                 console.error(`Error formateando fecha ${nombreVariable}:`, error);
             }
         }
 
-        console.log(`Reemplazando: ${variableCompleta} ->`, valor);
         textRuns.push(new TextRun({ text: valor, bold: true }));
 
         lastIndex = matchIndex + variableCompleta.length;
@@ -762,7 +701,6 @@ function reemplazarVariablesEnContenidoTxt(contenido, variables) {
         textRuns.push(new TextRun(textoFinal));
     }
 
-    console.log("Contenido procesado (TextRuns):", textRuns.length, "elementos");
     return textRuns;
 }
 
@@ -821,7 +759,6 @@ async function generarDocumentoTxt(responses, responseId, db, formTitle) {
         let IDdoc;
 
         if (existingDoc) {
-            console.log(`Sobreescribiendo documento TXT existente: ${existingDoc.IDdoc}`);
             IDdoc = existingDoc.IDdoc;
 
             result = await db.collection('docxs').updateOne(
@@ -867,10 +804,7 @@ async function generarDocumentoTxt(responses, responseId, db, formTitle) {
 async function generarAnexoDesdeRespuesta(responses, responseId, db, section, userData, formId, formTitle) {
     try {
         console.log("=== INICIANDO GENERACIÓN DE DOCUMENTO ===");
-        console.log("ResponseId:", responseId);
-        console.log("Section:", section);
-        console.log("UserData:", userData);
-        console.log("FormId recibido:", formId);
+        
 
         if (!formId) {
             console.log("No se recibió formId - Generando TXT");
@@ -880,10 +814,8 @@ async function generarAnexoDesdeRespuesta(responses, responseId, db, section, us
         const plantilla = await buscarPlantillaPorFormId(formId, db);
 
         if (plantilla) {
-            console.log("Usando plantilla para generar DOCX");
             return await generarDocumentoDesdePlantilla(responses, responseId, db, plantilla, userData, formTitle);
         } else {
-            console.log("No hay plantilla - Generando TXT como fallback");
             return await generarDocumentoTxt(responses, responseId, db, formTitle);
         }
 

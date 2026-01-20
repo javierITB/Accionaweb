@@ -41,17 +41,14 @@ router.get("/download/:IDdoc", async (req, res) => {
     try {
         const { IDdoc } = req.params;
         console.log("=== SOLICITUD DE DESCARGA ===");
-        console.log("Buscando documento con IDdoc:", IDdoc);
 
         const documento = await req.db.collection('docxs').findOne({ IDdoc: IDdoc });
 
         if (!documento) {
-            console.log("Documento no encontrado para IDdoc:", IDdoc);
             return res.status(404).json({ error: "Documento no encontrado" });
         }
 
         console.log("Documento encontrado");
-        console.log("Tipo de documento:", documento.tipo || 'docx');
 
         // OBTENER EL BUFFER CORRECTAMENTE
         const fileBuffer = documento.docxFile.buffer || documento.docxFile;
@@ -68,7 +65,6 @@ router.get("/download/:IDdoc", async (req, res) => {
                 'Content-Disposition': `attachment; filename="${fileName}.${extension}"`,
                 'Content-Length': bufferLength
             });
-            console.log("Enviando archivo TXT:", fileName);
         } else {
             // Para archivos DOCX (por defecto)
             res.set({
@@ -76,7 +72,6 @@ router.get("/download/:IDdoc", async (req, res) => {
                 'Content-Disposition': `attachment; filename="${fileName}.${extension}"`,
                 'Content-Length': bufferLength
             });
-            console.log("Enviando archivo DOCX:", fileName);
         }
 
         // ENVIAR EL BUFFER

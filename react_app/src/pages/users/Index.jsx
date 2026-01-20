@@ -76,7 +76,7 @@ const FormReg = () => {
     fetchUsers();
   }, []);
 
-const cargos = [
+  const cargos = [
     { value: 'admin', label: 'Administrador' },
     { value: 'RRHH', label: 'Recursos Humanos' },
     { value: 'Cliente', label: 'Cliente' },
@@ -299,12 +299,10 @@ const cargos = [
               type="text"
               placeholder="Búsqueda rápida..."
               className="w-full pl-10 pr-10 py-2.5 
-               bg-white border-gray-200 text-gray-900 placeholder:text-white-400
-                dark:border-zinc-700  dark:placeholder:text-zinc-500 
-               border rounded-xl text-sm 
+               bg-card text-foreground border border-border placeholder:text-muted-foreground
+               rounded-xl text-sm 
                focus:ring-2 focus:ring-primary/20 focus:border-primary 
-               dark:focus:ring-primary/40 dark:focus:border-primary/60
-               outline-none transition-all shadow-sm dark:shadow-none"
+               outline-none transition-all shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
