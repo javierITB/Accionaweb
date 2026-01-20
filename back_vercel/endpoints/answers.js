@@ -703,7 +703,7 @@ router.get("/mail/:mail", async (req, res) => {
     const descifrarObjeto = (obj) => {
       if (!obj || typeof obj !== 'object') return obj;
       if (Array.isArray(obj)) return obj.map(item => descifrarCampo(item));
-      
+
       const resultado = {};
       for (const key in obj) {
         const valor = obj[key];
@@ -752,9 +752,53 @@ router.get("/mail/:mail", async (req, res) => {
         isShared: esCompartida,    // Alias para compatibilidad
         metadata: {
           esPropia: !esCompartida
-        }
+        },
+        // Placeholder for form data, to be populated below
+        form: null
       };
     });
+
+    // --- OPTIMIZACIÓN: BUSCAR DATOS DE FORMULARIOS DEL SERVIDOR (LOOKUP) ---
+    // Recolectar IDs únicos de formularios
+    const formIds = [...new Set(answersProcessed.map(a => a.formId).filter(id => id))];
+
+    // Buscar detalles de formularios
+    const formsDetails = await req.db.collection("forms").find({
+      _id: { $in: formIds.map(id => new ObjectId(id)) } // Asumiendo que formId es string de ObjectId
+    }).project({
+      title: 1,
+      icon: 1,
+      primaryColor: 1,
+      section: 1,
+      description: 1, // Útil para mostrar detalles
+      updatedAt: 1
+    }).toArray();
+
+    // Crear mapa para acceso rápido
+    const formsMap = new Map();
+    formsDetails.forEach(f => formsMap.set(f._id.toString(), f));
+
+    // Inyectar datos del formulario en cada respuesta
+    answersProcessed.forEach(answer => {
+      if (answer.formId && formsMap.has(answer.formId)) {
+        const formData = formsMap.get(answer.formId);
+        answer.form = {
+          _id: formData._id,
+          title: formData.title,
+          icon: formData.icon,
+          primaryColor: formData.primaryColor,
+          section: formData.section,
+          description: formData.description,
+          updatedAt: formData.updatedAt
+        };
+
+        // Si no tiene título propio la respuesta, usar el del formulario
+        if (!answer.formTitle) {
+          answer.formTitle = formData.title;
+        }
+      }
+    });
+    // -----------------------------------------------------------------------
 
     // Ordenar por fecha (más recientes primero)
     answersProcessed.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -1041,55 +1085,55 @@ router.get("/filtros", async (req, res) => {
 
 // ruta para compartir solicitudes con usuarios 
 router.post("/compartir/", async (req, res) => {
-   try {
-      
-      const { usuarios, id } = req.body; 
-      const responseId = id;
-      
-      await verifyRequest(req);
+  try {
 
-      // Validar que el array de usuarios exista
-      if (!usuarios || !Array.isArray(usuarios)) {
-         return res.status(400).json({ 
-            success: false, 
-            message: "Se requiere un array de IDs de usuarios (usuariosIds)." 
-         });
-      }
+    const { usuarios, id } = req.body;
+    const responseId = id;
 
-      // 2. Actualización en la colección 'respuestas'
-      // Usamos la notación de punto para insertar 'compartidos' dentro del objeto 'user'
-      const result = await req.db.collection("respuestas").updateOne(
-         { _id: new ObjectId(responseId) },
-         { 
-            $set: { 
-               "user.compartidos": usuarios 
-            } 
-         }
-      );
+    await verifyRequest(req);
 
-      if (result.matchedCount === 0) {
-         return res.status(404).json({ 
-            success: false, 
-            message: "La solicitud (respuesta) no fue encontrada." 
-         });
-      }
-
-      // 3. Respuesta exitosa
-      res.json({ 
-         success: true, 
-         message: "Solicitud compartida correctamente con los compañeros." 
+    // Validar que el array de usuarios exista
+    if (!usuarios || !Array.isArray(usuarios)) {
+      return res.status(400).json({
+        success: false,
+        message: "Se requiere un array de IDs de usuarios (usuariosIds)."
       });
+    }
 
-   } catch (err) {
-      console.error("Error en endpoint compartir:", err);
-      // Si verifyRequest lanza un error con status, lo capturamos aquí
-      if (err.status) return res.status(err.status).json({ message: err.message });
-      
-      res.status(500).json({ 
-         success: false, 
-         error: "Error interno al procesar la acción de compartir." 
+    // 2. Actualización en la colección 'respuestas'
+    // Usamos la notación de punto para insertar 'compartidos' dentro del objeto 'user'
+    const result = await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(responseId) },
+      {
+        $set: {
+          "user.compartidos": usuarios
+        }
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "La solicitud (respuesta) no fue encontrada."
       });
-   }
+    }
+
+    // 3. Respuesta exitosa
+    res.json({
+      success: true,
+      message: "Solicitud compartida correctamente con los compañeros."
+    });
+
+  } catch (err) {
+    console.error("Error en endpoint compartir:", err);
+    // Si verifyRequest lanza un error con status, lo capturamos aquí
+    if (err.status) return res.status(err.status).json({ message: err.message });
+
+    res.status(500).json({
+      success: false,
+      error: "Error interno al procesar la acción de compartir."
+    });
+  }
 });
 
 // Obtener respuesta por ID - Versión simplificada
@@ -1914,7 +1958,7 @@ router.get("/:id/archived", async (req, res) => {
       req.db.collection("docxs").deleteMany({ responseId: id })
     ]);
 
-    
+
 
     // Respuesta final al cliente
     res.json({
@@ -1942,7 +1986,7 @@ router.post("/upload-corrected-files", async (req, res) => {
     // Nota: Como usamos uploadMultiple.array, multer procesa primero. 
     // Podríamos verificar el token dentro del callback, ya que req.body estará poblado ahí.
 
-    
+
 
     uploadMultiple.array('files', 10)(req, res, async (err) => {
       if (err) {
@@ -1955,7 +1999,7 @@ router.post("/upload-corrected-files", async (req, res) => {
       const auth = await verifyRequest(req);
       if (!auth.ok) return res.status(401).json({ error: auth.error });
 
-      
+
 
       const { responseId, index, total } = req.body;
       const files = req.files;
@@ -2012,7 +2056,7 @@ router.post("/upload-corrected-files", async (req, res) => {
           } else if (response._contexto && response._contexto.formTitle) {
             // Si no hay formId, usar el del contexto
             formName = response._contexto.formTitle;
-            
+
           }
         } else {
           console.log("No se encontró la respuesta");
@@ -2023,7 +2067,7 @@ router.post("/upload-corrected-files", async (req, res) => {
 
       // PROCESAR CADA ARCHIVO
       for (const file of files) {
-        
+
         const correctedFile = {
           fileName: normalizeFilename(file.originalname),
           tipo: 'pdf',
@@ -2573,7 +2617,7 @@ router.get("/download-approved-pdf/:responseId", async (req, res) => {
       return res.status(404).json({ error: "Archivo PDF no disponible" });
     }
 
-  
+
     // CORREGIDO: Asegurar que fileName existe
     const fileName = file.fileName || `documento_aprobado_${responseId}.pdf`;
 
@@ -3122,7 +3166,7 @@ router.get("/mantenimiento/migrar-respuestas-pqc", async (req, res) => {
     let totalCamposCifrados = 0;
     let errores = 0;
 
-    
+
 
     // Función para cifrar todos los strings en un objeto/array
     const cifrarObjetoCompleto = (obj) => {
