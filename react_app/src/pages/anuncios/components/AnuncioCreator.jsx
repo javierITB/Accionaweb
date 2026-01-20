@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import Icon from '../../../components/AppIcon'; // Importado para el selector
 import DestinatariosSelector from './DestinatariosSelector';
 import { API_BASE_URL } from '../../../utils/api';
 
 const AnuncioCreator = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false); // Para el dropdown de iconos
+  const dropdownRef = useRef(null);
 
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
     prioridad: 1,
     color: '#f5872dff',
+    icono: 'Edit', // Valor inicial para el selector
     actionUrl: '',
     enviarNotificacion: true,
     enviarCorreo: false,
@@ -22,6 +26,26 @@ const AnuncioCreator = ({ onSuccess }) => {
     }
   });
 
+  // Opciones de iconos para el administrador
+  const opcionesIcono = [
+    { id: 'Edit', label: 'Mensaje' },
+    { id: 'CheckCircle', label: 'Aprobación' },
+    { id: 'HelpCircle', label: 'Soporte' },
+    { id: 'FileText', label: 'Formularios' },
+    { id: 'MessageCircle', label: 'Sistema' }
+  ];
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -29,7 +53,6 @@ const AnuncioCreator = ({ onSuccess }) => {
       alert('Debes seleccionar al menos un método de envío');
       return;
     }
-
 
     if (formData.destinatarios.tipo === 'manual' && formData.destinatarios.usuariosManuales.length === 0) {
       alert('Por favor, selecciona al menos un destinatario');
@@ -41,18 +64,25 @@ const AnuncioCreator = ({ onSuccess }) => {
     try {
       const token = sessionStorage.getItem('token');
 
-      // 🔥 PAYLOAD SIMPLE - SOLO DATOS PARA NOTIFICACIONES
+      // Mapeo para que el NotificationsCard agrupe correctamente sin duplicados
+      const mapeoParaTarjeta = {
+        'Edit': 'Edit',           // Agrupa en Mensajes
+        'CheckCircle': 'CheckCircle', // Agrupa en Aprobaciones
+        'HelpCircle': 'paper',     // Agrupa en Soporte (como comprobamos en BD)
+        'FileText': 'FileText', // Agrupa en Formularios
+        'MessageCircle': 'MessageCircle'    // Agrupa en Sistema
+      };
+
       const payload = {
         titulo: formData.titulo.trim(),
         descripcion: formData.descripcion.trim(),
         prioridad: formData.prioridad,
         color: formData.color,
         actionUrl: formData.actionUrl?.trim() || null,
-
-        // Asegurar que sean boolean puro
+        // Usamos el mapeo para enviar el valor compatible
+        icono: mapeoParaTarjeta[formData.icono] || 'paper',
         enviarNotificacion: Boolean(formData.enviarNotificacion),
         enviarCorreo: Boolean(formData.enviarCorreo),
-
         destinatarios: formData.destinatarios,
       };
 
@@ -95,7 +125,6 @@ const AnuncioCreator = ({ onSuccess }) => {
 
       <form onSubmit={handleSubmit} className="p-6">
         <div className="space-y-8">
-          {/* Sección de Contenido */}
           <div className="space-y-6">
             <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">Contenido del Anuncio</h3>
 
@@ -135,6 +164,44 @@ const AnuncioCreator = ({ onSuccess }) => {
                 </select>
               </div>
 
+              {/* Selector de Icono agregado */}
+              <div className="relative" ref={dropdownRef}>
+                <label className="block text-sm font-medium mb-2 text-foreground">Icono de Notificación</label>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(!isOpen)}
+                  className="w-full flex items-center justify-between px-3 py-2 border border-border bg-card text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon name={formData.icono} size={18} className="text-muted-foreground" />
+                    <span>{opcionesIcono.find(opt => opt.id === formData.icono)?.label}</span>
+                  </div>
+                  <Icon name="ChevronDown" size={14} className="text-muted-foreground" />
+                </button>
+
+                {isOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                    {opcionesIcono.map((opcion) => (
+                      <div
+                        key={opcion.id}
+                        onClick={() => {
+                          setFormData({ ...formData, icono: opcion.id });
+                          setIsOpen(false);
+                        }}
+                        className={`flex items-center gap-3 px-3 py-2.5 hover:bg-muted cursor-pointer transition-colors ${
+                          formData.icono === opcion.id ? 'bg-muted/50' : ''
+                        }`}
+                      >
+                        <Icon name={opcion.id} size={18} className="text-muted-foreground" />
+                        <span className="text-sm text-foreground">{opcion.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-2 text-foreground">Color de notificación</label>
                 <div className="flex gap-2">
@@ -143,44 +210,37 @@ const AnuncioCreator = ({ onSuccess }) => {
                       key={color}
                       type="button"
                       onClick={() => setFormData({ ...formData, color })}
-                      className={`w-8 h-8 rounded-full border-2 ${formData.color === color ? 'border-foreground' : 'border-transparent'
-                        }`}
+                      className={`w-8 h-8 rounded-full border-2 ${formData.color === color ? 'border-foreground' : 'border-transparent'}`}
                       style={{ backgroundColor: color }}
                       title={color}
                     />
                   ))}
                 </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground">URL de acción (opcional)</label>
-              <Input
-                value={formData.actionUrl}
-                onChange={e => setFormData({ ...formData, actionUrl: e.target.value })}
-                placeholder="/ruta/destino"
-              />
-              <p className="text-sm text-muted-foreground mt-1">Los usuarios serán redirigidos aquí al hacer clic</p>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-foreground">URL de acción (opcional)</label>
+                <Input
+                  value={formData.actionUrl}
+                  onChange={e => setFormData({ ...formData, actionUrl: e.target.value })}
+                  placeholder="/ruta/destino"
+                />
+                <p className="text-sm text-muted-foreground mt-1">Los usuarios serán redirigidos aquí al hacer clic</p>
+              </div>
             </div>
           </div>
 
-          {/* Sección de Destinatarios */}
           <div className="space-y-6 pt-6 border-t border-border">
             <h3 className="text-lg font-medium text-foreground">Destinatarios</h3>
-
             <DestinatariosSelector
               formData={formData}
               setFormData={setFormData}
             />
           </div>
 
-          {/* Sección de metodo de envio por medio de checkboxes implementado*/}
-
           <div className="space-y-3 pt-6 border-t border-border">
             <h3 className="text-lg font-medium text-foreground">Método de envío</h3>
-
             <div className="space-y-2">
-              {/* Checkbox Notificación */}
               <label className="flex items-center gap-3 cursor-pointer p-3 hover:bg-muted rounded-lg">
                 <input
                   type="checkbox"
@@ -197,7 +257,6 @@ const AnuncioCreator = ({ onSuccess }) => {
                 </div>
               </label>
 
-              {/* Checkbox Correo */}
               <label className="flex items-center gap-3 cursor-pointer p-3 hover:bg-muted rounded-lg">
                 <input
                   type="checkbox"
@@ -215,7 +274,6 @@ const AnuncioCreator = ({ onSuccess }) => {
               </label>
             </div>
 
-            {/* Mensaje de advertencia si no hay método seleccionado */}
             {!formData.enviarNotificacion && !formData.enviarCorreo && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800">
                 <p className="text-sm text-red-600 dark:text-red-400 font-medium">
@@ -225,7 +283,6 @@ const AnuncioCreator = ({ onSuccess }) => {
             )}
           </div>
 
-          {/* Botones de acción */}
           <div className="flex justify-end space-x-3 pt-6 border-t border-border">
             <Button
               type="button"
