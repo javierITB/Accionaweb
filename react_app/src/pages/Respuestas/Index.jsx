@@ -308,7 +308,7 @@ const RequestTracking = () => {
 
                 {isLimitOpen && (
                   <div className="absolute right-0 top-full mt-2 w-16 bg-card border border-border shadow-md rounded-md z-50 overflow-hidden">
-                    {[15, 30].map(limit => (
+                    {[15, 30, 45, 60].map(limit => (
                       <button
                         key={limit}
                         onClick={() => handleLimitChange(limit)}
