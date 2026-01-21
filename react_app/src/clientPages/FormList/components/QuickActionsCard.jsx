@@ -45,7 +45,7 @@ const QuickActionsCard = ({ section }) => {
           path: "/forms?id=" + f._id
         }));
 
-        setAllForms(normalizedForms);
+        setAllForms(normalizedForms.sort((a, b) => a.title.localeCompare(b.title)));
       } catch (err) {
         console.error('Error cargando formularios:', err);
       } finally {

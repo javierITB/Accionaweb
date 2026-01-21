@@ -166,7 +166,8 @@ router.get("/mini", async (req, res) => {
         if (company && company.trim() !== "") {
             const term = company.toLowerCase().trim();
             answersProcessed = answersProcessed.filter(a =>
-                a.rutEmpresa.toLowerCase().includes(term)
+                a.rutEmpresa.toLowerCase().includes(term) ||
+                a.nombreEmpresa.toLowerCase().includes(term)
             );
         }
 
@@ -182,6 +183,7 @@ router.get("/mini", async (req, res) => {
             answersProcessed = answersProcessed.filter(a =>
                 a.tuNombre.toLowerCase().includes(term) ||
                 a.rutEmpresa.toLowerCase().includes(term) ||
+                a.nombreEmpresa.toLowerCase().includes(term) ||
                 a.formTitle.toLowerCase().includes(term)
             );
         }

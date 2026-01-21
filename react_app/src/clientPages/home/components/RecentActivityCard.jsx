@@ -38,6 +38,13 @@ const RequestTracking = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareRequest, setShareRequest] = useState(null);
 
+  // --- AGREGADO: Función para actualizar el estado local al compartir sin recargar ---
+  const handleRequestUpdate = (updatedRequest) => {
+    setResp(prevResp => 
+      prevResp.map(r => r._id === updatedRequest._id ? updatedRequest : r)
+    );
+  };
+
   const handleShareRequest = (request) => {
     setShareRequest(request);
     setShowShareModal(true);
@@ -374,6 +381,7 @@ const RequestTracking = () => {
                   request={request}
                   onViewDetails={handleViewDetails}
                   onSendMessage={handleSendMessage}
+                  onUpdate={handleRequestUpdate} // AGREGADO
                   onShare={() => handleShareRequest(request)}
                   viewMode={viewMode}
                 />
@@ -410,6 +418,7 @@ const RequestTracking = () => {
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         request={shareRequest}
+        onUpdate={handleRequestUpdate} // AGREGADO
       />
     </div>
   );
