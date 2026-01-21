@@ -196,7 +196,6 @@ const DashboardHome = () => {
             </div>
           </div>
 
-          <Footer />
         </div >
       </main >
     </div >
