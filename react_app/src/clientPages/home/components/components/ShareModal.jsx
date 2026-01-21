@@ -12,6 +12,9 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const mailSesion = sessionStorage.getItem("email");
 
+  // IDENTIFICAR SI EL USUARIO ACTUAL ES EL AUTOR
+  const isAuthor = mailSesion === request?.user?.mail;
+
   useEffect(() => {
     if (isOpen) {
       fetchUsers();
@@ -72,10 +75,8 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // --- CAMBIO MÍNIMO PARA ACTUALIZACIÓN EN TIEMPO REAL ---
         if (onUpdate) {
           const yaCompartidos = request?.user?.compartidos || [];
-          // Fusionamos los que ya estaban con los nuevos seleccionados
           const fusionados = Array.from(new Set([...yaCompartidos, ...selectedUsers]));
           
           onUpdate({
@@ -83,7 +84,6 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
             user: { ...request.user, compartidos: fusionados }
           });
         }
-        // ------------------------------------------------------
 
         alert("Solicitud compartida correctamente.");
         onClose();
@@ -98,12 +98,52 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.mail?.toLowerCase().includes(searchTerm.toLowerCase())
+  // --- SECCIONES SEPARADAS ---
+  
+  // 1. EL PROPIETARIO (Solo uno)
+  const ownerUser = users.find(user => user.mail === request?.user?.mail);
+
+  // 2. Usuarios que YA tienen acceso (excluyendo al propietario)
+  const sharedWith = users.filter(user => 
+    user.mail !== request?.user?.mail && request?.user?.compartidos?.includes(user.id)
   );
 
+  // 3. Usuarios DISPONIBLES para agregar
+  const availableToShare = users.filter(user => {
+    const isOwner = user.mail === request?.user?.mail;
+    const isAlreadyShared = request?.user?.compartidos?.includes(user.id);
+    const matchesSearch = user.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.mail?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return !isOwner && !isAlreadyShared && matchesSearch;
+  });
+
   if (!isOpen) return null;
+
+  // Componente para renderizar la lista de compartidos según la posición solicitada
+  const SharedSection = () => (
+    sharedWith.length > 0 && (
+      <div>
+        <p className="px-3 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Con acceso compartido</p>
+        <div className="space-y-1">
+          {sharedWith.map((user) => (
+            <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 opacity-90 border border-transparent">
+              <div className="flex items-center space-x-3">
+                <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-xs">
+                  {user.nombre?.charAt(0)}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{user.nombre} {user.apellido}</p>
+                  <p className="text-xs text-muted-foreground">{user.mail}</p>
+                </div>
+              </div>
+              <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap">Compartido</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  );
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -112,7 +152,7 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
         {/* Header */}
         <div className="p-4 border-b border-border flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Compartir Solicitud</h3>
+            <h3 className="text-lg font-semibold text-foreground">Gestionar Acceso</h3>
             <p className="text-xs text-muted-foreground truncate max-w-[250px]">{request?.formTitle || request?.title || 'Sin título'}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} iconName="X" iconSize={20} />
@@ -133,66 +173,71 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
         </div>
 
         {/* User List */}
-        <div className="flex-1 overflow-y-auto p-2">
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-3">
+            <div className="flex flex-col items-center justify-center py-12">
               <Icon name="Loader" size={24} className="animate-spin text-accent" />
-              <p className="text-sm text-muted-foreground">Cargando compañeros...</p>
             </div>
-          ) : filteredUsers.length > 0 ? (
-            <div className="space-y-1">
-              {filteredUsers.map((user) => {
-                const isOwner = user.mail === request?.user?.mail;
-                const isAlreadyShared = request?.user?.compartidos?.includes(user.id);
-                const isDisabled = isOwner || isAlreadyShared;
-
-                return (
-                  <div
-                    key={user.id}
-                    onClick={() => handleToggleUser(user.id, isDisabled)}
-                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                      isDisabled ? 'opacity-50 cursor-not-allowed bg-muted/20' : 'cursor-pointer hover:bg-muted/50 border border-transparent'
-                    } ${
-                      selectedUsers.includes(user.id) ? 'bg-accent/10 border-accent/20 border' : ''
-                    }`}
-                  >
+          ) : (
+            <>
+              {/* SECCIÓN ARRIBA ARRIBA: EL PROPIETARIO (ESTILO NORMALIZADO) */}
+              {ownerUser && (
+                <div>
+                  <p className="px-3 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Propietario</p>
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 opacity-90 border border-transparent">
                     <div className="flex items-center space-x-3">
                       <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-xs uppercase">
-                        {user.nombre?.charAt(0)}
+                        {ownerUser.nombre?.charAt(0)}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-foreground">{user.nombre} {user.apellido}</p>
-                          {isOwner && (
-                            <span className="text-[10px] bg-success text-white px-1.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap">
-                              Propietario
-                            </span>
-                          )}
-                          {isAlreadyShared && !isOwner && (
-                            <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap">
-                              Compartido
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">{user.mail}</p>
+                        <p className="text-sm font-medium text-foreground">{ownerUser.nombre} {ownerUser.apellido}</p>
+                        <p className="text-xs text-muted-foreground">{ownerUser.mail}</p>
                       </div>
                     </div>
-                    {!isDisabled && (
+                    <span className="text-[10px] bg-success text-white px-1.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap">Propietario</span>
+                  </div>
+                </div>
+              )}
+
+              {/* POSICIÓN DINÁMICA: Si es autor, los compartidos salen aquí (arriba) */}
+              {isAuthor && <SharedSection />}
+
+              {/* SECCIÓN AGREGAR NUEVOS */}
+              <div>
+                <p className="px-3 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  {searchTerm.length > 0 ? 'Resultados de búsqueda' : 'Sugeridos para compartir'}
+                </p>
+                <div className="space-y-1">
+                  {availableToShare.map((user) => (
+                    <div
+                      key={user.id}
+                      onClick={() => handleToggleUser(user.id, false)}
+                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/50 border ${
+                        selectedUsers.includes(user.id) ? 'bg-accent/10 border-accent/20' : 'border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-xs uppercase">
+                          {user.nombre?.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{user.nombre} {user.apellido}</p>
+                          <p className="text-xs text-muted-foreground">{user.mail}</p>
+                        </div>
+                      </div>
                       <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${
                         selectedUsers.includes(user.id) ? 'bg-accent border-accent' : 'border-border'
                       }`}>
                         {selectedUsers.includes(user.id) && <Icon name="Check" size={14} className="text-white" />}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Icon name="Users" size={32} className="mx-auto mb-3 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">No se encontraron usuarios</p>
-            </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* POSICIÓN DINÁMICA: Si NO es autor, los compartidos salen aquí (abajo) */}
+              {!isAuthor && <SharedSection />}
+            </>
           )}
         </div>
 
