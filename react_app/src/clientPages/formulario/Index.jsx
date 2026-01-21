@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/ui/Header';
 import QuickActionsCard from './components/QuickActionsCard';
-import { API_BASE_URL, apiFetch} from '../../utils/api';
-import Footer from 'clientPages/components/ui/footer';
+import { API_BASE_URL, apiFetch } from '../../utils/api';
+import Footer from '../components/ui/Footer';
 
 const DashboardHome = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
