@@ -4,20 +4,20 @@ import Icon from '../../../components/AppIcon';
 const QuickActionsCard = ({ orientation = 'horizontal' }) => { // Agregamos la prop orientation
   const quickActions = [
     {
-      id: 1,
-      title: 'Remuneraciones',
-      description: '',
-      icon: 'Receipt',
-      color: 'bg-blue-500',
-      path: '/remuneraciones'
-    },
-    {
       id: 2,
       title: 'Anexos',
       description: '',
       icon: 'Calendar',
       color: 'bg-green-500',
       path: '/Anexos'
+    },
+    {
+      id: 5,
+      title: 'Envío de documentos',
+      description: '',
+      icon: 'FileText',
+      color: 'bg-blue-500',
+      path: '/forms?id=6902379d46e3a2e6e0d8a57f'
     },
     {
       id: 3,
@@ -28,12 +28,12 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => { // Agregamos la p
       path: '/Finiquitos'
     },
     {
-      id: 5,
-      title: 'Envío de documentos',
+      id: 1,
+      title: 'Remuneraciones',
       description: '',
-      icon: 'FileText',
+      icon: 'Receipt',
       color: 'bg-blue-500',
-      path: '/forms?id=6902379d46e3a2e6e0d8a57f'
+      path: '/remuneraciones'
     },
     {
       id: 4,
@@ -48,7 +48,7 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => { // Agregamos la p
       title: 'Ayuda y Soporte',
       description: 'reporte de errores y consultas',
       icon: 'Monitor',
-      color: 'bg-blue-500', 
+      color: 'bg-blue-500',
       path: '/soporte'
     }
   ];
