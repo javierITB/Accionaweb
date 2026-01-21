@@ -185,12 +185,14 @@ const RequestTracking = () => {
     }
   }, [formId]);
 
+  /* EFECTO DESHABILITADO: Causaba reinicio de filtros
   useEffect(() => {
     const interval = setInterval(() => {
       if (filters.status !== 'archivado') fetchData(currentPage, true);
     }, 45000);
     return () => clearInterval(interval);
   }, [filters.status, currentPage, itemsPerPage]);
+  */
 
   // --- HANDLERS ---
   const handleApplyFilters = () => {
