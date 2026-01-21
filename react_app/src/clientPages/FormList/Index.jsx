@@ -3,7 +3,7 @@ import Header from '../components/ui/Header';
 import QuickActionsCard from './components/QuickActionsCard';
 
 import BackButton from 'clientPages/components/BackButton';
-import Footer from '@/clientPages/components/ui/Footer.jsx';
+import Footer from 'clientPages/components/ui/Footer.jsx';
 
 const DashboardHome = ( {section} ) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
