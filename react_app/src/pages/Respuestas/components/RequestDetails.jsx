@@ -350,76 +350,76 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     }
   };
 
-const handlePreviewCorrectedFile = async (index = 0, source = 'auto') => {
-  // source: 'approved' (archivos aprobados), 'new' (archivos nuevos), 'auto' (detecta automáticamente)
+  const handlePreviewCorrectedFile = async (index = 0, source = 'auto') => {
+    // source: 'approved' (archivos aprobados), 'new' (archivos nuevos), 'auto' (detecta automáticamente)
 
-  try {
-    setIsLoadingPreviewCorrected(true);
-    setPreviewIndex(index);
+    try {
+      setIsLoadingPreviewCorrected(true);
+      setPreviewIndex(index);
 
-    let documentUrl;
-    let useApprovedFiles = false;
+      let documentUrl;
+      let useApprovedFiles = false;
 
-    // Determinar qué archivos usar
-    if (source === 'approved') {
-      useApprovedFiles = true;
-    } else if (source === 'new') {
-      useApprovedFiles = false;
-    } else {
-      // 'auto' - intentar determinar basado en contexto
-      // Si estamos en la sección de archivos aprobados, probablemente es archivo aprobado
-      // Pero esto no es confiable, mejor pasar el source explícitamente
-      useApprovedFiles = correctedFiles.length === 0;
-    }
-
-    // Archivos aprobados
-    if (useApprovedFiles) {
-      const hasApprovedFiles = approvedData?.correctedFiles || fullRequestData?.correctedFile;
-      
-      if (!hasApprovedFiles) {
-        alert('No hay archivos aprobados disponibles');
-        return;
+      // Determinar qué archivos usar
+      if (source === 'approved') {
+        useApprovedFiles = true;
+      } else if (source === 'new') {
+        useApprovedFiles = false;
+      } else {
+        // 'auto' - intentar determinar basado en contexto
+        // Si estamos en la sección de archivos aprobados, probablemente es archivo aprobado
+        // Pero esto no es confiable, mejor pasar el source explícitamente
+        useApprovedFiles = correctedFiles.length === 0;
       }
 
-      // Si hay múltiples archivos aprobados
-      if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
-        if (index < 0 || index >= approvedData.correctedFiles.length) {
-          alert('Índice de archivo aprobado inválido');
+      // Archivos aprobados
+      if (useApprovedFiles) {
+        const hasApprovedFiles = approvedData?.correctedFiles || fullRequestData?.correctedFile;
+
+        if (!hasApprovedFiles) {
+          alert('No hay archivos aprobados disponibles');
           return;
         }
-        const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
-        documentUrl = await downloadPdfForPreview(pdfUrl);
-      } 
-      // Formato antiguo (un solo archivo)
-      else if (fullRequestData?.correctedFile) {
-        const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/corrected-file`;
-        documentUrl = await downloadPdfForPreview(pdfUrl);
+
+        // Si hay múltiples archivos aprobados
+        if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
+          if (index < 0 || index >= approvedData.correctedFiles.length) {
+            alert('Índice de archivo aprobado inválido');
+            return;
+          }
+          const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
+          documentUrl = await downloadPdfForPreview(pdfUrl);
+        }
+        // Formato antiguo (un solo archivo)
+        else if (fullRequestData?.correctedFile) {
+          const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/corrected-file`;
+          documentUrl = await downloadPdfForPreview(pdfUrl);
+        }
       }
-    } 
-    // Archivos nuevos/seleccionados
-    else {
-      if (correctedFiles.length === 0) {
-        alert('No hay archivos seleccionados para previsualizar');
-        return;
+      // Archivos nuevos/seleccionados
+      else {
+        if (correctedFiles.length === 0) {
+          alert('No hay archivos seleccionados para previsualizar');
+          return;
+        }
+
+        if (index < 0 || index >= correctedFiles.length) {
+          alert('Índice de archivo nuevo inválido');
+          return;
+        }
+
+        const file = correctedFiles[index];
+        documentUrl = URL.createObjectURL(file);
       }
 
-      if (index < 0 || index >= correctedFiles.length) {
-        alert('Índice de archivo nuevo inválido');
-        return;
-      }
-
-      const file = correctedFiles[index];
-      documentUrl = URL.createObjectURL(file);
+      handlePreviewDocument(documentUrl, 'pdf');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error: ' + error.message);
+    } finally {
+      setIsLoadingPreviewCorrected(false);
     }
-
-    handlePreviewDocument(documentUrl, 'pdf');
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Error: ' + error.message);
-  } finally {
-    setIsLoadingPreviewCorrected(false);
-  }
-};
+  };
 
   const handlePreviewClientSignature = async () => {
     if (!clientSignature) {
@@ -559,196 +559,196 @@ const handlePreviewCorrectedFile = async (index = 0, source = 'auto') => {
     }
   };
 
-const handleFileSelect = (event) => {
-  const files = Array.from(event.target.files);
-  const pdfFiles = files.filter(file => file.type === 'application/pdf');
+  const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files);
+    const pdfFiles = files.filter(file => file.type === 'application/pdf');
 
-  if (pdfFiles.length === 0) {
-    alert('Por favor, sube solo archivos PDF');
-    event.target.value = '';
-    return;
-  }
+    if (pdfFiles.length === 0) {
+      alert('Por favor, sube solo archivos PDF');
+      event.target.value = '';
+      return;
+    }
 
-  const totalApprovedFiles = approvedData?.correctedFiles?.length || 0;
-  const currentlySelectedFiles = correctedFiles.length;
-  const newFilesCount = pdfFiles.length;
-  const totalAfterSelection = totalApprovedFiles + currentlySelectedFiles + newFilesCount;
+    const totalApprovedFiles = approvedData?.correctedFiles?.length || 0;
+    const currentlySelectedFiles = correctedFiles.length;
+    const newFilesCount = pdfFiles.length;
+    const totalAfterSelection = totalApprovedFiles + currentlySelectedFiles + newFilesCount;
 
-  // 1. Validar límite de cantidad de archivos
-  if (totalAfterSelection > MAX_FILES) {
-    alert(`Máximo ${MAX_FILES} archivos permitidos. 
+    // 1. Validar límite de cantidad de archivos
+    if (totalAfterSelection > MAX_FILES) {
+      alert(`Máximo ${MAX_FILES} archivos permitidos. 
 Ya tienes ${totalApprovedFiles} archivo(s) aprobado(s) y ${currentlySelectedFiles} archivo(s) seleccionado(s).
 Puedes agregar máximo ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles} archivo(s) más.`);
-    event.target.value = '';
-    return;
-  }
-
-  // 2. Validar tamaño de cada archivo
-  const oversizedFiles = pdfFiles.filter(file => file.size > MAX_FILE_SIZE);
-  if (oversizedFiles.length > 0) {
-    const oversizedNames = oversizedFiles.map(f => f.name).join(', ');
-    alert(`Los siguientes archivos exceden el límite de 1MB: ${oversizedNames}`);
-    event.target.value = '';
-    return;
-  }
-
-  // 3. Validar que no exceda el límite por archivo
-  const totalFilesAfterAdding = totalApprovedFiles + currentlySelectedFiles + pdfFiles.length;
-  if (totalFilesAfterAdding > MAX_FILES) {
-    alert(`No puedes agregar ${pdfFiles.length} archivo(s). 
-Solo puedes agregar ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles} archivo(s) más.`);
-    event.target.value = '';
-    return;
-  }
-
-  setCorrectedFiles(prev => [...prev, ...pdfFiles]);
-  event.target.value = '';
-};
-
-const canAddMoreFiles = () => {
-  const totalApprovedFiles = approvedData?.correctedFiles?.length || 0;
-  const currentlySelectedFiles = correctedFiles.length;
-  const availableSlots = MAX_FILES - totalApprovedFiles - currentlySelectedFiles;
-  return availableSlots > 0;
-};
-
-const getAvailableSlots = () => {
-  const totalApprovedFiles = approvedData?.correctedFiles?.length || 0;
-  const currentlySelectedFiles = correctedFiles.length;
-  return MAX_FILES - totalApprovedFiles - currentlySelectedFiles;
-};
-
-const handleUploadAdditionalFiles = async () => {
-  if (correctedFiles.length === 0 && filesToDelete.length === 0) {
-    alert('No hay cambios para aplicar');
-    return;
-  }
-
-  const changes = [];
-  if (correctedFiles.length > 0) changes.push(`${correctedFiles.length} archivo(s) para agregar`);
-  if (filesToDelete.length > 0) changes.push(`${filesToDelete.length} archivo(s) para eliminar`);
-  
-  if (!confirm(`¿Aplicar los siguientes cambios?\n${changes.join('\n')}`)) return;
-
-  setIsUploading(true);
-
-  try {
-    const results = {
-      added: 0,
-      deleted: 0,
-      errors: []
-    };
-
-
-        // 1. PRIMERO AGREGAR ARCHIVOS NUEVOS
-    if (correctedFiles.length > 0) {
-      const uploadSuccess = await uploadFilesOneByOne();
-      if (uploadSuccess) {
-        results.added = correctedFiles.length;
-      }
+      event.target.value = '';
+      return;
     }
 
-    // 2. LUEGO ELIMINAR ARCHIVOS
-    if (filesToDelete.length > 0) {
-      for (const fileToDelete of filesToDelete) {
-        try {
-          const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/delete-corrected-file/${request._id}`, {
-            method: 'DELETE',
-            body: JSON.stringify({ fileName: fileToDelete.fileName })
-          });
+    // 2. Validar tamaño de cada archivo
+    const oversizedFiles = pdfFiles.filter(file => file.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      const oversizedNames = oversizedFiles.map(f => f.name).join(', ');
+      alert(`Los siguientes archivos exceden el límite de 1MB: ${oversizedNames}`);
+      event.target.value = '';
+      return;
+    }
 
-          if (response.ok) {
-            results.deleted++;
-            console.log(`Archivo eliminado: ${fileToDelete.fileName}`);
-          } else {
-            const errorData = await response.json();
-            results.errors.push(`Error eliminando "${fileToDelete.fileName}": ${errorData.error}`);
-          }
-        } catch (error) {
-          results.errors.push(`Error eliminando "${fileToDelete.fileName}": ${error.message}`);
+    // 3. Validar que no exceda el límite por archivo
+    const totalFilesAfterAdding = totalApprovedFiles + currentlySelectedFiles + pdfFiles.length;
+    if (totalFilesAfterAdding > MAX_FILES) {
+      alert(`No puedes agregar ${pdfFiles.length} archivo(s). 
+Solo puedes agregar ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles} archivo(s) más.`);
+      event.target.value = '';
+      return;
+    }
+
+    setCorrectedFiles(prev => [...prev, ...pdfFiles]);
+    event.target.value = '';
+  };
+
+  const canAddMoreFiles = () => {
+    const totalApprovedFiles = approvedData?.correctedFiles?.length || 0;
+    const currentlySelectedFiles = correctedFiles.length;
+    const availableSlots = MAX_FILES - totalApprovedFiles - currentlySelectedFiles;
+    return availableSlots > 0;
+  };
+
+  const getAvailableSlots = () => {
+    const totalApprovedFiles = approvedData?.correctedFiles?.length || 0;
+    const currentlySelectedFiles = correctedFiles.length;
+    return MAX_FILES - totalApprovedFiles - currentlySelectedFiles;
+  };
+
+  const handleUploadAdditionalFiles = async () => {
+    if (correctedFiles.length === 0 && filesToDelete.length === 0) {
+      alert('No hay cambios para aplicar');
+      return;
+    }
+
+    const changes = [];
+    if (correctedFiles.length > 0) changes.push(`${correctedFiles.length} archivo(s) para agregar`);
+    if (filesToDelete.length > 0) changes.push(`${filesToDelete.length} archivo(s) para eliminar`);
+
+    if (!confirm(`¿Aplicar los siguientes cambios?\n${changes.join('\n')}`)) return;
+
+    setIsUploading(true);
+
+    try {
+      const results = {
+        added: 0,
+        deleted: 0,
+        errors: []
+      };
+
+
+      // 1. PRIMERO AGREGAR ARCHIVOS NUEVOS
+      if (correctedFiles.length > 0) {
+        const uploadSuccess = await uploadFilesOneByOne();
+        if (uploadSuccess) {
+          results.added = correctedFiles.length;
         }
       }
-    }
 
+      // 2. LUEGO ELIMINAR ARCHIVOS
+      if (filesToDelete.length > 0) {
+        for (const fileToDelete of filesToDelete) {
+          try {
+            const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/delete-corrected-file/${request._id}`, {
+              method: 'DELETE',
+              body: JSON.stringify({ fileName: fileToDelete.fileName })
+            });
 
-
-    // 3. ESPERAR UN MOMENTO PARA ASEGURAR QUE LOS CAMBIOS SE GUARDARON
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // 4. REFRESCAR LOS DATOS APROBADOS
-    await fetchApprovedData(request._id);
-    
-    // 5. LIMPIAR ESTADOS
-    setCorrectedFiles([]);
-    setFilesToDelete([]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    
-    // 6. MOSTRAR RESULTADO
-    let message = 'Cambios aplicados exitosamente:\n';
-    if (results.added > 0) message += `✓ ${results.added} archivo(s) agregado(s)\n`;
-    if (results.deleted > 0) message += `✓ ${results.deleted} archivo(s) eliminado(s)\n`;
-    if (results.errors.length > 0) {
-      message += '\nErrores:\n' + results.errors.join('\n');
-    }
-    
-    alert(message);
-    
-    // 7. REFRESCAR EL ESTADO SI ES NECESARIO
-    if (onUpdate) {
-      const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
-      if (updatedResponse.ok) {
-        const updatedRequest = await updatedResponse.json();
-        const normalizedRequest = {
-          ...updatedRequest,
-          submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
-          company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
-          submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
-        };
-        onUpdate(normalizedRequest);
+            if (response.ok) {
+              results.deleted++;
+              console.log(`Archivo eliminado: ${fileToDelete.fileName}`);
+            } else {
+              const errorData = await response.json();
+              results.errors.push(`Error eliminando "${fileToDelete.fileName}": ${errorData.error}`);
+            }
+          } catch (error) {
+            results.errors.push(`Error eliminando "${fileToDelete.fileName}": ${error.message}`);
+          }
+        }
       }
-    }
 
-  } catch (error) {
-    console.error('Error aplicando cambios:', error);
-    alert('Error aplicando cambios: ' + error.message);
-  } finally {
-    setIsUploading(false);
-  }
-};
+
+
+      // 3. ESPERAR UN MOMENTO PARA ASEGURAR QUE LOS CAMBIOS SE GUARDARON
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 4. REFRESCAR LOS DATOS APROBADOS
+      await fetchApprovedData(request._id);
+
+      // 5. LIMPIAR ESTADOS
+      setCorrectedFiles([]);
+      setFilesToDelete([]);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+
+      // 6. MOSTRAR RESULTADO
+      let message = 'Cambios aplicados exitosamente:\n';
+      if (results.added > 0) message += `✓ ${results.added} archivo(s) agregado(s)\n`;
+      if (results.deleted > 0) message += `✓ ${results.deleted} archivo(s) eliminado(s)\n`;
+      if (results.errors.length > 0) {
+        message += '\nErrores:\n' + results.errors.join('\n');
+      }
+
+      alert(message);
+
+      // 7. REFRESCAR EL ESTADO SI ES NECESARIO
+      if (onUpdate) {
+        const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
+        if (updatedResponse.ok) {
+          const updatedRequest = await updatedResponse.json();
+          const normalizedRequest = {
+            ...updatedRequest,
+            submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || 'Usuario Desconocido',
+            company: updatedRequest.user?.empresa || updatedRequest.company || 'Empresa Desconocida',
+            submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt
+          };
+          onUpdate(normalizedRequest);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error aplicando cambios:', error);
+      alert('Error aplicando cambios: ' + error.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleRemoveFile = (index) => {
     setCorrectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleUndoDelete = (fileName) => {
-  setFilesToDelete(prev => prev.filter(f => f.fileName !== fileName));
-  
-  // Restaurar visualmente el archivo
-  if (approvedData?.correctedFiles) {
-    const updatedApprovedFiles = approvedData.correctedFiles.map(file => 
-      file.fileName === fileName 
-        ? { ...file, markedForDelete: false }
-        : file
-    );
-    
-    setApprovedData(prev => ({
-      ...prev,
-      correctedFiles: updatedApprovedFiles
-    }));
-  }
-  
-  // alert(`Eliminación de "${fileName}" cancelada`);
-};
+    setFilesToDelete(prev => prev.filter(f => f.fileName !== fileName));
 
-const handleUploadClick = () => {
-  if (!canAddMoreFiles()) {
-    alert(`No puedes agregar más archivos. 
+    // Restaurar visualmente el archivo
+    if (approvedData?.correctedFiles) {
+      const updatedApprovedFiles = approvedData.correctedFiles.map(file =>
+        file.fileName === fileName
+          ? { ...file, markedForDelete: false }
+          : file
+      );
+
+      setApprovedData(prev => ({
+        ...prev,
+        correctedFiles: updatedApprovedFiles
+      }));
+    }
+
+    // alert(`Eliminación de "${fileName}" cancelada`);
+  };
+
+  const handleUploadClick = () => {
+    if (!canAddMoreFiles()) {
+      alert(`No puedes agregar más archivos. 
 Ya tienes ${approvedData?.correctedFiles?.length || 0} archivo(s) aprobado(s) y ${correctedFiles.length} archivo(s) seleccionado(s).
 Máximo permitido: ${MAX_FILES} archivos.`);
-    return;
-  }
-  fileInputRef.current?.click();
-};
+      return;
+    }
+    fileInputRef.current?.click();
+  };
 
   const handleRemoveCorrection = async () => {
     if (correctedFiles.length > 0) {
@@ -784,42 +784,42 @@ Máximo permitido: ${MAX_FILES} archivos.`);
   };
 
   // Función para eliminar un archivo ya subido en el backend
-const handleDeleteUploadedFile = async (fileName, index) => {
-  // if (!confirm(`¿Estás seguro de eliminar el archivo "${fileName}"?`)) return;
+  const handleDeleteUploadedFile = async (fileName, index) => {
+    // if (!confirm(`¿Estás seguro de eliminar el archivo "${fileName}"?`)) return;
 
-  setIsDeletingFile(index);
-  
-  try {
-    // En lugar de eliminar inmediatamente, agregamos a la lista de archivos a eliminar
-    setFilesToDelete(prev => [...prev, {
-      fileName,
-      index,
-      id: approvedData?.correctedFiles?.[index]?._id // Si hay ID del archivo
-    }]);
+    setIsDeletingFile(index);
 
-    // También eliminamos visualmente el archivo de la lista aprobada
-    if (approvedData?.correctedFiles) {
-      const updatedApprovedFiles = [...approvedData.correctedFiles];
-      updatedApprovedFiles[index] = {
-        ...updatedApprovedFiles[index],
-        markedForDelete: true // Marcamos para eliminación
-      };
-      
-      setApprovedData(prev => ({
-        ...prev,
-        correctedFiles: updatedApprovedFiles
-      }));
+    try {
+      // En lugar de eliminar inmediatamente, agregamos a la lista de archivos a eliminar
+      setFilesToDelete(prev => [...prev, {
+        fileName,
+        index,
+        id: approvedData?.correctedFiles?.[index]?._id // Si hay ID del archivo
+      }]);
+
+      // También eliminamos visualmente el archivo de la lista aprobada
+      if (approvedData?.correctedFiles) {
+        const updatedApprovedFiles = [...approvedData.correctedFiles];
+        updatedApprovedFiles[index] = {
+          ...updatedApprovedFiles[index],
+          markedForDelete: true // Marcamos para eliminación
+        };
+
+        setApprovedData(prev => ({
+          ...prev,
+          correctedFiles: updatedApprovedFiles
+        }));
+      }
+
+      // alert(`Archivo "${fileName}" marcado para eliminación. Presiona "Actualizar" para aplicar los cambios.`);
+
+    } catch (error) {
+      console.error('Error marcando archivo para eliminación:', error);
+      alert('Error marcando archivo: ' + error.message);
+    } finally {
+      setIsDeletingFile(null);
     }
-
-    // alert(`Archivo "${fileName}" marcado para eliminación. Presiona "Actualizar" para aplicar los cambios.`);
-    
-  } catch (error) {
-    console.error('Error marcando archivo para eliminación:', error);
-    alert('Error marcando archivo: ' + error.message);
-  } finally {
-    setIsDeletingFile(null);
-  }
-};
+  };
 
   // Función para subir archivos uno por uno (igual que adjuntos)
   const uploadFilesOneByOne = async () => {
@@ -855,13 +855,13 @@ const handleDeleteUploadedFile = async (fileName, index) => {
           console.log(`Archivo ${i + 1} subido:`, result);
           successfulUploads++;
 
-// Subida completada exitosamente
-successfulUploads++;
+          // Subida completada exitosamente
+          successfulUploads++;
 
-// Pequeña pausa entre archivos (opcional, si quieres mantenerlo)
-if (i < correctedFiles.length - 1) {
-  await new Promise(resolve => setTimeout(resolve, 100)); // Puedes reducir el tiempo o quitarlo
-}
+          // Pequeña pausa entre archivos (opcional, si quieres mantenerlo)
+          if (i < correctedFiles.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100)); // Puedes reducir el tiempo o quitarlo
+          }
         } else {
           const error = await response.json();
           console.error(`Error subiendo archivo ${i + 1}:`, error);
@@ -1340,273 +1340,268 @@ if (i < correctedFiles.length - 1) {
         )}
       </div>
 
-<div>
-  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-    Documento Corregido
-    {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-  </h3>
-  
-  <div className="bg-muted/50 rounded-lg p-4 space-y-4">
-    {/* ===== SECCIÓN 1: ARCHIVOS YA APROBADOS ===== */}
-    {(approvedData?.correctedFiles || fullRequestData?.correctedFile) && (
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Icon name="CheckCircle" size={16} className="text-success" />
-              Archivos aprobados
-            </h4>
-            <p className="text-xs text-muted-foreground">
-              {approvedData?.correctedFiles?.length || 1} archivo(s) aprobado(s)
-            </p>
-          </div>
-          {/* <div className="flex items-center gap-2">
+      <div>
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          Documento Corregido
+          {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+        </h3>
+
+        <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+          {/* ===== SECCIÓN 1: ARCHIVOS YA APROBADOS ===== */}
+          {(approvedData?.correctedFiles || fullRequestData?.correctedFile) && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Icon name="CheckCircle" size={16} className="text-success" />
+                    Archivos aprobados
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    {approvedData?.correctedFiles?.length || 1} archivo(s) aprobado(s)
+                  </p>
+                </div>
+                {/* <div className="flex items-center gap-2">
             <span className="text-xs px-2 py-1 bg-success/10 text-success rounded-full">
               {fullRequestData?.status}
             </span>
           </div> */}
-        </div>
-        
-{approvedData?.correctedFiles?.map((file, index) => {
-  const isMarkedForDelete = file.markedForDelete || filesToDelete.some(f => f.fileName === file.fileName);
-  
-  return (
-    <div key={index} className={`flex items-center justify-between p-3 rounded border ${
-      isMarkedForDelete 
-        ? 'bg-error/10 border-error/30' 
-        : 'bg-success/5 border-success/20'
-    }`}>
-      <div className="flex items-center space-x-3">
-        <Icon name="FileText" size={20} className={isMarkedForDelete ? "text-error" : "text-success"} />
-        <div>
-          <p className={`text-sm font-medium ${
-            isMarkedForDelete ? "text-error line-through" : "text-foreground"
-          }`}>
-            {file.fileName}
-            {isMarkedForDelete && (
-              <span className="ml-2 text-xs text-error font-medium">(Eliminar)</span>
-            )}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {formatFileSize(file.fileSize)} • Subido el {formatDate(file.uploadedAt)} • Archivo {index + 1}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
-          iconPosition="left"
-          iconSize={16}
-          onClick={() => handleDownloadCorrected(index, "approved")}
-          disabled={downloadingCorrectedIndex === index || isMarkedForDelete}
-        >
-          {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handlePreviewCorrectedFile(index, "approved")}
-          iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
-          iconPosition="left"
-          iconSize={16}
-          disabled={isLoadingPreviewCorrected || isMarkedForDelete}
-        >
-          {isLoadingPreviewCorrected && previewIndex === index ? 'Cargando...' : 'Vista Previa'}
-        </Button>
-      {isMarkedForDelete ? (
-  <Button
-    variant="ghost"
-    size="icon"
-    onClick={() => handleUndoDelete(file.fileName)}
-    className="text-success hover:bg-success/10"
-  >
-    <Icon name="RotateCcw" size={16} />
-  </Button>
-) : (
-  <Button
-    variant="ghost"
-    size="icon"
-    onClick={() => handleDeleteUploadedFile(file.fileName, index)}
-    className="text-error hover:bg-error/10"
-    disabled={isDeletingFile === index}
-  >
-    <Icon name={isDeletingFile === index ? "Loader" : "Trash2"} size={16} 
-          className={isDeletingFile === index ? "animate-spin" : ""} />
-  </Button>
-)}
-      </div>
-    </div>
-  );
-})}
-      </div>
-    )}
-    
-    {/* ===== SECCIÓN 2: AGREGAR NUEVOS ARCHIVOS ===== */}
-    <div className="pt-4 border-t border-border">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-sm font-medium text-foreground">
-              {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') 
-                ? 'Agregar archivos adicionales' 
-                : 'Subir correcciones'}
-            </h4>
-            <p className="text-xs text-muted-foreground">
-              Límite: {MAX_FILES} archivos máximo • 1MB por archivo • Solo PDF
-            </p>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
-          </div>
-        </div>
-        
-        {/* Archivos seleccionados actualmente */}
-        {correctedFiles.length > 0 ? (
-          <div className="space-y-3">
-            {correctedFiles.map((file, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20">
-                <div className="flex items-center space-x-3">
-                  <Icon name="FileText" size={20} className="text-accent" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {file.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.size)} • PDF • {file.size > MAX_FILE_SIZE ? (
-                        <span className="text-error">EXCEDE LÍMITE</span>
-                      ) : 'Válido'}
-                    </p>
+              </div>
+
+              {approvedData?.correctedFiles?.map((file, index) => {
+                const isMarkedForDelete = file.markedForDelete || filesToDelete.some(f => f.fileName === file.fileName);
+
+                return (
+                  <div key={index} className={`flex items-center justify-between p-3 rounded border ${isMarkedForDelete
+                    ? 'bg-error/10 border-error/30'
+                    : 'bg-success/5 border-success/20'
+                    }`}>
+                    <div className="flex items-center space-x-3">
+                      <Icon name="FileText" size={20} className={isMarkedForDelete ? "text-error" : "text-success"} />
+                      <div>
+                        <p className={`text-sm font-medium ${isMarkedForDelete ? "text-error line-through" : "text-foreground"
+                          }`}>
+                          {file.fileName}
+                          {isMarkedForDelete && (
+                            <span className="ml-2 text-xs text-error font-medium">(Eliminar)</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(file.fileSize)} • Subido el {formatDate(file.uploadedAt)} • Archivo {index + 1}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
+                        iconPosition="left"
+                        iconSize={16}
+                        onClick={() => handleDownloadCorrected(index, "approved")}
+                        disabled={downloadingCorrectedIndex === index || isMarkedForDelete}
+                      >
+                        {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handlePreviewCorrectedFile(index, "approved")}
+                        iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                        iconPosition="left"
+                        iconSize={16}
+                        disabled={isLoadingPreviewCorrected || isMarkedForDelete}
+                      >
+                        {isLoadingPreviewCorrected && previewIndex === index ? 'Cargando...' : 'Vista Previa'}
+                      </Button>
+                      {isMarkedForDelete ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleUndoDelete(file.fileName)}
+                          className="text-success hover:bg-success/10"
+                        >
+                          <Icon name="RotateCcw" size={16} />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteUploadedFile(file.fileName, index)}
+                          className="text-error hover:bg-error/10"
+                          disabled={isDeletingFile === index}
+                        >
+                          <Icon name={isDeletingFile === index ? "Loader" : "Trash2"} size={16}
+                            className={isDeletingFile === index ? "animate-spin" : ""} />
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ===== SECCIÓN 2: AGREGAR NUEVOS ARCHIVOS ===== */}
+          <div className="pt-4 border-t border-border">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-medium text-foreground">
+                    {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado')
+                      ? 'Agregar archivos adicionales'
+                      : 'Subir correcciones'}
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Límite: {MAX_FILES} archivos máximo • 1MB por archivo • Solo PDF
+                  </p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handlePreviewCorrectedFile(index, "new")}
-                    iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
-                    iconPosition="left"
-                    iconSize={16}
-                    disabled={isLoadingPreviewCorrected}
-                  >
-                    Vista Previa
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemoveFile(index)}
-                    className="text-error hover:bg-error/10"
-                  >
-                    <Icon name="X" size={16} />
-                  </Button>
+                <div className="text-xs text-muted-foreground">
+                  Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
                 </div>
               </div>
-            ))}
-            
-<div className="flex items-center justify-between pt-3 border-t border-border">
-  <Button
-    variant="ghost"
-    size="sm"
-    onClick={() => setCorrectedFiles([])}
-    iconName="Trash2"
-    iconPosition="left"
-    className="text-error hover:bg-error/10"
-    disabled={correctedFiles.length === 0}
-  >
-    Eliminar todos ({correctedFiles.length})
-  </Button>
-  
-  <div className="flex items-center gap-2">
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleUploadClick}
-      iconName="Plus"
-      iconPosition="left"
-      disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
-    >
-      Agregar más
-    </Button>
-    
-  </div>
-</div>
-          </div>
-        ) : (() => {
-          // ===== ZONA DE SUBIDA COMPLETAMENTE CLICKEABLE =====
-  const canAddFiles = canAddMoreFiles();
-  const availableSlots = getAvailableSlots();
-  
-  return (
-    <div 
-      className={`p-6 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer group ${
-        canAddFiles 
-          ? 'border-border hover:border-accent/50 hover:bg-accent/5 bg-card/50' 
-          : 'border-error/30 bg-error/5 cursor-not-allowed'
-      }`}
-      onClick={canAddFiles ? handleUploadClick : () => {
-        alert(`Límite de archivos alcanzado. 
+
+              {/* Archivos seleccionados actualmente */}
+              {correctedFiles.length > 0 ? (
+                <div className="space-y-3">
+                  {correctedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20">
+                      <div className="flex items-center space-x-3">
+                        <Icon name="FileText" size={20} className="text-accent" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {file.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(file.size)} • PDF • {file.size > MAX_FILE_SIZE ? (
+                              <span className="text-error">EXCEDE LÍMITE</span>
+                            ) : 'Válido'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePreviewCorrectedFile(index, "new")}
+                          iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                          iconPosition="left"
+                          iconSize={16}
+                          disabled={isLoadingPreviewCorrected}
+                        >
+                          Vista Previa
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveFile(index)}
+                          className="text-error hover:bg-error/10"
+                        >
+                          <Icon name="X" size={16} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="flex items-center justify-between pt-3 border-t border-border">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCorrectedFiles([])}
+                      iconName="Trash2"
+                      iconPosition="left"
+                      className="text-error hover:bg-error/10"
+                      disabled={correctedFiles.length === 0}
+                    >
+                      Eliminar todos ({correctedFiles.length})
+                    </Button>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUploadClick}
+                        iconName="Plus"
+                        iconPosition="left"
+                        disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
+                      >
+                        Agregar más
+                      </Button>
+
+                    </div>
+                  </div>
+                </div>
+              ) : (() => {
+                // ===== ZONA DE SUBIDA COMPLETAMENTE CLICKEABLE =====
+                const canAddFiles = canAddMoreFiles();
+                const availableSlots = getAvailableSlots();
+
+                return (
+                  <div
+                    className={`p-6 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer group ${canAddFiles
+                      ? 'border-border hover:border-accent/50 hover:bg-accent/5 bg-card/50'
+                      : 'border-error/30 bg-error/5 cursor-not-allowed'
+                      }`}
+                    onClick={canAddFiles ? handleUploadClick : () => {
+                      alert(`Límite de archivos alcanzado. 
 Ya tienes ${approvedData?.correctedFiles?.length || 0} archivo(s) aprobado(s).
 Máximo permitido: ${MAX_FILES} archivos.`);
-      }}
-    >
-      <div className="flex flex-col items-center justify-center text-center space-y-3">
-        <div className={`p-3 rounded-full transition-colors ${
-          canAddFiles 
-            ? 'bg-accent/10 group-hover:bg-accent/20' 
-            : 'bg-error/10'
-        }`}>
-          <Icon 
-            name={canAddFiles ? "Upload" : "AlertCircle"} 
-            size={24} 
-            className={canAddFiles 
-              ? "text-accent group-hover:text-accent/80" 
-              : "text-error"
-            } 
+                    }}
+                  >
+                    <div className="flex flex-col items-center justify-center text-center space-y-3">
+                      <div className={`p-3 rounded-full transition-colors ${canAddFiles
+                        ? 'bg-accent/10 group-hover:bg-accent/20'
+                        : 'bg-error/10'
+                        }`}>
+                        <Icon
+                          name={canAddFiles ? "Upload" : "AlertCircle"}
+                          size={24}
+                          className={canAddFiles
+                            ? "text-accent group-hover:text-accent/80"
+                            : "text-error"
+                          }
+                        />
+                      </div>
+                      <div>
+                        <p className={`text-sm font-medium ${canAddFiles ? "text-foreground" : "text-error"
+                          }`}>
+                          {canAddFiles
+                            ? "Haz clic aquí para subir archivos"
+                            : "Límite de archivos alcanzado"
+                          }
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {canAddFiles
+                            ? `Puedes agregar hasta ${availableSlots} archivo(s)`
+                            : `Ya tienes ${approvedData?.correctedFiles?.length || 0}/${MAX_FILES} archivos. No puedes agregar más.`
+                          }
+                        </p>
+                      </div>
+
+                      {canAddFiles ? (
+                        <></>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Si necesitas subir más archivos, primero elimina alguno existente
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Input de archivo oculto */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            accept=".pdf"
+            multiple={true}
+            className="hidden"
           />
         </div>
-        <div>
-          <p className={`text-sm font-medium ${
-            canAddFiles ? "text-foreground" : "text-error"
-          }`}>
-            {canAddFiles 
-              ? "Haz clic aquí para subir archivos"
-              : "Límite de archivos alcanzado"
-            }
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {canAddFiles 
-              ? `Puedes agregar hasta ${availableSlots} archivo(s)`
-              : `Ya tienes ${approvedData?.correctedFiles?.length || 0}/${MAX_FILES} archivos. No puedes agregar más.`
-            }
-          </p>
-        </div>
-        
-        {canAddFiles ? (
-          <></>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Si necesitas subir más archivos, primero elimina alguno existente
-          </p>
-        )}
       </div>
-    </div>
-  );
-})()}
-      </div>
-    </div>
-    
-    {/* Input de archivo oculto */}
-    <input
-      type="file"
-      ref={fileInputRef}
-      onChange={handleFileSelect}
-      accept=".pdf"
-      multiple={true}
-      className="hidden"
-    />
-  </div>
-</div>
 
 
       {(fullRequestData?.status !== 'pendiente' && fullRequestData?.status !== 'en_revision') && (
@@ -1716,96 +1711,96 @@ Máximo permitido: ${MAX_FILES} archivos.`);
     }
   };
 
-const handleDownloadCorrected = async (index = 0, source = 'auto') => {
-  try {
-    setDownloadingCorrectedIndex(index);
+  const handleDownloadCorrected = async (index = 0, source = 'auto') => {
+    try {
+      setDownloadingCorrectedIndex(index);
 
-    let url;
-    let filename;
-    let useApprovedFiles = false;
+      let url;
+      let filename;
+      let useApprovedFiles = false;
 
-    // Determinar qué archivos usar
-    if (source === 'approved') {
-      useApprovedFiles = true;
-    } else if (source === 'new') {
-      useApprovedFiles = false;
-    } else {
-      useApprovedFiles = correctedFiles.length === 0;
-    }
-
-    // Archivos aprobados
-    if (useApprovedFiles) {
-      const hasApprovedFiles = approvedData?.correctedFiles || fullRequestData?.correctedFile;
-      
-      if (!hasApprovedFiles) {
-        alert('No hay archivos aprobados disponibles');
-        return;
+      // Determinar qué archivos usar
+      if (source === 'approved') {
+        useApprovedFiles = true;
+      } else if (source === 'new') {
+        useApprovedFiles = false;
+      } else {
+        useApprovedFiles = correctedFiles.length === 0;
       }
 
-      // Si hay múltiples archivos aprobados
-      if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
-        if (index < 0 || index >= approvedData.correctedFiles.length) {
-          alert('Índice de archivo aprobado inválido');
+      // Archivos aprobados
+      if (useApprovedFiles) {
+        const hasApprovedFiles = approvedData?.correctedFiles || fullRequestData?.correctedFile;
+
+        if (!hasApprovedFiles) {
+          alert('No hay archivos aprobados disponibles');
           return;
         }
-        
-        const fileInfo = approvedData.correctedFiles[index];
-        url = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${fullRequestData._id}?index=${index}`;
-        filename = fileInfo.fileName || `documento_corregido_${index + 1}.pdf`;
-      } 
-      // Formato antiguo (un solo archivo)
-      else if (fullRequestData?.correctedFile) {
-        url = `${API_BASE_URL}/${endpointPrefix}/${fullRequestData._id}/corrected-file`;
-        filename = fullRequestData.correctedFile.fileName;
+
+        // Si hay múltiples archivos aprobados
+        if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
+          if (index < 0 || index >= approvedData.correctedFiles.length) {
+            alert('Índice de archivo aprobado inválido');
+            return;
+          }
+
+          const fileInfo = approvedData.correctedFiles[index];
+          url = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${fullRequestData._id}?index=${index}`;
+          filename = fileInfo.fileName || `documento_corregido_${index + 1}.pdf`;
+        }
+        // Formato antiguo (un solo archivo)
+        else if (fullRequestData?.correctedFile) {
+          url = `${API_BASE_URL}/${endpointPrefix}/${fullRequestData._id}/corrected-file`;
+          filename = fullRequestData.correctedFile.fileName;
+        }
+
+        const token = sessionStorage.getItem("token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const response = await fetch(url, { headers });
+
+        if (!response.ok) throw new Error("Error en descarga");
+
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
+      }
+      // Archivos nuevos/seleccionados
+      else {
+        if (correctedFiles.length === 0) {
+          alert('No hay archivos seleccionados para descargar');
+          return;
+        }
+
+        if (index < 0 || index >= correctedFiles.length) {
+          alert('Índice de archivo nuevo inválido');
+          return;
+        }
+
+        const file = correctedFiles[index];
+        url = URL.createObjectURL(file);
+        filename = file.name;
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       }
 
-      const token = sessionStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await fetch(url, { headers });
-
-      if (!response.ok) throw new Error("Error en descarga");
-
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(blobUrl);
-      document.body.removeChild(a);
-    } 
-    // Archivos nuevos/seleccionados
-    else {
-      if (correctedFiles.length === 0) {
-        alert('No hay archivos seleccionados para descargar');
-        return;
-      }
-
-      if (index < 0 || index >= correctedFiles.length) {
-        alert('Índice de archivo nuevo inválido');
-        return;
-      }
-
-      const file = correctedFiles[index];
-      url = URL.createObjectURL(file);
-      filename = file.name;
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error descargando archivo corregido:", error);
+      alert("Error al descargar archivo: " + error.message);
+    } finally {
+      setDownloadingCorrectedIndex(null);
     }
-
-  } catch (error) {
-    console.error("Error descargando archivo corregido:", error);
-    alert("Error al descargar archivo: " + error.message);
-  } finally {
-    setDownloadingCorrectedIndex(null);
-  }
-};
+  };
 
   const renderResponsesTab = () => {
     const responses = fullRequestData?.responses || {};
@@ -1936,6 +1931,52 @@ const handleDownloadCorrected = async (index = 0, source = 'auto') => {
     );
   };
 
+  const renderSharedTab = () => {
+    // Preferimos la data poblada, sino usamos los IDs
+    const sharedUsers = fullRequestData?.user?.compartidos_data || fullRequestData?.user?.compartidos || [];
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Icon name="Users" size={20} className="text-accent" />
+            Usuarios Compartidos
+          </h3>
+
+          {sharedUsers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border mb-6">
+              <Icon name="UserX" size={32} className="mb-2 opacity-50" />
+              <p>Esta solicitud no se ha compartido con nadie.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {sharedUsers.map((user, index) => {
+                // Manejar tanto si es objeto poblado o ID string
+                const isPopulated = typeof user === 'object' && user !== null;
+                const displayName = isPopulated ? user.nombre : `Usuario ID: ${user}`;
+                const displayEmail = isPopulated ? user.email : 'Sin información';
+
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 bg-card rounded-lg border border-border/50 hover:border-accent/30 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-primary/10 rounded-full text-primary">
+                        <Icon name="User" size={16} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{displayName}</p>
+                        <p className="text-xs text-muted-foreground">{isPopulated ? displayEmail : 'Acceso concedido'}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const totalFiles = correctedFiles.length > 0
     ? correctedFiles.length
     : approvedData?.correctedFiles?.length || 1;
@@ -2026,101 +2067,111 @@ const handleDownloadCorrected = async (index = 0, source = 'auto') => {
             >
               Respuestas
             </button>
+            <button
+              onClick={() => setActiveTab('shared')}
+              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'shared'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              title="Ver usuarios con acceso"
+            >
+              Compartidos
+            </button>
           </div>
         </div>
 
         <div className="p-6">
-          {activeTab === 'details' ? renderDetailsTab() : renderResponsesTab()}
+          {activeTab === 'details' ? renderDetailsTab() : (activeTab === 'responses' ? renderResponsesTab() : renderSharedTab())}
         </div>
 
-  <div className="sticky bottom-0 bg-card border-t border-border p-6">
-  <div className="flex items-center justify-between">
-    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-      <Icon name="Clock" size={16} />
-      <span>Última actualización: {formatDate(fullRequestData?.submittedAt)}</span>
-    </div>
-    <div className="flex items-center space-x-3">
-      {!isStandalone && (
-        <>
-          <Button
-            variant="outline"
-            iconName="MessageSquare"
-            iconPosition="left"
-            onClick={() => onSendMessage(fullRequestData)}
-            iconSize={16}
-          >
-            Mensajes
-          </Button>
+        <div className="sticky bottom-0 bg-card border-t border-border p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Icon name="Clock" size={16} />
+              <span>Última actualización: {formatDate(fullRequestData?.submittedAt)}</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              {!isStandalone && (
+                <>
+                  <Button
+                    variant="outline"
+                    iconName="MessageSquare"
+                    iconPosition="left"
+                    onClick={() => onSendMessage(fullRequestData)}
+                    iconSize={16}
+                  >
+                    Mensajes
+                  </Button>
 
-          {/* BOTÓN "ACTUALIZAR" - Para agregar archivos cuando ya está aprobado */}
-{(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && 
- (correctedFiles.length > 0 || filesToDelete.length > 0) && (
-  <Button
-    variant="default"
-    iconName={isUploading ? "Loader" : "RefreshCw"}
-    iconPosition="left"
-    iconSize={16}
-    onClick={handleUploadAdditionalFiles}
-    disabled={isUploading || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
-  >
-    {isUploading ? 'Actualizando...' : `Actualizar (${correctedFiles.length + filesToDelete.length})`}
-  </Button>
-)}
+                  {/* BOTÓN "ACTUALIZAR" - Para agregar archivos cuando ya está aprobado */}
+                  {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') &&
+                    (correctedFiles.length > 0 || filesToDelete.length > 0) && (
+                      <Button
+                        variant="default"
+                        iconName={isUploading ? "Loader" : "RefreshCw"}
+                        iconPosition="left"
+                        iconSize={16}
+                        onClick={handleUploadAdditionalFiles}
+                        disabled={isUploading || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
+                      >
+                        {isUploading ? 'Actualizando...' : `Actualizar (${correctedFiles.length + filesToDelete.length})`}
+                      </Button>
+                    )}
 
-          {/* BOTÓN "APROBAR" - Para estados pendiente/en_revision */}
-          {(fullRequestData?.status === 'en_revision' || fullRequestData?.status === 'pendiente') && correctedFiles.length > 0 && (
-            <Button
-              variant="default"
-              iconName={isApproving ? "Loader" : "CheckCircle"}
-              iconPosition="left"
-              iconSize={16}
-              onClick={handleApprove}
-              disabled={isApproving || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
-            >
-              {isApproving ? 'Aprobando...' : `Aprobar (${correctedFiles.length})`}
-            </Button>
-          )}
+                  {/* BOTÓN "APROBAR" - Para estados pendiente/en_revision */}
+                  {(fullRequestData?.status === 'en_revision' || fullRequestData?.status === 'pendiente') && correctedFiles.length > 0 && (
+                    <Button
+                      variant="default"
+                      iconName={isApproving ? "Loader" : "CheckCircle"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={handleApprove}
+                      disabled={isApproving || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
+                    >
+                      {isApproving ? 'Aprobando...' : `Aprobar (${correctedFiles.length})`}
+                    </Button>
+                  )}
 
-          {/* BOTÓN "FINALIZAR" */}
-          {fullRequestData?.status !== 'finalizado' && fullRequestData?.status !== 'archivado' && (
-            <Button
-              variant="default"
-              iconName={isApproving ? "Loader" : "CheckCircle"}
-              iconPosition="left"
-              iconSize={16}
-              onClick={handleApprovewithoutFile}
-              disabled={isApproving}
-            >
-              {isApproving ? 'Finalizando...' : 'Finalizar'}
-            </Button>
-          )}
+                  {/* BOTÓN "FINALIZAR" */}
+                  {fullRequestData?.status !== 'finalizado' && fullRequestData?.status !== 'archivado' && (
+                    <Button
+                      variant="default"
+                      iconName={isApproving ? "Loader" : "CheckCircle"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={handleApprovewithoutFile}
+                      disabled={isApproving}
+                    >
+                      {isApproving ? 'Finalizando...' : 'Finalizar'}
+                    </Button>
+                  )}
 
-          {/* BOTÓN "ARCHIVAR" */}
-          {fullRequestData?.status === 'finalizado' && (
-            <Button
-              variant="default"
-              iconName={isApproving ? "Loader" : "Folder"}
-              iconPosition="left"
-              iconSize={16}
-              onClick={handleArchieve}
-              disabled={isApproving}
-            >
-              {isApproving ? 'Archivando...' : 'Archivar'}
-            </Button>
-          )}
-        </>
-      )}
-      {!isStandalone && (
-        <Button
-          variant="default"
-          onClick={onClose}
-        >
-          Cerrar
-        </Button>
-      )}
-    </div>
-  </div>
-</div>
+                  {/* BOTÓN "ARCHIVAR" */}
+                  {fullRequestData?.status === 'finalizado' && (
+                    <Button
+                      variant="default"
+                      iconName={isApproving ? "Loader" : "Folder"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={handleArchieve}
+                      disabled={isApproving}
+                    >
+                      {isApproving ? 'Archivando...' : 'Archivar'}
+                    </Button>
+                  )}
+                </>
+              )}
+              {!isStandalone && (
+                <Button
+                  variant="default"
+                  onClick={onClose}
+                >
+                  Cerrar
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       <CleanDocumentPreview
