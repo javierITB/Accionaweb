@@ -3,6 +3,8 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import CleanDocumentPreview from './CleanDocumentPreview';
 import { apiFetch, API_BASE_URL } from '../../../utils/api';
+import useAsyncDialog from 'hooks/useAsyncDialog';
+import AsyncActionDialog from '@/components/AsyncActionDialog';
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
@@ -49,6 +51,9 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
   const [filesToDelete, setFilesToDelete] = useState([]);
+
+  const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsyncDialog();
+
 
 
   useEffect(() => {
@@ -560,10 +565,71 @@ const handlePreviewCorrectedFile = async (index = 0, source = 'auto') => {
     }
   };
 
+
+const renameDuplicatedFiles = (newFiles) => {
+  const allExistingNames = new Set();
+  
+  // Agregar nombres existentes (ya normalizados por el backend)
+  approvedData?.correctedFiles?.forEach(file => {
+    const name = file.fileName || file.name || file.originalname;
+    if (name) allExistingNames.add(name);
+  });
+  
+  correctedFiles.forEach(file => {
+    allExistingNames.add(file.name);
+  });
+  
+  return newFiles.map(file => {
+    const originalFileName = file.name;
+    
+    // Normalizar el nombre como lo hace el backend
+    const baseName = originalFileName.replace(/\.[^/.]+$/, "");
+    const extension = originalFileName.includes('.') ? 
+                      originalFileName.substring(originalFileName.lastIndexOf('.')) : '.pdf';
+    
+    // Patrón de normalización (igual que el backend)
+    let normalizedBase = baseName
+      .replace(/[-\s]/g, '_')          // Reemplazar espacios y guiones por underscore
+      .replace(/[^\w_]/g, '')          // Eliminar caracteres no alfanuméricos ni underscore
+      .replace(/_{2,}/g, '_');         // Reemplazar múltiples underscores por uno solo
+    
+    const normalizedFileName = `${normalizedBase}${extension}`;
+    
+    //  Verificar si el nombre normalizado ya existe
+    if (!allExistingNames.has(normalizedFileName)) {
+      // NO existe, usar el nombre normalizado sin número
+      allExistingNames.add(normalizedFileName);
+      return new File([file], normalizedFileName, {
+        type: file.type,
+        lastModified: file.lastModified
+      });
+    }
+    
+    // Si ya existe, encontrar el siguiente número disponible
+    let number = 1;
+    let newFileName;
+    
+    while (true) {
+      newFileName = `${normalizedBase}_${number}${extension}`;
+      if (!allExistingNames.has(newFileName)) {
+        break;
+      }
+      number++;
+    }
+    
+    allExistingNames.add(newFileName);
+    
+    return new File([file], newFileName, {
+      type: file.type,
+      lastModified: file.lastModified
+    });
+  });
+};
 const handleFileSelect = (event) => {
   const files = Array.from(event.target.files);
   const pdfFiles = files.filter(file => file.type === 'application/pdf');
 
+  console.log(files)
   if (pdfFiles.length === 0) {
     alert('Por favor, sube solo archivos PDF');
     event.target.value = '';
@@ -601,6 +667,7 @@ Solo puedes agregar ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles} a
     event.target.value = '';
     return;
   }
+
 
   setCorrectedFiles(prev => [...prev, ...pdfFiles]);
   event.target.value = '';
@@ -832,9 +899,14 @@ const handleDeleteUploadedFile = async (fileName, index) => {
 
     let successfulUploads = 0;
 
+    // bob el contructor
+
+    const filesToUpload = renameDuplicatedFiles(correctedFiles);
+    
+
     try {
-      for (let i = 0; i < correctedFiles.length; i++) {
-        const file = correctedFiles[i];
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
         const formData = new FormData();
 
         // Agregar el archivo individual
@@ -843,9 +915,9 @@ const handleDeleteUploadedFile = async (fileName, index) => {
         // Agregar metadata como en adjuntos
         formData.append('responseId', request._id);
         formData.append('index', i.toString());
-        formData.append('total', correctedFiles.length.toString());
+        formData.append('total', filesToUpload.length.toString());
 
-        console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
+        console.log(`Subiendo archivo ${i + 1} de ${filesToUpload.length}: ${file.name}`);
 
         const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
           method: 'POST',
@@ -860,10 +932,6 @@ const handleDeleteUploadedFile = async (fileName, index) => {
 // Subida completada exitosamente
 successfulUploads++;
 
-// Pequeña pausa entre archivos (opcional, si quieres mantenerlo)
-if (i < correctedFiles.length - 1) {
-  await new Promise(resolve => setTimeout(resolve, 100)); // Puedes reducir el tiempo o quitarlo
-}
         } else {
           const error = await response.json();
           console.error(`Error subiendo archivo ${i + 1}:`, error);
@@ -1350,11 +1418,11 @@ if (i < correctedFiles.length - 1) {
       {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
     </h3>
       {/* Información de límites */}
-  <div>
+  {/* <div>
     <p className="text-xs text-muted-foreground">
       Límite: {MAX_FILES} archivos máximo • 1MB por archivo • Solo PDF
     </p>
-  </div>
+  </div> */}
     
     {/* BOTÓN PARA SUBIR ARCHIVOS */}
     <div className="flex items-center gap-2">
