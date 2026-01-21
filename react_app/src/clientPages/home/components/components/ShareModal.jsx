@@ -3,7 +3,8 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { apiFetch, API_BASE_URL } from '../../../../utils/api';
 
-const ShareModal = ({ isOpen, onClose, request }) => {
+// Agregamos onUpdate a las props
+const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
   const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,13 +34,8 @@ const ShareModal = ({ isOpen, onClose, request }) => {
 
       if (response.ok) {
         const result = await response.json();
-
-        // AJUSTE: Accedemos a result.data que es donde viene el array ahora
         const userData = result.data || [];
-        
-        // AJUSTE: Filtramos comparando con u.mail según tu nuevo formato de objeto
-        const otherUsers = userData.filter(u => u.mail !== mailSesion);
-        setUsers(otherUsers);
+        setUsers(userData);
       } else {
         console.error('Error en la respuesta del servidor');
       }
@@ -50,7 +46,9 @@ const ShareModal = ({ isOpen, onClose, request }) => {
     }
   };
 
-  const handleToggleUser = (userId) => {
+  const handleToggleUser = (userId, isDisabled) => {
+    if (isDisabled) return; 
+    
     setSelectedUsers(prev =>
       prev.includes(userId)
         ? prev.filter(id => id !== userId)
@@ -66,14 +64,27 @@ const ShareModal = ({ isOpen, onClose, request }) => {
       const response = await apiFetch(`${API_BASE_URL}/respuestas/compartir`, {
         method: 'POST',
         body: JSON.stringify({
-          id: request._id,      // El backend espera 'id'
-          usuarios: selectedUsers // El backend espera 'usuarios' (array de IDs)
+          id: request._id,      
+          usuarios: selectedUsers 
         })
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // --- CAMBIO MÍNIMO PARA ACTUALIZACIÓN EN TIEMPO REAL ---
+        if (onUpdate) {
+          const yaCompartidos = request?.user?.compartidos || [];
+          // Fusionamos los que ya estaban con los nuevos seleccionados
+          const fusionados = Array.from(new Set([...yaCompartidos, ...selectedUsers]));
+          
+          onUpdate({
+            ...request,
+            user: { ...request.user, compartidos: fusionados }
+          });
+        }
+        // ------------------------------------------------------
+
         alert("Solicitud compartida correctamente.");
         onClose();
       } else {
@@ -102,7 +113,7 @@ const ShareModal = ({ isOpen, onClose, request }) => {
         <div className="p-4 border-b border-border flex justify-between items-center">
           <div>
             <h3 className="text-lg font-semibold text-foreground">Compartir Solicitud</h3>
-            <p className="text-xs text-muted-foreground truncate max-w-[250px]">{request?.title || 'Sin título'}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[250px]">{request?.formTitle || request?.title || 'Sin título'}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} iconName="X" iconSize={20} />
         </div>
@@ -130,30 +141,52 @@ const ShareModal = ({ isOpen, onClose, request }) => {
             </div>
           ) : filteredUsers.length > 0 ? (
             <div className="space-y-1">
-              {filteredUsers.map((user) => (
-                <div
-                  key={user.id} // AJUSTE: Ahora es 'id' según tu JSON
-                  onClick={() => handleToggleUser(user.id)}
-                  className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedUsers.includes(user.id) ? 'bg-accent/10 border-accent/20 border' : 'hover:bg-muted/50 border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-xs uppercase">
-                      {user.nombre?.charAt(0)}
+              {filteredUsers.map((user) => {
+                const isOwner = user.mail === request?.user?.mail;
+                const isAlreadyShared = request?.user?.compartidos?.includes(user.id);
+                const isDisabled = isOwner || isAlreadyShared;
+
+                return (
+                  <div
+                    key={user.id}
+                    onClick={() => handleToggleUser(user.id, isDisabled)}
+                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                      isDisabled ? 'opacity-50 cursor-not-allowed bg-muted/20' : 'cursor-pointer hover:bg-muted/50 border border-transparent'
+                    } ${
+                      selectedUsers.includes(user.id) ? 'bg-accent/10 border-accent/20 border' : ''
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-xs uppercase">
+                        {user.nombre?.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-foreground">{user.nombre} {user.apellido}</p>
+                          {isOwner && (
+                            <span className="text-[10px] bg-success text-white px-1.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap">
+                              Propietario
+                            </span>
+                          )}
+                          {isAlreadyShared && !isOwner && (
+                            <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap">
+                              Compartido
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{user.mail}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{user.nombre} {user.apellido}</p>
-                      <p className="text-xs text-muted-foreground">{user.mail}</p>
-                    </div>
+                    {!isDisabled && (
+                      <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${
+                        selectedUsers.includes(user.id) ? 'bg-accent border-accent' : 'border-border'
+                      }`}>
+                        {selectedUsers.includes(user.id) && <Icon name="Check" size={14} className="text-white" />}
+                      </div>
+                    )}
                   </div>
-                  <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${
-                    selectedUsers.includes(user.id) ? 'bg-accent border-accent' : 'border-border'
-                  }`}>
-                    {selectedUsers.includes(user.id) && <Icon name="Check" size={14} className="text-white" />}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12">

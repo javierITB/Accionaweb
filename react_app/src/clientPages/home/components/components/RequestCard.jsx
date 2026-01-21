@@ -187,7 +187,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
             {/* ETIQUETA HAS COMPARTIDO (Enviada por ti) */}
             {currentRequest?.metadata?.esPropia && currentRequest?.user?.compartidos?.length > 0 && (
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap">
-                Has compartido la solicitud
+                Has compartido la solicitud con {currentRequest.user.compartidos.length} {currentRequest.user.compartidos.length === 1 ? 'persona' : 'personas'}
               </span>
             )}
           </div>
@@ -260,7 +260,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
             variant="outline"
             iconName="Share2"
             iconPosition="left"
-            onClick={() => onShare(request)}
+            onClick={() => onShare(currentRequest)}
             iconSize={16}
           >
           </Button>
