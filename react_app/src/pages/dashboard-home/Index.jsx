@@ -4,8 +4,8 @@ import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
 import { API_BASE_URL, apiFetch } from '../../utils/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-
 import SummaryCard from './components/SummaryCard';
+import Footer from '../../clientPages/components/ui/Footer';
 
 const DashboardHome = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -196,9 +196,10 @@ const DashboardHome = () => {
             </div>
           </div>
 
-        </div>
-      </main>
-    </div>
+          <Footer />
+        </div >
+      </main >
+    </div >
   );
 };
 
