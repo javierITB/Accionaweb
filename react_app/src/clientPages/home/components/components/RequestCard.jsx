@@ -184,11 +184,13 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
               </span>
             )}
 
-            {/* ETIQUETA HAS COMPARTIDO (Enviada por ti) */}
+            {/* ETIQUETA HAS COMPARTIDO  */}
             {currentRequest?.metadata?.esPropia && currentRequest?.user?.compartidos?.length > 0 && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap">
+              <button 
+                className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap hover:bg-blue-200 transition-colors cursor-pointer group"
+              >
                 Has compartido la solicitud con {currentRequest.user.compartidos.length} {currentRequest.user.compartidos.length === 1 ? 'persona' : 'personas'}
-              </span>
+              </button>
             )}
           </div>
           <p className={`text-muted-foreground ${viewMode === 'grid' ? 'text-xs line-clamp-2' : 'text-sm'} mb-3`}>
