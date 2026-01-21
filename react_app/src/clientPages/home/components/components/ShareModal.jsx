@@ -7,12 +7,12 @@ import { apiFetch, API_BASE_URL } from '../../../../utils/api';
 const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
   const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
+  const [usersToRemove, setUsersToRemove] = useState([]); 
   const [isLoading, setIsLoading] = useState(false);
-  const [isSharing, setIsSharing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); 
   const [searchTerm, setSearchTerm] = useState('');
   const mailSesion = sessionStorage.getItem("email");
 
-  // IDENTIFICAR SI EL USUARIO ACTUAL ES EL AUTOR
   const isAuthor = mailSesion === request?.user?.mail;
 
   useEffect(() => {
@@ -21,6 +21,7 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
     } else {
       setUsers([]);
       setSelectedUsers([]);
+      setUsersToRemove([]);
       setSearchTerm('');
     }
   }, [isOpen]);
@@ -59,10 +60,18 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
     );
   };
 
+  const handleToggleRemove = (userId) => {
+    setUsersToRemove(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
   const handleShare = async () => {
     if (selectedUsers.length === 0) return;
 
-    setIsSharing(true);
+    setIsProcessing(true);
     try {
       const response = await apiFetch(`${API_BASE_URL}/respuestas/compartir`, {
         method: 'POST',
@@ -94,21 +103,51 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
       console.error('Error sharing request:', error);
       alert('Error de conexión al compartir');
     } finally {
-      setIsSharing(false);
+      setIsProcessing(false);
     }
   };
 
-  // --- SECCIONES SEPARADAS ---
-  
-  // 1. EL PROPIETARIO (Solo uno)
+  const handleBulkRemoveAccess = async () => {
+    if (usersToRemove.length === 0) return;
+    if (!window.confirm(`¿Estás seguro de que deseas revocar el acceso a ${usersToRemove.length} usuario(s)?`)) return;
+
+    setIsProcessing(true);
+    try {
+      for (const userId of usersToRemove) {
+        await apiFetch(`${API_BASE_URL}/respuestas/quitar-acceso`, {
+          method: 'POST',
+          body: JSON.stringify({
+            respuestaId: request._id,
+            usuarioAQuitarId: userId,
+            mailAutor: mailSesion
+          })
+        });
+      }
+
+      if (onUpdate) {
+        const compartidosActualizados = request.user.compartidos.filter(id => !usersToRemove.includes(id));
+        onUpdate({
+          ...request,
+          user: { ...request.user, compartidos: compartidosActualizados }
+        });
+      }
+      setUsersToRemove([]);
+      alert("Accesos revocados correctamente.");
+      onClose(); // <--- SE AGREGA PARA CERRAR EL MODAL AL FINALIZAR
+    } catch (error) {
+      console.error("Error revoking access:", error);
+      alert("Hubo un problema al revocar algunos accesos.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const ownerUser = users.find(user => user.mail === request?.user?.mail);
 
-  // 2. Usuarios que YA tienen acceso (excluyendo al propietario)
   const sharedWith = users.filter(user => 
     user.mail !== request?.user?.mail && request?.user?.compartidos?.includes(user.id)
   );
 
-  // 3. Usuarios DISPONIBLES para agregar
   const availableToShare = users.filter(user => {
     const isOwner = user.mail === request?.user?.mail;
     const isAlreadyShared = request?.user?.compartidos?.includes(user.id);
@@ -120,16 +159,21 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
 
   if (!isOpen) return null;
 
-  // Componente para renderizar la lista de compartidos según la posición solicitada
   const SharedSection = () => (
     sharedWith.length > 0 && (
       <div>
         <p className="px-3 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Con acceso compartido</p>
         <div className="space-y-1">
           {sharedWith.map((user) => (
-            <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 opacity-90 border border-transparent">
+            <div 
+              key={user.id} 
+              onClick={() => isAuthor && handleToggleRemove(user.id)}
+              className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                isAuthor ? 'cursor-pointer hover:bg-blue-50/50' : 'bg-muted/20'
+              } ${usersToRemove.includes(user.id) ? 'bg-blue-50/50 border border-blue-200' : 'border-transparent'}`}
+            >
               <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-xs">
+                <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-xs uppercase">
                   {user.nombre?.charAt(0)}
                 </div>
                 <div>
@@ -137,7 +181,16 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
                   <p className="text-xs text-muted-foreground">{user.mail}</p>
                 </div>
               </div>
-              <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap">Compartido</span>
+              <div className="flex items-center space-x-3">
+                <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap">Compartido</span>
+                {isAuthor && (
+                   <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${
+                    usersToRemove.includes(user.id) ? 'bg-blue-600 border-blue-600' : 'border-border'
+                  }`}>
+                    {usersToRemove.includes(user.id) && <Icon name="Check" size={14} className="text-white" />}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -149,7 +202,6 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-card border border-border shadow-brand-active w-full max-w-md rounded-xl overflow-hidden flex flex-col max-h-[90vh]">
 
-        {/* Header */}
         <div className="p-4 border-b border-border flex justify-between items-center">
           <div>
             <h3 className="text-lg font-semibold text-foreground">Gestionar Acceso</h3>
@@ -158,7 +210,6 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
           <Button variant="ghost" size="icon" onClick={onClose} iconName="X" iconSize={20} />
         </div>
 
-        {/* Search */}
         <div className="p-4 border-b border-border bg-muted/30">
           <div className="relative">
             <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -172,7 +223,6 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
           </div>
         </div>
 
-        {/* User List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
@@ -180,15 +230,12 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
             </div>
           ) : (
             <>
-              {/* SECCIÓN ARRIBA ARRIBA: EL PROPIETARIO (ESTILO NORMALIZADO) */}
               {ownerUser && (
                 <div>
                   <p className="px-3 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Propietario</p>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 opacity-90 border border-transparent">
                     <div className="flex items-center space-x-3">
-                      <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-xs uppercase">
-                        {ownerUser.nombre?.charAt(0)}
-                      </div>
+                      <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-xs uppercase">{ownerUser.nombre?.charAt(0)}</div>
                       <div>
                         <p className="text-sm font-medium text-foreground">{ownerUser.nombre} {ownerUser.apellido}</p>
                         <p className="text-xs text-muted-foreground">{ownerUser.mail}</p>
@@ -199,10 +246,8 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
                 </div>
               )}
 
-              {/* POSICIÓN DINÁMICA: Si es autor, los compartidos salen aquí (arriba) */}
               {isAuthor && <SharedSection />}
 
-              {/* SECCIÓN AGREGAR NUEVOS */}
               <div>
                 <p className="px-3 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   {searchTerm.length > 0 ? 'Resultados de búsqueda' : 'Sugeridos para compartir'}
@@ -217,16 +262,14 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
                       }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-xs uppercase">
-                          {user.nombre?.charAt(0)}
-                        </div>
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-xs uppercase">{user.nombre?.charAt(0)}</div>
                         <div>
                           <p className="text-sm font-medium text-foreground">{user.nombre} {user.apellido}</p>
                           <p className="text-xs text-muted-foreground">{user.mail}</p>
                         </div>
                       </div>
                       <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${
-                        selectedUsers.includes(user.id) ? 'bg-accent border-accent' : 'border-border'
+                        selectedUsers.includes(user.id) ? 'bg-blue-600 border-blue-600' : 'border-border'
                       }`}>
                         {selectedUsers.includes(user.id) && <Icon name="Check" size={14} className="text-white" />}
                       </div>
@@ -235,28 +278,45 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
                 </div>
               </div>
 
-              {/* POSICIÓN DINÁMICA: Si NO es autor, los compartidos salen aquí (abajo) */}
               {!isAuthor && <SharedSection />}
             </>
           )}
         </div>
 
-        {/* Footer */}
         <div className="p-4 border-t border-border bg-card">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground font-medium">
-              {selectedUsers.length} {selectedUsers.length === 1 ? 'seleccionado' : 'seleccionados'}
-            </p>
+            <div className="flex flex-col">
+              <p className="text-xs text-muted-foreground font-medium">
+                {selectedUsers.length} para agregar
+              </p>
+              {isAuthor && usersToRemove.length > 0 && (
+                <p className="text-[10px] text-blue-700 font-bold italic">
+                  {usersToRemove.length} para quitar
+                </p>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-              <Button
-                variant="default"
-                onClick={handleShare}
-                disabled={selectedUsers.length === 0 || isSharing}
-                iconName={isSharing ? "Loader" : "Share2"}
-              >
-                {isSharing ? 'Compartiendo...' : 'Compartir'}
-              </Button>
+              {usersToRemove.length > 0 ? (
+                <Button
+                  variant="default"
+                  className="bg-blue-600 text-white hover:bg-blue-700"
+                  onClick={handleBulkRemoveAccess}
+                  disabled={isProcessing}
+                  iconName={isProcessing ? "Loader" : "Trash2"}
+                >
+                  {isProcessing ? 'Quitando...' : 'Quitar Acceso'}
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  onClick={handleShare}
+                  disabled={selectedUsers.length === 0 || isProcessing}
+                  iconName={isProcessing ? "Loader" : "Share2"}
+                >
+                  {isProcessing ? 'Compartiendo...' : 'Compartir'}
+                </Button>
+              )}
             </div>
           </div>
         </div>
