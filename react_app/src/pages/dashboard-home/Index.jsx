@@ -12,6 +12,7 @@ const DashboardHome = () => {
    const [isMobileScreen, setIsMobileScreen] = useState(false);
    const [metrics, setMetrics] = useState(null);
    const [loading, setLoading] = useState(true);
+   const [isGlobalTime, setIsGlobalTime] = useState(false); // Default: Esta Semana
 
    // Paleta para gráfico de torta
    // Mapeo de colores específico por estado (Hex codes para Recharts)
@@ -55,10 +56,10 @@ const DashboardHome = () => {
    }, []);
 
    // Ordenar días de la semana: Lun - Dom
-  const sorter = { 'Lun': 1, 'Mar': 2, 'Mie': 3, 'Jue': 4, 'Vie': 5, 'Sab': 6, 'Dom': 7 };
-  const performanceData = (metrics?.weeklyPerformance || []).sort((a, b) => {
-    return (sorter[a.name] || 0) - (sorter[b.name] || 0);
-  });
+   const sorter = { 'Lun': 1, 'Mar': 2, 'Mie': 3, 'Jue': 4, 'Vie': 5, 'Sab': 6, 'Dom': 7 };
+   const performanceData = [...(metrics?.weeklyPerformance || [])].sort((a, b) => {
+      return (sorter[a.name] || 0) - (sorter[b.name] || 0);
+   });
    const statusData = metrics?.statusDistribution || [];
 
    return (
@@ -72,19 +73,18 @@ const DashboardHome = () => {
          />
 
          <main
-            className={`transition-all duration-300 ${
-               isMobileScreen ? "lg:ml-0" : sidebarCollapsed ? "lg:ml-16" : "lg:ml-64"
-            } pt-24 lg:pt-28 p-6`}
+            className={`transition-all duration-300 ${isMobileScreen ? "lg:ml-0" : sidebarCollapsed ? "lg:ml-16" : "lg:ml-64"
+               } pt-20 lg:pt-24 p-6`}
          >
-            <div className="mb-8">
-               <h1 className="text-3xl font-bold mb-2">Panel de Métricas</h1>
+            <div className="mb-4">
+               <h1 className="text-3xl font-bold mb-1">Panel de Métricas</h1>
                <p className="text-gray-500 dark:text-gray-400">
                   Visión general del rendimiento y estado de solicitudes.
                </p>
             </div>
 
             {/* 1. KPIs Principales (Fila Superior) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                <SummaryCard
                   title="Total Solicitudes"
                   count={metrics?.totalRequests || 0}
@@ -117,63 +117,93 @@ const DashboardHome = () => {
             </div>
 
             {/* 2. Sección Gráficos y Tiempos */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                {/* Columna Izquierda: Tiempos y Rendimiento (Ocupa 2/3) */}
-               <div className="xl:col-span-2 space-y-8">
+               <div className="xl:col-span-2 space-y-4">
                   {/* Tiempos de Respuesta */}
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg transition-colors">
-                     <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-indigo-50 dark:bg-indigo-500/20 rounded-lg text-indigo-600 dark:text-indigo-400">
-                           <Icon name="Clock" size={24} />
+                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                        <div className="flex items-center gap-3">
+                           <div className="p-2 bg-indigo-50 dark:bg-indigo-500/20 rounded-lg text-indigo-600 dark:text-indigo-400">
+                              <Icon name="Clock" size={24} />
+                           </div>
+                           <h3 className="text-xl font-bold text-gray-900 dark:text-white">Tiempos de Ciclo (Promedios)</h3>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Tiempos de Ciclo (Promedios)</h3>
+
+                        {/* Toggle Button */}
+                        <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                           <button
+                              onClick={() => setIsGlobalTime(false)}
+                              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!isGlobalTime
+                                 ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                 }`}
+                           >
+                              Esta Semana
+                           </button>
+                           <button
+                              onClick={() => setIsGlobalTime(true)}
+                              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${isGlobalTime
+                                 ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                 }`}
+                           >
+                              Global
+                           </button>
+                        </div>
                      </div>
 
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <TimeMetricItem
                            label="Creación → Revisión"
-                           days={metrics?.timeMetrics?.creationToReview}
+                           days={isGlobalTime ? metrics?.timeMetrics?.creationToReview : metrics?.weeklyTimeMetrics?.creationToReview}
+                           globalDays={metrics?.timeMetrics?.creationToReview}
                            color="bg-blue-500"
+                           showComparison={!isGlobalTime}
                         />
                         <TimeMetricItem
                            label="Creación → Aprobado"
-                           days={metrics?.timeMetrics?.creationToApproved}
+                           days={isGlobalTime ? metrics?.timeMetrics?.creationToApproved : metrics?.weeklyTimeMetrics?.creationToApproved}
+                           globalDays={metrics?.timeMetrics?.creationToApproved}
                            color="bg-purple-500"
+                           showComparison={!isGlobalTime}
                         />
                         <TimeMetricItem
                            label="Firmado → Finalizado"
-                           days={metrics?.timeMetrics?.signedToFinalized}
+                           days={isGlobalTime ? metrics?.timeMetrics?.signedToFinalized : metrics?.weeklyTimeMetrics?.signedToFinalized}
+                           globalDays={metrics?.timeMetrics?.signedToFinalized}
                            color="bg-emerald-500"
+                           showComparison={!isGlobalTime}
                         />
                      </div>
                   </div>
 
-            {/* Gráfico de Barras */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg transition-colors">
-              <h3 className="text-lg font-bold mb-6 text-gray-900 dark:text-white">Solicitudes por Día (Semana Anterior)</h3>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} opacity={0.3} />
-                    <XAxis dataKey="name" stroke="#9CA3AF" axisLine={false} tickLine={false} />
-                    <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} allowDecimals={false} domain={[0, 'auto']} />
-                    <Tooltip
-                      cursor={{ fill: '#374151', opacity: 0.1 }}
-                      contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#fff', borderRadius: '8px' }}
-                    />
-                    <Bar dataKey="solicitudes" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={48} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+                  {/* Gráfico de Barras */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg transition-colors">
+                     <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Solicitudes por Día (Semana Anterior)</h3>
+                     <div className="h-56 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                           <BarChart data={performanceData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} opacity={0.3} />
+                              <XAxis dataKey="name" stroke="#9CA3AF" axisLine={false} tickLine={false} />
+                              <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} allowDecimals={false} domain={[0, 'auto']} />
+                              <Tooltip
+                                 cursor={{ fill: '#374151', opacity: 0.1 }}
+                                 contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#fff', borderRadius: '8px' }}
+                              />
+                              <Bar dataKey="solicitudes" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={48} />
+                           </BarChart>
+                        </ResponsiveContainer>
+                     </div>
+                  </div>
+               </div>
 
                {/* Columna Derecha: Distribución (Ocupa 1/3) */}
-               <div className="space-y-8">
+               <div className="space-y-4">
                   {/* Gráfico de Torta - Estados */}
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg h-full transition-colors">
-                     <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Distribución por Estado</h3>
-                     <div className="h-64 w-full flex justify-center">
+                     <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">Distribución por Estado</h3>
+                     <div className="h-56 w-full flex justify-center">
                         <ResponsiveContainer width="100%" height="100%">
                            <PieChart>
                               <Pie
@@ -228,20 +258,37 @@ const DashboardHome = () => {
    );
 };
 
-const TimeMetricItem = ({ label, days, color }) => (
-   <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700/50 transition-colors">
-      <div className="flex justify-between items-center mb-2">
-         <span className="text-gray-500 dark:text-gray-400 text-xs uppercase font-bold tracking-wider">{label}</span>
-         <Icon name="Clock" size={14} className="text-gray-400 dark:text-gray-500" />
+const TimeMetricItem = ({ label, days, globalDays, color, showComparison }) => {
+   let comparison = null;
+   if (showComparison && days !== null && globalDays !== null) {
+      const diff = globalDays - days;
+      if (diff > 0) comparison = { text: `${diff}d más rápido`, color: "text-emerald-500", icon: "TrendingDown" };
+      else if (diff < 0) comparison = { text: `${Math.abs(diff)}d más lento`, color: "text-red-500", icon: "TrendingUp" };
+      else comparison = { text: "Igual al promedio", color: "text-gray-500", icon: "Minus" };
+   }
+
+   return (
+      <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700/50 transition-colors">
+         <div className="flex justify-between items-center mb-2">
+            <span className="text-gray-500 dark:text-gray-400 text-xs uppercase font-bold tracking-wider">{label}</span>
+            <Icon name="Clock" size={14} className="text-gray-400 dark:text-gray-500" />
+         </div>
+         <div className="flex items-end gap-1 mb-3">
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">{days !== null ? days : "-"}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">días</span>
+         </div>
+         <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden mb-2">
+            <div className={`h-full ${color}`} style={{ width: `${Math.min(((days || 0) / 30) * 100, 100)}%` }}></div>
+         </div>
+
+         {showComparison && comparison && (
+            <div className={`flex items-center gap-1 text-xs font-medium ${comparison.color}`}>
+               <Icon name={comparison.icon} size={12} />
+               <span>{comparison.text}</span>
+            </div>
+         )}
       </div>
-      <div className="flex items-end gap-1 mb-3">
-         <span className="text-3xl font-bold text-gray-900 dark:text-white">{days !== null ? days : "-"}</span>
-         <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">días</span>
-      </div>
-      <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
-         <div className={`h-full ${color}`} style={{ width: `${Math.min(((days || 0) / 30) * 100, 100)}%` }}></div>
-      </div>
-   </div>
-);
+   );
+};
 
 export default DashboardHome;
