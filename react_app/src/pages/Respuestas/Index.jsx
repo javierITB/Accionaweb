@@ -74,6 +74,19 @@ const RequestTracking = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // --- LOGICA DE SIDEBAR ---
+  const toggleSidebar = () => {
+    if (isMobileScreen) {
+      setIsMobileOpen(!isMobileOpen);
+    } else {
+      setIsDesktopOpen(!isDesktopOpen);
+    }
+  };
+
+  const handleNavigation = () => {
+    if (isMobileScreen) setIsMobileOpen(false);
+  };
+
   // --- FUNCIÓN DE NORMALIZACIÓN ---
   const normalizeData = (data) => {
     return data.map(r => ({
@@ -101,7 +114,7 @@ const RequestTracking = () => {
 
       const params = new URLSearchParams({
         page: pageNumber,
-        limit: itemsPerPage, // Usar estado dinámico
+        limit: itemsPerPage,
         search: overrideFilters.search || '',
         status: overrideFilters.status || '',
         company: overrideFilters.company || '',
@@ -172,7 +185,7 @@ const RequestTracking = () => {
 
   useEffect(() => {
     fetchData(currentPage);
-  }, [currentPage, itemsPerPage]); // 
+  }, [currentPage, itemsPerPage]);
 
   useEffect(() => {
     if (!formId) return;
@@ -184,15 +197,6 @@ const RequestTracking = () => {
       findRequestGlobally(formId);
     }
   }, [formId]);
-
-  /* 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (filters.status !== 'archivado') fetchData(currentPage, true);
-    }, 45000);
-    return () => clearInterval(interval);
-  }, [filters.status, currentPage, itemsPerPage]);
-  */
 
   // --- HANDLERS ---
   const handleApplyFilters = () => {
@@ -248,7 +252,6 @@ const RequestTracking = () => {
     }
   };
 
-  // --- CORRECCIÓN SOLICITADA: Filtrado de archivados en Front ---
   const currentRequests = useMemo(() => {
     return resp;
   }, [resp]);
@@ -268,15 +271,24 @@ const RequestTracking = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Sidebar isCollapsed={!isDesktopOpen} onToggleCollapse={() => setIsDesktopOpen(!isDesktopOpen)} isMobileOpen={isMobileOpen} onNavigate={() => isMobileScreen && setIsMobileOpen(false)} />
-
-      {isMobileScreen && isMobileOpen && (
-        <div className="fixed inset-0 bg-foreground/50 z-40 lg:hidden" onClick={() => setIsMobileOpen(false)}></div>
+      
+      {(isMobileOpen || !isMobileScreen) && (
+        <>
+          <Sidebar 
+            isCollapsed={!isDesktopOpen} 
+            onToggleCollapse={toggleSidebar} 
+            isMobileOpen={isMobileOpen} 
+            onNavigate={handleNavigation} 
+          />
+          {isMobileScreen && isMobileOpen && (
+            <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileOpen(false)}></div>
+          )}
+        </>
       )}
 
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
-          <Button variant="default" size="icon" onClick={() => setIsMobileOpen(true)} iconName="Menu" className="w-12 h-12 rounded-full shadow-lg" />
+          <Button variant="default" size="icon" onClick={toggleSidebar} iconName="Menu" className="w-12 h-12 rounded-full shadow-lg" />
         </div>
       )}
 
@@ -287,7 +299,7 @@ const RequestTracking = () => {
             <div>
               <div className="flex items-center gap-3">
                 <span className="flex items-center justify-center min-w-8 h-8 px-2 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
-                  {filters.status === 'archivado' ? totalItems : (totalItems - (serverStats?.archivado || 0))}
+                  {filters.status === 'archivado' ? (serverStats?.archivado || 0) : totalItems}
                 </span>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
                   Seguimiento de Solicitudes
@@ -298,7 +310,8 @@ const RequestTracking = () => {
               </p>
             </div>
 
-            <div className="flex items-center space-x-4">
+            {/* CORRECCIÓN: Contenedor de acciones centrado en móvil */}
+            <div className="flex items-center justify-center md:justify-end w-full md:w-auto space-x-4">
               <div ref={limitRef} className="relative">
                 <button
                   onClick={() => setIsLimitOpen(!isLimitOpen)}
@@ -325,7 +338,7 @@ const RequestTracking = () => {
 
               <div className="flex items-center space-x-2 text-sm text-muted-foreground border border-border rounded-lg p-1 bg-card">
                 <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 || isLoading} iconName="ChevronLeft" />
-                <span className="font-medium">{currentPage} / {totalPages}</span>
+                <span className="font-medium whitespace-nowrap">{currentPage} / {totalPages}</span>
                 <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || isLoading} iconName="ChevronRight" />
               </div>
               <div className="flex items-center border border-border rounded-lg bg-card">
@@ -371,14 +384,32 @@ const RequestTracking = () => {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-4 py-8">
-              <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 || isLoading}>
-                Anterior
-              </Button>
-              <span className="text-sm font-medium">Página {currentPage} de {totalPages}</span>
-              <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || isLoading}>
-                Siguiente
-              </Button>
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 py-8 border-t border-border mt-6">
+              <div className="flex items-center space-x-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                  disabled={currentPage === 1 || isLoading}
+                  className="w-28 sm:w-auto"
+                >
+                  <Icon name="ChevronLeft" size={16} className="mr-2" />
+                  Anterior
+                </Button>
+                <span className="text-sm font-medium bg-muted px-3 py-1 rounded-full">
+                   {currentPage} <span className="text-muted-foreground">de</span> {totalPages}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                  disabled={currentPage === totalPages || isLoading}
+                  className="w-28 sm:w-auto"
+                >
+                  Siguiente
+                  <Icon name="ChevronRight" size={16} className="ml-2" />
+                </Button>
+              </div>
             </div>
           )}
         </div>

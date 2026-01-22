@@ -1,213 +1,308 @@
-import React, { useState, useEffect } from 'react';
-import Header from '../../components/ui/Header';
-import Sidebar from '../../components/ui/Sidebar';
-import QuickActionsCard from './components/QuickActionsCard';
-import PendingTasksCard from './components/PendingTasksCard';
-import StatsOverviewCard from './components/StatsOverviewCard';
-import Icon from '../../components/AppIcon';
-import Button from '../../components/ui/Button';
+import React, { useState, useEffect } from "react";
+import Header from "../../components/ui/Header";
+import Sidebar from "../../components/ui/Sidebar";
+import Icon from "../../components/AppIcon";
+import { API_BASE_URL, apiFetch } from "../../utils/api";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import SummaryCard from "./components/SummaryCard";
 
 const DashboardHome = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const user = sessionStorage.getItem("user");
-  const mail = sessionStorage.getItem("email");
-  
-  // Detectar si es móvil
-  const [isMobileScreen, setIsMobileScreen] = useState(false);
+   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+   const [isMobileOpen, setIsMobileOpen] = useState(false);
+   const [isMobileScreen, setIsMobileScreen] = useState(false);
+   const [metrics, setMetrics] = useState(null);
+   const [loading, setLoading] = useState(true);
+   const [isGlobalTime, setIsGlobalTime] = useState(false); // Default: Esta Semana
 
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobileScreen(window.innerWidth < 1024);
-    };
+   // Paleta para gráfico de torta
+   // Mapeo de colores específico por estado (Hex codes para Recharts)
+   const STATUS_COLORS = {
+      pendiente: "#EF4444", // Red-500 (Error)
+      en_revision: "#F97316", // Orange-500 (Secondary approx)
+      en_revisión: "#F97316", // Fallback
+      aprobado: "#EAB308", // Yellow-500 (Warning)
+      firmado: "#10B981", // Emerald-500 (Success)
+      finalizado: "#06B6D4", // Cyan-500 (Accent approx)
+      archivado: "#6B7280", // Gray-500 (Muted)
+      borrador: "#9CA3AF", // Gray-400
+   };
 
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+   const getStatusColor = (status) => STATUS_COLORS[status?.toLowerCase()] || "#8B5CF6"; // Default Purple
 
-  // Mock user data
-  const currentUser = {
-    id: 1,
-    name: user,
-    email: mail,
-    department: "Recursos Humanos",
-    position: "HR Specialist",
-    employeeId: "ACC-2024-001",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
-  };
+   useEffect(() => {
+      const checkScreenSize = () => {
+         setIsMobileScreen(window.innerWidth < 1024);
+      };
+      checkScreenSize();
+      window.addEventListener("resize", checkScreenSize);
+      return () => window.removeEventListener("resize", checkScreenSize);
+   }, []);
 
-  // Update time every minute
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
+   useEffect(() => {
+      const fetchMetrics = async () => {
+         try {
+            const res = await apiFetch(`${API_BASE_URL}/dashboard/metrics`);
+            const data = await res.json();
+            if (data.success) {
+               setMetrics(data.data);
+            }
+         } catch (err) {
+            console.error("Error fetching metrics:", err);
+         } finally {
+            setLoading(false);
+         }
+      };
+      fetchMetrics();
+   }, []);
 
-    return () => clearInterval(timer);
-  }, []);
+   // Ordenar días de la semana: Lun - Dom
+   const sorter = { 'Lun': 1, 'Mar': 2, 'Mie': 3, 'Jue': 4, 'Vie': 5, 'Sab': 6, 'Dom': 7 };
+   const performanceData = [...(metrics?.weeklyPerformance || [])].sort((a, b) => {
+      return (sorter[a.name] || 0) - (sorter[b.name] || 0);
+   });
+   const statusOrder = {
+      'pendiente': 1,
+      'en_revision': 2,
+      'en_revisión': 2,
+      'aprobado': 3,
+      'firmado': 4,
+      'finalizado': 5,
+      'archivado': 6,
+      'borrador': 0
+   };
+   const statusData = [...(metrics?.statusDistribution || [])].sort((a, b) => {
+      const orderA = statusOrder[a.name?.toLowerCase()] || 99;
+      const orderB = statusOrder[b.name?.toLowerCase()] || 99;
+      return orderA - orderB;
+   });
 
-  const toggleSidebar = () => {
-    if (isMobileScreen) {
-      setIsMobileOpen(!isMobileOpen);
-    } else {
-      setSidebarCollapsed(!sidebarCollapsed);
-    }
-  };
+   return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-sans selection:bg-blue-500 selection:text-white">
+         <Header />
+         <Sidebar
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            isMobileOpen={isMobileOpen}
+            onNavigate={() => setIsMobileOpen(false)}
+         />
 
-  const handleNavigation = () => {
-    if (isMobileScreen) {
-      setIsMobileOpen(false);
-    }
-  };
-
-  const handleEmergencyContact = () => {
-    window.location.href = '/support-portal?category=emergency';
-  };
-
-  const handleQuickHelp = () => {
-    window.location.href = '/support-portal?section=help';
-  };
-
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <Header />
-      
-      {/* Sidebar */}
-      <Sidebar 
-        isCollapsed={sidebarCollapsed}
-        onToggleCollapse={toggleSidebar}
-        isMobileOpen={isMobileOpen}
-        onNavigate={handleNavigation}
-      />
-      
-      {/* Mobile Overlay */}
-      {isMobileScreen && isMobileOpen && (
-        <div 
-          className="fixed inset-0 bg-foreground/50 z-40 lg:hidden" 
-          onClick={toggleSidebar}
-        ></div>
-      )}
-
-      {/* Main Content - RESPONSIVE */}
-      <main className={`transition-all duration-300 ${
-        isMobileScreen ? 'lg:ml-0' : sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
-      } pt-16 lg:pt-20`}>
-        <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto">
-          {/* Page Header - RESPONSIVE */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 lg:space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="lg:hidden w-10 h-10"
-              >
-                <Icon name="Menu" size={20} />
-              </Button>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Panel de Control</h1>
-                <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-                  Gestiona tus solicitudes y mantente al día con las novedades
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Main Dashboard Grid - RESPONSIVE */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
-            {/* Left Column - Primary Actions */}
-            <div className="xl:col-span-2 space-y-4 lg:space-y-6">
-              {/* Quick Actions */}
-              <QuickActionsCard />
-              
-              {/* Stats Overview */}
-              <StatsOverviewCard />
+         <main
+            className={`transition-all duration-300 ${isMobileScreen ? "lg:ml-0" : sidebarCollapsed ? "lg:ml-16" : "lg:ml-64"
+               } pt-20 lg:pt-24 p-6`}
+         >
+            <div className="mb-4">
+               <h1 className="text-3xl font-bold mb-1">Panel de Métricas</h1>
+               <p className="text-gray-500 dark:text-gray-400">
+                  Visión general del rendimiento y estado de solicitudes.
+               </p>
             </div>
 
-            {/* Right Column - Secondary Info */}
-            <div className="space-y-4 lg:space-y-6">
-              {/* Pending Tasks */}
-              <PendingTasksCard />
-              
-              {/* System Status Card - RESPONSIVE */}
-              <div className="bg-card rounded-xl shadow-brand border border-border p-4 lg:p-6">
-                <div className="flex items-center justify-between mb-3 lg:mb-4">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground">Estado del Sistema</h3>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-success rounded-full animate-pulse-subtle"></div>
-                    <span className="text-sm text-success font-medium">Operativo</span>
-                  </div>
-                </div>
-                <div className="space-y-2 lg:space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Portal RRHH</span>
-                    <span className="text-success">✓ Online</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Sistema de Documentos</span>
-                    <span className="text-success">✓ Online</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Notificaciones</span>
-                    <span className="text-success">✓ Online</span>
-                  </div>
-                  <div className="pt-2 lg:pt-3 border-t border-border">
-                    <p className="text-xs text-muted-foreground">
-                      Última actualización: {currentTime?.toLocaleTimeString('es-ES', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </div>
+            {/* 1. KPIs Principales (Fila Superior) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+               <SummaryCard
+                  title="Total Solicitudes"
+                  count={metrics?.totalRequests || 0}
+                  trend={statusData.length > 0 ? "Activo" : "Sin Datos"}
+                  label="Histórico completo"
+                  icon="FileText"
+                  color="bg-blue-600"
+               />
+               <SummaryCard
+                  title="Total Usuarios"
+                  count={metrics?.totalUsers || 0}
+                  label="Registrados"
+                  icon="Users"
+                  color="bg-purple-600"
+               />
+               <SummaryCard
+                  title="Tasa de Éxito"
+                  count={`${metrics?.globalRate || 0}%`}
+                  label="Solicitudes finalizadas"
+                  icon="CheckCircle"
+                  color="bg-emerald-600"
+               />
+               <SummaryCard
+                  title="Esta Semana"
+                  count={metrics?.weeklyRequests || 0}
+                  label="Nuevas solicitudes"
+                  icon="TrendingUp"
+                  color="bg-orange-500"
+               />
             </div>
-          </div>
 
-          {/* Footer Section - RESPONSIVE */}
-          <div className="bg-card rounded-xl shadow-brand border border-border p-4 lg:p-6 mt-6 lg:mt-8">
-            <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-              <div className="flex items-center space-x-3 lg:space-x-4">
-                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-                  <Icon name="Building2" size={20} color="white" className="lg:w-6 lg:h-6" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-foreground text-sm lg:text-base">Acciona HR Portal</h4>
-                  <p className="text-sm text-muted-foreground text-xs lg:text-sm">
-                    Tu plataforma integral de recursos humanos
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:flex lg:items-center lg:justify-end lg:space-x-6 text-xs lg:text-sm text-muted-foreground">
-                <div className="flex items-center justify-center sm:justify-start space-x-2">
-                  <Icon name="Shield" size={14} className="lg:w-4 lg:h-4" />
-                  <span>Seguro y Confiable</span>
-                </div>
-                <div className="flex items-center justify-center sm:justify-start space-x-2">
-                  <Icon name="Clock" size={14} className="lg:w-4 lg:h-4" />
-                  <span>24/7 Disponible</span>
-                </div>
-                <div className="flex items-center justify-center sm:justify-start space-x-2">
-                  <Icon name="Users" size={14} className="lg:w-4 lg:h-4" />
-                  <span>Soporte Dedicado</span>
-                </div>
-              </div>
+            {/* 2. Sección Gráficos y Tiempos */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+               {/* Columna Izquierda: Tiempos y Rendimiento (Ocupa 2/3) */}
+               <div className="xl:col-span-2 space-y-4">
+                  {/* Tiempos de Respuesta */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg transition-colors">
+                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                        <div className="flex items-center gap-3">
+                           <div className="p-2 bg-indigo-50 dark:bg-indigo-500/20 rounded-lg text-indigo-600 dark:text-indigo-400">
+                              <Icon name="Clock" size={24} />
+                           </div>
+                           <h3 className="text-xl font-bold text-gray-900 dark:text-white">Tiempos de Ciclo (Promedios)</h3>
+                        </div>
+
+                        {/* Toggle Button */}
+                        <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                           <button
+                              onClick={() => setIsGlobalTime(false)}
+                              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!isGlobalTime
+                                 ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                 }`}
+                           >
+                              Esta Semana
+                           </button>
+                           <button
+                              onClick={() => setIsGlobalTime(true)}
+                              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${isGlobalTime
+                                 ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                 }`}
+                           >
+                              Global
+                           </button>
+                        </div>
+                     </div>
+
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <TimeMetricItem
+                           label="Creación → Revisión"
+                           days={isGlobalTime ? metrics?.timeMetrics?.creationToReview : metrics?.weeklyTimeMetrics?.creationToReview}
+                           globalDays={metrics?.timeMetrics?.creationToReview}
+                           color="bg-blue-500"
+                           showComparison={!isGlobalTime}
+                        />
+                        <TimeMetricItem
+                           label="Creación → Aprobado"
+                           days={isGlobalTime ? metrics?.timeMetrics?.creationToApproved : metrics?.weeklyTimeMetrics?.creationToApproved}
+                           globalDays={metrics?.timeMetrics?.creationToApproved}
+                           color="bg-purple-500"
+                           showComparison={!isGlobalTime}
+                        />
+                        <TimeMetricItem
+                           label="Firmado → Finalizado"
+                           days={isGlobalTime ? metrics?.timeMetrics?.signedToFinalized : metrics?.weeklyTimeMetrics?.signedToFinalized}
+                           globalDays={metrics?.timeMetrics?.signedToFinalized}
+                           color="bg-emerald-500"
+                           showComparison={!isGlobalTime}
+                        />
+                     </div>
+                  </div>
+
+                  {/* Gráfico de Barras */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg transition-colors">
+                     <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Solicitudes por Día (Semana Anterior)</h3>
+                     <div className="h-56 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                           <BarChart data={performanceData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} opacity={0.3} />
+                              <XAxis dataKey="name" stroke="#9CA3AF" axisLine={false} tickLine={false} />
+                              <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} allowDecimals={false} domain={[0, 'auto']} />
+                              <Tooltip
+                                 cursor={{ fill: '#374151', opacity: 0.1 }}
+                                 contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#fff', borderRadius: '8px' }}
+                              />
+                              <Bar dataKey="solicitudes" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={48} />
+                           </BarChart>
+                        </ResponsiveContainer>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Columna Derecha: Distribución (Ocupa 1/3) */}
+               <div className="space-y-4">
+                  {/* Gráfico de Torta - Estados */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg h-full transition-colors">
+                     <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">Distribución por Estado</h3>
+                     <div className="h-56 w-full flex justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                           <PieChart>
+                              <Pie
+                                 data={statusData}
+                                 cx="50%"
+                                 cy="50%"
+                                 innerRadius={60}
+                                 outerRadius={80}
+                                 paddingAngle={5}
+                                 dataKey="value"
+                              >
+                                 {statusData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={getStatusColor(entry.name)} />
+                                 ))}
+                              </Pie>
+                              <Tooltip
+                                 contentStyle={{
+                                    backgroundColor: "#1F2937",
+                                    borderColor: "#374151",
+                                    color: "#fff",
+                                    borderRadius: "8px",
+                                 }}
+                              />
+                           </PieChart>
+                        </ResponsiveContainer>
+                     </div>
+
+                     <div className="mt-4 space-y-3">
+                        {statusData.map((entry, index) => (
+                           <div key={index} className="flex justify-between items-center text-sm">
+                              <div className="flex items-center gap-2">
+                                 <div
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: getStatusColor(entry.name) }}
+                                 ></div>
+                                 <span className="text-gray-600 dark:text-gray-300 capitalize">
+                                    {entry.name.replace(/_/g, " ")}
+                                 </span>
+                              </div>
+                              <span className="font-bold text-gray-900 dark:text-white">{entry.value}</span>
+                           </div>
+                        ))}
+                        {statusData.length === 0 && (
+                           <p className="text-gray-500 text-center text-sm">No hay datos suficientes</p>
+                        )}
+                     </div>
+                  </div>
+               </div>
             </div>
-            <div className="mt-3 lg:mt-4 pt-3 lg:pt-4 border-t border-border text-center">
-              <p className="text-xs text-muted-foreground">
-                © {new Date()?.getFullYear()} Acciona. Todos los derechos reservados. 
-                <br className="sm:hidden" />
-                Portal desarrollado para mejorar tu experiencia laboral.
-              </p>
+         </main>
+      </div>
+   );
+};
+
+const TimeMetricItem = ({ label, days, globalDays, color, showComparison }) => {
+   let comparison = null;
+   if (showComparison && days !== null && globalDays !== null) {
+      const diff = globalDays - days;
+      if (diff > 0) comparison = { text: `${diff}d más rápido`, color: "text-emerald-500", icon: "TrendingUp" };
+      else if (diff < 0) comparison = { text: `${Math.abs(diff)}d más lento`, color: "text-red-500", icon: "TrendingDown" };
+      else comparison = { text: "Igual al promedio", color: "text-gray-500", icon: "Minus" };
+   }
+
+   return (
+      <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700/50 transition-colors">
+         <div className="flex justify-between items-center mb-2">
+            <span className="text-gray-500 dark:text-gray-400 text-xs uppercase font-bold tracking-wider">{label}</span>
+            <Icon name="Clock" size={14} className="text-gray-400 dark:text-gray-500" />
+         </div>
+         <div className="flex items-end gap-1 mb-3">
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">{days !== null ? days : "-"}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">días</span>
+         </div>
+         <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden mb-2">
+            <div className={`h-full ${color}`} style={{ width: `${Math.min(((days || 0) / 30) * 100, 100)}%` }}></div>
+         </div>
+
+         {showComparison && comparison && (
+            <div className={`flex items-center gap-1 text-xs font-medium ${comparison.color}`}>
+               <Icon name={comparison.icon} size={12} />
+               <span>{comparison.text}</span>
             </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+         )}
+      </div>
+   );
 };
 
 export default DashboardHome;

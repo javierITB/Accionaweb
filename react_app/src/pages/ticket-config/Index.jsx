@@ -307,14 +307,14 @@ const TicketConfig = () => {
             )}
 
             <main className={`transition-all duration-300 ${mainMarginClass} pt-20 px-6 pb-10`}>
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Configuración de Tickets</h1>
-                        <p className="text-muted-foreground mt-1">Gestiona los estados y flujos de las categorías de tickets.</p>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <div className="text-left">
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Configuración de Tickets</h1>
+                        <p className="text-muted-foreground mt-1 text-sm md:text-base">Gestiona los estados y flujos de las categorías de tickets.</p>
                     </div>
-                    <div className="flex gap-2">
-                        <Button onClick={fetchConfigs} variant="outline" iconName="RefreshCw" size="sm">Actualizar</Button>
-                        <Button onClick={handleCreateClick} variant="default" iconName="Plus" size="sm">Nueva Categoría</Button>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                        <Button onClick={fetchConfigs} variant="outline" iconName="RefreshCw" size="sm" className="w-full sm:w-auto">Actualizar</Button>
+                        <Button onClick={handleCreateClick} variant="default" iconName="Plus" size="sm" className="w-full sm:w-auto">Nueva Categoría</Button>
                     </div>
                 </div>
 
@@ -477,7 +477,6 @@ const TicketConfig = () => {
                                     Configura las subcategorías y el flujo de estados.
                                 </p>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={handleCloseModal} iconName="X" className="self-start md:self-center" />
                         </div>
 
                         <div className="p-6 overflow-y-auto flex-1 space-y-6">

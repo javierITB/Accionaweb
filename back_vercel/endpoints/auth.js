@@ -311,7 +311,15 @@ router.post("/login", async (req, res) => {
       }
 
       if (user.twoFactorEnabled === true) {
-         await generateAndSend2FACode(req.db, user, "2FA_LOGIN");
+         try {
+            await generateAndSend2FACode(req.db, user, "2FA_LOGIN");
+         } catch (mailError) {
+            console.error("Error enviando 2FA login:", mailError);
+            return res.status(500).json({
+               success: false,
+               message: "Error enviando código 2FA: " + (mailError.message || "Error desconocido")
+            });
+         }
 
          return res.json({
             success: true,
@@ -396,7 +404,7 @@ router.post("/login", async (req, res) => {
 router.post("/verify-login-2fa", async (req, res) => {
    const { email, verificationCode } = req.body;
 
-   
+
 
    if (!email || !verificationCode || verificationCode.length !== 6) {
       return res.status(400).json({
@@ -800,7 +808,7 @@ router.post("/validate", async (req, res) => {
    if (!token || !email || !cargo) return res.status(401).json({ valid: false, message: "Acceso inválido" });
 
    try {
-      
+
 
       // Buscar token (el campo 'token' no está cifrado)
       const tokenRecord = await req.db.collection("tokens").findOne({
@@ -815,7 +823,7 @@ router.post("/validate", async (req, res) => {
          });
       }
 
-      
+
 
       // 1. Verificar si está activo (descifrar campo 'active')
       let activeDescifrado = "false"; // Por defecto
@@ -1443,7 +1451,7 @@ router.get("/empresas/usuarios/:email", async (req, res) => {
                // Comparamos el texto plano de la empresa (evita errores por IV distinto)
                return decrypt(u.empresa) === empresaReferencia;
             } catch (e) {
-               return false; 
+               return false;
             }
          })
          .map(u => ({

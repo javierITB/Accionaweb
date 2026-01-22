@@ -171,26 +171,29 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
 
   return (
     <div className={`bg-card border border-border rounded-lg hover:shadow-brand-hover transition-brand ${viewMode === 'grid' ? 'p-4' : 'p-4 sm:p-6'}`}>
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-3">
+        {/* LADO IZQUIERDO: Título y Datos - Agregado min-w-0 para evitar desborde */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-3 mb-1">
-            <h3 className={`font-semibold text-foreground ${viewMode === 'grid' ? 'text-sm line-clamp-2' : 'text-lg'}`}>
+          <div className="flex items-center flex-wrap gap-2 mb-1">
+            <h3 className={`font-semibold text-foreground break-words ${viewMode === 'grid' ? 'text-sm line-clamp-2' : 'text-lg'}`}>
               {getCombinedTitle()}
             </h3>
-            {/* ETIQUETA SOLICITUD COMPARTIDA (Recibida) */}
+            {/* ETIQUETA RECIBIDA CON ICONO - Sin cursor pointer */}
             {currentRequest?.isShared && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap">
-                Solicitud Compartida
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap">
+                <Icon name="Users" size={12} />
+                Recibida
               </span>
             )}
 
-            {/* ETIQUETA HAS COMPARTIDO  */}
+            {/* ETIQUETA ENVIADA CON ICONO - Sin botón ni hover */}
             {currentRequest?.metadata?.esPropia && currentRequest?.user?.compartidos?.length > 0 && (
-              <button 
-                className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap hover:bg-blue-200 transition-colors cursor-pointer group"
+              <span 
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap"
               >
-                Has compartido la solicitud con {currentRequest.user.compartidos.length} {currentRequest.user.compartidos.length === 1 ? 'persona' : 'personas'}
-              </button>
+                <Icon name="Send" size={12} />
+                Enviada a {currentRequest.user.compartidos.length} {currentRequest.user.compartidos.length === 1 ? 'persona' : 'personas'}
+              </span>
             )}
           </div>
           <p className={`text-muted-foreground ${viewMode === 'grid' ? 'text-xs line-clamp-2' : 'text-sm'} mb-3`}>
@@ -225,7 +228,8 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
           </div>
         </div>
 
-        <div className={`flex items-center space-x-2 ${viewMode === 'grid' ? 'ml-2' : 'ml-4'}`}>
+        {/* LADO DERECHO: Estado - Agregado shrink-0 para evitar que el texto lo mueva */}
+        <div className={`flex items-center shrink-0 space-x-2 ${viewMode === 'grid' ? 'ml-2' : 'ml-4'}`}>
           {currentRequest?.hasMessages && (
             <div className="relative">
               <Icon name="MessageCircle" size={16} className="text-accent" />

@@ -3,6 +3,8 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import CleanDocumentPreview from './CleanDocumentPreview';
 import { apiFetch, API_BASE_URL } from '../../../utils/api';
+import useAsyncDialog from 'hooks/useAsyncDialog';
+import AsyncActionDialog from '@/components/AsyncActionDialog';
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
@@ -49,6 +51,10 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
   const [filesToDelete, setFilesToDelete] = useState([]);
+
+  const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsyncDialog();
+
+
 
   useEffect(() => {
     if (request) {
@@ -559,9 +565,69 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, onSendMessage, 
     }
   };
 
-  const handleFileSelect = (event) => {
-    const files = Array.from(event.target.files);
-    const pdfFiles = files.filter(file => file.type === 'application/pdf');
+
+const renameDuplicatedFiles = (newFiles) => {
+  const allExistingNames = new Set();
+  
+  // Agregar nombres existentes (ya normalizados por el backend)
+  approvedData?.correctedFiles?.forEach(file => {
+    const name = file.fileName || file.name || file.originalname;
+    if (name) allExistingNames.add(name);
+  });
+  
+  correctedFiles.forEach(file => {
+    allExistingNames.add(file.name);
+  });
+  
+  return newFiles.map(file => {
+    const originalFileName = file.name;
+    
+    // Normalizar el nombre como lo hace el backend
+    const baseName = originalFileName.replace(/\.[^/.]+$/, "");
+    const extension = originalFileName.includes('.') ? 
+                      originalFileName.substring(originalFileName.lastIndexOf('.')) : '.pdf';
+    
+    // Patrón de normalización (igual que el backend)
+    let normalizedBase = baseName
+      .replace(/[-\s]/g, '_')          // Reemplazar espacios y guiones por underscore
+      .replace(/[^\w_]/g, '')          // Eliminar caracteres no alfanuméricos ni underscore
+      .replace(/_{2,}/g, '_');         // Reemplazar múltiples underscores por uno solo
+    
+    const normalizedFileName = `${normalizedBase}${extension}`;
+    
+    //  Verificar si el nombre normalizado ya existe
+    if (!allExistingNames.has(normalizedFileName)) {
+      // NO existe, usar el nombre normalizado sin número
+      allExistingNames.add(normalizedFileName);
+      return new File([file], normalizedFileName, {
+        type: file.type,
+        lastModified: file.lastModified
+      });
+    }
+    
+    // Si ya existe, encontrar el siguiente número disponible
+    let number = 1;
+    let newFileName;
+    
+    while (true) {
+      newFileName = `${normalizedBase}_${number}${extension}`;
+      if (!allExistingNames.has(newFileName)) {
+        break;
+      }
+      number++;
+    }
+    
+    allExistingNames.add(newFileName);
+    
+    return new File([file], newFileName, {
+      type: file.type,
+      lastModified: file.lastModified
+    });
+  });
+};
+const handleFileSelect = (event) => {
+  const files = Array.from(event.target.files);
+  const pdfFiles = files.filter(file => file.type === 'application/pdf');
 
     if (pdfFiles.length === 0) {
       alert('Por favor, sube solo archivos PDF');
@@ -597,9 +663,10 @@ Puedes agregar máximo ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles
     if (totalFilesAfterAdding > MAX_FILES) {
       alert(`No puedes agregar ${pdfFiles.length} archivo(s). 
 Solo puedes agregar ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles} archivo(s) más.`);
-      event.target.value = '';
-      return;
-    }
+    event.target.value = '';
+    return;
+  }
+
 
     setCorrectedFiles(prev => [...prev, ...pdfFiles]);
     event.target.value = '';
@@ -717,6 +784,7 @@ Solo puedes agregar ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles} a
   };
 
   const handleRemoveFile = (index) => {
+
     setCorrectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -750,38 +818,38 @@ Máximo permitido: ${MAX_FILES} archivos.`);
     fileInputRef.current?.click();
   };
 
-  const handleRemoveCorrection = async () => {
-    if (correctedFiles.length > 0) {
-      if (!confirm('¿Eliminar todos los archivos seleccionados?')) return;
-      setCorrectedFiles([]);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
+  // const handleRemoveCorrection = async () => {
+  //   if (correctedFiles.length > 0) {
+  //     if (!confirm('¿Eliminar todos los archivos seleccionados?')) return;
+  //     setCorrectedFiles([]);
+  //     if (fileInputRef.current) fileInputRef.current.value = '';
+  //     return;
+  //   }
 
-    try {
-      const signatureCheck = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/has-client-signature`);
-      const signatureData = await signatureCheck.json();
-      const hasSignature = signatureData.exists;
-      let warningMessage = '¿Eliminar corrección y volver a revisión?';
-      if (hasSignature) warningMessage = 'ADVERTENCIA: Existe documento firmado. ¿Continuar?';
-      if (!confirm(warningMessage)) return;
+  //   try {
+  //     const signatureCheck = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/has-client-signature`);
+  //     const signatureData = await signatureCheck.json();
+  //     const hasSignature = signatureData.exists;
+  //     let warningMessage = '¿Eliminar corrección y volver a revisión?';
+  //     if (hasSignature) warningMessage = 'ADVERTENCIA: Existe documento firmado. ¿Continuar?';
+  //     if (!confirm(warningMessage)) return;
 
-      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/remove-correction`, { method: 'DELETE' });
-      const result = await response.json();
-      if (response.ok) {
-        if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
-        setCorrectedFiles([]);
-        setApprovedData(null);
-        if (result.hasExistingSignature) alert('Corrección eliminada. Estado volverá a firmado al subir nueva.');
-        else alert('Corrección eliminada, vuelve a revisión.');
-      } else {
-        alert(result.error || 'Error al eliminar');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error al eliminar');
-    }
-  };
+  //     const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/remove-correction`, { method: 'DELETE' });
+  //     const result = await response.json();
+  //     if (response.ok) {
+  //       if (onUpdate && result.updatedRequest) onUpdate(result.updatedRequest);
+  //       setCorrectedFiles([]);
+  //       setApprovedData(null);
+  //       if (result.hasExistingSignature) alert('Corrección eliminada. Estado volverá a firmado al subir nueva.');
+  //       else alert('Corrección eliminada, vuelve a revisión.');
+  //     } else {
+  //       alert(result.error || 'Error al eliminar');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error:', error);
+  //     alert('Error al eliminar');
+  //   }
+  // };
 
   // Función para eliminar un archivo ya subido en el backend
   const handleDeleteUploadedFile = async (fileName, index) => {
@@ -830,9 +898,14 @@ Máximo permitido: ${MAX_FILES} archivos.`);
 
     let successfulUploads = 0;
 
+    // bob el contructor
+
+    const filesToUpload = renameDuplicatedFiles(correctedFiles);
+    
+
     try {
-      for (let i = 0; i < correctedFiles.length; i++) {
-        const file = correctedFiles[i];
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
         const formData = new FormData();
 
         // Agregar el archivo individual
@@ -841,9 +914,9 @@ Máximo permitido: ${MAX_FILES} archivos.`);
         // Agregar metadata como en adjuntos
         formData.append('responseId', request._id);
         formData.append('index', i.toString());
-        formData.append('total', correctedFiles.length.toString());
+        formData.append('total', filesToUpload.length.toString());
 
-        console.log(`Subiendo archivo ${i + 1} de ${correctedFiles.length}: ${file.name}`);
+        console.log(`Subiendo archivo ${i + 1} de ${filesToUpload.length}: ${file.name}`);
 
         const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
           method: 'POST',
@@ -858,10 +931,6 @@ Máximo permitido: ${MAX_FILES} archivos.`);
           // Subida completada exitosamente
           successfulUploads++;
 
-          // Pequeña pausa entre archivos (opcional, si quieres mantenerlo)
-          if (i < correctedFiles.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 100)); // Puedes reducir el tiempo o quitarlo
-          }
         } else {
           const error = await response.json();
           console.error(`Error subiendo archivo ${i + 1}:`, error);
@@ -1340,268 +1409,253 @@ Máximo permitido: ${MAX_FILES} archivos.`);
         )}
       </div>
 
-      <div>
-        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          Documento Corregido
-          {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-        </h3>
+<div>
+  <div className="flex items-center justify-between mb-3 pr-4">
+    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+      <Icon name="CheckCircle" size={21} className="text-success" />
+      Documentos Aprobados
+      {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+    </h3>
+      {/* Información de límites */}
+  {/* <div>
+    <p className="text-xs text-muted-foreground">
+      Límite: {MAX_FILES} archivos máximo • 1MB por archivo • Solo PDF
+    </p>
+  </div> */}
+    
+    {/* BOTÓN PARA SUBIR ARCHIVOS */}
+    <div className="flex items-center gap-2">
+      <span className={`text-sm pr-1  ${
+    (approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES ? "text-blue-600" : "text-muted-foreground"
+  }`}>
+        Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
+      </span>
+      <Button
+        variant="outlineTeal"
+        size="sm"
+        onClick={handleUploadClick}
+        iconName="Plus"
+        iconPosition="left"
 
-        <div className="bg-muted/50 rounded-lg p-4 space-y-4">
-          {/* ===== SECCIÓN 1: ARCHIVOS YA APROBADOS ===== */}
-          {(approvedData?.correctedFiles || fullRequestData?.correctedFile) && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <Icon name="CheckCircle" size={16} className="text-success" />
-                    Archivos aprobados
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    {approvedData?.correctedFiles?.length || 1} archivo(s) aprobado(s)
-                  </p>
-                </div>
-                {/* <div className="flex items-center gap-2">
-            <span className="text-xs px-2 py-1 bg-success/10 text-success rounded-full">
-              {fullRequestData?.status}
-            </span>
-          </div> */}
+        disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
+      >
+        Añadir Archivos
+      </Button>
+    </div>
+    
+    {/* Input de archivo oculto */}
+    <input
+      type="file"
+      ref={fileInputRef}
+      onChange={handleFileSelect}
+      accept=".pdf"
+      multiple={true}
+      className="hidden"
+    />
+  </div>
+  
+
+  
+  <div className="bg-muted/50 rounded-lg pb-4 px-4 space-y-4">
+    {/* ===== SECCIÓN 1: NUEVOS ARCHIVOS SELECCIONADOS ===== */}
+    {correctedFiles.length > 0 && (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-base font-xl text-accent">Archivos por subir ({correctedFiles.length})</span>
+          <Button
+            variant="ghostError"
+            size="sm"
+            onClick={() =>  setCorrectedFiles([])}
+            iconName="Trash2"
+            iconPosition="left"
+            // className="text-error hover:bg-error/10"
+          >
+            Eliminar todos
+          </Button>
+        </div>
+        
+        {correctedFiles.map((file, index) => (
+          <div key={index} className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20">
+            <div className="flex items-center space-x-3">
+              <Icon name="FileText" size={20} className="text-accent" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {file.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatFileSize(file.size)} • PDF • {file.size > MAX_FILE_SIZE ? (
+                    <span className="text-error">EXCEDE LÍMITE</span>
+                  ) : 'Válido'}
+                </p>
               </div>
-
-              {approvedData?.correctedFiles?.map((file, index) => {
-                const isMarkedForDelete = file.markedForDelete || filesToDelete.some(f => f.fileName === file.fileName);
-
-                return (
-                  <div key={index} className={`flex items-center justify-between p-3 rounded border ${isMarkedForDelete
-                    ? 'bg-error/10 border-error/30'
-                    : 'bg-success/5 border-success/20'
-                    }`}>
-                    <div className="flex items-center space-x-3">
-                      <Icon name="FileText" size={20} className={isMarkedForDelete ? "text-error" : "text-success"} />
-                      <div>
-                        <p className={`text-sm font-medium ${isMarkedForDelete ? "text-error line-through" : "text-foreground"
-                          }`}>
-                          {file.fileName}
-                          {isMarkedForDelete && (
-                            <span className="ml-2 text-xs text-error font-medium">(Eliminar)</span>
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatFileSize(file.fileSize)} • Subido el {formatDate(file.uploadedAt)} • Archivo {index + 1}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
-                        iconPosition="left"
-                        iconSize={16}
-                        onClick={() => handleDownloadCorrected(index, "approved")}
-                        disabled={downloadingCorrectedIndex === index || isMarkedForDelete}
-                      >
-                        {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handlePreviewCorrectedFile(index, "approved")}
-                        iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
-                        iconPosition="left"
-                        iconSize={16}
-                        disabled={isLoadingPreviewCorrected || isMarkedForDelete}
-                      >
-                        {isLoadingPreviewCorrected && previewIndex === index ? 'Cargando...' : 'Vista Previa'}
-                      </Button>
-                      {isMarkedForDelete ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleUndoDelete(file.fileName)}
-                          className="text-success hover:bg-success/10"
-                        >
-                          <Icon name="RotateCcw" size={16} />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteUploadedFile(file.fileName, index)}
-                          className="text-error hover:bg-error/10"
-                          disabled={isDeletingFile === index}
-                        >
-                          <Icon name={isDeletingFile === index ? "Loader" : "Trash2"} size={16}
-                            className={isDeletingFile === index ? "animate-spin" : ""} />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
-          )}
-
-          {/* ===== SECCIÓN 2: AGREGAR NUEVOS ARCHIVOS ===== */}
-          <div className="pt-4 border-t border-border">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium text-foreground">
-                    {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado')
-                      ? 'Agregar archivos adicionales'
-                      : 'Subir correcciones'}
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    Límite: {MAX_FILES} archivos máximo • 1MB por archivo • Solo PDF
-                  </p>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
-                </div>
-              </div>
-
-              {/* Archivos seleccionados actualmente */}
-              {correctedFiles.length > 0 ? (
-                <div className="space-y-3">
-                  {correctedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20">
-                      <div className="flex items-center space-x-3">
-                        <Icon name="FileText" size={20} className="text-accent" />
-                        <div>
-                          <p className="text-sm font-medium text-foreground">
-                            {file.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatFileSize(file.size)} • PDF • {file.size > MAX_FILE_SIZE ? (
-                              <span className="text-error">EXCEDE LÍMITE</span>
-                            ) : 'Válido'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handlePreviewCorrectedFile(index, "new")}
-                          iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
-                          iconPosition="left"
-                          iconSize={16}
-                          disabled={isLoadingPreviewCorrected}
-                        >
-                          Vista Previa
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveFile(index)}
-                          className="text-error hover:bg-error/10"
-                        >
-                          <Icon name="X" size={16} />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-
-                  <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCorrectedFiles([])}
-                      iconName="Trash2"
-                      iconPosition="left"
-                      className="text-error hover:bg-error/10"
-                      disabled={correctedFiles.length === 0}
-                    >
-                      Eliminar todos ({correctedFiles.length})
-                    </Button>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleUploadClick}
-                        iconName="Plus"
-                        iconPosition="left"
-                        disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
-                      >
-                        Agregar más
-                      </Button>
-
-                    </div>
-                  </div>
-                </div>
-              ) : (() => {
-                // ===== ZONA DE SUBIDA COMPLETAMENTE CLICKEABLE =====
-                const canAddFiles = canAddMoreFiles();
-                const availableSlots = getAvailableSlots();
-
-                return (
-                  <div
-                    className={`p-6 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer group ${canAddFiles
-                      ? 'border-border hover:border-accent/50 hover:bg-accent/5 bg-card/50'
-                      : 'border-error/30 bg-error/5 cursor-not-allowed'
-                      }`}
-                    onClick={canAddFiles ? handleUploadClick : () => {
-                      alert(`Límite de archivos alcanzado. 
-Ya tienes ${approvedData?.correctedFiles?.length || 0} archivo(s) aprobado(s).
-Máximo permitido: ${MAX_FILES} archivos.`);
-                    }}
-                  >
-                    <div className="flex flex-col items-center justify-center text-center space-y-3">
-                      <div className={`p-3 rounded-full transition-colors ${canAddFiles
-                        ? 'bg-accent/10 group-hover:bg-accent/20'
-                        : 'bg-error/10'
-                        }`}>
-                        <Icon
-                          name={canAddFiles ? "Upload" : "AlertCircle"}
-                          size={24}
-                          className={canAddFiles
-                            ? "text-accent group-hover:text-accent/80"
-                            : "text-error"
-                          }
-                        />
-                      </div>
-                      <div>
-                        <p className={`text-sm font-medium ${canAddFiles ? "text-foreground" : "text-error"
-                          }`}>
-                          {canAddFiles
-                            ? "Haz clic aquí para subir archivos"
-                            : "Límite de archivos alcanzado"
-                          }
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {canAddFiles
-                            ? `Puedes agregar hasta ${availableSlots} archivo(s)`
-                            : `Ya tienes ${approvedData?.correctedFiles?.length || 0}/${MAX_FILES} archivos. No puedes agregar más.`
-                          }
-                        </p>
-                      </div>
-
-                      {canAddFiles ? (
-                        <></>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          Si necesitas subir más archivos, primero elimina alguno existente
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handlePreviewCorrectedFile(index, "new")}
+                iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                iconPosition="left"
+                iconSize={16}
+                disabled={isLoadingPreviewCorrected}
+              >
+                Vista Previa
+              </Button>
+              <Button
+                variant="ghostError"
+                size="icon"
+                onClick={() => handleRemoveFile(index)}
+              >
+                <Icon name="Trash2" size={16} />
+              </Button>
             </div>
           </div>
-
-          {/* Input de archivo oculto */}
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            accept=".pdf"
-            multiple={true}
-            className="hidden"
-          />
-        </div>
+        ))}
+        
+       {!canAddMoreFiles() && (
+  <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700 flex items-center">
+    <Icon name="Info" size={14} className="inline mr-1" />
+    Límite máximo alcanzado. Puedes eliminar algunos archivos para agregar otros nuevos.
+  </div>
+)}
       </div>
+    )}
+    
+    {/* ===== SECCIÓN 2: ARCHIVOS YA APROBADOS ===== */}
+    {(approvedData?.correctedFiles || fullRequestData?.correctedFile) && (
+      <div className="space-y-3">
+        { correctedFiles.length > 0 && <span className="text-base font-lg text-accent">
+          Archivos aprobados ({approvedData?.correctedFiles?.length || 1})
+        </span>}
+        
+        {approvedData?.correctedFiles?.map((file, index) => {
+          const isMarkedForDelete = file.markedForDelete || filesToDelete.some(f => f.fileName === file.fileName);
+          
+          return (
+            <div key={index} className={`flex items-center justify-between p-3 rounded border ${
+              isMarkedForDelete 
+                ? 'bg-error/10 border-error/30' 
+                : 'bg-success/5 border-success/20'
+            }`}>
+              <div className="flex items-center space-x-3">
+                <Icon name="FileText" size={20} className={isMarkedForDelete ? "text-error" : "text-success"} />
+                <div>
+                  <p className={`text-sm font-medium ${
+                    isMarkedForDelete ? "text-error line-through" : "text-foreground"
+                  }`}>
+                    {file.fileName}
+                    {isMarkedForDelete && (
+                      <span className="ml-2 text-xs text-error font-medium">(Eliminar)</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatFileSize(file.fileSize)} • Subido el {formatDate(file.uploadedAt)} • Archivo {index + 1}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
+                  iconPosition="left"
+                  iconSize={16}
+                  onClick={() => handleDownloadCorrected(index, "approved")}
+                  disabled={downloadingCorrectedIndex === index || isMarkedForDelete}
+                >
+                  {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePreviewCorrectedFile(index, "approved")}
+                  iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                  iconPosition="left"
+                  iconSize={16}
+                  disabled={isLoadingPreviewCorrected || isMarkedForDelete}
+                >
+                  {isLoadingPreviewCorrected && previewIndex === index ? 'Cargando...' : 'Vista Previa'}
+                </Button>
+                {isMarkedForDelete ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleUndoDelete(file.fileName)}
+                    // className="text-success hover:bg-success/10"
+                  >
+                    <Icon name="RotateCcw" size={16} />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghostError"
+                    size="icon"
+                    onClick={() => handleDeleteUploadedFile(file.fileName, index)}
+                    // className="text-error hover:bg-error/10"
+                    disabled={isDeletingFile === index}
+                  >
+                    <Icon name={isDeletingFile === index ? "Loader" : "Trash2"} size={16} 
+                          className={isDeletingFile === index ? "animate-spin" : ""} 
+                          />
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        
+        {/* Formato antiguo (un solo archivo) */}
+        {!approvedData?.correctedFiles && fullRequestData?.correctedFile && (
+          <div className="flex items-center justify-between p-3 bg-success/5 rounded border border-success/20">
+            <div className="flex items-center space-x-3">
+              <Icon name="FileText" size={20} className="text-success" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {fullRequestData.correctedFile.fileName}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatFileSize(fullRequestData.correctedFile.fileSize)} • Subido el {formatDate(fullRequestData.submittedAt)}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                iconName={downloadingCorrectedIndex === 0 ? "Loader" : "Download"}
+                iconPosition="left"
+                iconSize={16}
+                onClick={() => handleDownloadCorrected(0, "approved")}
+                disabled={downloadingCorrectedIndex === 0}
+              >
+                {downloadingCorrectedIndex === 0 ? "Descargando..." : "Descargar"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handlePreviewCorrectedFile(0, "approved")}
+                iconName={isLoadingPreviewCorrected && previewIndex === 0 ? "Loader" : "Eye"}
+                iconPosition="left"
+                iconSize={16}
+                disabled={isLoadingPreviewCorrected}
+              >
+                {isLoadingPreviewCorrected && previewIndex === 0 ? 'Cargando...' : 'Vista Previa'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    )}
+    
+    {/* Mensaje cuando no hay archivos */}
+    {!correctedFiles.length && !approvedData?.correctedFiles && !fullRequestData?.correctedFile && (
+      <div className="text-center py-6 text-muted-foreground">
+        <Icon name="FileText" size={24} className="mx-auto mb-2 opacity-50" />
+        <p className="text-sm">No hay documentos corregidos aún</p>
+        <p className="text-xs mt-1">Usa el botón "Añadir Archivos" para agregar documentos PDF</p>
+      </div>
+    )}
+  </div>
+</div>
 
 
       {(fullRequestData?.status !== 'pendiente' && fullRequestData?.status !== 'en_revision') && (
@@ -1654,10 +1708,10 @@ Máximo permitido: ${MAX_FILES} archivos.`);
                     {isLoadingPreviewSignature ? 'Cargando...' : 'Vista Previa'}
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="ghostError"
                     size="icon"
                     onClick={() => handleDeleteClientSignature(fullRequestData._id)}
-                    className="text-error hover:bg-error/10"
+                    // className="text-error hover:bg-error/10"
                   >
                     <Icon name="Trash2" size={16} />
                   </Button>
@@ -2103,20 +2157,20 @@ Máximo permitido: ${MAX_FILES} archivos.`);
                     Mensajes
                   </Button>
 
-                  {/* BOTÓN "ACTUALIZAR" - Para agregar archivos cuando ya está aprobado */}
-                  {(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') &&
-                    (correctedFiles.length > 0 || filesToDelete.length > 0) && (
-                      <Button
-                        variant="default"
-                        iconName={isUploading ? "Loader" : "RefreshCw"}
-                        iconPosition="left"
-                        iconSize={16}
-                        onClick={handleUploadAdditionalFiles}
-                        disabled={isUploading || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
-                      >
-                        {isUploading ? 'Actualizando...' : `Actualizar (${correctedFiles.length + filesToDelete.length})`}
-                      </Button>
-                    )}
+          {/* BOTÓN "ACTUALIZAR" - Para agregar archivos cuando ya está aprobado */}
+{(fullRequestData?.status === 'aprobado' || fullRequestData?.status === 'firmado') && 
+ (correctedFiles.length > 0 || filesToDelete.length > 0) && (
+  <Button
+    variant="outlineTeal"
+    iconName={isUploading ? "Loader" : "RefreshCw"}
+    iconPosition="left"
+    iconSize={16}
+    onClick={handleUploadAdditionalFiles}
+    disabled={isUploading || correctedFiles.some(f => f.size > MAX_FILE_SIZE)}
+  >
+    {isUploading ? 'Actualizando...' : `Actualizar (${correctedFiles.length + filesToDelete.length})`}
+  </Button>
+)}
 
                   {/* BOTÓN "APROBAR" - Para estados pendiente/en_revision */}
                   {(fullRequestData?.status === 'en_revision' || fullRequestData?.status === 'pendiente') && correctedFiles.length > 0 && (
