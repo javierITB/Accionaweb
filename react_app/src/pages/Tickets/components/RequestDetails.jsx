@@ -369,7 +369,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
   const handlePreviewDocument = (documentUrl, documentType) => {
     if (!documentUrl) {
-      alert('No hay documento disponible para vista previa');
+      // alert('No hay documento disponible para vista previa');
+      openInfoDialog('No hay documento disponible para vista previa');
       return;
     }
     setPreviewDocument({ url: documentUrl, type: documentType });
@@ -381,7 +382,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
     const hasFiles = correctedFiles.length > 0 || approvedData || fullRequestData?.correctedFile;
 
     if (!hasFiles) {
-      alert('No hay documentos corregidos para vista previa');
+      // alert('No hay documentos corregidos para vista previa');
+      openInfoDialog('No hay documentos corregidos para vista previa');
       return;
     }
 
@@ -393,7 +395,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
       if (correctedFiles.length > 0) {
         if (index < 0 || index >= correctedFiles.length) {
-          alert('Índice de archivo inválido');
+          openErrorDialog('El archivo seleccionado no es válido');
+          // alert('El archivo seleccionado no es válido');
           return;
         }
         const file = correctedFiles[index];
@@ -408,17 +411,21 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
         documentUrl = await downloadPdfForPreview(pdfUrl);
       }
       else if (request?.correctedFile) {
-        alert('El documento corregido está en proceso de revisión.');
+        // alert('El documento corregido está en proceso de revisión.');
+        openInfoDialog('El documento corregido está en proceso de revisión.');
         return;
       } else {
-        alert('No hay documentos corregidos disponibles');
+
+        // alert('No hay documentos corregidos disponibles');
+        openInfoDialog('No hay documentos corregidos disponibles');
         return;
       }
 
       handlePreviewDocument(documentUrl, 'pdf');
     } catch (error) {
       console.error('Error:', error);
-      alert('Error: ' + error.message);
+      // alert('Error: ' + error.message);
+      openErrorDialog('Error al abrir documento');
     } finally {
       setIsLoadingPreviewCorrected(false);
     }
@@ -451,29 +458,32 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
           handlePreviewDocument(url, adjunto.mimeType?.includes('image') ? 'image' : 'pdf');
         } catch (e) {
           console.error("Error creating blob:", e);
-          alert("Error procesando el archivo para vista previa.");
+          // alert("Error procesando el archivo para vista previa.");
+          openErrorDialog("Error al abrir documento");
         }
         return;
       }
 
       console.warn("No hay fileData local para adjunto", index);
-      alert("El contenido de este archivo no está disponible para vista previa.");
+      // alert("El contenido de este archivo no está disponible para vista previa.");
+      openInfoDialog("El contenido de este archivo no está disponible para vista previa.");
       return;
 
       // Fallback a descarga si no hay data local
-      if (adjunto.mimeType !== 'application/pdf' && !adjunto.mimeType?.includes('image')) {
-        alert('Vista previa solo disponible para PDF e Imágenes');
-        return;
-      }
+      // if (adjunto.mimeType !== 'application/pdf' && !adjunto.mimeType?.includes('image')) {
+      //   alert('Vista previa solo disponible para PDF e Imágenes');
+      //   return;
+      // }
 
-      const pdfUrl = `${API_BASE_URL}/respuestas/${responseId}/adjuntos/${index}`;
-      const documentUrl = await downloadPdfForPreview(pdfUrl);
+      // const pdfUrl = `${API_BASE_URL}/respuestas/${responseId}/adjuntos/${index}`;
+      // const documentUrl = await downloadPdfForPreview(pdfUrl);
 
-      handlePreviewDocument(documentUrl, adjunto.mimeType?.includes('image') ? 'image' : 'pdf');
+      // handlePreviewDocument(documentUrl, adjunto.mimeType?.includes('image') ? 'image' : 'pdf');
 
     } catch (error) {
       console.error('Error:', error);
-      alert('Error: ' + error.message);
+      // alert('Error: ' + error.message);
+      openErrorDialog('Error al abrir documento');
     } finally {
       setIsLoadingPreviewAdjunto(false);
     }
@@ -509,19 +519,22 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
           document.body.removeChild(a);
         } catch (e) {
           console.error("Error creating download blob:", e);
-          alert("Error procesando el archivo para descarga.");
+          // alert("Error procesando el archivo para descarga.");
+          openErrorDialog("Error al descargar archivo");
         }
         return;
       }
 
       // Si no hay data local, avisar y no llamar al endpoint (que daría 404)
       console.warn("No hay fileData local para descarga adjunto", index);
-      alert("El contenido de este archivo no está disponible para descarga.");
+      // alert("El contenido de este archivo no está disponible para descarga.");
+      openInfoDialog("El contenido de este archivo no está disponible para descarga.");
       return;
 
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al descargar');
+      // alert('Error al descargar');
+      openErrorDialog('Error al descargar archivo');
     } finally {
       setDownloadingAttachmentIndex(null);
     }
@@ -637,7 +650,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
   const handleApprovewithoutFile = async () => {
     // guard lógico (no UI)
-    if (request?.status === "finalizado") return;
+    if (request?.status === "finalizado") return { type: "info", message: "Formulario ya finalizado" };
 
     const response = await apiFetch(
       `${API_BASE_URL}/soporte/${request._id}/status`,
@@ -649,7 +662,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || "Error al finalizar el trabajo");
+      console.error(errorData);
+      throw new Error("Error al finalizar el trabajo");
     }
 
     if (onUpdate) {
@@ -673,7 +687,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || "Error al archivar ticket");
+      console.error(errorData);
+      throw new Error("Error al archivar ticket");
     }
 
     if (onUpdate) {
