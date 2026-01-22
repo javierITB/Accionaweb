@@ -273,7 +273,7 @@ const FormCenter = () => {
           />
         </div>
       )}
-
+  
       {/* Contenido Principal - RESPONSIVE */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-8 max-w-7xl mx-auto">
