@@ -55,7 +55,11 @@ const DashboardHome = () => {
     fetchMetrics();
   }, []);
 
-  const performanceData = metrics?.weeklyPerformance || [];
+  // Ordenar días de la semana: Lun -> Dom
+  const sorter = { 'Lun': 1, 'Mar': 2, 'Mie': 3, 'Jue': 4, 'Vie': 5, 'Sab': 6, 'Dom': 7 };
+  const performanceData = (metrics?.weeklyPerformance || []).sort((a, b) => {
+    return (sorter[a.name] || 0) - (sorter[b.name] || 0);
+  });
   const statusData = metrics?.statusDistribution || [];
 
   if (loading) return <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center text-gray-900 dark:text-white">Cargando métricas...</div>;
@@ -139,7 +143,7 @@ const DashboardHome = () => {
                   <BarChart data={performanceData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} opacity={0.3} />
                     <XAxis dataKey="name" stroke="#9CA3AF" axisLine={false} tickLine={false} />
-                    <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} />
+                    <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} allowDecimals={false} domain={[0, 'auto']} />
                     <Tooltip
                       cursor={{ fill: '#374151', opacity: 0.1 }}
                       contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#fff', borderRadius: '8px' }}
