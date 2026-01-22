@@ -273,14 +273,14 @@ const FormCenter = () => {
           />
         </div>
       )}
-
+  
       {/* Contenido Principal - RESPONSIVE */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-8 max-w-7xl mx-auto">
           <div className="space-y-3 lg:space-y-4">
 
             {/* Título y Botones - RESPONSIVE */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between items-center text-center md:items-stretch md:text-left">
               <div className="mb-3 md:mb-0 min-w-0 flex-1">
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Gestión de Formularios</h1>
                 <p className="text-muted-foreground mt-1 text-xs sm:text-sm lg:text-base">
@@ -288,7 +288,7 @@ const FormCenter = () => {
                 </p>
               </div>
 
-              <div className="flex items-center space-x-2 lg:space-x-3 flex-wrap">
+              <div className="flex items-center space-x-2 lg:space-x-3 flex-wrap justify-center md:justify-end">
                 {/* Botón de toggle del sidebar en desktop - RESPONSIVE */}
                 <div className="hidden lg:flex items-center">
                   <Button

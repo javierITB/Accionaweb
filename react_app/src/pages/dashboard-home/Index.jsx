@@ -13,6 +13,7 @@ const DashboardHome = () => {
    const [metrics, setMetrics] = useState(null);
    const [loading, setLoading] = useState(true);
    const [isGlobalTime, setIsGlobalTime] = useState(false); // Default: Esta Semana
+   const [timeUnit, setTimeUnit] = useState("dias");
 
    // Paleta para gráfico de torta
    // Mapeo de colores específico por estado (Hex codes para Recharts)
@@ -145,47 +146,76 @@ const DashboardHome = () => {
                         </div>
 
                         {/* Toggle Button */}
-                        <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
-                           <button
-                              onClick={() => setIsGlobalTime(false)}
-                              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!isGlobalTime
-                                 ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
-                                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
-                                 }`}
-                           >
-                              Esta Semana
-                           </button>
-                           <button
-                              onClick={() => setIsGlobalTime(true)}
-                              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${isGlobalTime
-                                 ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
-                                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
-                                 }`}
-                           >
-                              Global
-                           </button>
+                        {/* Toggle Button GroupContainer */}
+                        <div className="flex gap-2">
+                           {/* Selector Semana/Global */}
+                           <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                              <button
+                                 onClick={() => setIsGlobalTime(false)}
+                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!isGlobalTime
+                                    ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                    }`}
+                              >
+                                 Semana
+                              </button>
+                              <button
+                                 onClick={() => setIsGlobalTime(true)}
+                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${isGlobalTime
+                                    ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                    }`}
+                              >
+                                 Global
+                              </button>
+                           </div>
+
+                           {/* Selector Días/Horas */}
+                           <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                              <button
+                                 onClick={() => setTimeUnit("dias")}
+                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${timeUnit === "dias"
+                                    ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                    }`}
+                              >
+                                 Días
+                              </button>
+                              <button
+                                 onClick={() => setTimeUnit("horas")}
+                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${timeUnit === "horas"
+                                    ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                    }`}
+                              >
+                                 Hrs
+                              </button>
+                           </div>
                         </div>
                      </div>
 
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <TimeMetricItem
                            label="Creación → Revisión"
-                           days={isGlobalTime ? metrics?.timeMetrics?.creationToReview : metrics?.weeklyTimeMetrics?.creationToReview}
-                           globalDays={metrics?.timeMetrics?.creationToReview}
+                           value={isGlobalTime ? metrics?.timeMetrics?.creationToReview : metrics?.weeklyTimeMetrics?.creationToReview}
+                           globalValue={metrics?.timeMetrics?.creationToReview}
+                           unit={timeUnit}
                            color="bg-blue-500"
                            showComparison={!isGlobalTime}
                         />
                         <TimeMetricItem
                            label="Creación → Aprobado"
-                           days={isGlobalTime ? metrics?.timeMetrics?.creationToApproved : metrics?.weeklyTimeMetrics?.creationToApproved}
-                           globalDays={metrics?.timeMetrics?.creationToApproved}
+                           value={isGlobalTime ? metrics?.timeMetrics?.creationToApproved : metrics?.weeklyTimeMetrics?.creationToApproved}
+                           globalValue={metrics?.timeMetrics?.creationToApproved}
+                           unit={timeUnit}
                            color="bg-purple-500"
                            showComparison={!isGlobalTime}
                         />
                         <TimeMetricItem
                            label="Firmado → Finalizado"
-                           days={isGlobalTime ? metrics?.timeMetrics?.signedToFinalized : metrics?.weeklyTimeMetrics?.signedToFinalized}
-                           globalDays={metrics?.timeMetrics?.signedToFinalized}
+                           value={isGlobalTime ? metrics?.timeMetrics?.signedToFinalized : metrics?.weeklyTimeMetrics?.signedToFinalized}
+                           globalValue={metrics?.timeMetrics?.signedToFinalized}
+                           unit={timeUnit}
                            color="bg-emerald-500"
                            showComparison={!isGlobalTime}
                         />
@@ -228,6 +258,8 @@ const DashboardHome = () => {
                                  outerRadius={80}
                                  paddingAngle={5}
                                  dataKey="value"
+                                 startAngle={180}
+                                 endAngle={-180}
                               >
                                  {statusData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={getStatusColor(entry.name)} />
@@ -239,7 +271,10 @@ const DashboardHome = () => {
                                     borderColor: "#374151",
                                     color: "#fff",
                                     borderRadius: "8px",
+                                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                                  }}
+                                 itemStyle={{ color: "#fff" }}
+                                 labelStyle={{ color: "#fff" }}
                               />
                            </PieChart>
                         </ResponsiveContainer>
@@ -272,12 +307,36 @@ const DashboardHome = () => {
    );
 };
 
-const TimeMetricItem = ({ label, days, globalDays, color, showComparison }) => {
+const TimeMetricItem = ({ label, value, globalValue, unit, color, showComparison }) => {
+   // Conversión dinámica
+   // 'value' y 'globalValue' vienen en HORAS
+   const isDays = unit === 'dias';
+
+   const formatVal = (v) => {
+      if (v === null || v === undefined) return null;
+      return isDays ? Math.round(v / 24) : parseFloat(v).toFixed(1);
+   };
+
+   const displayVal = formatVal(value);
+   const displayGlobal = formatVal(globalValue);
+   const unitLabel = isDays ? "días" : "hrs";
+   const maxScale = isDays ? 30 : 720; // 30 días o 720 horas
+
    let comparison = null;
-   if (showComparison && days !== null && globalDays !== null) {
-      const diff = globalDays - days;
-      if (diff > 0) comparison = { text: `${diff}d más rápido`, color: "text-emerald-500", icon: "TrendingUp" };
-      else if (diff < 0) comparison = { text: `${Math.abs(diff)}d más lento`, color: "text-red-500", icon: "TrendingDown" };
+   if (showComparison && displayVal !== null && displayGlobal !== null) {
+      // Comparar usando valores convertidos para ser consistentes con lo que ve el usuario,
+      // o usar raw hours. Usamos valores convertidos numéricos.
+      const valNum = parseFloat(displayVal);
+      const globalNum = parseFloat(displayGlobal);
+
+      const diff = globalNum - valNum;
+      // Nota: Si diff es positivo, el valor actual es MENOR que el global (más rápido)
+      // porque estamos restando Global - Actual.
+
+      const absDiff = Math.abs(diff).toFixed(1);
+
+      if (diff > 0.1) comparison = { text: `${absDiff}${isDays ? 'd' : 'h'} más rápido`, color: "text-emerald-500", icon: "TrendingUp" };
+      else if (diff < -0.1) comparison = { text: `${absDiff}${isDays ? 'd' : 'h'} más lento`, color: "text-red-500", icon: "TrendingDown" };
       else comparison = { text: "Igual al promedio", color: "text-gray-500", icon: "Minus" };
    }
 
@@ -288,11 +347,11 @@ const TimeMetricItem = ({ label, days, globalDays, color, showComparison }) => {
             <Icon name="Clock" size={14} className="text-gray-400 dark:text-gray-500" />
          </div>
          <div className="flex items-end gap-1 mb-3">
-            <span className="text-3xl font-bold text-gray-900 dark:text-white">{days !== null ? days : "-"}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">días</span>
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">{displayVal !== null ? displayVal : "-"}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">{unitLabel}</span>
          </div>
          <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden mb-2">
-            <div className={`h-full ${color}`} style={{ width: `${Math.min(((days || 0) / 30) * 100, 100)}%` }}></div>
+            <div className={`h-full ${color}`} style={{ width: `${Math.min(((value || 0) / maxScale) * 100, 100)}%` }}></div>
          </div>
 
          {showComparison && comparison && (
