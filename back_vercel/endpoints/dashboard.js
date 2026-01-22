@@ -110,6 +110,75 @@ router.get("/metrics", async (req, res) => {
         const finalizedRequests = await req.db.collection("respuestas").countDocuments({ status: "finalizado" });
         const globalRate = totalRequests > 0 ? Math.round((finalizedRequests / totalRequests) * 100) : 0;
 
+        // 4. Performance Semanal de la semana anterior
+
+        // Obtener fecha actual
+        const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' });
+        const todayStr = fmt.format(new Date()); // YYYY-MM-DD
+        const [y, m, d] = todayStr.split('-').map(Number);
+
+        // Crear objeto fecha 
+        const currentSantiagoDate = new Date(y, m - 1, d, 12, 0, 0);
+
+        // Encontrar el Lunes de esta semana
+        const day = currentSantiagoDate.getDay();
+        const diffToMonday = (day === 0 ? -6 : 1) - day;
+        const monday = new Date(currentSantiagoDate);
+        monday.setDate(currentSantiagoDate.getDate() + diffToMonday);
+
+        monday.setDate(monday.getDate() - 7);
+
+        // Calcular fecha inicio para la query 
+        const queryStartDate = new Date(monday);
+        queryStartDate.setDate(monday.getDate() - 1);
+
+        const weeklyPerformanceRaw = await req.db.collection("respuestas").aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: queryStartDate }
+                }
+            },
+            {
+                $project: {
+                    dateStr: {
+                        $dateToString: {
+                            format: "%Y-%m-%d",
+                            date: "$createdAt",
+                            timezone: "-03:00"
+                        }
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$dateStr",
+                    count: { $sum: 1 }
+                }
+            }
+        ]).toArray();
+
+        // Generar array Lun-Dom
+        const daysName = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
+        const weeklyPerformance = [];
+
+        for (let i = 0; i < 7; i++) {
+            const loopDate = new Date(monday);
+            loopDate.setDate(monday.getDate() + i);
+
+            // Formatear a YYYY-MM-DD manualmente para coincidir con el aggregate
+            const ly = loopDate.getFullYear();
+            const lm = String(loopDate.getMonth() + 1).padStart(2, '0');
+            const ld = String(loopDate.getDate()).padStart(2, '0');
+            const dateStr = `${ly}-${lm}-${ld}`;
+
+            const found = weeklyPerformanceRaw.find(item => item._id === dateStr);
+            weeklyPerformance.push({
+                name: daysName[i],
+                solicitudes: found ? found.count : 0,
+                fullDate: dateStr
+            });
+        }
+
         res.json({
             success: true,
             data: {
@@ -119,13 +188,7 @@ router.get("/metrics", async (req, res) => {
                 weeklyRequests,
                 globalRate,
                 statusDistribution, // Nuevo dato
-                weeklyPerformance: [
-                    { name: 'Lun', solicitudes: 4 },
-                    { name: 'Mar', solicitudes: 7 },
-                    { name: 'Mie', solicitudes: 5 },
-                    { name: 'Jue', solicitudes: 10 },
-                    { name: 'Vie', solicitudes: 6 },
-                ]
+                weeklyPerformance
             }
         });
     } catch (err) {
