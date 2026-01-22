@@ -228,6 +228,8 @@ const DashboardHome = () => {
                                  outerRadius={80}
                                  paddingAngle={5}
                                  dataKey="value"
+                                 startAngle={180}
+                                 endAngle={-180}
                               >
                                  {statusData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={getStatusColor(entry.name)} />

@@ -105,10 +105,10 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
             `}
             title={!isTextVisible ? item.name : ""}
          >
-            <Icon name={item.icon} size={isChild ? 16 : 20} className={isTextVisible && !isChild ? "mr-2" : ""} />
+            <Icon name={item.icon} size={isChild ? 16 : 20} className={isTextVisible && !isChild ? "mr-3" : ""} />
             {isTextVisible && (
                <div className="flex-1 text-left min-w-0">
-                  <div className={`${isChild ? "text-xs ml-2" : "text-sm"} font-medium truncate`}> {item.name}</div>
+                  <div className={`${isChild ? "text-xs ml-2 font-medium" : "text-sm font-semibold"} truncate`}> {item.name}</div>
                </div>
             )}
          </button>
