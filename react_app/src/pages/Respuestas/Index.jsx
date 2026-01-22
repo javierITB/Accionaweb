@@ -74,6 +74,19 @@ const RequestTracking = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // --- LOGICA DE SIDEBAR ---
+  const toggleSidebar = () => {
+    if (isMobileScreen) {
+      setIsMobileOpen(!isMobileOpen);
+    } else {
+      setIsDesktopOpen(!isDesktopOpen);
+    }
+  };
+
+  const handleNavigation = () => {
+    if (isMobileScreen) setIsMobileOpen(false);
+  };
+
   // --- FUNCIÓN DE NORMALIZACIÓN ---
   const normalizeData = (data) => {
     return data.map(r => ({
@@ -101,7 +114,7 @@ const RequestTracking = () => {
 
       const params = new URLSearchParams({
         page: pageNumber,
-        limit: itemsPerPage, // Usar estado dinámico
+        limit: itemsPerPage,
         search: overrideFilters.search || '',
         status: overrideFilters.status || '',
         company: overrideFilters.company || '',
@@ -172,7 +185,7 @@ const RequestTracking = () => {
 
   useEffect(() => {
     fetchData(currentPage);
-  }, [currentPage, itemsPerPage]); // 
+  }, [currentPage, itemsPerPage]);
 
   useEffect(() => {
     if (!formId) return;
@@ -185,7 +198,7 @@ const RequestTracking = () => {
     }
   }, [formId]);
 
-  /* 
+   /* 
   useEffect(() => {
     const interval = setInterval(() => {
       if (filters.status !== 'archivado') fetchData(currentPage, true);
@@ -248,7 +261,6 @@ const RequestTracking = () => {
     }
   };
 
-  // --- CORRECCIÓN SOLICITADA: Filtrado de archivados en Front ---
   const currentRequests = useMemo(() => {
     return resp;
   }, [resp]);
@@ -268,15 +280,24 @@ const RequestTracking = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Sidebar isCollapsed={!isDesktopOpen} onToggleCollapse={() => setIsDesktopOpen(!isDesktopOpen)} isMobileOpen={isMobileOpen} onNavigate={() => isMobileScreen && setIsMobileOpen(false)} />
-
-      {isMobileScreen && isMobileOpen && (
-        <div className="fixed inset-0 bg-foreground/50 z-40 lg:hidden" onClick={() => setIsMobileOpen(false)}></div>
+      
+      {(isMobileOpen || !isMobileScreen) && (
+        <>
+          <Sidebar 
+            isCollapsed={!isDesktopOpen} 
+            onToggleCollapse={toggleSidebar} 
+            isMobileOpen={isMobileOpen} 
+            onNavigate={handleNavigation} 
+          />
+          {isMobileScreen && isMobileOpen && (
+            <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileOpen(false)}></div>
+          )}
+        </>
       )}
 
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
-          <Button variant="default" size="icon" onClick={() => setIsMobileOpen(true)} iconName="Menu" className="w-12 h-12 rounded-full shadow-lg" />
+          <Button variant="default" size="icon" onClick={toggleSidebar} iconName="Menu" className="w-12 h-12 rounded-full shadow-lg" />
         </div>
       )}
 
@@ -287,7 +308,8 @@ const RequestTracking = () => {
             <div>
               <div className="flex items-center gap-3">
                 <span className="flex items-center justify-center min-w-8 h-8 px-2 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
-                  {filters.status === 'archivado' ? totalItems : (totalItems - (serverStats?.archivado || 0))}
+                  {/* Corregido: totalItems ya viene filtrado sin archivados desde el backend */}
+                  {filters.status === 'archivado' ? (serverStats?.archivado || 0) : totalItems}
                 </span>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
                   Seguimiento de Solicitudes
