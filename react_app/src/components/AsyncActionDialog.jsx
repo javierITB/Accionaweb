@@ -12,13 +12,13 @@ export default function AsyncActionDialog({
    errorText = "Ocurrió un error",
    initialPhase = "confirm", // confirm | loading | success | error
    variant = "success", // success | error | info
-   autoCloseMs = 1800,
    onConfirm,
    onClose,
 }) {
    const [phase, setPhase] = useState(initialPhase);
    const [dynamicSuccessText, setDynamicSuccessText] = useState(successText);
    const [dynamicErrorText, setDynamicErrorText] = useState(errorText);
+   const [currentVariant, setCurrentVariant] = useState(variant);
 
    // 🔁 sincroniza la fase cada vez que se abre
    useEffect(() => {
@@ -26,8 +26,9 @@ export default function AsyncActionDialog({
          setPhase(initialPhase);
          setDynamicErrorText(errorText);
          setDynamicSuccessText(successText);
+         setCurrentVariant(variant);
       }
-   }, [open, initialPhase, errorText, successText]);
+   }, [open, initialPhase, errorText, successText, variant]);
 
    if (!open) return null;
 
@@ -40,12 +41,35 @@ export default function AsyncActionDialog({
 
       try {
          setPhase("loading");
+
          const result = await onConfirm();
 
          if (typeof result === "string") {
+            // backward compatibility
             setDynamicSuccessText(result);
+            setPhase("success");
+            return;
          }
+
+         if (result?.type === "info") {
+            setDynamicSuccessText(result.message);
+            setCurrentVariant("info");
+            setPhase("success");
+
+            return;
+         }
+
+         if (result?.type === "success") {
+            setDynamicSuccessText(result.message);
+            setCurrentVariant("success");
+            setPhase("success");
+            return;
+         }
+
+         setCurrentVariant("success");
          setPhase("success");
+
+
       } catch (error) {
          setDynamicErrorText(error?.message || errorText);
          setPhase("error");
@@ -59,7 +83,7 @@ export default function AsyncActionDialog({
 
    const renderIcon = () => {
       if (phase === "success") {
-         if (variant === "info") {
+         if (currentVariant === "info") {
             return <Icon name="AlertCircle" size={48} className="mx-auto mb-3 text-accent" />;
          }
 
@@ -112,7 +136,7 @@ export default function AsyncActionDialog({
                   </button>
                   {renderIcon()}
 
-                  <p className="text-md text-muted-foreground ">
+                  <p className="text-sm text-muted-foreground whitespace-pre-line leading-tight">
                      {phase === "error" ? dynamicErrorText : dynamicSuccessText}
                   </p>
                </div>
