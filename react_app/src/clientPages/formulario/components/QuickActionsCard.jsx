@@ -680,6 +680,47 @@ const FormPreview = ({ formData }) => {
             </div>
           );
 
+        case 'rut':
+          const formatRut = (rut) => {
+            if (!rut) return '';
+            let actual = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+            if (actual.length <= 1) return actual;
+
+            let cuerpo = actual.substring(0, actual.length - 1);
+            let dv = actual.substring(actual.length - 1);
+
+            let cuerpoFormateado = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+            return `${cuerpoFormateado}-${dv}`;
+          };
+
+          return (
+            <div>
+              <input
+                type="text"
+                placeholder="12.345.678-K"
+                className={`${baseInputClass} ${error ? 'border-red-500 ring-2 ring-red-200' : ''}`}
+                value={value}
+                maxLength={12} // 9 digits + 2 dots + 1 hyphen = 12 chars max (XX.XXX.XXX-X)
+                onChange={(e) => {
+                  const formatted = formatRut(e.target.value);
+                  // Asegurar límite de caracteres reales del rut (8 o 9 dígitos)
+                  // O simplemente dejar que el usuario escriba y el format se encargue
+                  if (formatted.length <= 12) {
+                    handleInputChange(question.id, getQuestionTitle(question), formatted);
+                  }
+                }}
+                onBlur={(e) => handleInputBlur(question.id, e.target.value, question.required)}
+              />
+              {error && (
+                <p className="text-red-600 text-sm mt-1 flex items-center">
+                  <Icon name="AlertCircle" size={14} className="mr-1" />
+                  {error}
+                </p>
+              )}
+            </div>
+          );
+
         case 'file':
           return renderFileInput(question, fileErrorList, error);
 

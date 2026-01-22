@@ -139,6 +139,16 @@ const FormPreview = ({ formData }) => {
           </div>
         );
 
+      case 'rut':
+        return (
+          <input
+            type="text"
+            placeholder="12.345.678-K"
+            className={baseInputClass}
+            readOnly
+          />
+        );
+
       default:
         return (
           <div className="text-center py-4 text-muted-foreground">
