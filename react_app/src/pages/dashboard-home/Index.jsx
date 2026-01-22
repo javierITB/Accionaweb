@@ -241,7 +241,10 @@ const DashboardHome = () => {
                                     borderColor: "#374151",
                                     color: "#fff",
                                     borderRadius: "8px",
+                                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                                  }}
+                                 itemStyle={{ color: "#fff" }}
+                                 labelStyle={{ color: "#fff" }}
                               />
                            </PieChart>
                         </ResponsiveContainer>
