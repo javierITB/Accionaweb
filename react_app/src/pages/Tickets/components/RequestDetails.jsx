@@ -97,7 +97,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
   }, [isVisible, request?._id]);
 
   const fetchApprovedData = async (responseId) => {
-    setIsLoadingApprovedData(true);
+    // setIsLoadingApprovedData(true);
     try {
       const response = await apiFetch(`${API_BASE_URL}/soporte/data-approved/${responseId}`);
       if (response.ok) {
@@ -110,7 +110,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
       console.error('Error obteniendo datos de aprobado:', error);
       setApprovedData(null);
     } finally {
-      setIsLoadingApprovedData(false);
+      // setIsLoadingApprovedData(false);
     }
   };
 
@@ -185,7 +185,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
     const responseId = request._id;
 
     const fetchFullDetailsAndDocs = async () => {
-      setIsDetailLoading(true);
+      // setIsDetailLoading(true);
       try {
         const response = await apiFetch(`${API_BASE_URL}/soporte/${responseId}`);
         if (response.ok) {
@@ -199,7 +199,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
       } catch (error) {
         console.error('Error cargando detalles completos:', error);
       } finally {
-        setIsDetailLoading(false);
+        // setIsDetailLoading(false);
       }
     };
 
@@ -329,12 +329,15 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
       }
     );
 
+    const currentStatus = fullRequestData?.status;
+    
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || "No se pudo cambiar el estado");
+      throw new Error(errorData.error || `No se pudo cambiar del estado "${currentStatus}" a "${newStatus}"`);
     }
 
     const result = await response.json();
+
 
     if (onUpdate && result.updatedRequest) {
       onUpdate(result.updatedRequest);
@@ -345,20 +348,22 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
         adjuntos: prev.adjuntos,
       }));
     }
+
+    return 'Estado cambiado a "' + newStatus + '" correctamente';
   };
 
 
-  const getPreviousStatus = (currentStatus) => {
-    const statusFlow = getDynamicStatusFlow();
-    const currentIndex = statusFlow.indexOf(currentStatus);
-    return currentIndex > 0 ? statusFlow[currentIndex - 1] : null;
-  };
+  // const getPreviousStatus = (currentStatus) => {
+  //   const statusFlow = getDynamicStatusFlow();
+  //   const currentIndex = statusFlow.indexOf(currentStatus);
+  //   return currentIndex > 0 ? statusFlow[currentIndex - 1] : null;
+  // };
 
-  const getNextStatus = (currentStatus) => {
-    const statusFlow = getDynamicStatusFlow();
-    const currentIndex = statusFlow.indexOf(currentStatus);
-    return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
-  };
+  // const getNextStatus = (currentStatus) => {
+  //   const statusFlow = getDynamicStatusFlow();
+  //   const currentIndex = statusFlow.indexOf(currentStatus);
+  //   return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
+  // };
 
   if (!isVisible || !request) return null;
 
@@ -1089,7 +1094,6 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                                   <button
                                     key={st.value}
                                     onClick={() => {
-                                      // handleStatusChange(st.value);
                                       openAsyncDialog({
                                         title: `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
                                         loadingText: `Cambiando estado a "${st.label}"...`,
