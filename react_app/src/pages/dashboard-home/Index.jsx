@@ -60,7 +60,21 @@ const DashboardHome = () => {
    const performanceData = [...(metrics?.weeklyPerformance || [])].sort((a, b) => {
       return (sorter[a.name] || 0) - (sorter[b.name] || 0);
    });
-   const statusData = metrics?.statusDistribution || [];
+   const statusOrder = {
+      'pendiente': 1,
+      'en_revision': 2,
+      'en_revisión': 2,
+      'aprobado': 3,
+      'firmado': 4,
+      'finalizado': 5,
+      'archivado': 6,
+      'borrador': 0
+   };
+   const statusData = [...(metrics?.statusDistribution || [])].sort((a, b) => {
+      const orderA = statusOrder[a.name?.toLowerCase()] || 99;
+      const orderB = statusOrder[b.name?.toLowerCase()] || 99;
+      return orderA - orderB;
+   });
 
    return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-sans selection:bg-blue-500 selection:text-white">
