@@ -198,7 +198,7 @@ const FormReg = () => {
               <p>Hola <strong>${formData.nombre} ${formData.apellido}</strong>,</p>
               <p>Has sido registrado en nuestra plataforma. Para completar tu registro y establecer tu contraseña, haz clic en el siguiente botón:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="https://infoacciona.cl/set-password?userId=${savedUser}" 
+                <a href="https://infodesa.vercel.app/set-password?userId=${savedUser}" 
                    style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                   Establecer Contraseña
                 </a>

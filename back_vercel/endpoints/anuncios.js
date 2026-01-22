@@ -83,7 +83,7 @@ router.post('/', async (req, res) => {
       enviarNotificacion = true
     } = req.body;
 
-    const urlNotificaciones = actionUrl || "https://infoacciona.cl/";
+    const urlNotificaciones = actionUrl || "https://infodesa.vercel.app/";
 
     if (!titulo || !descripcion) {
       console.log('Validación fallida: título o descripción faltante');

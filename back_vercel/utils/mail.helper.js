@@ -4,11 +4,11 @@ const { isEmail } = require("validator");
 
 // --- CONFIGURACIÓN SMTP ---
 const MAIL_CREDENTIALS = {
-  host: "mail.infoacciona.cl",
+  host: "mail.infodesa.vercel.app",
   port: 465,
   secure: true,
   auth: {
-    user: "administracion@infoacciona.cl",
+    user: "administracion@infodesa.vercel.app",
     pass: "CorreoAdmin.1",
   },
 };
