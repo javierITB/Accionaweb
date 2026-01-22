@@ -198,15 +198,6 @@ const RequestTracking = () => {
     }
   }, [formId]);
 
-   /* 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (filters.status !== 'archivado') fetchData(currentPage, true);
-    }, 45000);
-    return () => clearInterval(interval);
-  }, [filters.status, currentPage, itemsPerPage]);
-  */
-
   // --- HANDLERS ---
   const handleApplyFilters = () => {
     setCurrentPage(1);
@@ -308,7 +299,6 @@ const RequestTracking = () => {
             <div>
               <div className="flex items-center gap-3">
                 <span className="flex items-center justify-center min-w-8 h-8 px-2 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
-                  {/* Corregido: totalItems ya viene filtrado sin archivados desde el backend */}
                   {filters.status === 'archivado' ? (serverStats?.archivado || 0) : totalItems}
                 </span>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
@@ -320,7 +310,8 @@ const RequestTracking = () => {
               </p>
             </div>
 
-            <div className="flex items-center space-x-4">
+            {/* CORRECCIÓN: Contenedor de acciones centrado en móvil */}
+            <div className="flex items-center justify-center md:justify-end w-full md:w-auto space-x-4">
               <div ref={limitRef} className="relative">
                 <button
                   onClick={() => setIsLimitOpen(!isLimitOpen)}
@@ -347,7 +338,7 @@ const RequestTracking = () => {
 
               <div className="flex items-center space-x-2 text-sm text-muted-foreground border border-border rounded-lg p-1 bg-card">
                 <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 || isLoading} iconName="ChevronLeft" />
-                <span className="font-medium">{currentPage} / {totalPages}</span>
+                <span className="font-medium whitespace-nowrap">{currentPage} / {totalPages}</span>
                 <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || isLoading} iconName="ChevronRight" />
               </div>
               <div className="flex items-center border border-border rounded-lg bg-card">
@@ -393,14 +384,32 @@ const RequestTracking = () => {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-4 py-8">
-              <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 || isLoading}>
-                Anterior
-              </Button>
-              <span className="text-sm font-medium">Página {currentPage} de {totalPages}</span>
-              <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || isLoading}>
-                Siguiente
-              </Button>
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 py-8 border-t border-border mt-6">
+              <div className="flex items-center space-x-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                  disabled={currentPage === 1 || isLoading}
+                  className="w-28 sm:w-auto"
+                >
+                  <Icon name="ChevronLeft" size={16} className="mr-2" />
+                  Anterior
+                </Button>
+                <span className="text-sm font-medium bg-muted px-3 py-1 rounded-full">
+                   {currentPage} <span className="text-muted-foreground">de</span> {totalPages}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                  disabled={currentPage === totalPages || isLoading}
+                  className="w-28 sm:w-auto"
+                >
+                  Siguiente
+                  <Icon name="ChevronRight" size={16} className="ml-2" />
+                </Button>
+              </div>
             </div>
           )}
         </div>
