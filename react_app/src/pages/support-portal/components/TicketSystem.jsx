@@ -284,42 +284,46 @@ const TicketSystem = () => {
    };
 
    return (
-      <div className="mb-8">
+      <div className="mb-8 px-2 sm:px-0">
          <div className="button-container pb-3 text-md">
             <BackButton />
          </div>
-         <div className="flex justify-between w-full pb-2">
 
-         <h2 className="text-2xl font-bold text-foreground">Sistema de Tickets</h2>
-         {/* Tabs */}
-         <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
-            <Button
-               variant={activeTab === "create" ? "default" : "ghost"}
-               size="sm"
-               onClick={() => {
-                  setActiveTab("create");
-                  setSelectedTicket(null);
-               }}
-               iconName="Plus"
-               iconPosition="left"
-               iconSize={16}
-            >
-               Crear Ticket
-            </Button>
-            <Button
-               variant={activeTab === "my-tickets" || activeTab === "details" ? "default" : "ghost"}
-               size="sm"
-               onClick={() => {
-                  setActiveTab("my-tickets");
-                  setSelectedTicket(null);
-               }}
-               iconName="List"
-               iconPosition="left"
-               iconSize={16}
-            >
-               Mis Tickets
-            </Button>
-         </div>
+         {/* Contenedor adaptativo: flex-col en móvil, flex-row en escritorio */}
+         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full pb-4 gap-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground">Sistema de Tickets</h2>
+            
+            {/* Tabs adaptativos: w-full en móvil, w-fit en escritorio */}
+            <div className="flex space-x-1 bg-muted p-1 rounded-lg w-full sm:w-fit overflow-hidden">
+               <Button
+                  variant={activeTab === "create" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                     setActiveTab("create");
+                     setSelectedTicket(null);
+                  }}
+                  iconName="Plus"
+                  iconPosition="left"
+                  iconSize={14}
+                  className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4"
+               >
+                  Crear Ticket
+               </Button>
+               <Button
+                  variant={activeTab === "my-tickets" || activeTab === "details" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                     setActiveTab("my-tickets");
+                     setSelectedTicket(null);
+                  }}
+                  iconName="List"
+                  iconPosition="left"
+                  iconSize={14}
+                  className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4"
+               >
+                  Mis Tickets
+               </Button>
+            </div>
          </div>
 
          {isLoading && <div className="text-center py-4">Cargando...</div>}
