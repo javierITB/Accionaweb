@@ -11,8 +11,8 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          isAccordion: true,
          roles: ["admin", "RRHH"], // Solo estos cargos ven el acordeón completo
          children: [
-            { name: "Respuestas", path: "/RespuestasForms", icon: "FileText", roles: ["admin", "RRHH"] },
-            { name: "Solicitudes", path: "/Solicitudes", icon: "Pencil", roles: ["admin", "RRHH"] },
+            { name: "Solicitudes de Clientes", path: "/RespuestasForms", icon: "FileText", roles: ["admin", "RRHH"] },
+            { name: "Solicitudes a Cliente", path: "/Solicitudes", icon: "Pencil", roles: ["admin", "RRHH"] },
             { name: "Tickets", path: "/Tickets", icon: "FileText", roles: ["admin", "RRHH", "soporte"] },
             { name: "Domicilio Virtual", path: "/DomicilioVirtual", icon: "Home", roles: ["admin"] },
          ]
