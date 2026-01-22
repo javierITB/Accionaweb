@@ -50,4 +50,4 @@ export const apiFetch = async (url, options = {}) => {
     }
 };
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://back-desa.vercel.app/api";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://back-acciona.vercel.app/api";
