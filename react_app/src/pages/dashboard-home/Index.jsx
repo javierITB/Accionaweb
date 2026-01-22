@@ -276,8 +276,8 @@ const TimeMetricItem = ({ label, days, globalDays, color, showComparison }) => {
    let comparison = null;
    if (showComparison && days !== null && globalDays !== null) {
       const diff = globalDays - days;
-      if (diff > 0) comparison = { text: `${diff}d más rápido`, color: "text-emerald-500", icon: "TrendingDown" };
-      else if (diff < 0) comparison = { text: `${Math.abs(diff)}d más lento`, color: "text-red-500", icon: "TrendingUp" };
+      if (diff > 0) comparison = { text: `${diff}d más rápido`, color: "text-emerald-500", icon: "TrendingUp" };
+      else if (diff < 0) comparison = { text: `${Math.abs(diff)}d más lento`, color: "text-red-500", icon: "TrendingDown" };
       else comparison = { text: "Igual al promedio", color: "text-gray-500", icon: "Minus" };
    }
 
