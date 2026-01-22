@@ -704,8 +704,7 @@ const FormPreview = ({ formData }) => {
                 maxLength={12} // 9 digits + 2 dots + 1 hyphen = 12 chars max (XX.XXX.XXX-X)
                 onChange={(e) => {
                   const formatted = formatRut(e.target.value);
-                  // Asegurar límite de caracteres reales del rut (8 o 9 dígitos)
-                  // O simplemente dejar que el usuario escriba y el format se encargue
+
                   if (formatted.length <= 12) {
                     handleInputChange(question.id, getQuestionTitle(question), formatted);
                   }

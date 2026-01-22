@@ -247,7 +247,7 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
                         )}
 
                         <a
-                            href="https://infodesa.vercel.app/"
+                            href="https://infoacciona.cl/"
                             className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
                         >
                             Ir al Portal

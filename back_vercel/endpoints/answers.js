@@ -1787,7 +1787,7 @@ router.post("/chat", async (req, res) => {
 
         // ENVIAR CORREO SI TENEMOS EMAIL
         if (userEmail) {
-          const baseUrl = process.env.PORTAL_URL || "https://infodesa.vercel.app";
+          const baseUrl = process.env.PORTAL_URL || "https://infoacciona.cl";
           const responseUrl = `${baseUrl}/preview?type=messages&id=${respuestaId}`;
 
           const emailHtml = `
