@@ -18,6 +18,12 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          ]
       },
       {
+         name: "Rendimiento",
+         path: "/dashboard-home",
+         icon: "BarChart2",
+         roles: ["admin"]
+      },
+      {
          name: "Configuración",
          icon: "Settings",
          isAccordion: true,
