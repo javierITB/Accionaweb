@@ -86,12 +86,14 @@ router.get("/metrics", async (req, res) => {
         };
 
         // 3. Stats Semanales y tasa global
+        const todayDate = new Date();
         const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        oneWeekAgo.setDate(todayDate.getDate() - 7);
+        oneWeekAgo.setHours(0, 0, 0, 0);
 
         // Solicitudes creadas esta semana
         const weeklyRequests = await req.db.collection("respuestas").countDocuments({
-            createdAt: { $gte: oneWeekAgo.toISOString() }
+            createdAt: { $gte: oneWeekAgo }
         });
 
         // Total por estado para gráficos
