@@ -42,24 +42,25 @@ const DocumentTemplateEditor = ({
   dynamicVariables = [],
   staticVariables = [],
   templateData,
-  onUpdateTemplateData
+  onUpdateTemplateData,
+  onSave
 }) => {
   const [staticVarsExpanded, setStaticVarsExpanded] = useState(true);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
+        // Habilitamos negrita y cursiva
         underline: false,
-        bold: false,
-        italic: false,
       }),
       Underline,
       TextStyle,
       FontFamily,
       FontSize,
       Image,
-      TextAlign.configure({ 
-        types: ['heading', 'paragraph', 'tableCell', 'tableHeader'] 
+      TextAlign.configure({
+        types: ['heading', 'paragraph', 'tableCell', 'tableHeader']
       }),
       Table.configure({ resizable: true }),
       TableRow,
@@ -90,11 +91,24 @@ const DocumentTemplateEditor = ({
   const fontSizes = ['10px', '11px', '12px', '14px', '16px', '18px', '22px', '28px', '36px'];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-250px)] border rounded-xl bg-background shadow-lg overflow-hidden border-border">
-      
+    <div className={`flex flex-col border rounded-xl bg-background shadow-lg overflow-hidden border-border transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 h-screen m-0 rounded-none' : 'h-[calc(100vh-140px)]'}`}>
+
       {/* BARRA DE HERRAMIENTAS */}
       <div className="flex flex-wrap items-center gap-2 p-2 border-b bg-muted/20">
-        <select 
+
+        {/* Botones de Control Global */}
+        <div className="flex items-center gap-1 border-r pr-2 mr-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsFullScreen(!isFullScreen)}
+            title={isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
+          >
+            <Icon name={isFullScreen ? "Minimize" : "Maximize"} size={16} />
+          </Button>
+
+        </div>
+        <select
           className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
           onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
         >
@@ -102,7 +116,7 @@ const DocumentTemplateEditor = ({
           {fontFamilies.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
 
-        <select 
+        <select
           className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
           onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
         >
@@ -143,7 +157,7 @@ const DocumentTemplateEditor = ({
           <Button variant="ghost" size="sm" className="h-7 text-[10px] flex items-center gap-1 border-r pr-2" onClick={() => editor.chain().focus().insertTable({ rows: 1, cols: 2, withHeaderRow: false }).run()}>
             <Icon name="Columns" size={14} /> Zona Firmas
           </Button>
-          
+
           {editor.isActive('table') && (
             <div className="flex gap-1 pl-1">
               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => editor.chain().focus().deleteTable().run()} title="Eliminar Tabla">
@@ -162,10 +176,35 @@ const DocumentTemplateEditor = ({
           </Button>
           <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-blue-200 text-blue-600" onClick={() => {
             const cond = prompt("Variable para condicionar (IF):");
-            if(cond) editor.chain().focus().insertContent(`<p>[[IF:${cond.toUpperCase()}]]</p><p>Escribir contenido condicional aqui...</p><p>[[ENDIF]]</p>`).run();
+            if (cond) {
+              const tagStart = `[[IF:${cond.toUpperCase()}]]`;
+              const tagEnd = `[[ENDIF]]`;
+
+              if (editor.state.selection.empty) {
+                editor.chain().focus().insertContent(`<p>${tagStart}</p><p>Contenido...</p><p>${tagEnd}</p>`).run();
+              } else {
+                const { from, to } = editor.state.selection;
+                editor.chain().focus()
+                  .insertContentAt(to, `<p>${tagEnd}</p>`)
+                  .insertContentAt(from, `<p>${tagStart}</p>`)
+                  .run();
+              }
+            }
           }}>
             + CONDICIONAL
           </Button>
+
+          {isFullScreen && onSave && (
+            <Button
+              variant="default"
+              size="sm"
+              className="h-8 text-[10px] px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white ml-2 shadow-sm"
+              onClick={onSave}
+              title="Guardar Plantilla"
+            >
+              <Icon name="Save" size={12} /> GUARDAR
+            </Button>
+          )}
         </div>
       </div>
 
@@ -197,7 +236,7 @@ const DocumentTemplateEditor = ({
 
             {/* Variables Generales Reintegradas */}
             <div>
-              <button 
+              <button
                 onClick={() => setStaticVarsExpanded(!staticVarsExpanded)}
                 className="w-full flex items-center justify-between text-[10px] font-bold uppercase text-orange-600 mb-3 tracking-widest hover:bg-orange-50 p-1 rounded transition-colors"
               >
@@ -206,7 +245,7 @@ const DocumentTemplateEditor = ({
                 </span>
                 <Icon name={staticVarsExpanded ? "ChevronUp" : "ChevronDown"} size={12} />
               </button>
-              
+
               {staticVarsExpanded && (
                 <div className="grid grid-cols-1 gap-1.5 animate-in fade-in slide-in-from-top-1">
                   {staticVariables.map(v => {
@@ -215,10 +254,10 @@ const DocumentTemplateEditor = ({
                       <button
                         key={v.title}
                         onClick={() => addVariable(tag)}
-                        className="text-left px-3 py-2 text-[11px] bg-orange-50 border border-orange-100 rounded shadow-sm hover:bg-orange-500 hover:text-white transition-all truncate"
+                        className="text-left px-3 py-2 text-[11px] bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded shadow-sm hover:bg-orange-500 hover:text-white dark:hover:bg-orange-600 transition-all truncate"
                         title={tag}
                       >
-                        <span className="font-mono">{tag}</span>
+                        <span className="font-mono text-orange-700 dark:text-orange-300">{tag}</span>
                       </button>
                     );
                   })}

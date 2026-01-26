@@ -267,6 +267,7 @@ const FormBuilder = () => {
 
       documentTitle: formData.documentTitle,
       paragraphs: formData.paragraphs,
+      documentContent: formData.documentContent, // Agregar soporte para editor Tiptap HTML
       signature1Text: formData.signature1Text || "zona firma 1",
       signature2Text: formData.signature2Text || "zona firma 1",
       formId: formData.formId,
@@ -283,8 +284,8 @@ const FormBuilder = () => {
       alert("ERROR: Debe ingresar un Título para el Documento (DOCX).");
       return;
     }
-    if (dataToSend.paragraphs.length === 0) {
-      alert("ERROR: La plantilla debe contener al menos un párrafo.");
+    if (dataToSend.paragraphs.length === 0 && !dataToSend.documentContent) {
+      alert("ERROR: La plantilla debe contener al menos un párrafo o contenido HTML.");
       return;
     }
 
@@ -383,6 +384,7 @@ const FormBuilder = () => {
             onUpdateParagraph={handleUpdateParagraph}
             onDeleteParagraph={handleDeleteParagraph}
             onMoveParagraph={handleMoveParagraph}
+            onSave={() => handleSaveTemplate('publicado')}
           />
         );
       default:
@@ -475,7 +477,7 @@ const FormBuilder = () => {
                 loading={isSaving}
                 iconName="Send"
                 iconPosition="left"
-                disabled={!formData.formId || isSaving || !formData.documentTitle || formData.paragraphs.length === 0}
+                disabled={!formData.formId || isSaving || !formData.documentTitle || (formData.paragraphs.length === 0 && !formData.documentContent)}
               >
                 {isSaving ? 'Guardando...' : 'Guardar Plantilla'}
               </Button>
