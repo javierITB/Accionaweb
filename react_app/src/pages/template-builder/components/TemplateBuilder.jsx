@@ -1,10 +1,42 @@
 import React, { useCallback } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import TextAlign from '@tiptap/extension-text-align';
+import { useEditor, EditorContent, Extension } from '@tiptap/react';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { FontFamily } from '@tiptap/extension-font-family';
+import { Underline } from '@tiptap/extension-underline';
+import { Image } from '@tiptap/extension-image';
+import { StarterKit } from '@tiptap/starter-kit';
+import { TextAlign } from '@tiptap/extension-text-align';
+
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+
+// --- EXTENSIÓN PERSONALIZADA PARA TAMAÑO DE FUENTE ---
+const FontSize = TextStyle.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      fontSize: {
+        default: null,
+        parseHTML: element => element.style.fontSize,
+        renderHTML: attributes => {
+          if (!attributes.fontSize) return {};
+          return { style: `font-size: ${attributes.fontSize}` };
+        },
+      },
+    };
+  },
+  addCommands() {
+    return {
+      ...this.parent?.(),
+      setFontSize: size => ({ chain }) => {
+        return chain().setMark('textStyle', { fontSize: size }).run();
+      },
+      unsetFontSize: () => ({ chain }) => {
+        return chain().setMark('textStyle', { fontSize: null }).run();
+      },
+    };
+  },
+});
 
 const DocumentTemplateEditor = ({
   dynamicVariables = [],
@@ -17,10 +49,17 @@ const DocumentTemplateEditor = ({
     extensions: [
       StarterKit,
       Underline,
+      TextStyle,
+      FontFamily,
+      FontSize,
       Image,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
-    content: templateData.documentContent || templateData.paragraphs?.map(p => p.content).join('<br>') || '',
+    // Migración: Si venimos de párrafos, los unimos. Si ya es HTML, lo usamos.
+    content: templateData.documentContent || 
+             (templateData.paragraphs?.length > 0 
+              ? templateData.paragraphs.map(p => `<p>${p.content}</p>`).join('') 
+              : ''),
     onUpdate: ({ editor }) => {
       onUpdateTemplateData('documentContent', editor.getHTML());
     },
@@ -31,82 +70,142 @@ const DocumentTemplateEditor = ({
   };
 
   const addConditional = () => {
-    const condition = prompt("Nombre de la variable para condicionar este bloque (ej: TIENE_HIJOS):");
+    const condition = prompt("Nombre de la variable para condicionar (ej: ES_CASADO):");
     if (condition) {
       editor.chain().focus()
-        .insertContent(`[[IF:${condition}]]`)
-        .insertContent(`<p>Escribe aquí el contenido condicional...</p>`)
-        .insertContent(`[[ENDIF]]`)
+        .insertContent(`<p>[[IF:${condition.toUpperCase()}]]</p>`)
+        .insertContent(`<p>Escribe el texto condicional aquí...</p>`)
+        .insertContent(`<p>[[ENDIF]]</p>`)
         .run();
     }
   };
 
-  const addImage = () => {
-    const url = prompt('Introduce la URL de la imagen (o logo variable):');
-    if (url) editor.chain().focus().setImage({ src: url }).run();
-  };
-
   if (!editor) return null;
 
+  const fontFamilies = [
+    { label: 'Arial', value: 'Arial' },
+    { label: 'Times New Roman', value: 'Times New Roman' },
+    { label: 'Courier New', value: 'Courier New' },
+    { label: 'Georgia', value: 'Georgia' }
+  ];
+
+  const fontSizes = ['10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px'];
+
   return (
-    <div className="flex flex-col h-[calc(100vh-200px)] border rounded-xl bg-background shadow-xl overflow-hidden">
-      {/* BARRA DE HERRAMIENTAS SUPERIOR */}
-      <div className="flex flex-wrap items-center gap-1 p-2 border-b bg-muted/30">
-        <div className="flex bg-card border rounded-md p-1 mr-2">
-          <Button variant="ghost" size="icon" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'bg-primary/20' : ''}>
-            <Icon name="Bold" size={16} />
+    <div className="flex flex-col h-[calc(100vh-250px)] border rounded-xl bg-background shadow-lg overflow-hidden border-border">
+      
+      {/* TOOLBAR PROFESIONAL */}
+      <div className="flex flex-wrap items-center gap-2 p-2 border-b bg-muted/20">
+        
+        {/* Selector de Fuente */}
+        <select 
+          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
+          onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
+        >
+          <option value="">Fuente</option>
+          {fontFamilies.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+        </select>
+
+        {/* Selector de Tamaño */}
+        <select 
+          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
+          onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
+        >
+          <option value="">Tamaño</option>
+          {fontSizes.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        <div className="w-px h-6 bg-border mx-1" />
+
+        <div className="flex bg-card border rounded-md p-0.5">
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('bold') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}>
+            <Icon name="Bold" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'bg-primary/20' : ''}>
-            <Icon name="Italic" size={16} />
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('italic') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}>
+            <Icon name="Italic" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'bg-primary/20' : ''}>
-            <Icon name="Underline" size={16} />
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('underline') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+            <Icon name="Underline" size={14} />
           </Button>
         </div>
 
-        <div className="flex bg-card border rounded-md p-1 mr-2">
-          <Button variant="ghost" size="icon" onClick={() => editor.chain().focus().setTextAlign('left').run()} className={editor.isActive({ textAlign: 'left' }) ? 'bg-primary/20' : ''}>
-            <Icon name="AlignLeft" size={16} />
+        <div className="flex bg-card border rounded-md p-0.5">
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'left' }) ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
+            <Icon name="AlignLeft" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => editor.chain().focus().setTextAlign('justify').run()} className={editor.isActive({ textAlign: 'justify' }) ? 'bg-primary/20' : ''}>
-            <Icon name="AlignJustify" size={16} />
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
+            <Icon name="AlignJustify" size={14} />
           </Button>
         </div>
 
-        <div className="flex bg-card border rounded-md p-1 gap-1">
-          <Button variant="outline" size="sm" onClick={() => addVariable('{{NUMERAL}}')} className="text-[10px] font-bold">
+        <div className="flex gap-1 ml-auto">
+          <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => addVariable('{{NUMERAL}}')}>
             + NUMERAL
           </Button>
-          <Button variant="outline" size="sm" onClick={addConditional} className="text-[10px] font-bold border-blue-400 text-blue-600">
+          <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-blue-200 text-blue-600" onClick={addConditional}>
             + CONDICIONAL
           </Button>
-          <Button variant="outline" size="sm" onClick={addImage}>
-            <Icon name="Image" size={16} />
+          <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => {
+            const url = prompt('URL de la imagen:');
+            if (url) editor.chain().focus().setImage({ src: url }).run();
+          }}>
+            <Icon name="Image" size={14} />
           </Button>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* PANEL IZQUIERDO: VARIABLES */}
-        <div className="w-64 border-r bg-muted/10 p-4 overflow-y-auto">
-          <h3 className="text-xs font-bold uppercase text-muted-foreground mb-4">Variables del Formulario</h3>
-          <div className="space-y-2">
-            {dynamicVariables.map(v => (
-              <button
-                key={v.id}
-                onClick={() => addVariable(`{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`)}
-                className="w-full text-left p-2 text-xs bg-card border rounded hover:border-primary transition-colors"
-              >
-                {v.title}
-              </button>
-            ))}
+        {/* PANEL DE VARIABLES INTEGRADO */}
+        <div className="w-72 border-r bg-muted/5 p-4 overflow-y-auto">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-[10px] font-bold uppercase text-primary mb-3 tracking-widest">Variables Formulario</h3>
+              <div className="grid grid-cols-1 gap-1.5">
+                {dynamicVariables.map(v => {
+                  const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
+                  return (
+                    <button
+                      key={v.id || v.title}
+                      onClick={() => addVariable(tag)}
+                      className="text-left px-3 py-2 text-[11px] bg-card border rounded shadow-sm hover:border-primary hover:bg-primary/5 transition-all truncate group"
+                      title={tag}
+                    >
+                      <span className="font-mono text-primary group-hover:text-primary-foreground">{tag}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-[10px] font-bold uppercase text-orange-500 mb-3 tracking-widest">Generales</h3>
+              <div className="grid grid-cols-1 gap-1.5">
+                {staticVariables.map(v => {
+                  const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
+                  return (
+                    <button
+                      key={v.title}
+                      onClick={() => addVariable(tag)}
+                      className="text-left px-3 py-2 text-[11px] bg-orange-50 border border-orange-100 rounded shadow-sm hover:bg-orange-500 hover:text-white transition-all truncate"
+                    >
+                      <span className="font-mono">{tag}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* LIENZO DE ESCRITURA */}
-        <div className="flex-1 bg-gray-100 p-8 overflow-y-auto flex justify-center">
-          <div className="w-[800px] min-h-[1056px] bg-white shadow-2xl p-[2cm] outline-none">
-            <EditorContent editor={editor} className="prose prose-blue max-w-none focus:outline-none" />
+        {/* HOJA DE TRABAJO */}
+        <div className="flex-1 bg-muted/30 p-8 overflow-y-auto flex justify-center">
+          <div className="w-full max-w-[850px] min-h-[1100px] bg-white shadow-2xl p-[2.5cm] rounded-sm border border-border">
+            <style>{`
+              .ProseMirror { outline: none; min-height: 100%; }
+              .ProseMirror p { margin-bottom: 0.5em; line-height: 1.5; }
+              .ProseMirror strong { font-weight: bold; }
+            `}</style>
+            <EditorContent editor={editor} className="prose prose-sm max-w-none" />
           </div>
         </div>
       </div>
