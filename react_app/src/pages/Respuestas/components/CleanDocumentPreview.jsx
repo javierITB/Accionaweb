@@ -158,12 +158,13 @@ const CleanDocumentPreview = ({
         switch (documentType) {
             case 'pdf':
                 return (
-                    <div className="h-full flex flex-col">
-                        <div className="flex-1 overflow-auto bg-white">
+                    <div className="h-full flex flex-col overflow-hidden">
+                        <div className="flex-1 bg-white">
                             <object
                                 data={`${documentUrl}#toolbar=0&navpanes=0&scrollbar=1`}
                                 type="application/pdf"
-                                className="w-full h-full min-h-[400px] sm:min-h-[600px] md:min-h-[800px]"
+                                className="w-full h-full"
+                                style={{ height: 'calc(100%)' }}
                             >
                                 <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4 text-center">
                                     <p className="text-sm sm:text-base mb-2">No se puede mostrar la vista previa del PDF</p>
@@ -227,7 +228,6 @@ const CleanDocumentPreview = ({
                     {/* Header */}
                     <div className="flex justify-between items-center px-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-black">
                         
-                        {/* Zona Superior Izquierda: Menú de Pestañas */}
                         <div className="flex items-center space-x-6 min-w-0 flex-1 h-12">
                             <button
                                 onClick={() => setActiveTab('preview')}
@@ -246,7 +246,6 @@ const CleanDocumentPreview = ({
                             </button>
                         </div>
 
-                        {/* Botón Cerrar */}
                         <button
                             onClick={onClose}
                             className="p-2 ml-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex-shrink-0"
@@ -258,15 +257,14 @@ const CleanDocumentPreview = ({
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 relative">
+                    <div className="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900 relative">
                         {activeTab === 'preview' ? renderPreviewContent() : renderRespuestas()}
                     </div>
 
-                    {/* Footer solo para Vista Previa en móvil */}
                     {activeTab === 'preview' && (
                         <div className="sm:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-700 p-3">
                             <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 uppercase font-bold">
+                                <span className="text-xs text-gray-500">
                                     {documentType?.toUpperCase()}
                                 </span>
                                 <a

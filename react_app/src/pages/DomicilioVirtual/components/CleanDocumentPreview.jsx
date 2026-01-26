@@ -158,19 +158,17 @@ const CleanDocumentPreview = ({
         switch (documentType) {
             case 'pdf':
                 return (
-                    <div className="h-full flex flex-col">
-                        <div className="flex-1 overflow-auto bg-white">
-                            <object
-                                data={`${documentUrl}#toolbar=0&navpanes=0&scrollbar=1`}
-                                type="application/pdf"
-                                className="w-full h-full min-h-[400px] sm:min-h-[600px] md:min-h-[800px]"
-                            >
-                                <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4 text-center">
-                                    <p className="text-sm sm:text-base mb-2">No se puede mostrar la vista previa del PDF</p>
-                                    <a href={documentUrl} download className="text-blue-600 hover:underline">Descargar PDF</a>
-                                </div>
-                            </object>
-                        </div>
+                    <div className="h-full w-full bg-white overflow-hidden">
+                        <object
+                            data={`${documentUrl}#toolbar=0&navpanes=0&scrollbar=1`}
+                            type="application/pdf"
+                            className="w-full h-full block"
+                        >
+                            <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4 text-center">
+                                <p className="text-sm sm:text-base mb-2">No se puede mostrar la vista previa del PDF</p>
+                                <a href={documentUrl} download className="text-blue-600 hover:underline">Descargar PDF</a>
+                            </div>
+                        </object>
                     </div>
                 );
             case 'docx':
@@ -225,9 +223,8 @@ const CleanDocumentPreview = ({
                 <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white dark:bg-black rounded-lg sm:rounded-xl shadow-xl flex flex-col w-[98vw] h-[95vh] sm:w-[95vw] sm:h-[90vh] max-w-6xl mx-2 sm:mx-4 overflow-hidden">
                     
                     {/* Header */}
-                    <div className="flex justify-between items-center px-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-black">
+                    <div className="flex justify-between items-center px-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-black shrink-0">
                         
-                        {/* Zona Superior Izquierda: Menú de Pestañas */}
                         <div className="flex items-center space-x-6 min-w-0 flex-1 h-12">
                             <button
                                 onClick={() => setActiveTab('preview')}
@@ -246,7 +243,6 @@ const CleanDocumentPreview = ({
                             </button>
                         </div>
 
-                        {/* Botón Cerrar */}
                         <button
                             onClick={onClose}
                             className="p-2 ml-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex-shrink-0"
@@ -258,26 +254,29 @@ const CleanDocumentPreview = ({
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 relative">
+                    {/* Content Area con overflow corregido para PDF */}
+                    <div className={`flex-1 ${documentType === 'pdf' && activeTab === 'preview' ? 'overflow-hidden' : 'overflow-auto'} bg-gray-50 dark:bg-gray-900 relative`}>
                         {activeTab === 'preview' ? renderPreviewContent() : renderRespuestas()}
                     </div>
 
                     {/* Footer solo para Vista Previa en móvil */}
                     {activeTab === 'preview' && (
-                        <div className="sm:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-700 p-3 flex justify-between items-center">
-                            <span className="text-xs text-gray-500 uppercase font-bold">
-                                {documentType?.toUpperCase()}
-                            </span>
-                            <a
-                                href={documentUrl}
-                                download
-                                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
-                            >
-                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                Descargar
-                            </a>
+                        <div className="sm:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-700 p-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500">
+                                    {documentType?.toUpperCase()}
+                                </span>
+                                <a
+                                    href={documentUrl}
+                                    download
+                                    className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
+                                >
+                                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Descargar
+                                </a>
+                            </div>
                         </div>
                     )}
                 </div>
