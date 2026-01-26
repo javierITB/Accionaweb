@@ -51,7 +51,6 @@ const DocumentTemplateEditor = ({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        // Habilitamos negrita y cursiva
         underline: false,
       }),
       Underline,
