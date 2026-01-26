@@ -47,6 +47,7 @@ const DocumentTemplateEditor = ({
 }) => {
   const [staticVarsExpanded, setStaticVarsExpanded] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -76,6 +77,44 @@ const DocumentTemplateEditor = ({
     if (editor) {
       editor.chain().focus().insertContent(`<strong>${tag}</strong>`).run();
     }
+  };
+
+  // Efecto para controlar modo solo lectura (Vista Previa)
+  React.useEffect(() => {
+    if (editor) {
+      editor.setEditable(!isPreview);
+    }
+  }, [editor, isPreview]);
+
+  const generatePreviewHtml = (html) => {
+    let content = html;
+
+    // 1. Eliminar etiquetas de condicionales
+    content = content.replace(/<p>\[\[IF:.*?\]\]<\/p>/g, '');
+    content = content.replace(/<p>\[\[ENDIF\]\]<\/p>/g, '');
+    content = content.replace(/\[\[IF:.*?\]\]/g, '');
+    content = content.replace(/\[\[ENDIF\]\]/g, '');
+
+    const ORDINALES = [
+      "", "PRIMERO", "SEGUNDO", "TERCERO", "CUARTO", "QUINTO",
+      "SEXTO", "SÉPTIMO", "OCTAVO", "NOVENO", "DÉCIMO",
+      "UNDÉCIMO", "DUODÉCIMO", "DÉCIMO TERCERO", "DÉCIMO CUARTO",
+      "DÉCIMO QUINTO", "DÉCIMO SEXTO", "DÉCIMO SÉPTIMO",
+      "DÉCIMO OCTAVO", "DÉCIMO NOVENO", "VIGÉSIMO"
+    ];
+    let contadorNumeral = 1;
+
+    // 2. Reemplazar variables
+    content = content.replace(/{{([^}]+)}}/g, (match, varName) => {
+      if (varName === 'NUMERAL') {
+        const ordinal = ORDINALES[contadorNumeral] || `${contadorNumeral}°`;
+        contadorNumeral++;
+        return `<span class="font-bold text-black">${ordinal}</span>`;
+      }
+      return `<span class="text-gray-800 bg-gray-100 px-1 rounded" title="Variable: ${varName}">${varName.replace(/_/g, ' ')}</span>`;
+    });
+
+    return content;
   };
 
   if (!editor) return null;
@@ -170,7 +209,18 @@ const DocumentTemplateEditor = ({
         </div>
 
         <div className="flex gap-1 ml-auto">
-          <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => addVariable('{{NUMERAL}}')}>
+          <Button
+            variant={isPreview ? "default" : "outline"}
+            size="sm"
+            className={`h-8 text-[10px] font-bold ${isPreview ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600' : 'border-indigo-200 text-indigo-600'}`}
+            onClick={() => setIsPreview(!isPreview)}
+            title={isPreview ? "Volver a Edición" : "Ver documento final"}
+          >
+            <Icon name={isPreview ? "EyeOff" : "Eye"} size={14} className="mr-1" />
+            VISTA PREVIA
+          </Button>
+
+          <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => addVariable('{{NUMERAL}}')} disabled={isPreview}>
             + NUMERAL
           </Button>
           <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-blue-200 text-blue-600" onClick={() => {
@@ -268,15 +318,24 @@ const DocumentTemplateEditor = ({
 
         {/* AREA DE EDICION (HOJA) */}
         <div className="flex-1 bg-muted/30 p-8 overflow-y-auto flex justify-center">
-          <div className="w-full max-w-[850px] min-h-[1100px] bg-white shadow-2xl p-[2.5cm] rounded-sm border border-border">
+          <div className={`w-full max-w-[850px] min-h-[1100px] bg-white shadow-2xl p-[2.5cm] rounded-sm border border-border transition-all ${isPreview ? 'scale-[1.02] shadow-xl' : ''}`}>
             <style>{`
               .ProseMirror { outline: none; min-height: 100%; font-family: 'Arial', sans-serif; }
               .ProseMirror table { border-collapse: collapse; table-layout: fixed; width: 100%; margin: 1em 0; overflow: hidden; }
-              .ProseMirror td, .ProseMirror th { min-width: 1em; border: 1px dashed #ccc; padding: 10px; vertical-align: top; box-sizing: border-box; position: relative; }
+              .ProseMirror td, .ProseMirror th { min-width: 1em; border: 1px dashed ${isPreview ? 'transparent' : '#ccc'}; padding: 10px; vertical-align: top; box-sizing: border-box; position: relative; }
               .ProseMirror p { margin-bottom: 0.5em; line-height: 1.5; text-align: justify; }
               .ProseMirror .selectedCell:after { z-index: 2; background: rgba(200, 200, 255, 0.4); content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; }
+              /* Ocultar placeholders y otros elementos de edición en preview si fuera necesario */
             `}</style>
-            <EditorContent editor={editor} className="prose prose-sm max-w-none" />
+
+            {!isPreview ? (
+              <EditorContent editor={editor} className="prose prose-sm max-w-none" />
+            ) : (
+              <div
+                className="prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: generatePreviewHtml(editor.getHTML()) }}
+              />
+            )}
           </div>
         </div>
       </div>
