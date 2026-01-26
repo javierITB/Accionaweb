@@ -44,7 +44,7 @@ const DocumentTemplateEditor = ({
   templateData,
   onUpdateTemplateData
 }) => {
-  
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -56,10 +56,10 @@ const DocumentTemplateEditor = ({
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
     // Migración: Si venimos de párrafos, los unimos. Si ya es HTML, lo usamos.
-    content: templateData.documentContent || 
-             (templateData.paragraphs?.length > 0 
-              ? templateData.paragraphs.map(p => `<p>${p.content}</p>`).join('') 
-              : ''),
+    content: templateData.documentContent ||
+      (templateData.paragraphs?.length > 0
+        ? templateData.paragraphs.map(p => `<p>${p.content}</p>`).join('')
+        : ''),
     onUpdate: ({ editor }) => {
       onUpdateTemplateData('documentContent', editor.getHTML());
     },
@@ -93,12 +93,12 @@ const DocumentTemplateEditor = ({
 
   return (
     <div className="flex flex-col h-[calc(100vh-250px)] border rounded-xl bg-background shadow-lg overflow-hidden border-border">
-      
+
       {/* TOOLBAR PROFESIONAL */}
       <div className="flex flex-wrap items-center gap-2 p-2 border-b bg-muted/20">
-        
+
         {/* Selector de Fuente */}
-        <select 
+        <select
           className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
           onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
         >
@@ -107,7 +107,7 @@ const DocumentTemplateEditor = ({
         </select>
 
         {/* Selector de Tamaño */}
-        <select 
+        <select
           className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
           onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
         >
@@ -186,9 +186,9 @@ const DocumentTemplateEditor = ({
                     <button
                       key={v.title}
                       onClick={() => addVariable(tag)}
-                      className="text-left px-3 py-2 text-[11px] bg-orange-50 border border-orange-100 rounded shadow-sm hover:bg-orange-500 hover:text-white transition-all truncate"
+                      className="text-left px-3 py-2 text-[11px] bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded shadow-sm hover:bg-orange-500 hover:text-white dark:hover:bg-orange-600 transition-all truncate group"
                     >
-                      <span className="font-mono">{tag}</span>
+                      <span className="font-mono text-orange-700 dark:text-orange-300 group-hover:text-white">{tag}</span>
                     </button>
                   );
                 })}
