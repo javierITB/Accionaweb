@@ -67,9 +67,24 @@ const DocumentTemplateEditor = ({
       TableCell,
       TableHeader,
     ],
-    content: templateData.documentContent || '<p>Comienza a escribir el documento...</p>',
+    content: templateData.documentContent || (templateData.paragraphs && templateData.paragraphs.length > 0
+      ? templateData.paragraphs.map(p => {
+        let text = p.content;
+        if (p.conditionalVar) {
+          return `<p>[[IF:${p.conditionalVar}]]${text}[[ENDIF]]</p>`;
+        }
+        return `<p>${text}</p>`;
+      }).join('')
+      : '<p>Comienza a escribir el documento...</p>'),
     onUpdate: ({ editor }) => {
-      onUpdateTemplateData('documentContent', editor.getHTML());
+      const html = editor.getHTML();
+      onUpdateTemplateData('documentContent', html);
+
+      // Extraer primera línea como título
+      const titleText = editor.state.doc.firstChild?.textContent?.trim();
+      if (titleText && titleText !== 'Comienza a escribir el documento...') {
+        onUpdateTemplateData('documentTitle', titleText.substring(0, 50));
+      }
     },
   });
 
@@ -208,17 +223,20 @@ const DocumentTemplateEditor = ({
           )}
         </div>
 
-        <div className="flex gap-1 ml-auto">
-          <Button
-            variant={isPreview ? "default" : "outline"}
-            size="sm"
-            className={`h-8 text-[10px] font-bold ${isPreview ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600' : 'border-indigo-200 text-indigo-600'}`}
-            onClick={() => setIsPreview(!isPreview)}
-            title={isPreview ? "Volver a Edición" : "Ver documento final"}
-          >
-            <Icon name={isPreview ? "EyeOff" : "Eye"} size={14} className="mr-1" />
-            VISTA PREVIA
-          </Button>
+
+
+        <div className="flex gap-1 ml-auto items-center">
+          <div className="flex items-center gap-2 mr-3 border-r pr-3">
+            <span className={`text-[10px] font-bold ${!isPreview ? 'text-primary' : 'text-muted-foreground'}`}>EDICIÓN</span>
+            <button
+              className={`w-9 h-5 rounded-full px-0.5 transition-colors duration-200 flex items-center ${isPreview ? 'bg-primary' : 'bg-slate-300'}`}
+              onClick={() => setIsPreview(!isPreview)}
+              title="Alternar Vista Previa"
+            >
+              <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${isPreview ? 'translate-x-4' : 'translate-x-0'}`} />
+            </button>
+            <span className={`text-[10px] font-bold ${isPreview ? 'text-primary' : 'text-muted-foreground'}`}>VISTA PREVIA</span>
+          </div>
 
           <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => addVariable('{{NUMERAL}}')} disabled={isPreview}>
             + NUMERAL
@@ -317,22 +335,55 @@ const DocumentTemplateEditor = ({
         </div>
 
         {/* AREA DE EDICION (HOJA) */}
-        <div className="flex-1 bg-muted/30 p-8 overflow-y-auto flex justify-center">
-          <div className={`w-full max-w-[850px] min-h-[1100px] bg-white shadow-2xl p-[2.5cm] rounded-sm border border-border transition-all ${isPreview ? 'scale-[1.02] shadow-xl' : ''}`}>
+        <div className="editor-paper-container flex-1 bg-muted/30 overflow-y-auto">
+          <div className={`w-full max-w-[216mm] transition-all ${isPreview ? 'scale-[1.02]' : ''}`}>
             <style>{`
-              .ProseMirror { outline: none; min-height: 100%; font-family: 'Arial', sans-serif; }
-              .ProseMirror table { border-collapse: collapse; table-layout: fixed; width: 100%; margin: 1em 0; overflow: hidden; }
-              .ProseMirror td, .ProseMirror th { min-width: 1em; border: 1px dashed ${isPreview ? 'transparent' : '#ccc'}; padding: 10px; vertical-align: top; box-sizing: border-box; position: relative; }
+              /* Contenedor del área de edición */
+              .editor-paper-container {
+                background-color: #f0f2f5; /* Fondo gris para resaltar la "hoja" */
+                padding: 40px 0;
+                display: flex;
+                justify-content: center;
+              }
+
+              /* La "Hoja" de papel */
+              .ProseMirror {
+                outline: none;
+                background: white;
+                width: 216mm; /* Ancho Carta */
+                min-height: 279mm; /* Alto Carta Mínimo */
+                padding: 2.5cm; /* Márgenes físicos del documento */
+                margin: 0 auto;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                position: relative;
+                font-family: 'Arial', sans-serif;
+              }
+
+              /* Ajustes para tablas y párrafos */
               .ProseMirror p { margin-bottom: 0.5em; line-height: 1.5; text-align: justify; }
+              .ProseMirror table { margin: 1em 0; border-collapse: collapse; table-layout: fixed; width: 100%; overflow: hidden; }
+              .ProseMirror td, .ProseMirror th { min-width: 1em; border: 1px dashed ${isPreview ? 'transparent' : '#ccc'}; padding: 10px; vertical-align: top; box-sizing: border-box; position: relative; }
               .ProseMirror .selectedCell:after { z-index: 2; background: rgba(200, 200, 255, 0.4); content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; }
-              /* Ocultar placeholders y otros elementos de edición en preview si fuera necesario */
+
+              /* Adaptación para Vista Previa */
+              .preview-page {
+                outline: none;
+                background: white;
+                width: 216mm;
+                min-height: 279mm;
+                padding: 2.5cm;
+                margin: 0 auto;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                position: relative;
+                font-family: 'Arial', sans-serif;
+              }
             `}</style>
 
             {!isPreview ? (
               <EditorContent editor={editor} className="prose prose-sm max-w-none" />
             ) : (
               <div
-                className="prose prose-sm max-w-none"
+                className="prose prose-sm max-w-none preview-page"
                 dangerouslySetInnerHTML={{ __html: generatePreviewHtml(editor.getHTML()) }}
               />
             )}

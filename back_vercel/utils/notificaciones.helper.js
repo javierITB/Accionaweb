@@ -1,19 +1,11 @@
 // routes/notificaciones.helper.js - VERSIÓN CORREGIDA
 const { ObjectId } = require("mongodb");
-const { createBlindIndex } = require("./seguridad.helper");
+const { createBlindIndex, decrypt } = require("./seguridad.helper");
 
 /**
  * Añade una notificación a uno o varios usuarios
  * @param {Db} db - Conexión activa a MongoDB
- * @param {Object} options - Configuración de la notificación
- * @param {string} [options.userId] - ID del usuario destino
- * @param {Object} [options.filtro] - Filtro para múltiples usuarios
- * @param {string} options.titulo - Título de la notificación
- * @param {string} options.descripcion - Descripción de la notificación
- * @param {number} [options.prioridad=1] - Nivel de prioridad
- * @param {string} [options.color="#f5872dff"] - Color de acento
- * @param {string} [options.icono="paper"] - Icono de referencia
- * @param {string|null} [options.actionUrl=null] - URL o ruta asociada
+ * ...
  */
 async function addNotification(
   db,
@@ -44,8 +36,8 @@ async function addNotification(
     fecha_creacion: new Date(),
   };
 
-  let query;
-  
+  let query = {};
+
   // Si es usuario específico
   if (userId) {
     try {
@@ -53,67 +45,81 @@ async function addNotification(
       query = { _id: new ObjectId(userId) };
     } catch (error) {
       // Si no es ObjectId válido, asumir que es email
-      // Usar mail_index (hash determinístico del email)
       const mailIndex = createBlindIndex(userId);
       query = { mail_index: mailIndex };
     }
-  } 
+  }
   // Si es por filtro
   else if (filtro) {
-    query = { estado: 'activo' };
-    const andConditions = [];
-    
-    // CASO 1: Filtro con estructura compleja (desde anuncios.js)
+    const encryptedFields = ['rol', 'cargo', 'empresa', 'mail', 'nombre', 'apellido'];
+
+    let dbQuery = { estado: 'activo' }; // Base query
+    let memoryFilters = [];
+
+    // Helper para procesar condiciones - Separar DB vs Memoria
+    const processCondition = (key, value) => {
+      if (encryptedFields.includes(key)) {
+        memoryFilters.push({ key, value });
+      } else {
+        // DB Query Normal logic
+        if (value && value.$in) {
+          // ya viene formateado
+          dbQuery[key] = value;
+        } else if (Array.isArray(value)) {
+          dbQuery[key] = { $in: value };
+        } else {
+          dbQuery[key] = value;
+        }
+      }
+    };
+
+    // CASO 1: Filtro con estructura compleja (desde anuncios.js - $and)
     if (filtro.$and && Array.isArray(filtro.$and)) {
       filtro.$and.forEach(condition => {
         Object.keys(condition).forEach(key => {
-          const value = condition[key];
-          
-          // Si es búsqueda por $in (ej: empresas: ["Empresa A", "Empresa B"])
-          if (value.$in && Array.isArray(value.$in)) {
-            const fieldName = key;
-            const fieldValues = value.$in;
-            
-            // Para empresa, cargo, rol (NO cifrados) podemos buscar directamente
-            andConditions.push({ [fieldName]: { $in: fieldValues } });
-          }
-          // Si es búsqueda por igualdad simple
-          else if (typeof value === 'string') {
-            andConditions.push({ [key]: value });
-          }
+          processCondition(key, condition[key]);
         });
       });
     }
-    // CASO 2: Filtro simple (desde otros endpoints) - Ej: { cargo: "RRHH" }, { rol: "admin" }
+    // CASO 2: Filtro simple
     else {
       Object.keys(filtro).forEach(key => {
-        const value = filtro[key];
-        
-        // Manejar diferentes tipos de valores
-        if (Array.isArray(value)) {
-          // Si es array, usar $in
-          andConditions.push({ [key]: { $in: value } });
-        } else if (typeof value === 'string') {
-          // Si es string simple, usar igualdad
-          andConditions.push({ [key]: value });
-        } else if (value && typeof value === 'object') {
-          // Si ya es un operador MongoDB (como $in, $eq, etc.)
-          andConditions.push({ [key]: value });
-        }
+        processCondition(key, filtro[key]);
       });
     }
-    
-    // Si hay condiciones AND, agregarlas al query
-    if (andConditions.length > 0) {
-      query.$and = andConditions;
+
+    // Si NO hay filtros de memoria, usamos el query directo (optimizado)
+    if (memoryFilters.length === 0) {
+      query = dbQuery;
+    } else {
+      // Si HAY filtros de memoria, debemos traer los candidatos y filtrar en JS
+      // 1. Traer candidatos (filtrados por lógicas de DB como 'estado')
+      const candidates = await db.collection("usuarios").find(dbQuery).toArray();
+
+      const matchingIds = [];
+
+      for (const u of candidates) {
+        let match = true;
+
+        for (const filter of memoryFilters) {
+          matchingIds.push(u._id);
+        }
+      }
+
+      // Si nadie coincide, forzamos un query que no devuelva nada
+      if (matchingIds.length === 0) {
+        return { notificacion, modifiedCount: 0 };
+      }
+
+      query = { _id: { $in: matchingIds } };
     }
   }
 
-  
+
   const result = await db.collection("usuarios").updateMany(query, {
     $push: { notificaciones: notificacion },
   });
-  
+
   return { notificacion, modifiedCount: result.modifiedCount };
 }
 

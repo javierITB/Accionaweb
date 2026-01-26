@@ -112,6 +112,7 @@ const FormBuilder = () => {
           section: data.section || '',
           status: data.status || 'borrador',
           companies: data.companies || [],
+          documentContent: data.documentContent || '',
 
           documentTitle: data.documentTitle || '',
           paragraphs: data.paragraphs || [],
@@ -204,6 +205,7 @@ const FormBuilder = () => {
       id: existingTemplateData._id || existingTemplateData.id,
       formId: selectedFormId,
       documentTitle: existingTemplateData.documentTitle,
+      documentContent: existingTemplateData.documentContent,
       paragraphs: existingTemplateData.paragraphs,
       signature1Text: existingTemplateData.signature1Text,
       signature2Text: existingTemplateData.signature2Text,
