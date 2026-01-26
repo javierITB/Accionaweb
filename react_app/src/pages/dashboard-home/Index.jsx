@@ -13,7 +13,7 @@ const DashboardHome = () => {
    const [rawData, setRawData] = useState(null);
    const [metrics, setMetrics] = useState(null);
    const [isGlobalTime, setIsGlobalTime] = useState(false); // Default: Esta Semana
-   // const [timeUnit, setTimeUnit] = useState("dias"); // Deprecated: Smart formatting used instead
+   const [chartOffset, setChartOffset] = useState(0);
 
    // Paleta para gráfico de torta
    // Mapeo de colores específico por estado (Hex codes para Recharts)
@@ -139,8 +139,12 @@ const DashboardHome = () => {
 
       for (let i = 6; i >= 0; i--) {
          const d = new Date(now);
-         d.setDate(d.getDate() - i);
+         d.setDate(d.getDate() - i - (chartOffset * 7));
+
          const dayName = daysName[d.getDay()];
+         const dayNum = String(d.getDate()).padStart(2, '0');
+         const monthNum = String(d.getMonth() + 1).padStart(2, '0');
+         const dateLabel = `${dayName} ${dayNum}/${monthNum}`;
 
          // Contar solicitudes de ese día
          const localDateStr = d.toLocaleDateString('en-CA');
@@ -152,15 +156,16 @@ const DashboardHome = () => {
 
 
          weeklyPerformance.push({
-            name: dayName,
+            name: dateLabel, // Recharts usa 'name' como eje X por defecto
+            dayNameRaw: dayName, // Para filtro
             solicitudes: count,
             fullDate: localDateStr
          });
       }
 
-      // Filtrar Domingo si no tiene solicitudes, mantener Lun-Sab siempre
+      // Filtrar Domingo si no tiene solicitudes
       const finalWeeklyPerformance = weeklyPerformance.filter(d => {
-         if (d.name === 'Dom' && d.solicitudes === 0) return false;
+         if (d.dayNameRaw === 'Dom' && d.solicitudes === 0) return false;
          return true;
       });
 
@@ -175,7 +180,7 @@ const DashboardHome = () => {
          weeklyPerformance: finalWeeklyPerformance
       };
 
-   }, [rawData]);
+   }, [rawData, chartOffset]);
 
    useEffect(() => {
       if (processedMetrics) {
@@ -326,7 +331,35 @@ const DashboardHome = () => {
 
                   {/* Gráfico de Barras */}
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg transition-colors">
-                     <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Solicitudes por Día (Últimos 7 días)</h3>
+                     <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                           {(() => {
+                              if (chartOffset === 0) return "Solicitudes por Día (Última Semana)";
+                              const now = new Date();
+                              const startDate = new Date(now);
+                              startDate.setDate(startDate.getDate() - 6 - (chartOffset * 7));
+                              const dateStr = startDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+                              return `Semana del ${dateStr}`;
+                           })()}
+                        </h3>
+                        <div className="flex gap-2">
+                           <button
+                              onClick={() => setChartOffset(prev => prev + 1)}
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-500 transition-colors"
+                              title="Semana Anterior"
+                           >
+                              <Icon name="ChevronLeft" size={20} />
+                           </button>
+                           <button
+                              onClick={() => setChartOffset(prev => Math.max(0, prev - 1))}
+                              disabled={chartOffset === 0}
+                              className={`p-1 rounded-md transition-colors ${chartOffset === 0 ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                              title="Semana Siguiente"
+                           >
+                              <Icon name="ChevronRight" size={20} />
+                           </button>
+                        </div>
+                     </div>
                      <div className="h-56 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                            <BarChart data={performanceData}>
@@ -410,34 +443,39 @@ const DashboardHome = () => {
 };
 
 const TimeMetricItem = ({ label, value, globalValue, color, showComparison }) => {
-
    const formatSmart = (v) => {
-      if (v === null || v === undefined) return { val: "-", unit: "" };
+      if (v === null || v === undefined) return { val: "-", unit: "", fullText: "" };
 
       const vNum = parseFloat(v);
       if (vNum < 24) {
          return { val: vNum.toFixed(1), unit: "hrs", rawDays: vNum / 24 };
       } else {
-         return { val: (vNum / 24).toFixed(1), unit: "días", rawDays: vNum / 24 };
+         const days = Math.floor(vNum / 24);
+         const remHours = Math.round(vNum % 24);
+
+         const dayText = `${days} día${days !== 1 ? 's' : ''}`;
+         const hourText = remHours > 0 ? ` ${remHours} hr${remHours !== 1 ? 's' : ''}` : '';
+
+         return { val: dayText + hourText, unit: "", rawDays: vNum / 24, isText: true };
       }
    };
 
    const current = formatSmart(value);
    const global = formatSmart(globalValue);
 
-   const maxScaleDays = 30; // 30 días como 100%
+   const maxScaleDays = 30;
    const currentDays = value ? (value / 24) : 0;
    const widthPerc = Math.min((currentDays / maxScaleDays) * 100, 100);
 
    let comparison = null;
    if (showComparison && value !== null && globalValue !== null) {
-      // Comparar en HORAS (unidad base)
       const diff = globalValue - value;
-      // Si diff > 0, actual es MENOR (más rápido)
 
-      if (Math.abs(diff) > 0.1) { // 0.1 horas umbral
-         const formattedDiff = formatSmart(Math.abs(diff));
-         const diffText = `${formattedDiff.val} ${formattedDiff.unit}`;
+      if (Math.abs(diff) > 0.1) {
+         const diffAbs = Math.abs(diff);
+         let diffText = "";
+         if (diffAbs < 24) diffText = `${diffAbs.toFixed(1)} hrs`;
+         else diffText = `${(diffAbs / 24).toFixed(1)} días`;
 
          if (diff > 0) comparison = { text: `${diffText} más rápido`, color: "text-emerald-500", icon: "TrendingUp" };
          else comparison = { text: `${diffText} más lento`, color: "text-red-500", icon: "TrendingDown" };
@@ -453,8 +491,10 @@ const TimeMetricItem = ({ label, value, globalValue, color, showComparison }) =>
             <Icon name="Clock" size={14} className="text-gray-400 dark:text-gray-500" />
          </div>
          <div className="flex items-end gap-1 mb-3">
-            <span className="text-3xl font-bold text-gray-900 dark:text-white">{current.val}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">{current.unit}</span>
+            <span className={`font-bold text-gray-900 dark:text-white ${current.isText ? 'text-xl' : 'text-3xl'}`}>
+               {current.val}
+            </span>
+            {!current.isText && <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">{current.unit}</span>}
          </div>
          <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden mb-2">
             <div className={`h-full ${color}`} style={{ width: `${widthPerc}%` }}></div>
