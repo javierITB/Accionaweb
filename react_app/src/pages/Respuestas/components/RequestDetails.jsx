@@ -83,7 +83,6 @@ const RequestDetails = ({
 
    const fetchApprovedData = async (responseId) => {
       setIsLoadingApprovedData(true);
-      setIsLoadingApprovedData(true);
       try {
          const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/data-approved/${responseId}`);
          if (response.ok) {
@@ -288,49 +287,38 @@ const RequestDetails = ({
       };
    }, [previewDocument]);
 
-const handleStatusChange = async (newStatus) => {
-  try {
-    const response = await apiFetch(
-      `${API_BASE_URL}/${endpointPrefix}/${request._id}/status`,
-      {
-        method: "PUT",
-        body: JSON.stringify({ status: newStatus }),
+   const handleStatusChange = async (newStatus) => {
+      try {
+         const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/status`, {
+            method: "PUT",
+            body: JSON.stringify({ status: newStatus }),
+         });
+
+         const data = await response.json();
+
+         if (!response.ok) {
+            throw new Error(data.error || "No se pudo cambiar el estado");
+         }
+
+         // Si hay onUpdate, normaliza los datos
+         if (onUpdate && data.updatedRequest) {
+            const normalizedRequest = {
+               ...data.updatedRequest,
+               submittedBy: data.updatedRequest.user?.nombre || data.updatedRequest.submittedBy || "Usuario Desconocido",
+               company: data.updatedRequest.user?.empresa || data.updatedRequest.company || "Empresa Desconocida",
+               submittedAt: data.updatedRequest.submittedAt || data.updatedRequest.createdAt,
+            };
+
+            onUpdate(normalizedRequest);
+            setFullRequestData(normalizedRequest);
+         }
+
+         return `Estado cambiado a "${newStatus}"`;
+      } catch (err) {
+         console.error("Error cambiando estado:", err);
+         throw new Error(err.message || "Error cambiando estado");
       }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "No se pudo cambiar el estado");
-    }
-
-    // Si hay onUpdate, normaliza los datos
-    if (onUpdate && data.updatedRequest) {
-      const normalizedRequest = {
-        ...data.updatedRequest,
-        submittedBy:
-          data.updatedRequest.user?.nombre ||
-          data.updatedRequest.submittedBy ||
-          "Usuario Desconocido",
-        company:
-          data.updatedRequest.user?.empresa ||
-          data.updatedRequest.company ||
-          "Empresa Desconocida",
-        submittedAt:
-          data.updatedRequest.submittedAt || data.updatedRequest.createdAt,
-      };
-
-      onUpdate(normalizedRequest);
-      setFullRequestData(normalizedRequest);
-    }
-
-    return `Estado cambiado a "${newStatus}"`;
-  } catch (err) {
-    console.error("Error cambiando estado:", err);
-    throw new Error(err.message || "Error cambiando estado");
-  }
-};
-
+   };
 
    const getPreviousStatus = (currentStatus) => {
       const statusFlow = ["pendiente", "en_revision", "aprobado", "firmado", "finalizado", "archivado"];
@@ -656,34 +644,26 @@ const handleStatusChange = async (newStatus) => {
       const totalApprovedFiles = approvedData?.correctedFiles?.length || 0;
       const currentlySelectedFiles = correctedFiles.length;
       const newFilesCount = pdfFiles.length;
-      const totalAfterSelection = totalApprovedFiles + currentlySelectedFiles + newFilesCount;
 
-      // 1. Validar límite de cantidad de archivos
-      if (totalAfterSelection > MAX_FILES) {
-         const message = `Máximo ${MAX_FILES} archivos permitidos. 
-Ya tienes ${totalApprovedFiles} archivo(s) aprobado(s) y ${currentlySelectedFiles} archivo(s) seleccionado(s).
-Puedes agregar máximo ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles} archivo(s) más.`;
-         openInfoDialog(message);
+      const remainingSlots = MAX_FILES - totalApprovedFiles - currentlySelectedFiles;
+
+      // 1. Validar límite total de archivos
+      if (newFilesCount > remainingSlots) {
+         openInfoDialog(
+            `Máximo ${MAX_FILES} archivos permitidos.
+Ya tienes ${totalApprovedFiles} aprobado(s) y ${currentlySelectedFiles} seleccionado(s).
+Puedes agregar máximo ${remainingSlots} archivo(s) más.`,
+         );
          event.target.value = "";
          return;
       }
 
-      // 2. Validar tamaño de cada archivo
+      // 2. Validar tamaño por archivo
       const oversizedFiles = pdfFiles.filter((file) => file.size > MAX_FILE_SIZE);
+
       if (oversizedFiles.length > 0) {
-         const oversizedNames = oversizedFiles.map((f) => f.name).join(", ");
-         openInfoDialog(`Los siguientes archivos exceden el límite de 1MB: ${oversizedNames}`);
-         event.target.value = "";
-         return;
-      }
-
-      // 3. Validar que no exceda el límite por archivo
-      const totalFilesAfterAdding = totalApprovedFiles + currentlySelectedFiles + pdfFiles.length;
-      if (totalFilesAfterAdding > MAX_FILES) {
-        const message = `No puedes agregar ${pdfFiles.length} archivo(s). 
-        Solo puedes agregar ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles} archivo(s) más.`
-
-        openInfoDialog(message);
+         const names = oversizedFiles.map((f) => f.name).join(", ");
+         openInfoDialog(`Los siguientes archivos exceden el límite de 1MB: ${names}`);
          event.target.value = "";
          return;
       }
@@ -799,8 +779,8 @@ Puedes agregar máximo ${MAX_FILES - totalApprovedFiles - currentlySelectedFiles
       if (!canAddMoreFiles()) {
          const message = `No puedes agregar más archivos. 
 Ya tienes ${approvedData?.correctedFiles?.length || 0} archivo(s) aprobado(s) y ${correctedFiles.length} archivo(s) seleccionado(s).
-Máximo permitido: ${MAX_FILES} archivos.`
-          openInfoDialog(message);
+Máximo permitido: ${MAX_FILES} archivos.`;
+         openInfoDialog(message);
 
          return;
       }
@@ -874,7 +854,7 @@ Máximo permitido: ${MAX_FILES} archivos.`
          // alert(`Archivo "${fileName}" marcado para eliminación. Presiona "Actualizar" para aplicar los cambios.`);
       } catch (error) {
          console.error("Error marcando archivo para eliminación:", error);
-         openErrorDialog("Error marcando archivo para eliminación"); 
+         openErrorDialog("Error marcando archivo para eliminación");
       } finally {
          setIsDeletingFile(null);
       }
@@ -942,97 +922,95 @@ Máximo permitido: ${MAX_FILES} archivos.`
       }
    };
 
-const handleApprove = async () => {
-  // 1️⃣ Validaciones previas
-  if (correctedFiles.length === 0) {
-    throw new Error("Debe subir al menos un archivo PDF para aprobar");
-  }
-
-  if (correctedFiles.length > MAX_FILES) {
-    throw new Error(
-      `Máximo ${MAX_FILES} archivos permitidos. Tienes ${correctedFiles.length} archivos.`
-    );
-  }
-
-  const oversizedFiles = correctedFiles.filter(f => f.size > MAX_FILE_SIZE);
-  if (oversizedFiles.length > 0) {
-    throw new Error(
-      `No se puede aprobar. Los siguientes archivos exceden 1MB: ${oversizedFiles.map(f => f.name).join(", ")}`
-    );
-  }
-
-  if (isApproving || ["aprobado", "firmado"].includes(request?.status)) {
-    return "Formulario ya aprobado o firmado";
-  }
-
-  setIsApproving(true);
-  setIsUploading(true);
-
-  try {
-    // 2️⃣ Subir archivos uno por uno
-    const uploadSuccess = await uploadFilesOneByOne();
-    if (!uploadSuccess) {
-      throw new Error("Error subiendo archivos. No se pudo aprobar.");
-    }
-
-    // 3️⃣ Esperar un momento para asegurar persistencia
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // 4️⃣ Aprobar el formulario
-    let approveResponse = await apiFetch(
-      `${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }
-    );
-
-    const handleUpdate = async () => {
-      if (!onUpdate) return;
-
-      const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
-      if (updatedResponse.ok) {
-        const updatedRequest = await updatedResponse.json();
-        const normalizedRequest = {
-          ...updatedRequest,
-          submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
-          company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
-          submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
-        };
-        onUpdate(normalizedRequest);
+   const handleApprove = async () => {
+      // 1️⃣ Validaciones previas
+      if (correctedFiles.length === 0) {
+         throw new Error("Debe subir al menos un archivo PDF para aprobar");
       }
-      fetchApprovedData(request._id);
-    };
 
-    if (!approveResponse.ok) {
-      const errorData = await approveResponse.json();
-      // Reintento si no encuentra archivos
-      if (errorData.error?.includes("No hay archivos corregidos")) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        approveResponse = await apiFetch(
-          `${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`,
-          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }
-        );
-        if (!approveResponse.ok) {
-          const retryError = await approveResponse.json();
-          throw new Error(`Error en reintento: ${retryError.error}`);
-        }
-      } else {
-        throw new Error(`Error aprobando: ${errorData.error}`);
+      if (correctedFiles.length > MAX_FILES) {
+         throw new Error(`Máximo ${MAX_FILES} archivos permitidos. Tienes ${correctedFiles.length} archivos.`);
       }
-    }
 
-    // 5️⃣ Si todo salió bien
-    await handleUpdate();
-    setCorrectedFiles([]);
-    return `✅ Formulario aprobado exitosamente\n${correctedFiles.length} archivo(s) subido(s)`;
+      const oversizedFiles = correctedFiles.filter((f) => f.size > MAX_FILE_SIZE);
+      if (oversizedFiles.length > 0) {
+         throw new Error(
+            `No se puede aprobar. Los siguientes archivos exceden 1MB: ${oversizedFiles.map((f) => f.name).join(", ")}`,
+         );
+      }
 
-  } catch (err) {
-    console.error("Error aprobando formulario:", err);
-    throw new Error(err.message || "Error aprobando formulario");
-  } finally {
-    setIsApproving(false);
-    setIsUploading(false);
-  }
-};
+      if (isApproving || ["aprobado", "firmado"].includes(request?.status)) {
+         return "Formulario ya aprobado o firmado";
+      }
 
+      setIsApproving(true);
+      setIsUploading(true);
+
+      try {
+         // 2️⃣ Subir archivos uno por uno
+         const uploadSuccess = await uploadFilesOneByOne();
+         if (!uploadSuccess) {
+            throw new Error("Error subiendo archivos. No se pudo aprobar.");
+         }
+
+         // 3️⃣ Esperar un momento para asegurar persistencia
+         await new Promise((resolve) => setTimeout(resolve, 1000));
+
+         // 4️⃣ Aprobar el formulario
+         let approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+         });
+
+         const handleUpdate = async () => {
+            if (!onUpdate) return;
+
+            const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
+            if (updatedResponse.ok) {
+               const updatedRequest = await updatedResponse.json();
+               const normalizedRequest = {
+                  ...updatedRequest,
+                  submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
+                  company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
+                  submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
+               };
+               onUpdate(normalizedRequest);
+            }
+            fetchApprovedData(request._id);
+         };
+
+         if (!approveResponse.ok) {
+            const errorData = await approveResponse.json();
+            // Reintento si no encuentra archivos
+            if (errorData.error?.includes("No hay archivos corregidos")) {
+               await new Promise((resolve) => setTimeout(resolve, 3000));
+               approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/approve`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({}),
+               });
+               if (!approveResponse.ok) {
+                  const retryError = await approveResponse.json();
+                  throw new Error(`Error en reintento: ${retryError.error}`);
+               }
+            } else {
+               throw new Error(`Error aprobando: ${errorData.error}`);
+            }
+         }
+
+         // 5️⃣ Si todo salió bien
+         await handleUpdate();
+         setCorrectedFiles([]);
+         return `✅ Formulario aprobado exitosamente\n${correctedFiles.length} archivo(s) subido(s)`;
+      } catch (err) {
+         console.error("Error aprobando formulario:", err);
+         throw new Error(err.message || "Error aprobando formulario");
+      } finally {
+         setIsApproving(false);
+         setIsUploading(false);
+      }
+   };
 
    const handleApprovewithoutFile = async () => {
       if (isApproving || request?.status === "finalizado")
@@ -2088,13 +2066,13 @@ const handleApprove = async () => {
                               variant="ghost"
                               size="icon"
                               onClick={() => {
-                                openAsyncDialog({
-                                   title: `¿Estás seguro de que quieres cambiar el estado a '${getPreviousStatus(fullRequestData?.status)}'?`,
-                                   loadingText: `Cambiando estado a "${getPreviousStatus(fullRequestData?.status)}"...`,
-                                   successText: `Estado cambiado a "${getPreviousStatus(fullRequestData?.status)}" correctamente`,
-                                   errorText: `No se pudo cambiar el estado a "${getPreviousStatus(fullRequestData?.status)}"`,
-                                   onConfirm: () => handleStatusChange(getPreviousStatus(fullRequestData?.status)),
-                                });
+                                 openAsyncDialog({
+                                    title: `¿Estás seguro de que quieres cambiar el estado a '${getPreviousStatus(fullRequestData?.status)}'?`,
+                                    loadingText: `Cambiando estado a "${getPreviousStatus(fullRequestData?.status)}"...`,
+                                    successText: `Estado cambiado a "${getPreviousStatus(fullRequestData?.status)}" correctamente`,
+                                    errorText: `No se pudo cambiar el estado a "${getPreviousStatus(fullRequestData?.status)}"`,
+                                    onConfirm: () => handleStatusChange(getPreviousStatus(fullRequestData?.status)),
+                                 });
                               }}
                               disabled={!getPreviousStatus(fullRequestData?.status)}
                               iconName="ChevronLeft"
@@ -2115,13 +2093,13 @@ const handleApprove = async () => {
                               variant="ghost"
                               size="icon"
                               onClick={() => {
-                                openAsyncDialog({
-                                   title: `¿Estás seguro de que quieres cambiar el estado a '${getNextStatus(fullRequestData?.status)}'?`,
-                                   loadingText: `Cambiando estado a "${getNextStatus(fullRequestData?.status)}"...`,
-                                   successText: `Estado cambiado a "${getNextStatus(fullRequestData?.status)}" correctamente`,
-                                   errorText: `No se pudo cambiar el estado a "${getNextStatus(fullRequestData?.status)}"`,
-                                   onConfirm: () => handleStatusChange(getNextStatus(fullRequestData?.status)),
-                                });
+                                 openAsyncDialog({
+                                    title: `¿Estás seguro de que quieres cambiar el estado a '${getNextStatus(fullRequestData?.status)}'?`,
+                                    loadingText: `Cambiando estado a "${getNextStatus(fullRequestData?.status)}"...`,
+                                    successText: `Estado cambiado a "${getNextStatus(fullRequestData?.status)}" correctamente`,
+                                    errorText: `No se pudo cambiar el estado a "${getNextStatus(fullRequestData?.status)}"`,
+                                    onConfirm: () => handleStatusChange(getNextStatus(fullRequestData?.status)),
+                                 });
                               }}
                               disabled={!getNextStatus(fullRequestData?.status)}
                               iconName="ChevronRight"
