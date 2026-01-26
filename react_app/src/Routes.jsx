@@ -23,6 +23,7 @@ import AdminTickets from './pages/Tickets/Index.jsx';
 import Users from './pages/users/Index.jsx';
 import Empresas from './pages/empresas/Index.jsx';
 import Ingresos from './pages/Ingresos/Index.jsx';
+import Registro from './pages/registro/Index.jsx';
 import SetPassword from './pages/users/components/SetPassword.jsx';
 import Solicitudes from './pages/solicitudes/Index.jsx';
 import DomicilioVirtualIndex from './pages/DomicilioVirtual/Index.jsx';
@@ -64,6 +65,8 @@ const Routes = () => {
           <Route path="/RespuestasForms" element={<ProtectedRoute><RespuestasForms /></ProtectedRoute>} />
           <Route path="/Tickets" element={<ProtectedRoute><AdminTickets /></ProtectedRoute>} />
           <Route path="/registro-ingresos" element={<ProtectedRoute><Ingresos /></ProtectedRoute>} />
+          <Route path="/registro-cambios" element={<ProtectedRoute><Registro /></ProtectedRoute>} />
+
 
           <Route path="/users" element={<ProtectedRoute> <Users /> </ProtectedRoute>} />
           <Route path="/empresas" element={<ProtectedRoute> <Empresas /> </ProtectedRoute>} />

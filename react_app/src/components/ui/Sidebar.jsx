@@ -43,6 +43,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          children: [
             { name: "Usuarios", path: "/users", icon: "User", roles: ["admin", "RRHH"] },
             { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["admin", "RRHH"] },
+            { name: "Registro de cambios", path: "/registro-cambios", icon: "FileText", roles: ["admin", "RRHH"] },
          ]
       },
    ];
