@@ -44,7 +44,8 @@ const DocumentTemplateEditor = ({
   templateData,
   onUpdateTemplateData
 }) => {
-  
+  const [staticVarsExpanded, setStaticVarsExpanded] = useState(true);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -57,13 +58,15 @@ const DocumentTemplateEditor = ({
       FontFamily,
       FontSize,
       Image,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TextAlign.configure({ 
+        types: ['heading', 'paragraph', 'tableCell', 'tableHeader'] 
+      }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableCell,
+      TableHeader,
     ],
-    // Migración: Si venimos de párrafos, los unimos. Si ya es HTML, lo usamos.
-    content: templateData.documentContent || 
-             (templateData.paragraphs?.length > 0 
-              ? templateData.paragraphs.map(p => `<p>${p.content}</p>`).join('') 
-              : ''),
+    content: templateData.documentContent || '<p>Comienza a escribir el documento...</p>',
     onUpdate: ({ editor }) => {
       onUpdateTemplateData('documentContent', editor.getHTML());
     },
@@ -89,10 +92,8 @@ const DocumentTemplateEditor = ({
   return (
     <div className="flex flex-col h-[calc(100vh-250px)] border rounded-xl bg-background shadow-lg overflow-hidden border-border">
       
-      {/* TOOLBAR PROFESIONAL */}
+      {/* BARRA DE HERRAMIENTAS */}
       <div className="flex flex-wrap items-center gap-2 p-2 border-b bg-muted/20">
-        
-        {/* Selector de Fuente */}
         <select 
           className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
           onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
@@ -101,7 +102,6 @@ const DocumentTemplateEditor = ({
           {fontFamilies.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
 
-        {/* Selector de Tamaño */}
         <select 
           className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
           onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
@@ -197,21 +197,33 @@ const DocumentTemplateEditor = ({
 
             {/* Variables Generales Reintegradas */}
             <div>
-              <h3 className="text-[10px] font-bold uppercase text-orange-500 mb-3 tracking-widest">Generales</h3>
-              <div className="grid grid-cols-1 gap-1.5">
-                {staticVariables.map(v => {
-                  const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
-                  return (
-                    <button
-                      key={v.title}
-                      onClick={() => addVariable(tag)}
-                      className="text-left px-3 py-2 text-[11px] bg-orange-50 border border-orange-100 rounded shadow-sm hover:bg-orange-500 hover:text-white transition-all truncate"
-                    >
-                      <span className="font-mono">{tag}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <button 
+                onClick={() => setStaticVarsExpanded(!staticVarsExpanded)}
+                className="w-full flex items-center justify-between text-[10px] font-bold uppercase text-orange-600 mb-3 tracking-widest hover:bg-orange-50 p-1 rounded transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <Icon name="Globe" size={12} /> Variables Generales
+                </span>
+                <Icon name={staticVarsExpanded ? "ChevronUp" : "ChevronDown"} size={12} />
+              </button>
+              
+              {staticVarsExpanded && (
+                <div className="grid grid-cols-1 gap-1.5 animate-in fade-in slide-in-from-top-1">
+                  {staticVariables.map(v => {
+                    const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
+                    return (
+                      <button
+                        key={v.title}
+                        onClick={() => addVariable(tag)}
+                        className="text-left px-3 py-2 text-[11px] bg-orange-50 border border-orange-100 rounded shadow-sm hover:bg-orange-500 hover:text-white transition-all truncate"
+                        title={tag}
+                      >
+                        <span className="font-mono">{tag}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
