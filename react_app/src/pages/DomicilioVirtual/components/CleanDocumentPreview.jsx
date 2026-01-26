@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as mammoth from 'mammoth';
 
 const CleanDocumentPreview = ({
@@ -35,15 +35,25 @@ const CleanDocumentPreview = ({
                     const result = await mammoth.convertToHtml({
                         arrayBuffer
                     }, {
+                        // FIX: :fresh evita que los párrafos se junten y respeta el orden original
+                        styleMap: [
+                            "p[style-name='Title'] => h1:fresh",
+                            "p[style-name='Heading 1'] => h2:fresh",
+                            "p => p:fresh",
+                            "table => table:fresh"
+                        ],
                         preserveHardBreaks: true,
-                        includeDefaultStyleMap: false
+                        includeDefaultStyleMap: true
                     });
 
+                    // FIX: Aplicamos estilos al HTML para centrar título, controlar logo gigante y evitar desbordes
                     let processedContent = result.value
-                        .replace(/\n/g, '<br>')
-                        .replace(/<p>/g, '<p style="margin-bottom: 12px; line-height: 1.6;">')
-                        .replace(/<br\s*\/?>/gi, '<br>')
-                        .replace(/([.!?])\s*<br>/g, '$1</p><p style="margin-bottom: 12px; line-height: 1.6;">');
+                        .replace(/<h1>/g, '<h1 style="font-size: 22pt; font-weight: bold; text-align: center; margin-bottom: 24pt; display: block; clear: both;">')
+                        .replace(/<h2>/g, '<h2 style="font-size: 16pt; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 4px; margin-top: 18pt; margin-bottom: 12pt; display: block; clear: both; word-break: break-word;">')
+                        .replace(/<p>/g, '<p style="margin-bottom: 12pt; line-height: 1.6; text-align: justify; display: block; clear: both; word-break: break-word; overflow-wrap: break-word;">')
+                        .replace(/<table>/g, '<table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0; table-layout: fixed; word-wrap: break-word;">')
+                        .replace(/<td>/g, '<td style="border: 1px solid #d1d1d1; padding: 8px; vertical-align: top; word-break: break-word; overflow-wrap: break-word;">')
+                        .replace(/<img/g, '<img style="max-width: 160px; height: auto; float: left; margin: 0 1.5rem 1rem 0; clear: both;"');
 
                     setContent(processedContent);
                 }
@@ -125,7 +135,7 @@ const CleanDocumentPreview = ({
 
         if (error) {
             return (
-                <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-red-600 p-4 sm:p-8">
+                <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-red-600 p-4 sm:p-8 text-center">
                     <svg className="w-12 h-12 sm:w-16 sm:h-16 mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
@@ -166,16 +176,17 @@ const CleanDocumentPreview = ({
             case 'docx':
             case 'doc':
                 return (
-                    <div className="h-full overflow-auto bg-white">
+                    <div className="h-full overflow-auto bg-gray-200 p-4 md:p-8">
                         <div
-                            className="p-3 sm:p-4 md:p-6 max-w-full lg:max-w-6xl mx-auto"
+                            className="mx-auto bg-white shadow-2xl mb-10"
                             style={{
+                                width: '210mm',
+                                maxWidth: '100%',
+                                minHeight: '297mm',
+                                padding: '25mm 25mm',
+                                boxSizing: 'border-box',
                                 fontFamily: "'Times New Roman', serif",
-                                lineHeight: '1.6',
                                 color: '#000',
-                                fontSize: '11pt',
-                                whiteSpace: 'normal',
-                                wordWrap: 'break-word'
                             }}
                             dangerouslySetInnerHTML={{ __html: content }}
                         />
@@ -213,7 +224,7 @@ const CleanDocumentPreview = ({
             {isVisible && (
                 <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white dark:bg-black rounded-lg sm:rounded-xl shadow-xl flex flex-col w-[98vw] h-[95vh] sm:w-[95vw] sm:h-[90vh] max-w-6xl mx-2 sm:mx-4 overflow-hidden">
                     
-                    {/* Header - Ahora contiene el Pseudo Menu */}
+                    {/* Header */}
                     <div className="flex justify-between items-center px-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-black">
                         
                         {/* Zona Superior Izquierda: Menú de Pestañas */}
@@ -247,29 +258,26 @@ const CleanDocumentPreview = ({
                         </button>
                     </div>
 
-                    {/* Content Area con renderizado condicional */}
                     <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 relative">
-                        {renderPreviewContent()}
+                        {activeTab === 'preview' ? renderPreviewContent() : renderRespuestas()}
                     </div>
 
                     {/* Footer solo para Vista Previa en móvil */}
                     {activeTab === 'preview' && (
-                        <div className="sm:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-700 p-3">
-                            <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500">
-                                    {documentType?.toUpperCase()}
-                                </span>
-                                <a
-                                    href={documentUrl}
-                                    download
-                                    className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
-                                >
-                                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    Descargar
-                                </a>
-                            </div>
+                        <div className="sm:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-700 p-3 flex justify-between items-center">
+                            <span className="text-xs text-gray-500 uppercase font-bold">
+                                {documentType?.toUpperCase()}
+                            </span>
+                            <a
+                                href={documentUrl}
+                                download
+                                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
+                            >
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Descargar
+                            </a>
                         </div>
                     )}
                 </div>
