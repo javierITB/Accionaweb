@@ -1,210 +1,41 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import { StarterKit } from '@tiptap/starter-kit';
+import { Underline } from '@tiptap/extension-underline';
+import { TextAlign } from '@tiptap/extension-text-align';
+import { Image } from '@tiptap/extension-image';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { FontFamily } from '@tiptap/extension-font-family';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const Input = React.forwardRef((props, ref) => (
-  <input
-    ref={ref}
-    {...props}
-    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-  />
-));
-
-const Textarea = React.forwardRef(({ className = '', ...props }, ref) => (
-  <textarea
-    ref={ref}
-    {...props}
-    className={`flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y ${className}`}
-  />
-));
-
-const generateVarTag = (title) => {
-  if (!title) return '';
-
-  let tag = title.toUpperCase();
-  tag = tag.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  tag = tag.replace(/[^A-Z0-9]+/g, '_');
-  tag = tag.replace(/^_+|_+$/g, '').replace(/__+/g, '_');
-  return `{{${tag}}}`;
-};
-
-const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const hasSubVariables = (variable.options && variable.options.length > 0) || (variable.subformQuestions && variable.subformQuestions.length > 0);
-
-  const renderSimpleVariable = (v) => v.type && (
-    <button
-      key={generateVarTag(v.title || v.text)}
-      onClick={() => copyVariable(generateVarTag(v.title || v.text))}
-      className={`w-full flex flex-col items-start px-3 py-2 rounded-md text-xs transition-brand cursor-pointer text-left font-mono border border-transparent bg-white-50 hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white dark:text-foreground ${isChild
-        ? 'bg-white-50 hover:bg-gray-100 dark:hover:bg-secondary dark:text-foreground'
-        : 'hover:bg-primary'
-        }`}
-      title={`Copiar variable ${generateVarTag(v.title || v.text)}`}
-    >
-      <span className={`font-semibold ${isChild ? 'text-xs' : 'text-sm'}`}>
-        {generateVarTag(v.title || v.text)}
-      </span>
-      <span className={`text-xs opacity-80 ${isChild ? 'ml-1' : ''}`}>
-        {v.title || v.text} {v.type && (" (" + v.type + ")")}
-      </span>
-    </button>
-  );
-
-  if (!hasSubVariables) {
-    return renderSimpleVariable(variable);
-  }
-
-  if (variable.subformQuestions?.length === 1 && !variable.subformQuestions[0].options.length > 0) {
-    return renderSimpleVariable(variable.subformQuestions[0]);
-  }
-
-  if (variable.options?.length === 1 && !variable.options[0].hasSubVariables && variable.options[0].options.length === 0) {
-    return renderSimpleVariable(variable.options[0]);
-  }
-
-  if (variable.options && variable.options.length > 0) {
-
-    let areOptionsFlat = true;
-
-    for (const option of variable.options) {
-      const optionHasSubVars = (option.hasSubform && option.subformQuestions.length > 0);
-
-      if (optionHasSubVars) {
-        areOptionsFlat = false;
-        break;
-      }
-    }
-
-    if (areOptionsFlat) {
-      return renderSimpleVariable(variable);
-    }
-  }
-
-  return (
-    <div className={`w-full border border-border rounded-lg ${isOpen ? 'bg-primary/5 dark:bg-primary/10' : 'bg-card dark:bg-card'}`}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2 cursor-pointer text-left font-semibold text-sm hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
-        title = {isOpen ? "Cerrar detalles de la variable" : "Abrir detalles de la variable"}
-      >
-        <div className="flex flex-col items-start">
-          <span className="font-semibold text-sm">{variable.title || variable.text}</span>
-          <span className="text-xs opacity-80 text-primary">{variable.title || variable.text} {variable.type && (" (" + variable.type + ")")}</span>
-        </div>
-        <Icon name={isOpen ? "ChevronUp" : "ChevronDown"} size={14} className="text-primary" />
-      </button>
-
-      {isOpen && (
-        <div className="p-2 space-y-1 border-t border-border dark:border-slate-700 ">
-          {renderSimpleVariable(variable)}
-          {variable.options && (variable.options)?.map((subVar) => (
-            <VariableItem
-              key={subVar.title}
-              variable={subVar}
-              copyVariable={copyVariable}
-              isChild={true}
-            />
-          ))}
-          {variable.subformQuestions && (variable.subformQuestions)?.map((subVar) => (
-            <VariableItem
-              key={subVar.title}
-              variable={subVar}
-              copyVariable={copyVariable}
-              isChild={true}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-});
-
-const ParagraphEditor = React.memo(({ paragraph, index, total, onUpdate, onDelete, onMove }) => {
-  const textareaRef = useRef(null);
-
-  const handleContentChange = useCallback((e) => {
-    onUpdate(paragraph.id, 'content', e.target.value);
-  }, [paragraph.id, onUpdate]);
-
-  const handleConditionalVarChange = useCallback((e) => {
-    onUpdate(paragraph.id, 'conditionalVar', e.target.value);
-  }, [paragraph.id, onUpdate]);
-
-  const handleMoveUp = useCallback(() => {
-    onMove(paragraph.id, 'up');
-  }, [paragraph.id, onMove]);
-
-  const handleMoveDown = useCallback(() => {
-    onMove(paragraph.id, 'down');
-  }, [paragraph.id, onMove]);
-
-  const handleDelete = useCallback(() => {
-    onDelete(paragraph.id);
-  }, [paragraph.id, onDelete]);
-
-  return (
-    <div className="bg-gray border border-border rounded-lg p-4 shadow-sm space-y-3">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-muted-foreground">
-          Párrafo {index + 1}
-        </h4>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleMoveUp}
-            disabled={index === 0}
-            className="h-8 w-8"
-            type="button"
-          >
-            <Icon name="ChevronUp" size={14} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleMoveDown}
-            disabled={index === total - 1}
-            className="h-8 w-8"
-            type="button"
-          >
-            <Icon name="ChevronDown" size={14} />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleDelete}
-            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-            type="button"
-          >
-            <Icon name="Trash2" size={14} />
-          </Button>
-        </div>
-      </div>
-
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">
-          Variable Condicional (Opcional)
-        </label>
-        <Input
-          type="text"
-          placeholder="Ej: {{CAMPOS_OCUPACION}} (El párrafo se renderiza solo si esta variable tiene valor)"
-          value={paragraph.conditionalVar || ''}
-          onChange={handleConditionalVarChange}
-        />
-      </div>
-
-      <Textarea
-        ref={textareaRef}
-        value={paragraph.content}
-        onChange={handleContentChange}
-        rows={5}
-        placeholder="Escribe el contenido del párrafo. Pega las variables copiadas aquí."
-        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
-      />
-    </div>
-  );
+// Extension personalizada para tamaño de fuente
+const FontSize = TextStyle.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      fontSize: {
+        default: null,
+        parseHTML: element => element.style.fontSize,
+        renderHTML: attributes => {
+          if (!attributes.fontSize) return {};
+          return { style: `font-size: ${attributes.fontSize}` };
+        },
+      },
+    };
+  },
+  addCommands() {
+    return {
+      ...this.parent?.(),
+      setFontSize: size => ({ chain }) => {
+        return chain().setMark('textStyle', { fontSize: size }).run();
+      },
+    };
+  },
 });
 
 const DocumentTemplateEditor = ({
@@ -212,214 +43,300 @@ const DocumentTemplateEditor = ({
   staticVariables = [],
   templateData,
   onUpdateTemplateData,
-  onAddParagraph,
-  onUpdateParagraph,
-  onDeleteParagraph,
-  onMoveParagraph
+  onSave
 }) => {
-
-  const copyVariable = useCallback((tag) => {
-    navigator.clipboard.writeText(tag).catch(() => {
-      const tempInput = document.createElement('textarea');
-      tempInput.value = tag;
-      document.body.appendChild(tempInput);
-      tempInput.select();
-      document.execCommand('copy');
-      document.body.removeChild(tempInput);
-    });
-  }, []);
-
   const [staticVarsExpanded, setStaticVarsExpanded] = useState(true);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
 
-  const paragraphEditors = useMemo(() =>
-    templateData.paragraphs.map((paragraph, index) => (
-      <ParagraphEditor
-        key={paragraph.id}
-        paragraph={paragraph}
-        index={index}
-        total={templateData.paragraphs.length}
-        onUpdate={onUpdateParagraph}
-        onDelete={onDeleteParagraph}
-        onMove={onMoveParagraph}
-      />
-    )),
-    [
-      templateData.paragraphs,
-      onUpdateParagraph,
-      onDeleteParagraph,
-      onMoveParagraph
-    ]
-  );
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        underline: false,
+      }),
+      Underline,
+      TextStyle,
+      FontFamily,
+      FontSize,
+      Image,
+      TextAlign.configure({
+        types: ['heading', 'paragraph', 'tableCell', 'tableHeader']
+      }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableCell,
+      TableHeader,
+    ],
+    content: templateData.documentContent || '<p>Comienza a escribir el documento...</p>',
+    onUpdate: ({ editor }) => {
+      onUpdateTemplateData('documentContent', editor.getHTML());
+    },
+  });
+
+  const addVariable = (tag) => {
+    if (editor) {
+      editor.chain().focus().insertContent(`<strong>${tag}</strong>`).run();
+    }
+  };
+
+  // Efecto para controlar modo solo lectura (Vista Previa)
+  React.useEffect(() => {
+    if (editor) {
+      editor.setEditable(!isPreview);
+    }
+  }, [editor, isPreview]);
+
+  const generatePreviewHtml = (html) => {
+    let content = html;
+
+    // 1. Eliminar etiquetas de condicionales
+    content = content.replace(/<p>\[\[IF:.*?\]\]<\/p>/g, '');
+    content = content.replace(/<p>\[\[ENDIF\]\]<\/p>/g, '');
+    content = content.replace(/\[\[IF:.*?\]\]/g, '');
+    content = content.replace(/\[\[ENDIF\]\]/g, '');
+
+    const ORDINALES = [
+      "", "PRIMERO", "SEGUNDO", "TERCERO", "CUARTO", "QUINTO",
+      "SEXTO", "SÉPTIMO", "OCTAVO", "NOVENO", "DÉCIMO",
+      "UNDÉCIMO", "DUODÉCIMO", "DÉCIMO TERCERO", "DÉCIMO CUARTO",
+      "DÉCIMO QUINTO", "DÉCIMO SEXTO", "DÉCIMO SÉPTIMO",
+      "DÉCIMO OCTAVO", "DÉCIMO NOVENO", "VIGÉSIMO"
+    ];
+    let contadorNumeral = 1;
+
+    // 2. Reemplazar variables
+    content = content.replace(/{{([^}]+)}}/g, (match, varName) => {
+      if (varName === 'NUMERAL') {
+        const ordinal = ORDINALES[contadorNumeral] || `${contadorNumeral}°`;
+        contadorNumeral++;
+        return `<span class="font-bold text-black">${ordinal}</span>`;
+      }
+      return `<span class="text-gray-800 bg-gray-100 px-1 rounded" title="Variable: ${varName}">${varName.replace(/_/g, ' ')}</span>`;
+    });
+
+    return content;
+  };
+
+  if (!editor) return null;
+
+  const fontFamilies = [
+    { label: 'Arial', value: 'Arial' },
+    { label: 'Times New Roman', value: 'Times New Roman' },
+    { label: 'Courier New', value: 'Courier New' },
+    { label: 'Georgia', value: 'Georgia' }
+  ];
+
+  const fontSizes = ['10px', '11px', '12px', '14px', '16px', '18px', '22px', '28px', '36px'];
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <div className="bg-card border border-border rounded-lg p-4 sticky top-6 shadow-brand dark:bg-gray max-h-[calc(90vh-10rem)] overflow-y-auto">
-            <h3 className="font-semibold text-foreground mb-4">
-              Variables Disponibles
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Haz clic para copiar la variable al portapapeles y pegarla en tu párrafo.
-            </p>
+    <div className={`flex flex-col border rounded-xl bg-background shadow-lg overflow-hidden border-border transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 h-screen m-0 rounded-none' : 'h-[calc(100vh-140px)]'}`}>
 
-            {dynamicVariables.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-sm font-semibold text-foreground mb-2">
-                  Variables del Formulario ({dynamicVariables.length})
-                </h4>
-                <div className="space-y-2">
-                  {dynamicVariables.map((variable) => (
-                    <VariableItem
-                      variable={variable}
-                      key={variable.title || variable.id}
-                      copyVariable={copyVariable}
-                    />
-                  ))}
-                </div>
+      {/* BARRA DE HERRAMIENTAS */}
+      <div className="flex flex-wrap items-center gap-2 p-2 border-b bg-muted/20">
+
+        {/* Botones de Control Global */}
+        <div className="flex items-center gap-1 border-r pr-2 mr-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsFullScreen(!isFullScreen)}
+            title={isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
+          >
+            <Icon name={isFullScreen ? "Minimize" : "Maximize"} size={16} />
+          </Button>
+
+        </div>
+        <select
+          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
+          onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
+        >
+          <option value="">Fuente</option>
+          {fontFamilies.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+        </select>
+
+        <select
+          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
+          onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
+        >
+          <option value="">Tamaño</option>
+          {fontSizes.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        <div className="w-px h-6 bg-border mx-1" />
+
+        {/* Estilos basicos */}
+        <div className="flex bg-card border rounded-md p-0.5">
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('bold') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}>
+            <Icon name="Bold" size={14} />
+          </Button>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('italic') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}>
+            <Icon name="Italic" size={14} />
+          </Button>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('underline') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+            <Icon name="Underline" size={14} />
+          </Button>
+        </div>
+
+        {/* Alineacion */}
+        <div className="flex bg-card border rounded-md p-0.5">
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'left' }) ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
+            <Icon name="AlignLeft" size={14} />
+          </Button>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'center' }) ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
+            <Icon name="AlignCenter" size={14} />
+          </Button>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
+            <Icon name="AlignJustify" size={14} />
+          </Button>
+        </div>
+
+        {/* Tablas y Firmas */}
+        <div className="flex bg-card border rounded-md p-0.5 gap-1 px-1 items-center">
+          <Button variant="ghost" size="sm" className="h-7 text-[10px] flex items-center gap-1 border-r pr-2" onClick={() => editor.chain().focus().insertTable({ rows: 1, cols: 2, withHeaderRow: false }).run()}>
+            <Icon name="Columns" size={14} /> Zona Firmas
+          </Button>
+
+          {editor.isActive('table') && (
+            <div className="flex gap-1 pl-1">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => editor.chain().focus().deleteTable().run()} title="Eliminar Tabla">
+                <Icon name="Trash2" size={14} />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => editor.chain().focus().addColumnAfter().run()} title="Añadir Columna">
+                <Icon name="ArrowRight" size={14} />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-1 ml-auto">
+          <Button
+            variant={isPreview ? "default" : "outline"}
+            size="sm"
+            className={`h-8 text-[10px] font-bold ${isPreview ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600' : 'border-indigo-200 text-indigo-600'}`}
+            onClick={() => setIsPreview(!isPreview)}
+            title={isPreview ? "Volver a Edición" : "Ver documento final"}
+          >
+            <Icon name={isPreview ? "EyeOff" : "Eye"} size={14} className="mr-1" />
+            VISTA PREVIA
+          </Button>
+
+          <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => addVariable('{{NUMERAL}}')} disabled={isPreview}>
+            + NUMERAL
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-blue-200 text-blue-600" onClick={() => {
+            const cond = prompt("Variable para condicionar (IF):");
+            if (cond) {
+              const tagStart = `[[IF:${cond.toUpperCase()}]]`;
+              const tagEnd = `[[ENDIF]]`;
+
+              if (editor.state.selection.empty) {
+                editor.chain().focus().insertContent(`<p>${tagStart}</p><p>Contenido...</p><p>${tagEnd}</p>`).run();
+              } else {
+                const { from, to } = editor.state.selection;
+                editor.chain().focus()
+                  .insertContentAt(to, `<p>${tagEnd}</p>`)
+                  .insertContentAt(from, `<p>${tagStart}</p>`)
+                  .run();
+              }
+            }
+          }}>
+            + CONDICIONAL
+          </Button>
+
+          {isFullScreen && onSave && (
+            <Button
+              variant="default"
+              size="sm"
+              className="h-8 text-[10px] px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white ml-2 shadow-sm"
+              onClick={onSave}
+              title="Guardar Plantilla"
+            >
+              <Icon name="Save" size={12} /> GUARDAR
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* PANEL LATERAL DE VARIABLES */}
+        <div className="w-72 border-r bg-muted/5 p-4 overflow-y-auto">
+          <div className="space-y-6">
+            {/* Variables del Formulario */}
+            <div>
+              <h3 className="text-[10px] font-bold uppercase text-primary mb-3 tracking-widest flex items-center gap-2">
+                <Icon name="Database" size={12} /> Variables Formulario
+              </h3>
+              <div className="grid grid-cols-1 gap-1.5">
+                {dynamicVariables.map(v => {
+                  const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
+                  return (
+                    <button
+                      key={v.id || v.title}
+                      onClick={() => addVariable(tag)}
+                      className="text-left px-3 py-2 text-[11px] bg-card border rounded shadow-sm hover:border-primary hover:bg-primary/5 transition-all truncate group"
+                      title={tag}
+                    >
+                      <span className="font-mono text-primary group-hover:text-primary-foreground">{tag}</span>
+                    </button>
+                  );
+                })}
               </div>
-            )}
+            </div>
 
-            {dynamicVariables.length > 0 && staticVariables.length > 0 && (
-              <div className="border-t border-border my-4"></div>
-            )}
+            {/* Variables Generales Reintegradas */}
+            <div>
+              <button
+                onClick={() => setStaticVarsExpanded(!staticVarsExpanded)}
+                className="w-full flex items-center justify-between text-[10px] font-bold uppercase text-orange-600 mb-3 tracking-widest hover:bg-orange-50 p-1 rounded transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <Icon name="Globe" size={12} /> Variables Generales
+                </span>
+                <Icon name={staticVarsExpanded ? "ChevronUp" : "ChevronDown"} size={12} />
+              </button>
 
-            {staticVariables.length > 0 && (
-              <div>
-                <button
-                  onClick={() => setStaticVarsExpanded(!staticVarsExpanded)}
-                  className="w-full flex items-center justify-between text-sm font-semibold text-foreground mb-2 hover:text-primary transition-colors p-2 rounded-md hover:bg-primary/5"
-                  title = {staticVarsExpanded ? "Cerrar detalles de la variable" : "Abrir detalles de la variable"}
-                >
-                  <span>Variables Generales ({staticVariables.length})</span>
-                  <Icon
-                    name={staticVarsExpanded ? "ChevronUp" : "ChevronDown"}
-                    size={14}
-                    className="text-muted-foreground"
-                  />
-                </button>
-
-                {staticVarsExpanded && (
-                  <div className="space-y-2 bg-primary/5 rounded-lg p-2 dark:bg-primary/10">
-                    {staticVariables.map((variable) => (
+              {staticVarsExpanded && (
+                <div className="grid grid-cols-1 gap-1.5 animate-in fade-in slide-in-from-top-1">
+                  {staticVariables.map(v => {
+                    const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
+                    return (
                       <button
-                        key={variable.title}
-                        onClick={() => copyVariable(generateVarTag(variable.title))}
-                        className="w-full flex flex-col items-start px-3 py-2 rounded-md text-xs transition-brand cursor-pointer text-left font-mono border border-transparent bg-white-50 hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white dark:text-foreground"
-                        title = {`Copiar variable ${generateVarTag(variable.title)}`}
+                        key={v.title}
+                        onClick={() => addVariable(tag)}
+                        className="text-left px-3 py-2 text-[11px] bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded shadow-sm hover:bg-orange-500 hover:text-white dark:hover:bg-orange-600 transition-all truncate"
+                        title={tag}
                       >
-                        <span className="font-semibold text-sm">
-                          {generateVarTag(variable.title)}
-                        </span>
-                        <span className="text-xs opacity-80">
-                          {variable.title} {variable.type && `(${variable.type})`}
-                        </span>
+                        <span className="font-mono text-orange-700 dark:text-orange-300">{tag}</span>
                       </button>
-                    ))}
-                  </div>
-                )}
-
-                <p className="text-xs text-muted-foreground mt-2">
-                  Disponibles en todas las plantillas
-                </p>
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="lg:col-span-3 space-y-6 max-h-[calc(90vh-10rem)] overflow-y-auto">
-          <div className="bg-card border border-border rounded-lg p-6 shadow-brand">
-            <h3 className="text-lg font-semibold text-foreground mb-3">
-              Título del Documento
-            </h3>
-            <Input
-              type="text"
-              placeholder="Ej: Contrato de {{EMPLEADO_NOMBRE}}"
-              value={templateData.documentTitle}
-              onChange={(e) => onUpdateTemplateData('documentTitle', e.target.value)}
-              className="w-full text-xl font-bold"
-            />
+        {/* AREA DE EDICION (HOJA) */}
+        <div className="flex-1 bg-muted/30 p-8 overflow-y-auto flex justify-center">
+          <div className={`w-full max-w-[850px] min-h-[1100px] bg-white shadow-2xl p-[2.5cm] rounded-sm border border-border transition-all ${isPreview ? 'scale-[1.02] shadow-xl' : ''}`}>
+            <style>{`
+              .ProseMirror { outline: none; min-height: 100%; font-family: 'Arial', sans-serif; }
+              .ProseMirror table { border-collapse: collapse; table-layout: fixed; width: 100%; margin: 1em 0; overflow: hidden; }
+              .ProseMirror td, .ProseMirror th { min-width: 1em; border: 1px dashed ${isPreview ? 'transparent' : '#ccc'}; padding: 10px; vertical-align: top; box-sizing: border-box; position: relative; }
+              .ProseMirror p { margin-bottom: 0.5em; line-height: 1.5; text-align: justify; }
+              .ProseMirror .selectedCell:after { z-index: 2; background: rgba(200, 200, 255, 0.4); content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; }
+              /* Ocultar placeholders y otros elementos de edición en preview si fuera necesario */
+            `}</style>
+
+            {!isPreview ? (
+              <EditorContent editor={editor} className="prose prose-sm max-w-none" />
+            ) : (
+              <div
+                className="prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: generatePreviewHtml(editor.getHTML()) }}
+              />
+            )}
           </div>
-
-          <h3 className="text-lg font-semibold text-foreground">
-            Contenido y Párrafos ({templateData.paragraphs?.length || 0})
-          </h3>
-          <div className="space-y-4">
-            {paragraphEditors}
-          </div>
-
-          {templateData.paragraphs.length === 0 && (
-            <div className="text-center py-12 bg-card border border-border rounded-lg">
-              <Icon name="FileText" size={48} className="mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-medium text-foreground mb-4">
-                Comienza a crear la plantilla
-              </h3>
-              <Button
-                onClick={onAddParagraph}
-                iconName="Plus"
-                iconPosition="left"
-                variant="default"
-                type="button"
-              >
-                Agregar Primer Párrafo
-              </Button>
-            </div>
-          )}
-
-          {templateData.paragraphs.length > 0 && (
-            <div className="flex justify-center pt-2">
-              <Button
-                onClick={onAddParagraph}
-                variant="outline"
-                iconName="Plus"
-                iconPosition="left"
-                size="sm"
-                type="button"
-              >
-                Añadir otro Párrafo
-              </Button>
-            </div>
-          )}
-
-          <div className="bg-card border border-border rounded-lg p-6 shadow-brand">
-            <h3 className="text-lg font-semibold text-foreground mb-4">
-              Zona de Firmas
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Define el texto (ej. Nombre/Cargo) para cada una de las dos secciones de firma.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold text-sm mb-2">Firma 1 (Emisor/Empresa)</h4>
-                <Textarea
-                  value={templateData.signature1Text}
-                  onChange={(e) => onUpdateTemplateData('signature1Text', e.target.value)}
-                  rows={3}
-                  placeholder="Ej: Nombre del Representante Legal.&#10;Rut: {{RUT_EMPRESA}}"
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Este texto aparecerá bajo la línea de firma izquierda.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-sm mb-2">Firma 2 (Receptor/Empleado)</h4>
-                <Textarea
-                  value={templateData.signature2Text}
-                  onChange={(e) => onUpdateTemplateData('signature2Text', e.target.value)}
-                  rows={3}
-                  placeholder="Ej: Nombre Completo del Empleado.&#10;Rut: {{RUT_DEL_EMPLEADO}}"
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Este texto aparecerá bajo la línea de firma derecha.
-                </p>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
