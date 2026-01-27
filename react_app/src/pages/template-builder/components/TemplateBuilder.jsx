@@ -55,7 +55,8 @@ const DocumentTemplateEditor = ({
         underline: false,
       }),
       Underline,
-      TextStyle,
+      Underline,
+      // TextStyle ya incluido en FontSize
       FontFamily,
       FontSize,
       Image,
