@@ -1,19 +1,46 @@
+async function registerEvent(req, event) {
+   const payload = {
+      ...event,
+      createdAt: new Date(),
+   };
 
+   const collection = req.db.collection("cambios");
+   const result = await collection.insertOne(payload);
 
-export async function registerEvent(req, event) {
+   if (!result.insertedId) {
+      throw new Error("Error al registrar evento");
+   }
+}
 
-      const payload = {
-         ...event,
-         createdAt: new Date(),
-      };
+export async function registerStatusChangeEvent(req, { updatedResponse, auth, result, error = null }) {
+   const actor = auth?.data || {};
 
-      const collection = req.db.collection("cambios");
-      const result = await collection.insertOne(payload);
+   let description = "Cambio de estado de solicitud";
 
-      if (!result.insertedId) {
-         throw new Error("Error al registrar evento");
-      }
+   await registerEvent(req, {
+      code: CODES.SOLICITUD_CAMBIO_ESTADO,
+      target: {
+         type: TARGET_TYPES.SOLICITUD,
+         _id: updatedResponse?._id?.toString() || null,
+      },
+      actor: {
+         uid: updatedResponse?.user?.uid?.toString() || null,
+         name: updatedResponse?.user?.nombre || "desconocido",
+         role: actor?.rol || "desconocido",
+         email: actor?.email || "desconocido",
+         empresa: updatedResponse?.user?.empresa || "desconocido",
+      },
+      description: updatedResponse
+         ? `${description} "${updatedResponse?.formTitle}" a ${updatedResponse?.status}`
+         : description + " desconocida",
+      metadata: {
+         nombre_de_solicitud: updatedResponse?.formTitle || "desconocido",
+         nuevo_estado: updatedResponse?.status || "desconocido",
+      },
 
+      result,
+      ...(error && { error_message: error.message }),
+   });
 }
 
 // codes

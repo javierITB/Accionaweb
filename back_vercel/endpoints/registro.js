@@ -20,7 +20,11 @@ const verifyRequest = async (req) => {
 router.get("/todos", async (req, res) => {
    try {
       await verifyRequest(req);
-      const tkn = await req.db.collection("cambios").find().toArray();
+      const tkn = await req.db
+         .collection("cambios")
+         .find({}, { projection: { error_message: 0 } })
+         .toArray();
+
       res.json(tkn);
    } catch (err) {
       if (err.status) return res.status(err.status).json({ message: err.message });
