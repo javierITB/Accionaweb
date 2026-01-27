@@ -23,7 +23,7 @@ import AdminTickets from './pages/Tickets/Index.jsx';
 import Users from './pages/users/Index.jsx';
 import Empresas from './pages/empresas/Index.jsx';
 import Ingresos from './pages/Ingresos/Index.jsx';
-import Registro from './pages/registro/Index.jsx';
+import Registro from './pages/registro/index.jsx';
 import SetPassword from './pages/users/components/SetPassword.jsx';
 import Solicitudes from './pages/solicitudes/Index.jsx';
 import DomicilioVirtualIndex from './pages/DomicilioVirtual/Index.jsx';
