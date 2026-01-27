@@ -121,6 +121,23 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
   const [companyOptions, setCompanyOptions] = useState([]);
   const [loadingCompanies, setLoadingCompanies] = useState(true);
 
+  // --- LÓGICA DE AUTO-RELLENO DE NOMBRE Y APELLIDO DESDE SESIÓN ---
+  useEffect(() => {
+    // Si el autor es el default 'Admin' o está vacío, buscamos los datos reales
+    if (!formData?.author || formData?.author === 'Admin') {
+      const name = sessionStorage.getItem('user');
+      const lastName = sessionStorage.getItem('lastName');
+      
+      if (name) {
+        // Solo agregamos el apellido si el valor existe y no es el string literal "undefined"
+        const validLastName = (lastName && lastName !== "undefined" && lastName !== "null") ? ` ${lastName}` : "";
+        const fullName = `${name}${validLastName}`.trim();
+        
+        onUpdateFormData('author', fullName);
+      }
+    }
+  }, [formData?.author, onUpdateFormData]);
+
   // Cargar empresas desde MongoDB
   useEffect(() => {
     const fetchEmpresas = async () => {
@@ -365,9 +382,10 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
             </p>
           </div>
 
+          {/* CAMPO DE AUTOR - MOSTRANDO VALOR CONCATENADO */}
           <Input
             label="Autor"
-            value={formData?.author}
+            value={formData?.author || ''}
             onChange={(e) => onUpdateFormData('author', e.target.value)}
             description="Nombre de quien creó el formulario"
             disabled

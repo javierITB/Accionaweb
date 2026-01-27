@@ -20,7 +20,7 @@ const FormBuilder = () => {
     description: '',
     category: '',
     responseTime: '',
-    author: 'Admin',
+    author: '',
     primaryColor: '#3B82F6',
     secondaryColor: '#F3F4F6',
     questions: [],

@@ -358,12 +358,14 @@ router.post("/login", async (req, res) => {
       }
 
       let nombre = "";
+      let apellido = "";
       let rol = "";
       try {
          nombre = decrypt(user.nombre);
-         rol = decrypt(user.cargo);
+         apellido = user.apellido ? decrypt(user.apellido) : ""; 
       } catch {
          nombre = user.nombre || "";
+         apellido = user.apellido || "";
          rol = user.cargo || "";
       }
 
@@ -389,6 +391,7 @@ router.post("/login", async (req, res) => {
          token: finalToken,
          usr: {
             name: nombre,
+            lastName: apellido,
             email: normalizedEmail,
             cargo: user.rol,
             rol: rol,
