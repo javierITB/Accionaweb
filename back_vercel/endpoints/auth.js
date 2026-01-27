@@ -363,6 +363,8 @@ router.post("/login", async (req, res) => {
       try {
          nombre = decrypt(user.nombre);
          apellido = user.apellido ? decrypt(user.apellido) : ""; 
+         rol = decrypt(user.cargo);
+
       } catch {
          nombre = user.nombre || "";
          apellido = user.apellido || "";
