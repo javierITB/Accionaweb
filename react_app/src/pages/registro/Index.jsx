@@ -132,7 +132,7 @@ const CompanyReg = () => {
                      <tbody>
                         {registros.map((registro, index) => (
                            <tr key={index} className="border-t hover:bg-muted/30 transition">
-                              <td className="px-4 py-2 text-[11px] ">{registro.action}</td>
+                              <td className="px-4 py-2 text-[11px] ">{registro.code}</td>
                               <td className="px-4 py-2 text-sm text-center">{registro.actor.name}</td>
                               <td className="px-4 py-2 text-sm">{registro.description}</td>
                               <td className="px-4 py-2 text-sm text-center">{registro.target.type || "—"}</td>
@@ -168,13 +168,24 @@ const CompanyReg = () => {
                      >
                         ×
                      </button>
+                     <div className="flex items-center justify-between border-b border-border pb-2">
+                        <div className="flex items-center gap-3">
+                           {selectedRegistro.result ? (
+                              <Icon name="CheckCircle" size={28} className="text-success" />
+                           ) : (
+                              <Icon name="XCircle" size={28} className="text-error" />
+                           )}
 
-                     <h2 className="text-2xl font-bold  border-b border-border pb-2">Detalles del Evento</h2>
+                           <h2 className="text-2xl font-bold  ">Detalles del Evento</h2>
+                        </div>
+
+                        <p className="pr-4">{formatDate(selectedRegistro.createdAt)}</p>
+                     </div>
 
                      <div className="flex flex-col gap-4 divide-y divide-border text-sm">
                         <div className="pt-4 ">
                            <p>
-                              <span className="font-semibold text-foreground">Código:</span> {selectedRegistro.action}
+                              <span className="font-semibold text-foreground">Código:</span> {selectedRegistro.code}
                            </p>
                         </div>
 
@@ -186,18 +197,18 @@ const CompanyReg = () => {
                         </div>
 
                         <div className="pt-4 ">
-                           <p className="font-semibold mb-1 text-foreground">Actor</p>
+                           <p className="font-semibold pb-1 text-foreground text-base">Actor:</p>
                            <p>
-                              <span className="font-medium">Nombre:</span> {selectedRegistro.actor.name}
+                              <span className="font-semibold pl-2">Nombre:</span> {selectedRegistro.actor.name}
                            </p>
                            <p>
-                              <span className="font-medium">Rol:</span> {selectedRegistro.actor.role}
+                              <span className="font-semibold pl-2">Rol:</span> {selectedRegistro.actor.role}
                            </p>
                            <p>
-                              <span className="font-medium">Email:</span> {selectedRegistro.actor.email}
+                              <span className="font-semibold pl-2">Email:</span> {selectedRegistro.actor.email}
                            </p>
                            <p>
-                              <span className="font-medium">Empresa:</span> {selectedRegistro.actor.empresa}
+                              <span className="font-semibold pl-2">Empresa:</span> {selectedRegistro.actor.empresa}
                            </p>
                         </div>
 
@@ -208,13 +219,14 @@ const CompanyReg = () => {
                         </div>
 
                         <div className="pt-4 ">
-                           <p>
-                              <span className="font-semibold">Nombre Solicitud:</span>{" "}
-                              {selectedRegistro.metadata?.nombre_solicitud}
-                           </p>
-                           <p>
-                              <span className="font-semibold">Estado:</span> {selectedRegistro.metadata?.status}
-                           </p>
+                           {Object.entries(selectedRegistro.metadata).map(([key, value]) => (
+                              <p key={key} className="mb-1 text-foreground">
+                                 <span className="font-semibold first-letter:uppercase">
+                                    {key.replace(/_/g, " ").charAt(0).toUpperCase() + key.replace(/_/g, " ").slice(1)}:
+                                 </span>{" "}
+                                 {value}
+                              </p>
+                           ))}
                         </div>
 
                         <div className="pt-4 ">
