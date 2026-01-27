@@ -205,10 +205,11 @@ const DocumentTemplateEditor = ({
           </Button>
         </div>
 
-        {/* Tablas y Firmas */}
+        {/* Tablas - BOTÓN DE ZONA FIRMAS ELIMINADO - Ahora se maneja con inputs dedicados */}
         <div className="flex bg-card border rounded-md p-0.5 gap-1 px-1 items-center">
-          <Button variant="ghost" size="sm" className="h-7 text-[10px] flex items-center gap-1 border-r pr-2" onClick={() => editor.chain().focus().insertTable({ rows: 1, cols: 2, withHeaderRow: false }).run()}>
-            <Icon name="Columns" size={14} /> Zona Firmas
+          {/* Solo botones generales de tabla si se necesitan, pero quitamos el de Zona Firmas específico */}
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insertar Tabla">
+            <Icon name="Grid" size={14} />
           </Button>
 
           {editor.isActive('table') && (
@@ -428,6 +429,37 @@ const DocumentTemplateEditor = ({
             )}
           </div>
         </div>
+
+        {/* ZONA DE CONFIGURACIÓN DE FIRMAS (Fuera del editor Tiptap) */}
+        {!isPreview && (
+          <div className="w-72 border-l bg-muted/5 p-4 overflow-y-auto">
+            <h3 className="text-[10px] font-bold uppercase text-primary mb-3 tracking-widest flex items-center gap-2">
+              <Icon name="PenTool" size={12} /> Configuración de Firmas
+            </h3>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Firma Izquierda (Empleador)</label>
+                <textarea
+                  className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
+                  placeholder="Ej: {{NOMBRE_EMPRESA}}\nRRHH..."
+                  value={templateData.signature1Text || ''}
+                  onChange={(e) => onUpdateTemplateData('signature1Text', e.target.value)}
+                />
+                <p className="text-[10px] text-muted-foreground">Soporta variables y saltos de linea.</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Firma Derecha (Empleado)</label>
+                <textarea
+                  className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
+                  placeholder="Ej: {{NOMBRE_EMPLEADO}}\nRut: {{RUT_EMPLEADO}}..."
+                  value={templateData.signature2Text || ''}
+                  onChange={(e) => onUpdateTemplateData('signature2Text', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
