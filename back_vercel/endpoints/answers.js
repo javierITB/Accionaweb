@@ -8,6 +8,7 @@ const { enviarCorreoRespaldo } = require("../utils/mailrespaldo.helper");
 const { validarToken } = require("../utils/validarToken.js");
 const { createBlindIndex, verifyPassword, encrypt, decrypt } = require("../utils/seguridad.helper");
 const { sendEmail } = require("../utils/mail.helper");
+const { registerEvent, CODES, TARGET_TYPES, ACTOR_ROLES, RESULTS, STATUS } = require("../utils/registerEvent");
 
 // Función para normalizar nombres de archivos (versión completa y segura)
 const normalizeFilename = (filename) => {
@@ -3349,6 +3350,32 @@ router.put("/:id/status", async (req, res) => {
   } catch (err) {
     console.error("Error cambiando estado:", err);
     res.status(500).json({ error: "Error cambiando estado: " + err.message });
+  }
+
+  // Registrar evento
+  try {
+     await registerEvent(req, {
+        code: CODES.SOLICITUD_CAMBIO_ESTADO,
+        target: {
+           type: TARGET_TYPES.SOLICITUD,
+           _id: updatedResponse._id,
+        },
+        actor: {
+           uid: updatedResponse.user.uid,
+           name: updatedResponse.user.nombre,
+           role: ACTOR_ROLES.ADMIN,
+           email: updatedResponse.user.mail,
+           empresa: updatedResponse.user.empresa,
+        },
+        description: `Cambio de estado de solicitud "${updatedResponse.formTitle}" a ${updatedResponse.status}`,
+
+        metadata: {
+          nombre_de_solicitud: updatedResponse.formTitle,
+          nuevo_estado: updatedResponse.status,
+        },
+     });
+  } catch (error) {
+     console.error("Error registrando evento:", error);
   }
 });
 
