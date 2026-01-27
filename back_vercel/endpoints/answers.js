@@ -3367,10 +3367,10 @@ router.put("/:id/status", async (req, res) => {
         code: CODES.SOLICITUD_CAMBIO_ESTADO,
         target: {
            type: TARGET_TYPES.SOLICITUD,
-           _id: updatedResponse._id,
+           _id: updatedResponse._id.toString(),
         },
         actor: {
-           uid: updatedResponse.user.uid,
+           uid: updatedResponse.user.uid.toString(),
            name: updatedResponse.user.nombre,
            role: ACTOR_ROLES.ADMIN,
            email: updatedResponse.user.mail,
@@ -3401,10 +3401,10 @@ router.put("/:id/status", async (req, res) => {
       code: CODES.SOLICITUD_CAMBIO_ESTADO,
       target: {
          type: TARGET_TYPES.SOLICITUD,
-         _id: updatedResponse._id,
+         _id: updatedResponse._id.toString(),
       },
       actor: {
-         uid: updatedResponse.user.uid,
+         uid: updatedResponse.user.uid.toString(),
          name: updatedResponse.user.nombre,
          role: ACTOR_ROLES.ADMIN,
          email: updatedResponse.user.mail,
