@@ -63,7 +63,7 @@ const CompanyReg = () => {
 
    const fetchRegistros = async () => {
       try {
-         const response = await apiFetch(`${API_BASE_URL}/auth/registros/todos`);
+         const response = await apiFetch(`${API_BASE_URL}/registros/todos`);
          if (response.ok) {
             const registrosData = await response.json();
             setRegistros(registrosData);
@@ -126,7 +126,7 @@ const CompanyReg = () => {
                            <th className="px-4 py-2 text-center">Afectado</th>
                            <th className="px-4 py-2 text-center">Resultado</th>
                            <th className="px-4 py-2 text-center">Fecha</th>
-                           <th className="px-4 py-2 text-center">Extra</th>
+                           <th className="px-4 py-2 text-center">Detalles</th>
                         </tr>
                      </thead>
                      <tbody>
