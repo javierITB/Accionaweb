@@ -94,6 +94,7 @@ export default function App() {
         sessionStorage.setItem("cargo", data?.usr?.cargo);
         sessionStorage.setItem("email", data?.usr?.email);
         sessionStorage.setItem("user", data?.usr?.name);
+        sessionStorage.setItem("lastName", data?.usr?.lastName || '');
         sessionStorage.setItem("token", data?.token);
         navigate(from, { replace: true });
       } else {
@@ -132,6 +133,7 @@ export default function App() {
           sessionStorage.setItem("cargo", data?.usr?.cargo);
           sessionStorage.setItem("email", data?.usr?.email);
           sessionStorage.setItem("user", data?.usr?.name);
+          sessionStorage.setItem("lastName", data?.usr?.lastName || '');
           sessionStorage.setItem("token", data?.token);
           navigate(from, { replace: true });
         }
