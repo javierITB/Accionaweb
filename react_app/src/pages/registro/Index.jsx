@@ -14,18 +14,18 @@ import Button from "../../components/ui/Button";
 
 const CompanyReg = () => {
    const [registros, setRegistros] = useState([]);
-   //   const [formData, setFormData] = useState({
-   //     nombre: '',
-   //     rut: '',
-   //     direccion: '',
-   //     encargado: '',
-   //     rut_encargado: '',
-   //     logo: null,
-   //     logoUrl: null
-   //   });
-   //   const [isLoading, setIsLoading] = useState(false);
-   //   const [activeTab, setActiveTab] = useState('register');
+   const [modalOpen, setModalOpen] = useState(false);
+   const [selectedRegistro, setSelectedRegistro] = useState(null);
 
+   const openModal = (registro) => {
+      setSelectedRegistro(registro);
+      setModalOpen(true);
+   };
+
+   const closeModal = () => {
+      setSelectedRegistro(null);
+      setModalOpen(false);
+   };
    // ESTADOS DEL SIDEBAR - ACTUALIZADOS
    const [isDesktopOpen, setIsDesktopOpen] = useState(true);
    const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -78,6 +78,37 @@ const CompanyReg = () => {
       fetchRegistros();
    }, []);
 
+   const formatDate = (dateString) => {
+      if (!dateString) return "—";
+
+      const date = new Date(dateString);
+      const pad = (n) => n.toString().padStart(2, "0");
+
+      const day = pad(date.getDate());
+      const month = pad(date.getMonth() + 1);
+      const year = date.getFullYear();
+
+      const hours = pad(date.getHours());
+      const minutes = pad(date.getMinutes());
+      const seconds = pad(date.getSeconds());
+
+      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+   };
+
+   const formatDateSplit = (dateString) => {
+      if (!dateString) return "—";
+
+      const full = formatDate(dateString); // "27/01/2026 14:56:26"
+      const [datePart, timePart] = full.split(" "); // separar en fecha y hora
+
+      return (
+         <div className="flex flex-col items-center text-sm">
+            <span>{datePart}</span>
+            <span>{timePart}</span>
+         </div>
+      );
+   };
+
    const getTabContent = () => {
       return (
          <div className="space-y-4">
@@ -89,32 +120,115 @@ const CompanyReg = () => {
                   <table className="min-w-full border border-border rounded-lg">
                      <thead className="bg-muted text-sm text-muted-foreground">
                         <tr>
-                           <th className="px-4 py-2 text-left">Codigo</th>
+                           <th className="px-4 py-2 text-left">Código</th>
+                           <th className="px-4 py-2 text-center">Actor</th>
                            <th className="px-4 py-2 text-left">Descripción</th>
-                           <th className="px-4 py-2 text-left">Actor</th>
-                           <th className="px-4 py-2 text-left">Afectado</th>
-                           <th className="px-4 py-2 text-left">resultado</th>
-                           <th className="px-4 py-2 text-left">Fecha</th>
-                           <th className="px-4 py-2 text-left">Extra</th>
+                           <th className="px-4 py-2 text-center">Afectado</th>
+                           <th className="px-4 py-2 text-center">Resultado</th>
+                           <th className="px-4 py-2 text-center">Fecha</th>
+                           <th className="px-4 py-2 text-center">Extra</th>
                         </tr>
                      </thead>
                      <tbody>
-                        {registros.map(
-                           (registro, index) =>
-                              registro.action != "Todas" && (
-                                 <tr key={index} className="border-t hover:bg-muted/30 transition">
-                                    <td className="px-4 py-2 font-medium text-sm">{registro.description}</td>
-                                    <td className="px-4 py-2 text-sm whitespace-nowrap">{registro.actor.role}</td>
-                                    <td className="px-4 py-2 text-sm">{registro.target.type || "—"}</td>
-                                    <td className="px-4 py-2 text-sm">{registro.result || "—"}</td>
-                                    <td className="px-4 py-2 text-sm">{registro.createdAt || "—"}</td>
-                                    <td className="px-4 py-2 text-sm">{JSON.stringify(registro.extra) || "—"}</td>
-                                
-                                 </tr>
-                              ),
-                        )}
+                        {registros.map((registro, index) => (
+                           <tr key={index} className="border-t hover:bg-muted/30 transition">
+                              <td className="px-4 py-2 text-[11px] ">{registro.action}</td>
+                              <td className="px-4 py-2 text-sm text-center">{registro.actor.name}</td>
+                              <td className="px-4 py-2 text-sm">{registro.description}</td>
+                              <td className="px-4 py-2 text-sm text-center">{registro.target.type || "—"}</td>
+                              <td className="px-4 py-2 text-sm">
+                                 <div className="flex justify-center">
+                                    {registro.result ? (
+                                       <Icon name="CheckCircle" size={21} className="text-success" />
+                                    ) : (
+                                       <Icon name="XCircle" size={21} className="text-error" />
+                                    )}
+                                 </div>
+                              </td>
+
+                              <td className="px-4 py-2 text-sm">{formatDateSplit(registro.createdAt) || "—"}</td>
+                              <td className="px-4 py-2 text-sm">
+                                 <Button variant="outlineTeal" size="sm" onClick={() => openModal(registro)}>
+                                    Ver más
+                                 </Button>
+                              </td>
+                           </tr>
+                        ))}
                      </tbody>
                   </table>
+               </div>
+            )}
+
+            {modalOpen && selectedRegistro && (
+               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                  <div className="bg-background rounded-lg shadow-2xl w-11/12 max-w-lg p-6 relative overflow-y-auto max-h-[90vh]">
+                     <button
+                        className="absolute top-3 right-3 text-muted-foreground hover:text-foreground text-2xl font-bold"
+                        onClick={closeModal}
+                     >
+                        ×
+                     </button>
+
+                     <h2 className="text-2xl font-bold  border-b border-border pb-2">Detalles del Evento</h2>
+
+                     <div className="flex flex-col gap-4 divide-y divide-border text-sm">
+                        <div className="pt-4 ">
+                           <p>
+                              <span className="font-semibold text-foreground">Código:</span> {selectedRegistro.action}
+                           </p>
+                        </div>
+
+                        <div className="pt-4">
+                           <p>
+                              <span className="font-semibold text-foreground">Descripción:</span>{" "}
+                              {selectedRegistro.description}
+                           </p>
+                        </div>
+
+                        <div className="pt-4 ">
+                           <p className="font-semibold mb-1 text-foreground">Actor</p>
+                           <p>
+                              <span className="font-medium">Nombre:</span> {selectedRegistro.actor.name}
+                           </p>
+                           <p>
+                              <span className="font-medium">Rol:</span> {selectedRegistro.actor.role}
+                           </p>
+                           <p>
+                              <span className="font-medium">Email:</span> {selectedRegistro.actor.email}
+                           </p>
+                           <p>
+                              <span className="font-medium">Empresa:</span> {selectedRegistro.actor.empresa}
+                           </p>
+                        </div>
+
+                        <div className="pt-4 ">
+                           <p className="font-semibold  text-foreground">
+                              Afectado: <span className="font-normal">{selectedRegistro.target.type}</span>
+                           </p>
+                        </div>
+
+                        <div className="pt-4 ">
+                           <p>
+                              <span className="font-semibold">Nombre Solicitud:</span>{" "}
+                              {selectedRegistro.metadata?.nombre_solicitud}
+                           </p>
+                           <p>
+                              <span className="font-semibold">Estado:</span> {selectedRegistro.metadata?.status}
+                           </p>
+                        </div>
+
+                        <div className="pt-4 ">
+                           <p>
+                              <span className="font-semibold text-foreground">Fecha:</span>{" "}
+                              {formatDate(selectedRegistro.createdAt)}
+                              <p className="pt-1">
+                                 <span className="font-semibold text-foreground">Resultado:</span>{" "}
+                                 {selectedRegistro.result ? "✅ Éxito" : "❌ Fallido"}
+                              </p>
+                           </p>
+                        </div>
+                     </div>
+                  </div>
                </div>
             )}
          </div>
