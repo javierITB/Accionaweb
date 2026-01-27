@@ -63,7 +63,7 @@ const CompanyReg = () => {
 
    const fetchRegistros = async () => {
       try {
-         const response = await apiFetch(`${API_BASE_URL}/registros/todos`);
+         const response = await apiFetch(`${API_BASE_URL}/registro/todos`);
          if (response.ok) {
             const registrosData = await response.json();
             setRegistros(registrosData);
