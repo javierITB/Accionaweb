@@ -3361,6 +3361,7 @@ router.put("/:id/status", async (req, res) => {
           nombre_de_solicitud: updatedResponse.formTitle,
           nuevo_estado: updatedResponse.status,
         },
+        result: RESULTS.SUCCESS,
      });
   
 
@@ -3372,7 +3373,33 @@ router.put("/:id/status", async (req, res) => {
 
   } catch (err) {
     console.error("Error cambiando estado:", err);
+
+    // Registrar evento
+
+    registerEvent(req, {
+      code: CODES.SOLICITUD_CAMBIO_ESTADO,
+      target: {
+         type: TARGET_TYPES.SOLICITUD,
+         _id: updatedResponse._id,
+      },
+      actor: {
+         uid: updatedResponse.user.uid,
+         name: updatedResponse.user.nombre,
+         role: ACTOR_ROLES.ADMIN,
+         email: updatedResponse.user.mail,
+         empresa: updatedResponse.user.empresa,
+      },
+      description: `Cambio de estado de solicitud "${updatedResponse.formTitle}" a ${updatedResponse.status}`,
+      metadata: {
+        nombre_de_solicitud: updatedResponse.formTitle,
+        nuevo_estado: updatedResponse.status,
+      },
+      result: RESULTS.ERROR
+    });
+
+
     res.status(500).json({ error: "Error cambiando estado: " + err.message });
+    
   }
 
 

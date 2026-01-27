@@ -34,7 +34,7 @@ export const ACTOR_ROLES = {
 // results
 export const RESULTS = {
    SUCCESS: "success",
-   FAILURE: "error",
+   ERROR: "error",
 };
 
 // metadata
