@@ -3342,7 +3342,7 @@ router.put("/:id/status", async (req, res) => {
     }
 
       // Registrar evento
-     await registerEvent(req, {
+      registerEvent(req, {
         code: CODES.SOLICITUD_CAMBIO_ESTADO,
         target: {
            type: TARGET_TYPES.SOLICITUD,
