@@ -3341,19 +3341,7 @@ router.put("/:id/status", async (req, res) => {
       });
     }
 
-    res.json({
-      success: true,
-      message: `Estado cambiado a '${status}'`,
-      updatedRequest: updatedResponse
-    });
-
-  } catch (err) {
-    console.error("Error cambiando estado:", err);
-    res.status(500).json({ error: "Error cambiando estado: " + err.message });
-  }
-
-  // Registrar evento
-  try {
+      // Registrar evento
      await registerEvent(req, {
         code: CODES.SOLICITUD_CAMBIO_ESTADO,
         target: {
@@ -3374,9 +3362,20 @@ router.put("/:id/status", async (req, res) => {
           nuevo_estado: updatedResponse.status,
         },
      });
-  } catch (error) {
-     console.error("Error registrando evento:", error);
+  
+
+    res.json({
+      success: true,
+      message: `Estado cambiado a '${status}'`,
+      updatedRequest: updatedResponse
+    });
+
+  } catch (err) {
+    console.error("Error cambiando estado:", err);
+    res.status(500).json({ error: "Error cambiando estado: " + err.message });
   }
+
+
 });
 
 // MANTENIMIENTO: Migrar respuestas existentes para cifrado PQC
