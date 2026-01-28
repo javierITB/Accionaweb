@@ -332,6 +332,16 @@ const DocumentTemplateEditor = ({
           }}>
             + CONDICIONAL
           </Button>
+          <Button
+            variant={templateData.includeSignature ? "default" : "outline"}
+            size="sm"
+            className={`h-8 text-[10px] font-bold ${templateData.includeSignature ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
+            onClick={() => onUpdateTemplateData('includeSignature', !templateData.includeSignature)}
+            disabled={isPreview}
+            title={templateData.includeSignature ? "Quitar Zona de Firma" : "Agregar Zona de Firma"}
+          >
+            <Icon name="PenTool" size={12} className="mr-1" /> {templateData.includeSignature ? "FIRMA" : "+ FIRMA"}
+          </Button>
 
           {isFullScreen && onSave && (
             <Button
@@ -557,54 +567,40 @@ const DocumentTemplateEditor = ({
         </div>
 
         {/* ZONA DE CONFIGURACIÓN DE FIRMAS (Fuera del editor Tiptap) */}
-        {!isPreview && (
-          <div className="w-72 border-l bg-muted/5 p-4 overflow-y-auto">
+        {/* ZONA DE CONFIGURACIÓN DE FIRMAS (Fuera del editor Tiptap) */}
+        {!isPreview && templateData.includeSignature && (
+          <div className="w-72 border-l bg-muted/5 p-4 overflow-y-auto animate-in slide-in-from-right-2 duration-300">
             <h3 className="text-[10px] font-bold uppercase text-primary mb-3 tracking-widest flex items-center gap-2">
               <Icon name="PenTool" size={12} /> Configuración de Firmas
             </h3>
             <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                <input
-                  type="checkbox"
-                  id="includeSignature"
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                  checked={templateData.includeSignature || false}
-                  onChange={(e) => onUpdateTemplateData('includeSignature', e.target.checked)}
+              {/* Checkbox eliminado, controlado por Toolbar */}
+
+              <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                <label className="text-xs font-medium text-muted-foreground">Firma Izquierda (Empleador)</label>
+                <textarea
+                  className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
+                  placeholder="Ej: {{NOMBRE_EMPRESA}}\nRRHH..."
+                  value={templateData.signature1Text || ''}
+                  onChange={(e) => onUpdateTemplateData('signature1Text', e.target.value)}
                 />
-                <label htmlFor="includeSignature" className="text-xs font-medium cursor-pointer select-none">
-                  Incluir Zona de Firmas
-                </label>
+                <p className="text-[10px] text-muted-foreground">Soporta variables y saltos de linea.</p>
               </div>
 
-              {templateData.includeSignature && (
-                <>
-                  <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <label className="text-xs font-medium text-muted-foreground">Firma Izquierda (Empleador)</label>
-                    <textarea
-                      className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
-                      placeholder="Ej: {{NOMBRE_EMPRESA}}\nRRHH..."
-                      value={templateData.signature1Text || ''}
-                      onChange={(e) => onUpdateTemplateData('signature1Text', e.target.value)}
-                    />
-                    <p className="text-[10px] text-muted-foreground">Soporta variables y saltos de linea.</p>
-                  </div>
-
-                  <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <label className="text-xs font-medium text-muted-foreground">Firma Derecha (Empleado)</label>
-                    <textarea
-                      className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
-                      placeholder="Ej: {{NOMBRE_EMPLEADO}}\nRut: {{RUT_EMPLEADO}}..."
-                      value={templateData.signature2Text || ''}
-                      onChange={(e) => onUpdateTemplateData('signature2Text', e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
+              <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                <label className="text-xs font-medium text-muted-foreground">Firma Derecha (Empleado)</label>
+                <textarea
+                  className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
+                  placeholder="Ej: {{NOMBRE_EMPLEADO}}\nRut: {{RUT_EMPLEADO}}..."
+                  value={templateData.signature2Text || ''}
+                  onChange={(e) => onUpdateTemplateData('signature2Text', e.target.value)}
+                />
+              </div>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 };
 
