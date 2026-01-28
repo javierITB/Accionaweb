@@ -426,21 +426,49 @@ function procesarHTML(html, variables) {
         if (tagName === 'p') {
             const style = parsearEstilosInline(fullTag);
 
-            const parts = innerContent.split(/(<\/?(?:strong|b|em|i|u)>)/gi);
+            const parts = innerContent.split(/(<\/?(?:strong|b|em|i|u|span(?:\s+[^>]*)?)>)/gi);
             const paragraphChildren = [];
 
             let currentSpanStyle = { ...style };
+            const baseSize = currentSpanStyle.size; // Guardar tamaño base del párrafo si existe
 
             for (const part of parts) {
                 if (!part) continue;
                 const lower = part.toLowerCase();
 
-                if (lower === '<strong>' || lower === '<b>') { currentSpanStyle.bold = true; continue; }
-                if (lower === '</strong>' || lower === '</b>') { currentSpanStyle.bold = false; continue; }
-                if (lower === '<em>' || lower === '<i>') { currentSpanStyle.italics = true; continue; }
-                if (lower === '</em>' || lower === '</i>') { currentSpanStyle.italics = false; continue; }
-                if (lower === '<u>') { currentSpanStyle.underline = true; continue; }
-                if (lower === '</u>') { currentSpanStyle.underline = false; continue; }
+                // Detección de Tags
+                if (lower.startsWith('<strong>') || lower.startsWith('<b>')) { currentSpanStyle.bold = true; continue; }
+                if (lower.startsWith('</strong>') || lower.startsWith('</b>')) { currentSpanStyle.bold = false; continue; }
+                if (lower.startsWith('<em>') || lower.startsWith('<i>')) { currentSpanStyle.italics = true; continue; }
+                if (lower.startsWith('</em>') || lower.startsWith('</i>')) { currentSpanStyle.italics = false; continue; }
+                if (lower.startsWith('<u>')) { currentSpanStyle.underline = true; continue; }
+                if (lower.startsWith('</u>')) { currentSpanStyle.underline = false; continue; }
+
+                // Soporte para SPAN con font-size
+                if (lower.startsWith('<span')) {
+                    const styleMatch = lower.match(/style="([^"]*)"/i);
+                    if (styleMatch && styleMatch[1]) {
+                        const stylesStr = styleMatch[1];
+                        const sizeMatch = stylesStr.match(/font-size:\s*([\d\.]+)(pt|px)/i);
+                        if (sizeMatch) {
+                            let val = parseFloat(sizeMatch[1]);
+                            const unit = sizeMatch[2];
+                            if (unit === 'pt') {
+                                currentSpanStyle.size = Math.round(val * 2);
+                            } else if (unit === 'px') {
+                                currentSpanStyle.size = Math.round(val * 1.5);
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                if (lower.startsWith('</span>')) {
+                    // Restaurar tamaño base al cerrar span
+                    if (baseSize) currentSpanStyle.size = baseSize;
+                    else delete currentSpanStyle.size;
+                    continue;
+                }
 
                 const runs = reemplazarVariablesEnTexto(part, variables, currentSpanStyle, contadorNumeral);
                 paragraphChildren.push(...runs);
@@ -561,11 +589,12 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
         if (plantilla.includeSignature !== false && signatures.length > 0) {
             children.push(new Paragraph({ text: "", spacing: { before: 800 } }));
 
-            const procesarFirma = (textoFirma) => {
+            const procesarFirma = (textoFirma, styleOpts) => {
                 const parrafosFirma = [];
                 if (!textoFirma) return parrafosFirma;
 
                 const lineas = textoFirma.split(/\r?\n/);
+                const baseStyles = styleOpts || { size: 24, bold: false };
 
                 for (let i = 0; i < lineas.length; i++) {
                     const linea = lineas[i];
@@ -580,7 +609,7 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
                         continue;
                     }
 
-                    const runsLinea = reemplazarVariablesEnTexto(linea, variables, { size: 24, bold: false, preventVariableBold: true }, null);
+                    const runsLinea = reemplazarVariablesEnTexto(linea, variables, { ...baseStyles, preventVariableBold: true }, null);
 
                     parrafosFirma.push(new Paragraph({
                         alignment: AlignmentType.CENTER,
@@ -594,7 +623,16 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
 
             const generarBloqueFirma = (sig) => {
                 const titleText = sig.title || "Firma";
-                const dynamicContent = procesarFirma(sig.text);
+
+                // Configurar estilos del texto (contenido)
+                const textStyles = {
+                    size: 24,
+                    bold: !!sig.textBold,
+                    italics: !!sig.textItalic,
+                    underline: sig.textUnderline ? { type: "single" } : undefined
+                };
+
+                const dynamicContent = procesarFirma(sig.text, textStyles);
 
                 return [
                     new Paragraph({
@@ -605,7 +643,13 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
                     }),
                     new Paragraph({
                         alignment: AlignmentType.CENTER,
-                        children: [new TextRun({ text: titleText, bold: true, size: 24 })],
+                        children: [new TextRun({
+                            text: titleText,
+                            bold: !!sig.titleBold,
+                            italics: !!sig.titleItalic,
+                            underline: sig.titleUnderline ? { type: "single" } : undefined,
+                            size: 24
+                        })],
                         spacing: { after: 0 },
                         keepWithNext: true
                     }),
@@ -632,24 +676,38 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
             const tableRows = [];
             for (let i = 0; i < signatures.length; i += 2) {
                 const sig1 = signatures[i];
-                const sig2 = signatures[i + 1]; // Puede ser undefined
+                const sig2 = signatures[i + 1];
 
-                const cell1Children = generarBloqueFirma(sig1);
-                const cell2Children = sig2 ? generarBloqueFirma(sig2) : [new Paragraph("")];
+                if (!sig2) {
+                    // Si es impar y es el último, centrar usando columnSpan 2
+                    tableRows.push(new TableRow({
+                        cantSplit: true,
+                        children: [
+                            new TableCell({
+                                columnSpan: 2,
+                                children: generarBloqueFirma(sig1),
+                                borders: bordersNoneConfig,
+                            })
+                        ]
+                    }));
+                } else {
+                    const cell1Children = generarBloqueFirma(sig1);
+                    const cell2Children = generarBloqueFirma(sig2);
 
-                tableRows.push(new TableRow({
-                    cantSplit: true,
-                    children: [
-                        new TableCell({
-                            children: cell1Children,
-                            borders: bordersNoneConfig,
-                        }),
-                        new TableCell({
-                            children: cell2Children,
-                            borders: bordersNoneConfig,
-                        })
-                    ]
-                }));
+                    tableRows.push(new TableRow({
+                        cantSplit: true,
+                        children: [
+                            new TableCell({
+                                children: cell1Children,
+                                borders: bordersNoneConfig,
+                            }),
+                            new TableCell({
+                                children: cell2Children,
+                                borders: bordersNoneConfig,
+                            })
+                        ]
+                    }));
+                }
             }
 
             children.push(new Table({

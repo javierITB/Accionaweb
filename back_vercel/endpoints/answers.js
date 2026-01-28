@@ -1034,10 +1034,10 @@ router.get("/filtros", async (req, res) => {
     const auth = await verifyRequest(req);
     if (!auth.ok) return res.status(401).json({ error: auth.error });
 
-    // 1. Parámetros de la URL
+    // 1. Parámetros de la URL (Se agrega submittedBy)
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
-    const { status, company, search, startDate, endDate } = req.query;
+    const { status, company, search, startDate, endDate, submittedBy } = req.query;
 
     // 2. Query inicial de Base de Datos (Campos no encriptados)
     let query = {};
@@ -1061,7 +1061,6 @@ router.get("/filtros", async (req, res) => {
     const collection = req.db.collection("respuestas");
 
     // 3. Obtenemos todos los registros que cumplen los filtros base de la DB
-    // No limitamos aquí porque necesitamos desencriptar para buscar por 'search'
     const statsQuery = { ...query };
     delete statsQuery.status;
 
@@ -1094,7 +1093,6 @@ router.get("/filtros", async (req, res) => {
         try { return decrypt(val); } catch (e) { return val; }
       };
 
-      // Extraemos los datos clave para la búsqueda y la respuesta
       const trabajador = getDecryptedResponse([
         "Nombre del trabajador",
         "NOMBRE DEL TRABAJADOR",
@@ -1133,7 +1131,6 @@ router.get("/filtros", async (req, res) => {
 
     // 5. Filtrado en Memoria (Búsqueda por texto claro)
     if (search && search.trim() !== "") {
-      // Función interna para quitar tildes, convertir a minúsculas y asegurar que sea string
       const normalizeText = (str) => 
         str ? str.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
 
@@ -1150,11 +1147,20 @@ router.get("/filtros", async (req, res) => {
         );
       });
     }
-    // 6. Filtro por empresa (Si el campo empresa también está encriptado en DB)
+
+    // 6. Filtro por empresa
     if (company && company.trim() !== "") {
       const compTerm = company.toLowerCase();
       answersProcessed = answersProcessed.filter(item =>
         item.company.toLowerCase().includes(compTerm)
+      );
+    }
+
+    // 6.1 Filtro por enviado por (AÑADIDO)
+    if (submittedBy && submittedBy.trim() !== "") {
+      const userTerm = submittedBy.toLowerCase();
+      answersProcessed = answersProcessed.filter(item =>
+        item.submittedBy.toLowerCase().includes(userTerm)
       );
     }
 
@@ -1163,12 +1169,10 @@ router.get("/filtros", async (req, res) => {
     const skip = (page - 1) * limit;
     const paginatedData = answersProcessed.slice(skip, skip + limit);
 
-    // 8. Stats de estados (Basados en la agregación global)
-    // Mapeamos los resultados del group by
     const getCount = (s) => statusCounts.find(x => x._id === s)?.count || 0;
 
     const stats = {
-      total: totalCount, // Total VISIBLE (filtrado)
+      total: totalCount,
       pendiente: getCount('pendiente'),
       en_revision: getCount('en_revision'),
       aprobado: getCount('aprobado'),
@@ -1177,7 +1181,6 @@ router.get("/filtros", async (req, res) => {
       firmado: getCount('firmado')
     };
 
-    // 9. Respuesta final
     res.json({
       success: true,
       data: paginatedData,

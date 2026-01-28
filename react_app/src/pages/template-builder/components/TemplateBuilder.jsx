@@ -49,20 +49,21 @@ const DocumentTemplateEditor = ({
   const [dynamicVarsExpanded, setDynamicVarsExpanded] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
-  const [, setTick] = useState(0); // Force re-render for toolbars
+  const [, setTick] = useState(0);
+  const [focusedField, setFocusedField] = useState({ type: 'editor' });
 
   // --- Lógica de Firmas Dinámicas ---
   const getEffectiveSignatures = () => {
     if (templateData.signatures && Array.isArray(templateData.signatures)) return templateData.signatures;
     const sigs = [];
-    // Migración Legacy: Si existen campos antiguos, úsalos
+    // Migración Legacy:
     if (templateData.signature1Text !== undefined || templateData.signature2Text !== undefined) {
-      sigs.push({ title: templateData.signature1Title || "Empleador / Representante Legal", text: templateData.signature1Text || "" });
-      sigs.push({ title: templateData.signature2Title || "Empleado", text: templateData.signature2Text || "" });
+      sigs.push({ title: templateData.signature1Title || "Empleador / Representante Legal", text: templateData.signature1Text || "", titleBold: true });
+      sigs.push({ title: templateData.signature2Title || "Empleado", text: templateData.signature2Text || "", titleBold: true });
     } else {
       // Default Inicial (2 columnas vacías)
-      sigs.push({ title: "Empleador / Representante Legal", text: "" });
-      sigs.push({ title: "Empleado", text: "" });
+      sigs.push({ title: "Empleador / Representante Legal", text: "", titleBold: true });
+      sigs.push({ title: "Empleado", text: "", titleBold: true });
     }
     return sigs;
   };
@@ -103,6 +104,7 @@ const DocumentTemplateEditor = ({
       TableCell,
       TableHeader,
     ],
+    onFocus: () => setFocusedField({ type: 'editor' }),
     content: templateData.documentContent || (templateData.paragraphs && templateData.paragraphs.length > 0
       ? templateData.paragraphs.map(p => {
         let text = p.content;
@@ -158,32 +160,86 @@ const DocumentTemplateEditor = ({
   };
 
   const addVariable = (tag) => {
-    if (editor) {
-      editor.chain().focus().insertContent(tag.toLowerCase()).run();
+    if (focusedField.type === 'signature') {
+      const { index, field } = focusedField;
+      const currentText = signatures[index][field] || "";
+      // Append variable with a space if not empty
+      const spacer = currentText.length > 0 && !currentText.endsWith(' ') ? " " : "";
+      updateSignature(index, field, currentText + spacer + tag.toLowerCase());
+    } else {
+      if (editor) {
+        editor.chain().focus().insertContent(tag.toLowerCase()).run();
+      }
     }
   };
 
   const changeCase = (mode) => {
     if (!editor) return;
-    const { from, to, empty } = editor.state.selection;
+    const { state, view } = editor;
+    const { from, to, empty } = state.selection;
     if (empty) return;
 
-    const text = editor.state.doc.textBetween(from, to);
-    let newText = text;
+    const tr = state.tr;
 
-    if (mode === 'upper') {
-      newText = text.toUpperCase();
-    } else if (mode === 'lower') {
-      newText = text.toLowerCase();
-    } else if (mode === 'default') {
-      // Solo modificar si parece una variable (empieza con {{ y termina con }})
-      if (/^{{.+}}$/.test(text)) {
-        // Title Case para variables: Capitaliza primera letra de cada palabra
-        newText = text.toLowerCase().replace(/(?:^|[\s_])\w/g, m => m.toUpperCase());
+    state.doc.nodesBetween(from, to, (node, pos) => {
+      if (node.isText) {
+        const start = Math.max(from, pos);
+        const end = Math.min(to, pos + node.nodeSize);
+
+        if (start < end) {
+          const content = node.text.substring(start - pos, end - pos);
+          let newContent = content;
+
+          if (mode === 'upper') {
+            newContent = content.toUpperCase();
+          } else if (mode === 'lower') {
+            newContent = content.toLowerCase();
+          } else if (mode === 'default') {
+            // Title Case para variables (si empieza con {{)
+            if (content.trim().startsWith('{{') || /^{{.+}}$/.test(content)) {
+              newContent = content.toLowerCase().replace(/(?:^|[\s_])\w/g, m => m.toUpperCase());
+            }
+          }
+
+          if (newContent !== content) {
+            // Reemplazar manteniendo los estilos (marks) del nodo original
+            tr.replaceWith(start, end, state.schema.text(newContent, node.marks));
+          }
+        }
       }
-    }
+      return true;
+    });
 
-    editor.chain().focus().insertContent(newText).run();
+    if (tr.docChanged) {
+      view.dispatch(tr);
+    }
+  };
+
+  const toggleStyle = (style) => {
+    if (focusedField.type === 'signature') {
+      const { index, field } = focusedField;
+      if (!field) return;
+
+      const propName = `${field}${style.charAt(0).toUpperCase() + style.slice(1)}`;
+      const currentVal = signatures[index][propName];
+      updateSignature(index, propName, !currentVal);
+    } else {
+      if (!editor) return;
+      if (style === 'bold') editor.chain().focus().toggleBold().run();
+      if (style === 'italic') editor.chain().focus().toggleItalic().run();
+      if (style === 'underline') editor.chain().focus().toggleUnderline().run();
+    }
+  };
+
+  const isStyleActive = (style) => {
+    if (focusedField.type === 'signature') {
+      const { index, field } = focusedField;
+      if (!field) return false;
+      const propName = `${field}${style.charAt(0).toUpperCase() + style.slice(1)}`;
+      return !!signatures[index]?.[propName];
+    }
+    if (!editor) return false;
+    return editor.isActive(style);
   };
 
   // Efecto para controlar modo solo lectura (Vista Previa)
@@ -233,7 +289,7 @@ const DocumentTemplateEditor = ({
     { label: 'Georgia', value: 'Georgia' }
   ];
 
-  const fontSizes = ['10px', '11px', '12px', '14px', '16px', '18px', '22px', '28px', '36px'];
+  const fontSizes = ['8', '9', '10', '11', '12', '14', '16', '18', '20', '22', '24', '26', '28', '36', '48', '72'];
 
   return (
     <div className={`flex flex-col border rounded-xl bg-background shadow-lg overflow-hidden border-border transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 h-screen m-0 rounded-none' : 'h-[calc(100vh-140px)]'}`}>
@@ -262,10 +318,19 @@ const DocumentTemplateEditor = ({
         </select>
 
         <select
-          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
-          onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
+          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-20"
+          value={editor.getAttributes('textStyle').fontSize ? String(editor.getAttributes('textStyle').fontSize).replace('pt', '').replace('px', '') : ''}
+          onChange={(e) => {
+            const val = e.target.value;
+            // Si selecciona "Tamaño", no hace nada o borra
+            if (!val) {
+              editor.chain().focus().setMark('textStyle', { fontSize: null }).run();
+            } else {
+              editor.chain().focus().setFontSize(`${val}pt`).run();
+            }
+          }}
         >
-          <option value="">Tamaño</option>
+          <option value="">Tam.</option>
           {fontSizes.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
 
@@ -304,13 +369,13 @@ const DocumentTemplateEditor = ({
 
         {/* Estilos basicos */}
         <div className="flex bg-card border rounded-md p-0.5">
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('bold') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('bold') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('bold')}>
             <Icon name="Bold" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('italic') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('italic') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('italic')}>
             <Icon name="Italic" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('underline') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('underline') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('underline')}>
             <Icon name="Underline" size={14} />
           </Button>
         </div>
@@ -580,16 +645,26 @@ const DocumentTemplateEditor = ({
 
               {/* VISUALIZACIÓN DE FIRMAS (Solo si está activo) */}
               {templateData.includeSignature && (
-                <div className="signature-area">
-                  {signatures.map((sig, i) => (
-                    <div className="signature-col" key={i}>
-                      <div className="signature-line">__________________________</div>
-                      <div className="font-bold">{sig.title || "Firma"}</div>
-                      {sig.text?.split('\n').map((line, j) => (
-                        <div key={j}>{line}</div>
-                      ))}
-                    </div>
-                  ))}
+                <div className="signature-area grid grid-cols-2 gap-x-8 gap-y-8 mt-8">
+                  {signatures.map((sig, i) => {
+                    const isLastAndOdd = (i === signatures.length - 1) && (signatures.length % 2 !== 0);
+                    return (
+                      <div
+                        className={`signature-col flex flex-col items-center text-center ${isLastAndOdd ? 'col-span-2 place-self-center' : ''}`}
+                        key={i}
+                      >
+                        <div className="signature-line font-bold mb-1">__________________________</div>
+                        <div className={`text-sm mb-1 ${sig.titleBold ? 'font-bold' : ''} ${sig.titleItalic ? 'italic' : ''} ${sig.titleUnderline ? 'underline' : ''}`}>
+                          {sig.title || "Firma"}
+                        </div>
+                        <div className={`${sig.textBold ? 'font-bold' : ''} ${sig.textItalic ? 'italic' : ''} ${sig.textUnderline ? 'underline' : ''}`}>
+                          {sig.text?.split('\n').map((line, j) => (
+                            <div key={j} className="text-sm">{line}</div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -620,6 +695,7 @@ const DocumentTemplateEditor = ({
                       className="w-full text-xs border rounded px-2 py-1 focus:ring-1 focus:ring-primary outline-none bg-background text-foreground placeholder:text-muted-foreground/50"
                       value={sig.title || ''}
                       onChange={(e) => updateSignature(i, 'title', e.target.value)}
+                      onFocus={() => setFocusedField({ type: 'signature', index: i, field: 'title' })}
                       placeholder="Ej: Empleado"
                     />
                   </div>
@@ -631,6 +707,7 @@ const DocumentTemplateEditor = ({
                       placeholder="Variables, RUT, etc..."
                       value={sig.text || ''}
                       onChange={(e) => updateSignature(i, 'text', e.target.value)}
+                      onFocus={() => setFocusedField({ type: 'signature', index: i, field: 'text' })}
                     />
                   </div>
                 </div>
