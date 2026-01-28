@@ -233,7 +233,7 @@ const DocumentTemplateEditor = ({
     { label: 'Georgia', value: 'Georgia' }
   ];
 
-  const fontSizes = ['10px', '11px', '12px', '14px', '16px', '18px', '22px', '28px', '36px'];
+  const fontSizes = ['8', '9', '10', '11', '12', '14', '16', '18', '20', '22', '24', '26', '28', '36', '48', '72'];
 
   return (
     <div className={`flex flex-col border rounded-xl bg-background shadow-lg overflow-hidden border-border transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 h-screen m-0 rounded-none' : 'h-[calc(100vh-140px)]'}`}>
@@ -262,10 +262,19 @@ const DocumentTemplateEditor = ({
         </select>
 
         <select
-          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
-          onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
+          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-20"
+          value={editor.getAttributes('textStyle').fontSize ? String(editor.getAttributes('textStyle').fontSize).replace('pt', '').replace('px', '') : ''}
+          onChange={(e) => {
+            const val = e.target.value;
+            // Si selecciona "Tamaño", no hace nada o borra
+            if (!val) {
+              editor.chain().focus().setMark('textStyle', { fontSize: null }).run();
+            } else {
+              editor.chain().focus().setFontSize(`${val}pt`).run();
+            }
+          }}
         >
-          <option value="">Tamaño</option>
+          <option value="">Tam.</option>
           {fontSizes.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
 
