@@ -46,8 +46,45 @@ const DocumentTemplateEditor = ({
   onSave
 }) => {
   const [staticVarsExpanded, setStaticVarsExpanded] = useState(true);
+  const [dynamicVarsExpanded, setDynamicVarsExpanded] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
+  const [, setTick] = useState(0); // Force re-render for toolbars
+
+  // --- Lógica de Firmas Dinámicas ---
+  const getEffectiveSignatures = () => {
+    if (templateData.signatures && Array.isArray(templateData.signatures)) return templateData.signatures;
+    const sigs = [];
+    // Migración Legacy: Si existen campos antiguos, úsalos
+    if (templateData.signature1Text !== undefined || templateData.signature2Text !== undefined) {
+      sigs.push({ title: templateData.signature1Title || "Empleador / Representante Legal", text: templateData.signature1Text || "" });
+      sigs.push({ title: templateData.signature2Title || "Empleado", text: templateData.signature2Text || "" });
+    } else {
+      // Default Inicial (2 columnas vacías)
+      sigs.push({ title: "Empleador / Representante Legal", text: "" });
+      sigs.push({ title: "Empleado", text: "" });
+    }
+    return sigs;
+  };
+
+  const signatures = getEffectiveSignatures();
+
+  const updateSignature = (index, field, value) => {
+    const newSigs = [...signatures];
+    newSigs[index] = { ...newSigs[index], [field]: value };
+    onUpdateTemplateData('signatures', newSigs);
+  };
+
+  const addSignature = () => {
+    const newSigs = [...signatures, { title: "Firma Adicional", text: "" }];
+    onUpdateTemplateData('signatures', newSigs);
+  };
+
+  const removeSignature = (index) => {
+    const newSigs = signatures.filter((_, i) => i !== index);
+    onUpdateTemplateData('signatures', newSigs);
+  };
+  // ----------------------------------
 
   const editor = useEditor({
     extensions: [
@@ -55,7 +92,6 @@ const DocumentTemplateEditor = ({
         underline: false,
       }),
       Underline,
-      // TextStyle ya incluido en FontSize
       FontFamily,
       FontSize,
       Image,
@@ -88,10 +124,66 @@ const DocumentTemplateEditor = ({
     },
   });
 
+  // Force re-render on selection change or transaction to update toolbar state
+  React.useEffect(() => {
+    if (!editor) return;
+    const forceUpdate = () => setTick(t => t + 1);
+
+    // Bind all relevant events
+    editor.on('selectionUpdate', forceUpdate);
+    editor.on('transaction', forceUpdate);
+    editor.on('focus', forceUpdate);
+    editor.on('blur', forceUpdate);
+
+    return () => {
+      editor.off('selectionUpdate', forceUpdate);
+      editor.off('transaction', forceUpdate);
+      editor.off('focus', forceUpdate);
+      editor.off('blur', forceUpdate);
+    };
+  }, [editor]);
+
+  const getCasingClass = (mode) => {
+    if (!editor || editor.state.selection.empty) return '';
+    const text = editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to);
+    if (!text) return '';
+
+    const hasUpper = /[A-ZÁÉÍÓÚÑ]/.test(text);
+    const hasLower = /[a-záéíóúñ]/.test(text);
+
+    if (mode === 'upper') return (hasUpper && !hasLower) ? 'bg-blue-600 text-white' : '';
+    if (mode === 'lower') return (hasLower && !hasUpper) ? 'bg-blue-600 text-white' : '';
+    if (mode === 'default') return (hasUpper && hasLower) ? 'bg-blue-600 text-white' : '';
+    return '';
+  };
+
   const addVariable = (tag) => {
     if (editor) {
-      editor.chain().focus().insertContent(`<strong>${tag}</strong>`).run();
+      editor.chain().focus().insertContent(tag.toLowerCase()).run();
     }
+  };
+
+  const changeCase = (mode) => {
+    if (!editor) return;
+    const { from, to, empty } = editor.state.selection;
+    if (empty) return;
+
+    const text = editor.state.doc.textBetween(from, to);
+    let newText = text;
+
+    if (mode === 'upper') {
+      newText = text.toUpperCase();
+    } else if (mode === 'lower') {
+      newText = text.toLowerCase();
+    } else if (mode === 'default') {
+      // Solo modificar si parece una variable (empieza con {{ y termina con }})
+      if (/^{{.+}}$/.test(text)) {
+        // Title Case para variables: Capitaliza primera letra de cada palabra
+        newText = text.toLowerCase().replace(/(?:^|[\s_])\w/g, m => m.toUpperCase());
+      }
+    }
+
+    editor.chain().focus().insertContent(newText).run();
   };
 
   // Efecto para controlar modo solo lectura (Vista Previa)
@@ -179,50 +271,64 @@ const DocumentTemplateEditor = ({
 
         <div className="w-px h-6 bg-border mx-1" />
 
+        {/* Mayúsculas / Minúsculas / Default */}
+        <div className="flex bg-card border rounded-md p-0.5 gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('upper')}`}
+            onClick={() => changeCase('upper')}
+            title="Mayúsculas"
+          >
+            M ↑
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('lower')}`}
+            onClick={() => changeCase('lower')}
+            title="Minúsculas"
+          >
+            m ↓
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('default')}`}
+            onClick={() => changeCase('default')}
+            title="Default (Como se ingresó)"
+          >
+            d
+          </Button>
+        </div>
+
         {/* Estilos basicos */}
         <div className="flex bg-card border rounded-md p-0.5">
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('bold') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('bold') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}>
             <Icon name="Bold" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('italic') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('italic') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}>
             <Icon name="Italic" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('underline') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('underline') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}>
             <Icon name="Underline" size={14} />
           </Button>
         </div>
 
         {/* Alineacion */}
         <div className="flex bg-card border rounded-md p-0.5">
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'left' }) ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'left' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
             <Icon name="AlignLeft" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'center' }) ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'center' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
             <Icon name="AlignCenter" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
             <Icon name="AlignJustify" size={14} />
           </Button>
         </div>
 
-        {/* Tablas - BOTÓN DE ZONA FIRMAS ELIMINADO - Ahora se maneja con inputs dedicados */}
-        <div className="flex bg-card border rounded-md p-0.5 gap-1 px-1 items-center">
-          {/* Solo botones generales de tabla si se necesitan, pero quitamos el de Zona Firmas específico */}
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insertar Tabla">
-            <Icon name="Grid" size={14} />
-          </Button>
 
-          {editor.isActive('table') && (
-            <div className="flex gap-1 pl-1">
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => editor.chain().focus().deleteTable().run()} title="Eliminar Tabla">
-                <Icon name="Trash2" size={14} />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => editor.chain().focus().addColumnAfter().run()} title="Añadir Columna">
-                <Icon name="ArrowRight" size={14} />
-              </Button>
-            </div>
-          )}
-        </div>
 
 
 
@@ -261,6 +367,16 @@ const DocumentTemplateEditor = ({
           }}>
             + CONDICIONAL
           </Button>
+          <Button
+            variant={templateData.includeSignature ? "default" : "outline"}
+            size="sm"
+            className={`h-8 text-[10px] font-bold ${templateData.includeSignature ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
+            onClick={() => onUpdateTemplateData('includeSignature', !templateData.includeSignature)}
+            disabled={isPreview}
+            title={templateData.includeSignature ? "Quitar Zona de Firma" : "Agregar Zona de Firma"}
+          >
+            <Icon name="PenTool" size={12} className="mr-1" /> {templateData.includeSignature ? "FIRMA" : "+ FIRMA"}
+          </Button>
 
           {isFullScreen && onSave && (
             <Button
@@ -282,63 +398,72 @@ const DocumentTemplateEditor = ({
           <div className="space-y-6">
             {/* Variables del Formulario */}
             <div>
-              <h3 className="text-[10px] font-bold uppercase text-primary mb-3 tracking-widest flex items-center gap-2">
-                <Icon name="Database" size={12} /> Variables Formulario
-              </h3>
-              <div className="grid grid-cols-1 gap-1.5">
-                {dynamicVariables.map((v) => {
-                  const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
-                  const isSelectable = v.type?.toLowerCase().includes('select') ||
-                    v.type?.toLowerCase().includes('drop') ||
-                    v.type?.toLowerCase().includes('check') ||
-                    v.type?.toLowerCase().includes('radio');
+              <button
+                onClick={() => setDynamicVarsExpanded(!dynamicVarsExpanded)}
+                className="w-full flex items-center justify-between text-[10px] font-bold uppercase text-primary mb-3 tracking-widest hover:bg-primary/10 p-1 rounded transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <Icon name="Database" size={12} /> Variables Formulario
+                </span>
+                <Icon name={dynamicVarsExpanded ? "ChevronUp" : "ChevronDown"} size={12} />
+              </button>
 
-                  return (
-                    <div key={v.id || v.title} className="mb-1">
-                      <button
-                        onClick={() => addVariable(tag)}
-                        className={`w-full text-left px-3 py-2 text-[11px] border rounded shadow-sm transition-all truncate flex items-center gap-2 ${isSelectable
-                          ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-800'
-                          : 'bg-card hover:border-primary hover:bg-primary/5'
-                          }`}
-                        title={`${tag} (${v.type || 'Texto'})`}
-                      >
-                        <Icon
-                          name={isSelectable ? "List" : "Type"}
-                          size={12}
-                          className={isSelectable ? "text-blue-500" : "text-muted-foreground group-hover:text-primary"}
-                        />
-                        <span className={`font-mono truncate ${isSelectable ? 'text-blue-700 dark:text-blue-300' : 'text-primary group-hover:text-primary-foreground'}`}>
-                          {tag}
-                        </span>
-                      </button>
+              {dynamicVarsExpanded && (
+                <div className="grid grid-cols-1 gap-1.5 animate-in slide-in-from-top-1 fade-in duration-200">
+                  {dynamicVariables.map((v) => {
+                    const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
+                    const isSelectable = v.type?.toLowerCase().includes('select') ||
+                      v.type?.toLowerCase().includes('drop') ||
+                      v.type?.toLowerCase().includes('check') ||
+                      v.type?.toLowerCase().includes('radio');
 
-                      {isSelectable && v.options && v.options.length > 0 && (
-                        <div className="ml-4 mt-1 border-l-2 border-blue-100 pl-2 space-y-1">
-                          {v.options.map((opt, idx) => (
-                            <button
-                              key={idx}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const val = typeof opt === 'string' ? opt : opt.value || opt.label;
-                                // Insertar bloque condicional pre-armado
-                                const condBlock = `[[IF:${tag.replace(/[{}]/g, '')} == "${val}"]]`;
-                                const endBlock = `[[ENDIF]]`;
-                                editor.chain().focus().insertContent(`<p>${condBlock}</p><p>...</p><p>${endBlock}</p>`).run();
-                              }}
-                              className="w-full text-left text-[10px] text-muted-foreground hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded truncate flex items-center gap-1"
-                              title={`Insertar condición: Si es "${typeof opt === 'string' ? opt : opt.val}"`}
-                            >
-                              <Icon name="GitBranch" size={10} />
-                              <span className="truncate">{typeof opt === 'string' ? opt : opt.label || opt.value}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                    return (
+                      <div key={v.id || v.title} className="mb-1">
+                        <button
+                          onClick={() => addVariable(tag)}
+                          className={`w-full text-left px-3 py-2 text-[11px] border rounded shadow-sm transition-all truncate flex items-center gap-2 ${isSelectable
+                            ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-800'
+                            : 'bg-card hover:border-primary hover:bg-primary/5'
+                            }`}
+                          title={`${tag} (${v.type || 'Texto'})`}
+                        >
+                          <Icon
+                            name={isSelectable ? "List" : "Type"}
+                            size={12}
+                            className={isSelectable ? "text-blue-500" : "text-muted-foreground group-hover:text-primary"}
+                          />
+                          <span className={`font-mono truncate ${isSelectable ? 'text-blue-700 dark:text-blue-300' : 'text-primary group-hover:text-primary-foreground'}`}>
+                            {tag}
+                          </span>
+                        </button>
+
+                        {isSelectable && v.options && v.options.length > 0 && (
+                          <div className="ml-4 mt-1 border-l-2 border-blue-100 pl-2 space-y-1">
+                            {v.options.map((opt, idx) => (
+                              <button
+                                key={idx}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const val = typeof opt === 'string' ? opt : opt.value || opt.label;
+                                  // Insertar bloque condicional pre-armado
+                                  const condBlock = `[[IF:${tag.replace(/[{}]/g, '')} == "${val}"]]`;
+                                  const endBlock = `[[ENDIF]]`;
+                                  editor.chain().focus().insertContent(`<p>${condBlock}</p><p>...</p><p>${endBlock}</p>`).run();
+                                }}
+                                className="w-full text-left text-[10px] text-muted-foreground hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded truncate flex items-center gap-1"
+                                title={`Insertar condición: Si es "${typeof opt === 'string' ? opt : opt.val}"`}
+                              >
+                                <Icon name="GitBranch" size={10} />
+                                <span className="truncate">{typeof opt === 'string' ? opt : opt.label || opt.value}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Variables Generales Reintegradas */}
@@ -380,15 +505,14 @@ const DocumentTemplateEditor = ({
             <style>{`
               /* Contenedor del área de edición */
               .editor-paper-container {
-                background-color: #f0f2f5; /* Fondo gris para resaltar la "hoja" */
+                background-color: #f0f2f5; 
                 padding: 40px 0;
                 display: flex;
                 justify-content: center;
               }
 
-              /* La "Hoja" de papel */
-              .ProseMirror {
-                outline: none;
+              /* La "Hoja" Visual (Contenedor Padre) */
+              .visual-page {
                 background: white;
                 width: 216mm; /* Ancho Carta */
                 min-height: 279mm; /* Alto Carta Mínimo */
@@ -397,6 +521,20 @@ const DocumentTemplateEditor = ({
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                 position: relative;
                 font-family: 'Arial', sans-serif;
+                display: flex;
+                flex-direction: column;
+              }
+
+              /* El Editor Tiptap (Contenido) */
+              .ProseMirror {
+                outline: none;
+                flex: 1; /* Ocupa el espacio disponible */
+              }
+              
+              /* Vista Previa (Contenido) */
+              .preview-page {
+                outline: none;
+                flex: 1;
               }
 
               /* Ajustes para tablas y párrafos */
@@ -405,63 +543,112 @@ const DocumentTemplateEditor = ({
               .ProseMirror td, .ProseMirror th { min-width: 1em; border: 1px dashed ${isPreview ? 'transparent' : '#ccc'}; padding: 10px; vertical-align: top; box-sizing: border-box; position: relative; }
               .ProseMirror .selectedCell:after { z-index: 2; background: rgba(200, 200, 255, 0.4); content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; }
 
-              /* Adaptación para Vista Previa */
-              .preview-page {
-                outline: none;
-                background: white;
-                width: 216mm;
-                min-height: 279mm;
-                padding: 2.5cm;
-                margin: 0 auto;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                position: relative;
-                font-family: 'Arial', sans-serif;
+              /* Área Visual de Firmas */
+              .signature-area {
+                margin-top: 50px;
+                padding-top: 20px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 40px;
+                page-break-inside: avoid;
+                color: black; /* FORZAR CONTRASTE */
+                border-top: 1px dashed #eee; /* Guía visual sutil */
+              }
+              .signature-col {
+                text-align: center;
+                font-size: 12px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+              }
+              .signature-line {
+                font-weight: bold;
+                margin-bottom: 8px;
               }
             `}</style>
 
-            {!isPreview ? (
-              <EditorContent editor={editor} className="prose prose-sm max-w-none" />
-            ) : (
-              <div
-                className="prose prose-sm max-w-none preview-page"
-                dangerouslySetInnerHTML={{ __html: generatePreviewHtml(editor.getHTML()) }}
-              />
-            )}
+            <div className={`visual-page ${isPreview ? 'scale-[1.02]' : ''}`}>
+              {!isPreview ? (
+                <EditorContent editor={editor} className="prose prose-sm max-w-none flex-1" />
+              ) : (
+                <div
+                  className="prose prose-sm max-w-none preview-page"
+                  dangerouslySetInnerHTML={{ __html: generatePreviewHtml(editor.getHTML()) }}
+                />
+              )}
+
+              {/* VISUALIZACIÓN DE FIRMAS (Solo si está activo) */}
+              {templateData.includeSignature && (
+                <div className="signature-area">
+                  {signatures.map((sig, i) => (
+                    <div className="signature-col" key={i}>
+                      <div className="signature-line">__________________________</div>
+                      <div className="font-bold">{sig.title || "Firma"}</div>
+                      {sig.text?.split('\n').map((line, j) => (
+                        <div key={j}>{line}</div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* ZONA DE CONFIGURACIÓN DE FIRMAS (Fuera del editor Tiptap) */}
-        {!isPreview && (
-          <div className="w-72 border-l bg-muted/5 p-4 overflow-y-auto">
+        {/* ZONA DE CONFIGURACIÓN DE FIRMAS (Fuera del editor Tiptap) */}
+        {!isPreview && templateData.includeSignature && (
+          <div className="w-72 border-l bg-muted/5 p-4 overflow-y-auto animate-in slide-in-from-right-2 duration-300">
             <h3 className="text-[10px] font-bold uppercase text-primary mb-3 tracking-widest flex items-center gap-2">
               <Icon name="PenTool" size={12} /> Configuración de Firmas
             </h3>
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Firma Izquierda (Empleador)</label>
-                <textarea
-                  className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
-                  placeholder="Ej: {{NOMBRE_EMPRESA}}\nRRHH..."
-                  value={templateData.signature1Text || ''}
-                  onChange={(e) => onUpdateTemplateData('signature1Text', e.target.value)}
-                />
-                <p className="text-[10px] text-muted-foreground">Soporta variables y saltos de linea.</p>
-              </div>
+              {signatures.map((sig, i) => (
+                <div key={i} className="relative p-3 border rounded-md bg-card shadow-sm group hover:border-primary/50 transition-colors">
+                  <button
+                    onClick={() => removeSignature(i)}
+                    className="absolute top-2 right-2 text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                    title="Eliminar esta firma"
+                  >
+                    <Icon name="Trash" size={12} />
+                  </button>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Firma Derecha (Empleado)</label>
-                <textarea
-                  className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
-                  placeholder="Ej: {{NOMBRE_EMPLEADO}}\nRut: {{RUT_EMPLEADO}}..."
-                  value={templateData.signature2Text || ''}
-                  onChange={(e) => onUpdateTemplateData('signature2Text', e.target.value)}
-                />
-              </div>
+                  <div className="mb-3">
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Título</label>
+                    <input
+                      className="w-full text-xs border rounded px-2 py-1 focus:ring-1 focus:ring-primary outline-none bg-background text-foreground placeholder:text-muted-foreground/50"
+                      value={sig.title || ''}
+                      onChange={(e) => updateSignature(i, 'title', e.target.value)}
+                      placeholder="Ej: Empleado"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Contenido</label>
+                    <textarea
+                      className="w-full h-24 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary outline-none bg-background text-foreground placeholder:text-muted-foreground/50 font-mono"
+                      placeholder="Variables, RUT, etc..."
+                      value={sig.text || ''}
+                      onChange={(e) => updateSignature(i, 'text', e.target.value)}
+                    />
+                  </div>
+                </div>
+              ))}
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-dashed text-primary hover:bg-primary/5 h-8 text-[10px]"
+                onClick={addSignature}
+              >
+                + Agregar Firma
+              </Button>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 };
 

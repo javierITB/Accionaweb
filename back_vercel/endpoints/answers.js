@@ -1133,18 +1133,23 @@ router.get("/filtros", async (req, res) => {
 
     // 5. Filtrado en Memoria (Búsqueda por texto claro)
     if (search && search.trim() !== "") {
-      const searchTerm = search.toLowerCase();
+      // Función interna para quitar tildes, convertir a minúsculas y asegurar que sea string
+      const normalizeText = (str) => 
+        str ? str.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+
+      const searchTerm = normalizeText(search);
+
       answersProcessed = answersProcessed.filter(item => {
         return (
-          item.trabajador.toLowerCase().includes(searchTerm) ||
-          item.formTitle.toLowerCase().includes(searchTerm) ||
-          item.submittedBy.toLowerCase().includes(searchTerm) ||
-          item.company.toLowerCase().includes(searchTerm) ||
-          item.rutTrabajador.toLowerCase().includes(searchTerm)
+          normalizeText(item._id).includes(searchTerm) || 
+          normalizeText(item.trabajador).includes(searchTerm) ||
+          normalizeText(item.formTitle).includes(searchTerm) ||
+          normalizeText(item.submittedBy).includes(searchTerm) ||
+          normalizeText(item.company).includes(searchTerm) ||
+          normalizeText(item.rutTrabajador).includes(searchTerm)
         );
       });
     }
-
     // 6. Filtro por empresa (Si el campo empresa también está encriptado en DB)
     if (company && company.trim() !== "") {
       const compTerm = company.toLowerCase();
@@ -2515,6 +2520,17 @@ router.delete("/delete-corrected-file/:responseId", async (req, res) => {
       return res.status(400).json({ error: "fileName es requerido" });
     }
 
+    // --- NUEVA LÓGICA: VALIDACIÓN DE ESTADO ARCHIVADO ---
+    const respuestaActual = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(responseId)
+    });
+
+    if (respuestaActual && respuestaActual.status === "archivado") {
+      return res.status(403).json({ 
+        error: "No se pueden eliminar archivos de una solicitud que ya está archivada." 
+      });
+    }
+
     const approvedDoc = await req.db.collection("aprobados").findOne({
       responseId: responseId
     });
@@ -2529,10 +2545,6 @@ router.delete("/delete-corrected-file/:responseId", async (req, res) => {
     }
 
     // Guardar información del estado actual antes de eliminar
-    const respuestaActual = await req.db.collection("respuestas").findOne({
-      _id: new ObjectId(responseId)
-    });
-
     const estadoActual = respuestaActual?.status;
     const tieneFirma = await req.db.collection("firmados").findOne({
       responseId: responseId
@@ -3056,6 +3068,18 @@ router.delete("/:responseId/client-signature", async (req, res) => {
     // Verificar token
     const auth = await verifyRequest(req);
     if (!auth.ok) return res.status(401).json({ error: auth.error });
+
+    // --- AGREGADO: VALIDACIÓN DE ESTADO ARCHIVADO ---
+    const respuestaActual = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(responseId)
+    });
+
+    if (respuestaActual && respuestaActual.status === "archivado") {
+      return res.status(403).json({ 
+        error: "No se puede eliminar la firma de una solicitud que ya está archivada." 
+      });
+    }
+    // -----------------------------------------------
 
     const deleteResult = await req.db.collection("firmados").deleteOne({
       responseId: responseId

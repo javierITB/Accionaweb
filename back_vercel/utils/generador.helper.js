@@ -160,11 +160,19 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
     const hoy = new Date();
     variables['FECHA_ACTUAL'] = formatearFechaEspanol(hoy.toISOString().split("T")[0]);
     variables['HORA_ACTUAL'] = hoy.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago' });
-    const unAnio = new Date(hoy); unAnio.setFullYear(hoy.getFullYear() + 1);
+    const unAnio = new Date(hoy);
+    unAnio.setFullYear(hoy.getFullYear() + 1);
+    unAnio.setDate(unAnio.getDate() - 1);
     variables['FECHA_ACTUAL_1_ANIO'] = formatearFechaEspanol(unAnio.toISOString().split("T")[0]);
-    const seisMeses = new Date(hoy); seisMeses.setMonth(hoy.getMonth() + 6);
+
+    const seisMeses = new Date(hoy);
+    seisMeses.setMonth(hoy.getMonth() + 6);
+    seisMeses.setDate(seisMeses.getDate() - 1);
     variables['FECHA_ACTUAL_6_MESES'] = formatearFechaEspanol(seisMeses.toISOString().split("T")[0]);
-    const unMes = new Date(hoy); unMes.setMonth(hoy.getMonth() + 1);
+
+    const unMes = new Date(hoy);
+    unMes.setMonth(hoy.getMonth() + 1);
+    unMes.setDate(unMes.getDate() - 1);
     variables['FECHA_ACTUAL_1_MES'] = formatearFechaEspanol(unMes.toISOString().split("T")[0]);
 
     return variables;
@@ -284,9 +292,20 @@ function reemplazarVariablesEnTexto(texto, variables, estiloBase, contadorNumera
                 try { valor = formatearFechaEspanol(valor); } catch (e) { }
             }
 
+            // Lógica de Mayúsculas/Minúsculas según cómo se escribió la variable en el editor
+            let fianlText = String(valor);
+            const isUpper = rawVarName === rawVarName.toUpperCase() && /[a-zA-Z]/.test(rawVarName);
+            const isLower = rawVarName === rawVarName.toLowerCase() && /[a-zA-Z]/.test(rawVarName);
+
+            if (isUpper) {
+                fianlText = fianlText.toUpperCase();
+            } else if (isLower) {
+                fianlText = fianlText.toLowerCase();
+            }
+
             runs.push(new TextRun({
-                text: String(valor),
-                bold: true,
+                text: fianlText,
+                bold: estiloBase.bold, // Respetar negrita del editor, no forzar
                 italics: estiloBase.italics,
                 underline: estiloBase.underline ? { type: BorderStyle.SINGLE } : undefined,
                 font: estiloBase.font,
@@ -460,7 +479,6 @@ function procesarHTML(html, variables) {
 
                     cells.push(new TableCell({
                         children: [new Paragraph({ children: tdRuns })],
-                        // CORRECCIÓN 1: Eliminado width fijo de 100% en celdas para evitar colapsos
                     }));
                 }
                 rows.push(new TableRow({ children: cells }));
@@ -520,8 +538,27 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
             }
         }
 
-        // 3. FIRMAS (TABLA 2 COLUMNAS)
-        if (plantilla.signature1Text || plantilla.signature2Text) {
+        // 3. FIRMAS (TABLA 2 COLUMNAS - DINÁMICA)
+        let signatures = plantilla.signatures;
+
+        // Fallback para plantillas antiguas que usan signature1Text/signature2Text
+        if (!signatures || !Array.isArray(signatures) || signatures.length === 0) {
+            signatures = [];
+            if (plantilla.signature1Text) {
+                signatures.push({
+                    title: plantilla.signature1Title || "Empleador / Representante Legal",
+                    text: plantilla.signature1Text
+                });
+            }
+            if (plantilla.signature2Text) {
+                signatures.push({
+                    title: plantilla.signature2Title || "Empleado",
+                    text: plantilla.signature2Text
+                });
+            }
+        }
+
+        if (plantilla.includeSignature !== false && signatures.length > 0) {
             children.push(new Paragraph({ text: "", spacing: { before: 800 } }));
 
             const procesarFirma = (textoFirma) => {
@@ -543,7 +580,7 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
                         continue;
                     }
 
-                    const runsLinea = reemplazarVariablesEnTexto(linea, variables, { size: 24, bold: false }, null);
+                    const runsLinea = reemplazarVariablesEnTexto(linea, variables, { size: 24, bold: false, preventVariableBold: true }, null);
 
                     parrafosFirma.push(new Paragraph({
                         alignment: AlignmentType.CENTER,
@@ -555,10 +592,10 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
                 return parrafosFirma;
             };
 
-            const dynamicContent1 = procesarFirma(plantilla.signature1Text);
-            const dynamicContent2 = procesarFirma(plantilla.signature2Text);
+            const generarBloqueFirma = (sig) => {
+                const titleText = sig.title || "Firma";
+                const dynamicContent = procesarFirma(sig.text);
 
-            const generarBloqueFirma = (titulo, contenidoDinamico) => {
                 return [
                     new Paragraph({
                         alignment: AlignmentType.CENTER,
@@ -568,16 +605,13 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
                     }),
                     new Paragraph({
                         alignment: AlignmentType.CENTER,
-                        children: [new TextRun({ text: titulo, bold: true, size: 24 })],
+                        children: [new TextRun({ text: titleText, bold: true, size: 24 })],
                         spacing: { after: 0 },
                         keepWithNext: true
                     }),
-                    ...contenidoDinamico
+                    ...dynamicContent
                 ];
             };
-
-            const cell1Children = generarBloqueFirma("Empleador / Representante Legal", dynamicContent1);
-            const cell2Children = generarBloqueFirma("Empleado", dynamicContent2);
 
             const borderNone = {
                 style: BorderStyle.NONE,
@@ -594,26 +628,36 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
                 insideVertical: borderNone
             };
 
-            // CORRECCIÓN 3: Ajuste basado en snippet legacy (Ancho 100% + columnWidths explícitos)
+            // Generar Filas (Iterar de 2 en 2)
+            const tableRows = [];
+            for (let i = 0; i < signatures.length; i += 2) {
+                const sig1 = signatures[i];
+                const sig2 = signatures[i + 1]; // Puede ser undefined
+
+                const cell1Children = generarBloqueFirma(sig1);
+                const cell2Children = sig2 ? generarBloqueFirma(sig2) : [new Paragraph("")];
+
+                tableRows.push(new TableRow({
+                    cantSplit: true,
+                    children: [
+                        new TableCell({
+                            children: cell1Children,
+                            borders: bordersNoneConfig,
+                        }),
+                        new TableCell({
+                            children: cell2Children,
+                            borders: bordersNoneConfig,
+                        })
+                    ]
+                }));
+            }
+
             children.push(new Table({
                 width: { size: 100, type: WidthType.PERCENTAGE },
-                columnWidths: [4600, 4600], // Aproximadamente mitad de pagina cada una
+                columnWidths: [4600, 4600],
                 alignment: AlignmentType.CENTER,
                 borders: bordersNoneConfig,
-                rows: [
-                    new TableRow({
-                        children: [
-                            new TableCell({
-                                children: cell1Children,
-                                borders: bordersNoneConfig,
-                            }),
-                            new TableCell({
-                                children: cell2Children,
-                                borders: bordersNoneConfig,
-                            })
-                        ]
-                    })
-                ]
+                rows: tableRows
             }));
         }
 

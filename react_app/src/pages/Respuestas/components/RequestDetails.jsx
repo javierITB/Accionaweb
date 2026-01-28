@@ -571,6 +571,40 @@ const RequestDetails = ({
       }
    };
 
+   const handleDeleteClientSignature = async (responseId) => {
+      openAsyncDialog({
+         title: "¿Estás seguro de eliminar la firma del cliente? El estado de la solicitud volverá a 'Aprobado'.",
+         loadingText: "Eliminando firma...",
+         successText: "Firma eliminada correctamente",
+         errorText: "Error al eliminar la firma",
+         onConfirm: async () => {
+            try {
+               const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/client-signature`, {
+                  method: "DELETE",
+               });
+
+               if (response.ok) {
+                  setClientSignature(null); // Limpiar estado local
+                  // Refrescar datos para ver el cambio de estado (de 'firmado' a 'aprobado')
+                  const updatedRes = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}`);
+                  if (updatedRes.ok) {
+                     const data = await updatedRes.json();
+                     setFullRequestData(prev => ({ ...prev, ...data }));
+                     if (onUpdate) onUpdate(data);
+                  }
+                  return true;
+               } else {
+                  const errorData = await response.json();
+                  throw new Error(errorData.error || "No se pudo eliminar");
+               }
+            } catch (error) {
+               console.error("Error eliminando firma:", error);
+               throw error;
+            }
+         }
+      });
+   };
+
    const renameDuplicatedFiles = (newFiles) => {
       const allExistingNames = new Set();
 
@@ -1414,6 +1448,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   >
                      Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
                   </span>
+                  {fullRequestData?.status !== "archivado" && (
                   <Button
                      variant="outlineTeal"
                      size="sm"
@@ -1424,6 +1459,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   >
                      Añadir Archivos
                   </Button>
+                  )}
                </div>
 
                {/* Input de archivo oculto */}
@@ -1572,13 +1608,9 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                        ? "Cargando..."
                                        : "Vista Previa"}
                                  </Button>
-                                 {isMarkedForDelete ? (
-                                    <Button
-                                       variant="ghost"
-                                       size="icon"
-                                       onClick={() => handleUndoDelete(file.fileName)}
-                                       // className="text-success hover:bg-success/10"
-                                    >
+                                 {fullRequestData?.status !== "archivado" && (
+                                 isMarkedForDelete ? (
+                                    <Button variant="ghost" size="icon" onClick={() => handleUndoDelete(file.fileName)}>
                                        <Icon name="RotateCcw" size={16} />
                                     </Button>
                                  ) : (
@@ -1586,7 +1618,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                        variant="ghostError"
                                        size="icon"
                                        onClick={() => handleDeleteUploadedFile(file.fileName, index)}
-                                       // className="text-error hover:bg-error/10"
                                        disabled={isDeletingFile === index}
                                     >
                                        <Icon
@@ -1595,7 +1626,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                           className={isDeletingFile === index ? "animate-spin" : ""}
                                        />
                                     </Button>
-                                 )}
+                                 )
+                              )}
                               </div>
                            </div>
                         );
@@ -1706,14 +1738,16 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            >
                               {isLoadingPreviewSignature ? "Cargando..." : "Vista Previa"}
                            </Button>
+                           {/* Solo ocultamos el botón de eliminar firma si la solicitud está archivada */}
+                           {fullRequestData?.status !== "archivado" && (
                            <Button
                               variant="ghostError"
                               size="icon"
                               onClick={() => handleDeleteClientSignature(fullRequestData._id)}
-                              // className="text-error hover:bg-error/10"
                            >
                               <Icon name="Trash2" size={16} />
                            </Button>
+                           )}
                         </div>
                      </div>
                   </div>
