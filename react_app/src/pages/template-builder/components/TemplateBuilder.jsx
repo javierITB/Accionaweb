@@ -165,25 +165,44 @@ const DocumentTemplateEditor = ({
 
   const changeCase = (mode) => {
     if (!editor) return;
-    const { from, to, empty } = editor.state.selection;
+    const { state, view } = editor;
+    const { from, to, empty } = state.selection;
     if (empty) return;
 
-    const text = editor.state.doc.textBetween(from, to);
-    let newText = text;
+    const tr = state.tr;
 
-    if (mode === 'upper') {
-      newText = text.toUpperCase();
-    } else if (mode === 'lower') {
-      newText = text.toLowerCase();
-    } else if (mode === 'default') {
-      // Solo modificar si parece una variable (empieza con {{ y termina con }})
-      if (/^{{.+}}$/.test(text)) {
-        // Title Case para variables: Capitaliza primera letra de cada palabra
-        newText = text.toLowerCase().replace(/(?:^|[\s_])\w/g, m => m.toUpperCase());
+    state.doc.nodesBetween(from, to, (node, pos) => {
+      if (node.isText) {
+        const start = Math.max(from, pos);
+        const end = Math.min(to, pos + node.nodeSize);
+
+        if (start < end) {
+          const content = node.text.substring(start - pos, end - pos);
+          let newContent = content;
+
+          if (mode === 'upper') {
+            newContent = content.toUpperCase();
+          } else if (mode === 'lower') {
+            newContent = content.toLowerCase();
+          } else if (mode === 'default') {
+            // Title Case para variables (si empieza con {{)
+            if (content.trim().startsWith('{{') || /^{{.+}}$/.test(content)) {
+              newContent = content.toLowerCase().replace(/(?:^|[\s_])\w/g, m => m.toUpperCase());
+            }
+          }
+
+          if (newContent !== content) {
+            // Reemplazar manteniendo los estilos (marks) del nodo original
+            tr.replaceWith(start, end, state.schema.text(newContent, node.marks));
+          }
+        }
       }
-    }
+      return true;
+    });
 
-    editor.chain().focus().insertContent(newText).run();
+    if (tr.docChanged) {
+      view.dispatch(tr);
+    }
   };
 
   // Efecto para controlar modo solo lectura (Vista Previa)
