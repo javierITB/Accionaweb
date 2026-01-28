@@ -159,11 +159,7 @@ const CompanyReg = () => {
                      </button>
                      <div className="flex items-center justify-between border-b border-border pb-2">
                         <div className="flex items-center gap-3">
-                           {selectedRegistro.result ? (
-                              <Icon name="CheckCircle" size={28} className="text-success" />
-                           ) : (
-                              <Icon name="XCircle" size={28} className="text-error" />
-                           )}
+                          <Icon name="CheckCircle" size={28} className="text-success" />
 
                            <h2 className="text-2xl font-bold  ">Detalles del Evento</h2>
                         </div>
