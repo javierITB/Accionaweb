@@ -48,6 +48,7 @@ const DocumentTemplateEditor = ({
   const [staticVarsExpanded, setStaticVarsExpanded] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
+  const [, setTick] = useState(0); // Force re-render for toolbars
 
   const editor = useEditor({
     extensions: [
@@ -87,10 +88,66 @@ const DocumentTemplateEditor = ({
     },
   });
 
+  // Force re-render on selection change or transaction to update toolbar state
+  React.useEffect(() => {
+    if (!editor) return;
+    const forceUpdate = () => setTick(t => t + 1);
+
+    // Bind all relevant events
+    editor.on('selectionUpdate', forceUpdate);
+    editor.on('transaction', forceUpdate);
+    editor.on('focus', forceUpdate);
+    editor.on('blur', forceUpdate);
+
+    return () => {
+      editor.off('selectionUpdate', forceUpdate);
+      editor.off('transaction', forceUpdate);
+      editor.off('focus', forceUpdate);
+      editor.off('blur', forceUpdate);
+    };
+  }, [editor]);
+
+  const getCasingClass = (mode) => {
+    if (!editor || editor.state.selection.empty) return '';
+    const text = editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to);
+    if (!text) return '';
+
+    const hasUpper = /[A-ZÁÉÍÓÚÑ]/.test(text);
+    const hasLower = /[a-záéíóúñ]/.test(text);
+
+    if (mode === 'upper') return (hasUpper && !hasLower) ? 'bg-blue-600 text-white' : '';
+    if (mode === 'lower') return (hasLower && !hasUpper) ? 'bg-blue-600 text-white' : '';
+    if (mode === 'default') return (hasUpper && hasLower) ? 'bg-blue-600 text-white' : '';
+    return '';
+  };
+
   const addVariable = (tag) => {
     if (editor) {
-      editor.chain().focus().insertContent(`<strong>${tag}</strong>`).run();
+      editor.chain().focus().insertContent(tag.toLowerCase()).run();
     }
+  };
+
+  const changeCase = (mode) => {
+    if (!editor) return;
+    const { from, to, empty } = editor.state.selection;
+    if (empty) return;
+
+    const text = editor.state.doc.textBetween(from, to);
+    let newText = text;
+
+    if (mode === 'upper') {
+      newText = text.toUpperCase();
+    } else if (mode === 'lower') {
+      newText = text.toLowerCase();
+    } else if (mode === 'default') {
+      // Solo modificar si parece una variable (empieza con {{ y termina con }})
+      if (/^{{.+}}$/.test(text)) {
+        // Title Case para variables: Capitaliza primera letra de cada palabra
+        newText = text.toLowerCase().replace(/(?:^|[\s_])\w/g, m => m.toUpperCase());
+      }
+    }
+
+    editor.chain().focus().insertContent(newText).run();
   };
 
   // Efecto para controlar modo solo lectura (Vista Previa)
@@ -178,28 +235,59 @@ const DocumentTemplateEditor = ({
 
         <div className="w-px h-6 bg-border mx-1" />
 
+        {/* Mayúsculas / Minúsculas / Default */}
+        <div className="flex bg-card border rounded-md p-0.5 gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('upper')}`}
+            onClick={() => changeCase('upper')}
+            title="Mayúsculas"
+          >
+            M ↑
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('lower')}`}
+            onClick={() => changeCase('lower')}
+            title="Minúsculas"
+          >
+            m ↓
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('default')}`}
+            onClick={() => changeCase('default')}
+            title="Default (Como se ingresó)"
+          >
+            d
+          </Button>
+        </div>
+
         {/* Estilos basicos */}
         <div className="flex bg-card border rounded-md p-0.5">
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('bold') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('bold') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}>
             <Icon name="Bold" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('italic') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('italic') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}>
             <Icon name="Italic" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('underline') ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('underline') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}>
             <Icon name="Underline" size={14} />
           </Button>
         </div>
 
         {/* Alineacion */}
         <div className="flex bg-card border rounded-md p-0.5">
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'left' }) ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'left' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
             <Icon name="AlignLeft" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'center' }) ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'center' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
             <Icon name="AlignCenter" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-primary/20' : ''}`} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
             <Icon name="AlignJustify" size={14} />
           </Button>
         </div>
