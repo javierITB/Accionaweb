@@ -113,7 +113,7 @@ const CompanyReg = () => {
       return (
          <div className="space-y-4">
             <h3 className="text-lg font-semibold text-foreground">Eventos registrados</h3>
-            {registros.reverse().length === 0 ? (
+            {registros.length === 0 ? (
                <p className="text-muted-foreground">No hay Eventos registrados.</p>
             ) : (
                <div className="overflow-x-auto">
