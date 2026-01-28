@@ -51,6 +51,41 @@ const DocumentTemplateEditor = ({
   const [isPreview, setIsPreview] = useState(false);
   const [, setTick] = useState(0); // Force re-render for toolbars
 
+  // --- Lógica de Firmas Dinámicas ---
+  const getEffectiveSignatures = () => {
+    if (templateData.signatures && Array.isArray(templateData.signatures)) return templateData.signatures;
+    const sigs = [];
+    // Migración Legacy: Si existen campos antiguos, úsalos
+    if (templateData.signature1Text !== undefined || templateData.signature2Text !== undefined) {
+      sigs.push({ title: templateData.signature1Title || "Empleador / Representante Legal", text: templateData.signature1Text || "" });
+      sigs.push({ title: templateData.signature2Title || "Empleado", text: templateData.signature2Text || "" });
+    } else {
+      // Default Inicial (2 columnas vacías)
+      sigs.push({ title: "Empleador / Representante Legal", text: "" });
+      sigs.push({ title: "Empleado", text: "" });
+    }
+    return sigs;
+  };
+
+  const signatures = getEffectiveSignatures();
+
+  const updateSignature = (index, field, value) => {
+    const newSigs = [...signatures];
+    newSigs[index] = { ...newSigs[index], [field]: value };
+    onUpdateTemplateData('signatures', newSigs);
+  };
+
+  const addSignature = () => {
+    const newSigs = [...signatures, { title: "Firma Adicional", text: "" }];
+    onUpdateTemplateData('signatures', newSigs);
+  };
+
+  const removeSignature = (index) => {
+    const newSigs = signatures.filter((_, i) => i !== index);
+    onUpdateTemplateData('signatures', newSigs);
+  };
+  // ----------------------------------
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -546,20 +581,15 @@ const DocumentTemplateEditor = ({
               {/* VISUALIZACIÓN DE FIRMAS (Solo si está activo) */}
               {templateData.includeSignature && (
                 <div className="signature-area">
-                  <div className="signature-col">
-                    <div className="signature-line">__________________________</div>
-                    <div className="font-bold">Empleador / Representante Legal</div>
-                    {templateData.signature1Text?.split('\n').map((line, i) => (
-                      <div key={i}>{line}</div>
-                    ))}
-                  </div>
-                  <div className="signature-col">
-                    <div className="signature-line">__________________________</div>
-                    <div className="font-bold">Empleado</div>
-                    {templateData.signature2Text?.split('\n').map((line, i) => (
-                      <div key={i}>{line}</div>
-                    ))}
-                  </div>
+                  {signatures.map((sig, i) => (
+                    <div className="signature-col" key={i}>
+                      <div className="signature-line">__________________________</div>
+                      <div className="font-bold">{sig.title || "Firma"}</div>
+                      {sig.text?.split('\n').map((line, j) => (
+                        <div key={j}>{line}</div>
+                      ))}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -574,28 +604,46 @@ const DocumentTemplateEditor = ({
               <Icon name="PenTool" size={12} /> Configuración de Firmas
             </h3>
             <div className="space-y-4">
-              {/* Checkbox eliminado, controlado por Toolbar */}
+              {signatures.map((sig, i) => (
+                <div key={i} className="relative p-3 border rounded-md bg-card shadow-sm group hover:border-primary/50 transition-colors">
+                  <button
+                    onClick={() => removeSignature(i)}
+                    className="absolute top-2 right-2 text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                    title="Eliminar esta firma"
+                  >
+                    <Icon name="Trash" size={12} />
+                  </button>
 
-              <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                <label className="text-xs font-medium text-muted-foreground">Firma Izquierda (Empleador)</label>
-                <textarea
-                  className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
-                  placeholder="Ej: {{NOMBRE_EMPRESA}}\nRRHH..."
-                  value={templateData.signature1Text || ''}
-                  onChange={(e) => onUpdateTemplateData('signature1Text', e.target.value)}
-                />
-                <p className="text-[10px] text-muted-foreground">Soporta variables y saltos de linea.</p>
-              </div>
+                  <div className="mb-3">
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Título</label>
+                    <input
+                      className="w-full text-xs border rounded px-2 py-1 focus:ring-1 focus:ring-primary outline-none bg-background text-foreground placeholder:text-muted-foreground/50"
+                      value={sig.title || ''}
+                      onChange={(e) => updateSignature(i, 'title', e.target.value)}
+                      placeholder="Ej: Empleado"
+                    />
+                  </div>
 
-              <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                <label className="text-xs font-medium text-muted-foreground">Firma Derecha (Empleado)</label>
-                <textarea
-                  className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
-                  placeholder="Ej: {{NOMBRE_EMPLEADO}}\nRut: {{RUT_EMPLEADO}}..."
-                  value={templateData.signature2Text || ''}
-                  onChange={(e) => onUpdateTemplateData('signature2Text', e.target.value)}
-                />
-              </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Contenido</label>
+                    <textarea
+                      className="w-full h-24 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary outline-none bg-background text-foreground placeholder:text-muted-foreground/50 font-mono"
+                      placeholder="Variables, RUT, etc..."
+                      value={sig.text || ''}
+                      onChange={(e) => updateSignature(i, 'text', e.target.value)}
+                    />
+                  </div>
+                </div>
+              ))}
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-dashed text-primary hover:bg-primary/5 h-8 text-[10px]"
+                onClick={addSignature}
+              >
+                + Agregar Firma
+              </Button>
             </div>
           </div>
         )}
