@@ -571,6 +571,40 @@ const RequestDetails = ({
       }
    };
 
+   const handleDeleteClientSignature = async (responseId) => {
+      openAsyncDialog({
+         title: "¿Estás seguro de eliminar la firma del cliente? El estado de la solicitud volverá a 'Aprobado'.",
+         loadingText: "Eliminando firma...",
+         successText: "Firma eliminada correctamente",
+         errorText: "Error al eliminar la firma",
+         onConfirm: async () => {
+            try {
+               const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/client-signature`, {
+                  method: "DELETE",
+               });
+
+               if (response.ok) {
+                  setClientSignature(null); // Limpiar estado local
+                  // Refrescar datos para ver el cambio de estado (de 'firmado' a 'aprobado')
+                  const updatedRes = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}`);
+                  if (updatedRes.ok) {
+                     const data = await updatedRes.json();
+                     setFullRequestData(prev => ({ ...prev, ...data }));
+                     if (onUpdate) onUpdate(data);
+                  }
+                  return true;
+               } else {
+                  const errorData = await response.json();
+                  throw new Error(errorData.error || "No se pudo eliminar");
+               }
+            } catch (error) {
+               console.error("Error eliminando firma:", error);
+               throw error;
+            }
+         }
+      });
+   };
+
    const renameDuplicatedFiles = (newFiles) => {
       const allExistingNames = new Set();
 
