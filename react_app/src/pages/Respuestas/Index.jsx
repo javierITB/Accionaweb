@@ -39,6 +39,9 @@ const RequestTracking = () => {
   const [serverStats, setServerStats] = useState(null);
   const requestsPerPage = 30;
 
+  // NUEVO: Estado para el valor del input de página
+  const [pageInputValue, setPageInputValue] = useState("1");
+
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -61,6 +64,11 @@ const RequestTracking = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // NUEVO: Sincronizar el input cuando cambia la página (por botones o carga)
+  useEffect(() => {
+    setPageInputValue(currentPage.toString());
+  }, [currentPage]);
 
   // --- EFECTOS DE REDIMENSIONAMIENTO ---
   useEffect(() => {
@@ -198,6 +206,31 @@ const RequestTracking = () => {
     }
   }, [formId]);
 
+  // NUEVO: Handlers para cambio de página manual
+  const handlePageInputChange = (e) => {
+    const value = e.target.value;
+    if (value === "" || /^[0-9]+$/.test(value)) {
+      setPageInputValue(value);
+    }
+  };
+
+  const handlePageInputBlurOrSubmit = () => {
+    let page = parseInt(pageInputValue);
+    if (isNaN(page) || page < 1) {
+      page = 1;
+    } else if (page > totalPages) {
+      page = totalPages;
+    }
+    setCurrentPage(page);
+    setPageInputValue(page.toString());
+  };
+
+  const handlePageInputKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handlePageInputBlurOrSubmit();
+    }
+  };
+
   // --- HANDLERS ---
   const handleApplyFilters = () => {
     setCurrentPage(1);
@@ -310,7 +343,6 @@ const RequestTracking = () => {
               </p>
             </div>
 
-            {/* CORRECCIÓN: Contenedor de acciones centrado en móvil */}
             <div className="flex items-center justify-center md:justify-end w-full md:w-auto space-x-4">
               <div ref={limitRef} className="relative">
                 <button
@@ -338,7 +370,21 @@ const RequestTracking = () => {
 
               <div className="flex items-center space-x-2 text-sm text-muted-foreground border border-border rounded-lg p-1 bg-card">
                 <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 || isLoading} iconName="ChevronLeft" />
-                <span className="font-medium whitespace-nowrap">{currentPage} / {totalPages}</span>
+                
+                {/* NUEVO: Diseño x/y Compacto Superior */}
+                <div className="flex items-center gap-0 text-muted-foreground">
+                  <input
+                    type="text"
+                    value={pageInputValue}
+                    onChange={handlePageInputChange}
+                    onBlur={handlePageInputBlurOrSubmit}
+                    onKeyDown={handlePageInputKeyDown}
+                    className="w-6 h-7 text-right bg-transparent border-none text-muted-foreground font-medium focus:ring-0 outline-none p-0"
+                  />
+                  <span className="font-medium mx-0.5">/</span>
+                  <span className="font-medium text-left min-w-[1.5rem]">{totalPages}</span>
+                </div>
+
                 <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || isLoading} iconName="ChevronRight" />
               </div>
               <div className="flex items-center border border-border rounded-lg bg-card">
@@ -396,9 +442,21 @@ const RequestTracking = () => {
                   <Icon name="ChevronLeft" size={16} className="mr-2" />
                   Anterior
                 </Button>
-                <span className="text-sm font-medium bg-muted px-3 py-1 rounded-full">
-                   {currentPage} <span className="text-muted-foreground">de</span> {totalPages}
-                </span>
+                
+                {/* NUEVO: Diseño x/y Compacto Inferior */}
+                <div className="flex items-center gap-0 bg-muted px-4 py-1.5 rounded-full text-muted-foreground">
+                  <input
+                    type="text"
+                    value={pageInputValue}
+                    onChange={handlePageInputChange}
+                    onBlur={handlePageInputBlurOrSubmit}
+                    onKeyDown={handlePageInputKeyDown}
+                    className="w-6 bg-transparent border-none text-right font-medium text-muted-foreground focus:outline-none p-0"
+                  />
+                  <span className="font-medium mx-0.5">/</span>
+                  <span className="font-medium text-left min-w-[1.5rem]">{totalPages}</span>
+                </div>
+
                 <Button 
                   variant="outline" 
                   size="sm" 
