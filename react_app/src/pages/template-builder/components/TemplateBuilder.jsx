@@ -137,6 +137,17 @@ const DocumentTemplateEditor = ({
   const [, setTick] = useState(0);
   const [focusedField, setFocusedField] = useState({ type: 'editor' });
 
+  // Estado para controlar la visibilidad del panel de configuración de firmas
+  const [showSignatureConfig, setShowSignatureConfig] = useState(false);
+
+  // Sincronizar includeSignature con la existencia de firmas
+  React.useEffect(() => {
+    const hasSignatures = templateData.signatures && templateData.signatures.length > 0;
+    if (templateData.includeSignature !== hasSignatures) {
+      onUpdateTemplateData('includeSignature', hasSignatures);
+    }
+  }, [templateData.signatures?.length, templateData.includeSignature]);
+
   // --- Lógica de Firmas Dinámicas ---
   const getEffectiveSignatures = () => {
     if (templateData.signatures && Array.isArray(templateData.signatures)) return templateData.signatures;
@@ -565,14 +576,14 @@ const DocumentTemplateEditor = ({
             + CONDICIONAL
           </Button>
           <Button
-            variant={templateData.includeSignature ? "default" : "outline"}
+            variant={showSignatureConfig ? "default" : "outline"}
             size="sm"
-            className={`h-8 text-[10px] font-bold ${templateData.includeSignature ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
-            onClick={() => onUpdateTemplateData('includeSignature', !templateData.includeSignature)}
+            className={`h-8 text-[10px] font-bold ${showSignatureConfig ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
+            onClick={() => setShowSignatureConfig(!showSignatureConfig)}
             disabled={isPreview}
-            title={templateData.includeSignature ? "Quitar Zona de Firma" : "Agregar Zona de Firma"}
+            title={showSignatureConfig ? "Ocultar Configuración de Firmas" : "Configurar Firmas"}
           >
-            <Icon name="PenTool" size={12} className="mr-1" /> {templateData.includeSignature ? "FIRMA" : "+ FIRMA"}
+            <Icon name="PenTool" size={12} className="mr-1" /> {showSignatureConfig ? "FIRMA" : "+ FIRMA"}
           </Button>
 
           {isFullScreen && onSave && (
@@ -730,8 +741,8 @@ const DocumentTemplateEditor = ({
                 />
               )}
 
-              {/* VISUALIZACIÓN DE FIRMAS (Solo si está activo) */}
-              {templateData.includeSignature && (
+              {/* VISUALIZACIÓN DE FIRMAS (Si hay firmas definidas) */}
+              {signatures.length > 0 && (
                 <div className="signature-area grid grid-cols-2 gap-x-8 gap-y-8 mt-8">
                   {signatures.map((sig, i) => {
                     const isLastAndOdd = (i === signatures.length - 1) && (signatures.length % 2 !== 0);
@@ -759,8 +770,7 @@ const DocumentTemplateEditor = ({
         </div>
 
         {/* ZONA DE CONFIGURACIÓN DE FIRMAS (Fuera del editor Tiptap) */}
-        {/* ZONA DE CONFIGURACIÓN DE FIRMAS (Fuera del editor Tiptap) */}
-        {!isPreview && templateData.includeSignature && (
+        {!isPreview && showSignatureConfig && (
           <div className="w-72 border-l bg-muted/5 p-4 overflow-y-auto animate-in slide-in-from-right-2 duration-300">
             <h3 className="text-[10px] font-bold uppercase text-primary mb-3 tracking-widest flex items-center gap-2">
               <Icon name="PenTool" size={12} /> Configuración de Firmas
