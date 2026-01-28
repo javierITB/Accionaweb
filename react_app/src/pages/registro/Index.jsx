@@ -199,7 +199,10 @@ const CompanyReg = () => {
                         <div className="pt-4 ">
                            <p className="font-semibold pb-1 text-foreground text-base">Actor:</p>
                            <p>
-                              <span className="font-semibold pl-2">Nombre:</span> {selectedRegistro.actor.name}
+                              <span className="font-semibold pl-2">Nombre:</span> {selectedRegistro.actor.name + " " + selectedRegistro.actor.last_name}
+                           </p>
+                           <p>
+                              <span className="font-semibold pl-2">Cargo:</span> {selectedRegistro.actor.cargo}
                            </p>
                            <p>
                               <span className="font-semibold pl-2">Rol:</span> {selectedRegistro.actor.role}
@@ -209,6 +212,9 @@ const CompanyReg = () => {
                            </p>
                            <p>
                               <span className="font-semibold pl-2">Empresa:</span> {selectedRegistro.actor.empresa}
+                           </p>
+                           <p>
+                              <span className="font-semibold pl-2">Estado:</span> {selectedRegistro.actor.estado}
                            </p>
                         </div>
 

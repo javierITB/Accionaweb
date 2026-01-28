@@ -8,7 +8,7 @@ const { enviarCorreoRespaldo } = require("../utils/mailrespaldo.helper");
 const { validarToken } = require("../utils/validarToken.js");
 const { createBlindIndex, verifyPassword, encrypt, decrypt } = require("../utils/seguridad.helper");
 const { sendEmail } = require("../utils/mail.helper");
-const { registerEvent, registerStatusChangeEvent, CODES, TARGET_TYPES, ACTOR_ROLES, RESULTS, STATUS,  } = require("../utils/registerEvent");
+const { registerEvent, registerStatusChangeEvent, registerRegenerateDocumentEvent, CODES, TARGET_TYPES, ACTOR_ROLES, RESULTS, STATUS,  } = require("../utils/registerEvent");
 
 // Función para normalizar nombres de archivos (versión completa y segura)
 const normalizeFilename = (filename) => {
@@ -3148,15 +3148,17 @@ router.get("/:responseId/has-client-signature", async (req, res) => {
 
 // Endpoint para regenerar documento desde respuestas existentes
 router.post("/:id/regenerate-document", async (req, res) => {
+  let auth = null;
+  let respuesta = null;
   try {
     const { id } = req.params;
 
     // Verificar token
-    const auth = await verifyRequest(req);
+     auth = await verifyRequest(req);
     if (!auth.ok) return res.status(401).json({ error: auth.error });
 
 
-    const respuesta = await req.db.collection("respuestas").findOne({
+     respuesta = await req.db.collection("respuestas").findOne({
       _id: new ObjectId(id)
     });
 
@@ -3223,25 +3225,8 @@ router.post("/:id/regenerate-document", async (req, res) => {
       );
       
       // Registrar evento
-      registerEvent(req, {
-        code: CODES.SOLICITUD_REGENERACION_DOCUMENTO,
-        target: {
-           type: TARGET_TYPES.SOLICITUD,
-           _id: respuesta._id.toString(),
-        },
-        actor: {
-           uid: uidUsuario.toString(),
-           name: nombreUsuario,
-           role: ACTOR_ROLES.ADMIN,
-           email: mailUsuario,
-           empresa: empresaUsuario,
-        },
-        description: `Regeneración de documento de solicitud "${respuesta.formTitle}"`,
-        metadata: {
-          nombre_de_solicitud: respuesta.formTitle,
-        },
-        result: RESULTS.SUCCESS,
-     });
+
+     registerRegenerateDocumentEvent(req, { respuesta, auth, result: RESULTS.SUCCESS });
 
       res.json({
         success: true,
@@ -3256,26 +3241,8 @@ router.post("/:id/regenerate-document", async (req, res) => {
         error: "Error regenerando documento: " + generationError.message
       });
 
-      registerEvent(req, {
-        code: CODES.SOLICITUD_REGENERACION_DOCUMENTO,
-        target: {
-           type: TARGET_TYPES.SOLICITUD,
-           _id: respuesta._id.toString(),
-        },
-        actor: {
-           uid: uidUsuario.toString(),
-           name: nombreUsuario,
-           role: ACTOR_ROLES.ADMIN,
-           email: mailUsuario,
-           empresa: empresaUsuario,
-        },
-        description: `Regeneración de documento de solicitud "${respuesta.formTitle}"`,
-        metadata: {
-          nombre_de_solicitud: respuesta.formTitle,
-        },
-        result: RESULTS.ERROR,
-        error_message: generationError.message,
-     });
+      // Registrar evento de error
+      registerRegenerateDocumentEvent(req, { respuesta, auth, result: RESULTS.ERROR, error: generationError });
 
     }
 
@@ -3295,7 +3262,7 @@ router.put("/:id/status", async (req, res) => {
     const { status } = req.body;
 
     // Verificar token
-    const auth = await verifyRequest(req);
+     auth = await verifyRequest(req);
     if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     if (!ObjectId.isValid(id)) {
@@ -3426,7 +3393,6 @@ router.put("/:id/status", async (req, res) => {
   } catch (err) {
     console.error("Error cambiando estado:", err);
 
-    const actor = auth.data
 
     // Registrar evento
     registerStatusChangeEvent(req, {auth, updatedResponse, result: RESULTS.ERROR, error: err});
