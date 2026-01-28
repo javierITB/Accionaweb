@@ -124,7 +124,6 @@ const CompanyReg = () => {
                            <th className="px-4 py-2 text-center">Actor</th>
                            <th className="px-4 py-2 text-left">Descripción</th>
                            <th className="px-4 py-2 text-center">Afectado</th>
-                           <th className="px-4 py-2 text-center">Resultado</th>
                            <th className="px-4 py-2 text-center">Fecha</th>
                            <th className="px-4 py-2 text-center">Detalles</th>
                         </tr>
@@ -136,16 +135,6 @@ const CompanyReg = () => {
                               <td className="px-4 py-2 text-sm text-center">{registro.actor.name}</td>
                               <td className="px-4 py-2 text-sm">{registro.description}</td>
                               <td className="px-4 py-2 text-sm text-center">{registro.target.type || "—"}</td>
-                              <td className="px-4 py-2 text-sm">
-                                 <div className="flex justify-center">
-                                    {registro.result ? (
-                                       <Icon name="CheckCircle" size={21} className="text-success" />
-                                    ) : (
-                                       <Icon name="XCircle" size={21} className="text-error" />
-                                    )}
-                                 </div>
-                              </td>
-
                               <td className="px-4 py-2 text-sm">{formatDateSplit(registro.createdAt) || "—"}</td>
                               <td className="px-4 py-2 text-sm">
                                  <Button variant="outlineTeal" size="sm" onClick={() => openModal(registro)}>
@@ -238,17 +227,6 @@ const CompanyReg = () => {
                            )})
                            
                            }
-                        </div>
-
-                        <div className="pt-4 ">
-                           <p>
-                              <span className="font-semibold text-foreground">Fecha:</span>{" "}
-                              {formatDate(selectedRegistro.createdAt)}
-                              <p className="pt-1">
-                                 <span className="font-semibold text-foreground">Resultado:</span>{" "}
-                                 {selectedRegistro.result ? "✅ Éxito" : "❌ Fallido"}
-                              </p>
-                           </p>
                         </div>
                      </div>
                   </div>
