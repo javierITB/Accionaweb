@@ -2515,6 +2515,17 @@ router.delete("/delete-corrected-file/:responseId", async (req, res) => {
       return res.status(400).json({ error: "fileName es requerido" });
     }
 
+    // --- NUEVA LÓGICA: VALIDACIÓN DE ESTADO ARCHIVADO ---
+    const respuestaActual = await req.db.collection("respuestas").findOne({
+      _id: new ObjectId(responseId)
+    });
+
+    if (respuestaActual && respuestaActual.status === "archivado") {
+      return res.status(403).json({ 
+        error: "No se pueden eliminar archivos de una solicitud que ya está archivada." 
+      });
+    }
+
     const approvedDoc = await req.db.collection("aprobados").findOne({
       responseId: responseId
     });
@@ -2529,10 +2540,6 @@ router.delete("/delete-corrected-file/:responseId", async (req, res) => {
     }
 
     // Guardar información del estado actual antes de eliminar
-    const respuestaActual = await req.db.collection("respuestas").findOne({
-      _id: new ObjectId(responseId)
-    });
-
     const estadoActual = respuestaActual?.status;
     const tieneFirma = await req.db.collection("firmados").findOne({
       responseId: responseId

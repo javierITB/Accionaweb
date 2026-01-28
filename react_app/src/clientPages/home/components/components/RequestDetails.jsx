@@ -708,7 +708,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                </div>
             </div>
          );
-      } else if (request?.status === "firmado" || request?.status === "finalizado" || request?.status === "archivado") {
+      } else if ((request?.status === "firmado" || request?.status === "finalizado" || request?.status === "archivado") && hasSignedPdf) {
          return (
             <div className="mt-6">
                <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado</h3>
@@ -749,7 +749,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
          );
       }
 
-      return null;
+      return null; 
    };
 
    return (
