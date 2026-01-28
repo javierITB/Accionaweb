@@ -46,6 +46,7 @@ const DocumentTemplateEditor = ({
   onSave
 }) => {
   const [staticVarsExpanded, setStaticVarsExpanded] = useState(true);
+  const [dynamicVarsExpanded, setDynamicVarsExpanded] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
   const [, setTick] = useState(0); // Force re-render for toolbars
@@ -352,63 +353,72 @@ const DocumentTemplateEditor = ({
           <div className="space-y-6">
             {/* Variables del Formulario */}
             <div>
-              <h3 className="text-[10px] font-bold uppercase text-primary mb-3 tracking-widest flex items-center gap-2">
-                <Icon name="Database" size={12} /> Variables Formulario
-              </h3>
-              <div className="grid grid-cols-1 gap-1.5">
-                {dynamicVariables.map((v) => {
-                  const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
-                  const isSelectable = v.type?.toLowerCase().includes('select') ||
-                    v.type?.toLowerCase().includes('drop') ||
-                    v.type?.toLowerCase().includes('check') ||
-                    v.type?.toLowerCase().includes('radio');
+              <button
+                onClick={() => setDynamicVarsExpanded(!dynamicVarsExpanded)}
+                className="w-full flex items-center justify-between text-[10px] font-bold uppercase text-primary mb-3 tracking-widest hover:bg-primary/10 p-1 rounded transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <Icon name="Database" size={12} /> Variables Formulario
+                </span>
+                <Icon name={dynamicVarsExpanded ? "ChevronUp" : "ChevronDown"} size={12} />
+              </button>
 
-                  return (
-                    <div key={v.id || v.title} className="mb-1">
-                      <button
-                        onClick={() => addVariable(tag)}
-                        className={`w-full text-left px-3 py-2 text-[11px] border rounded shadow-sm transition-all truncate flex items-center gap-2 ${isSelectable
-                          ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-800'
-                          : 'bg-card hover:border-primary hover:bg-primary/5'
-                          }`}
-                        title={`${tag} (${v.type || 'Texto'})`}
-                      >
-                        <Icon
-                          name={isSelectable ? "List" : "Type"}
-                          size={12}
-                          className={isSelectable ? "text-blue-500" : "text-muted-foreground group-hover:text-primary"}
-                        />
-                        <span className={`font-mono truncate ${isSelectable ? 'text-blue-700 dark:text-blue-300' : 'text-primary group-hover:text-primary-foreground'}`}>
-                          {tag}
-                        </span>
-                      </button>
+              {dynamicVarsExpanded && (
+                <div className="grid grid-cols-1 gap-1.5 animate-in slide-in-from-top-1 fade-in duration-200">
+                  {dynamicVariables.map((v) => {
+                    const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
+                    const isSelectable = v.type?.toLowerCase().includes('select') ||
+                      v.type?.toLowerCase().includes('drop') ||
+                      v.type?.toLowerCase().includes('check') ||
+                      v.type?.toLowerCase().includes('radio');
 
-                      {isSelectable && v.options && v.options.length > 0 && (
-                        <div className="ml-4 mt-1 border-l-2 border-blue-100 pl-2 space-y-1">
-                          {v.options.map((opt, idx) => (
-                            <button
-                              key={idx}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const val = typeof opt === 'string' ? opt : opt.value || opt.label;
-                                // Insertar bloque condicional pre-armado
-                                const condBlock = `[[IF:${tag.replace(/[{}]/g, '')} == "${val}"]]`;
-                                const endBlock = `[[ENDIF]]`;
-                                editor.chain().focus().insertContent(`<p>${condBlock}</p><p>...</p><p>${endBlock}</p>`).run();
-                              }}
-                              className="w-full text-left text-[10px] text-muted-foreground hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded truncate flex items-center gap-1"
-                              title={`Insertar condición: Si es "${typeof opt === 'string' ? opt : opt.val}"`}
-                            >
-                              <Icon name="GitBranch" size={10} />
-                              <span className="truncate">{typeof opt === 'string' ? opt : opt.label || opt.value}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                    return (
+                      <div key={v.id || v.title} className="mb-1">
+                        <button
+                          onClick={() => addVariable(tag)}
+                          className={`w-full text-left px-3 py-2 text-[11px] border rounded shadow-sm transition-all truncate flex items-center gap-2 ${isSelectable
+                            ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-800'
+                            : 'bg-card hover:border-primary hover:bg-primary/5'
+                            }`}
+                          title={`${tag} (${v.type || 'Texto'})`}
+                        >
+                          <Icon
+                            name={isSelectable ? "List" : "Type"}
+                            size={12}
+                            className={isSelectable ? "text-blue-500" : "text-muted-foreground group-hover:text-primary"}
+                          />
+                          <span className={`font-mono truncate ${isSelectable ? 'text-blue-700 dark:text-blue-300' : 'text-primary group-hover:text-primary-foreground'}`}>
+                            {tag}
+                          </span>
+                        </button>
+
+                        {isSelectable && v.options && v.options.length > 0 && (
+                          <div className="ml-4 mt-1 border-l-2 border-blue-100 pl-2 space-y-1">
+                            {v.options.map((opt, idx) => (
+                              <button
+                                key={idx}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const val = typeof opt === 'string' ? opt : opt.value || opt.label;
+                                  // Insertar bloque condicional pre-armado
+                                  const condBlock = `[[IF:${tag.replace(/[{}]/g, '')} == "${val}"]]`;
+                                  const endBlock = `[[ENDIF]]`;
+                                  editor.chain().focus().insertContent(`<p>${condBlock}</p><p>...</p><p>${endBlock}</p>`).run();
+                                }}
+                                className="w-full text-left text-[10px] text-muted-foreground hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded truncate flex items-center gap-1"
+                                title={`Insertar condición: Si es "${typeof opt === 'string' ? opt : opt.val}"`}
+                              >
+                                <Icon name="GitBranch" size={10} />
+                                <span className="truncate">{typeof opt === 'string' ? opt : opt.label || opt.value}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Variables Generales Reintegradas */}
