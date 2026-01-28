@@ -38,6 +38,91 @@ const FontSize = TextStyle.extend({
   },
 });
 
+
+
+const generateVarTag = (str) => {
+  if (!str) return "";
+  return `{{${str.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '')}}}`;
+};
+
+const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const hasSubVariables = (variable.options && variable.options.length > 0) || (variable.subformQuestions && variable.subformQuestions.length > 0);
+
+  const renderSimpleVariable = (v) => {
+    const rawLabel = v.title || v.text || v.value || v.label || (typeof v === 'string' ? v : "");
+    const tag = generateVarTag(rawLabel);
+
+    if (!tag) return null;
+
+    return (
+      <button
+        key={tag}
+        onClick={() => copyVariable(tag)}
+        className={`w-full group text-left px-3 py-2 border rounded-md transition-all truncate
+          ${isChild
+            ? 'bg-muted/10 border-border/50 hover:bg-muted/20 text-[10px] ml-2 w-[calc(100%-8px)]'
+            : 'bg-card dark:bg-[#1e293b] border-border dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-accent dark:hover:bg-slate-800 text-[11px]'
+          }
+        `}
+        title={`Insertar ${tag} \n(${rawLabel})`}
+      >
+        <span className="font-mono font-medium text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300">
+          {tag}
+        </span>
+      </button>
+    );
+  };
+
+  if (!hasSubVariables) {
+    return renderSimpleVariable(variable);
+  }
+
+  // Flatten logic
+  if (variable.subformQuestions?.length === 1 && !variable.subformQuestions[0].options?.length) {
+    return renderSimpleVariable(variable.subformQuestions[0]);
+  }
+
+  return (
+    <div className={`w-full rounded-lg overflow-hidden transition-all mb-1 ${isOpen ? 'bg-accent/50 dark:bg-slate-900/50' : ''}`}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between px-3 py-2 cursor-pointer text-left transition-colors group border rounded-md
+            ${isOpen ? 'bg-accent dark:bg-slate-800 border-transparent shadow-inner' : 'bg-card dark:bg-[#1e293b] border-border dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'}
+        `}
+      >
+        <span className="font-mono font-medium text-[11px] truncate text-foreground/80 group-hover:text-foreground">
+          {generateVarTag(variable.title || variable.text)}
+        </span>
+        <Icon name={isOpen ? "ChevronUp" : "ChevronDown"} size={12} className="text-muted-foreground group-hover:text-foreground shrink-0 opacity-70" />
+      </button>
+
+      {isOpen && (
+        <div className="p-1 space-y-1 mt-1 border-l border-border dark:border-slate-700 ml-3 pl-2">
+          {renderSimpleVariable(variable)}
+
+          {variable.options?.map((subVar, idx) => (
+            <VariableItem
+              key={subVar.id || idx}
+              variable={subVar}
+              copyVariable={copyVariable}
+              isChild={true}
+            />
+          ))}
+          {variable.subformQuestions?.map((subVar, idx) => (
+            <VariableItem
+              key={subVar.id || idx}
+              variable={subVar}
+              copyVariable={copyVariable}
+              isChild={true}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+});
+
 const DocumentTemplateEditor = ({
   dynamicVariables = [],
   staticVariables = [],
@@ -475,58 +560,13 @@ const DocumentTemplateEditor = ({
 
               {dynamicVarsExpanded && (
                 <div className="grid grid-cols-1 gap-1.5 animate-in slide-in-from-top-1 fade-in duration-200">
-                  {dynamicVariables.map((v) => {
-                    const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
-                    const isSelectable = v.type?.toLowerCase().includes('select') ||
-                      v.type?.toLowerCase().includes('drop') ||
-                      v.type?.toLowerCase().includes('check') ||
-                      v.type?.toLowerCase().includes('radio');
-
-                    return (
-                      <div key={v.id || v.title} className="mb-1">
-                        <button
-                          onClick={() => addVariable(tag)}
-                          className={`w-full text-left px-3 py-2 text-[11px] border rounded shadow-sm transition-all truncate flex items-center gap-2 ${isSelectable
-                            ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-800'
-                            : 'bg-card hover:border-primary hover:bg-primary/5'
-                            }`}
-                          title={`${tag} (${v.type || 'Texto'})`}
-                        >
-                          <Icon
-                            name={isSelectable ? "List" : "Type"}
-                            size={12}
-                            className={isSelectable ? "text-blue-500" : "text-muted-foreground group-hover:text-primary"}
-                          />
-                          <span className={`font-mono truncate ${isSelectable ? 'text-blue-700 dark:text-blue-300' : 'text-primary group-hover:text-primary-foreground'}`}>
-                            {tag}
-                          </span>
-                        </button>
-
-                        {isSelectable && v.options && v.options.length > 0 && (
-                          <div className="ml-4 mt-1 border-l-2 border-blue-100 pl-2 space-y-1">
-                            {v.options.map((opt, idx) => (
-                              <button
-                                key={idx}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const val = typeof opt === 'string' ? opt : opt.value || opt.label;
-                                  // Insertar bloque condicional pre-armado
-                                  const condBlock = `[[IF:${tag.replace(/[{}]/g, '')} == "${val}"]]`;
-                                  const endBlock = `[[ENDIF]]`;
-                                  editor.chain().focus().insertContent(`<p>${condBlock}</p><p>...</p><p>${endBlock}</p>`).run();
-                                }}
-                                className="w-full text-left text-[10px] text-muted-foreground hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded truncate flex items-center gap-1"
-                                title={`Insertar condición: Si es "${typeof opt === 'string' ? opt : opt.val}"`}
-                              >
-                                <Icon name="GitBranch" size={10} />
-                                <span className="truncate">{typeof opt === 'string' ? opt : opt.label || opt.value}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {dynamicVariables.map((v) => (
+                    <VariableItem
+                      key={v.id || v.title}
+                      variable={v}
+                      copyVariable={addVariable}
+                    />
+                  ))}
                 </div>
               )}
             </div>
