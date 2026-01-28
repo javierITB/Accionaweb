@@ -58,12 +58,12 @@ const DocumentTemplateEditor = ({
     const sigs = [];
     // Migración Legacy:
     if (templateData.signature1Text !== undefined || templateData.signature2Text !== undefined) {
-      sigs.push({ title: templateData.signature1Title || "Empleador / Representante Legal", text: templateData.signature1Text || "" });
-      sigs.push({ title: templateData.signature2Title || "Empleado", text: templateData.signature2Text || "" });
+      sigs.push({ title: templateData.signature1Title || "Empleador / Representante Legal", text: templateData.signature1Text || "", titleBold: true });
+      sigs.push({ title: templateData.signature2Title || "Empleado", text: templateData.signature2Text || "", titleBold: true });
     } else {
       // Default Inicial (2 columnas vacías)
-      sigs.push({ title: "Empleador / Representante Legal", text: "" });
-      sigs.push({ title: "Empleado", text: "" });
+      sigs.push({ title: "Empleador / Representante Legal", text: "", titleBold: true });
+      sigs.push({ title: "Empleado", text: "", titleBold: true });
     }
     return sigs;
   };
@@ -215,6 +215,33 @@ const DocumentTemplateEditor = ({
     }
   };
 
+  const toggleStyle = (style) => {
+    if (focusedField.type === 'signature') {
+      const { index, field } = focusedField;
+      if (!field) return;
+
+      const propName = `${field}${style.charAt(0).toUpperCase() + style.slice(1)}`;
+      const currentVal = signatures[index][propName];
+      updateSignature(index, propName, !currentVal);
+    } else {
+      if (!editor) return;
+      if (style === 'bold') editor.chain().focus().toggleBold().run();
+      if (style === 'italic') editor.chain().focus().toggleItalic().run();
+      if (style === 'underline') editor.chain().focus().toggleUnderline().run();
+    }
+  };
+
+  const isStyleActive = (style) => {
+    if (focusedField.type === 'signature') {
+      const { index, field } = focusedField;
+      if (!field) return false;
+      const propName = `${field}${style.charAt(0).toUpperCase() + style.slice(1)}`;
+      return !!signatures[index]?.[propName];
+    }
+    if (!editor) return false;
+    return editor.isActive(style);
+  };
+
   // Efecto para controlar modo solo lectura (Vista Previa)
   React.useEffect(() => {
     if (editor) {
@@ -342,13 +369,13 @@ const DocumentTemplateEditor = ({
 
         {/* Estilos basicos */}
         <div className="flex bg-card border rounded-md p-0.5">
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('bold') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('bold') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('bold')}>
             <Icon name="Bold" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('italic') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('italic') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('italic')}>
             <Icon name="Italic" size={14} />
           </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive('underline') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('underline') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('underline')}>
             <Icon name="Underline" size={14} />
           </Button>
         </div>
@@ -627,10 +654,14 @@ const DocumentTemplateEditor = ({
                         key={i}
                       >
                         <div className="signature-line font-bold mb-1">__________________________</div>
-                        <div className="font-bold text-sm mb-1">{sig.title || "Firma"}</div>
-                        {sig.text?.split('\n').map((line, j) => (
-                          <div key={j} className="text-sm">{line}</div>
-                        ))}
+                        <div className={`text-sm mb-1 ${sig.titleBold ? 'font-bold' : ''} ${sig.titleItalic ? 'italic' : ''} ${sig.titleUnderline ? 'underline' : ''}`}>
+                          {sig.title || "Firma"}
+                        </div>
+                        <div className={`${sig.textBold ? 'font-bold' : ''} ${sig.textItalic ? 'italic' : ''} ${sig.textUnderline ? 'underline' : ''}`}>
+                          {sig.text?.split('\n').map((line, j) => (
+                            <div key={j} className="text-sm">{line}</div>
+                          ))}
+                        </div>
                       </div>
                     );
                   })}
