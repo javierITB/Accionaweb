@@ -589,16 +589,22 @@ const DocumentTemplateEditor = ({
 
               {/* VISUALIZACIÓN DE FIRMAS (Solo si está activo) */}
               {templateData.includeSignature && (
-                <div className="signature-area">
-                  {signatures.map((sig, i) => (
-                    <div className="signature-col" key={i}>
-                      <div className="signature-line">__________________________</div>
-                      <div className="font-bold">{sig.title || "Firma"}</div>
-                      {sig.text?.split('\n').map((line, j) => (
-                        <div key={j}>{line}</div>
-                      ))}
-                    </div>
-                  ))}
+                <div className="signature-area grid grid-cols-2 gap-x-8 gap-y-8 mt-8">
+                  {signatures.map((sig, i) => {
+                    const isLastAndOdd = (i === signatures.length - 1) && (signatures.length % 2 !== 0);
+                    return (
+                      <div
+                        className={`signature-col flex flex-col items-center text-center ${isLastAndOdd ? 'col-span-2 place-self-center' : ''}`}
+                        key={i}
+                      >
+                        <div className="signature-line font-bold mb-1">__________________________</div>
+                        <div className="font-bold text-sm mb-1">{sig.title || "Firma"}</div>
+                        {sig.text?.split('\n').map((line, j) => (
+                          <div key={j} className="text-sm">{line}</div>
+                        ))}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
