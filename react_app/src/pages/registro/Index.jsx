@@ -225,14 +225,19 @@ const CompanyReg = () => {
                         </div>
 
                         <div className="pt-4 ">
-                           {Object.entries(selectedRegistro.metadata).map(([key, value]) => (
+                           {Object.entries(selectedRegistro.metadata).map(([key, value]) =>  { 
+                              const keyFormatted = key.replace(/_/g, " ").charAt(0).toUpperCase() + key.replace(/_/g, " ").slice(1);
+                              const valueFormatted = value.replace(/_/g, " ").charAt(0).toUpperCase() + value.replace(/_/g, " ").slice(1);
+                              return(
                               <p key={key} className="mb-1 text-foreground">
                                  <span className="font-semibold first-letter:uppercase">
-                                    {key.replace(/_/g, " ").charAt(0).toUpperCase() + key.replace(/_/g, " ").slice(1)}:
+                                    {keyFormatted}:
                                  </span>{" "}
-                                 {value}
+                                 "{valueFormatted}"
                               </p>
-                           ))}
+                           )})
+                           
+                           }
                         </div>
 
                         <div className="pt-4 ">
