@@ -176,6 +176,7 @@ const FormBuilder = () => {
         id: null, // ← SIEMPRE null para nuevas plantillas
         formId: selectedFormId,
         documentTitle: selectedTemplateData.documentTitle,
+        documentContent: selectedTemplateData.documentContent || '',
         paragraphs: selectedTemplateData.paragraphs,
         signature1Text: selectedTemplateData.signature1Text,
         signature2Text: selectedTemplateData.signature2Text,
@@ -222,6 +223,7 @@ const FormBuilder = () => {
       id: null,
       formId: selectedFormId,
       documentTitle: `Plantilla para ${selectedTemplateData.title}`,
+      documentContent: '',
       questions: selectedTemplateData.questions || [],
       paragraphs: [{ id: 'p1', content: 'Primera cláusula del contrato - {{FECHA_ACTUAL}}.' }],
       signature1Text: 'Firma del Empleador (Emisor).',
