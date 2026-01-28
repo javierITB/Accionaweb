@@ -259,6 +259,44 @@ const DocumentTemplateEditor = ({
   };
 
   const changeCase = (mode) => {
+    // 1. Manejo para Firmas (Inputs nativos)
+    if (focusedField.type === 'signature') {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        const { selectionStart, selectionEnd, value } = activeEl;
+
+        if (selectionStart === selectionEnd) return;
+
+        const before = value.substring(0, selectionStart);
+        const selected = value.substring(selectionStart, selectionEnd);
+        const after = value.substring(selectionEnd);
+        const { index, field } = focusedField;
+
+        let newSelected = selected;
+        if (mode === 'upper') {
+          newSelected = selected.toUpperCase();
+        } else if (mode === 'lower') {
+          newSelected = selected.toLowerCase();
+        } else if (mode === 'default') {
+          newSelected = selected.toLowerCase().replace(/(?:^|[\s_])\w/g, m => m.toUpperCase());
+        }
+
+        if (newSelected !== selected) {
+          const newValue = before + newSelected + after;
+          updateSignature(index, field, newValue);
+
+          setTimeout(() => {
+            if (activeEl) {
+              activeEl.value = newValue;
+              activeEl.setSelectionRange(selectionStart, selectionEnd);
+            }
+          }, 0);
+        }
+      }
+      return;
+    }
+
+    // 2. Manejo para Editor
     if (!editor) return;
     const { state, view } = editor;
     const { from, to, empty } = state.selection;
@@ -280,14 +318,14 @@ const DocumentTemplateEditor = ({
           } else if (mode === 'lower') {
             newContent = content.toLowerCase();
           } else if (mode === 'default') {
-            // Title Case para variables (si empieza con {{)
             if (content.trim().startsWith('{{') || /^{{.+}}$/.test(content)) {
               newContent = content.toLowerCase().replace(/(?:^|[\s_])\w/g, m => m.toUpperCase());
+            } else {
+              newContent = content.toLowerCase().replace(/(?:^|[\s])\w/g, m => m.toUpperCase());
             }
           }
 
           if (newContent !== content) {
-            // Reemplazar manteniendo los estilos (marks) del nodo original
             tr.replaceWith(start, end, state.schema.text(newContent, node.marks));
           }
         }
@@ -427,6 +465,7 @@ const DocumentTemplateEditor = ({
             variant="ghost"
             size="icon"
             className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('upper')}`}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => changeCase('upper')}
             title="Mayúsculas"
           >
@@ -436,6 +475,7 @@ const DocumentTemplateEditor = ({
             variant="ghost"
             size="icon"
             className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('lower')}`}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => changeCase('lower')}
             title="Minúsculas"
           >
@@ -445,6 +485,7 @@ const DocumentTemplateEditor = ({
             variant="ghost"
             size="icon"
             className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('default')}`}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => changeCase('default')}
             title="Default (Como se ingresó)"
           >
