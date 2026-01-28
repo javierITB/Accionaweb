@@ -250,10 +250,10 @@ const DocumentTemplateEditor = ({
       const currentText = signatures[index][field] || "";
       // Append variable with a space if not empty
       const spacer = currentText.length > 0 && !currentText.endsWith(' ') ? " " : "";
-      updateSignature(index, field, currentText + spacer + tag.toLowerCase());
+      updateSignature(index, field, currentText + spacer + tag);
     } else {
       if (editor) {
-        editor.chain().focus().insertContent(tag.toLowerCase()).run();
+        editor.chain().focus().insertContent(tag).run();
       }
     }
   };
@@ -536,7 +536,13 @@ const DocumentTemplateEditor = ({
             <span className={`text-[10px] font-bold ${isPreview ? 'text-primary' : 'text-muted-foreground'}`}>VISTA PREVIA</span>
           </div>
 
-          <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => addVariable('{{NUMERAL}}')} disabled={isPreview}>
+          <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => {
+            if (focusedField.type === 'signature') {
+              addVariable('{{NUMERAL}}');
+            } else {
+              editor.chain().focus().setMark('bold').insertContent('{{NUMERAL}}').unsetMark('bold').run();
+            }
+          }} disabled={isPreview}>
             + NUMERAL
           </Button>
           <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-blue-200 text-blue-600" onClick={() => {
