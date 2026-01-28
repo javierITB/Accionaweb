@@ -1,6 +1,17 @@
-async function registerEvent(req, event) {
+async function registerEvent(req, actor, event) {
    const payload = {
       ...event,
+      actor: {
+         uid: actor?.uid?.toString() || null,
+         name: actor?.nombre || "desconocido",
+         last_name: actor?.apellido || "desconocido",
+         role: actor?.rol || "desconocido",
+         email: actor?.mail || "desconocido",
+         empresa: actor?.empresa || "desconocido",
+         cargo: actor?.cargo || "desconocido",
+         estado: actor?.estado || "desconocido",
+      },
+
       createdAt: new Date(),
    };
 
@@ -13,23 +24,17 @@ async function registerEvent(req, event) {
 }
 
 export async function registerStatusChangeEvent(req, { updatedResponse, auth, result, error = null }) {
-   const actor = auth?.data || {};
+   const userData = auth?.data?.usuario || {};
 
    let description = "Cambio de estado de solicitud";
 
-   await registerEvent(req, {
+   registerEvent(req, userData, {
       code: CODES.SOLICITUD_CAMBIO_ESTADO,
       target: {
          type: TARGET_TYPES.SOLICITUD,
          _id: updatedResponse?._id?.toString() || null,
       },
-      actor: {
-         uid: updatedResponse?.user?.uid?.toString() || null,
-         name: updatedResponse?.user?.nombre || "desconocido",
-         role: actor?.rol || "desconocido",
-         email: actor?.email || "desconocido",
-         empresa: updatedResponse?.user?.empresa || "desconocido",
-      },
+
       description: updatedResponse
          ? `${description} "${updatedResponse?.formTitle}" a ${updatedResponse?.status}`
          : description + " desconocida",
@@ -43,21 +48,26 @@ export async function registerStatusChangeEvent(req, { updatedResponse, auth, re
    });
 }
 
-// codes
-export const CODES = {
-   SOLICITUD_CAMBIO_ESTADO: "SOLICITUD_CAMBIO_ESTADO",
-   SOLICITUD_REGENERACION_DOCUMENTO: "SOLICITUD_REGENERACION_DOCUMENTO",
-};
+export async function registerRegenerateDocumentEvent(req, { respuesta, auth, result, error = null }) {
+   const userData = auth?.data?.usuario || {};
 
-// target types
-export const TARGET_TYPES = {
-   SOLICITUD: "solicitud",
-};
+   let description = "Regeneración de documento de solicitud";
 
-// actor roles
-export const ACTOR_ROLES = {
-   ADMIN: "admin",
-};
+   registerEvent(req, userData, {
+      code: CODES.SOLICITUD_REGENERACION_DOCUMENTO,
+      target: {
+         type: TARGET_TYPES.SOLICITUD,
+         _id: respuesta?._id.toString() || null,
+      },
+
+      description: respuesta ? `${description} "${respuesta?.formTitle}"` : description + " desconocida",
+      metadata: {
+         nombre_de_solicitud: respuesta?.formTitle,
+      },
+      result,
+      ...(error && { error_message: error.message }),
+   });
+}
 
 // results
 export const RESULTS = {
@@ -65,9 +75,25 @@ export const RESULTS = {
    ERROR: "error",
 };
 
+// codes
+const CODES = {
+   SOLICITUD_CAMBIO_ESTADO: "SOLICITUD_CAMBIO_ESTADO",
+   SOLICITUD_REGENERACION_DOCUMENTO: "SOLICITUD_REGENERACION_DOCUMENTO",
+};
+
+// target types
+const TARGET_TYPES = {
+   SOLICITUD: "solicitud",
+};
+
+// actor roles
+const ACTOR_ROLES = {
+   ADMIN: "admin",
+};
+
 // metadata
 
-export const STATUS = {
+const STATUS = {
    PENDIENTE: "pendiente",
    EN_REVISION: "en_revisión",
    APROBADA: "aprobada",

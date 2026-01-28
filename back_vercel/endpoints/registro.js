@@ -22,7 +22,7 @@ router.get("/todos", async (req, res) => {
       await verifyRequest(req);
       const tkn = await req.db
          .collection("cambios")
-         .find({}, { projection: { error_message: 0 } })
+         .find({}, { projection: { error_message: 0, "actor.uid": 0 } })
          .toArray();
 
       res.json(tkn);
