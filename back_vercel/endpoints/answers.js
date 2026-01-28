@@ -8,7 +8,7 @@ const { enviarCorreoRespaldo } = require("../utils/mailrespaldo.helper");
 const { validarToken } = require("../utils/validarToken.js");
 const { createBlindIndex, verifyPassword, encrypt, decrypt } = require("../utils/seguridad.helper");
 const { sendEmail } = require("../utils/mail.helper");
-const { registerEvent, registerStatusChangeEvent, registerRegenerateDocumentEvent, CODES, TARGET_TYPES, ACTOR_ROLES, RESULTS, STATUS,  } = require("../utils/registerEvent");
+const {registerStatusChangeEvent, registerRegenerateDocumentEvent, RESULTS} = require("../utils/registerEvent");
 
 // Función para normalizar nombres de archivos (versión completa y segura)
 const normalizeFilename = (filename) => {
@@ -3225,7 +3225,6 @@ router.post("/:id/regenerate-document", async (req, res) => {
       );
       
       // Registrar evento
-
      registerRegenerateDocumentEvent(req, { respuesta, auth, result: RESULTS.SUCCESS });
 
       res.json({

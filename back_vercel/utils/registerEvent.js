@@ -1,15 +1,20 @@
-async function registerEvent(req, actor, event) {
+const { getUserByTokenId } = require("./getUserData.helper.js");
+
+async function registerEvent(req, auth, event) {
+   const tokenId = auth?.data?._id?.toString() || null;
+   const userData = await getUserByTokenId(req.db, tokenId);
+
    const payload = {
       ...event,
       actor: {
-         uid: actor?.uid?.toString() || null,
-         name: actor?.nombre || "desconocido",
-         last_name: actor?.apellido || "desconocido",
-         role: actor?.rol || "desconocido",
-         email: actor?.mail || "desconocido",
-         empresa: actor?.empresa || "desconocido",
-         cargo: actor?.cargo || "desconocido",
-         estado: actor?.estado || "desconocido",
+         uid: userData?.uid?.toString() || null,
+         name: userData?.nombre || "desconocido",
+         last_name: userData?.apellido || "desconocido",
+         role: userData?.rol || "desconocido",
+         email: userData?.mail || "desconocido",
+         empresa: userData?.empresa || "desconocido",
+         cargo: userData?.cargo || "desconocido",
+         estado: userData?.estado || "desconocido",
       },
 
       createdAt: new Date(),
@@ -24,11 +29,10 @@ async function registerEvent(req, actor, event) {
 }
 
 export async function registerStatusChangeEvent(req, { updatedResponse, auth, result, error = null }) {
-   const userData = auth?.data?.usuario || {};
 
    let description = "Cambio de estado de solicitud";
 
-   registerEvent(req, userData, {
+   registerEvent(req, auth, {
       code: CODES.SOLICITUD_CAMBIO_ESTADO,
       target: {
          type: TARGET_TYPES.SOLICITUD,
@@ -49,11 +53,10 @@ export async function registerStatusChangeEvent(req, { updatedResponse, auth, re
 }
 
 export async function registerRegenerateDocumentEvent(req, { respuesta, auth, result, error = null }) {
-   const userData = auth?.data?.usuario || {};
 
    let description = "Regeneración de documento de solicitud";
 
-   registerEvent(req, userData, {
+   registerEvent(req, auth, {
       code: CODES.SOLICITUD_REGENERACION_DOCUMENTO,
       target: {
          type: TARGET_TYPES.SOLICITUD,
