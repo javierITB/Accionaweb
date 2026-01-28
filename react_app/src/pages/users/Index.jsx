@@ -69,9 +69,11 @@ const FormReg = () => {
   }, []);
 
   const cargos = [
+    { value: 'Cliente', label: 'Cliente' },
     { value: 'admin', label: 'Administrador' },
     { value: 'RRHH', label: 'Recursos Humanos' },
-    { value: 'Cliente', label: 'Cliente' },
+    { value: 'SoloLectura', label: 'Solo Lectura' },
+    
   ];
 
   const roles = [

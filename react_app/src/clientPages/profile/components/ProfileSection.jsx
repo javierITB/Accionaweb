@@ -283,7 +283,7 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
 
             {/* Department Assignments - RESPONSIVE */}
             <div className="mt-4 sm:mt-6">
-              <h4 className="text-sm font-medium text-foreground mb-3">Asignaciones de Cuenta</h4>
+              <h4 className="text-sm font-medium text-foreground mb-3">Empresa</h4>
               <div className="space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-muted rounded-lg space-y-2 sm:space-y-0">
                   <div className="flex items-center space-x-3">
