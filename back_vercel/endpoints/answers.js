@@ -1129,11 +1129,12 @@ router.get("/filtros", async (req, res) => {
       };
     });
 
-    // 5. Filtrado en Memoria (Búsqueda por texto claro)
-    if (search && search.trim() !== "") {
-      const normalizeText = (str) => 
-        str ? str.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+    // 5. Función de normalización (Reutilizable para todos los filtros de texto)
+    const normalizeText = (str) => 
+      str ? str.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
 
+    // 5.1 Filtrado en Memoria (Búsqueda por texto claro)
+    if (search && search.trim() !== "") {
       const searchTerm = normalizeText(search);
 
       answersProcessed = answersProcessed.filter(item => {
@@ -1148,19 +1149,19 @@ router.get("/filtros", async (req, res) => {
       });
     }
 
-    // 6. Filtro por empresa
+    // 6. Filtro por empresa (Corregido para ignorar tildes)
     if (company && company.trim() !== "") {
-      const compTerm = company.toLowerCase();
+      const compTerm = normalizeText(company);
       answersProcessed = answersProcessed.filter(item =>
-        item.company.toLowerCase().includes(compTerm)
+        normalizeText(item.company).includes(compTerm)
       );
     }
 
-    // 6.1 Filtro por enviado por (AÑADIDO)
+    // 6.1 Filtro por enviado por (Corregido para ignorar tildes)
     if (submittedBy && submittedBy.trim() !== "") {
-      const userTerm = submittedBy.toLowerCase();
+      const userTerm = normalizeText(submittedBy);
       answersProcessed = answersProcessed.filter(item =>
-        item.submittedBy.toLowerCase().includes(userTerm)
+        normalizeText(item.submittedBy).includes(userTerm)
       );
     }
 

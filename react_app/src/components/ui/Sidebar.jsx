@@ -9,11 +9,11 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          name: "Gestión Principal",
          icon: "LayoutDashboard",
          isAccordion: true,
-         roles: ["admin", "RRHH"], // Solo estos cargos ven el acordeón completo
+         roles: ["admin", "RRHH", "SoloLectura"], // Solo estos cargos ven el acordeón completo
          children: [
-            { name: "Solicitudes de Clientes", path: "/RespuestasForms", icon: "FileText", roles: ["admin", "RRHH"] },
-            { name: "Solicitudes a Cliente", path: "/Solicitudes", icon: "Pencil", roles: ["admin", "RRHH"] },
-            { name: "Tickets", path: "/Tickets", icon: "FileText", roles: ["admin", "RRHH", "soporte"] },
+            { name: "Solicitudes de Clientes", path: "/RespuestasForms", icon: "FileText", roles: ["admin", "RRHH", "SoloLectura"] },
+            { name: "Solicitudes a Cliente", path: "/Solicitudes", icon: "Pencil", roles: ["admin", "RRHH", "SoloLectura"] },
+            { name: "Tickets", path: "/Tickets", icon: "FileText", roles: ["admin", "RRHH", "soporte", "SoloLectura"] },
             { name: "Domicilio Virtual", path: "/DomicilioVirtual", icon: "Home", roles: ["admin"] },
          ]
       },
@@ -21,29 +21,29 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          name: "Rendimiento",
          path: "/dashboard-home",
          icon: "BarChart2",
-         roles: ["admin"]
+         roles: ["admin", "SoloLectura"]
       },
       {
          name: "Configuración",
          icon: "Settings",
          isAccordion: true,
-         roles: ["admin", "RRHH"],
+         roles: ["admin", "RRHH", "SoloLectura"],
          children: [
-            { name: "Formularios", path: "/form-center", icon: "FileText", roles: ["admin", "RRHH"] },
-            { name: "Plantillas", path: "/template-builder", icon: "FileText", roles: ["admin", "RRHH"] },
-            { name: "Config. Tickets", path: "/config-tickets", icon: "Settings", roles: ["admin"] },
-            { name: "Anuncios", path: "/anuncios", icon: "Megaphone", roles: ["admin", "RRHH"] },
+            { name: "Formularios", path: "/form-center", icon: "FileText", roles: ["admin", "RRHH", "SoloLectura"] },
+            { name: "Plantillas", path: "/template-builder", icon: "FileText", roles: ["admin", "RRHH", "SoloLectura"] },
+            { name: "Config. Tickets", path: "/config-tickets", icon: "Settings", roles: ["admin", "SoloLectura"] },
+            { name: "Anuncios", path: "/anuncios", icon: "Megaphone", roles: ["admin", "RRHH", "SoloLectura"] },
          ]
       },
       {
          name: "Administración",
          icon: "Shield",
          isAccordion: true,
-         roles: ["admin", "RRHH"],
+         roles: ["admin", "RRHH", "SoloLectura"],
          children: [
-            { name: "Usuarios", path: "/users", icon: "User", roles: ["admin", "RRHH"] },
-            { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["admin", "RRHH"] },
-            { name: "Registro de cambios", path: "/registro-cambios", icon: "FileText", roles: ["admin", "RRHH"] },
+            { name: "Usuarios", path: "/users", icon: "User", roles: ["admin", "RRHH", "SoloLectura"] },
+            { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["admin", "RRHH", "SoloLectura"] },
+            { name: "Registro de cambios", path: "/registro-cambios", icon: "FileText", roles: ["admin", "RRHH", "SoloLectura"] },
          ]
       },
    ];
