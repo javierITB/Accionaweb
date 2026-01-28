@@ -49,13 +49,14 @@ const DocumentTemplateEditor = ({
   const [dynamicVarsExpanded, setDynamicVarsExpanded] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
-  const [, setTick] = useState(0); // Force re-render for toolbars
+  const [, setTick] = useState(0);
+  const [focusedField, setFocusedField] = useState({ type: 'editor' });
 
   // --- Lógica de Firmas Dinámicas ---
   const getEffectiveSignatures = () => {
     if (templateData.signatures && Array.isArray(templateData.signatures)) return templateData.signatures;
     const sigs = [];
-    // Migración Legacy: Si existen campos antiguos, úsalos
+    // Migración Legacy:
     if (templateData.signature1Text !== undefined || templateData.signature2Text !== undefined) {
       sigs.push({ title: templateData.signature1Title || "Empleador / Representante Legal", text: templateData.signature1Text || "" });
       sigs.push({ title: templateData.signature2Title || "Empleado", text: templateData.signature2Text || "" });
@@ -103,6 +104,7 @@ const DocumentTemplateEditor = ({
       TableCell,
       TableHeader,
     ],
+    onFocus: () => setFocusedField({ type: 'editor' }),
     content: templateData.documentContent || (templateData.paragraphs && templateData.paragraphs.length > 0
       ? templateData.paragraphs.map(p => {
         let text = p.content;
@@ -158,8 +160,16 @@ const DocumentTemplateEditor = ({
   };
 
   const addVariable = (tag) => {
-    if (editor) {
-      editor.chain().focus().insertContent(tag.toLowerCase()).run();
+    if (focusedField.type === 'signature') {
+      const { index, field } = focusedField;
+      const currentText = signatures[index][field] || "";
+      // Append variable with a space if not empty
+      const spacer = currentText.length > 0 && !currentText.endsWith(' ') ? " " : "";
+      updateSignature(index, field, currentText + spacer + tag.toLowerCase());
+    } else {
+      if (editor) {
+        editor.chain().focus().insertContent(tag.toLowerCase()).run();
+      }
     }
   };
 
@@ -654,6 +664,7 @@ const DocumentTemplateEditor = ({
                       className="w-full text-xs border rounded px-2 py-1 focus:ring-1 focus:ring-primary outline-none bg-background text-foreground placeholder:text-muted-foreground/50"
                       value={sig.title || ''}
                       onChange={(e) => updateSignature(i, 'title', e.target.value)}
+                      onFocus={() => setFocusedField({ type: 'signature', index: i, field: 'title' })}
                       placeholder="Ej: Empleado"
                     />
                   </div>
@@ -665,6 +676,7 @@ const DocumentTemplateEditor = ({
                       placeholder="Variables, RUT, etc..."
                       value={sig.text || ''}
                       onChange={(e) => updateSignature(i, 'text', e.target.value)}
+                      onFocus={() => setFocusedField({ type: 'signature', index: i, field: 'text' })}
                     />
                   </div>
                 </div>
