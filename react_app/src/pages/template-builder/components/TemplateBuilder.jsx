@@ -55,7 +55,6 @@ const DocumentTemplateEditor = ({
         underline: false,
       }),
       Underline,
-      // TextStyle ya incluido en FontSize
       FontFamily,
       FontSize,
       Image,
@@ -205,24 +204,7 @@ const DocumentTemplateEditor = ({
           </Button>
         </div>
 
-        {/* Tablas - BOTÓN DE ZONA FIRMAS ELIMINADO - Ahora se maneja con inputs dedicados */}
-        <div className="flex bg-card border rounded-md p-0.5 gap-1 px-1 items-center">
-          {/* Solo botones generales de tabla si se necesitan, pero quitamos el de Zona Firmas específico */}
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insertar Tabla">
-            <Icon name="Grid" size={14} />
-          </Button>
 
-          {editor.isActive('table') && (
-            <div className="flex gap-1 pl-1">
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => editor.chain().focus().deleteTable().run()} title="Eliminar Tabla">
-                <Icon name="Trash2" size={14} />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => editor.chain().focus().addColumnAfter().run()} title="Añadir Columna">
-                <Icon name="ArrowRight" size={14} />
-              </Button>
-            </div>
-          )}
-        </div>
 
 
 
@@ -380,15 +362,14 @@ const DocumentTemplateEditor = ({
             <style>{`
               /* Contenedor del área de edición */
               .editor-paper-container {
-                background-color: #f0f2f5; /* Fondo gris para resaltar la "hoja" */
+                background-color: #f0f2f5; 
                 padding: 40px 0;
                 display: flex;
                 justify-content: center;
               }
 
-              /* La "Hoja" de papel */
-              .ProseMirror {
-                outline: none;
+              /* La "Hoja" Visual (Contenedor Padre) */
+              .visual-page {
                 background: white;
                 width: 216mm; /* Ancho Carta */
                 min-height: 279mm; /* Alto Carta Mínimo */
@@ -397,6 +378,20 @@ const DocumentTemplateEditor = ({
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                 position: relative;
                 font-family: 'Arial', sans-serif;
+                display: flex;
+                flex-direction: column;
+              }
+
+              /* El Editor Tiptap (Contenido) */
+              .ProseMirror {
+                outline: none;
+                flex: 1; /* Ocupa el espacio disponible */
+              }
+              
+              /* Vista Previa (Contenido) */
+              .preview-page {
+                outline: none;
+                flex: 1;
               }
 
               /* Ajustes para tablas y párrafos */
@@ -405,28 +400,61 @@ const DocumentTemplateEditor = ({
               .ProseMirror td, .ProseMirror th { min-width: 1em; border: 1px dashed ${isPreview ? 'transparent' : '#ccc'}; padding: 10px; vertical-align: top; box-sizing: border-box; position: relative; }
               .ProseMirror .selectedCell:after { z-index: 2; background: rgba(200, 200, 255, 0.4); content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; }
 
-              /* Adaptación para Vista Previa */
-              .preview-page {
-                outline: none;
-                background: white;
-                width: 216mm;
-                min-height: 279mm;
-                padding: 2.5cm;
-                margin: 0 auto;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                position: relative;
-                font-family: 'Arial', sans-serif;
+              /* Área Visual de Firmas */
+              .signature-area {
+                margin-top: 50px;
+                padding-top: 20px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 40px;
+                page-break-inside: avoid;
+                color: black; /* FORZAR CONTRASTE */
+                border-top: 1px dashed #eee; /* Guía visual sutil */
+              }
+              .signature-col {
+                text-align: center;
+                font-size: 12px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+              }
+              .signature-line {
+                font-weight: bold;
+                margin-bottom: 8px;
               }
             `}</style>
 
-            {!isPreview ? (
-              <EditorContent editor={editor} className="prose prose-sm max-w-none" />
-            ) : (
-              <div
-                className="prose prose-sm max-w-none preview-page"
-                dangerouslySetInnerHTML={{ __html: generatePreviewHtml(editor.getHTML()) }}
-              />
-            )}
+            <div className={`visual-page ${isPreview ? 'scale-[1.02]' : ''}`}>
+              {!isPreview ? (
+                <EditorContent editor={editor} className="prose prose-sm max-w-none flex-1" />
+              ) : (
+                <div
+                  className="prose prose-sm max-w-none preview-page"
+                  dangerouslySetInnerHTML={{ __html: generatePreviewHtml(editor.getHTML()) }}
+                />
+              )}
+
+              {/* VISUALIZACIÓN DE FIRMAS (Solo si está activo) */}
+              {templateData.includeSignature && (
+                <div className="signature-area">
+                  <div className="signature-col">
+                    <div className="signature-line">__________________________</div>
+                    <div className="font-bold">Empleador / Representante Legal</div>
+                    {templateData.signature1Text?.split('\n').map((line, i) => (
+                      <div key={i}>{line}</div>
+                    ))}
+                  </div>
+                  <div className="signature-col">
+                    <div className="signature-line">__________________________</div>
+                    <div className="font-bold">Empleado</div>
+                    {templateData.signature2Text?.split('\n').map((line, i) => (
+                      <div key={i}>{line}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -437,26 +465,43 @@ const DocumentTemplateEditor = ({
               <Icon name="PenTool" size={12} /> Configuración de Firmas
             </h3>
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Firma Izquierda (Empleador)</label>
-                <textarea
-                  className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
-                  placeholder="Ej: {{NOMBRE_EMPRESA}}\nRRHH..."
-                  value={templateData.signature1Text || ''}
-                  onChange={(e) => onUpdateTemplateData('signature1Text', e.target.value)}
+              <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                <input
+                  type="checkbox"
+                  id="includeSignature"
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                  checked={templateData.includeSignature || false}
+                  onChange={(e) => onUpdateTemplateData('includeSignature', e.target.checked)}
                 />
-                <p className="text-[10px] text-muted-foreground">Soporta variables y saltos de linea.</p>
+                <label htmlFor="includeSignature" className="text-xs font-medium cursor-pointer select-none">
+                  Incluir Zona de Firmas
+                </label>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Firma Derecha (Empleado)</label>
-                <textarea
-                  className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
-                  placeholder="Ej: {{NOMBRE_EMPLEADO}}\nRut: {{RUT_EMPLEADO}}..."
-                  value={templateData.signature2Text || ''}
-                  onChange={(e) => onUpdateTemplateData('signature2Text', e.target.value)}
-                />
-              </div>
+              {templateData.includeSignature && (
+                <>
+                  <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <label className="text-xs font-medium text-muted-foreground">Firma Izquierda (Empleador)</label>
+                    <textarea
+                      className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
+                      placeholder="Ej: {{NOMBRE_EMPRESA}}\nRRHH..."
+                      value={templateData.signature1Text || ''}
+                      onChange={(e) => onUpdateTemplateData('signature1Text', e.target.value)}
+                    />
+                    <p className="text-[10px] text-muted-foreground">Soporta variables y saltos de linea.</p>
+                  </div>
+
+                  <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <label className="text-xs font-medium text-muted-foreground">Firma Derecha (Empleado)</label>
+                    <textarea
+                      className="w-full h-32 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary bg-background"
+                      placeholder="Ej: {{NOMBRE_EMPLEADO}}\nRut: {{RUT_EMPLEADO}}..."
+                      value={templateData.signature2Text || ''}
+                      onChange={(e) => onUpdateTemplateData('signature2Text', e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

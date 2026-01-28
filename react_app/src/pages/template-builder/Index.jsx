@@ -34,6 +34,7 @@ const FormBuilder = () => {
     }],
     signature1Text: 'Firma del Empleador (Emisor).',
     signature2Text: 'Firma del Empleado (Receptor).',
+    includeSignature: false,
     formId: null,
   });
 
@@ -121,6 +122,7 @@ const FormBuilder = () => {
 
           signature1Text: data.signature1Text || 'Firma del Empleador (Emisor).',
           signature2Text: data.signature2Text || 'Firma del Empleado (Receptor).',
+          includeSignature: data.includeSignature !== undefined ? data.includeSignature : false,
 
           createdAt: data.createdAt || new Date().toISOString(),
           updatedAt: data.updatedAt || new Date().toISOString()
@@ -176,6 +178,7 @@ const FormBuilder = () => {
         paragraphs: selectedTemplateData.paragraphs,
         signature1Text: selectedTemplateData.signature1Text,
         signature2Text: selectedTemplateData.signature2Text,
+        includeSignature: selectedTemplateData.includeSignature || false,
         questions: selectedTemplateData.questions || [],
       };
 
@@ -209,6 +212,7 @@ const FormBuilder = () => {
       paragraphs: existingTemplateData.paragraphs,
       signature1Text: existingTemplateData.signature1Text,
       signature2Text: existingTemplateData.signature2Text,
+      includeSignature: existingTemplateData.includeSignature !== undefined ? existingTemplateData.includeSignature : false,
       questions: selectedTemplateData.questions || [],
     } : {
       // Fallback por si acaso (no debería llegar aquí con el nuevo flujo)
@@ -272,6 +276,7 @@ const FormBuilder = () => {
       documentContent: formData.documentContent, // Agregar soporte para editor Tiptap HTML
       signature1Text: formData.signature1Text || "zona firma 1",
       signature2Text: formData.signature2Text || "zona firma 1",
+      includeSignature: formData.includeSignature,
       formId: formData.formId,
 
       status: newStatus,
