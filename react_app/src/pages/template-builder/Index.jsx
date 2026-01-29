@@ -40,6 +40,8 @@ const FormBuilder = () => {
 
   const [activeTab, setActiveTab] = useState('properties');
   const [isSaving, setIsSaving] = useState(false);
+  // Estado para forzar la recarga del editor SOLAMENTE al cargar una nueva plantilla
+  const [templateVersion, setTemplateVersion] = useState(0);
 
   // EFECTO PARA MANEJAR REDIMENSIONAMIENTO - AGREGADO
   useEffect(() => {
@@ -235,6 +237,9 @@ const FormBuilder = () => {
       ...newTemplateState,
     }));
 
+    // Forzar recarga del editor
+    setTemplateVersion(v => v + 1);
+
     setActiveTab('document');
   };
 
@@ -390,6 +395,7 @@ const FormBuilder = () => {
         }
         return (
           <DocumentTemplateEditor
+            key={`${formData.formId}-${templateVersion}`}
             dynamicVariables={dynamicVariables}
             staticVariables={staticVariables}
             templateData={formData}
