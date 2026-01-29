@@ -109,6 +109,25 @@ const CompanyReg = () => {
       );
    };
 
+   const formatText = (text) => text.replace(/_/g, " ").charAt(0).toUpperCase() + text.replace(/_/g, " ").slice(1);
+
+   const renderMetadata = (data, level = 0) => {
+      return Object.entries(data).map(([key, value]) => {
+         const isObject = typeof value === "object" && value !== null && !Array.isArray(value);
+
+         return (
+            <div key={key} className={level > 0 ? "ml-4" : ""}>
+               <p className="mb-1 text-foreground">
+                  <span className="font-semibold">{formatText(key)}:</span>{" "}
+                  {!isObject && `"${formatText(String(value))}"`}
+               </p>
+
+               {isObject && renderMetadata(value, level + 1)}
+            </div>
+         );
+      });
+   };
+
    const getTabContent = () => {
       return (
          <div className="space-y-4">
@@ -159,7 +178,7 @@ const CompanyReg = () => {
                      </button>
                      <div className="flex items-center justify-between border-b border-border pb-2">
                         <div className="flex items-center gap-3">
-                          <Icon name="CheckCircle" size={28} className="text-success" />
+                           <Icon name="CheckCircle" size={28} className="text-success" />
 
                            <h2 className="text-2xl font-bold  ">Detalles del Evento</h2>
                         </div>
@@ -184,7 +203,8 @@ const CompanyReg = () => {
                         <div className="pt-4 ">
                            <p className="font-semibold pb-1 text-foreground text-base">Actor:</p>
                            <p>
-                              <span className="font-semibold pl-2">Nombre:</span> {selectedRegistro.actor.name + " " + selectedRegistro.actor.last_name}
+                              <span className="font-semibold pl-2">Nombre:</span>{" "}
+                              {selectedRegistro.actor.name + " " + selectedRegistro.actor.last_name}
                            </p>
                            <p>
                               <span className="font-semibold pl-2">Cargo:</span> {selectedRegistro.actor.cargo}
@@ -209,21 +229,7 @@ const CompanyReg = () => {
                            </p>
                         </div>
 
-                        <div className="pt-4 ">
-                           {Object.entries(selectedRegistro.metadata).map(([key, value]) =>  { 
-                              const keyFormatted = key.replace(/_/g, " ").charAt(0).toUpperCase() + key.replace(/_/g, " ").slice(1);
-                              const valueFormatted = value.replace(/_/g, " ").charAt(0).toUpperCase() + value.replace(/_/g, " ").slice(1);
-                              return(
-                              <p key={key} className="mb-1 text-foreground">
-                                 <span className="font-semibold first-letter:uppercase">
-                                    {keyFormatted}:
-                                 </span>{" "}
-                                 "{valueFormatted}"
-                              </p>
-                           )})
-                           
-                           }
-                        </div>
+                        <div className="pt-4">{renderMetadata(selectedRegistro.metadata)}</div>
                      </div>
                   </div>
                </div>
