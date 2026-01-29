@@ -8,7 +8,7 @@ import AsyncActionDialog from "@/components/AsyncActionDialog";
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
-const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 1MB en bytes
 
 const RequestDetails = ({
    request,
@@ -697,7 +697,7 @@ Puedes agregar máximo ${remainingSlots} archivo(s) más.`,
 
       if (oversizedFiles.length > 0) {
          const names = oversizedFiles.map((f) => f.name).join(", ");
-         openInfoDialog(`Los siguientes archivos exceden el límite de 1MB: ${names}`);
+         openInfoDialog(`Los siguientes archivos exceden el límite de 3MB: ${names}`);
          event.target.value = "";
          return;
       }
@@ -968,9 +968,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
       const oversizedFiles = correctedFiles.filter((f) => f.size > MAX_FILE_SIZE);
       if (oversizedFiles.length > 0) {
-         throw new Error(
-            `No se puede aprobar. Los siguientes archivos exceden 1MB: ${oversizedFiles.map((f) => f.name).join(", ")}`,
-         );
+         throw new Error(`No se puede aprobar. Los siguientes archivos exceden 3MB: ${oversizedFiles.map((f) => f.name).join(", ")}`);
       }
 
       if (isApproving || ["aprobado", "firmado"].includes(request?.status)) {
@@ -1224,15 +1222,22 @@ Máximo permitido: ${MAX_FILES} archivos.`;
    const formatFileSize = (bytes) => {
       if (!bytes) return "0 KB";
       if (bytes < 1024) return bytes + " B";
+      
+      // Si es menor a 1 MB, mostrar en KB
       if (bytes < 1048576) {
-         const kb = (bytes / 1024).toFixed(2);
-         if (bytes > 900 * 1024) {
-            return `${kb} KB (cerca del límite)`;
-         }
-         return kb + " KB";
+          return (bytes / 1024).toFixed(2) + " KB";
       }
+      
+      // Si es mayor a 1 MB, calculamos los MB
       const mb = (bytes / 1048576).toFixed(2);
-      return `${mb} MB (EXCEDE LÍMITE)`;
+      
+      // ✅ Aquí está la clave: solo muestra (EXCEDE LÍMITE) si pasa los 3MB reales
+      if (bytes > MAX_FILE_SIZE) {
+          return `${mb} MB (EXCEDE LÍMITE)`;
+      }
+      
+      // Si está entre 1MB y 3MB, se muestra normal: "2.50 MB"
+      return `${mb} MB`;
    };
 
    const getFileIcon = (type) => {
