@@ -75,7 +75,7 @@ export async function getUserByTokenId(db, tokenId) {
    }
 }
 
-export function encryptObject(obj) {
+export function encryptObject(obj, seen = new WeakSet()) {
    if (!obj || typeof obj !== "object") return obj;
    if (seen.has(obj)) return obj;
 
