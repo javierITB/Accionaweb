@@ -34,7 +34,7 @@ async function registerEvent(req, auth, event, metadata = {}) {
    }
 }
 
-export async function registerSolicitudCreationEvent(req, auth, description = "", metadata = {}) {
+async function registerSolicitudCreationEvent(req, auth, description = "", metadata = {}) {
    const payload = {
       code: CODES.SOLICITUD_CREACION,
       target: {
@@ -46,7 +46,7 @@ export async function registerSolicitudCreationEvent(req, auth, description = ""
    await registerEvent(req, auth, payload, metadata);
 }
 
-export async function registerTicketCreationEvent(req, auth, description = "", metadata = {}) {
+async function registerTicketCreationEvent(req, auth, description = "", metadata = {}) {
    const payload = {
       code: CODES.TICKET_CREACION,
       target: {
@@ -68,4 +68,10 @@ const CODES = {
 const TARGET_TYPES = {
    SOLICITUD: "solicitud",
    TICKET: "ticket",
+};
+
+
+module.exports = {
+  registerSolicitudCreationEvent,
+  registerTicketCreationEvent,
 };
