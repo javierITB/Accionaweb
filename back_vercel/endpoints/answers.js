@@ -2942,6 +2942,7 @@ router.delete("/:id/remove-correction", async (req, res) => {
 });
 
 // Subir PDF firmado por cliente a colección firmados y cambiar estado de respuesta a 'firmado'
+
 router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), async (req, res) => {
   try {
     const { responseId } = req.params;
@@ -2962,6 +2963,25 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       return res.status(404).json({ error: "Formulario no encontrado" });
     }
 
+    // --- LÓGICA DE DESCIFRADO AGREGADA ---
+    const descifrarObjeto = (obj) => {
+      if (!obj || typeof obj !== 'object') return obj;
+      const resultado = {};
+      for (const key in obj) {
+        const valor = obj[key];
+        if (typeof valor === 'string' && valor.includes(':')) {
+          resultado[key] = decrypt(valor);
+        } else {
+          resultado[key] = valor;
+        }
+      }
+      return resultado;
+    };
+
+    const responsesDescifradas = descifrarObjeto(respuesta.responses || {});
+    const nombreTrabajador = responsesDescifradas['NOMBRE DEL TRABAJADOR'] || "Trabajador";
+    // -------------------------------------
+
     const existingSignature = await req.db.collection("firmados").findOne({
       responseId: responseId
     });
@@ -2978,7 +2998,7 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
       uploadedAt: new Date(),
-      signedBy: respuesta.responses['Nombre del trabajador'],
+      signedBy: nombreTrabajador,
       clientName: respuesta.submittedBy || respuesta.user?.nombre,
       clientEmail: respuesta.userEmail || respuesta.user?.mail
     };
@@ -3008,7 +3028,7 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
     await addNotification(req.db, {
       filtro: { cargo: "RRHH" },
       titulo: `Documento ${respuesta.formTitle} Firmado`,
-      descripcion: `se ha recibido el Documento Firmado asociado al Formulario ${respuesta.formTitle} ${respuesta.responses['Nombre del trabajador']}`,
+      descripcion: `se ha recibido el Documento Firmado asociado al Formulario ${respuesta.formTitle} de ${nombreTrabajador}`,
       prioridad: 2,
       icono: 'Pen',
       color: '#dbca34ff',
