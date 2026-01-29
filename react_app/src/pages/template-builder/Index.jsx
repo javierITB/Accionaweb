@@ -283,6 +283,7 @@ const FormBuilder = () => {
       signature2Text: formData.signature2Text || "zona firma 1",
       signatures: formData.signatures,
       includeSignature: formData.includeSignature,
+      logoConfig: formData.logoConfig,
       formId: formData.formId,
 
       status: newStatus,
