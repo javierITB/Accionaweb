@@ -260,9 +260,20 @@ async function buscarPlantillaPorFormId(formId, db) {
 
 async function extraerVariablesDeRespuestas(responses, userData, db) {
     const variables = {};
+    const encryptedRegex = /^[a-f0-9]{24}:[a-f0-9]{32}:[a-f0-9]+$/i;
+
     Object.keys(responses).forEach(key => {
         if (key === '_contexto') return;
         let valor = responses[key];
+
+        // Intentar desencriptar si parece un string cifrado
+        if (typeof valor === 'string' && encryptedRegex.test(valor)) {
+            try {
+                valor = decrypt(valor);
+            } catch (e) {
+            }
+        }
+
         if (Array.isArray(valor)) valor = valor.join(', ');
         if (valor && typeof valor === 'object' && !Array.isArray(valor)) valor = JSON.stringify(valor);
         const nombreVariable = normalizarNombreVariable(key);
@@ -576,11 +587,13 @@ function procesarHTML(html, variables) {
                 if (lower.startsWith('<u>')) { currentSpanStyle.underline = true; continue; }
                 if (lower.startsWith('</u>')) { currentSpanStyle.underline = false; continue; }
 
-                // Soporte para SPAN con font-size
+                // Soporte para SPAN con font-size y font-family
                 if (lower.startsWith('<span')) {
-                    const styleMatch = lower.match(/style="([^"]*)"/i);
-                    if (styleMatch && styleMatch[1]) {
-                        const stylesStr = styleMatch[1];
+                    const spanStyleMatch = part.match(/style="([^"]*)"/i);
+                    if (spanStyleMatch && spanStyleMatch[1]) {
+                        const stylesStr = spanStyleMatch[1];
+
+                        // Font Size
                         const sizeMatch = stylesStr.match(/font-size:\s*([\d\.]+)(pt|px)/i);
                         if (sizeMatch) {
                             let val = parseFloat(sizeMatch[1]);
@@ -591,9 +604,16 @@ function procesarHTML(html, variables) {
                                 currentSpanStyle.size = Math.round(val * 1.5);
                             }
                         }
+
+                        // Font Family
+                        const fontMatch = stylesStr.match(/font-family:\s*['"]?([^'";]+)['"]?/i);
+                        if (fontMatch && fontMatch[1]) {
+                            currentSpanStyle.font = fontMatch[1].trim();
+                        }
                     }
-                    continue;
+                    continue; // Skip adding text for the opening tag
                 }
+
 
                 if (lower.startsWith('</span>')) {
                     // Restaurar tamaño base al cerrar span
@@ -756,7 +776,8 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
 
                 // Configurar estilos del texto (contenido)
                 const textStyles = {
-                    size: 24,
+                    size: (sig.textFontSize && !isNaN(parseInt(sig.textFontSize))) ? parseInt(sig.textFontSize) * 2 : 24, // DOCX usa half-points
+                    font: sig.textFontFamily || undefined,
                     bold: !!sig.textBold,
                     italics: !!sig.textItalic,
                     underline: sig.textUnderline ? { type: "single" } : undefined
@@ -778,7 +799,8 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
                             bold: !!sig.titleBold,
                             italics: !!sig.titleItalic,
                             underline: sig.titleUnderline ? { type: "single" } : undefined,
-                            size: 24
+                            size: (sig.titleFontSize && !isNaN(parseInt(sig.titleFontSize))) ? parseInt(sig.titleFontSize) * 2 : 24,
+                            font: sig.titleFontFamily || undefined
                         })],
                         spacing: { after: 0 },
                         keepWithNext: true

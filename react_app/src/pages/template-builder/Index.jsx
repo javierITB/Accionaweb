@@ -125,7 +125,9 @@ const FormBuilder = () => {
           signature1Text: data.signature1Text || 'Firma del Empleador (Emisor).',
           signature2Text: data.signature2Text || 'Firma del Empleado (Receptor).',
           signatures: data.signatures || [],
+
           includeSignature: data.includeSignature !== undefined ? data.includeSignature : false,
+          logoConfig: data.logoConfig || { left: true, right: false },
 
           createdAt: data.createdAt || new Date().toISOString(),
           updatedAt: data.updatedAt || new Date().toISOString()
@@ -218,7 +220,9 @@ const FormBuilder = () => {
       signature1Text: existingTemplateData.signature1Text,
       signature2Text: existingTemplateData.signature2Text,
       signatures: existingTemplateData.signatures || [],
+
       includeSignature: existingTemplateData.includeSignature !== undefined ? existingTemplateData.includeSignature : false,
+      logoConfig: existingTemplateData.logoConfig || { left: true, right: false },
       questions: selectedTemplateData.questions || [],
     } : {
       // Fallback por si acaso (no debería llegar aquí con el nuevo flujo)

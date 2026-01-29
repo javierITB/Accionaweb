@@ -20,6 +20,14 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
    const [downloadingApprovedFileIndex, setDownloadingApprovedFileIndex] = useState(null);
    const [clientSelectedAdjuntos, setClientSelectedAdjuntos] = useState([]);
 
+   // --- Lógica de Permisos ---
+   const status = request?.status?.toLowerCase() || "";
+   const isClosed = ["firmado", "finalizado", "archivado", "rechazado"].includes(status);
+   const canUpload = !isClosed;
+   const hasAttachments = fullRequestData?.adjuntos?.length > 0;
+   const shouldShowAttachmentsSection = hasAttachments || canUpload;
+   // --------------------------
+
    // Polling para verificar cambios de estado cada 5 segundos
    useEffect(() => {
       if (!isVisible || !request?._id) return;
@@ -749,7 +757,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
          );
       }
 
-      return null; 
+      return null;
    };
 
    return (
@@ -838,96 +846,98 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                </div>
 
                {/* Sección de Archivos Adjuntos */}
-               <div>
-                  <div className="flex items-center justify-between mb-3 pr-4">
-                     {attachmentsLoading && (
-                        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                           Archivos Adjuntos
-                           {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-                        </h3>
-                     )}
-                     {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
-                        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                           Archivos Adjuntos
-                        </h3>
-                     )}
-                     {/* BOTÓN PARA SUBIR ARCHIVOS */}
-                     <div className="flex items-center gap-2">
-                        <span
-                           className={`text-sm pr-1  ${
-                              (fullRequestData?.adjuntos?.length || 0) + (clientSelectedAdjuntos.length || 0) >=
-                              MAX_CLIENT_FILES
-                                 ? "text-blue-600"
-                                 : "text-muted-foreground"
-                           }`}
-                        >
-                           Archivos:{" "}
-                           {(fullRequestData?.adjuntos?.length || 0) + (clientSelectedAdjuntos.length || 0) || 0}/
-                           {MAX_CLIENT_FILES}
-                        </span>
-                        <Button
-                           variant="outlineTeal"
-                           size="sm"
-                           onClick={handleUploadClick}
-                           iconName="Plus"
-                           iconPosition="left"
-                           disabled={(fullRequestData?.adjuntos?.length || 0) >= MAX_CLIENT_FILES}
-                        >
-                           Añadir Archivos
-                        </Button>
-                     </div>
-
-                     {/* Input de archivo oculto */}
-                     <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileSelect}
-                        accept=".pdf"
-                        multiple={true}
-                        className="hidden"
-                     />
-                  </div>
-
-                  <div className="bg-muted/50 rounded-lg pb-4 px-4 space-y-4">
-                     {/* ===== SECCIÓN 1: NUEVOS ARCHIVOS SELECCIONADOS ===== */}
-                     {clientSelectedAdjuntos.length > 0 && (
-                        <div className="space-y-3">
-                           <div className="flex items-center justify-between">
-                              <span className="text-base font-xl text-accent">
-                                 Archivos por subir ({clientSelectedAdjuntos.length})
+               {shouldShowAttachmentsSection && (
+                  <div>
+                     <div className="flex items-center justify-between mb-3 pr-4">
+                        {attachmentsLoading && (
+                           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                              Archivos Adjuntos
+                              {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+                           </h3>
+                        )}
+                        {!attachmentsLoading && (
+                           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                              Archivos Adjuntos
+                           </h3>
+                        )}
+                        {/* BOTÓN PARA SUBIR ARCHIVOS */}
+                        {canUpload && (
+                           <div className="flex items-center gap-2">
+                              <span
+                                 className={`text-sm pr-1  ${(fullRequestData?.adjuntos?.length || 0) + (clientSelectedAdjuntos.length || 0) >=
+                                    MAX_CLIENT_FILES
+                                    ? "text-blue-600"
+                                    : "text-muted-foreground"
+                                    }`}
+                              >
+                                 Archivos:{" "}
+                                 {(fullRequestData?.adjuntos?.length || 0) + (clientSelectedAdjuntos.length || 0) || 0}/
+                                 {MAX_CLIENT_FILES}
                               </span>
                               <Button
-                                 variant="ghostError"
+                                 variant="outlineTeal"
                                  size="sm"
-                                 onClick={() => setClientSelectedAdjuntos([])}
-                                 iconName="Trash2"
+                                 onClick={handleUploadClick}
+                                 iconName="Plus"
                                  iconPosition="left"
-                                 // className="text-error hover:bg-error/10"
+                                 disabled={(fullRequestData?.adjuntos?.length || 0) >= MAX_CLIENT_FILES}
                               >
-                                 Eliminar todos
+                                 Añadir Archivos
                               </Button>
                            </div>
+                        )}
 
-                           {clientSelectedAdjuntos.map((file, index) => (
-                              <div
-                                 key={index}
-                                 className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20"
-                              >
-                                 <div className="flex items-center space-x-3">
-                                    <Icon name="FileText" size={20} className="text-accent" />
-                                    <div>
-                                       <p className="text-sm font-medium text-foreground">{file.name}</p>
-                                       <p className="text-xs text-muted-foreground">
-                                          {formatFileSize(file.size)} • PDF •{" "}
-                                          {file.size > MAX_CLIENT_FILE_SIZE ? (
-                                             <span className="text-error">EXCEDE LÍMITE</span>
-                                          ) : (
-                                             "Válido"
-                                          )}
-                                       </p>
+                        {/* Input de archivo oculto */}
+                        <input
+                           type="file"
+                           ref={fileInputRef}
+                           onChange={handleFileSelect}
+                           accept=".pdf"
+                           multiple={true}
+                           className="hidden"
+                        />
+                     </div>
+
+                     <div className="bg-muted/50 rounded-lg pb-4 px-4 space-y-4">
+                        {/* ===== SECCIÓN 1: NUEVOS ARCHIVOS SELECCIONADOS ===== */}
+                        {clientSelectedAdjuntos.length > 0 && (
+                           <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                 <span className="text-base font-xl text-accent">
+                                    Archivos por subir ({clientSelectedAdjuntos.length})
+                                 </span>
+                                 <Button
+                                    variant="ghostError"
+                                    size="sm"
+                                    onClick={() => setClientSelectedAdjuntos([])}
+                                    iconName="Trash2"
+                                    iconPosition="left"
+                                 // className="text-error hover:bg-error/10"
+                                 >
+                                    Eliminar todos
+                                 </Button>
+                              </div>
+
+                              {clientSelectedAdjuntos.map((file, index) => (
+                                 <div
+                                    key={index}
+                                    className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20"
+                                 >
+                                    <div className="flex items-center space-x-3">
+                                       <Icon name="FileText" size={20} className="text-accent" />
+                                       <div>
+                                          <p className="text-sm font-medium text-foreground">{file.name}</p>
+                                          <p className="text-xs text-muted-foreground">
+                                             {formatFileSize(file.size)} • PDF •{" "}
+                                             {file.size > MAX_CLIENT_FILE_SIZE ? (
+                                                <span className="text-error">EXCEDE LÍMITE</span>
+                                             ) : (
+                                                "Válido"
+                                             )}
+                                          </p>
+                                       </div>
                                     </div>
-                                 </div>
-                                 {/* <div className="flex items-center space-x-2">
+                                    {/* <div className="flex items-center space-x-2">
                               <Button
                                  variant="ghost"
                                  size="sm"
@@ -943,57 +953,58 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                                  <Icon name="Trash2" size={16} />
                               </Button>
                            </div> */}
-                              </div>
-                           ))}
+                                 </div>
+                              ))}
 
-                           {!canAddMoreFiles() && (
-                              <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700 flex items-center">
-                                 <Icon name="Info" size={14} className="inline mr-1" />
-                                 Límite máximo alcanzado. Puedes eliminar algunos archivos para agregar otros nuevos.
-                              </div>
-                           )}
-                        </div>
-                     )}
+                              {!canAddMoreFiles() && (
+                                 <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700 flex items-center">
+                                    <Icon name="Info" size={14} className="inline mr-1" />
+                                    Límite máximo alcanzado. Puedes eliminar algunos archivos para agregar otros nuevos.
+                                 </div>
+                              )}
+                           </div>
+                        )}
 
-                     {/* ===== SECCIÓN 2: ARCHIVOS YA SUBIDOS ===== */}
-                     {fullRequestData?.adjuntos?.length > 0 && (
-                        <div className="space-y-2">
-                           {clientSelectedAdjuntos.length > 0 && (
-                              <span className="text-base font-lg text-accent">
-                                 Archivos subidos ({fullRequestData?.adjuntos?.length || 1})
-                              </span>
-                           )}
-                           {fullRequestData.adjuntos.map((adjunto, index) => (
-                              <div key={index} className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20">
-                                 <div className="flex items-center space-x-3">
-                                    <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
-                                    <div>
-                                       <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
-                                       <p className="text-xs text-muted-foreground">
-                                          {adjunto.pregunta} • {formatFileSize(adjunto.size)} •{" "}
-                                          {formatDate(adjunto.uploadedAt)}
-                                       </p>
+                        {/* ===== SECCIÓN 2: ARCHIVOS YA SUBIDOS ===== */}
+                        {fullRequestData?.adjuntos?.length > 0 && (
+                           <div className="space-y-2">
+                              {clientSelectedAdjuntos.length > 0 && (
+                                 <span className="text-base font-lg text-accent">
+                                    Archivos subidos ({fullRequestData?.adjuntos?.length || 1})
+                                 </span>
+                              )}
+                              {fullRequestData.adjuntos.map((adjunto, index) => (
+                                 <div key={index} className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20">
+                                    <div className="flex items-center space-x-3">
+                                       <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
+                                       <div>
+                                          <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
+                                          <p className="text-xs text-muted-foreground">
+                                             {adjunto.pregunta} • {formatFileSize(adjunto.size)} •{" "}
+                                             {formatDate(adjunto.uploadedAt)}
+                                          </p>
+                                       </div>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                       <Button
+                                          variant="outline"
+                                          size="sm"
+                                          iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
+                                          iconPosition="left"
+                                          iconSize={16}
+                                          onClick={() => handleDownloadAdjunto(request._id, index)}
+                                          disabled={downloadingAttachmentIndex !== null}
+                                       >
+                                          {downloadingAttachmentIndex === index ? "Descargando..." : "Descargar"}
+                                       </Button>
                                     </div>
                                  </div>
-                                 <div className="flex items-center space-x-2">
-                                    <Button
-                                       variant="outline"
-                                       size="sm"
-                                       iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
-                                       iconPosition="left"
-                                       iconSize={16}
-                                       onClick={() => handleDownloadAdjunto(request._id, index)}
-                                       disabled={downloadingAttachmentIndex !== null}
-                                    >
-                                       {downloadingAttachmentIndex === index ? "Descargando..." : "Descargar"}
-                                    </Button>
-                                 </div>
-                              </div>
-                           ))}
-                        </div>
-                     )}
+                              ))}
+                           </div>
+                        )}
+                     </div>
                   </div>
-               </div>
+               )}
 
                {/* Sección de Documentos Corregidos */}
                {request?.status !== "pendiente" && request?.status !== "en_revision" && (

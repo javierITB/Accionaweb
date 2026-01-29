@@ -68,75 +68,53 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
     );
   };
 
-  const handleShare = async () => {
-    if (selectedUsers.length === 0) return;
-
+  const handleApplyChanges = async () => {
     setIsProcessing(true);
     try {
-      const response = await apiFetch(`${API_BASE_URL}/respuestas/compartir`, {
-        method: 'POST',
-        body: JSON.stringify({
-          id: request._id,      
-          usuarios: selectedUsers 
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        if (onUpdate) {
-          const yaCompartidos = request?.user?.compartidos || [];
-          const fusionados = Array.from(new Set([...yaCompartidos, ...selectedUsers]));
-          
-          onUpdate({
-            ...request,
-            user: { ...request.user, compartidos: fusionados }
+      // 1. PROCESAR ELIMINACIONES
+      if (usersToRemove.length > 0) {
+        for (const userId of usersToRemove) {
+          await apiFetch(`${API_BASE_URL}/respuestas/quitar-acceso`, {
+            method: 'POST',
+            body: JSON.stringify({
+              respuestaId: request._id,
+              usuarioAQuitarId: userId,
+              mailAutor: mailSesion
+            })
           });
         }
-
-        alert("Solicitud compartida correctamente.");
-        onClose();
-      } else {
-        alert(data.message || 'Error al compartir la solicitud');
       }
-    } catch (error) {
-      console.error('Error sharing request:', error);
-      alert('Error de conexión al compartir');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
-  const handleBulkRemoveAccess = async () => {
-    if (usersToRemove.length === 0) return;
-    if (!window.confirm(`¿Estás seguro de que deseas revocar el acceso a ${usersToRemove.length} usuario(s)?`)) return;
-
-    setIsProcessing(true);
-    try {
-      for (const userId of usersToRemove) {
-        await apiFetch(`${API_BASE_URL}/respuestas/quitar-acceso`, {
+      // 2. PROCESAR AGREGADOS
+      if (selectedUsers.length > 0) {
+        await apiFetch(`${API_BASE_URL}/respuestas/compartir`, {
           method: 'POST',
           body: JSON.stringify({
-            respuestaId: request._id,
-            usuarioAQuitarId: userId,
-            mailAutor: mailSesion
+            id: request._id,      
+            usuarios: selectedUsers 
           })
         });
       }
 
+      // 3. ACTUALIZAR ESTADO LOCAL/GLOBAL
       if (onUpdate) {
-        const compartidosActualizados = request.user.compartidos.filter(id => !usersToRemove.includes(id));
+        let nuevosCompartidos = [...(request?.user?.compartidos || [])];
+        // Quitar los seleccionados para remover
+        nuevosCompartidos = nuevosCompartidos.filter(id => !usersToRemove.includes(id));
+        // Agregar los nuevos seleccionados (sin duplicados)
+        nuevosCompartidos = Array.from(new Set([...nuevosCompartidos, ...selectedUsers]));
+
         onUpdate({
           ...request,
-          user: { ...request.user, compartidos: compartidosActualizados }
+          user: { ...request.user, compartidos: nuevosCompartidos }
         });
       }
-      setUsersToRemove([]);
-      alert("Accesos revocados correctamente.");
-      onClose(); // <--- SE AGREGA PARA CERRAR EL MODAL AL FINALIZAR
+
+      alert("Cambios aplicados correctamente.");
+      onClose();
     } catch (error) {
-      console.error("Error revoking access:", error);
-      alert("Hubo un problema al revocar algunos accesos.");
+      console.error('Error al actualizar accesos:', error);
+      alert('Hubo un problema al aplicar los cambios.');
     } finally {
       setIsProcessing(false);
     }
@@ -297,26 +275,14 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
             </div>
             <div className="flex gap-2">
               <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-              {usersToRemove.length > 0 ? (
-                <Button
-                  variant="default"
-                  className="bg-blue-600 text-white hover:bg-blue-700"
-                  onClick={handleBulkRemoveAccess}
-                  disabled={isProcessing}
-                  iconName={isProcessing ? "Loader" : "Trash2"}
-                >
-                  {isProcessing ? 'Quitando...' : 'Quitar Acceso'}
-                </Button>
-              ) : (
-                <Button
-                  variant="default"
-                  onClick={handleShare}
-                  disabled={selectedUsers.length === 0 || isProcessing}
-                  iconName={isProcessing ? "Loader" : "Share2"}
-                >
-                  {isProcessing ? 'Compartiendo...' : 'Compartir'}
-                </Button>
-              )}
+              <Button
+                variant="default"
+                onClick={handleApplyChanges}
+                disabled={isProcessing || (selectedUsers.length === 0 && usersToRemove.length === 0)}
+                iconName={isProcessing ? "Loader" : "Check"}
+              >
+                {isProcessing ? 'Procesando...' : 'Aplicar Cambios'}
+              </Button>
             </div>
           </div>
         </div>
