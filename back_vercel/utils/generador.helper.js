@@ -2,7 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const docx = require("docx");
-const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, ImageRun, BorderStyle, HeadingLevel, TableLayoutType } = docx;
+const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, ImageRun, BorderStyle, HeadingLevel, TableLayoutType, Header, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom } = docx;
 const { createBlindIndex, decrypt } = require("./seguridad.helper");
 
 // ========== UTILS: NORMALIZACIÓN Y FECHAS ==========
@@ -77,35 +77,167 @@ async function obtenerEmpresaDesdeBD(nombreEmpresa, db) {
     }
 }
 
-function crearLogoImagen(logoData) {
-    if (!logoData || !logoData.fileData) return null;
+// ========== LOGO HELPERS ==========
+
+// Helper para obtener tipo imagen DOCX
+const mapMimeToDocxType = (mime) => {
+    const m = mime ? mime.toLowerCase() : '';
+    if (m.includes('jpeg') || m.includes('jpg')) return 'jpeg';
+    if (m.includes('png')) return 'png';
+    if (m.includes('gif')) return 'gif';
+    return 'png';
+};
+
+// Validar Magic Bytes
+function detectarTipoImagen(buffer) {
+    if (!buffer || buffer.length < 4) return null;
+    const header = buffer.toString('hex', 0, 4).toUpperCase();
+
+    // PNG: 89 50 4E 47
+    if (header === '89504E47') return 'png';
+
+    // JPEG: FF D8 ...
+    if (header.startsWith('FFD8')) return 'jpeg';
+
+    // GIF: 47 49 46 38
+    if (header === '47494638') return 'gif';
+
+    return null;
+}
+
+function procesarLogoEmpresa(empresaInfo) {
+    if (!empresaInfo || !empresaInfo.logo || !empresaInfo.logo.fileData) return null;
     try {
-        let imageBuffer;
-        if (typeof logoData.fileData === 'string' && logoData.fileData.includes(':')) {
-            const base64Descifrado = decrypt(logoData.fileData);
-            imageBuffer = Buffer.from(base64Descifrado, 'base64');
-        } else if (logoData.fileData && logoData.fileData.buffer) {
-            imageBuffer = Buffer.from(logoData.fileData.buffer);
-        } else if (Buffer.isBuffer(logoData.fileData)) {
-            imageBuffer = logoData.fileData;
-        } else if (typeof logoData.fileData === 'string') {
-            imageBuffer = Buffer.from(logoData.fileData, 'base64');
-        } else {
-            return null;
+        const logoDecrypted = decrypt(empresaInfo.logo.fileData);
+        const buffer = Buffer.from(logoDecrypted, 'base64');
+
+        // Intentar detectar tipo real
+        let type = detectarTipoImagen(buffer);
+        if (!type) {
+            // Fallback a MIME si la detección falla (ej. BMP o variantes raras)
+            console.warn("Logo Empresa: Tipo no detectado por firma, usando MIME DB.");
+            type = mapMimeToDocxType(empresaInfo.logo.mimeType);
         }
 
-        if (!imageBuffer || imageBuffer.length === 0) return null;
-
-        return new ImageRun({
-            data: imageBuffer,
-            transformation: { width: 100, height: 100 },
-            floating: { horizontalPosition: { offset: 201440 }, verticalPosition: { offset: 201440 } }
-        });
-    } catch (error) {
-        console.error('Error creando imagen del logo:', error);
+        return { buffer, type };
+    } catch (e) {
+        console.error("Error procesando logo empresa:", e);
         return null;
     }
 }
+
+function procesarLogoCustom(dataUrl) {
+    if (!dataUrl) return null;
+    try {
+        const parts = dataUrl.split(',');
+        let buffer;
+
+        if (parts.length > 1) {
+            buffer = Buffer.from(parts[1], 'base64');
+        } else {
+            buffer = Buffer.from(parts[0], 'base64');
+        }
+
+        const type = detectarTipoImagen(buffer);
+        if (!type) {
+            // Si es custom y no tiene firma válida, rechazamos (seguridad/estabilidad)
+            throw new Error("Logo Custom: Formato de archivo no reconocido (Firma desconocida). Use PNG o JPG.");
+        }
+
+        return { buffer, type };
+    } catch (e) {
+        console.error("Error procesando logo custom:", e);
+        throw e; // Relanzar para fallback TXT
+    }
+}
+
+// Crea el ImageRun para el Header (Soporta Floating)
+function crearImageRunHeader(imgData, floatingOptions) {
+    if (!imgData || !imgData.buffer) return null;
+
+    const config = {
+        data: imgData.buffer,
+        transformation: { width: 100, height: 100 },
+        type: imgData.type
+    };
+
+    if (floatingOptions) {
+        config.floating = floatingOptions;
+    }
+
+    return new ImageRun(config);
+}
+
+// Construye el objeto Header completo
+function construirHeaderLogos(logoConfig, empresaInfo) {
+    if (!logoConfig || (!logoConfig.left && !logoConfig.right)) return null;
+
+    try {
+        const logoEmpresa = procesarLogoEmpresa(empresaInfo);
+        const logoCustom = procesarLogoCustom(logoConfig.rightLogoData);
+        const children = [];
+
+        // Configuración Floating Izquierda
+        const leftFloating = {
+            horizontalPosition: {
+                relative: HorizontalPositionRelativeFrom.PAGE,
+                offset: 201440
+            },
+            verticalPosition: {
+                relative: VerticalPositionRelativeFrom.PAGE,
+                offset: 201440
+            }
+        };
+
+        // Configuración Floating Derecha
+        const rightFloating = {
+            horizontalPosition: {
+                relative: HorizontalPositionRelativeFrom.PAGE,
+                align: AlignmentType.RIGHT
+            },
+            verticalPosition: {
+                relative: VerticalPositionRelativeFrom.PAGE,
+                offset: 201440
+            }
+        };
+
+        // 1. Logo Izquierdo
+        if (logoConfig.left && logoEmpresa) {
+            const img = crearImageRunHeader(logoEmpresa, leftFloating);
+            if (img) children.push(img);
+        }
+
+        // 2. Logo Derecho
+        let rightImgData = null;
+        if (logoConfig.right) {
+            if (logoCustom) rightImgData = logoCustom;
+            else if (logoEmpresa) rightImgData = logoEmpresa;
+        }
+
+        if (rightImgData) {
+            const img = crearImageRunHeader(rightImgData, rightFloating);
+            if (img) children.push(img);
+        }
+
+        // Retornar Header con párrafo simple (imágenes flotantes no requieren tabla)
+        return {
+            default: new Header({
+                children: [
+                    new Paragraph({
+                        children: children,
+                        text: ""
+                    }),
+                    new Paragraph({ text: "", spacing: { after: 200 } })
+                ]
+            })
+        };
+
+    } catch (e) {
+        console.error("Error construyendo header logos:", e);
+        throw e;
+    }
+}
+
 
 async function buscarPlantillaPorFormId(formId, db) {
     try {
@@ -533,18 +665,12 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
         console.log("=== GENERANDO DOCUMENTO (TIPTAP SYSTEM) ===");
         const variables = await extraerVariablesDeRespuestas(responses, userData, db);
         const empresaInfo = await obtenerEmpresaDesdeBD(userData?.empresa || '', db);
-        const logo = empresaInfo ? empresaInfo.logo : null;
 
+        // --- HEADER LOGOS (Generados mediante helpers) ---
+        const header = construirHeaderLogos(plantilla.logoConfig, empresaInfo);
+
+        // --- BODY ---
         const children = [];
-
-        // 1. LOGO
-        if (logo) {
-            const logoImagen = crearLogoImagen(logo);
-            if (logoImagen) {
-                children.push(new Paragraph({ children: [logoImagen] }));
-                children.push(new Paragraph({ text: "" }));
-            }
-        }
 
         // 2. CONTENIDO PRINCIPAL
         if (plantilla.documentContent) {
@@ -604,12 +730,16 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
                         continue;
                     }
 
-                    if (linea.trim() === '') {
-                        parrafosFirma.push(new Paragraph({ text: "", spacing: { after: 200 }, keepWithNext: true }));
+                    if (linea.trim() === '__________________________') {
+                        parrafosFirma.push(new Paragraph({
+                            children: [new TextRun({ text: linea, bold: true, size: 24 })],
+                            alignment: AlignmentType.CENTER
+                        }));
                         continue;
                     }
 
-                    const runsLinea = reemplazarVariablesEnTexto(linea, variables, { ...baseStyles, preventVariableBold: true }, null);
+                    const runOpts = { ...baseStyles };
+                    const runsLinea = reemplazarVariablesEnTexto(linea, variables, runOpts, null);
 
                     parrafosFirma.push(new Paragraph({
                         alignment: AlignmentType.CENTER,
@@ -722,11 +852,13 @@ async function generarDocumentoDesdePlantilla(responses, responseId, db, plantil
         const doc = new Document({
             sections: [{
                 properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
+                headers: header || undefined,
                 children: children
             }]
         });
 
         const buffer = await Packer.toBuffer(doc);
+
         const fileName = `${normalizarNombreVariable(formTitle)}.docx`;
 
         const existing = await db.collection('docxs').findOne({ responseId });
@@ -787,6 +919,10 @@ async function generarAnexoDesdeRespuesta(responses, responseId, db, section, us
             return await generarDocumentoDesdePlantilla(responses, responseId, db, plantilla, userData, formTitle);
         } catch (error) {
             console.error("[GENERADOR] Error crítico generando DOCX desde plantilla:", error);
+            try {
+                const fs = require('fs');
+                const path = require('path');
+            } catch (e) { }
             return await generarDocumentoTxt(responses, responseId, db, formTitle);
         }
     } else {

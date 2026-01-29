@@ -12,6 +12,7 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { apiFetch, API_BASE_URL } from '../../../utils/api';
 
 // Extension personalizada para tamaño de fuente
 const FontSize = TextStyle.extend({
@@ -140,6 +141,20 @@ const DocumentTemplateEditor = ({
   // Estado para controlar la visibilidad del panel de configuración de firmas
   const [showSignatureConfig, setShowSignatureConfig] = useState(false);
 
+  // Logo Configuration State
+  const [logoConfig, setLogoConfig] = useState(templateData.logoConfig || { left: true, right: false });
+
+  // Sync logoConfig to templateData
+  React.useEffect(() => {
+    if (JSON.stringify(templateData.logoConfig) !== JSON.stringify(logoConfig)) {
+      onUpdateTemplateData('logoConfig', logoConfig);
+    }
+  }, [logoConfig]);
+
+  const toggleLogo = (side) => {
+    setLogoConfig(prev => ({ ...prev, [side]: !prev[side] }));
+  };
+
   // Sincronizar includeSignature con la existencia de firmas
   React.useEffect(() => {
     const hasSignatures = templateData.signatures && templateData.signatures.length > 0;
@@ -147,6 +162,60 @@ const DocumentTemplateEditor = ({
       onUpdateTemplateData('includeSignature', hasSignatures);
     }
   }, [templateData.signatures?.length, templateData.includeSignature]);
+
+  // LOGO FETCHING (Visual Editor)
+  const [logoSrc, setLogoSrc] = useState(null);
+
+  React.useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const email = sessionStorage.getItem("email");
+        if (!email) return;
+
+        // 1. Obtener datos del usuario (Nombre Empresa)
+        const userRes = await apiFetch(`${API_BASE_URL}/auth/full/${email}`);
+        if (!userRes.ok) return;
+        const userData = await userRes.json();
+        const empresaName = userData.empresa;
+
+        if (!empresaName) return;
+
+        // 2. Buscar empresa por nombre
+        const companiesRes = await apiFetch(`${API_BASE_URL}/auth/empresas/todas`);
+        if (!companiesRes.ok) return;
+        const companies = await companiesRes.json();
+
+        const normalize = s => s ? s.toString().toLowerCase().trim() : "";
+        const targetName = normalize(empresaName);
+
+        const myCompany = companies.find(c => normalize(c.nombre) === targetName);
+
+        if (myCompany && myCompany.logo && myCompany.logo.fileData) {
+          setLogoSrc(`data:${myCompany.logo.mimeType};base64,${myCompany.logo.fileData}`);
+        }
+      } catch (err) {
+        console.error("Error cargando logo:", err);
+      }
+    };
+
+    fetchLogo();
+  }, []);
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        // Simple alerta por ahora (o usar toast si hay uno disponible)
+        alert("La imagen no debe superar 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoConfig(prev => ({ ...prev, rightLogoData: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // --- Lógica de Firmas Dinámicas ---
   const getEffectiveSignatures = () => {
@@ -729,9 +798,120 @@ const DocumentTemplateEditor = ({
                 font-weight: bold;
                 margin-bottom: 8px;
               }
+              
+              /* HEADER CON LOGOS */
+               .header-row {
+                 display: flex;
+                 justify-content: space-between;
+                 align-items: flex-start;
+                 margin-bottom: 2rem;
+                 min-height: 60px; /* Space for logos */
+               }
+               .logo-box {
+                  position: relative;
+                  width: 150px;
+                  height: 60px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  border: 1px dashed #e2e8f0;
+                  border-radius: 4px;
+                  transition: all 0.2s;
+               }
+               .logo-box.active {
+                  border: none;
+                  background: transparent;
+               }
+               .logo-box:not(.active):hover {
+                  border-color: #94a3b8;
+                  background: #f8fafc;
+               }
+               .logo-toggle-btn {
+                  position: absolute;
+                  top: -8px;
+                  right: -8px;
+                  z-index: 10;
+                  background: white;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 50%;
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  cursor: pointer;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+               }
             `}</style>
 
             <div className={`visual-page ${isPreview ? 'scale-[1.02]' : ''}`}>
+
+              {/* HEADER CON LOGOS (Visualización) */}
+              <div className="header-row">
+                {/* Left Logo */}
+                <div className={`logo-box ${logoConfig.left ? 'active' : 'opacity-40 hover:opacity-100'}`}>
+                  {logoConfig.left ? (
+                    <div className="w-full h-full flex items-center justify-start">
+                      {logoSrc ? (
+                        <img src={logoSrc} alt="Logo Izquierdo" className="max-h-full max-w-full object-contain" />
+                      ) : (
+                        <span className="font-bold text-lg text-slate-700">LOGO</span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-[10px] uppercase font-bold text-slate-300">Logo Izq.</span>
+                  )}
+
+                  {!isPreview && (
+                    <button
+                      onClick={() => toggleLogo('left')}
+                      className={`logo-toggle-btn ${logoConfig.left ? 'text-red-500 hover:bg-red-50 border-red-200' : 'text-green-500 hover:bg-green-50 border-green-200'}`}
+                      title={logoConfig.left ? "Quitar Logo Izquierdo" : "Agregar Logo Izquierdo"}
+                    >
+                      <Icon name={logoConfig.left ? "X" : "Plus"} size={12} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Right Logo */}
+                <div className={`logo-box group ${logoConfig.right ? 'active' : 'opacity-40 hover:opacity-100'}`}>
+                  {logoConfig.right ? (
+                    <div className="w-full h-full flex items-center justify-end relative">
+                      {logoConfig.rightLogoData ? (
+                        <img src={logoConfig.rightLogoData} alt="Logo Derecho Personalizado" className="max-h-full max-w-full object-contain" />
+                      ) : logoSrc ? (
+                        <img src={logoSrc} alt="Logo Derecho" className="max-h-full max-w-full object-contain" />
+                      ) : (
+                        <span className="font-bold text-lg text-slate-700">LOGO</span>
+                      )}
+
+                      {!isPreview && (
+                        <label className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/50 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded backdrop-blur-[1px]">
+                          <span className="flex flex-col items-center gap-1">
+                            <Icon name="Upload" size={14} />
+                            SUBIR
+                          </span>
+                          <input type="file" className="hidden" accept="image/png, image/jpeg, image/jpg" onChange={handleLogoUpload} />
+                        </label>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-[10px] uppercase font-bold text-slate-300">Logo Der.</span>
+                  )}
+
+                  {!isPreview && (
+                    <button
+                      onClick={() => toggleLogo('right')}
+                      className={`logo-toggle-btn ${logoConfig.right ? 'text-red-500 hover:bg-red-50 border-red-200' : 'text-green-500 hover:bg-green-50 border-red-200'}`}
+                      title={logoConfig.right ? "Quitar Logo Derecho" : "Agregar Logo Derecho"}
+                      style={{ zIndex: 20 }}
+                    >
+                      <Icon name={logoConfig.right ? "X" : "Plus"} size={12} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {!isPreview ? (
                 <EditorContent editor={editor} className="prose prose-sm max-w-none flex-1" />
               ) : (
