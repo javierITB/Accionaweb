@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Icon from "../AppIcon";
+import logo from "/logo2.png"; 
 
 const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobileOpen = false, onNavigate }) => {
 
@@ -9,7 +10,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          name: "Gestión Principal",
          icon: "LayoutDashboard",
          isAccordion: true,
-         roles: ["admin", "RRHH", "SoloLectura"], // Solo estos cargos ven el acordeón completo
+         roles: ["admin", "RRHH", "SoloLectura"],
          children: [
             { name: "Solicitudes de Clientes", path: "/RespuestasForms", icon: "FileText", roles: ["admin", "RRHH", "SoloLectura"] },
             { name: "Solicitudes a Cliente", path: "/Solicitudes", icon: "Pencil", roles: ["admin", "RRHH", "SoloLectura"] },
@@ -48,35 +49,30 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
       },
    ];
 
-
    const location = useLocation();
    const navigate = useNavigate();
 
    const [openMenus, setOpenMenus] = useState({ "Gestión Principal": true });
 
-   // Obtenemos los datos del usuario para el filtro de permisos
    const user = sessionStorage.getItem("user") || "Usuario";
-   const userRole = sessionStorage.getItem("rol") || "guest"; // Cargo actual del usuario
+   const userRole = sessionStorage.getItem("rol") || "guest";
 
    useEffect(() => {
-      // Buscamos si la ruta actual pertenece a algún hijo de un acordeón
       MENU_STRUCTURE.forEach(item => {
          if (item.isAccordion && item.children) {
             const hasActiveChild = item.children.some(child => child.path === location.pathname);
-
             if (hasActiveChild) {
                setOpenMenus(prev => ({
                   ...prev,
-                  [item.name]: true // Abrimos el acordeón padre
+                  [item.name]: true
                }));
             }
          }
       });
    }, [location.pathname]);
 
-   // --- SISTEMA DE GESTIÓN DE PERMISOS ---
    const hasPermission = (itemRoles) => {
-      if (!itemRoles) return true; // Si no hay roles definidos, es público
+      if (!itemRoles) return true;
       return itemRoles.includes(userRole);
    };
 
@@ -89,10 +85,16 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
       if (onNavigate) onNavigate(path);
    };
 
+   // Corrección: Función específica para el logo que limpia el modo oscuro
+   const handleLogoClick = () => {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      handleNavigation('/');
+   };
+
    const isTextVisible = !(isCollapsed && !isMobileOpen);
 
    const renderNavLink = (item, isChild = false) => {
-      // Validamos permiso antes de renderizar
       if (!hasPermission(item.roles)) return null;
 
       const isActive = location.pathname === item.path;
@@ -119,24 +121,31 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
    return (
       <aside className={`bg-card border-r border-border transition-all duration-300 
          ${isTextVisible ? "w-64" : "w-16"} 
-         ${isMobileOpen ? "fixed inset-y-0 left-0 z-[60] shadow-2xl" : "hidden md:flex fixed left-0 top-16 bottom-0 z-40"} 
+         ${isMobileOpen ? "fixed inset-y-0 left-0 z-[60] shadow-2xl" : "hidden md:flex fixed left-0 top-0 bottom-0 z-40"} 
          ${className} flex flex-col`}>
 
          <div className="flex flex-col h-full">
-            {isMobileOpen && (
-               <div className="flex items-center justify-between p-4 border-b border-border">
-                  <span className="font-bold text-lg">Menú</span>
-                  <button onClick={onToggleCollapse} className="p-2 hover:bg-muted rounded-md">
-                     <Icon name="X" size={24} />
-                  </button>
+            {/* Header del Sidebar */}
+            <div className={`flex items-center px-4 py-6 border-b border-border/50 ${!isTextVisible ? "justify-center" : "justify-between"}`}>
+               <div 
+                  className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={handleLogoClick}
+               >
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden bg-background/50 border border-border/50 shadow-sm shrink-0">
+                     <img src={logo} alt="Logo Acciona" className="max-w-full max-h-full p-1" style={{ objectFit: 'contain' }} />
+                  </div>
+                  {isTextVisible && (
+                     <div className="flex flex-col overflow-hidden">
+                        <h1 className="text-lg font-semibold text-foreground leading-tight truncate">NexoDesk Acciona</h1> 
+                        <span className="text-[10px] text-muted-foreground font-mono truncate">Panel de administración</span>
+                     </div>
+                  )}
                </div>
-            )}
+            </div>
 
-            <nav className={`flex-1 ${isMobileOpen ? "mt-2" : "mt-4"} p-3 space-y-1 overflow-y-auto overflow-x-hidden`}>
+            <nav className={`flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden`}>
                {MENU_STRUCTURE.map((item) => {
-                  // Validar si el usuario tiene permiso para ver el ítem principal o acordeón
                   if (!hasPermission(item.roles)) return null;
-
                   if (!item.isAccordion) return renderNavLink(item);
 
                   const isOpen = openMenus[item.name];
@@ -167,7 +176,21 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                })}
             </nav>
 
-            {/* Profile Link Pinned to Bottom */}
+            <div className="px-3 pb-2">
+               <button 
+                  onClick={onToggleCollapse} 
+                  className={`w-full flex items-center rounded-lg transition-all duration-200 px-3 py-3 text-muted-foreground hover:bg-muted hover:text-foreground
+                     ${!isTextVisible ? "justify-center" : ""}
+                  `}
+                  title={isTextVisible ? "Contraer menú" : "Expandir menú"}
+               >
+                  <Icon name={isMobileOpen ? "X" : isTextVisible ? "ChevronLeft" : "ChevronRight"} size={20} className={isTextVisible ? "mr-2" : ""} />
+                  {isTextVisible && (
+                     <div className="text-sm font-medium">Contraer menú</div>
+                  )}
+               </button>
+            </div>
+
             <div className="p-3 border-t border-border mt-auto">
                <button
                   onClick={() => handleNavigation("/perfil")}
@@ -185,7 +208,6 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                </button>
             </div>
 
-            {/* User Info Footer */}
             <div className="p-4 pt-0 flex items-center">
                <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold text-xs uppercase">
                   {userRole.substring(0, 2)}

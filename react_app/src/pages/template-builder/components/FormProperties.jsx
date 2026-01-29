@@ -31,7 +31,6 @@ const TemplateList = ({ onUpdateFormData }) => {
       setIsLoading(true);
 
       // Cargar formularios
-      // Cargar formularios (Fetch with high limit to get all)
       const formsRes = await apiFetch(`${API_BASE_URL}/forms?limit=1000`);
       if (!formsRes.ok) throw new Error('Error al obtener formularios');
       const result = await formsRes.json();
@@ -119,7 +118,7 @@ const TemplateList = ({ onUpdateFormData }) => {
       section: selectedFormForTemplate.section,
       questions: selectedFormForTemplate.questions,
 
-      // Datos de plantilla vacía (pero con estructura completa)
+      // Datos de plantilla vacía 
       documentTitle: ``,
       paragraphs: [{
         id: 'p1',
@@ -146,14 +145,7 @@ const TemplateList = ({ onUpdateFormData }) => {
     }
 
     try {
-      // Obtener los datos completos de la plantilla seleccionada
-      const response = await apiFetch(`${API_BASE_URL}/plantillas/${selectedTemplateForDuplicate.formId}`);
-
-      if (!response.ok) {
-        throw new Error('Error al cargar la plantilla para duplicar');
-      }
-
-      const templateData = await response.json();
+      const templateData = selectedTemplateForDuplicate;
 
       // Crear objeto con TODOS los datos necesarios para la duplicación
       const duplicatedTemplate = {
@@ -165,6 +157,7 @@ const TemplateList = ({ onUpdateFormData }) => {
 
         // Datos COMPLETOS de la plantilla a duplicar
         documentTitle: `${templateData.documentTitle} (Copia)`,
+        documentContent: templateData.documentContent, // 
         paragraphs: templateData.paragraphs ? templateData.paragraphs.map(p => ({
           ...p,
           id: Date.now().toString() + Math.random().toString(36).substr(2, 5)

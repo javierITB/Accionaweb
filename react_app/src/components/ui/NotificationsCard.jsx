@@ -330,7 +330,7 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-x-6 gap-y-1 justify-center">
           {notificationTypes.map(type => (
             type !== 'all' && (
               <button

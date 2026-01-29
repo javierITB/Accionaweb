@@ -3,38 +3,34 @@ import { apiFetch, API_BASE_URL } from '../../utils/api';
 import Icon from '../AppIcon';
 import Button from './Button';
 import NotificationsCard from './NotificationsCard';
-import logo from "/logo2.png";
 
 const Header = ({ className = '' }) => {
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNotiOpen, setIsNotiOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
   const user = sessionStorage.getItem("user");
   const cargo = sessionStorage.getItem("cargo");
+  const userMail = sessionStorage.getItem("email");
   const [unreadCount, setUnreadCount] = useState(0);
   const [userRole, setUserRole] = useState(cargo || 'Usuario');
-
   const [shouldShake, setShouldShake] = useState(false);
-  const [isNotiOpen, setIsNotiOpen] = useState(false);
 
   // REF para el audio y para seguir el rastro del conteo anterior sin disparar re-renders
   const audioRef = useRef(new Audio('/bell.mp3')); // Ruta a tu archivo en public
   const prevUnreadCountRef = useRef(0);
+  const menuRef = useRef(null);
+  const notiRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   const [theme, setTheme] = useState(
     localStorage.getItem('theme') ||
     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
   );
 
-  const menuRef = useRef(null);
-  const notiRef = useRef(null);
-  const userMenuRef = useRef(null);
-  const userMail = sessionStorage.getItem("email");
-
-  // --- EFECTOS ---
-
-  // Efecto para el audio (opcional: ajustar volumen)
   useEffect(() => {
-    audioRef.current.volume = 1.0; // Volumen al máximo
+    audioRef.current.volume = 1.0;
   }, []);
 
   useEffect(() => {
@@ -74,12 +70,9 @@ const Header = ({ className = '' }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Polling de Notificaciones con lógica de sonido
   useEffect(() => {
     if (!userMail) return;
-
     let intervalId;
-
     const fetchUnreadCount = async (isInitialLoad = false) => {
       try {
         const response = await apiFetch(`${API_BASE_URL}/noti/${userMail}/unread-count`);
@@ -131,111 +124,142 @@ const Header = ({ className = '' }) => {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-brand ${className}`}>
-      <div className="flex items-center justify-between h-20 px-6">
-        <button
-          onClick={() => handleNavigation('/')}
-          className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
-        >
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden">
-            <img src={logo} alt="Logo Acciona" className="max-w-full max-h-full" style={{ objectFit: 'contain' }} />
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-semibold text-foreground leading-tight">NexoDesk Acciona</h1> 
-            <span className="text-xs text-muted-foreground font-mono hidden sm:block">Panel de administración</span>
-          </div>
-        </button>
+    <div className="fixed top-4 right-1 sm:right-1 lg:right-2 z-50 flex flex-col items-end pointer-events-none">
+      <header 
+        ref={(el) => {
+          menuRef.current = el;
+          notiRef.current = el;
+        }}
+        className={`
+          relative pointer-events-auto
+          bg-card border border-border 
+          rounded-2xl shadow-brand 
+          transition-all duration-500 ease-in-out
+          flex items-center
+          ${isHeaderHidden ? 'w-14 h-14 justify-center' : 'h-16 md:h-20 pl-3 pr-1 md:pl-5 md:pr-1 min-w-[320px] md:min-w-[550px] lg:min-w-[200px] justify-between'}
+          ${className}
+        `}
+      >
+        <div className="flex items-center space-x-2 md:space-x-3">
+          
+          <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => {
+                setIsHeaderHidden(!isHeaderHidden);
+                setIsNotiOpen(false);
+              }} 
+              iconName={isHeaderHidden ? "Eye" : "EyeOff"} 
+              className="rounded-xl w-10 h-10 md:w-11 md:h-11 text-muted-foreground" 
+              iconSize={20}
+          />
 
-        <nav className="hidden lg:flex items-center space-x-1">
-          {/* Los botones de Inicio y Ayuda han sido removidos */}
-        </nav>
-
-        <div className="flex items-center space-x-3">
-          <div className="hidden sm:block">
-            <Button variant="ghost" size="icon" onClick={toggleTheme} iconName={theme === 'dark' ? "Sun" : "Moon"} />
-          </div>
-
-          <div ref={notiRef}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleNoti}
-              className={`relative hover:bg-primary transition-brand w-10 h-10 lg:w-12 lg:h-12 ${shouldShake ? 'animate-bell-shake' : ''}`}
-              iconName="Bell"
-              iconSize={18}
-            >
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 min-w-[1.25rem] h-5 px-1.5 text-xs font-bold text-white bg-error rounded-full flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
-            </Button>
-
-            {isNotiOpen && (
-              <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
-                <div className="py-2">
-                  <NotificationsCard user={userMail} onUnreadChange={setUnreadCount} />
-                </div>
+          {!isHeaderHidden && (
+            <>
+              <div className="hidden sm:block">
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={toggleTheme} 
+                    iconName={theme === 'dark' ? "Sun" : "Moon"} 
+                    className="rounded-xl w-10 h-10 md:w-11 md:h-11" 
+                    iconSize={20}
+                />
               </div>
-            )}
-          </div>
 
-          <div className="hidden sm:flex items-center space-x-3 pl-3 border-l border-border">
-            {user && (
-              <div className="hidden md:block text-right" >
-                <p className="text-sm font-medium text-foreground">{user}</p>
-                <p className="text-xs text-muted-foreground">{userRole}</p>
+              <div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleNoti}
+                  /* RECUPERADO: hover:bg-primary y transition-brand */
+                  className={`relative hover:bg-primary transition-brand rounded-xl w-10 h-10 md:w-11 md:h-11 ${shouldShake ? 'animate-bell-shake' : ''} ${isNotiOpen ? 'bg-primary text-white' : ''}`}
+                  iconName="Bell"
+                  /* RECUPERADO: iconSize={18} */
+                  iconSize={18}
+                >
+                  {unreadCount > 0 && (
+                    /* RECUPERADO: Sin borde (border-2 border-card eliminado) */
+                    <span className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 min-w-[1.25rem] h-5 px-1.5 text-xs font-bold text-white bg-error rounded-full flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
               </div>
-            )}
-            {user && (
-              <div className="relative" ref={userMenuRef}>
-                <button onClick={() => { window.location.href = "/perfil" }} className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold">
-                  {user.charAt(0).toUpperCase()}
+
+              <div className="flex items-center space-x-2 md:space-x-3 pl-2 md:pl-3 border-l border-border/60">
+                {user && (
+                  <div className="hidden lg:block text-right leading-tight pr-1">
+                    <p className="text-sm font-bold text-foreground truncate max-w-[150px]">{user}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-tight">{userRole}</p>
+                  </div>
+                )}
+                
+                {user && (
+                  <div className="relative" ref={userMenuRef}>
+                    <button 
+                      /* RECUPERADO: window.location.href directo */
+                      onClick={() => { window.location.href = "/perfil" }} 
+                      className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white font-bold text-base shadow-sm hover:scale-105 active:scale-95 transition-all"
+                    >
+                      {user.charAt(0).toUpperCase()}
+                    </button>
+                  </div>
+                )}
+
+                <button 
+                  onClick={() => { user ? handleLogout() : handleNavigation('/login') }} 
+                  className="w-10 h-10 md:w-12 md:h-12 bg-muted/50 hover:bg-error/10 hover:text-error rounded-xl flex items-center justify-center text-muted-foreground transition-colors"
+                  /* RECUPERADO: Atributo title */
+                  title={user ? "Cerrar Sesión" : "Iniciar Sesión"}
+                >
+                  {/* RECUPERADO: size={16} para el Logout */}
+                  <Icon name={user ? "LogOut" : "LogIn"} size={16} />
                 </button>
               </div>
-            )}
-            <div className="relative">
-              <button onClick={() => { user ? handleLogout() : window.location.href = "/login" }} className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white">
-                <Icon name={user ? "LogOut" : "LogIn"} size={16} />
-              </button>
+
+              <div className="md:hidden">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleMenu}
+                    className="rounded-xl w-10 h-10"
+                    iconName={isMenuOpen ? "X" : "Menu"}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {isNotiOpen && !isHeaderHidden && (
+          <div className="absolute top-full right-0 mt-3 pointer-events-auto animate-scale-in origin-top-right w-full min-w-full">
+            <div className="bg-popover border border-border rounded-xl shadow-brand-hover overflow-hidden w-full">
+              <NotificationsCard user={userMail} onUnreadChange={setUnreadCount} />
             </div>
           </div>
-          {/* Mobile Menu Toggle */}
+        )}
+      </header>
+
+      {isMenuOpen && !isHeaderHidden && (
+        <div className="md:hidden pointer-events-auto w-full mt-2 px-4 pb-4 pt-1 space-y-2 bg-card rounded-2xl border border-border shadow-xl">
           <Button
             variant="ghost"
-            size="icon"
-            onClick={toggleMenu}
-            className="lg:hidden hover:bg-muted transition-brand"
+            size="sm"
+            onClick={toggleTheme}
+            iconName={theme === 'dark' ? "Sun" : "Moon"}
+            className="w-full justify-start rounded-xl text-muted-foreground py-3"
+            iconPosition="left"
           >
-            <Icon name={isMenuOpen ? "X" : "Menu"} size={20} />
+            {theme === 'dark' ? "Modo Claro" : "Modo Oscuro"}
           </Button>
-        </div>
-      </div>
-
-      {/* Mobile Menu - Solo modo claro/oscuro y perfil/cierre de sesión */}
-      {isMenuOpen && (
-        <div className="lg:hidden px-4 pt-2 pb-4 space-y-2 bg-card border-t border-border">
-          <div className="border-b border-border pb-2 mb-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleTheme}
-              iconName={theme === 'dark' ? "Sun" : "Moon"}
-              className="w-full justify-start px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
-              iconPosition="left"
-            >
-              {theme === 'dark' ? "Modo Claro" : "Modo Oscuro"}
-            </Button>
-          </div>
-
-          {user ? (
+          {user && (
             <>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleNavigation('/perfil')}
                 iconName="User"
-                className="w-full justify-start px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+                className="w-full justify-start rounded-xl text-muted-foreground py-3"
                 iconPosition="left"
               >
                 Mi Perfil
@@ -245,27 +269,16 @@ const Header = ({ className = '' }) => {
                 size="sm"
                 onClick={handleLogout}
                 iconName="LogOut"
-                className="w-full justify-start px-4 py-2 text-md font-medium text-error hover:bg-error/10 hover:text-error"
+                className="w-full justify-start rounded-xl text-error hover:bg-error/5 py-3"
                 iconPosition="left"
               >
                 Cerrar Sesión
               </Button>
             </>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleNavigation('/login')}
-              iconName="LogIn"
-              className="w-full justify-start px-4 py-2 text-md font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
-              iconPosition="left"
-            >
-              Iniciar Sesión
-            </Button>
           )}
         </div>
       )}
-    </header>
+    </div>
   );
 };
 
