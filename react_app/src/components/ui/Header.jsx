@@ -17,7 +17,8 @@ const Header = ({ className = '' }) => {
   const [userRole, setUserRole] = useState(cargo || 'Usuario');
   const [shouldShake, setShouldShake] = useState(false);
 
-  const audioRef = useRef(new Audio('/bell.mp3'));
+  // REF para el audio y para seguir el rastro del conteo anterior sin disparar re-renders
+  const audioRef = useRef(new Audio('/bell.mp3')); // Ruta a tu archivo en public
   const prevUnreadCountRef = useRef(0);
   const menuRef = useRef(null);
   const notiRef = useRef(null);
@@ -40,6 +41,7 @@ const Header = ({ className = '' }) => {
         if (response.ok) {
           const userData = await response.json();
           setUserRole(userData.rol || cargo || 'Usuario');
+          return;
         }
       } catch (error) {
         console.error('Error obteniendo rol del usuario:', error);
@@ -77,25 +79,39 @@ const Header = ({ className = '' }) => {
         const data = await response.json();
         const newUnreadCount = data.unreadCount || 0;
 
+        // LÓGICA DE SONIDO Y AGITACIÓN
+        // Si el nuevo conteo es mayor al que teníamos guardado en la referencia
         if (!isInitialLoad && newUnreadCount > prevUnreadCountRef.current) {
-          audioRef.current.play().catch(error => console.log("Audio bloqueado", error));
+          // 1. Reproducir sonido
+          audioRef.current.play().catch(error => {
+            console.log("El navegador bloqueó el audio hasta que el usuario interactúe con la página.", error);
+          });
+
+          // 2. Activar agitación visual
           setShouldShake(true);
           setTimeout(() => setShouldShake(false), 1500);
-        } else if (isInitialLoad && newUnreadCount > 0) {
+        }
+        else if (isInitialLoad && newUnreadCount > 0) {
+          // Agitación inicial sin sonido (opcional)
           setShouldShake(true);
           setTimeout(() => setShouldShake(false), 1500);
         }
 
+        // Actualizar estados y referencias
         setUnreadCount(newUnreadCount);
         prevUnreadCountRef.current = newUnreadCount;
+
       } catch (error) {
-        console.error("Error en polling:", error);
+        console.error("Error en polling de no leídas:", error);
       }
     };
 
     fetchUnreadCount(true);
     intervalId = setInterval(() => fetchUnreadCount(false), 10000);
-    return () => clearInterval(intervalId);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [userMail]);
 
   const toggleTheme = () => setTheme(currentTheme => (currentTheme === 'light' ? 'dark' : 'light'));
