@@ -489,10 +489,40 @@ const DocumentTemplateEditor = ({
     { label: 'Arial', value: 'Arial' },
     { label: 'Times New Roman', value: 'Times New Roman' },
     { label: 'Courier New', value: 'Courier New' },
-    { label: 'Georgia', value: 'Georgia' }
+    { label: 'Georgia', value: 'Georgia' },
+    { label: 'Calibri', value: 'Calibri' },
+    { label: 'Verdana', value: 'Verdana' },
+    { label: 'Trebuchet MS', value: 'Trebuchet MS' },
+    { label: 'Garamond', value: 'Garamond' },
+    { label: 'Book Antiqua', value: 'Book Antiqua' }
   ];
 
   const fontSizes = ['8', '9', '10', '11', '12', '14', '16', '18', '20', '22', '24', '26', '28', '36', '48', '72'];
+
+  const getActiveFontFamily = () => {
+    if (focusedField.type === 'signature') {
+      const { index, field } = focusedField;
+      if (!field) return '';
+      // Propiedad dinámica
+      const propName = `${field}FontFamily`;
+      return signatures[index][propName] || '';
+    }
+    return editor ? editor.getAttributes('textStyle').fontFamily : '';
+  };
+
+  const getActiveFontSize = () => {
+    if (focusedField.type === 'signature') {
+      const { index, field } = focusedField;
+      if (!field) return '';
+      // Propiedad dinámica
+      const propName = `${field}FontSize`;
+      const val = signatures[index][propName];
+      return val ? String(val).replace('pt', '') : '';
+    }
+    return editor && editor.getAttributes('textStyle').fontSize
+      ? String(editor.getAttributes('textStyle').fontSize).replace('pt', '').replace('px', '')
+      : '';
+  };
 
   return (
     <div className={`flex flex-col border rounded-xl bg-background shadow-lg overflow-hidden border-border transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 h-screen m-0 rounded-none' : 'h-[calc(100vh-140px)]'}`}>
@@ -513,8 +543,24 @@ const DocumentTemplateEditor = ({
 
         </div>
         <select
-          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary"
-          onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
+          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-28"
+          value={getActiveFontFamily()}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (focusedField.type === 'signature') {
+              const { index, field } = focusedField;
+              if (field) {
+                setFocusedField({ type: 'signature', index, field });
+                updateSignature(index, `${field}FontFamily`, val);
+                setTimeout(() => {
+                  const el = document.getElementById(`sig-${field}-${index}`);
+                  if (el) el.focus();
+                }, 50);
+              }
+            } else {
+              editor.chain().focus().setFontFamily(val).run();
+            }
+          }}
         >
           <option value="">Fuente</option>
           {fontFamilies.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
@@ -522,14 +568,25 @@ const DocumentTemplateEditor = ({
 
         <select
           className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-20"
-          value={editor.getAttributes('textStyle').fontSize ? String(editor.getAttributes('textStyle').fontSize).replace('pt', '').replace('px', '') : ''}
+          value={getActiveFontSize()}
           onChange={(e) => {
             const val = e.target.value;
-            // Si selecciona "Tamaño", no hace nada o borra
-            if (!val) {
-              editor.chain().focus().setMark('textStyle', { fontSize: null }).run();
+            if (focusedField.type === 'signature') {
+              const { index, field } = focusedField;
+              if (field) {
+                setFocusedField({ type: 'signature', index, field });
+                updateSignature(index, `${field}FontSize`, val);
+                setTimeout(() => {
+                  const el = document.getElementById(`sig-${field}-${index}`);
+                  if (el) el.focus();
+                }, 50);
+              }
             } else {
-              editor.chain().focus().setFontSize(`${val}pt`).run();
+              if (!val) {
+                editor.chain().focus().setMark('textStyle', { fontSize: null }).run();
+              } else {
+                editor.chain().focus().setFontSize(`${val}pt`).run();
+              }
             }
           }}
         >
@@ -932,12 +989,24 @@ const DocumentTemplateEditor = ({
                         key={i}
                       >
                         <div className="signature-line font-bold mb-1">__________________________</div>
-                        <div className={`text-sm mb-1 ${sig.titleBold ? 'font-bold' : ''} ${sig.titleItalic ? 'italic' : ''} ${sig.titleUnderline ? 'underline' : ''}`}>
+                        <div
+                          className={`mb-1 ${sig.titleBold ? 'font-bold' : ''} ${sig.titleItalic ? 'italic' : ''} ${sig.titleUnderline ? 'underline' : ''}`}
+                          style={{
+                            fontFamily: sig.titleFontFamily,
+                            fontSize: sig.titleFontSize ? `${sig.titleFontSize}pt` : 'inherit'
+                          }}
+                        >
                           {sig.title || "Firma"}
                         </div>
-                        <div className={`${sig.textBold ? 'font-bold' : ''} ${sig.textItalic ? 'italic' : ''} ${sig.textUnderline ? 'underline' : ''}`}>
+                        <div
+                          className={`${sig.textBold ? 'font-bold' : ''} ${sig.textItalic ? 'italic' : ''} ${sig.textUnderline ? 'underline' : ''}`}
+                          style={{
+                            fontFamily: sig.textFontFamily,
+                            fontSize: sig.textFontSize ? `${sig.textFontSize}pt` : 'inherit'
+                          }}
+                        >
                           {sig.text?.split('\n').map((line, j) => (
-                            <div key={j} className="text-sm">{line}</div>
+                            <div key={j}>{line}</div>
                           ))}
                         </div>
                       </div>
@@ -969,7 +1038,15 @@ const DocumentTemplateEditor = ({
                   <div className="mb-3">
                     <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Título</label>
                     <input
-                      className="w-full text-xs border rounded px-2 py-1 focus:ring-1 focus:ring-primary outline-none bg-background text-foreground placeholder:text-muted-foreground/50"
+                      id={`sig-title-${i}`}
+                      className={`w-full border rounded px-2 py-1 outline-none bg-background text-foreground placeholder:text-muted-foreground/50 transition-all ${focusedField.type === 'signature' && focusedField.index === i && focusedField.field === 'title'
+                        ? 'ring-1 ring-primary border-primary'
+                        : 'focus:ring-1 focus:ring-primary'
+                        }`}
+                      style={{
+                        fontFamily: sig.titleFontFamily || 'inherit',
+                        fontSize: sig.titleFontSize ? `${sig.titleFontSize}pt` : '12px'
+                      }}
                       value={sig.title || ''}
                       onChange={(e) => updateSignature(i, 'title', e.target.value)}
                       onFocus={() => setFocusedField({ type: 'signature', index: i, field: 'title' })}
@@ -980,7 +1057,15 @@ const DocumentTemplateEditor = ({
                   <div>
                     <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Contenido</label>
                     <textarea
-                      className="w-full h-24 text-xs border rounded-md p-2 resize-none focus:ring-1 focus:ring-primary outline-none bg-background text-foreground placeholder:text-muted-foreground/50 font-mono"
+                      id={`sig-text-${i}`}
+                      className={`w-full h-24 border rounded-md p-2 resize-none outline-none bg-background text-foreground placeholder:text-muted-foreground/50 transition-all chain-input ${focusedField.type === 'signature' && focusedField.index === i && focusedField.field === 'text'
+                        ? 'ring-1 ring-primary border-primary'
+                        : 'focus:ring-1 focus:ring-primary'
+                        }`}
+                      style={{
+                        fontFamily: sig.textFontFamily || 'monospace',
+                        fontSize: sig.textFontSize ? `${sig.textFontSize}pt` : '12px'
+                      }}
                       placeholder="Variables, RUT, etc..."
                       value={sig.text || ''}
                       onChange={(e) => updateSignature(i, 'text', e.target.value)}
