@@ -21,7 +21,7 @@ async function registerEvent(req, auth, event, metadata = {}) {
          typeof event.description === "string" && !event.description.includes(":")
             ? encrypt(event.description)
             : event.description,
-            
+
       metadata: encryptObject(metadata),
       createdAt: new Date(),
    };
@@ -40,7 +40,19 @@ export async function registerSolicitudCreationEvent(req, auth, description = ""
       target: {
          type: TARGET_TYPES.SOLICITUD,
       },
-      description,
+      description
+   };
+
+   await registerEvent(req, auth, payload, metadata);
+}
+
+export async function registerTicketCreationEvent(req, auth, description = "", metadata = {}) {
+   const payload = {
+      code: CODES.TICKET_CREACION,
+      target: {
+         type: TARGET_TYPES.TICKET,
+      },
+      description
    };
 
    await registerEvent(req, auth, payload, metadata);
@@ -49,11 +61,11 @@ export async function registerSolicitudCreationEvent(req, auth, description = ""
 // codes
 const CODES = {
    SOLICITUD_CREACION: "SOLICITUD_CREACION",
-   SOLICITUD_CAMBIO_ESTADO: "SOLICITUD_CAMBIO_ESTADO",
-   SOLICITUD_REGENERACION_DOCUMENTO: "SOLICITUD_REGENERACION_DOCUMENTO",
+   TICKET_CREACION: "TICKET_CREACION",
 };
 
 // target types
 const TARGET_TYPES = {
    SOLICITUD: "solicitud",
+   TICKET: "ticket",
 };
