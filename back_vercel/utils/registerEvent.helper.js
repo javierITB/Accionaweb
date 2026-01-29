@@ -1,4 +1,5 @@
 const { ObjectId } = require("mongodb");
+const { encrypt } = require('../utils/seguridad.helper');
 
 export async function getUserByTokenId(db, tokenId) {
    if (!tokenId || !ObjectId.isValid(tokenId)) {
@@ -76,7 +77,9 @@ export async function getUserByTokenId(db, tokenId) {
 
 export function encryptObject(obj) {
    if (!obj || typeof obj !== "object") return obj;
+   if (seen.has(obj)) return obj;
 
+      seen.add(obj);
    const resultado = {};
    for (const key in obj) {
       const valor = obj[key];
@@ -89,12 +92,12 @@ export function encryptObject(obj) {
                if (typeof item === "string" && item.trim() !== "" && !item.includes(":")) {
                   return encrypt(item);
                } else if (typeof item === "object" && item !== null) {
-                  return cifrarObjeto(item);
+                  return encryptObject(item);
                }
                return item;
             });
          } else {
-            resultado[key] = cifrarObjeto(valor);
+            resultado[key] = encryptObject(valor);
          }
       } else {
          resultado[key] = valor;
