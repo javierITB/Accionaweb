@@ -43,7 +43,11 @@ const FormReg = () => {
   }, []);
 
   const toggleSidebar = () => {
-    isMobileScreen ? setIsMobileOpen(!isMobileOpen) : setIsDesktopOpen(!isDesktopOpen);
+    if (isMobileScreen) {
+      setIsMobileOpen(!isMobileOpen);
+    } else {
+      setIsDesktopOpen(!isDesktopOpen);
+    }
   };
 
   const handleNavigation = () => {
@@ -276,7 +280,22 @@ const FormReg = () => {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <Header />
-      <Sidebar isCollapsed={!isDesktopOpen} onToggleCollapse={toggleSidebar} isMobileOpen={isMobileOpen} onNavigate={handleNavigation} />
+      
+      {/* IMPLEMENTACIÓN DEL SIDEBAR */}
+      {(isMobileOpen || !isMobileScreen) && (
+        <>
+          <Sidebar 
+            isCollapsed={!isDesktopOpen} 
+            onToggleCollapse={toggleSidebar} 
+            isMobileOpen={isMobileOpen} 
+            onNavigate={handleNavigation} 
+          />
+          {isMobileScreen && isMobileOpen && (
+            <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileOpen(false)}></div>
+          )}
+        </>
+      )}
+
       <main className={`transition-all duration-300 ${mainMarginClass} pt-20`}>
         <div className="p-6 space-y-6 container-main">
           <div className="flex items-center justify-between">
@@ -296,6 +315,19 @@ const FormReg = () => {
           </div>
         </div>
       </main>
+
+      {/* BOTÓN FLOTANTE MÓVIL - FUERA DEL MAIN, SIEMPRE VISIBLE */}
+      {!isMobileOpen && isMobileScreen && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <Button
+            variant="default"
+            size="icon"
+            onClick={toggleSidebar}
+            iconName="Menu"
+            className="w-12 h-12 rounded-full shadow-lg"
+          />
+        </div>
+      )}
     </div>
   );
 };

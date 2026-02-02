@@ -333,11 +333,20 @@ const CompanyReg = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      
+      {/* IMPLEMENTACIÓN DEL SIDEBAR */}
       {(isMobileOpen || !isMobileScreen) && (
-        <Sidebar isCollapsed={!isDesktopOpen} onToggleCollapse={toggleSidebar} isMobileOpen={isMobileOpen} onNavigate={handleNavigation} />
-      )}
-      {isMobileScreen && isMobileOpen && (
-        <div className="fixed inset-0 bg-foreground/50 z-40" onClick={toggleSidebar}></div>
+        <>
+          <Sidebar 
+            isCollapsed={!isDesktopOpen} 
+            onToggleCollapse={toggleSidebar} 
+            isMobileOpen={isMobileOpen} 
+            onNavigate={handleNavigation} 
+          />
+          {isMobileScreen && isMobileOpen && (
+            <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileOpen(false)}></div>
+          )}
+        </>
       )}
 
       <main className={`transition-all duration-300 ${mainMarginClass} pt-20`}>
@@ -380,6 +389,19 @@ const CompanyReg = () => {
           </div>
         </div>
       </main>
+
+      {/* BOTÓN FLOTANTE MÓVIL - FUERA DEL MAIN, SIEMPRE VISIBLE */}
+      {!isMobileOpen && isMobileScreen && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <Button
+            variant="default"
+            size="icon"
+            onClick={toggleSidebar}
+            iconName="Menu"
+            className="w-12 h-12 rounded-full shadow-lg"
+          />
+        </div>
+      )}
     </div>
   );
 };
