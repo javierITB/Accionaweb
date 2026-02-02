@@ -147,50 +147,50 @@ const CompanyReg = () => {
                <div className="flex items-center justify-between">
                   <div className="flex gap-1 items-center">
                      <h3 className="text-lg font-semibold text-foreground">Eventos registrados</h3>
-                     {pagination && (
-                        <span className="text-sm text-muted-foreground">({pagination.total})</span>
-                     )}
+                     {pagination && <span className="text-sm text-muted-foreground">({pagination.total})</span>}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row justify-center items-center">
-                     <div className="flex items-center space-x-4">
-                        <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => setPage((p) => p - 1)}
-                           disabled={!pagination.hasPrevPage || loading}
-                           className="w-28 sm:w-auto"
-                        >
-                           <Icon name="ChevronLeft" size={16} className="mr-2" />
-                           Anterior
-                        </Button>
+                  {pagination.totalPages > 1 && (
+                     <div className="flex flex-col sm:flex-row justify-center items-center">
+                        <div className="flex items-center space-x-4">
+                           <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPage((p) => p - 1)}
+                              disabled={!pagination.hasPrevPage || loading}
+                              className="w-28 sm:w-auto"
+                           >
+                              <Icon name="ChevronLeft" size={16} className="mr-2" />
+                              Anterior
+                           </Button>
 
-                        {/* NUEVO: Diseño x/y Compacto Inferior */}
-                        <div className="flex items-center gap-0 bg-muted px-4 py-1.5 rounded-full text-muted-foreground">
-                           <input
-                              type="text"
-                              value={pagination.page}
-                              //   onChange={handlePageInputChange}
-                              //   onBlur={handlePageInputBlurOrSubmit}
-                              //   onKeyDown={handlePageInputKeyDown}
-                              className="w-6 bg-transparent border-none text-right font-medium text-muted-foreground focus:outline-none p-0"
-                           />
-                           <span className="font-medium mx-0.5">/</span>
-                           <span className="font-medium text-left min-w-[1.5rem]">{pagination.totalPages}</span>
+                           {/* NUEVO: Diseño x/y Compacto Inferior */}
+                           <div className="flex items-center gap-0 bg-muted px-4 py-1.5 rounded-full text-muted-foreground">
+                              <input
+                                 type="text"
+                                 value={pagination.page}
+                                 //   onChange={handlePageInputChange}
+                                 //   onBlur={handlePageInputBlurOrSubmit}
+                                 //   onKeyDown={handlePageInputKeyDown}
+                                 className="w-6 bg-transparent border-none text-right font-medium text-muted-foreground focus:outline-none p-0"
+                              />
+                              <span className="font-medium mx-0.5">/</span>
+                              <span className="font-medium text-left min-w-[1.5rem]">{pagination.totalPages}</span>
+                           </div>
+
+                           <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPage((p) => p + 1)}
+                              disabled={!pagination.hasNextPage || loading}
+                              className="w-28 sm:w-auto"
+                           >
+                              Siguiente
+                              <Icon name="ChevronRight" size={16} className="ml-2" />
+                           </Button>
                         </div>
-
-                        <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => setPage((p) => p + 1)}
-                           disabled={!pagination.hasNextPage || loading}
-                           className="w-28 sm:w-auto"
-                        >
-                           Siguiente
-                           <Icon name="ChevronRight" size={16} className="ml-2" />
-                        </Button>
                      </div>
-                  </div>
+                  )}
                </div>
             )}
 
@@ -230,7 +230,7 @@ const CompanyReg = () => {
                      </tbody>
                   </table>
 
-                  {pagination && (
+                  {pagination.totalPages > 1 && (
                      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 py-8  mt-6">
                         <div className="flex items-center space-x-4">
                            <Button
