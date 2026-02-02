@@ -828,6 +828,7 @@ Puedes agregar máximo ${remainingSlots} archivo(s) más.`,
    };
 
    const handleUploadClick = () => {
+      if (["finalizado", "archivado"].includes(fullRequestData?.status)) return;
       if (!canAddMoreFiles()) {
          const message = `No puedes agregar más archivos. 
 Ya tienes ${approvedData?.correctedFiles?.length || 0} archivo(s) aprobado(s) y ${correctedFiles.length} archivo(s) seleccionado(s).
@@ -1480,7 +1481,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   >
                      Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
                   </span>
-                  {fullRequestData?.status !== "archivado" && (
+                  {!["archivado", "finalizado"].includes(fullRequestData?.status) && (
                      <Button
                         variant="outlineTeal"
                         size="sm"
