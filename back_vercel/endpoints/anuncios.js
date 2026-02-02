@@ -34,10 +34,10 @@ router.post('/', async (req, res) => {
     }
 
     const sessionToken = authHeader.split(' ')[1];
-    
+
     // Usar TU función validarToken EXACTAMENTE COMO ESTÁ
     const tokenValido = await validarToken(db, sessionToken);
-    
+
     if (!tokenValido.ok) {
       return res.status(401).json({
         success: false,
@@ -46,7 +46,7 @@ router.post('/', async (req, res) => {
     }
 
     const tokenData = tokenValido.data;
-    
+
     // ==================== 2. BUSCAR USUARIO COMPLETO ====================
     const user = await db.collection("usuarios").findOne({
       mail_index: createBlindIndex(tokenData.email.toLowerCase().trim())
@@ -67,7 +67,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    
+
 
     // ==================== 3. CONTINUAR CON LA LÓGICA ORIGINAL ====================
     // TODO TU CÓDIGO ORIGINAL AQUÍ (todo lo que ya tenías después de las validaciones)
@@ -83,7 +83,7 @@ router.post('/', async (req, res) => {
       enviarNotificacion = true
     } = req.body;
 
-    const urlNotificaciones = actionUrl || "https://infodesa.vercel.app/";
+    const urlNotificaciones = actionUrl || process.env.PORTAL_URL;
 
     if (!titulo || !descripcion) {
       console.log('Validación fallida: título o descripción faltante');
@@ -109,7 +109,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    
+
 
     let resultadoEnvio;
     const fechaEnvio = new Date();
@@ -133,13 +133,13 @@ router.post('/', async (req, res) => {
           .find({ estado: "activo", mail: { $exists: true } })
           .project({ mail: 1 })
           .toArray();
-    
-        
+
+
         for (const usuarioItem of usuarios) {
           if (usuarioItem.mail) {
             try {
               const emailDecrypted = decrypt(usuarioItem.mail);
-              
+
               if (emailDecrypted && emailDecrypted.includes('@')) {
                 await sendEmail({
                   to: emailDecrypted,
@@ -211,7 +211,7 @@ router.post('/', async (req, res) => {
           if (usuarioItem.mail) {
             try {
               const emailDecrypted = decrypt(usuarioItem.mail);
-              
+
               if (emailDecrypted && emailDecrypted.includes('@')) {
                 await sendEmail({
                   to: emailDecrypted,
@@ -268,11 +268,11 @@ router.post('/', async (req, res) => {
             const usuarioDestino = await db
               .collection("usuarios")
               .findOne({ _id: new ObjectId(userId) });
-          
+
             if (usuarioDestino?.mail) {
               try {
                 const emailDecrypted = decrypt(usuarioDestino.mail);
-                
+
                 if (emailDecrypted && emailDecrypted.includes('@')) {
                   await sendEmail({
                     to: emailDecrypted,
