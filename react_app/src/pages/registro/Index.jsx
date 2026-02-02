@@ -205,7 +205,7 @@ const CompanyReg = () => {
                      <thead className="bg-muted text-sm text-muted-foreground">
                         <tr>
                            <th className="px-4 py-2 text-center">Código</th>
-                           <th className="px-4 py-2 text-center">Actor</th>
+                           <th className="px-4 py-2 text-center">Rol</th>
                            <th className="px-4 py-2 text-left">Descripción</th>
                            <th className="px-4 py-2 text-center">Afectado</th>
                            <th className="px-4 py-2 text-center">Fecha</th>
@@ -216,7 +216,7 @@ const CompanyReg = () => {
                         {registros.map((registro, index) => (
                            <tr key={index} className="border-t hover:bg-muted/30 transition">
                               <td className="px-4 py-2 text-[11px] text-center">{registro.code}</td>
-                              <td className="px-4 py-2 text-sm text-center">{registro.actor.name}</td>
+                              <td className="px-4 py-2 text-sm text-center">{registro.actor.role}</td>
                               <td className="px-4 py-2 text-sm">{registro.description}</td>
                               <td className="px-4 py-2 text-sm text-center">{registro.target.type || "—"}</td>
                               <td className="px-4 py-2 text-sm">{formatDateSplit(registro.createdAt) || "—"}</td>
