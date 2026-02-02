@@ -199,41 +199,43 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
         </div>
 
         {/* Input */}
-        <div className="p-4 sm:p-6 border-t border-border">
-          <div className="flex items-center space-x-2">
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Escribe tu mensaje aquí..."
-              className="w-full min-h-[60px] p-3 border border-border rounded-lg resize-none bg-input text-foreground focus:ring-2 focus:ring-ring"
-              disabled={isSending}
-            />
-            <Button
-              variant="default"
-              onClick={handleSend}
-              disabled={!message.trim() || isSending}
-              loading={isSending}
-              iconName="Send"
-              iconPosition="left"
-              iconSize={16}
-            >
-              Enviar
-            </Button>
-            {/* AGREGADO: Botón para bajar rápido a la derecha del enviar */}
-            {showScrollToBottom && (
-              <div className="flex-shrink-0">
-                <Button
-                  onClick={scrollToBottom}
-                  className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-white"
-                  iconName="ArrowDown"
-                  size="sm"
-                >
-                  {hasNewMessages && "Nuevos"}  {/* ← Texto solo cuando hay nuevos */}
-                </Button>
-              </div>
-            )}
+        {!["finalizado", "archivado"].includes(request?.status) && (
+          <div className="p-4 sm:p-6 border-t border-border">
+            <div className="flex items-center space-x-2">
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Escribe tu mensaje aquí..."
+                className="w-full min-h-[60px] p-3 border border-border rounded-lg resize-none bg-input text-foreground focus:ring-2 focus:ring-ring"
+                disabled={isSending}
+              />
+              <Button
+                variant="default"
+                onClick={handleSend}
+                disabled={!message.trim() || isSending}
+                loading={isSending}
+                iconName="Send"
+                iconPosition="left"
+                iconSize={16}
+              >
+                Enviar
+              </Button>
+              {/* AGREGADO: Botón para bajar rápido a la derecha del enviar */}
+              {showScrollToBottom && (
+                <div className="flex-shrink-0">
+                  <Button
+                    onClick={scrollToBottom}
+                    className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-white"
+                    iconName="ArrowDown"
+                    size="sm"
+                  >
+                    {hasNewMessages && "Nuevos"}  {/* ← Texto solo cuando hay nuevos */}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

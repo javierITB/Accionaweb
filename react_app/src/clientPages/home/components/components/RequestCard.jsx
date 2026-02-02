@@ -188,7 +188,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
 
             {/* ETIQUETA ENVIADA CON ICONO - Sin botón ni hover */}
             {currentRequest?.metadata?.esPropia && currentRequest?.user?.compartidos?.length > 0 && (
-              <span 
+              <span
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase whitespace-nowrap"
               >
                 <Icon name="Send" size={12} />
@@ -270,18 +270,16 @@ const RequestCard = ({ request, onViewDetails, onSendMessage, onUpdate, onShare,
             iconSize={16}
           >
           </Button>
-          {currentRequest.status !== 'archivado' && (
-            <Button
-              variant="outline"
-              size="sm"
-              title="Chat de Mensajes"
-              onClick={() => onSendMessage(currentRequest)}
-              iconName="MessageSquare"
-              iconPosition="left"
-              iconSize={16}
-            >
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            title="Chat de Mensajes"
+            onClick={() => onSendMessage(currentRequest)}
+            iconName="MessageSquare"
+            iconPosition="left"
+            iconSize={16}
+          >
+          </Button>
 
           <Button
             variant="ghost"
