@@ -17,6 +17,11 @@ const CompanyReg = () => {
    const [modalOpen, setModalOpen] = useState(false);
    const [selectedRegistro, setSelectedRegistro] = useState(null);
 
+   const [page, setPage] = useState(1);
+   const [limit] = useState(10);
+   const [pagination, setPagination] = useState(null);
+   const [loading, setLoading] = useState(false);
+
    const openModal = (registro) => {
       setSelectedRegistro(registro);
       setModalOpen(true);
@@ -61,22 +66,27 @@ const CompanyReg = () => {
       }
    };
 
-   const fetchRegistros = async () => {
+   const fetchRegistros = async (currentPage = page) => {
       try {
-         const response = await apiFetch(`${API_BASE_URL}/registro/todos`);
+         setLoading(true);
+
+         const response = await apiFetch(`${API_BASE_URL}/registro/todos?page=${currentPage}&limit=${limit}`);
+
          if (response.ok) {
-            const registrosData = await response.json();
-            setRegistros(registrosData);
+            const result = await response.json();
+            setRegistros(result.data);
+            setPagination(result.pagination);
          }
       } catch (error) {
          console.error("Error cargando registros:", error);
-         console.error("No se pudo cargar la lista de registrosData");
+      } finally {
+         setLoading(false);
       }
    };
 
    useEffect(() => {
       fetchRegistros();
-   }, []);
+   }, [page]);
 
    const formatDate = (dateString) => {
       if (!dateString) return "—";
@@ -133,7 +143,9 @@ const CompanyReg = () => {
       return (
          <div className="space-y-4">
             <h3 className="text-lg font-semibold text-foreground">Eventos registrados</h3>
-            {registros.length === 0 ? (
+            {loading ? (
+               <p className="text-muted-foreground text-sm">Cargando registros...</p>
+            ) : registros.length === 0 ? (
                <p className="text-muted-foreground">No hay Eventos registrados.</p>
             ) : (
                <div className="overflow-x-auto">
@@ -165,12 +177,46 @@ const CompanyReg = () => {
                         ))}
                      </tbody>
                   </table>
+
+                  {pagination && (
+                     <div className="flex items-center justify-between mt-4">
+                        <span className="text-sm text-muted-foreground">
+                           Página {pagination.page} de {pagination.totalPages} — Total: {pagination.total}
+                        </span>
+
+                        <div className="flex gap-2">
+                           <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={!pagination.hasPrevPage || loading}
+                              onClick={() => setPage((p) => p - 1)}
+                           >
+                              Anterior
+                           </Button>
+
+                           <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={!pagination.hasNextPage || loading}
+                              onClick={() => setPage((p) => p + 1)}
+                           >
+                              Siguiente
+                           </Button>
+                        </div>
+                     </div>
+                  )}
                </div>
             )}
 
             {modalOpen && selectedRegistro && (
-               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={closeModal}>
-                  <div className="bg-background rounded-lg shadow-2xl w-11/12 max-w-lg p-6 relative overflow-y-auto max-h-[90vh]"onClick={(e) => e.stopPropagation()}>
+               <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                  onClick={closeModal}
+               >
+                  <div
+                     className="bg-background rounded-lg shadow-2xl w-11/12 max-w-lg p-6 relative overflow-y-auto max-h-[90vh]"
+                     onClick={(e) => e.stopPropagation()}
+                  >
                      <button
                         className="absolute top-3 right-3 text-muted-foreground hover:text-foreground text-2xl font-bold"
                         onClick={closeModal}
