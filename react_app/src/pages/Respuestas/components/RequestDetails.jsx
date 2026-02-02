@@ -60,6 +60,7 @@ const RequestDetails = ({
    const [previewIndex, setPreviewIndex] = useState(0);
    const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
    const [filesToDelete, setFilesToDelete] = useState([]);
+   const [isCopied, setIsCopied] = useState(false); // Feedback visual de copiado
 
    const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsyncDialog();
 
@@ -2119,7 +2120,20 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            <h2 className="text-xl font-semibold text-foreground">
                               {fullRequestData?.formTitle || fullRequestData?.title}
                            </h2>
-                           <p className="text-sm text-muted-foreground">ID: {fullRequestData?._id}</p>
+                           <p
+                              className="text-sm text-muted-foreground cursor-pointer hover:text-accent transition-colors flex items-center gap-2"
+                              onClick={() => {
+                                 const url = `${window.location.origin}${window.location.pathname}?id=${fullRequestData?._id}`;
+                                 navigator.clipboard.writeText(url).then(() => {
+                                    setIsCopied(true);
+                                    setTimeout(() => setIsCopied(false), 2000);
+                                 });
+                              }}
+                              title="Click para copiar enlace directo"
+                           >
+                              ID: {fullRequestData?._id}
+                              {isCopied && <span className="text-xs text-muted-foreground ml-2 transition-all duration-300">Enlace copiado</span>}
+                           </p>
                         </div>
                      </div>
 
