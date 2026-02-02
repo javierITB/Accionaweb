@@ -135,6 +135,53 @@ async function registerUserRemovedEvent(req, auth, metadata = {}) {
    await registerEvent(req, auth, payload, metadata, descriptionBuilder);
 }
 
+async function registerEmpresaCreationEvent(req, auth, empresaData = {}) {
+   const { nombre, rut, direccion, encargado, rut_encargado } = empresaData;
+   const metadata = { Empresa: { nombre, rut, direccion, encargado, rut_encargado } };
+
+   const descriptionBuilder = (actor) =>
+      `${decrypt(actor?.name) || "desconocido"} ${decrypt(actor?.last_name) || ""} registró una nueva empresa`;
+
+   const payload = {
+      code: CODES.EMPRESA_CREACION,
+      target: {
+         type: TARGET_TYPES.EMPRESA,
+      },
+   };
+
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
+async function registerEmpresaUpdateEvent(req, auth, empresaData = {}) {
+   const { nombre, rut, direccion, encargado, rut_encargado } = empresaData;
+   const metadata = { Empresa: { nombre, rut, direccion, encargado, rut_encargado } };
+
+   const descriptionBuilder = (actor) =>
+      `${decrypt(actor?.name) || "desconocido"} ${decrypt(actor?.last_name) || ""} actualizó una empresa`;
+
+   const payload = {
+      code: CODES.EMPRESA_ACTUALIZACION,
+      target: {
+         type: TARGET_TYPES.EMPRESA,
+      },
+   };
+
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
+async function registerEmpresaRemovedEvent(req, auth, metadata = {}) {
+   const descriptionBuilder = (actor) =>
+      `${decrypt(actor?.name) || "desconocido"} ${decrypt(actor?.last_name) || ""} eliminó una empresa`;
+   const payload = {
+      code: CODES.EMPRESA_ELIMINACION,
+      target: {
+         type: TARGET_TYPES.EMPRESA,
+      },
+   };
+
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
 // codes
 const CODES = {
    SOLICITUD_CREACION: "SOLICITUD_CREACION",
@@ -142,9 +189,12 @@ const CODES = {
    TICKET_CREACION: "TICKET_CREACION",
    TICKET_ELIMINACION: "TICKET_ELIMINACION",
    DOMICILIOV_ELIMINACION: "DOMICILIOV_ELIMINACION",
-   USUARIO_ACTUALIZACION: "USUARIO_ACTUALIZACION",
    USUARIO_CREACION: "USUARIO_CREACION",
+   USUARIO_ACTUALIZACION: "USUARIO_ACTUALIZACION",
    USUARIO_ELIMINACION: "USUARIO_ELIMINACION",
+   EMPRESA_CREACION: "EMPRESA_CREACION",
+   EMPRESA_ACTUALIZACION: "EMPRESA_ACTUALIZACION",
+   EMPRESA_ELIMINACION: "EMPRESA_ELIMINACION",
 };
 
 // target types
@@ -152,6 +202,7 @@ const TARGET_TYPES = {
    SOLICITUD: "Solicitud",
    TICKET: "Ticket",
    USUARIO: "Usuario",
+   EMPRESA: "Empresa",
 };
 
 module.exports = {
@@ -163,4 +214,7 @@ module.exports = {
    registerUserUpdateEvent,
    registerUserCreationEvent,
    registerUserRemovedEvent,
+   registerEmpresaCreationEvent,
+   registerEmpresaUpdateEvent,
+   registerEmpresaRemovedEvent,
 };
