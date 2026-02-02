@@ -651,7 +651,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
       if (request?.status === "aprobado") {
          return (
             <div className="mt-6">
-               <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado</h3>
+               <h3 className="text-lg font-semibold text-foreground mb-3">Documentos Enviados</h3>
                <div className="bg-success/10 border border-success/20 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                      <div className="flex items-center space-x-3">
@@ -719,13 +719,13 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
       } else if ((request?.status === "firmado" || request?.status === "finalizado" || request?.status === "archivado") && hasSignedPdf) {
          return (
             <div className="mt-6">
-               <h3 className="text-lg font-semibold text-foreground mb-3">Documento Firmado</h3>
+               <h3 className="text-lg font-semibold text-foreground mb-3">Documentos Enviados</h3>
                <div className="bg-success/10 border border-success/20 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                      <div className="flex items-center space-x-3">
                         <Icon name="CheckSquare" size={20} className="text-success" />
                         <div>
-                           <p className="text-sm font-medium text-foreground">Documento Firmado Completado</p>
+                           <p className="text-sm font-medium text-foreground">Documentos Enviados Completados</p>
                            <p className="text-xs text-muted-foreground">
                               El documento ha sido firmado y completado exitosamente.
                            </p>
@@ -1012,7 +1012,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                      {request?.status !== "archivado" && (
                         <div>
                            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                              Documentos Corregidos
+                              Documentos Recibidos
                               {loadingApprovedFiles && (
                                  <Icon name="Loader" size={16} className="animate-spin text-accent" />
                               )}

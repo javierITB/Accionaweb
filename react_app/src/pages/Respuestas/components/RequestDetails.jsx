@@ -141,6 +141,23 @@ const RequestDetails = ({
       await checkClientSignature();
    };
 
+   useEffect(() => {
+      const fetchFreshData = async () => {
+         if (request?._id) {
+            try {
+               const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
+               if (response.ok) {
+                  const data = await response.json();
+                  setFullRequestData((prev) => ({ ...prev, ...data }));
+               }
+            } catch (error) {
+               console.error("Error fetching fresh request data:", error);
+            }
+         }
+      };
+      fetchFreshData();
+   }, [request?._id, endpointPrefix]);
+
    const fetchAttachments = async (responseId) => {
       setAttachmentsLoading(true);
       try {
@@ -1222,20 +1239,20 @@ Máximo permitido: ${MAX_FILES} archivos.`;
    const formatFileSize = (bytes) => {
       if (!bytes) return "0 KB";
       if (bytes < 1024) return bytes + " B";
-      
+
       // Si es menor a 1 MB, mostrar en KB
       if (bytes < 1048576) {
-          return (bytes / 1024).toFixed(2) + " KB";
+         return (bytes / 1024).toFixed(2) + " KB";
       }
-      
+
       // Si es mayor a 1 MB, calculamos los MB
       const mb = (bytes / 1048576).toFixed(2);
-      
+
       // ✅ Aquí está la clave: solo muestra (EXCEDE LÍMITE) si pasa los 3MB reales
       if (bytes > MAX_FILE_SIZE) {
-          return `${mb} MB (EXCEDE LÍMITE)`;
+         return `${mb} MB (EXCEDE LÍMITE)`;
       }
-      
+
       // Si está entre 1MB y 3MB, se muestra normal: "2.50 MB"
       return `${mb} MB`;
    };
@@ -1343,96 +1360,106 @@ Máximo permitido: ${MAX_FILES} archivos.`;
             )}
          </div>
 
-         <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-               {endpointPrefix.includes("domicilio-virtual") ? "Documentos Adjuntos" : "Documento Generado"}
-               {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-            </h3>
-            {realAttachments?.length > 0 ? (
-               <div className="space-y-2">
-                  {realAttachments?.map((file) => (
-                     <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                           <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
-                           <div>
-                              <p className="text-sm font-medium text-foreground" title={file?.name}>
-                                 {file?.name?.length > 45 ? `${file.name.substring(0, 45)}...` : file?.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                 {file?.size} • Generado el {formatDate(file?.uploadedAt)}
-                              </p>
+         {/* SECCIÓN DOCUMENTO GENERADO */}
+         {(documentInfo || endpointPrefix.includes("domicilio-virtual")) && (
+            <div>
+               <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  {endpointPrefix.includes("domicilio-virtual") ? "Documentos Adjuntos" : "Documento Generado"}
+
+                  {/* Botón Regenerar al lado del título (Si hay plantilla y NO es domicilio virtual) */}
+                  {fullRequestData?.formId && !endpointPrefix.includes("domicilio-virtual") && (
+                     <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-primary ml-1"
+                        title="Regenerar Documento"
+                        onClick={(e) => {
+                           e.stopPropagation();
+                           openAsyncDialog({
+                              title: "¿Estás seguro de regenerar el documento? Esto sobrescribirá el documento actual.",
+                              loadingText: "Regenerando documento...",
+                              successText: "Documento regenerado exitosamente",
+                              errorText: "Error al regenerar documento",
+                              onConfirm: handleRegenerateDocument,
+                           });
+                        }}
+                        disabled={isRegenerating}
+                     >
+                        <Icon name={isRegenerating ? "Loader" : "RefreshCw"} size={14} className={isRegenerating ? "animate-spin" : ""} />
+                     </Button>
+                  )}
+
+                  {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+               </h3>
+               {realAttachments?.length > 0 ? (
+                  <div className="space-y-2">
+                     {realAttachments?.map((file) => (
+                        <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                           <div className="flex items-center space-x-3">
+                              <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
+                              <div>
+                                 <p className="text-sm font-medium text-foreground" title={file?.name}>
+                                    {file?.name?.length > 45 ? `${file.name.substring(0, 45)}...` : file?.name}
+                                 </p>
+                                 <p className="text-xs text-muted-foreground">
+                                    {file?.size} • Generado el {formatDate(file?.uploadedAt)}
+                                 </p>
+                              </div>
+                           </div>
+                           <div className="flex items-center space-x-2">
+                              <Button
+                                 variant="outline"
+                                 size="sm"
+                                 iconName={isDownloading ? "Loader" : "Download"}
+                                 iconPosition="left"
+                                 iconSize={16}
+                                 onClick={
+                                    endpointPrefix.includes("domicilio-virtual")
+                                       ? () => handleDownloadAdjunto(fullRequestData._id, 0)
+                                       : handleDownload
+                                 }
+                                 disabled={isDownloading}
+                              >
+                                 {isDownloading ? "Descargando..." : "Descargar"}
+                              </Button>
+                              <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={
+                                    endpointPrefix.includes("domicilio-virtual")
+                                       ? () => handlePreviewAdjunto(fullRequestData._id, 0)
+                                       : handlePreviewGenerated
+                                 }
+                                 iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
+                                 iconPosition="left"
+                                 iconSize={16}
+                                 disabled={isLoadingPreviewGenerated}
+                              >
+                                 {isLoadingPreviewGenerated ? "Cargando..." : "Vista Previa"}
+                              </Button>
+
                            </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                           <Button
-                              variant="outline"
-                              size="sm"
-                              iconName={isDownloading ? "Loader" : "Download"}
-                              iconPosition="left"
-                              iconSize={16}
-                              onClick={
-                                 endpointPrefix.includes("domicilio-virtual")
-                                    ? () => handleDownloadAdjunto(fullRequestData._id, 0)
-                                    : handleDownload
-                              }
-                              disabled={isDownloading}
-                           >
-                              {isDownloading ? "Descargando..." : "Descargar"}
-                           </Button>
-                           <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={
-                                 endpointPrefix.includes("domicilio-virtual")
-                                    ? () => handlePreviewAdjunto(fullRequestData._id, 0)
-                                    : handlePreviewGenerated
-                              }
-                              iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
-                              iconPosition="left"
-                              iconSize={16}
-                              disabled={isLoadingPreviewGenerated}
-                           >
-                              {isLoadingPreviewGenerated ? "Cargando..." : "Vista Previa"}
-                           </Button>
-                           <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                 openAsyncDialog({
-                                    title: "¿Estás seguro de regenerar el documento? Esto sobrescribirá el documento generado actual.",
-                                    loadingText: "Regenerando documento...",
-                                    successText: "Documento regenerado exitosamente",
-                                    errorText: "Error al regenerar documento",
-                                    onConfirm: handleRegenerateDocument,
-                                 });
-                              }}
-                              iconName={isRegenerating ? "Loader" : "RefreshCw"}
-                              iconPosition="left"
-                              iconSize={16}
-                              disabled={isRegenerating}
-                           >
-                              {isRegenerating ? "Regenerando..." : "Regenerar"}
-                           </Button>
-                        </div>
-                     </div>
-                  ))}
-               </div>
-            ) : (
-               <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-sm">
-                     {endpointPrefix.includes("domicilio-virtual")
-                        ? "No hay archivos adjuntos"
-                        : "No hay documentos generados para este formulario"}
-                  </p>
-               </div>
-            )}
-         </div>
+                     ))}
+                  </div>
+               ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                     <p className="text-sm">
+                        {endpointPrefix.includes("domicilio-virtual")
+                           ? "No hay archivos adjuntos"
+                           : "No hay documentos generados para este formulario"}
+                     </p>
+                  </div>
+               )}
+            </div>
+         )}
+
+
 
          <div>
             <div className="flex items-center justify-between mb-3 pr-4">
                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  <Icon name="CheckCircle" size={21} className="text-success" />
-                  Documentos Aprobados
+                  Enviados a Cliente
                   {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
                </h3>
                {/* Información de límites */}
@@ -1445,25 +1472,24 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                {/* BOTÓN PARA SUBIR ARCHIVOS */}
                <div className="flex items-center gap-2">
                   <span
-                     className={`text-sm pr-1  ${
-                        (approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES
-                           ? "text-blue-600"
-                           : "text-muted-foreground"
-                     }`}
+                     className={`text-sm pr-1  ${(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES
+                        ? "text-blue-600"
+                        : "text-muted-foreground"
+                        }`}
                   >
                      Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
                   </span>
                   {fullRequestData?.status !== "archivado" && (
-                  <Button
-                     variant="outlineTeal"
-                     size="sm"
-                     onClick={handleUploadClick}
-                     iconName="Plus"
-                     iconPosition="left"
-                     disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
-                  >
-                     Añadir Archivos
-                  </Button>
+                     <Button
+                        variant="outlineTeal"
+                        size="sm"
+                        onClick={handleUploadClick}
+                        iconName="Plus"
+                        iconPosition="left"
+                        disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
+                     >
+                        Añadir Archivos
+                     </Button>
                   )}
                </div>
 
@@ -1492,7 +1518,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            onClick={() => setCorrectedFiles([])}
                            iconName="Trash2"
                            iconPosition="left"
-                           // className="text-error hover:bg-error/10"
+                        // className="text-error hover:bg-error/10"
                         >
                            Eliminar todos
                         </Button>
@@ -1561,9 +1587,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                         return (
                            <div
                               key={index}
-                              className={`flex items-center justify-between p-3 rounded border ${
-                                 isMarkedForDelete ? "bg-error/10 border-error/30" : "bg-success/5 border-success/20"
-                              }`}
+                              className={`flex items-center justify-between p-3 rounded border ${isMarkedForDelete ? "bg-error/10 border-error/30" : "bg-success/5 border-success/20"
+                                 }`}
                            >
                               <div className="flex items-center space-x-3">
                                  <Icon
@@ -1573,9 +1598,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                  />
                                  <div>
                                     <p
-                                       className={`text-sm font-medium ${
-                                          isMarkedForDelete ? "text-error line-through" : "text-foreground"
-                                       }`}
+                                       className={`text-sm font-medium ${isMarkedForDelete ? "text-error line-through" : "text-foreground"
+                                          }`}
                                     >
                                        {file.fileName}
                                        {isMarkedForDelete && (
@@ -1614,25 +1638,25 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                        : "Vista Previa"}
                                  </Button>
                                  {fullRequestData?.status !== "archivado" && (
-                                 isMarkedForDelete ? (
-                                    <Button variant="ghost" size="icon" onClick={() => handleUndoDelete(file.fileName)}>
-                                       <Icon name="RotateCcw" size={16} />
-                                    </Button>
-                                 ) : (
-                                    <Button
-                                       variant="ghostError"
-                                       size="icon"
-                                       onClick={() => handleDeleteUploadedFile(file.fileName, index)}
-                                       disabled={isDeletingFile === index}
-                                    >
-                                       <Icon
-                                          name={isDeletingFile === index ? "Loader" : "Trash2"}
-                                          size={16}
-                                          className={isDeletingFile === index ? "animate-spin" : ""}
-                                       />
-                                    </Button>
-                                 )
-                              )}
+                                    isMarkedForDelete ? (
+                                       <Button variant="ghost" size="icon" onClick={() => handleUndoDelete(file.fileName)}>
+                                          <Icon name="RotateCcw" size={16} />
+                                       </Button>
+                                    ) : (
+                                       <Button
+                                          variant="ghostError"
+                                          size="icon"
+                                          onClick={() => handleDeleteUploadedFile(file.fileName, index)}
+                                          disabled={isDeletingFile === index}
+                                       >
+                                          <Icon
+                                             name={isDeletingFile === index ? "Loader" : "Trash2"}
+                                             size={16}
+                                             className={isDeletingFile === index ? "animate-spin" : ""}
+                                          />
+                                       </Button>
+                                    )
+                                 )}
                               </div>
                            </div>
                         );
@@ -1745,13 +1769,13 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            </Button>
                            {/* Solo ocultamos el botón de eliminar firma si la solicitud está archivada */}
                            {fullRequestData?.status !== "archivado" && (
-                           <Button
-                              variant="ghostError"
-                              size="icon"
-                              onClick={() => handleDeleteClientSignature(fullRequestData._id)}
-                           >
-                              <Icon name="Trash2" size={16} />
-                           </Button>
+                              <Button
+                                 variant="ghostError"
+                                 size="icon"
+                                 onClick={() => handleDeleteClientSignature(fullRequestData._id)}
+                              >
+                                 <Icon name="Trash2" size={16} />
+                              </Button>
                            )}
                         </div>
                      </div>
@@ -2147,6 +2171,29 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            />
                         )}
                      </div>
+
+                     {/* Botón Regenerar en Header (Si hay plantilla asignada y NO hay documento) */}
+                     {fullRequestData?.hasTemplate && !documentInfo && !endpointPrefix.includes("domicilio-virtual") && (
+                        <Button
+                           variant="ghost"
+                           size="icon"
+                           className="h-8 w-8 text-muted-foreground hover:text-primary ml-2 border border-dashed border-border"
+                           title="Generar Documento"
+                           onClick={(e) => {
+                              e.stopPropagation();
+                              openAsyncDialog({
+                                 title: "¿Generar documento desde la plantilla asignada?",
+                                 loadingText: "Generando documento...",
+                                 successText: "Documento generado exitosamente",
+                                 errorText: "Error al generar documento",
+                                 onConfirm: handleRegenerateDocument,
+                              });
+                           }}
+                           disabled={isRegenerating}
+                        >
+                           <Icon name={isRegenerating ? "Loader" : "RefreshCw"} size={16} className={isRegenerating ? "animate-spin" : ""} />
+                        </Button>
+                     )}
                   </div>
                   {!isStandalone && <Button variant="ghost" size="icon" onClick={onClose} iconName="X" iconSize={20} />}
                </div>
@@ -2154,33 +2201,30 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                <div className="px-6 flex space-x-6 ">
                   <button
                      onClick={() => setActiveTab("details")}
-                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === "details"
-                           ? "border-accent text-accent"
-                           : "border-transparent text-muted-foreground hover:text-foreground"
-                     }`}
+                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "details"
+                        ? "border-accent text-accent"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
                      title="Ver detalles de la solicitud"
                   >
                      Detalles
                   </button>
                   <button
                      onClick={() => setActiveTab("responses")}
-                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === "responses"
-                           ? "border-accent text-accent"
-                           : "border-transparent text-muted-foreground hover:text-foreground"
-                     }`}
+                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "responses"
+                        ? "border-accent text-accent"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
                      title="Ver respuestas del formulario"
                   >
                      Respuestas
                   </button>
                   <button
                      onClick={() => setActiveTab("shared")}
-                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === "shared"
-                           ? "border-accent text-accent"
-                           : "border-transparent text-muted-foreground hover:text-foreground"
-                     }`}
+                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "shared"
+                        ? "border-accent text-accent"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
                      title="Ver usuarios con acceso"
                   >
                      Compartidos
@@ -2192,8 +2236,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                {activeTab === "details"
                   ? renderDetailsTab()
                   : activeTab === "responses"
-                    ? renderResponsesTab()
-                    : renderSharedTab()}
+                     ? renderResponsesTab()
+                     : renderSharedTab()}
             </div>
 
             <div className="sticky bottom-0 bg-card border-t border-border p-6">

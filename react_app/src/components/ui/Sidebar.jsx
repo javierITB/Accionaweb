@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Icon from "../AppIcon";
-import logo from "/logo2.png"; 
+import logo from "/logo2.png";
 
 const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobileOpen = false, onNavigate }) => {
 
@@ -44,6 +44,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          children: [
             { name: "Usuarios", path: "/users", icon: "User", roles: ["admin", "RRHH", "SoloLectura"] },
             { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["admin", "RRHH", "SoloLectura"] },
+            { name: "Gestor Notificaciones", path: "/config-notificaciones", icon: "Bell", roles: ["admin", "RRHH"] },
             { name: "Registro de cambios", path: "/registro-cambios", icon: "FileText", roles: ["admin", "RRHH", "SoloLectura"] },
          ]
       },
@@ -127,7 +128,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          <div className="flex flex-col h-full">
             {/* Header del Sidebar */}
             <div className={`flex items-center px-4 py-6 border-b border-border/50 ${!isTextVisible ? "justify-center" : "justify-between"}`}>
-               <div 
+               <div
                   className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={handleLogoClick}
                >
@@ -136,7 +137,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                   </div>
                   {isTextVisible && (
                      <div className="flex flex-col overflow-hidden">
-                        <h1 className="text-lg font-semibold text-foreground leading-tight truncate">NexoDesk Acciona</h1> 
+                        <h1 className="text-lg font-semibold text-foreground leading-tight truncate">NexoDesk Acciona</h1>
                         <span className="text-[10px] text-muted-foreground font-mono truncate">Panel de administración</span>
                      </div>
                   )}
@@ -177,8 +178,8 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
             </nav>
 
             <div className="px-3 pb-2">
-               <button 
-                  onClick={onToggleCollapse} 
+               <button
+                  onClick={onToggleCollapse}
                   className={`w-full flex items-center rounded-lg transition-all duration-200 px-3 py-3 text-muted-foreground hover:bg-muted hover:text-foreground
                      ${!isTextVisible ? "justify-center" : ""}
                   `}
