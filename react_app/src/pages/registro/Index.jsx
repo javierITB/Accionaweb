@@ -127,6 +127,7 @@ const CompanyReg = () => {
          );
       });
    };
+   const hasMetadata = selectedRegistro?.metadata && Object.keys(selectedRegistro?.metadata)?.length > 0;
 
    const getTabContent = () => {
       return (
@@ -168,8 +169,8 @@ const CompanyReg = () => {
             )}
 
             {modalOpen && selectedRegistro && (
-               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                  <div className="bg-background rounded-lg shadow-2xl w-11/12 max-w-lg p-6 relative overflow-y-auto max-h-[90vh]">
+               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={closeModal}>
+                  <div className="bg-background rounded-lg shadow-2xl w-11/12 max-w-lg p-6 relative overflow-y-auto max-h-[90vh]"onClick={(e) => e.stopPropagation()}>
                      <button
                         className="absolute top-3 right-3 text-muted-foreground hover:text-foreground text-2xl font-bold"
                         onClick={closeModal}
@@ -229,7 +230,7 @@ const CompanyReg = () => {
                            </p>
                         </div>
 
-                        <div className="pt-4">{renderMetadata(selectedRegistro.metadata)}</div>
+                        {hasMetadata && <div className="pt-4">{renderMetadata(selectedRegistro.metadata)}</div>}
                      </div>
                   </div>
                </div>
