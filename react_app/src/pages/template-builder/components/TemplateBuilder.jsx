@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
 import { Underline } from '@tiptap/extension-underline';
@@ -140,6 +140,56 @@ const DocumentTemplateEditor = ({
 
   // Estado para controlar la visibilidad del panel de configuración de firmas
   const [showSignatureConfig, setShowSignatureConfig] = useState(false);
+
+  // -- ESTADOS DE REDIMENSIONAMIENTO --
+  const [leftPanelWidth, setLeftPanelWidth] = useState(320);
+  const [rightPanelWidth, setRightPanelWidth] = useState(300);
+  const [isResizing, setIsResizing] = useState(null); // 'left' | 'right' | null
+
+  // Manejadores de redimensionamiento
+  const startResizing = React.useCallback((direction) => {
+    setIsResizing(direction);
+  }, []);
+
+  const stopResizing = React.useCallback(() => {
+    setIsResizing(null);
+  }, []);
+
+  const resize = React.useCallback((e) => {
+    if (isResizing === 'left') {
+      const newWidth = e.clientX - 64; // Aproximadamente 64px del sidebar principal si existe, ajustar según layout
+      // Limitamos min 200, max 600
+      if (newWidth > 200 && newWidth < 600) {
+        setLeftPanelWidth(newWidth);
+      }
+    } else if (isResizing === 'right') {
+      // Para el panel derecho, calculamos desde el borde derecho
+      const newWidth = window.innerWidth - e.clientX - 40; // Margen de seguridad
+      if (newWidth > 200 && newWidth < 600) {
+        setRightPanelWidth(newWidth);
+      }
+    }
+  }, [isResizing]);
+
+  // Efecto global para el drag
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', resize);
+      window.addEventListener('mouseup', stopResizing);
+      // Evitar selección de texto mientras se arrastra
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+    } else {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    }
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
 
   // Logo Configuration State
   const [logoConfig, setLogoConfig] = useState(templateData.logoConfig || { left: true, right: false });
@@ -712,7 +762,7 @@ const DocumentTemplateEditor = ({
             <Icon name="PenTool" size={12} className="mr-1" /> {showSignatureConfig ? "FIRMA" : "+ FIRMA"}
           </Button>
 
-          {isFullScreen && onSave && (
+          {onSave && (
             <Button
               variant="default"
               size="sm"
@@ -728,7 +778,10 @@ const DocumentTemplateEditor = ({
 
       <div className="flex flex-1 overflow-hidden">
         {/* PANEL LATERAL DE VARIABLES */}
-        <div className="w-72 border-r bg-muted/5 p-4 overflow-y-auto">
+        <div
+          className="border-r bg-muted/5 p-4 overflow-y-auto shrink-0 transition-all duration-75"
+          style={{ width: leftPanelWidth }}
+        >
           <div className="space-y-6">
             {/* Variables del Formulario */}
             <div>
@@ -788,6 +841,14 @@ const DocumentTemplateEditor = ({
           </div>
         </div>
 
+        {/* DRAG HANDLE IZQUIERDO */}
+        <div
+          className="w-1 cursor-col-resize bg-border hover:bg-blue-500 transition-colors z-10 flex flex-col justify-center items-center group"
+          onMouseDown={() => startResizing('left')}
+        >
+          <div className="h-8 w-1 bg-border group-hover:bg-blue-300 rounded-full" />
+        </div>
+
         {/* AREA DE EDICION (HOJA) */}
         <div className="editor-paper-container flex-1 bg-muted/30 overflow-y-auto">
           <div className={`w-full max-w-[216mm] transition-all ${isPreview ? 'scale-[1.02]' : ''}`}>
@@ -795,7 +856,7 @@ const DocumentTemplateEditor = ({
               /* Contenedor del área de edición */
               .editor-paper-container {
                 background-color: #f0f2f5; 
-                padding: 40px 0;
+                padding: 10px 0;
                 display: flex;
                 justify-content: center;
               }
@@ -1018,9 +1079,22 @@ const DocumentTemplateEditor = ({
           </div>
         </div>
 
-        {/* ZONA DE CONFIGURACIÓN DE FIRMAS (Fuera del editor Tiptap) */}
+        {/* DRAG HANDLE DERECHO (Solo visible si el panel derecho está abierto y no es preview) */}
         {!isPreview && showSignatureConfig && (
-          <div className="w-72 border-l bg-muted/5 p-4 overflow-y-auto animate-in slide-in-from-right-2 duration-300">
+          <div
+            className="w-1 cursor-col-resize bg-border hover:bg-blue-500 transition-colors z-10 flex flex-col justify-center items-center group"
+            onMouseDown={() => startResizing('right')}
+          >
+            <div className="h-8 w-1 bg-border group-hover:bg-blue-300 rounded-full" />
+          </div>
+        )}
+
+        {/* ZONA DE CONFIGURACIÓN DE FIRMAS */}
+        {!isPreview && showSignatureConfig && (
+          <div
+            className="border-l bg-muted/5 p-4 overflow-y-auto animate-in slide-in-from-right-2 duration-300 shrink-0"
+            style={{ width: rightPanelWidth }}
+          >
             <h3 className="text-[10px] font-bold uppercase text-primary mb-3 tracking-widest flex items-center gap-2">
               <Icon name="PenTool" size={12} /> Configuración de Firmas
             </h3>

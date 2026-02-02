@@ -43,6 +43,18 @@ const FormBuilder = () => {
   // Estado para forzar la recarga del editor SOLAMENTE al cargar una nueva plantilla
   const [templateVersion, setTemplateVersion] = useState(0);
 
+  // Ref para auto-scroll
+  const editorRef = React.useRef(null);
+
+  // Auto-scroll al cambiar a pestaña documento
+  useEffect(() => {
+    if (activeTab === 'document' && editorRef.current) {
+      setTimeout(() => {
+        editorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [activeTab]);
+
   // EFECTO PARA MANEJAR REDIMENSIONAMIENTO - AGREGADO
   useEffect(() => {
     const handleResize = () => {
@@ -508,7 +520,7 @@ const FormBuilder = () => {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-lg">
+          <div className="bg-card border border-border rounded-lg" ref={editorRef}>
             <div className="border-b border-border">
               <nav className="flex space-x-8 px-6">
                 {tabs?.map((tab) => (
