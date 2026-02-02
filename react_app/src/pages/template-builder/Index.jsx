@@ -451,18 +451,6 @@ const FormBuilder = () => {
         </>
       )}
 
-      {!isMobileOpen && isMobileScreen && (
-        <div className="fixed bottom-4 left-4 z-50" style={{ position: 'fixed' }}>
-          <Button
-            variant="default"
-            size="icon"
-            onClick={toggleSidebar}
-            iconName="Menu"
-            className="w-12 h-12 rounded-full shadow-brand-active"
-          />
-        </div>
-      )}
-
       {/* CONTENIDO PRINCIPAL - ACTUALIZADO */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-16`}>
         <div className="p-6 space-y-6">
@@ -555,6 +543,19 @@ const FormBuilder = () => {
           </div>
         </div>
       </main>
+
+      {/* BOTÓN FLOTANTE MÓVIL - FUERA DEL MAIN, SIEMPRE VISIBLE */}
+      {!isMobileOpen && isMobileScreen && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <Button
+            variant="default"
+            size="icon"
+            onClick={toggleSidebar}
+            iconName="Menu"
+            className="w-12 h-12 rounded-full shadow-lg"
+          />
+        </div>
+      )}
     </div>
   );
 };
