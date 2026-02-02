@@ -4,6 +4,7 @@ import Header from "../../components/ui/Header";
 import Sidebar from "../../components/ui/Sidebar";
 import Icon from "../../components/AppIcon";
 import Button from "../../components/ui/Button";
+import LoadingCard from "clientPages/components/LoadingCard";
 
 // const createDataURL = (logoObj) => {
 //   if (logoObj && logoObj.fileData && logoObj.mimeType) {
@@ -142,9 +143,60 @@ const CompanyReg = () => {
    const getTabContent = () => {
       return (
          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-foreground">Eventos registrados</h3>
+            {pagination && (
+               <div className="flex items-center justify-between">
+                  <div className="flex gap-1 items-center">
+                     <h3 className="text-lg font-semibold text-foreground">Eventos registrados</h3>
+                     {pagination && (
+                        <span className="text-sm text-muted-foreground">({pagination.total})</span>
+                     )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row justify-center items-center">
+                     <div className="flex items-center space-x-4">
+                        <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => setPage((p) => p - 1)}
+                           disabled={!pagination.hasPrevPage || loading}
+                           className="w-28 sm:w-auto"
+                        >
+                           <Icon name="ChevronLeft" size={16} className="mr-2" />
+                           Anterior
+                        </Button>
+
+                        {/* NUEVO: Diseño x/y Compacto Inferior */}
+                        <div className="flex items-center gap-0 bg-muted px-4 py-1.5 rounded-full text-muted-foreground">
+                           <input
+                              type="text"
+                              value={pagination.page}
+                              //   onChange={handlePageInputChange}
+                              //   onBlur={handlePageInputBlurOrSubmit}
+                              //   onKeyDown={handlePageInputKeyDown}
+                              className="w-6 bg-transparent border-none text-right font-medium text-muted-foreground focus:outline-none p-0"
+                           />
+                           <span className="font-medium mx-0.5">/</span>
+                           <span className="font-medium text-left min-w-[1.5rem]">{pagination.totalPages}</span>
+                        </div>
+
+                        <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => setPage((p) => p + 1)}
+                           disabled={!pagination.hasNextPage || loading}
+                           className="w-28 sm:w-auto"
+                        >
+                           Siguiente
+                           <Icon name="ChevronRight" size={16} className="ml-2" />
+                        </Button>
+                     </div>
+                  </div>
+               </div>
+            )}
+
             {loading ? (
-               <p className="text-muted-foreground text-sm">Cargando registros...</p>
+               // <p className="text-muted-foreground text-sm">Cargando registros...</p>
+               <LoadingCard text="Cargando registros..." />
             ) : registros.length === 0 ? (
                <p className="text-muted-foreground">No hay Eventos registrados.</p>
             ) : (
@@ -179,28 +231,42 @@ const CompanyReg = () => {
                   </table>
 
                   {pagination && (
-                     <div className="flex items-center justify-between mt-4">
-                        <span className="text-sm text-muted-foreground">
-                           Página {pagination.page} de {pagination.totalPages} — Total: {pagination.total}
-                        </span>
-
-                        <div className="flex gap-2">
+                     <div className="flex flex-col sm:flex-row justify-center items-center gap-4 py-8  mt-6">
+                        <div className="flex items-center space-x-4">
                            <Button
-                              size="sm"
                               variant="outline"
-                              disabled={!pagination.hasPrevPage || loading}
+                              size="sm"
                               onClick={() => setPage((p) => p - 1)}
+                              disabled={!pagination.hasPrevPage || loading}
+                              className="w-28 sm:w-auto"
                            >
+                              <Icon name="ChevronLeft" size={16} className="mr-2" />
                               Anterior
                            </Button>
 
+                           {/* NUEVO: Diseño x/y Compacto Inferior */}
+                           <div className="flex items-center gap-0 bg-muted px-4 py-1.5 rounded-full text-muted-foreground">
+                              <input
+                                 type="text"
+                                 value={pagination.page}
+                                 //   onChange={handlePageInputChange}
+                                 //   onBlur={handlePageInputBlurOrSubmit}
+                                 //   onKeyDown={handlePageInputKeyDown}
+                                 className="w-6 bg-transparent border-none text-right font-medium text-muted-foreground focus:outline-none p-0"
+                              />
+                              <span className="font-medium mx-0.5">/</span>
+                              <span className="font-medium text-left min-w-[1.5rem]">{pagination.totalPages}</span>
+                           </div>
+
                            <Button
-                              size="sm"
                               variant="outline"
-                              disabled={!pagination.hasNextPage || loading}
+                              size="sm"
                               onClick={() => setPage((p) => p + 1)}
+                              disabled={!pagination.hasNextPage || loading}
+                              className="w-28 sm:w-auto"
                            >
                               Siguiente
+                              <Icon name="ChevronRight" size={16} className="ml-2" />
                            </Button>
                         </div>
                      </div>
@@ -321,7 +387,7 @@ const CompanyReg = () => {
 
          {/* CONTENIDO PRINCIPAL - ACTUALIZADO */}
          <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
-            <div className="p-6 space-y-6 container-main">
+            <div className="pb-6 space-y-6 container-main">
                {/* HEADER CON BOTÓN DE TOGGLE - AGREGADO */}
                <div className="flex flex-col md:flex-row items-start md:items-center justify-between pt-3">
                   <div className="mb-4 md:mb-0">
