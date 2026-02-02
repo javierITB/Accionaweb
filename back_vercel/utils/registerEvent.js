@@ -39,7 +39,8 @@ async function registerSolicitudCreationEvent(req, auth, description = "", metad
 }
 
 async function registerSolicitudRemovedEvent(req, auth, metadata = {}) {
-   const descriptionBuilder = (actor) => `El usuario ${decrypt(actor?.name) || "desconocido"} eliminó una solicitud`;
+   const descriptionBuilder = (actor) =>
+      `${decrypt(actor?.name) || "desconocido"} ${decrypt(actor?.last_name) || ""} eliminó una solicitud`;
 
    const payload = {
       code: CODES.SOLICITUD_ELIMINACION,
@@ -64,7 +65,8 @@ async function registerTicketCreationEvent(req, auth, description = "", metadata
 }
 
 async function registerTicketRemovedEvent(req, auth, metadata = {}) {
-   const descriptionBuilder = (actor) => `El usuario ${decrypt(actor?.name) || "desconocido"} eliminó un ticket`;
+   const descriptionBuilder = (actor) =>
+      `${decrypt(actor?.name) || "desconocido"} ${decrypt(actor?.last_name) || ""} eliminó un ticket`;
    const payload = {
       code: CODES.TICKET_ELIMINACION,
       target: {
@@ -76,7 +78,7 @@ async function registerTicketRemovedEvent(req, auth, metadata = {}) {
 
 async function registerDomicilioVirtualRemovalEvent(req, auth, metadata = {}) {
    const descriptionBuilder = (actor) =>
-      `El usuario ${decrypt(actor?.name) || "desconocido"} eliminó una solicitud de domicilio virtual`;
+      `${decrypt(actor?.name) || "desconocido"} ${decrypt(actor?.last_name) || ""} eliminó una solicitud de domicilio virtual`;
    const payload = {
       code: CODES.DOMICILIOV_ELIMINACION,
       target: {
@@ -86,16 +88,51 @@ async function registerDomicilioVirtualRemovalEvent(req, auth, metadata = {}) {
    await registerEvent(req, auth, payload, metadata, descriptionBuilder);
 }
 
-async function registerUserUpdateEvent(req, auth, description = "", metadata = {}) {
+async function registerUserUpdateEvent(req, auth, profileData = {}) {
+   const { nombre, apellido, mail, empresa, cargo, rol, estado } = profileData;
+   const metadata = { Usuario: { nombre, apellido, mail, empresa, cargo, rol, estado } };
+
+   const descriptionBuilder = (actor) =>
+      `${decrypt(actor?.name) || "desconocido"} ${decrypt(actor?.last_name) || ""} actualizó un perfil de usuario`;
    const payload = {
       code: CODES.USUARIO_ACTUALIZACION,
       target: {
          type: TARGET_TYPES.USUARIO,
       },
-      description,
    };
 
-   await registerEvent(req, auth, payload, metadata);
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
+async function registerUserCreationEvent(req, auth, profileData = {}) {
+   const { nombre, apellido, mail, empresa, cargo, rol, estado } = profileData;
+   const metadata = { Usuario: { nombre, apellido, mail, empresa, cargo, rol, estado } };
+
+   const descriptionBuilder = (actor) =>
+      `${decrypt(actor?.name) || "desconocido"} ${decrypt(actor?.last_name) || ""} creó un nuevo usuario`;
+
+   const payload = {
+      code: CODES.USUARIO_CREACION,
+      target: {
+         type: TARGET_TYPES.USUARIO,
+      },
+   };
+
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
+async function registerUserRemovedEvent(req, auth, metadata = {}) {
+   const descriptionBuilder = (actor) =>
+      `${decrypt(actor?.name) || "desconocido"} ${decrypt(actor?.last_name) || ""} eliminó un usuario`;
+
+   const payload = {
+      code: CODES.USUARIO_ELIMINACION,
+      target: {
+         type: TARGET_TYPES.USUARIO,
+      },
+   };
+
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
 }
 
 // codes
@@ -106,6 +143,8 @@ const CODES = {
    TICKET_ELIMINACION: "TICKET_ELIMINACION",
    DOMICILIOV_ELIMINACION: "DOMICILIOV_ELIMINACION",
    USUARIO_ACTUALIZACION: "USUARIO_ACTUALIZACION",
+   USUARIO_CREACION: "USUARIO_CREACION",
+   USUARIO_ELIMINACION: "USUARIO_ELIMINACION",
 };
 
 // target types
@@ -122,4 +161,6 @@ module.exports = {
    registerTicketRemovedEvent,
    registerDomicilioVirtualRemovalEvent,
    registerUserUpdateEvent,
+   registerUserCreationEvent,
+   registerUserRemovedEvent,
 };
