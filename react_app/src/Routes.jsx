@@ -23,6 +23,7 @@ import AdminTickets from './pages/Tickets/Index.jsx';
 import Users from './pages/users/Index.jsx';
 import Empresas from './pages/empresas/Index.jsx';
 import Ingresos from './pages/Ingresos/Index.jsx';
+import AdminNotificationManager from './pages/config-notificaciones/Index.jsx';
 import Registro from './pages/registro/Index.jsx';
 import SetPassword from './pages/users/components/SetPassword.jsx';
 import Solicitudes from './pages/solicitudes/Index.jsx';
@@ -70,6 +71,7 @@ const Routes = () => {
 
           <Route path="/users" element={<ProtectedRoute> <Users /> </ProtectedRoute>} />
           <Route path="/empresas" element={<ProtectedRoute> <Empresas /> </ProtectedRoute>} />
+          <Route path="/config-notificaciones" element={<ProtectedRoute> <AdminNotificationManager /> </ProtectedRoute>} />
           <Route path="/dashboard-home" element={<ProtectedRoute> <DashboardHome /> </ProtectedRoute>} />
           <Route path="/request-tracking" element={<ProtectedRoute> <RequestTracking /> </ProtectedRoute>} />
           <Route path="/solicitudes" element={<ProtectedRoute> <Solicitudes /> </ProtectedRoute>} />
