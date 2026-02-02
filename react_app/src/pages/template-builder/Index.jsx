@@ -454,8 +454,8 @@ const FormBuilder = () => {
       {/* CONTENIDO PRINCIPAL - ACTUALIZADO */}
       <main className={`transition-all duration-300 ${mainMarginClass} pt-16`}>
         <div className="p-6 space-y-6">
-          {/* HEADER CON BOTÓN DE TOGGLE - AGREGADO */}
-          <div className="flex items-center justify-between">
+          {/* HEADER CON BOTÓN DE TOGGLE - MODIFICADO ÚNICAMENTE AQUÍ PARA RESPONSIVIDAD */}
+          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Button
@@ -470,19 +470,19 @@ const FormBuilder = () => {
               </div>
 
               <div>
-                <h1 className="text-3xl font-bold text-foreground">
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">
                   {formData?.id ? 'Editar Plantilla' : 'Crear Plantilla Personalizada'}
                 </h1>
-                <p className="text-muted-foreground">
+                <p className="text-sm md:text-base text-muted-foreground mt-1">
                   {formData?.id
                     ? 'Modifica tu Plantilla existente y administra la estructura'
-                    : 'Diseña una plantilla personalizado con preguntas dinámicas'
+                    : 'Diseña una plantilla personalizada con preguntas dinámicas'
                   }
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center justify-between md:justify-end space-x-3">
               {/* BOTÓN DE TOGGLE DEL SIDEBAR - AGREGADO */}
               <div className="hidden md:flex items-center space-x-3">
                 <Button
@@ -501,6 +501,7 @@ const FormBuilder = () => {
                 loading={isSaving}
                 iconName="Send"
                 iconPosition="left"
+                className="w-full md:w-auto"
                 disabled={!formData.formId || isSaving || !formData.documentTitle || (formData.paragraphs.length === 0 && !formData.documentContent)}
               >
                 {isSaving ? 'Guardando...' : 'Guardar Plantilla'}
