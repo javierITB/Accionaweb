@@ -147,11 +147,13 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
               key={user.id} 
               onClick={() => isAuthor && handleToggleRemove(user.id)}
               className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                isAuthor ? 'cursor-pointer hover:bg-blue-50/50' : 'bg-muted/20'
-              } ${usersToRemove.includes(user.id) ? 'bg-blue-50/50 border border-blue-200' : 'border-transparent'}`}
+                isAuthor ? 'cursor-pointer hover:bg-muted/50' : 'bg-muted/20'
+              } ${usersToRemove.includes(user.id) ? 'bg-red-50/50 border border-red-200' : 'border-transparent'}`}
             >
               <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-xs uppercase">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs uppercase ${
+                   usersToRemove.includes(user.id) ? 'bg-red-200 text-red-700' : 'bg-accent/20 text-accent'
+                }`}>
                   {user.nombre?.charAt(0)}
                 </div>
                 <div>
@@ -160,10 +162,14 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap">Compartido</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap ${
+                   usersToRemove.includes(user.id) ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                }`}>
+                   {usersToRemove.includes(user.id) ? 'Quitar' : 'Compartido'}
+                </span>
                 {isAuthor && (
                    <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${
-                    usersToRemove.includes(user.id) ? 'bg-blue-600 border-blue-600' : 'border-border'
+                    usersToRemove.includes(user.id) ? 'bg-red-600 border-red-600' : 'border-border'
                   }`}>
                     {usersToRemove.includes(user.id) && <Icon name="Check" size={14} className="text-white" />}
                   </div>
@@ -236,20 +242,29 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
                       key={user.id}
                       onClick={() => handleToggleUser(user.id, false)}
                       className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/50 border ${
-                        selectedUsers.includes(user.id) ? 'bg-accent/10 border-accent/20' : 'border-transparent'
+                        selectedUsers.includes(user.id) ? 'bg-blue-50/50 border-blue-200' : 'border-transparent'
                       }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-xs uppercase">{user.nombre?.charAt(0)}</div>
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs uppercase ${
+                           selectedUsers.includes(user.id) ? 'bg-blue-200 text-blue-700' : 'bg-muted text-muted-foreground'
+                        }`}>
+                           {user.nombre?.charAt(0)}
+                        </div>
                         <div>
                           <p className="text-sm font-medium text-foreground">{user.nombre} {user.apellido}</p>
                           <p className="text-xs text-muted-foreground">{user.mail}</p>
                         </div>
                       </div>
-                      <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${
-                        selectedUsers.includes(user.id) ? 'bg-blue-600 border-blue-600' : 'border-border'
-                      }`}>
-                        {selectedUsers.includes(user.id) && <Icon name="Check" size={14} className="text-white" />}
+                      <div className="flex items-center space-x-3">
+                        {selectedUsers.includes(user.id) && (
+                          <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold uppercase">agregar</span>
+                        )}
+                        <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${
+                          selectedUsers.includes(user.id) ? 'bg-blue-600 border-blue-600' : 'border-border'
+                        }`}>
+                          {selectedUsers.includes(user.id) && <Icon name="Check" size={14} className="text-white" />}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -264,12 +279,12 @@ const ShareModal = ({ isOpen, onClose, request, onUpdate }) => {
         <div className="p-4 border-t border-border bg-card">
           <div className="flex items-center justify-between gap-3">
             <div className="flex flex-col">
-              <p className="text-xs text-muted-foreground font-medium">
-                {selectedUsers.length} para agregar
+              <p className="text-xs text-blue-700 font-bold">
+              Se agregarán {selectedUsers.length} persona(s) a la solicitud
               </p>
               {isAuthor && usersToRemove.length > 0 && (
-                <p className="text-[10px] text-blue-700 font-bold italic">
-                  {usersToRemove.length} para quitar
+                <p className="text-xs text-red-600 font-bold italic">
+              Se quitará el acceso a {usersToRemove.length} persona(s)
                 </p>
               )}
             </div>
