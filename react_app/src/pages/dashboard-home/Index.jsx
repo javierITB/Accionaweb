@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Header from "../../components/ui/Header";
 import Sidebar from "../../components/ui/Sidebar";
 import Icon from "../../components/AppIcon";
+import Button from "../../components/ui/Button";
 import { API_BASE_URL, apiFetch } from "../../utils/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import SummaryCard from "./components/SummaryCard";
@@ -32,12 +33,30 @@ const DashboardHome = () => {
 
    useEffect(() => {
       const checkScreenSize = () => {
-         setIsMobileScreen(window.innerWidth < 1024);
+         const isMobile = window.innerWidth < 768;
+         setIsMobileScreen(isMobile);
+         if (isMobile) {
+            setIsMobileOpen(false);
+         }
       };
       checkScreenSize();
       window.addEventListener("resize", checkScreenSize);
       return () => window.removeEventListener("resize", checkScreenSize);
    }, []);
+
+   const toggleSidebar = () => {
+      if (isMobileScreen) {
+         setIsMobileOpen(!isMobileOpen);
+      } else {
+         setSidebarCollapsed(!sidebarCollapsed);
+      }
+   };
+
+   const handleNavigation = () => {
+      if (isMobileScreen) {
+         setIsMobileOpen(false);
+      }
+   };
 
    useEffect(() => {
       const fetchMetrics = async () => {
@@ -206,20 +225,33 @@ const DashboardHome = () => {
       return orderA - orderB;
    });
 
+   const mainMarginClass = isMobileScreen ? 'ml-0' : sidebarCollapsed ? 'ml-16' : 'ml-64';
+
    return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white selection:bg-blue-500 selection:text-white">
          <Header />
-         <Sidebar
-            isCollapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-            isMobileOpen={isMobileOpen}
-            onNavigate={() => setIsMobileOpen(false)}
-         />
+         
+         {/* IMPLEMENTACIÓN DEL SIDEBAR - CORREGIDA */}
+         {(isMobileOpen || !isMobileScreen) && (
+            <>
+               <Sidebar
+                  isCollapsed={sidebarCollapsed}
+                  onToggleCollapse={toggleSidebar}
+                  isMobileOpen={isMobileOpen}
+                  onNavigate={handleNavigation}
+               />
+            </>
+         )}
 
-         <main
-            className={`transition-all duration-300 ${isMobileScreen ? "lg:ml-0" : sidebarCollapsed ? "lg:ml-16" : "lg:ml-64"
-               } pt-20 lg:pt-24 p-6`}
-         >
+         {/* OVERLAY PARA MÓVIL - SEPARADO Y CORREGIDO */}
+         {isMobileScreen && isMobileOpen && (
+            <div 
+               className="fixed inset-0 bg-black/50 z-40" 
+               onClick={() => setIsMobileOpen(false)}
+            ></div>
+         )}
+
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-20 lg:pt-24 p-6`}>
             <div className="mb-4">
                <h1 className="text-3xl font-bold mb-1">Panel de Métricas</h1>
                <p className="text-gray-500 dark:text-gray-400">
@@ -437,8 +469,21 @@ const DashboardHome = () => {
                   </div>
                </div>
             </div>
-         </main >
-      </div >
+         </main>
+
+         {/* BOTÓN FLOTANTE MÓVIL - FUERA DEL MAIN, SIEMPRE VISIBLE */}
+         {!isMobileOpen && isMobileScreen && (
+            <div className="fixed bottom-4 left-4 z-50">
+               <Button
+                  variant="default"
+                  size="icon"
+                  onClick={toggleSidebar}
+                  iconName="Menu"
+                  className="w-12 h-12 rounded-full shadow-lg"
+               />
+            </div>
+         )}
+      </div>
    );
 };
 
