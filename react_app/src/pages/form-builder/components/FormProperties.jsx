@@ -121,22 +121,38 @@ const FormProperties = ({ formData, categories, sections, onUpdateFormData }) =>
   const [companyOptions, setCompanyOptions] = useState([]);
   const [loadingCompanies, setLoadingCompanies] = useState(true);
 
-  // --- LÓGICA DE AUTO-RELLENO DE NOMBRE Y APELLIDO DESDE SESIÓN ---
+
+  // Dentro de FormProperties.jsx
   useEffect(() => {
-    // Si el autor es el default 'Admin' o está vacío, buscamos los datos reales
-    if (!formData?.author || formData?.author === 'Admin') {
-      const name = sessionStorage.getItem('user');
-      const lastName = sessionStorage.getItem('lastName');
-      
-      if (name) {
-        // Solo agregamos el apellido si el valor existe y no es el string literal "undefined"
-        const validLastName = (lastName && lastName !== "undefined" && lastName !== "null") ? ` ${lastName}` : "";
-        const fullName = `${name}${validLastName}`.trim();
+    const fetchUserData = async () => {
+      try {
+        // 1. Obtenemos el mail del sessionStorage (guardado en el login)
+        const userMail = sessionStorage.getItem('email'); 
+        if (!userMail) return;
+  
+        // 2. Consumimos la ruta exacta: /auth/full/:mail
+        const response = await apiFetch(`${API_BASE_URL}/auth/full/${userMail}`);
         
-        onUpdateFormData('author', fullName);
+        if (response.ok) {
+          const userData = await response.json();
+          
+          // 3. Usamos 'nombre' y 'apellido' que vienen desencriptados del backend
+          const fullName = `${userData.nombre || ''} ${userData.apellido || ''}`.trim();
+          
+          // 4. Solo actualizamos si el autor está vacío o es 'Admin' por defecto
+          if (fullName && (!formData.author || formData.author === 'Admin')) {
+            onUpdateFormData('author', fullName);
+          }
+        }
+      } catch (error) {
+        console.error('Error cargando datos del usuario desde /full/:mail:', error);
       }
-    }
-  }, [formData?.author, onUpdateFormData]);
+    };
+  
+    fetchUserData();
+  }, []); // Se ejecuta una vez al cargar el componente
+
+ 
 
   // Cargar empresas desde MongoDB
   useEffect(() => {
