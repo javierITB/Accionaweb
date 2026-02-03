@@ -49,8 +49,8 @@ const RegisterForm = ({
               onChange={(e) => onUpdateFormData('nombre', e.target.value)}
               maxLength={25}
               className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.nombre?.length || 0) >= 25
-                  ? 'border-red-500 focus-visible:ring-red-200'
-                  : 'border-input focus-visible:ring-blue-200'
+                ? 'border-red-500 focus-visible:ring-red-200'
+                : 'border-input focus-visible:ring-blue-200'
                 }`}
             />
             {(formData?.nombre?.length || 0) >= 25 && (
@@ -75,8 +75,8 @@ const RegisterForm = ({
               onChange={(e) => onUpdateFormData('apellido', e.target.value)}
               maxLength={25}
               className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.apellido?.length || 0) >= 25
-                  ? 'border-red-500 focus-visible:ring-red-200'
-                  : 'border-input focus-visible:ring-blue-200'
+                ? 'border-red-500 focus-visible:ring-red-200'
+                : 'border-input focus-visible:ring-blue-200'
                 }`}
             />
             {(formData?.apellido?.length || 0) >= 25 && (
@@ -125,7 +125,7 @@ const RegisterForm = ({
             </select>
           </div>
 
-          {/* CARGO */}
+          {/* CARGO (Ahora asigna Rol y Cargo) */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
               Cargo <span className="text-destructive">*</span>
@@ -133,7 +133,11 @@ const RegisterForm = ({
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData?.cargo || ''}
-              onChange={(e) => onUpdateFormData('cargo', e.target.value)}
+              onChange={(e) => {
+                const selectedVal = e.target.value;
+                onUpdateFormData('cargo', selectedVal);
+                onUpdateFormData('rol', selectedVal); // Asigna el mismo valor al rol
+              }}
             >
               <option value="">Selecciona un cargo</option>
               {cargos?.map((cargo) => (
@@ -142,26 +146,8 @@ const RegisterForm = ({
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* ROL */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              Rol <span className="text-destructive">*</span>
-            </label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={formData?.rol || 'user'}
-              onChange={(e) => onUpdateFormData('rol', e.target.value)}
-            >
-              {roles?.map((rol) => (
-                <option key={rol?.value} value={rol?.value}>
-                  {rol?.label}
-                </option>
-              ))}
-            </select>
             <p className="text-sm text-muted-foreground">
-              Define los permisos del usuario en el sistema
+              Define el cargo y los permisos del usuario en el sistema.
             </p>
           </div>
 
