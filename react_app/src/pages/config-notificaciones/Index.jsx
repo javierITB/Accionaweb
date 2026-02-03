@@ -22,7 +22,15 @@ const AdminNotificationManager = () => {
     const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Resize Handler
+    const [detailsFilter, setDetailsFilter] = useState("");
+    const [roleFilter, setRoleFilter] = useState("");
+    const [cargoFilter, setCargoFilter] = useState("");
+    const [companyFilter, setCompanyFilter] = useState("");
+
+    const [uniqueCompanies, setUniqueCompanies] = useState([]);
+    const [uniqueRoles, setUniqueRoles] = useState([]);
+    const [uniqueCargos, setUniqueCargos] = useState([]);
+
     useEffect(() => {
         const handleResize = () => {
             const isMobile = window.innerWidth < 768;
@@ -41,17 +49,56 @@ const AdminNotificationManager = () => {
     const fetchNotifications = useCallback(async () => {
         try {
             setIsLoading(true);
-            const res = await apiFetch(`${API_BASE_URL}/noti/gestion/agrupadas`);
+            const res = await apiFetch(`${API_BASE_URL}/auth/`);
             if (res.ok) {
-                const data = await res.json();
-                setNotificationGroups(data);
+                const users = await res.json();
+                const groupsMap = {};
+
+                users.forEach(user => {
+                    if (user.notificaciones && Array.isArray(user.notificaciones)) {
+                        user.notificaciones.forEach(noti => {
+                            const groupKeyObj = {
+                                titulo: noti.titulo,
+                                descripcion: noti.descripcion,
+                                tipo: noti.icono
+                            };
+                            const groupKey = JSON.stringify(groupKeyObj);
+
+                            if (!groupsMap[groupKey]) {
+                                groupsMap[groupKey] = {
+                                    key: groupKey,
+                                    titulo: noti.titulo,
+                                    descripcion: noti.descripcion,
+                                    tipo: noti.icono,
+                                    count: 0,
+                                    usuarios: []
+                                };
+                            }
+
+                            groupsMap[groupKey].count++;
+                            groupsMap[groupKey].usuarios.push({
+                                _id: user._id,
+                                nombre: user.nombre || "Sin Nombre",
+                                empresa: user.empresa || "Sin Empresa",
+                                cargo: user.cargo || "Sin Cargo",
+                                rol: user.rol || "Sin Rol",
+                                mail: user.mail || "Sin Email",
+                                notiId: noti.id,
+                                fecha: noti.fecha_creacion,
+                                leido: noti.leido
+                            });
+                        });
+                    }
+                });
+
+                const groupsArray = Object.values(groupsMap).sort((a, b) => b.count - a.count);
+                setNotificationGroups(groupsArray);
+
             } else {
-                console.error("Error fetching notifications");
-                // toast.error("Error al cargar notificaciones");
+                console.error("Error fetching users");
             }
         } catch (error) {
             console.error(error);
-            // toast.error("Error de conexión");
         } finally {
             setIsLoading(false);
         }
@@ -64,7 +111,19 @@ const AdminNotificationManager = () => {
     // Handlers
     const handleOpenGroup = (group) => {
         setSelectedGroup(group);
-        setSelectedUserIds([]); // Reset selection
+        setSelectedUserIds([]);
+        setDetailsFilter("");
+        setRoleFilter("");
+        setCargoFilter("");
+        setCompanyFilter("");
+
+        const companies = [...new Set(group.usuarios.map(u => u.empresa || "Sin Empresa"))].sort();
+        const roles = [...new Set(group.usuarios.map(u => u.rol || "Sin Rol"))].sort();
+        const cargos = [...new Set(group.usuarios.map(u => u.cargo || "Sin Cargo"))].sort();
+
+        setUniqueCompanies(companies);
+        setUniqueRoles(roles);
+        setUniqueCargos(cargos);
     };
 
     const handleCloseModal = () => {
@@ -79,14 +138,51 @@ const AdminNotificationManager = () => {
         });
     };
 
-    const toggleSelectAllUsers = () => {
+    const toggleSelectAllUsers = (filteredUsers) => {
         if (!selectedGroup) return;
-        if (selectedUserIds.length === selectedGroup.usuarios.length) {
-            setSelectedUserIds([]);
+        const allIds = filteredUsers.map(u => u._id);
+
+        const allSelected = allIds.every(id => selectedUserIds.includes(id));
+
+        if (allSelected) {
+            setSelectedUserIds(prev => prev.filter(id => !allIds.includes(id)));
         } else {
-            setSelectedUserIds(selectedGroup.usuarios.map(u => u._id));
+            const newSelection = [...new Set([...selectedUserIds, ...allIds])];
+            setSelectedUserIds(newSelection);
         }
     };
+    const getProcessedUsers = () => {
+        if (!selectedGroup) return [];
+
+        // 1. Group by User ID 
+        const userMap = {};
+        selectedGroup.usuarios.forEach(u => {
+            if (!userMap[u._id]) {
+                userMap[u._id] = {
+                    ...u,
+                    count: 0,
+                    dates: []
+                };
+            }
+            userMap[u._id].count++;
+            userMap[u._id].dates.push(u.fecha);
+        });
+
+        const uniqueUsers = Object.values(userMap);
+
+        // 2. Filter
+        return uniqueUsers.filter(u => {
+            const matchText = (u.nombre || "").toLowerCase().includes(detailsFilter.toLowerCase()) ||
+                (u.mail || "").toLowerCase().includes(detailsFilter.toLowerCase());
+            const matchCompany = companyFilter ? u.empresa === companyFilter : true;
+            const matchRole = roleFilter ? u.rol === roleFilter : true;
+            const matchCargo = cargoFilter ? u.cargo === cargoFilter : true;
+
+            return matchText && matchCompany && matchRole && matchCargo;
+        });
+    };
+
+    const processedUsers = getProcessedUsers();
 
     const handleDelete = async () => {
         if (!selectedGroup || selectedUserIds.length === 0) return;
@@ -156,7 +252,7 @@ const AdminNotificationManager = () => {
                     <div className="flex-1 bg-card border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
                         <div className="overflow-auto flex-1 p-0">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-muted/40 sticky top-0 z-10 text-xs uppercase text-muted-foreground font-semibold">
+                                <thead className="bg-card sticky top-0 z-10 text-xs uppercase text-muted-foreground font-semibold shadow-sm">
                                     <tr>
                                         <th className="px-6 py-3">Tipo</th>
                                         <th className="px-6 py-3">Título / Descripción</th>
@@ -173,18 +269,18 @@ const AdminNotificationManager = () => {
                                         filteredGroups.map((group, idx) => (
                                             <tr key={idx} className="hover:bg-muted/10 transition-colors group-row">
                                                 <td className="px-6 py-4">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-gray-100`}>
-                                                        <Icon name={group.tipo || 'Bell'} size={16} className="text-gray-600" />
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-muted`}>
+                                                        <Icon name={group.tipo || 'Bell'} size={16} className="text-foreground" />
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
+                                                <td className="px-6 py-4 max-w-md">
                                                     <div>
-                                                        <p className="font-semibold text-foreground">{group.titulo}</p>
-                                                        <p className="text-xs text-muted-foreground line-clamp-1">{group.descripcion}</p>
+                                                        <p className="font-semibold text-foreground break-words leading-tight">{group.titulo}</p>
+                                                        <p className="text-xs text-muted-foreground break-words line-clamp-2 mt-1">{group.descripcion}</p>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                                                         {group.count}
                                                     </span>
                                                 </td>
@@ -213,56 +309,117 @@ const AdminNotificationManager = () => {
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleCloseModal}></div>
                     <div className="relative w-full max-w-4xl bg-card border border-border rounded-xl shadow-2xl flex flex-col h-[80vh] animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
-                        <div className="p-6 border-b border-border flex justify-between items-start bg-muted/10">
-                            <div>
-                                <h2 className="text-xl font-bold flex items-center gap-2">
-                                    <Icon name={selectedGroup.tipo || 'Bell'} className="text-primary" />
-                                    {selectedGroup.titulo}
+                        <div className="p-6 border-b border-border flex justify-between items-start bg-muted/10 shrink-0">
+                            <div className="max-w-[90%]">
+                                <h2 className="text-xl font-bold flex items-start gap-3 text-foreground break-words">
+                                    <div className="mt-1 shrink-0">
+                                        <Icon name={selectedGroup.tipo || 'Bell'} className="text-primary" />
+                                    </div>
+                                    <span className="leading-snug">{selectedGroup.titulo}</span>
                                 </h2>
-                                <p className="text-sm text-muted-foreground mt-1 max-w-2xl">{selectedGroup.descripcion}</p>
+                                <p className="text-sm text-muted-foreground mt-2 leading-relaxed break-words">{selectedGroup.descripcion}</p>
                             </div>
                             <Button variant="ghost" size="icon" onClick={handleCloseModal} iconName="X" />
                         </div>
 
-                        {/* Toolbar */}
-                        <div className="p-4 border-b border-border flex justify-between items-center bg-card">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <input
-                                    type="checkbox"
-                                    className="rounded border-gray-300 text-primary focus:ring-primary"
-                                    checked={selectedUserIds.length > 0 && selectedUserIds.length === selectedGroup.usuarios.length}
-                                    onChange={toggleSelectAllUsers}
-                                />
-                                <span>Seleccionar todos ({selectedGroup.usuarios.length})</span>
+                        {/* Details Toolbar & Filters */}
+                        <div className="p-4 border-b border-border bg-card flex flex-col gap-4">
+                            {/* Filter Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                {/* Search */}
+                                <div className="relative">
+                                    <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar usuario..."
+                                        className="w-full pl-9 pr-3 py-2 text-sm bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        value={detailsFilter}
+                                        onChange={(e) => setDetailsFilter(e.target.value)}
+                                    />
+                                </div>
+
+                                {/* Company Filter */}
+                                <select
+                                    className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    value={companyFilter}
+                                    onChange={(e) => setCompanyFilter(e.target.value)}
+                                >
+                                    <option value="">Todas las Empresas</option>
+                                    {uniqueCompanies.map((c, i) => (
+                                        <option key={i} value={c}>{c}</option>
+                                    ))}
+                                </select>
+
+                                {/* Role Filter */}
+                                <select
+                                    className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    value={roleFilter}
+                                    onChange={(e) => setRoleFilter(e.target.value)}
+                                >
+                                    <option value="">Todos los Roles</option>
+                                    {uniqueRoles.map((r, i) => (
+                                        <option key={i} value={r}>{r}</option>
+                                    ))}
+                                </select>
+
+                                {/* Cargo Filter */}
+                                <select
+                                    className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    value={cargoFilter}
+                                    onChange={(e) => setCargoFilter(e.target.value)}
+                                >
+                                    <option value="">Todos los Cargos</option>
+                                    {uniqueCargos.map((c, i) => (
+                                        <option key={i} value={c}>{c}</option>
+                                    ))}
+                                </select>
                             </div>
 
-                            {selectedUserIds.length > 0 && (
-                                <Button
-                                    variant="danger"
-                                    size="sm"
-                                    iconName="Trash"
-                                    onClick={handleDelete}
-                                    loading={isDeleting}
-                                >
-                                    Eliminar ({selectedUserIds.length})
-                                </Button>
-                            )}
+                            {/* Actions & Stats Bar */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 sm:pt-0">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                                        checked={processedUsers.length > 0 && processedUsers.every(u => selectedUserIds.includes(u._id))}
+                                        onChange={() => toggleSelectAllUsers(processedUsers)}
+                                    />
+                                    <span className="cursor-pointer" onClick={() => toggleSelectAllUsers(processedUsers)}>
+                                        Seleccionar Visibles ({processedUsers.length})
+                                    </span>
+                                </div>
+
+                                {selectedUserIds.length > 0 && (
+                                    <Button
+                                        variant="danger"
+                                        size="sm"
+                                        iconName="Trash"
+                                        onClick={handleDelete}
+                                        loading={isDeleting}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        Eliminar ({selectedUserIds.length})
+                                    </Button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Users List */}
-                        <div className="flex-1 overflow-auto p-0">
+                        <div className="flex-1 overflow-auto p-0 relative">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-muted/30 sticky top-0">
-                                    <tr>
-                                        <th className="px-6 py-3 w-12"></th>
-                                        <th className="px-6 py-3">Usuario</th>
-                                        <th className="px-6 py-3">Empresa</th>
-                                        <th className="px-6 py-3">Fecha Notificación</th>
+                                <thead className="bg-card sticky top-0 z-10 shadow-sm">
+                                    <tr className="border-b border-border">
+                                        <th className="px-6 py-4 w-12 font-medium text-muted-foreground"></th>
+                                        <th className="px-6 py-4 font-medium text-muted-foreground">Usuario</th>
+                                        <th className="px-6 py-4 font-medium text-muted-foreground">Empresa</th>
+                                        <th className="px-6 py-4 font-medium text-muted-foreground">Rol</th>
+                                        <th className="px-6 py-4 font-medium text-muted-foreground">Cargo</th>
+                                        <th className="px-6 py-4 font-medium text-muted-foreground">Fecha Notificación</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border">
-                                    {selectedGroup.usuarios.map((u, i) => (
-                                        <tr key={i} className={`hover:bg-muted/5 ${selectedUserIds.includes(u._id) ? 'bg-primary/5' : ''}`}>
+                                <tbody className="divide-y divide-border bg-card">
+                                    {processedUsers.map((u, i) => (
+                                        <tr key={i} className={`hover:bg-muted/5 transition-colors ${selectedUserIds.includes(u._id) ? 'bg-primary/5' : ''}`}>
                                             <td className="px-6 py-3 text-center">
                                                 <input
                                                     type="checkbox"
@@ -276,8 +433,18 @@ const AdminNotificationManager = () => {
                                                 <div className="text-xs text-muted-foreground">{u.mail}</div>
                                             </td>
                                             <td className="px-6 py-3 text-muted-foreground">{u.empresa}</td>
+                                            <td className="px-6 py-3 text-sm text-muted-foreground">{u.rol}</td>
+                                            <td className="px-6 py-3 text-sm text-muted-foreground">{u.cargo}</td>
                                             <td className="px-6 py-3 text-xs text-muted-foreground">
-                                                {new Date(u.fecha).toLocaleString()}
+                                                {/* Mostrar Rango de Fechas o Conteo */}
+                                                {u.count > 1 ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="font-semibold text-primary">{u.count} ocurrencias</span>
+                                                        <span className="text-[10px] opacity-70">Última: {new Date(Math.max(...u.dates.map(d => new Date(d).getTime()))).toLocaleString()}</span>
+                                                    </div>
+                                                ) : (
+                                                    new Date(u.dates[0]).toLocaleString()
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
