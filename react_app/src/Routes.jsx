@@ -23,12 +23,12 @@ import AdminTickets from './pages/Tickets/Index.jsx';
 import Users from './pages/users/Index.jsx';
 import Empresas from './pages/empresas/Index.jsx';
 import Ingresos from './pages/Ingresos/Index.jsx';
-import AdminNotificationManager from './pages/config-notificaciones/Index.jsx';
+import Roles from './pages/dashboard-roles/Index.jsx';
 import Registro from './pages/registro/Index.jsx';
 import SetPassword from './pages/users/components/SetPassword.jsx';
 import Solicitudes from './pages/solicitudes/Index.jsx';
 import DomicilioVirtualIndex from './pages/DomicilioVirtual/Index.jsx';
-
+import AdminNotificationManager from './pages/config-notificaciones/Index.jsx';
 import Anuncios from './pages/anuncios/Index.jsx';
 
 import Home from './clientPages/home/Index.jsx';
@@ -52,13 +52,13 @@ const Routes = () => {
           <Route path="/Anexos" element={<ProtectedClient><FormList section={"Anexos"} /></ProtectedClient>} />
           <Route path="/Otras" element={<ProtectedClient><FormList section={"Otras"} /></ProtectedClient>} />
 
-
           <Route path="/forms" element={<ProtectedClient><Form /></ProtectedClient>} />
           <Route path="/set-password" element={<SetPassword />} />
           <Route path="/perfil" element={<ProtectedClient><Profile /></ProtectedClient>} />
           <Route path="/soporte" element={<SupportPortal />} />
           <Route path="/recuperacion" element={<Recuperacion />} />
           {/* Rutas protegidas */}
+
           <Route path="/form-builder" element={<ProtectedRoute><FormBuilder /></ProtectedRoute>} />
           <Route path="/template-builder" element={<ProtectedRoute><TemplateBuilder /></ProtectedRoute>} />
           <Route path="/form-center" element={<ProtectedRoute><FormCenter /></ProtectedRoute>} />
@@ -67,11 +67,11 @@ const Routes = () => {
           <Route path="/Tickets" element={<ProtectedRoute><AdminTickets /></ProtectedRoute>} />
           <Route path="/registro-ingresos" element={<ProtectedRoute><Ingresos /></ProtectedRoute>} />
           <Route path="/registro-cambios" element={<ProtectedRoute><Registro /></ProtectedRoute>} />
-
-
+          <Route path="/gestor-roles" element={<ProtectedRoute> <Roles /> </ProtectedRoute>} />
+          <Route path="/config-notificaciones" element={<ProtectedRoute> <AdminNotificationManager /> </ProtectedRoute>} />
+          
           <Route path="/users" element={<ProtectedRoute> <Users /> </ProtectedRoute>} />
           <Route path="/empresas" element={<ProtectedRoute> <Empresas /> </ProtectedRoute>} />
-          <Route path="/config-notificaciones" element={<ProtectedRoute> <AdminNotificationManager /> </ProtectedRoute>} />
           <Route path="/dashboard-home" element={<ProtectedRoute> <DashboardHome /> </ProtectedRoute>} />
           <Route path="/request-tracking" element={<ProtectedRoute> <RequestTracking /> </ProtectedRoute>} />
           <Route path="/solicitudes" element={<ProtectedRoute> <Solicitudes /> </ProtectedRoute>} />
