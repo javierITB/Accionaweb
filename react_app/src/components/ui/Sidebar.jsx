@@ -1,53 +1,52 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Icon from "../AppIcon";
-import logo from "/logo2.png"; 
+import logo from "/logo2.png";
+import { API_BASE_URL } from "../../utils/api";
 
 const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobileOpen = false, onNavigate }) => {
 
+   // Definimos permisos requeridos por ITEM
    const MENU_STRUCTURE = [
       {
          name: "Gestión Principal",
          icon: "LayoutDashboard",
          isAccordion: true,
-         roles: ["admin", "RRHH", "SoloLectura"],
          children: [
-            { name: "Solicitudes de Clientes", path: "/RespuestasForms", icon: "FileText", roles: ["admin", "RRHH", "SoloLectura"] },
-            { name: "Solicitudes a Cliente", path: "/Solicitudes", icon: "Pencil", roles: ["admin", "RRHH", "SoloLectura"] },
-            { name: "Tickets", path: "/Tickets", icon: "FileText", roles: ["admin", "RRHH", "soporte", "SoloLectura"] },
-            { name: "Domicilio Virtual", path: "/DomicilioVirtual", icon: "Home", roles: ["admin"] },
+            { name: "Solicitudes de Clientes", path: "/RespuestasForms", icon: "FileText", permission: "view_solicitudes_clientes" },
+            { name: "Solicitudes a Cliente", path: "/Solicitudes", icon: "Pencil", permission: "view_solicitudes_a_cliente" },
+            { name: "Tickets", path: "/Tickets", icon: "FileText", permission: "view_tickets" },
+            { name: "Domicilio Virtual", path: "/DomicilioVirtual", icon: "Home", permission: "view_domicilio_virtual" },
          ]
       },
       {
          name: "Rendimiento",
          path: "/dashboard-home",
          icon: "BarChart2",
-         roles: ["admin", "SoloLectura"]
+         permission: "view_rendimiento"
       },
       {
          name: "Configuración",
          icon: "Settings",
          isAccordion: true,
-         roles: ["admin", "RRHH", "SoloLectura"],
          children: [
-            { name: "Formularios", path: "/form-center", icon: "FileText", roles: ["admin", "RRHH", "SoloLectura"] },
-            { name: "Plantillas", path: "/template-builder", icon: "FileText", roles: ["admin", "RRHH", "SoloLectura"] },
-            { name: "Config. Tickets", path: "/config-tickets", icon: "Settings", roles: ["admin", "SoloLectura"] },
-            { name: "Anuncios", path: "/anuncios", icon: "Megaphone", roles: ["admin", "RRHH", "SoloLectura"] },
+            { name: "Formularios", path: "/form-center", icon: "FileText", permission: "view_formularios" },
+            { name: "Plantillas", path: "/template-builder", icon: "FileText", permission: "view_plantillas" },
+            { name: "Config. Tickets", path: "/config-tickets", icon: "Settings", permission: "view_configuracion_tickets" },
+            { name: "Anuncios", path: "/anuncios", icon: "Megaphone", permission: "view_anuncios" },
          ]
       },
       {
          name: "Administración",
          icon: "Shield",
          isAccordion: true,
-         roles: ["admin", "RRHH", "SoloLectura"],
          children: [
-            { name: "Usuarios", path: "/users", icon: "User", roles: ["admin", "RRHH", "SoloLectura"] },
-            { name: "Empresas", path: "/empresas", icon: "Building2", roles: ["admin", "RRHH", "SoloLectura"] },
-            { name: "Gestor de Roles", path: "/gestor-roles", icon: "Users", roles: ["admin"] },
-            { name: "Gestor Notificaciones", path: "/config-notificaciones", icon: "Bell", roles: ["admin", "RRHH"] },
-            { name: "Registro de cambios", path: "/registro-cambios", icon: "FileText", roles: ["admin", "RRHH", "SoloLectura"] },
-            { name: "Registro de ingresos", path: "/registro-ingresos", icon: "LogIn", roles: ["admin"] },
+            { name: "Usuarios", path: "/users", icon: "User", permission: "view_usuarios" },
+            { name: "Empresas", path: "/empresas", icon: "Building2", permission: "view_empresas" },
+            { name: "Gestor de Roles", path: "/gestor-roles", icon: "Users", permission: "view_gestor_roles" },
+            { name: "Gestor Notificaciones", path: "/config-notificaciones", icon: "Bell", permission: "view_gestor_notificaciones" },
+            { name: "Registro de cambios", path: "/registro-cambios", icon: "FileText", permission: "view_registro_cambios" },
+            { name: "Registro de ingresos", path: "/registro-ingresos", icon: "LogIn", permission: "view_registro_ingresos" },
          ]
       },
    ];
@@ -56,9 +55,11 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
    const navigate = useNavigate();
 
    const [openMenus, setOpenMenus] = useState({ "Gestión Principal": true });
+   const [userPermissions, setUserPermissions] = useState([]);
+   const [isAdminRole, setIsAdminRole] = useState(false);
 
    const user = sessionStorage.getItem("user") || "Usuario";
-   const userRole = sessionStorage.getItem("rol") || "guest";
+   const userRole = sessionStorage.getItem("cargo"); // Nombre del Rol
 
    useEffect(() => {
       MENU_STRUCTURE.forEach(item => {
@@ -74,9 +75,64 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
       });
    }, [location.pathname]);
 
-   const hasPermission = (itemRoles) => {
-      if (!itemRoles) return true;
-      return itemRoles.includes(userRole);
+   // Fetch permissons based on Role Name
+   useEffect(() => {
+      const fetchPermissions = async () => {
+         if (!userRole) return;
+
+         // 1. Intentar leer de sessionStorage
+         const cachedPermissions = sessionStorage.getItem("permissions");
+         if (cachedPermissions) {
+            try {
+               const parsed = JSON.parse(cachedPermissions);
+               setUserPermissions(parsed);
+               if (userRole === 'Admin') setIsAdminRole(true);
+               return;
+            } catch (e) {
+               console.error("Error parsing permissions from storage", e);
+            }
+         }
+
+         // 2. Fallback: Fetch si no están en storage
+         try {
+            const token = sessionStorage.getItem("token");
+            const res = await fetch(`${API_BASE_URL}/roles/name/${encodeURIComponent(userRole)}`, {
+               headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+               const data = await res.json();
+               const perms = data.permissions || [];
+               setUserPermissions(perms);
+               sessionStorage.setItem("permissions", JSON.stringify(perms));
+               if (data.name === 'Admin') setIsAdminRole(true);
+            }
+         } catch (error) {
+            console.error("Error fetching permissions for sidebar:", error);
+         }
+      };
+      fetchPermissions();
+   }, [userRole]);
+
+
+   const hasPermission = (itemPermission) => {
+      // 1. Si es admin root (nombre 'Admin'), tiene acceso a todo.
+      if (isAdminRole) return true;
+
+      // 2. Si no requiere permiso específico, es público (dentro del panel)
+      if (!itemPermission) return true;
+
+      // 3. Verificar si el array de permisos incluye el requerido
+      return userPermissions.includes(itemPermission);
+   };
+
+   // Verificar si una sección padre debe mostrarse (si tiene al menos un hijo visible)
+   const shouldShowSection = (item) => {
+      if (isAdminRole) return true;
+      if (item.children) {
+         return item.children.some(child => hasPermission(child.permission));
+      }
+      return hasPermission(item.permission);
    };
 
    const toggleAccordion = (name) => {
@@ -98,7 +154,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
    const isTextVisible = !(isCollapsed && !isMobileOpen);
 
    const renderNavLink = (item, isChild = false) => {
-      if (!hasPermission(item.roles)) return null;
+      if (!hasPermission(item.permission)) return null;
 
       const isActive = location.pathname === item.path;
       return (
@@ -130,7 +186,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          <div className="flex flex-col h-full">
             {/* Header del Sidebar */}
             <div className={`flex items-center px-4 py-6 border-b border-border/50 ${!isTextVisible ? "justify-center" : "justify-between"}`}>
-               <div 
+               <div
                   className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={handleLogoClick}
                >
@@ -139,7 +195,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                   </div>
                   {isTextVisible && (
                      <div className="flex flex-col overflow-hidden">
-                        <h1 className="text-lg font-semibold text-foreground leading-tight truncate">NexoDesk Acciona</h1> 
+                        <h1 className="text-lg font-semibold text-foreground leading-tight truncate">NexoDesk Acciona</h1>
                         <span className="text-[10px] text-muted-foreground font-mono truncate">Panel de administración</span>
                      </div>
                   )}
@@ -148,7 +204,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
 
             <nav className={`flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden`}>
                {MENU_STRUCTURE.map((item) => {
-                  if (!hasPermission(item.roles)) return null;
+                  if (!shouldShowSection(item)) return null;
                   if (!item.isAccordion) return renderNavLink(item);
 
                   const isOpen = openMenus[item.name];
@@ -180,8 +236,8 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
             </nav>
 
             <div className="px-3 pb-2">
-               <button 
-                  onClick={onToggleCollapse} 
+               <button
+                  onClick={onToggleCollapse}
                   className={`w-full flex items-center rounded-lg transition-all duration-200 px-3 py-3 text-muted-foreground hover:bg-muted hover:text-foreground
                      ${!isTextVisible ? "justify-center" : ""}
                   `}
@@ -213,7 +269,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
 
             <div className="p-4 pt-0 flex items-center">
                <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold text-xs uppercase">
-                  {userRole.substring(0, 2)}
+                  {(userRole || "GU").substring(0, 2)}
                </div>
                {isTextVisible && (
                   <div className="ml-3 overflow-hidden">
