@@ -11,6 +11,7 @@ const FormReg = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [empresas, setEmpresas] = useState([]);
   const [loadingEmpresas, setLoadingEmpresas] = useState(true);
+  const [fetchedRoles, setFetchedRoles] = useState([]);
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -68,22 +69,25 @@ const FormReg = () => {
         setLoadingEmpresas(false);
       }
     };
+
+    const fetchRoles = async () => {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/roles`);
+        if (!response.ok) throw new Error('Error al cargar roles');
+        const rolesData = await response.json();
+        // Map roles for dropdown options
+        setFetchedRoles(rolesData.map(r => ({ value: r.name, label: r.name })));
+      } catch (error) {
+        console.error('Error cargando roles:', error);
+      }
+    };
+
     fetchEmpresas();
+    fetchRoles();
     fetchUsers();
   }, []);
 
-  const cargos = [
-    { value: 'Cliente', label: 'Cliente' },
-    { value: 'admin', label: 'Administrador' },
-    { value: 'RRHH', label: 'Recursos Humanos' },
-    { value: 'SoloLectura', label: 'Solo Lectura' },
-    
-  ];
 
-  const roles = [
-    { value: 'Admin', label: 'Administrador' },
-    { value: 'user', label: 'Cliente' },
-  ];
 
   const fetchUsers = async () => {
     try {
@@ -99,7 +103,7 @@ const FormReg = () => {
   // --- CAMBIO PERTINENTE: handleSave SIMPLIFICADO ---
   const handleSave = async () => {
     const isUpdating = !!editingUser;
-    
+
     if (!formData.nombre || !formData.apellido || !formData.mail || !formData.empresa || !formData.cargo || !formData.rol) {
       alert('Por favor completa todos los campos obligatorios');
       return;
@@ -112,13 +116,13 @@ const FormReg = () => {
 
     try {
       setIsLoading(true);
-      
+
       // Llamada única a tu backend. 
       // El backend ahora se encarga de addNotification y sendEmail internamente.
       const response = await apiFetch(url, {
         method: method,
-        body: JSON.stringify(isUpdating 
-          ? { ...formData, estado: formData.estado } 
+        body: JSON.stringify(isUpdating
+          ? { ...formData, estado: formData.estado }
           : { ...formData, pass: "", estado: "pendiente" }
         ),
       });
@@ -129,7 +133,7 @@ const FormReg = () => {
       }
 
       alert(isUpdating ? 'Usuario actualizado exitosamente.' : 'Usuario registrado. Se ha enviado un correo de activación.');
-      
+
       clearForm();
       await fetchUsers();
     } catch (error) {
@@ -147,7 +151,7 @@ const FormReg = () => {
       apellido: user.apellido || '',
       mail: user.mail || '',
       empresa: user.empresa || '',
-      cargo: user.cargo || '',
+      cargo: user.rol || '', // Mapping Rol to Cargo field for UI
       rol: user.rol || 'user',
       estado: user.estado || 'pendiente'
     });
@@ -212,8 +216,8 @@ const FormReg = () => {
         <RegisterForm
           formData={formData}
           empresas={empresas}
-          cargos={cargos}
-          roles={roles}
+          cargos={fetchedRoles}
+          // roles prop removed as it is no longer used separately
           onUpdateFormData={(f, v) => setFormData(p => ({ ...p, [f]: v }))}
           onRegister={handleSave}
           isLoading={isLoading}
@@ -280,15 +284,15 @@ const FormReg = () => {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <Header />
-      
+
       {/* IMPLEMENTACIÓN DEL SIDEBAR */}
       {(isMobileOpen || !isMobileScreen) && (
         <>
-          <Sidebar 
-            isCollapsed={!isDesktopOpen} 
-            onToggleCollapse={toggleSidebar} 
-            isMobileOpen={isMobileOpen} 
-            onNavigate={handleNavigation} 
+          <Sidebar
+            isCollapsed={!isDesktopOpen}
+            onToggleCollapse={toggleSidebar}
+            isMobileOpen={isMobileOpen}
+            onNavigate={handleNavigation}
           />
           {isMobileScreen && isMobileOpen && (
             <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileOpen(false)}></div>
