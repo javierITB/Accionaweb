@@ -145,10 +145,9 @@ const App = () => {
             // Éxito: Redirigir al componente de establecer nueva contraseña
             setIsSuccess(true);
             setStep(3);
-
-            // Redirección con el uid retornado
-            // const userId = data.uid;
-            // navigate(`/set-password?userId=${userId}`, { replace: true });
+            setTimeout(() => {
+               navigate("/login", { replace: true });
+            }, 1500);
          } else {
             // Error en la verificación del código
             setMessage(data.message || "Código de verificación incorrecto o expirado.");
@@ -333,7 +332,7 @@ const App = () => {
                )}
                <p className="mt-3 font-medium">{message}</p>
             </div>
-            {!isSuccess && (
+            {!isSuccess ? (
                <button
                   onClick={resetForm}
                   className={`w-full flex items-center justify-center p-3 text-sm font-semibold rounded-xl text-white 
@@ -342,6 +341,9 @@ const App = () => {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Volver a Intentar
                </button>
+            ) : (
+               // vista Contraseña Reiniciada con éxito
+               <span className="text-center foreground-success pt-3"> Contraseña reiniciada con éxito. </span>
             )}
          </div>
       );
