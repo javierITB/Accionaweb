@@ -79,6 +79,21 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
    useEffect(() => {
       const fetchPermissions = async () => {
          if (!userRole) return;
+
+         // 1. Intentar leer de sessionStorage
+         const cachedPermissions = sessionStorage.getItem("permissions");
+         if (cachedPermissions) {
+            try {
+               const parsed = JSON.parse(cachedPermissions);
+               setUserPermissions(parsed);
+               if (userRole === 'Admin') setIsAdminRole(true);
+               return;
+            } catch (e) {
+               console.error("Error parsing permissions from storage", e);
+            }
+         }
+
+         // 2. Fallback: Fetch si no están en storage
          try {
             const token = sessionStorage.getItem("token");
             const res = await fetch(`${API_BASE_URL}/roles/name/${encodeURIComponent(userRole)}`, {
@@ -87,7 +102,9 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
 
             if (res.ok) {
                const data = await res.json();
-               setUserPermissions(data.permissions || []);
+               const perms = data.permissions || [];
+               setUserPermissions(perms);
+               sessionStorage.setItem("permissions", JSON.stringify(perms));
                if (data.name === 'Admin') setIsAdminRole(true);
             }
          } catch (error) {

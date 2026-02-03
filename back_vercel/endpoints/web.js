@@ -23,12 +23,12 @@ router.post("/filter", async (req, res) => {
 
     // Obtener email del token descifrado
     const tokenEmail = tokenResult.data.email;
-    
+
     // =========================================================
     // --- PASO 2: Verificar que el mail del cuerpo coincida con el del token ---
     // =========================================================
     let cleanMail;
-    
+
     // Determinar si el mail del request está cifrado
     if (mail && mail.includes(':')) {
       // El mail está cifrado, descifrarlo
