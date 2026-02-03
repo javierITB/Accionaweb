@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Loader, CheckCircle, XCircle, KeyRound, ArrowLeft } from "lucide-react";
 import { API_BASE_URL } from "../../utils/api";
+import { maskEmail } from "../../utils/maskEmail";
 
 // Endpoints de la API
 const API_URL_EMAIL = `${API_BASE_URL}/auth/recuperacion`;
@@ -26,9 +27,12 @@ const App = () => {
    const ORANGE_COLOR = "#f97316"; // Color semi-anaranjado
 
    // Estilos de foco basados en el color naranja
-   const inputFocusClasses = `focus:ring-2 focus:ring-[${ORANGE_COLOR}] focus:border-[${ORANGE_COLOR}]`;
-   const buttonClasses = `w-full flex items-center justify-center p-3 text-lg font-semibold rounded-xl text-white 
-              bg-[${ORANGE_COLOR}] hover:bg-orange-500 transition duration-150 shadow-lg disabled:opacity-70 disabled:cursor-not-allowed`;
+   const inputFocusClasses = "focus:ring-2 focus:ring-orange-500 focus:border-orange-300";
+   const buttonClasses = `
+  w-full flex items-center justify-center p-3 text-lg font-semibold rounded-xl text-white
+  bg-orange-500 hover:bg-orange-600 transition duration-150 shadow-lg
+  disabled:opacity-70 disabled:hover:bg-orange-500
+`;
 
    // --- Lógica para el Paso 1: Ingreso de Email ---
    const handleEmailSubmit = async (e) => {
@@ -64,30 +68,75 @@ const App = () => {
       }
    };
 
+   const canChangePassword = (passwordFirst, passwordConfirm) => {
+      if (code?.length !== 6) {
+         return {
+            ok: false,
+            message: "Código de verificación incorrecto o expirado",
+         };
+      }
+
+      if (passwordFirst.length === 0) {
+         return {
+            ok: false,
+            message: "La contraseña es obligatoria",
+         };
+      }
+      if (passwordFirst?.length < 8) {
+         return {
+            ok: false,
+            message: "La contraseña debe tener al menos 8 caracteres",
+         };
+      }
+      const hasLetter = /[a-zA-Z]/.test(passwordFirst);
+      const hasNumber = /[0-9]/.test(passwordFirst);
+
+      if (!hasLetter || !hasNumber) {
+         return {
+            ok: false,
+            message: "La contraseña debe incluir letras y números",
+         };
+      }
+
+      if (passwordFirst !== passwordConfirm) {
+         return {
+            ok: false,
+            message: "Las contraseñas no coinciden",
+         };
+      }
+
+      return { ok: true };
+   };
    // --- Lógica para el Paso 2: Ingreso de Código ---
    const handleCodeSubmit = async (e) => {
       e.preventDefault();
       setLoading(true);
       setMessage("");
+      const passwordFirst = password?.first;
+      const passwordConfirm = password?.confirm;
 
-      if (password?.first.length === 0) {
-         alert("La contraseña es obligatoria");
+      const result = canChangePassword(passwordFirst, passwordConfirm);
+
+      if (!result.ok) {
+         setLoading(false);
+         setMessage(result.message);
          return;
       }
-      if (password?.first?.length < 8) {
-         alert("La contraseña debe tener al menos 8 caracteres");
-         return;
-      }
-      if (password?.first !== password?.confirm) {
-         alert("Las contraseñas no coinciden");
-         return;
-      }
+
+      const requestBody = {
+         email,
+         code,
+         password: passwordFirst,
+      };
+
+      console.log(requestBody);
+
       try {
          const response = await fetch(API_URL_CODE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             // Enviar el email y el código de verificación
-            body: JSON.stringify({ email, code, password: password?.first }),
+            body: JSON.stringify(requestBody),
          });
 
          const data = await response.json();
@@ -98,8 +147,8 @@ const App = () => {
             setStep(3);
 
             // Redirección con el uid retornado
-            const userId = data.uid;
-            navigate(`/set-password?userId=${userId}`, { replace: true });
+            // const userId = data.uid;
+            // navigate(`/set-password?userId=${userId}`, { replace: true });
          } else {
             // Error en la verificación del código
             setMessage(data.message || "Código de verificación incorrecto o expirado.");
@@ -120,6 +169,7 @@ const App = () => {
    const resetForm = () => {
       setEmail("");
       setCode("");
+      setPassword({ first: "", confirm: "" });
       setStep(1);
       setMessage("");
       setIsSuccess(false);
@@ -165,14 +215,12 @@ const App = () => {
       </form>
    );
 
-
-   const canChangePassword = password?.first?.length >= 8 && password?.first === password?.confirm && code?.length === 6;
-
+   const passwordValidation = step === 2 ? canChangePassword(password?.first, password?.confirm) : { ok: false };
    // Paso 2: Ingreso de Código
    const renderCodeStep = () => (
-      <form onSubmit={handleCodeSubmit} className="space-y-6">
+      <form onSubmit={handleCodeSubmit} className="space-y-6" autoComplete="off">
          <div className="p-3 bg-green-50 border border-green-300 text-green-700 rounded-xl text-sm font-medium">
-            {message + ": " + email}
+            {message + ": " + maskEmail(email)}
          </div>
 
          <div>
@@ -191,60 +239,66 @@ const App = () => {
                   placeholder="------"
                   maxLength="6"
                   disabled={loading}
+                  name="code"
+                  autoComplete="new-password"
                />
             </div>
          </div>
          <div>
-            <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                Nueva Contraseña
             </label>
             <div className="relative">
                <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                <input
-                  // id="code"
+                  id="new-password"
                   type="password"
                   required
                   value={password?.first}
-                  onChange={(e) => setPassword({ first: e.target.value, confirm: password?.confirm })}
+                  onChange={(e) => setPassword((prev) => ({ ...prev, first: e.target.value }))}
                   // onChange={(e) => setCode(e.target.value)}
                   className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl transition duration-150 shadow-sm ${inputFocusClasses} text-left text-xl tracking-widest`}
                   placeholder=""
                   disabled={loading}
+                  name="new-password"
+                  autoComplete="new-password"
                />
             </div>
          </div>
          <div>
-            <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password-confirm" className="block text-sm font-medium text-gray-700 mb-2">
                Confirmar Contraseña
             </label>
             <div className="relative">
                <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                <input
-                  // id="code"
+                  id="password-confirm"
                   type="password"
                   required
                   value={password?.confirm}
-                  onChange={(e) => setPassword({ first: password?.first, confirm: e.target.value })}
+                  onChange={(e) => setPassword((prev) => ({ ...prev, confirm: e.target.value }))}
                   className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl transition duration-150 shadow-sm ${inputFocusClasses} text-left text-xl tracking-widest`}
                   placeholder=""
                   disabled={loading}
+                  name="new-password-confirm"
+                  autoComplete="new-password"
                />
             </div>
          </div>
 
          <button
             type="submit"
-            disabled={loading || !canChangePassword}
+            disabled={loading || !passwordValidation.ok}
             className={buttonClasses}
-            title="Verificar código"
+            title="Cambiar Contraseña"
          >
             {loading ? (
                <>
                   <Loader className="w-5 h-5 mr-3 animate-spin" />
-                  Verificando...
+                  Cambiando Contraseña...
                </>
             ) : (
-               "Verificar Código"
+               "Cambiar Contraseña"
             )}
          </button>
          <div className="text-center mt-4">
@@ -295,7 +349,7 @@ const App = () => {
 
    return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 sm:p-6 font-sans">
-         <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-xl">
+         <div className="w-full max-w-md bg-white px-8 py-5 rounded-xl shadow-xl">
             <div className="text-center mb-8">
                <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Recuperar Contraseña</h1>
             </div>
