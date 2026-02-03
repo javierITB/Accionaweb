@@ -40,7 +40,7 @@ const RequestTracking = () => {
 
   // --- AGREGADO: Función para actualizar el estado local al compartir sin recargar ---
   const handleRequestUpdate = (updatedRequest) => {
-    setResp(prevResp => 
+    setResp(prevResp =>
       prevResp.map(r => r._id === updatedRequest._id ? updatedRequest : r)
     );
   };
@@ -110,6 +110,8 @@ const RequestTracking = () => {
             submittedAt: r.submittedAt || r.createdAt || null,
             createdAt: r.createdAt || null,
             updatedAt: r.updatedAt || null,
+            updateClient: r.updateClient || null,
+            updateAdmin: r.updateAdmin || null,
             status: r.status || 'pendiente',
             correctedFile: r.correctedFile,
             formTitle: r.formTitle,
@@ -234,8 +236,9 @@ const RequestTracking = () => {
 
     switch (sortBy) {
       case 'date':
-        aValue = new Date(a.submittedAt || a.createdAt);
-        bValue = new Date(b.submittedAt || b.createdAt);
+      case 'date':
+        aValue = new Date(a.updateAdmin || 0);
+        bValue = new Date(b.updateAdmin || 0);
         break;
       case 'title':
         aValue = a?.title?.toLowerCase();
