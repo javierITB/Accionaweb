@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { API_BASE_URL } from "../utils/api";
 import LoadingCard from "../clientPages/components/LoadingCard";
@@ -6,6 +6,7 @@ import LoadingCard from "../clientPages/components/LoadingCard";
 export default function ProtectedRoute({ children }) {
    const [loading, setLoading] = useState(true);
    const [isAuth, setIsAuth] = useState(false);
+   const [userPermissions, setUserPermissions] = useState([]);
    const location = useLocation();
 
    useEffect(() => {
@@ -42,8 +43,7 @@ export default function ProtectedRoute({ children }) {
             const roleData = await roleRes.json();
             const permissions = roleData.permissions || [];
 
-            // Guardar permisos en sessionStorage para uso global (Sidebar, etc.)
-            sessionStorage.setItem("permissions", JSON.stringify(permissions));
+            setUserPermissions(permissions);
 
             const hasAccess = permissions.includes("view_panel_admin") || roleData.name === "Admin";
 
@@ -75,5 +75,15 @@ export default function ProtectedRoute({ children }) {
       );
    }
 
-   return isAuth ? children : <Navigate to="/login" state={{ from: location }} replace />;
+   if (!isAuth) {
+      return <Navigate to="/login" state={{ from: location }} replace />;
+   }
+
+   // Pasamos los permisos a los componentes hijos vía props
+   return React.Children.map(children, child => {
+      if (React.isValidElement(child)) {
+         return React.cloneElement(child, { userPermissions });
+      }
+      return child;
+   });
 }
