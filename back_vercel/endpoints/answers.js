@@ -183,6 +183,9 @@ router.post("/", async (req, res) => {
       mail: correoRespaldo,
       status: "pendiente",
       createdAt: new Date(),
+      status: "pendiente",
+      updateClient: new Date(),
+      createdAt: new Date(),
       updatedAt: new Date()
     });
 
@@ -771,6 +774,8 @@ router.get("/mail/:mail", async (req, res) => {
         status: answerDescifrada.status,
         createdAt: answerDescifrada.createdAt,
         updatedAt: answerDescifrada.updatedAt,
+        updateAdmin: answerDescifrada.updateAdmin,
+        updateClient: answerDescifrada.updateClient,
         compartida: esCompartida, // TAG SOLICITADO
         isShared: esCompartida,    // Alias para compatibilidad
         metadata: {
@@ -1016,7 +1021,9 @@ router.get("/mini", async (req, res) => {
         } : answer.user,
         status: answer.status,
         createdAt: answer.createdAt,
-        adjuntosCount: answer.adjuntosCount || 0
+        adjuntosCount: answer.adjuntosCount || 0,
+        updateClient: answer.updateClient,
+        updateAdmin: answer.updateAdmin
       };
     });
 
@@ -1183,6 +1190,13 @@ router.get("/filtros", async (req, res) => {
       );
     }
 
+    // 6.2 ORDENAMIENTO PERSONALIZADO
+    answersProcessed.sort((a, b) => {
+      const dateA = new Date(a.updateClient || 0);
+      const dateB = new Date(b.updateClient || 0);
+      return dateB - dateA;
+    });
+
     // 7. Paginación manual tras el filtrado
     const totalCount = answersProcessed.length;
     const skip = (page - 1) * limit;
@@ -1289,6 +1303,7 @@ router.post("/compartir/", async (req, res) => {
     const result = await req.db.collection("respuestas").updateOne(
       { _id: new ObjectId(responseId) },
       {
+        $set: { updatedAt: new Date(), updateAdmin: new Date() }, // ← Actualizamos updateAdmin
         $addToSet: {
           "user.compartidos": { $each: usuarios }
         }
@@ -1631,7 +1646,7 @@ router.put("/:id", async (req, res) => {
   try {
     const result = await req.db.collection("respuestas").findOneAndUpdate(
       { _id: new ObjectId(req.params.id) },
-      { $set: { ...req.body, updatedAt: new Date() } },
+      { $set: { ...req.body, updatedAt: new Date(), updateAdmin: new Date() } },
       { returnDocument: "after" }
     );
 
@@ -1783,10 +1798,9 @@ router.get("/:formId/chat/", async (req, res) => {
   }
 });
 
-//enviar mensaje
 router.post("/chat", async (req, res) => {
   try {
-    // Verificar token
+    // 1. Verificar token
     const auth = await verifyRequest(req);
     if (!auth.ok) return res.status(401).json({ error: auth.error });
 
@@ -1799,24 +1813,55 @@ router.post("/chat", async (req, res) => {
     const respuesta = await req.db.collection("respuestas").findOne(query);
     if (!respuesta) return res.status(404).json({ error: "Respuesta no encontrada" });
 
-    await req.db.collection("respuestas").updateOne({ _id: respuesta._id }, { $push: { mensajes: nuevoMensaje } });
+    // --- RECUPERADO: Validar rol del remitente desde el token ---
+    const token = req.headers['authorization']?.split(' ')[1];
+    let isSenderAdmin = false;
 
-    // ENVIAR CORREO SI ESTÁ MARCADO EL CHECKBOX Y NO ES MENSAJE DE ADMIN
+    if (token) {
+      const authData = await validarToken(req.db, token);
+      if (authData.ok) {
+        const rol = authData.data.rol?.toLowerCase();
+        if (rol === 'admin' || rol === 'root') {
+          isSenderAdmin = true;
+        }
+      }
+    }
+
+    // --- RECUPERADO: Determinar qué fecha actualizar ---
+    const updateField = isSenderAdmin ? { updateAdmin: new Date() } : { updateClient: new Date() };
+
+    // --- ACTUALIZACIÓN EN BD (Mantiene toda la estructura original) ---
+    await req.db.collection("respuestas").updateOne(
+      { _id: respuesta._id },
+      {
+        $push: { mensajes: nuevoMensaje },
+        $set: {
+          updatedAt: new Date(),
+          ...updateField
+        }
+      }
+    );
+
+    // --- DESCIFRADO DE DATOS (Necesario para que el resto funcione) ---
+    let userEmail = null;
+    let userName = autor;
+
+    if (respuesta.user) {
+      userEmail = (respuesta.user.mail && respuesta.user.mail.includes(':'))
+        ? decrypt(respuesta.user.mail)
+        : respuesta.user.mail;
+
+      userName = (respuesta.user.nombre && respuesta.user.nombre.includes(':'))
+        ? decrypt(respuesta.user.nombre)
+        : respuesta.user.nombre || autor;
+    }
+
+    // --- ENVIAR CORREO (Estructura y estilos recuperados al 100%) ---
     if (sendToEmail === true && admin !== true) {
       try {
-        // OBTENER DATOS PARA EL CORREO
-        let userEmail = null;
         let formName = "el formulario";
-        let userName = autor;
         let respuestaId = respuesta._id.toString();
 
-        // OBTENER EMAIL DEL USUARIO (CLIENTE) DESDE LA RESPUESTA
-        if (respuesta.user && respuesta.user.mail) {
-          userEmail = respuesta.user.mail;
-          userName = respuesta.user.nombre || autor;
-        }
-
-        // OBTENER NOMBRE DEL FORMULARIO
         if (respuesta.formId) {
           const form = await req.db.collection("forms").findOne({
             _id: new ObjectId(respuesta.formId)
@@ -1828,7 +1873,6 @@ router.post("/chat", async (req, res) => {
           formName = respuesta._contexto.formTitle;
         }
 
-        // ENVIAR CORREO SI TENEMOS EMAIL
         if (userEmail) {
           const baseUrl = process.env.PORTAL_URL;
           const responseUrl = `${baseUrl}/preview?type=messages&id=${respuestaId}`;
@@ -1846,7 +1890,7 @@ router.post("/chat", async (req, res) => {
           .button { 
               display: inline-block; 
               background-color: #4f46e5; 
-              color: white !important;  /* ← ESTA ES LA LÍNEA CLAVE */
+              color: white !important; 
               padding: 12px 24px; 
               text-decoration: none; 
               border-radius: 6px; 
@@ -1873,36 +1917,29 @@ router.post("/chat", async (req, res) => {
           </div>
           <div class="content">
               <h2 class="title">Tienes un nuevo mensaje en la plataforma de Recursos Humanos</h2>
-              
               <p>Estimado/a <strong>${userName}</strong>,</p>
-              
               <div class="message-box">
                   <p><strong>Formulario:</strong> ${formName}</p>
                   <p><strong>Fecha y hora:</strong> ${new Date().toLocaleDateString('es-CL', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          })}</p>
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                  })}</p>
               </div>
-              
               <p>Para ver los detalles de la solicitud y responder al mensaje, haz clic en el siguiente botón:</p>
-              
               <div style="text-align: center; margin: 30px 0;">
                   <a href="${responseUrl}" class="button" style="color: white !important; text-decoration: none;">
                       Ver detalles de la solicitud
                   </a>
               </div>
-              
               <div class="hr"></div>
-              
               <p style="font-size: 14px; color: #6b7280;">
                   Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
                   <a href="${responseUrl}" style="color: #4f46e5; word-break: break-all;">${responseUrl}</a>
               </p>
-              
               <div class="footer">
                   <p>Este es un mensaje automático de la plataforma de Recursos Humanos de Acciona Centro de Negocios.</p>
                   <p>Una vez en la plataforma, puedes acceder a los mensajes desde la sección de chat.</p>
@@ -1912,12 +1949,9 @@ router.post("/chat", async (req, res) => {
           </div>
       </div>
   </body>
-  </html>
-`;
+  </html>`;
 
-          // USAR LA MISMA FUNCIÓN DE ENVÍO DE CORREOS QUE EN upload-corrected-files
           const { sendEmail } = require("../utils/mail.helper");
-
           await sendEmail({
             to: userEmail,
             subject: `Nuevo mensaje - Plataforma RRHH - ${formName}`,
@@ -1926,12 +1960,11 @@ router.post("/chat", async (req, res) => {
         }
       } catch (emailError) {
         console.error("Error enviando correo:", emailError);
-        // Continuamos aunque falle el correo, no afecta la respuesta del mensaje
       }
     }
 
-    // NOTIFICACIONES (lógica original mantenida)
-    if (respuesta?.user?.nombre === autor) {
+    // --- NOTIFICACIONES (Comparando con nombre descifrado) ---
+    if (userName === autor) {
       const notifChat = {
         filtro: { cargo: "RRHH" },
         titulo: "Nuevo mensaje en formulario",
@@ -1954,8 +1987,9 @@ router.post("/chat", async (req, res) => {
     res.json({
       message: "Mensaje enviado",
       data: nuevoMensaje,
-      emailSent: sendToEmail === true && admin !== true
+      emailSent: sendToEmail === true && admin !== true && !!userEmail
     });
+
   } catch (err) {
     console.error("Error en chat:", err);
     res.status(500).json({ error: "Error en chat" });
@@ -2008,7 +2042,8 @@ router.post("/:id/upload-correction", upload.single('correctedFile'), async (req
           hasCorrection: true,
           correctionFileName: normalizedFileName,
           fileData: req.file.buffer, // Considerar cifrar aquí si el PDF es sensible
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          updateAdmin: new Date()
         }
       }
     );
@@ -2064,7 +2099,9 @@ router.get("/:id/finalized", async (req, res) => {
         $set: {
           status: "finalizado",
           finalizedAt: new Date(),
-          updatedAt: new Date()
+          finalizedAt: new Date(),
+          updatedAt: new Date(),
+          updateAdmin: new Date()
         }
       }
     );
@@ -2178,7 +2215,9 @@ router.get("/:id/archived", async (req, res) => {
         $set: {
           status: "archivado",
           archivedAt: new Date(),
-          updatedAt: new Date()
+          archivedAt: new Date(),
+          updatedAt: new Date(),
+          updateAdmin: new Date()
         }
       }
     );
@@ -2347,6 +2386,12 @@ router.post("/upload-corrected-files", async (req, res) => {
           console.log(`Nuevo documento creado en DB con 1 archivo`);
         }
       }
+
+      // Actualizar respuesta updateAdmin
+      await req.db.collection("respuestas").updateOne(
+        { _id: new ObjectId(responseId) },
+        { $set: { updatedAt: new Date(), updateAdmin: new Date() } }
+      );
 
       // ENVIAR CORREO AL USUARIO DESPUÉS DE SUBIR A LA DB
       let emailSent = false;
