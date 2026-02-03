@@ -1,75 +1,128 @@
 import React, { useState, useEffect } from 'react';
-import { X, Shield, Check } from 'lucide-react';
-import { useStore } from './lib/store';
+import { X, Shield, Check, Loader2 } from 'lucide-react';
+import { apiFetch, API_BASE_URL } from '../../../utils/api';
 
+// Cada vista del Sidebar es ahora una categoría independiente
 const PERMISSION_GROUPS = {
-    dashboard: {
-        label: 'Dashboard',
+    solicitudes_clientes: {
+        label: 'Vista: Solicitudes de Clientes',
         permissions: [
-            { id: 'view_dashboard', label: 'Ver Dashboard' }
+            { id: 'view_solicitudes_clientes', label: 'Acceso a la vista' },
         ]
     },
-    users: {
-        label: 'Usuarios',
+    solicitudes_a_cliente: {
+        label: 'Vista: Solicitudes a Cliente',
         permissions: [
-            { id: 'manage_users', label: 'Gestionar Usuarios (Crear/Editar/Borrar)' },
-            { id: 'view_users', label: 'Ver Lista de Usuarios' }
+            { id: 'view_solicitudes_a_cliente', label: 'Acceso a la vista' },
         ]
     },
-    teams: {
-        label: 'Equipos',
+    tickets: {
+        label: 'Vista: Tickets',
         permissions: [
-            { id: 'manage_teams', label: 'Gestionar Equipos' },
-            { id: 'view_teams', label: 'Ver Equipos' }
+            { id: 'view_tickets', label: 'Acceso a la vista' },
         ]
     },
-    contacts: {
-        label: 'Contactos',
+    domicilio_virtual: {
+        label: 'Vista: Domicilio Virtual',
         permissions: [
-            { id: 'view_contacts', label: 'Ver Contactos' },
-            { id: 'create_contacts', label: 'Crear Contactos' },
-            { id: 'edit_contacts', label: 'Editar Contactos' },
-            { id: 'delete_contacts', label: 'Eliminar Contactos' }
+            { id: 'view_domicilio_virtual', label: 'Acceso a la vista' },
         ]
     },
-    deals: {
-        label: 'Oportunidades (Pipeline)',
+    // --- RENDIMIENTO ---
+    rendimiento: {
+        label: 'Vista: Rendimiento',
         permissions: [
-            { id: 'view_deals', label: 'Ver Pipeline' },
-            { id: 'create_deals', label: 'Crear Oportunidades' },
-            { id: 'edit_deals', label: 'Editar Oportunidades' },
-            { id: 'delete_deals', label: 'Eliminar Oportunidades' }
+            { id: 'view_rendimiento', label: 'Acceso a la vista' },
         ]
     },
-    reports: {
-        label: 'Reportes',
+    // --- CONFIGURACIÓN ---
+    formularios: {
+        label: 'Vista: Formularios',
         permissions: [
-            { id: 'view_reports', label: 'Ver Reportes y Estadísticas' },
-            { id: 'export_data', label: 'Exportar Datos' }
+            { id: 'view_formularios', label: 'Acceso a la vista' },
+        ]
+    },
+    plantillas: {
+        label: 'Vista: Plantillas',
+        permissions: [
+            { id: 'view_plantillas', label: 'Acceso a la vista' },
+        ]
+    },
+    config_tickets: {
+        label: 'Vista: Config. Tickets',
+        permissions: [
+            { id: 'view_config_tickets', label: 'Acceso a la vista' },
+        ]
+    },
+    anuncios: {
+        label: 'Vista: Anuncios',
+        permissions: [
+            { id: 'view_anuncios', label: 'Acceso a la vista' },
+        ]
+    },
+    // --- ADMINISTRACIÓN ---
+    usuarios: {
+        label: 'Vista: Usuarios',
+        permissions: [
+            { id: 'view_usuarios', label: 'Acceso a la vista' },
+        ]
+    },
+    empresas: {
+        label: 'Vista: Empresas',
+        permissions: [
+            { id: 'view_empresas', label: 'Acceso a la vista' },
+        ]
+    },
+    gestor_roles: {
+        label: 'Vista: Gestor de Roles',
+        permissions: [
+            { id: 'view_gestor_roles', label: 'Acceso a la vista' },
+        ]
+    },
+    gestor_notificaciones: {
+        label: 'Vista: Gestor Notificaciones',
+        permissions: [
+            { id: 'view_gestor_notificaciones', label: 'Acceso a la vista' },
+        ]
+    },
+    registro_cambios: {
+        label: 'Vista: Registro de Cambios',
+        permissions: [
+            { id: 'view_registro_cambios', label: 'Acceso a la vista' },
+        ]
+    },
+    registro_ingresos: {
+        label: 'Vista: Registro de Ingresos',
+        permissions: [
+            { id: 'view_registro_ingresos', label: 'Acceso a la vista' },
         ]
     }
 };
 
-export function RoleModal({ isOpen, onClose, role = null }) {
-    const { addRole, updateRole } = useStore();
+export function RoleModal({ isOpen, onClose, onSuccess, role = null }) {
+    const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        permissions: []
+        permissions: [],
+        color: '#4f46e5'
     });
 
     useEffect(() => {
         if (role) {
             setFormData({
+                id: role._id, 
                 name: role.name,
                 description: role.description,
-                permissions: role.permissions || []
+                permissions: role.permissions || [],
+                color: role.color || '#4f46e5'
             });
         } else {
             setFormData({
                 name: '',
                 description: '',
-                permissions: []
+                permissions: [],
+                color: '#4f46e5'
             });
         }
     }, [role, isOpen]);
@@ -78,16 +131,27 @@ export function RoleModal({ isOpen, onClose, role = null }) {
 
     const handleSubmit = async () => {
         if (!formData.name) return;
-
-        if (role) {
-            await updateRole(role.id, formData);
-        } else {
-            await addRole(formData);
+        setIsSaving(true);
+        try {
+            const res = await apiFetch(`${API_BASE_URL}/roles`, {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+            if (res.ok) {
+                onSuccess();
+            } else {
+                const err = await res.json();
+                alert(err.error || "Error al guardar");
+            }
+        } catch (error) {
+            alert("Error de conexión");
+        } finally {
+            setIsSaving(false);
         }
-        onClose();
     };
 
     const togglePermission = (permId) => {
+        if (role?.id === 'admin') return;
         setFormData(prev => {
             const hasPerm = prev.permissions.includes(permId);
             const newPerms = hasPerm
@@ -98,16 +162,15 @@ export function RoleModal({ isOpen, onClose, role = null }) {
     };
 
     const toggleGroup = (groupId) => {
+        if (role?.id === 'admin') return;
         const groupPerms = PERMISSION_GROUPS[groupId].permissions.map(p => p.id);
         const allSelected = groupPerms.every(p => formData.permissions.includes(p));
 
         setFormData(prev => {
             let newPerms = [...prev.permissions];
             if (allSelected) {
-                // Remove all
                 newPerms = newPerms.filter(p => !groupPerms.includes(p));
             } else {
-                // Add missing
                 groupPerms.forEach(p => {
                     if (!newPerms.includes(p)) newPerms.push(p);
                 });
@@ -117,102 +180,86 @@ export function RoleModal({ isOpen, onClose, role = null }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-slate-200 dark:border-zinc-800 animate-in fade-in zoom-in duration-200">
-
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <div className="bg-card rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-border animate-in fade-in zoom-in duration-200">
+                
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-zinc-800 shrink-0">
-                    <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        <Shield size={20} className="text-indigo-600" />
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                    <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                        <Shield size={20} className="text-accent" />
                         {role ? 'Editar Rol' : 'Crear Nuevo Rol'}
                     </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                    <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                    {/* Basic Info */}
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre del Rol</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Nombre del Rol</label>
                             <input
                                 type="text"
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="Ej. Editor de Contenido"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white"
-                                disabled={role?.id === 'admin'} // Admin name locked
+                                className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-accent text-foreground"
+                                disabled={role?.id === 'admin'}
+                                placeholder="Ej: Auditor Externo"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Descripción</label>
                             <textarea
                                 value={formData.description}
                                 onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                placeholder="Describe las responsabilidades de este rol..."
                                 rows={2}
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white resize-none"
+                                className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-accent text-foreground resize-none"
+                                placeholder="Define el propósito de este rol..."
                             />
                         </div>
                     </div>
 
-                    {/* Permissions Editor */}
                     <div>
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider">Permisos del Sistema</h3>
-                        <div className="space-y-6">
+                        <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Configuración de Permisos por Vista</h3>
+                        <div className="space-y-4">
                             {Object.entries(PERMISSION_GROUPS).map(([groupId, group]) => {
                                 const groupPermsIds = group.permissions.map(p => p.id);
                                 const isAllSelected = groupPermsIds.every(id => formData.permissions.includes(id));
                                 const isIndeterminate = groupPermsIds.some(id => formData.permissions.includes(id)) && !isAllSelected;
 
                                 return (
-                                    <div key={groupId} className="bg-slate-50 dark:bg-zinc-800/30 rounded-xl border border-slate-200 dark:border-zinc-800 overflow-hidden">
-                                        {/* Group Header */}
-                                        <div
-                                            className="px-4 py-3 bg-slate-100 dark:bg-zinc-800 border-b border-slate-200 dark:border-zinc-700 flex items-center justify-between cursor-pointer"
+                                    <div key={groupId} className="bg-muted/30 rounded-xl border border-border overflow-hidden">
+                                        <div 
+                                            className="px-4 py-3 bg-muted/50 border-b border-border flex items-center justify-between cursor-pointer hover:bg-muted/70 transition-colors"
                                             onClick={() => toggleGroup(groupId)}
                                         >
-                                            <span className="font-semibold text-slate-700 dark:text-slate-200">{group.label}</span>
-                                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isAllSelected || isIndeterminate
-                                                    ? 'bg-indigo-600 border-indigo-600 text-white'
-                                                    : 'bg-white dark:bg-zinc-700 border-slate-300 dark:border-zinc-600'
-                                                }`}>
+                                            <span className="font-semibold text-sm text-foreground">{group.label}</span>
+                                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                                                isAllSelected || isIndeterminate ? 'bg-accent border-accent text-white' : 'bg-background border-border'
+                                            }`}>
                                                 {isAllSelected && <Check size={14} strokeWidth={3} />}
                                                 {isIndeterminate && <div className="w-2.5 h-0.5 bg-white rounded-full" />}
                                             </div>
                                         </div>
 
-                                        {/* Permissions List */}
-                                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            {group.permissions.map(perm => {
-                                                const isSelected = formData.permissions.includes(perm.id) || formData.permissions.includes('all');
-                                                const isDisabled = role?.id === 'admin';
-
-                                                return (
-                                                    <label
-                                                        key={perm.id}
-                                                        className={`flex items-start gap-3 p-2 rounded-lg transition-colors cursor-pointer ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-slate-100 dark:hover:bg-zinc-700/50'
-                                                            } ${isDisabled ? 'cursor-not-allowed opacity-75' : ''}`}
-                                                    >
-                                                        <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected
-                                                                ? 'bg-indigo-600 border-indigo-600 text-white'
-                                                                : 'bg-white dark:bg-zinc-800 border-slate-300 dark:border-zinc-600'
-                                                            }`}>
-                                                            {isSelected && <Check size={10} strokeWidth={3} />}
-                                                        </div>
-                                                        <span className="text-sm text-slate-600 dark:text-slate-300 select-none leading-tight">{perm.label}</span>
-                                                        <input
-                                                            type="checkbox"
-                                                            className="hidden"
-                                                            checked={isSelected}
-                                                            onChange={() => !isDisabled && togglePermission(perm.id)}
-                                                            disabled={isDisabled}
-                                                        />
-                                                    </label>
-                                                );
-                                            })}
+                                        <div className="p-4 grid grid-cols-1 gap-3">
+                                            {group.permissions.map(perm => (
+                                                <label key={perm.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                                                        formData.permissions.includes(perm.id) ? 'bg-accent border-accent text-white' : 'bg-background border-border'
+                                                    }`}>
+                                                        {formData.permissions.includes(perm.id) && <Check size={10} strokeWidth={3} />}
+                                                    </div>
+                                                    <span className="text-sm text-muted-foreground leading-tight">{perm.label}</span>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="hidden" 
+                                                        checked={formData.permissions.includes(perm.id)}
+                                                        onChange={() => togglePermission(perm.id)}
+                                                    />
+                                                </label>
+                                            ))}
                                         </div>
                                     </div>
                                 );
@@ -222,22 +269,19 @@ export function RoleModal({ isOpen, onClose, role = null }) {
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 border-t border-slate-100 dark:border-zinc-800 shrink-0 flex items-center justify-end gap-3 bg-slate-50/50 dark:bg-zinc-900">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-                    >
+                <div className="px-6 py-4 border-t border-border flex items-center justify-end gap-3 bg-muted/20">
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                         Cancelar
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={!formData.name}
-                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        disabled={isSaving || !formData.name}
+                        className="px-6 py-2 bg-accent hover:bg-accent/90 text-white text-sm font-medium rounded-lg disabled:opacity-50 flex items-center gap-2"
                     >
+                        {isSaving && <Loader2 size={16} className="animate-spin" />}
                         {role ? 'Guardar Cambios' : 'Crear Rol'}
                     </button>
                 </div>
-
             </div>
         </div>
     );
