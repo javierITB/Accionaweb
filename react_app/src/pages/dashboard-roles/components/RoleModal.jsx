@@ -358,7 +358,7 @@ const PERMISSION_GROUPS = {
 };
 
 
-export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos }) {
+ function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos }) {
    const [isSaving, setIsSaving] = useState(false);
    const [activeTab, setActiveTab] = useState('admin');
    const [formData, setFormData] = useState({
@@ -673,3 +673,5 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
       </div>
    );
 }
+
+export default RoleModal;
