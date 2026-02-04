@@ -28,6 +28,7 @@ const RolesView = ({ userPermissions = {} }) => {
    const permisos = useMemo(
       () => ({
          view_gestor_roles_details: userPermissions.includes("view_gestor_roles_details"),
+         view_gestor_roles_details_admin: userPermissions.includes("view_gestor_roles_details_admin"),
          create_gestor_roles: userPermissions.includes("create_gestor_roles"),
          edit_gestor_roles: userPermissions.includes("edit_gestor_roles"),
          edit_gestor_roles_admin: userPermissions.includes("edit_gestor_roles_admin"),
@@ -119,6 +120,8 @@ const RolesView = ({ userPermissions = {} }) => {
 
    const mainMarginClass = isMobileScreen ? "ml-0" : isDesktopOpen ? "lg:ml-64" : "lg:ml-16";
 
+
+
    return (
       <div className="min-h-screen bg-background">
          <Header />
@@ -191,6 +194,9 @@ const RolesView = ({ userPermissions = {} }) => {
                      {filteredRoles.map((role) => {
                         const userCount = getUserCount(role._id);
                         const isAdmin = role.id === "admin" || role.name?.toLowerCase() === "administrador";
+                        const canViewDetailsAdmin = isAdmin && permisos.view_gestor_roles_details_admin;
+                        const canViewDetailsOther = !isAdmin && permisos.view_gestor_roles_details;
+                        const canViewDetails = canViewDetailsAdmin || canViewDetailsOther;
 
                         return (
                            <div
@@ -198,7 +204,7 @@ const RolesView = ({ userPermissions = {} }) => {
                               className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col"
                            >
                               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                                 {(!isAdmin && permisos.view_gestor_roles_details) && (<button
+                                 {canViewDetails && (<button
                                     onClick={() => {
                                        setEditingRole(role);
                                        setIsRoleModalOpen(true);
