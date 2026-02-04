@@ -34,6 +34,7 @@ const RolesView = ({ userPermissions = {} }) => {
             edit_gestor_roles_admin: userPermissions.includes("edit_gestor_roles_admin"),
             edit_gestor_roles_by_self: userPermissions.includes("edit_gestor_roles_by_self"),
             delete_gestor_roles: userPermissions.includes("delete_gestor_roles"),
+            copy_gestor_roles: userPermissions.includes("copy_gestor_roles"),
         }),
         [userPermissions],
     );
@@ -231,13 +232,13 @@ const RolesView = ({ userPermissions = {} }) => {
                                         className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col"
                                     >
                                         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                                            <button
+                                            {permisos.copy_gestor_roles && (<button
                                                 onClick={() => handleDuplicate(role)}
                                                 title="Duplicar cargo"
                                                 className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                                             >
                                                 <Copy size={16} />
-                                            </button>
+                                            </button>)}
                                             {canViewDetails && (<button
                                                 onClick={() => {
                                                     setEditingRole(role);

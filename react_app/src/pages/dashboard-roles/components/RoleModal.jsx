@@ -448,23 +448,21 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos}) 
       }
    };
 
-   const isAdminRole = role.name?.toLowerCase() === "administrador";
+const roleName = role.name?.toLowerCase();
+const myRoleName = sessionStorage.getItem("cargo")?.toLowerCase();
 
-   const canEditAdmin = isAdminRole && permisos.edit_gestor_roles_admin;
+const isAdminRole = roleName === "administrador";
+const itsMyRole = roleName === myRoleName;
 
-   const itsMyRole = role.name?.toLowerCase() === sessionStorage.getItem('cargo').toLowerCase();
+const canEditAdmin = isAdminRole && permisos.edit_gestor_roles_admin;
+const canEditMyRole = itsMyRole && permisos.edit_gestor_roles_by_self;
+const canEditOtherRoles =
+   !isAdminRole &&
+   !itsMyRole &&
+   permisos.edit_gestor_roles;
 
-   const canEditOther = !isAdminRole && !itsMyRole && permisos.edit_gestor_roles;
+const canEdit = canEditAdmin || canEditMyRole || canEditOtherRoles;
 
-   const canEdit = canEditAdmin || canEditOther;
-
-   console.log("isAdminRole", isAdminRole)
-   console.log("canEditAdmin", canEditAdmin)
-   console.log("canEditOther", canEditOther)
-   console.log("canEdit", canEdit)
-   console.log("itsMyRole", itsMyRole)
-   console.log("role", role)
-   console.log("sessionStorage.getItem('cargo')", sessionStorage.getItem('cargo'))
 
    return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
@@ -638,7 +636,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos}) 
             </div>
 
             <div className="px-6 py-4 border-t border-border flex justify-end gap-3 bg-muted/10 shrink-0">
-               {canEdit || true? (
+               {canEdit ? (
                   <>
                      <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-muted-foreground">
                         Cancelar
