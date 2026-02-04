@@ -6,7 +6,14 @@ import RegisterForm from './components/RegisterForm';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 
-const FormReg = () => {
+const FormReg = ({ userPermissions = [] }) => {
+  // --- LÓGICA DE PERMISOS BASADA EN PROPS ---
+  const permisos = useMemo(() => ({
+    editar: userPermissions.includes("edit_usuarios"),
+    eliminar: userPermissions.includes("delete_usuarios"),
+    crear: userPermissions.includes("create_usuarios")
+  }), [userPermissions]);
+
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [empresas, setEmpresas] = useState([]);
@@ -20,7 +27,9 @@ const FormReg = () => {
     cargo: '',
     rol: 'user'
   });
-  const [activeTab, setActiveTab] = useState('register');
+  
+  // Mantenemos 'register' como inicial si tiene permiso, sino 'list'
+  const [activeTab, setActiveTab] = useState(permisos.crear ? 'register' : 'list');
 
   const [filters, setFilters] = useState({ field: null, value: null });
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,7 +84,6 @@ const FormReg = () => {
         const response = await apiFetch(`${API_BASE_URL}/roles`);
         if (!response.ok) throw new Error('Error al cargar roles');
         const rolesData = await response.json();
-        // Map roles for dropdown options
         setFetchedRoles(rolesData.map(r => ({ value: r.name, label: r.name })));
       } catch (error) {
         console.error('Error cargando roles:', error);
@@ -86,8 +94,6 @@ const FormReg = () => {
     fetchRoles();
     fetchUsers();
   }, []);
-
-
 
   const fetchUsers = async () => {
     try {
@@ -100,9 +106,12 @@ const FormReg = () => {
     }
   };
 
-  // --- CAMBIO PERTINENTE: handleSave SIMPLIFICADO ---
   const handleSave = async () => {
     const isUpdating = !!editingUser;
+
+    // Validación de seguridad interna
+    if (isUpdating && !permisos.editar) return;
+    if (!isUpdating && !permisos.crear) return;
 
     if (!formData.nombre || !formData.apellido || !formData.mail || !formData.empresa || !formData.cargo || !formData.rol) {
       alert('Por favor completa todos los campos obligatorios');
@@ -117,8 +126,6 @@ const FormReg = () => {
     try {
       setIsLoading(true);
 
-      // Llamada única a tu backend. 
-      // El backend ahora se encarga de addNotification y sendEmail internamente.
       const response = await apiFetch(url, {
         method: method,
         body: JSON.stringify(isUpdating
@@ -132,29 +139,33 @@ const FormReg = () => {
         throw new Error(errorData.error || 'Error en la operación');
       }
 
+      // REINTEGRACIÓN DE ALERTAS ORIGINALES
       alert(isUpdating ? 'Usuario actualizado exitosamente.' : 'Usuario registrado. Se ha enviado un correo de activación.');
 
       clearForm();
       await fetchUsers();
+      // Retorno automático a la lista
+      setActiveTab('list');
     } catch (error) {
       alert(error.message);
     } finally {
       setIsLoading(false);
     }
   };
-  // --- FIN DEL CAMBIO PERTINENTE ---
 
   const handleEditUser = (user) => {
+    if (!permisos.editar) return;
     setEditingUser(user);
     setFormData({
       nombre: user.nombre || '',
       apellido: user.apellido || '',
       mail: user.mail || '',
       empresa: user.empresa || '',
-      cargo: user.rol || '', // Mapping Rol to Cargo field for UI
+      cargo: user.rol || '', 
       rol: user.rol || 'user',
       estado: user.estado || 'pendiente'
     });
+    setActiveTab('register');
   };
 
   const clearForm = () => {
@@ -163,6 +174,8 @@ const FormReg = () => {
   };
 
   const handleRemoveUser = async (userId) => {
+    if (!permisos.eliminar) return;
+
     if (!window.confirm("¿Estás seguro?")) return;
     try {
       setIsLoading(true);
@@ -217,12 +230,12 @@ const FormReg = () => {
           formData={formData}
           empresas={empresas}
           cargos={fetchedRoles}
-          // roles prop removed as it is no longer used separately
           onUpdateFormData={(f, v) => setFormData(p => ({ ...p, [f]: v }))}
           onRegister={handleSave}
           isLoading={isLoading}
           isEditing={!!editingUser}
           onCancelEdit={clearForm}
+          permisos={permisos}
         />
       );
     }
@@ -249,12 +262,13 @@ const FormReg = () => {
                     <div className="flex items-center">{k.replace('createdAt', 'Fecha')} {getSortIcon(k)}</div>
                   </th>
                 ))}
-                <th className="px-4 py-3 text-left">Acciones</th>
+                {(permisos.editar || permisos.eliminar) && <th className="px-4 py-3 text-left">Acciones</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border bg-card">
               {sortedUsers.map((u) => (
                 <tr key={u._id} className="hover:bg-muted/20 transition">
+                  {/* ELIMINADAS CLASES whitespace-nowrap PARA RECUPERAR EL ESPACIO ORIGINAL */}
                   <td className="px-4 py-3 font-medium cursor-pointer hover:text-primary" onClick={() => handleFilter('nombre', u.nombre)}>{u.nombre} {u.apellido}</td>
                   <td className="px-4 py-3 cursor-pointer hover:text-primary" onClick={() => handleFilter('empresa', u.empresa)}>{u.empresa || '—'}</td>
                   <td className="px-4 py-3 text-muted-foreground">{u.mail}</td>
@@ -264,12 +278,20 @@ const FormReg = () => {
                     <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md ${u.estado === 'pendiente' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>{u.estado}</span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-3">
-                      <button onClick={() => { handleEditUser(u); setActiveTab('register'); }} className="text-primary hover:underline">Editar</button>
-                      <button onClick={() => handleRemoveUser(u._id)} className="text-destructive hover:underline">Borrar</button>
-                    </div>
-                  </td>
+                  
+                  {/* Columna Acciones dinâmica */}
+                  {(permisos.editar || permisos.eliminar) && (
+                    <td className="px-4 py-3">
+                      <div className="flex gap-3">
+                        {permisos.editar && (
+                          <button onClick={() => { handleEditUser(u); setActiveTab('register'); }} className="text-primary hover:underline">Editar</button>
+                        )}
+                        {permisos.eliminar && (
+                          <button onClick={() => handleRemoveUser(u._id)} className="text-destructive hover:underline">Borrar</button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -285,7 +307,6 @@ const FormReg = () => {
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <Header />
 
-      {/* IMPLEMENTACIÓN DEL SIDEBAR */}
       {(isMobileOpen || !isMobileScreen) && (
         <>
           <Sidebar
@@ -308,9 +329,17 @@ const FormReg = () => {
           </div>
           <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
             <div className="flex gap-2 p-4 bg-muted/20 border-b border-border">
-              <button onClick={() => setActiveTab('register')} className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition ${activeTab === 'register' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>
-                <Icon name="Plus" size={16} className="inline mr-2" /> {editingUser ? 'Modificar' : 'Registrar'}
-              </button>
+              {/* Pestaña dinámica */}
+              {(permisos.crear || editingUser) ? (
+                <button onClick={() => setActiveTab('register')} className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition ${activeTab === 'register' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>
+                  <Icon name="Plus" size={16} className="inline mr-2" /> {editingUser ? 'Modificar' : 'Registrar'}
+                </button>
+              ) : (
+                <div className="px-5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground bg-muted/50 border border-dashed border-border flex items-center opacity-60">
+                   <Icon name="Lock" size={14} className="mr-2" /> Acceso Restringido
+                </div>
+              )}
+              
               <button onClick={() => setActiveTab('list')} className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition ${activeTab === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>
                 <Icon name="List" size={16} className="inline mr-2" /> Lista ({users.length})
               </button>
@@ -320,7 +349,6 @@ const FormReg = () => {
         </div>
       </main>
 
-      {/* BOTÓN FLOTANTE MÓVIL - FUERA DEL MAIN, SIEMPRE VISIBLE */}
       {!isMobileOpen && isMobileScreen && (
         <div className="fixed bottom-4 left-4 z-50">
           <Button
