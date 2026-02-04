@@ -358,7 +358,7 @@ const PERMISSION_GROUPS = {
 };
 
 
- function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos }) {
+ const RoleModal = ({ isOpen, onClose, onSuccess, role = null, permisos }) => {
    const [isSaving, setIsSaving] = useState(false);
    const [activeTab, setActiveTab] = useState('admin');
    const [formData, setFormData] = useState({
