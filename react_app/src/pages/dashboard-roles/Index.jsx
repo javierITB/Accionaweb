@@ -25,18 +25,18 @@ const RolesView = ({ userPermissions = {} }) => {
     const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
     const [editingRole, setEditingRole] = useState(null);
 
-   const permisos = useMemo(
-      () => ({
-         view_gestor_roles_details: userPermissions.includes("view_gestor_roles_details"),
-         view_gestor_roles_details_admin: userPermissions.includes("view_gestor_roles_details_admin"),
-         create_gestor_roles: userPermissions.includes("create_gestor_roles"),
-         edit_gestor_roles: userPermissions.includes("edit_gestor_roles"),
-         edit_gestor_roles_admin: userPermissions.includes("edit_gestor_roles_admin"),
-         edit_gestor_roles_by_self: userPermissions.includes("edit_gestor_roles_by_self"),
-         delete_gestor_roles: userPermissions.includes("delete_gestor_roles"),
-      }),
-      [userPermissions],
-   );
+    const permisos = useMemo(
+        () => ({
+            view_gestor_roles_details: userPermissions.includes("view_gestor_roles_details"),
+            view_gestor_roles_details_admin: userPermissions.includes("view_gestor_roles_details_admin"),
+            create_gestor_roles: userPermissions.includes("create_gestor_roles"),
+            edit_gestor_roles: userPermissions.includes("edit_gestor_roles"),
+            edit_gestor_roles_admin: userPermissions.includes("edit_gestor_roles_admin"),
+            edit_gestor_roles_by_self: userPermissions.includes("edit_gestor_roles_by_self"),
+            delete_gestor_roles: userPermissions.includes("delete_gestor_roles"),
+        }),
+        [userPermissions],
+    );
 
     // --- CARGA DE DATOS DESDE API ---
     const fetchRoles = async () => {
@@ -211,35 +211,42 @@ const RolesView = ({ userPermissions = {} }) => {
                         />
                     </div>
 
-               {isLoading ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                     <Loader2 className="w-10 h-10 animate-spin mb-4 text-accent" />
-                     <p>Cargando configuración de seguridad...</p>
-                  </div>
-               ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-                     {filteredRoles.map((role) => {
-                        const userCount = getUserCount(role._id);
-                        const isAdmin = role.id === "admin" || role.name?.toLowerCase() === "administrador";
-                        const canViewDetailsAdmin = isAdmin && permisos.view_gestor_roles_details_admin;
-                        const canViewDetailsOther = !isAdmin && permisos.view_gestor_roles_details;
-                        const canViewDetails = canViewDetailsAdmin || canViewDetailsOther;
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                            <Loader2 className="w-10 h-10 animate-spin mb-4 text-accent" />
+                            <p>Cargando configuración de seguridad...</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                            {filteredRoles.map((role) => {
+                                const userCount = getUserCount(role._id);
+                                const isAdmin = role.id === "admin" || role.name?.toLowerCase() === "administrador";
+                                const canViewDetailsAdmin = isAdmin && permisos.view_gestor_roles_details_admin;
+                                const canViewDetailsOther = !isAdmin && permisos.view_gestor_roles_details;
+                                const canViewDetails = canViewDetailsAdmin || canViewDetailsOther;
 
-                        return (
-                           <div
-                              key={role._id}
-                              className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col"
-                           >
-                              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                                 {canViewDetails && (<button
-                                    onClick={() => {
-                                       setEditingRole(role);
-                                       setIsRoleModalOpen(true);
-                                    }}
-                                    className="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
-                                 >
-                                    <Eye size={21} />
-                                 </button>)}
+                                return (
+                                    <div
+                                        key={role._id}
+                                        className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col"
+                                    >
+                                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleDuplicate(role)}
+                                                title="Duplicar cargo"
+                                                className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                                            >
+                                                <Copy size={16} />
+                                            </button>
+                                            {canViewDetails && (<button
+                                                onClick={() => {
+                                                    setEditingRole(role);
+                                                    setIsRoleModalOpen(true);
+                                                }}
+                                                className="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+                                            >
+                                                <Eye size={21} />
+                                            </button>)}
 
                                             {!isAdmin && permisos.delete_gestor_roles && (
                                                 <button

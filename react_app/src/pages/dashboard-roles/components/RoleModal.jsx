@@ -170,6 +170,7 @@ const PERMISSION_GROUPS = {
             { id: 'edit_tickets_state', label: 'Editar estado de ticket ', dependency: 'view_tickets_details' },
         ]
     },
+    //check
     domicilio_virtual: {
         label: 'Vista: Domicilio Virtual',
         tagg: 'admin',
@@ -232,7 +233,7 @@ const PERMISSION_GROUPS = {
         tagg: 'admin',
         permissions: [{ id: 'view_configuracion_tickets', label: 'Acceso a la vista' }]
     },
-    
+
     anuncios: {
         label: 'Vista: Anuncios',
         tagg: 'admin',
@@ -293,6 +294,7 @@ const PERMISSION_GROUPS = {
             { id: 'delete_gestor_notificaciones', label: 'Eliminar notificaciones' },
         ]
     },
+    //check
     registro_cambios: {
         label: 'Vista: Registro de Cambios',
         tagg: 'admin',
@@ -301,6 +303,7 @@ const PERMISSION_GROUPS = {
             { id: 'view_registro_cambios_details', label: 'Acceso a la vista detallada', dependency: 'view_registro_cambios' }
         ]
     },
+    //check
     registro_ingresos: {
         label: 'Vista: Registro de Ingresos',
         tagg: 'admin',
@@ -638,7 +641,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos}) 
             </div>
 
             <div className="px-6 py-4 border-t border-border flex justify-end gap-3 bg-muted/10 shrink-0">
-               {canEdit ? (
+               {canEdit || true? (
                   <>
                      <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-muted-foreground">
                         Cancelar

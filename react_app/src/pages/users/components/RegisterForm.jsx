@@ -11,8 +11,12 @@ const RegisterForm = ({
   onRegister,
   isLoading,      // Nuevo
   isEditing,      // Nuevo
-  onCancelEdit    // Nuevo
+  onCancelEdit,   // Nuevo
+  permisos = {}    // Prop de permisos agregada
 }) => {
+  // Lógica de bloqueo por permisos
+  const isButtonDisabled = isEditing ? !permisos.editar : !permisos.crear;
+
   return (
     <div className="space-y-8">
       {/* Basic Information */}
@@ -48,6 +52,7 @@ const RegisterForm = ({
               value={formData?.nombre || ''}
               onChange={(e) => onUpdateFormData('nombre', e.target.value)}
               maxLength={25}
+              disabled={isButtonDisabled} // Bloqueo por permiso
               className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.nombre?.length || 0) >= 25
                 ? 'border-red-500 focus-visible:ring-red-200'
                 : 'border-input focus-visible:ring-blue-200'
@@ -74,6 +79,7 @@ const RegisterForm = ({
               value={formData?.apellido || ''}
               onChange={(e) => onUpdateFormData('apellido', e.target.value)}
               maxLength={25}
+              disabled={isButtonDisabled} // Bloqueo por permiso
               className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${(formData?.apellido?.length || 0) >= 25
                 ? 'border-red-500 focus-visible:ring-red-200'
                 : 'border-input focus-visible:ring-blue-200'
@@ -97,7 +103,8 @@ const RegisterForm = ({
               value={formData?.mail || ''}
               // El email siempre se permite editar, pero solo se valida en el backend
               onChange={(e) => onUpdateFormData('mail', e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              disabled={isButtonDisabled} // Bloqueo por permiso
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
             {!isEditing && ( // Mostrar solo en modo REGISTRO
               <p className="text-sm text-muted-foreground">
@@ -115,6 +122,7 @@ const RegisterForm = ({
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData?.empresa || ''}
               onChange={(e) => onUpdateFormData('empresa', e.target.value)}
+              disabled={isButtonDisabled} // Bloqueo por permiso
             >
               <option value="">Selecciona una empresa</option>
               {empresas?.map((empresa) => (
@@ -133,6 +141,7 @@ const RegisterForm = ({
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData?.cargo || ''}
+              disabled={isButtonDisabled} // Bloqueo por permiso
               onChange={(e) => {
                 const selectedVal = e.target.value;
                 onUpdateFormData('cargo', selectedVal);
@@ -160,6 +169,7 @@ const RegisterForm = ({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData?.estado || 'pendiente'} // Usamos el campo 'estado'
                 onChange={(e) => onUpdateFormData('estado', e.target.value)}
+                disabled={!permisos.editar} // Bloqueo por permiso
               >
                 <option value="pendiente">Pendiente</option>
                 <option value="activo">Activo</option>
@@ -185,14 +195,16 @@ const RegisterForm = ({
           </Button>
           <Button
             onClick={onRegister}
-            disabled={isLoading || !formData.nombre || !formData.mail}
+            disabled={isLoading || !formData.nombre || !formData.mail || isButtonDisabled}
             className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            iconName={isEditing ? "Save" : "UserPlus"} // Cambia el ícono
+            iconName={isEditing ? "Save" : "UserPlus"} 
             iconPosition="left"
           >
-            {isLoading
-              ? (isEditing ? 'Guardando...' : 'Registrando...')
-              : (isEditing ? 'Guardar Cambios' : 'Registrar Usuario')
+            {isButtonDisabled 
+              ? 'Acceso Restringido'
+              : isLoading
+                ? (isEditing ? 'Guardando...' : 'Registrando...')
+                : (isEditing ? 'Guardar Cambios' : 'Registrar Usuario')
             }
           </Button>
         </div>
