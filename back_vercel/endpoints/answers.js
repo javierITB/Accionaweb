@@ -673,13 +673,7 @@ router.get("/mail/:mail", async (req, res) => {
       {
         $match: {
           $or: [
-            // Caso A: El usuario está en la lista de compartidos (Texto plano)
             { "user.compartidos": userIdString },
-            // Caso B: Es el dueño. 
-            // NOTA: Si el UID está encriptado y NO tienes blind index para él,
-            // aquí podrías tener que filtrar por el valor encriptado exacto si lo conoces,
-            // o seguir filtrando este caso específico en memoria si son pocos.
-            // Asumiremos por ahora que buscamos coincidencias en compartidos en DB.
             { "user.uid": userIdString } 
           ]
         }
