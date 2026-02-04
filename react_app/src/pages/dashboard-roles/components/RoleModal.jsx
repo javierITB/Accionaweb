@@ -170,6 +170,7 @@ const PERMISSION_GROUPS = {
             { id: 'edit_tickets_state', label: 'Editar estado de ticket ', dependency: 'view_tickets_details' },
         ]
     },
+    //check
     domicilio_virtual: {
         label: 'Vista: Domicilio Virtual',
         tagg: 'admin',
@@ -293,6 +294,7 @@ const PERMISSION_GROUPS = {
             { id: 'delete_gestor_notificaciones', label: 'Eliminar notificaciones' },
         ]
     },
+    //check
     registro_cambios: {
         label: 'Vista: Registro de Cambios',
         tagg: 'admin',
@@ -301,6 +303,7 @@ const PERMISSION_GROUPS = {
             { id: 'view_registro_cambios_details', label: 'Acceso a la vista detallada', dependency: 'view_registro_cambios' }
         ]
     },
+    //check
     registro_ingresos: {
         label: 'Vista: Registro de Ingresos',
         tagg: 'admin',
