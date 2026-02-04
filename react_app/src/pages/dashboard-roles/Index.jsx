@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Shield, Users, Edit2, Trash2, CheckCircle2, Lock, Loader2 } from 'lucide-react';
+import { Search, Plus, Shield, Users, Edit2, Trash2, CheckCircle2, Lock, Loader2, Copy } from 'lucide-react';
 
 // Helpers y componentes de UI
 import { apiFetch, API_BASE_URL } from '../../utils/api';
@@ -76,6 +76,35 @@ const RolesView = () => {
         return users.filter(u => u.roleId === roleId || u.role === roleId).length;
     };
 
+    const handleDuplicate = async (role) => {
+        try {
+            setIsLoading(true);
+            // Preparamos el payload ignorando el _id original para que la API cree uno nuevo
+            const duplicateData = {
+                name: `${role.name} (copia)`,
+                description: role.description,
+                permissions: role.permissions || [],
+                color: role.color || '#4f46e5'
+            };
+
+            const res = await apiFetch(`${API_BASE_URL}/roles`, {
+                method: 'POST',
+                body: JSON.stringify(duplicateData)
+            });
+
+            if (res.ok) {
+                await fetchRoles(); // Recargamos la lista
+            } else {
+                const err = await res.json();
+                alert(err.error || "Error al duplicar el rol");
+            }
+        } catch (error) {
+            alert("Error de conexión con el servidor");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleDelete = async (roleId) => {
         if (roleId === 'admin') {
             alert('No se puede eliminar el rol de Administrador de sistema.');
@@ -139,7 +168,7 @@ const RolesView = () => {
 
             <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
                 <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
-                    
+
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="min-w-0 flex-1">
                             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight">
@@ -150,9 +179,9 @@ const RolesView = () => {
                             </p>
                         </div>
 
-                        <Button 
-                            variant="default" 
-                            iconName="Plus" 
+                        <Button
+                            variant="default"
+                            iconName="Plus"
                             onClick={() => {
                                 setEditingRole(null);
                                 setIsRoleModalOpen(true);
@@ -188,6 +217,13 @@ const RolesView = () => {
                                     <div key={role._id} className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col">
                                         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                                             <button
+                                                onClick={() => handleDuplicate(role)}
+                                                title="Duplicar cargo"
+                                                className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                                            >
+                                                <Copy size={16} />
+                                            </button>
+                                            <button
                                                 onClick={() => {
                                                     setEditingRole(role);
                                                     setIsRoleModalOpen(true);
@@ -207,7 +243,7 @@ const RolesView = () => {
                                         </div>
 
                                         <div className="flex items-start justify-between mb-4">
-                                            <div 
+                                            <div
                                                 className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg"
                                                 style={{ backgroundColor: role.color || '#4f46e5' }}
                                             >
@@ -251,9 +287,9 @@ const RolesView = () => {
             {isRoleModalOpen && (
                 <RoleModal
                     isOpen={isRoleModalOpen}
-                    onClose={() => { 
-                        setIsRoleModalOpen(false); 
-                        setEditingRole(null); 
+                    onClose={() => {
+                        setIsRoleModalOpen(false);
+                        setEditingRole(null);
                     }}
                     onSuccess={() => {
                         setIsRoleModalOpen(false);
