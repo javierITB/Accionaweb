@@ -60,7 +60,10 @@ const PERMISSION_GROUPS = {
     solicitudes_a_cliente: {
         label: 'Vista: Solicitudes a Cliente',
         tagg: 'admin',
-        permissions: [{ id: 'view_solicitudes_a_cliente', label: 'Acceso a la vista' }]
+        permissions: [
+            { id: 'view_solicitudes_a_cliente', label: 'Acceso a la vista' },
+            { id: 'create_solicitudes_a_cliente', label: 'Crear solicitudes a cliente' },
+        ]
     },
     tickets: {
         label: 'Vista: Tickets',
@@ -70,13 +73,13 @@ const PERMISSION_GROUPS = {
             { id: 'delete_tickets', label: 'Eliminar solicitudes de clientes' },
             { id: 'view_tickets_details', label: 'Acceso a detalles de tickets'},
             { id: 'view_tickets_answers', label: 'Ver tickets', dependency: 'view_tickets_details' },
+            { id: 'accept_tickets_answers', label: 'Aceptar tickets', dependency: 'view_tickets_details' },
 
             { id: 'view_tickets_attach', label: 'Ver documento adjunto', dependency: 'view_tickets_details' },
             { id: 'download_tickets_attach', label: 'Descargar documento adjunto', dependency: 'view_tickets_attach' },
             { id: 'preview_tickets_attach', label: 'vista previa documento adjunto', dependency: 'view_tickets_attach' },
 
             { id: 'edit_tickets_state', label: 'Editar estado de ticket ', dependency: 'view_tickets_details' },
-            
         ]
     },
     domicilio_virtual: {
@@ -87,7 +90,6 @@ const PERMISSION_GROUPS = {
             { id: 'delete_solicitudes_clientes', label: 'Eliminar solicitudes de clientes' },
             { id: 'view_solicitudes_clientes_details', label: 'Acceso a detalles de solicitudes de clientes' },
             { id: 'view_solicitudes_clientes_answers', label: 'Ver respuestas de solicitud de clientes', dependency: 'view_solicitudes_clientes_details' },
-            { id: 'view_solicitudes_clientes_shared', label: 'Ver usuarios compartidos', dependency: 'view_solicitudes_clientes_details' },
 
             { id: 'view_solicitudes_clientes_attach', label: 'Ver documento adjunto', dependency: 'view_solicitudes_clientes_details' },
             { id: 'download_solicitudes_clientes_attach', label: 'Descargar documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
