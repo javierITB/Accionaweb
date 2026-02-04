@@ -19,21 +19,32 @@ const getSessionEmail = () => {
 
 const MOCK_SESSION_EMAIL = getSessionEmail() || "mail@mail.com";
 
-const UserProfileSettings = () => {
+const UserProfileSettings = ({ userPermissions = [] }) => {
   const [activeTab, setActiveTab] = useState('profile');
+
+  if (!userPermissions.includes('view_perfil')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center p-6 bg-card rounded-xl shadow-lg border border-border">
+          <h2 className="text-xl font-bold text-red-500 mb-2">Acceso Restringido</h2>
+          <p className="text-muted-foreground">No tienes permisos para ver tu perfil.</p>
+        </div>
+      </div>
+    );
+  }
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // ESTADOS PARA ALMACENAR LOS DATOS DEL USUARIO
   const [userId, setUserId] = useState(null);
-  const [profileData, setProfileData] = useState(null); 
+  const [profileData, setProfileData] = useState(null);
 
   // --- NUEVO: EFECTO PARA DESACTIVAR MODO OSCURO DEL ADMIN ---
   useEffect(() => {
     const html = document.documentElement;
     const hadDark = html.classList.contains('dark');
     if (hadDark) html.classList.remove('dark');
-    
+
     return () => {
       if (hadDark) html.classList.add('dark');
     };

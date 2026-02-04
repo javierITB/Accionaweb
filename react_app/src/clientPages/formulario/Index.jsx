@@ -4,8 +4,19 @@ import QuickActionsCard from './components/QuickActionsCard';
 import { API_BASE_URL, apiFetch } from '../../utils/api';
 import Footer from '../components/ui/Footer';
 
-const DashboardHome = () => {
+const DashboardHome = ({ userPermissions = [] }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+
+  if (!userPermissions.includes('view_formulario')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center p-6 bg-card rounded-xl shadow-lg border border-border">
+          <h2 className="text-xl font-bold text-red-500 mb-2">Acceso Restringido</h2>
+          <p className="text-muted-foreground">No tienes permisos para ver el formulario.</p>
+        </div>
+      </div>
+    );
+  }
   const [formData, setFormData] = useState({
     id: null,
     title: '',

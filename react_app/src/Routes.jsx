@@ -44,7 +44,7 @@ const Routes = () => {
         <ScrollToTop />
         <RouterRoutes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<ProtectedClient><Home /></ProtectedClient>} />
           <Route path="/preview" element={<PublicPreview />} />
 
           <Route path="/Remuneraciones" element={<ProtectedClient><FormList section={"Remuneraciones"} /></ProtectedClient>} />
@@ -69,7 +69,7 @@ const Routes = () => {
           <Route path="/registro-cambios" element={<ProtectedRoute><Registro /></ProtectedRoute>} />
           <Route path="/gestor-roles" element={<ProtectedRoute> <Roles /> </ProtectedRoute>} />
           <Route path="/config-notificaciones" element={<ProtectedRoute> <AdminNotificationManager /> </ProtectedRoute>} />
-          
+
           <Route path="/users" element={<ProtectedRoute> <Users /> </ProtectedRoute>} />
           <Route path="/empresas" element={<ProtectedRoute> <Empresas /> </ProtectedRoute>} />
           <Route path="/dashboard-home" element={<ProtectedRoute> <DashboardHome /> </ProtectedRoute>} />

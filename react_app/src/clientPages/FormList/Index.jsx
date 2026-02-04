@@ -5,10 +5,21 @@ import QuickActionsCard from './components/QuickActionsCard';
 import BackButton from 'clientPages/components/BackButton';
 import Footer from 'clientPages/components/ui/Footer.jsx';
 
-const DashboardHome = ( {section} ) => {
+const DashboardHome = ({ section, userPermissions = [] }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+
+  if (!userPermissions.includes('view_formularios')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center p-6 bg-card rounded-xl shadow-lg border border-border">
+          <h2 className="text-xl font-bold text-red-500 mb-2">Acceso Restringido</h2>
+          <p className="text-muted-foreground">No tienes permisos para ver la lista de formularios.</p>
+        </div>
+      </div>
+    );
+  }
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+
   // Update time every minute
   useEffect(() => {
     const timer = setInterval(() => {
@@ -34,12 +45,12 @@ const DashboardHome = ( {section} ) => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <Header />
-      
+
       {/* Main Content */}
       <main className={`transition-all duration-300 pt-16 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto">
 
-          
+
           {/* Main Dashboard Grid */}
           <div className="grid grid-cols-1 gap-3 w-full mb-4">
 
@@ -49,11 +60,11 @@ const DashboardHome = ( {section} ) => {
             {/* Left Column - Primary Actions */}
             <div className="xl:col-span-2 space-y-6 lg:space-y-12 w-full">
               {/* Quick Actions */}
-              <QuickActionsCard section={section}/>
+              <QuickActionsCard section={section} />
             </div>
           </div>
 
-      <Footer />
+          <Footer />
 
 
 
