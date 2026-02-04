@@ -41,7 +41,7 @@ const Header = ({ className = "" }) => {
       { name: "Admin", path: "/RespuestasForms", icon: "Shield" },
    ];
 
-   const userMenuItems = [{ name: "Iniciar Sesión", path: "/login", icon: "LogIn" }];
+   // const userMenuItems = [{ name: "Iniciar Sesión", path: "/login", icon: "LogIn" }];
 
    // --- EFECTO DE POLLING Y AGITACIÓN ---
    useEffect(() => {
@@ -133,9 +133,9 @@ const Header = ({ className = "" }) => {
       setIsMenuOpen(!isMenuOpen);
    };
 
-   const toggleUserMenu = () => {
-      setIsUserMenuOpen(!isUserMenuOpen);
-   };
+   // const toggleUserMenu = () => {
+   //    setIsUserMenuOpen(!isUserMenuOpen);
+   // };
 
    const handleLogout = () => {
       sessionStorage.clear();
