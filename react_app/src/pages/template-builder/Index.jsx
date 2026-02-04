@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
@@ -7,7 +7,16 @@ import TemplateList from './components/FormProperties';
 import DocumentTemplateEditor from './components/TemplateBuilder';
 import { API_BASE_URL, apiFetch } from '../../utils/api';
 
-const FormBuilder = () => {
+const FormBuilder = ({ userPermissions = [] }) => {
+
+  // --- LÓGICA DE PERMISOS BASADA EN PROPS ---
+  const permisos = useMemo(() => ({
+    crear: userPermissions.includes("create_plantillas"),
+    copiar: userPermissions.includes("copy_plantillas"),
+    editar: userPermissions.includes("edit_plantillas"),
+    eliminar: userPermissions.includes("delete_plantillas")
+  }), [userPermissions]);
+
   // ESTADOS DEL SIDEBAR - AGREGADOS
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -183,6 +192,13 @@ const FormBuilder = () => {
 
     // Detectar el tipo de operación
     const isDuplicating = selectedTemplateData.documentTitle && selectedTemplateData.paragraphs;
+    
+    // BLOQUEO POR PERMISOS EN COPIA
+    if (isDuplicating && !permisos.copiar) {
+      alert("No tienes permisos para copiar plantillas.");
+      return;
+    }
+
     const isNewFromScratch = selectedTemplateData.isNewTemplate;
 
     if (isDuplicating || isNewFromScratch) {
@@ -259,6 +275,7 @@ const FormBuilder = () => {
     setActiveTab('document');
   };
 
+  // --- FUNCIONES DE PÁRRAFOS RECUPERADAS ---
   const handleAddParagraph = () => {
     const newParagraph = { id: Date.now().toString(), content: 'Nuevo párrafo de contenido.', conditionalVar: '' };
     setFormData(prev => ({ ...prev, paragraphs: [...prev.paragraphs, newParagraph] }));
@@ -292,6 +309,13 @@ const FormBuilder = () => {
   };
 
   const handleSaveTemplate = async (newStatus = 'publicado') => {
+    // --- LÍNEA RECUPERADA Y CRÍTICA ---
+    const isUpdating = !!formData.id;
+
+    // VALIDACIÓN DE PERMISOS
+    if (isUpdating && !permisos.editar) return;
+    if (!isUpdating && !permisos.crear) return;
+
     const dataToSend = {
       id: formData.id,
       section: formData.section || 'General',
@@ -326,7 +350,6 @@ const FormBuilder = () => {
 
     setIsSaving(true);
 
-    const isUpdating = !!formData.id;
     const url = `${API_BASE_URL}/plantillas`;
     const method = "POST";
 
@@ -393,6 +416,7 @@ const FormBuilder = () => {
         return (
           <TemplateList
             onUpdateFormData={handleTemplateSelect}
+            permisos={permisos} // PASAMOS LOS PERMISOS AL HIJO
           />
         );
       case 'document':
@@ -494,18 +518,25 @@ const FormBuilder = () => {
                 />
               </div>
 
-              <Button
-                type="button"
-                variant="default"
-                onClick={() => handleSaveTemplate('publicado')}
-                loading={isSaving}
-                iconName="Send"
-                iconPosition="left"
-                className="w-full md:w-auto"
-                disabled={!formData.formId || isSaving || !formData.documentTitle || (formData.paragraphs.length === 0 && !formData.documentContent)}
-              >
-                {isSaving ? 'Guardando...' : 'Guardar Plantilla'}
-              </Button>
+              {/* LÓGICA DE FELIPE: BOTÓN O MENSAJE SEGÚN PERMISOS */}
+              {(formData.id ? permisos.editar : permisos.crear) ? (
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={() => handleSaveTemplate('publicado')}
+                  loading={isSaving}
+                  iconName="Send"
+                  iconPosition="left"
+                  className="w-full md:w-auto"
+                  disabled={!formData.formId || isSaving || !formData.documentTitle || (formData.paragraphs.length === 0 && !formData.documentContent)}
+                >
+                  {isSaving ? 'Guardando...' : 'Guardar Plantilla'}
+                </Button>
+              ) : (
+                <div className="px-4 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-medium border border-border">
+                  Sin permisos
+                </div>
+              )}
             </div>
           </div>
 

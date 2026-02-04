@@ -262,20 +262,31 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
     const variables = {};
     const encryptedRegex = /^[a-f0-9]{24}:[a-f0-9]{32}:[a-f0-9]+$/i;
 
+    // Helper para descifrar valores individuales
+    const tryDecrypt = (val) => {
+        if (typeof val === 'string' && encryptedRegex.test(val)) {
+            try { return decrypt(val); } catch (e) { return val; }
+        }
+        return val;
+    };
+
     Object.keys(responses).forEach(key => {
         if (key === '_contexto') return;
         let valor = responses[key];
 
-        // Intentar desencriptar si parece un string cifrado
-        if (typeof valor === 'string' && encryptedRegex.test(valor)) {
-            try {
-                valor = decrypt(valor);
-            } catch (e) {
-            }
+        // 1. Arrays: Mapear y descifrar cada elemento antes de unir
+        if (Array.isArray(valor)) {
+            valor = valor.map(v => tryDecrypt(v)).join(', ');
+        }
+        // 2. Strings: Descifrar si coincide con el patrón
+        else if (typeof valor === 'string') {
+            valor = tryDecrypt(valor);
+        }
+        // 3. Objetos: Convertir a string (JSON)
+        else if (valor && typeof valor === 'object') {
+            valor = JSON.stringify(valor);
         }
 
-        if (Array.isArray(valor)) valor = valor.join(', ');
-        if (valor && typeof valor === 'object' && !Array.isArray(valor)) valor = JSON.stringify(valor);
         const nombreVariable = normalizarNombreVariable(key);
         variables[nombreVariable] = valor || '';
     });
@@ -326,8 +337,8 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
 function evaluarCondicional(conditionalVar, variables) {
     if (!conditionalVar || conditionalVar.trim() === '') return true;
 
-    // Quitar [[IF: y ]] si vienen
-    let condicion = conditionalVar.replace(/^(\[\[IF:|{{)(.*?)(]])?$/i, '$2').trim();
+    // Quitar [[IF: y ]] si vienen (con soporte multilinea)
+    let condicion = conditionalVar.replace(/^(\[\[IF:|{{)([\s\S]*?)(]])?$/i, '$2').trim();
 
     // 1. OR ||
     if (condicion.includes('||')) {
@@ -376,7 +387,14 @@ function evaluarCondicional(conditionalVar, variables) {
         return valorStr !== '' && valorStr !== 'false' && valorStr !== '0';
     }
 
-    if (operator === '<') return valorStr.toLowerCase() < valueToCheck.toLowerCase();
+    if (operator === '<') {
+        // Soporte para "CONTIENE" en arrays (separados por coma)
+        if (valorStr.includes(',')) {
+            const arr = valorStr.split(',').map(s => s.trim().toLowerCase());
+            if (arr.includes(valueToCheck.toLowerCase())) return true;
+        }
+        return valorStr.toLowerCase() < valueToCheck.toLowerCase();
+    }
     if (operator === '>') return valorStr.toLowerCase() > valueToCheck.toLowerCase();
     if (operator === '=') return valorStr.toLowerCase() === valueToCheck.toLowerCase();
     if (operator === '!=') return valorStr.toLowerCase() !== valueToCheck.toLowerCase();
@@ -496,11 +514,9 @@ function parsearEstilosInline(elementStr) {
 function procesarHTML(html, variables) {
     if (!html) return [];
 
+    // 1. Limpieza preliminar (solo estructural)
     let cleanHtml = html
         .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
         .replace(/<br\s*\/?>/gi, '\n');
 
     const contadorNumeral = { valor: 1 };
@@ -541,15 +557,31 @@ function procesarHTML(html, variables) {
         return styles;
     }
 
+    // Helper para decodificar entidades FINALMENTE (antes de evaluar)
+    const decodeEntities = (str) => {
+        return str
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&#91;/g, '[')
+            .replace(/&#93;/g, ']')
+            .replace(/&amp;/g, '&');
+    };
+
     while ((match = regexBloques.exec(cleanHtml)) !== null) {
         const fullTag = match[0];
         const tagName = match[1].toLowerCase();
         const innerContent = match[2];
 
+        // 1. Quitar tags HTML
         let textoPlano = innerContent.replace(/<[^>]*>/g, '');
-        textoPlano = textoPlano.replace(/&nbsp;/g, ' ').trim();
+        // 2. Limpiar espacios raros
+        textoPlano = textoPlano.replace(/&nbsp;/g, ' ').replace(/\u200B/g, '').trim();
+        // 3. Decodificar entidades (AHORA, que ya no hay tags que se rompan)
+        textoPlano = decodeEntities(textoPlano);
 
-        const matchIf = textoPlano.match(/^\[\[\s*IF:(.*?)\s*\]\]$/i);
+        const matchIf = textoPlano.match(/^\[\[\s*IF:([\s\S]*?)\s*\]\]$/i);
         const matchEndIf = textoPlano.match(/^\[\[\s*ENDIF\s*\]\]$/i);
 
         if (matchIf) {
@@ -568,6 +600,12 @@ function procesarHTML(html, variables) {
 
         if (tagName === 'p') {
             const style = parsearEstilosInline(fullTag);
+
+            // IMPORTANTE: Para el contenido real del párrafo, TAMBIÉN decodificar al final
+            // Pero aquí dividimos por tags... es complejo porque "split" usa regex de tags.
+            // Si decodificamos ANTES de split, reintroducimos < > que rompen lógica?
+            // No, porque split es sobre innerContent (con tags).
+            // Entonces, dentro del loop de parts, decodificar el TEXTO de los textNodes.
 
             const parts = innerContent.split(/(<\/?(?:strong|b|em|i|u|span(?:\s+[^>]*)?)>)/gi);
             const paragraphChildren = [];
