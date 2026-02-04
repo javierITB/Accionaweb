@@ -158,7 +158,7 @@ const PERMISSION_GROUPS = {
         tagg: 'admin',
         permissions: [
             { id: 'view_tickets', label: 'Acceso a la vista' },
-            { id: 'delete_tickets', label: 'Eliminar solicitudes de clientes' },
+            { id: 'delete_tickets', label: 'Eliminar tickets' },
             { id: 'view_tickets_details', label: 'Acceso a detalles de tickets'},
             { id: 'view_tickets_answers', label: 'Ver tickets', dependency: 'view_tickets_details' },
             { id: 'accept_tickets_answers', label: 'Aceptar tickets', dependency: 'view_tickets_details' },
@@ -233,7 +233,7 @@ const PERMISSION_GROUPS = {
         tagg: 'admin',
         permissions: [{ id: 'view_configuracion_tickets', label: 'Acceso a la vista' }]
     },
-
+    //check
     anuncios: {
         label: 'Vista: Anuncios',
         tagg: 'admin',
@@ -285,6 +285,7 @@ const PERMISSION_GROUPS = {
             { id: 'delete_gestor_roles', label: 'Eliminar roles', dependency: 'view_gestor_roles' },
         ]
     },
+    //check
     gestor_notificaciones: {
         label: 'Vista: Gestor de Notificaciones',
         tagg: 'admin',
