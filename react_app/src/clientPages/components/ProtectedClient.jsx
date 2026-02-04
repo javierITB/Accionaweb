@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { API_BASE_URL } from "../../utils/api";
 import LoadingCard from "./LoadingCard";
@@ -6,6 +6,7 @@ import LoadingCard from "./LoadingCard";
 export default function ProtectedRoute({ children }) {
    const [loading, setLoading] = useState(true);
    const [isAuth, setIsAuth] = useState(false);
+   const [userPermissions, setUserPermissions] = useState([]);
    const location = useLocation();
 
    useEffect(() => {
@@ -21,19 +22,44 @@ export default function ProtectedRoute({ children }) {
          }
 
          try {
+            // 1. Validar token básico
             const res = await fetch(`${API_BASE_URL}/auth/validate`, {
                method: "POST",
                headers: { "Content-Type": "application/json" },
                body: JSON.stringify({ token, email, cargo }),
             });
-            if (cargo == "user" || cargo == "cliente" || cargo == "Admin" || cargo == "admin") {
-               setIsAuth(res.ok);
+
+            if (!res.ok) throw new Error("Sesión inválida");
+
+            // 2. Verificar Permisos del Rol (RBAC)
+            if (!cargo) throw new Error("Rol no definido");
+
+            const roleRes = await fetch(`${API_BASE_URL}/roles/name/${encodeURIComponent(cargo)}`, {
+               headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!roleRes.ok) throw new Error("Error verificando permisos del rol");
+
+            const roleData = await roleRes.json();
+            const permissions = roleData.permissions || [];
+
+            setUserPermissions(permissions);
+
+            // Verificar acceso al panel de cliente
+            const hasAccess = permissions.includes("view_panel_cliente");
+
+            if (hasAccess) {
+               setIsAuth(true);
             } else {
-               alert("Sesión inactiva o expirada...");
+               alert("No tienes permisos para acceder al panel de clientes.");
+               sessionStorage.clear();
                setIsAuth(false);
             }
+
          } catch (err) {
+            console.error("Error en ProtectedClient:", err);
             setIsAuth(false);
+            if (err.message === "Sesión inválida") sessionStorage.clear();
          } finally {
             setLoading(false);
          }
@@ -50,5 +76,15 @@ export default function ProtectedRoute({ children }) {
       );
    }
 
-   return isAuth ? children : <Navigate to="/login" state={{ from: location }} replace />;
+   if (!isAuth) {
+      return <Navigate to="/login" state={{ from: location }} replace />;
+   }
+
+   // Pasamos los permisos a los componentes hijos vía props
+   return React.Children.map(children, child => {
+      if (React.isValidElement(child)) {
+         return React.cloneElement(child, { userPermissions });
+      }
+      return child;
+   });
 }
