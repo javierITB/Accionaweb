@@ -57,12 +57,13 @@ const PERMISSION_GROUPS = {
             { id: 'edit_solicitudes_clientes_archive', label: 'Archivar solicitud', dependency: 'edit_solicitudes_clientes_state' },
         ]
     },
+    //check
     solicitudes_a_cliente: {
         label: 'Vista: Solicitudes a Cliente',
         tagg: 'admin',
         permissions: [
             { id: 'view_solicitudes_a_cliente', label: 'Acceso a la vista' },
-            { id: 'create_solicitudes_a_cliente', label: 'Crear solicitudes a cliente' },
+            { id: 'create_solicitudes_a_cliente', label: 'Crear solicitudes a cliente', dependency: 'view_solicitudes_a_cliente' },
         ]
     },
     tickets: {
@@ -133,10 +134,10 @@ const PERMISSION_GROUPS = {
         tagg: 'admin',
         permissions: [
             { id: 'view_plantillas', label: 'Acceso a la vista' },
-            { id: 'create_plantillas', label: 'Crear nuevas plantillas' },
+            { id: 'create_plantillas', label: 'Crear nuevas plantillas', dependency: 'view_plantillas' },
             { id: 'copy_plantillas', label: 'Copiar plantilla existente', dependency: 'create_plantillas' },
-            { id: 'edit_plantillas', label: 'Editar plantillas existentes' },
-            { id: 'delete_plantillas', label: 'Eliminar plantillas' },
+            { id: 'edit_plantillas', label: 'Editar plantillas existentes', dependency: 'view_plantillas'},
+            { id: 'delete_plantillas', label: 'Eliminar plantillas', dependency: 'view_plantillas' },
         ]
     },
     configuracion_tickets: {
@@ -149,7 +150,7 @@ const PERMISSION_GROUPS = {
         tagg: 'admin',
         permissions: [
             { id: 'view_anuncios', label: 'Acceso a la vista' },
-            { id: 'create_anuncios', label: 'Crear anuncios web'},
+            { id: 'create_anuncios', label: 'Crear anuncios web', dependency: 'view_anuncios' },
             { id: 'create_anuncios_web', label: 'Crear anuncios web' , dependency: 'create_anuncios' },
             { id: 'create_anuncios_mail', label: 'Crear anuncios mail' , dependency: 'create_anuncios'},
             { id: 'create_anuncios_for_all', label: 'Crear anuncios para todos los usuarios' , dependency: 'create_anuncios'},
@@ -157,15 +158,15 @@ const PERMISSION_GROUPS = {
             { id: 'create_anuncios_manual', label: 'Crear anuncios enviados manualmente' , dependency: 'create_anuncios'},
         ]
     },
-    
+    //check
     usuarios: {
         label: 'Vista: Usuarios',
         tagg: 'admin',
         permissions: [
             { id: 'view_usuarios', label: 'Acceso a la vista' },
-            { id: 'edit_usuarios', label: 'Editar Usuarios' },
-            { id: 'delete_usuarios', label: 'Eliminar Usuarios' },
-            { id: 'create_usuarios', label: 'Crear Usuarios' },
+            { id: 'edit_usuarios', label: 'Editar Usuarios', dependency: 'view_usuarios' },
+            { id: 'delete_usuarios', label: 'Eliminar Usuarios', dependency: 'view_usuarios' },
+            { id: 'create_usuarios', label: 'Crear Usuarios', dependency: 'view_usuarios' },
         ]
     },
     //check
@@ -174,9 +175,9 @@ const PERMISSION_GROUPS = {
         tagg: 'admin',
         permissions: [
             { id: 'view_empresas', label: 'Acceso a la vista' },
-            { id: 'edit_empresas', label: 'Editar Empresas' },
-            { id: 'delete_empresas', label: 'Eliminar Empresas' },
-            { id: 'create_empresas', label: 'Crear Empresas' },
+            { id: 'edit_empresas', label: 'Editar Empresas', dependency: 'view_empresas' },
+            { id: 'delete_empresas', label: 'Eliminar Empresas', dependency: 'view_empresas' },
+            { id: 'create_empresas', label: 'Crear Empresas', dependency: 'view_empresas' },
         ]
     },
     gestor_roles: {
@@ -188,6 +189,7 @@ const PERMISSION_GROUPS = {
             { id: 'create_gestor_roles', label: 'Crear nuevos roles', dependency: 'view_gestor_roles' },
             { id: 'edit_gestor_roles', label: 'Editar roles existentes', dependency: 'view_gestor_roles_details' },
             { id: 'edit_gestor_roles_by_self', label: 'Editar rol propio', dependency: 'view_gestor_roles_details' },
+            { id: 'view_gestor_roles_details_admin', label: 'Acceso a la vista detallada (admin)', dependency: 'view_gestor_roles' },
             { id: 'edit_gestor_roles_admin', label: 'Editar rol existente (Admin)', dependency: 'view_gestor_roles_details' },
             { id: 'delete_gestor_roles', label: 'Eliminar roles', dependency: 'view_gestor_roles' },
         ]
@@ -204,7 +206,10 @@ const PERMISSION_GROUPS = {
     registro_cambios: {
         label: 'Vista: Registro de Cambios',
         tagg: 'admin',
-        permissions: [{ id: 'view_registro_cambios', label: 'Acceso a la vista' }]
+        permissions: [
+            { id: 'view_registro_cambios', label: 'Acceso a la vista' },
+            { id: 'view_registro_cambios_details', label: 'Acceso a la vista detallada', dependency: 'view_registro_cambios' }
+        ]
     },
     registro_ingresos: {
         label: 'Vista: Registro de Ingresos',
