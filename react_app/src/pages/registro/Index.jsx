@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { apiFetch, API_BASE_URL } from "../../utils/api";
 import Header from "../../components/ui/Header";
 import Sidebar from "../../components/ui/Sidebar";
@@ -13,7 +13,12 @@ import LoadingCard from "clientPages/components/LoadingCard";
 //   return null;
 // };
 
-const CompanyReg = () => {
+const CompanyReg = ({userPermissions = [] }) => {
+
+   const permisos = useMemo(() =>({
+      ver: userPermissions.includes("view_registro_cambios_details")
+   }), [userPermissions])
+
    const [registros, setRegistros] = useState([]);
    const [modalOpen, setModalOpen] = useState(false);
    const [selectedRegistro, setSelectedRegistro] = useState(null);
@@ -24,6 +29,7 @@ const CompanyReg = () => {
    const [loading, setLoading] = useState(false);
 
    const openModal = (registro) => {
+      if(!permisos.ver) return;
       setSelectedRegistro(registro);
       setModalOpen(true);
    };
@@ -209,7 +215,7 @@ const CompanyReg = () => {
                            <th className="px-4 py-2 text-left">Descripción</th>
                            <th className="px-4 py-2 text-center">Afectado</th>
                            <th className="px-4 py-2 text-center">Fecha</th>
-                           <th className="px-4 py-2 text-center">Detalles</th>
+                           {permisos.ver && <th className="px-4 py-2 text-center">Detalles</th>}
                         </tr>
                      </thead>
                      <tbody>
@@ -220,11 +226,13 @@ const CompanyReg = () => {
                               <td className="px-4 py-2 text-sm">{registro.description}</td>
                               <td className="px-4 py-2 text-sm text-center">{registro.target.type || "—"}</td>
                               <td className="px-4 py-2 text-sm">{formatDateSplit(registro.createdAt) || "—"}</td>
+                              {(permisos.ver) && ( 
                               <td className="px-4 py-2 text-sm">
                                  <Button variant="outlineTeal" size="sm" onClick={() => openModal(registro)}>
                                     Ver más
                                  </Button>
                               </td>
+                              )}
                            </tr>
                         ))}
                      </tbody>

@@ -11,7 +11,7 @@ import FilterPanel from './components/FilterPanel';
 import RequestDetails from './components/RequestDetails';
 import StatsOverview from './components/StatsOverview';
 
-const DomicilioVirtualIndex = () => {
+const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
     const urlParams = new URLSearchParams(window.location.search);
     const formId = urlParams?.get('id');
 
@@ -302,6 +302,7 @@ const DomicilioVirtualIndex = () => {
                                     request={request}
                                     onRemove={handleRemove}
                                     onViewDetails={(req) => { setSelectedRequest(req); setShowRequestDetails(true); }}
+                                    userPermissions={userPermissions}
                                 />
                             ))
                         ) : (
@@ -320,6 +321,7 @@ const DomicilioVirtualIndex = () => {
                 onClose={handleCloseRequestDetails}
                 onUpdate={updateRequest}
                 endpointPrefix="domicilio-virtual"
+                userPermissions={userPermissions}
             />
         </div>
     );

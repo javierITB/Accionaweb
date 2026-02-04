@@ -139,230 +139,234 @@ const PERMISSION_GROUPS = {
             dependency: "view_solicitudes_clientes_signed",
          },
 
-            { id: 'edit_solicitudes_clientes_state', label: 'Editar estado de solicitud ', dependency: 'view_solicitudes_clientes_details' },
-            { id: 'edit_solicitudes_clientes_finalize', label: 'Finalizar solicitud', dependency: 'edit_solicitudes_clientes_state' },
-            { id: 'edit_solicitudes_clientes_archive', label: 'Archivar solicitud', dependency: 'edit_solicitudes_clientes_state' },
-        ]
-    },
-    //check
-    solicitudes_a_cliente: {
-        label: 'Vista: Solicitudes a Cliente',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_solicitudes_a_cliente', label: 'Acceso a la vista' },
-            { id: 'create_solicitudes_a_cliente', label: 'Crear solicitudes a cliente', dependency: 'view_solicitudes_a_cliente' },
-        ]
-    },
-    tickets: {
-        label: 'Vista: Tickets',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_tickets', label: 'Acceso a la vista' },
-            { id: 'delete_tickets', label: 'Eliminar tickets' },
-            { id: 'view_tickets_details', label: 'Acceso a detalles de tickets'},
-            { id: 'view_tickets_answers', label: 'Ver tickets', dependency: 'view_tickets_details' },
-            { id: 'accept_tickets_answers', label: 'Aceptar tickets', dependency: 'view_tickets_details' },
+         { id: 'edit_solicitudes_clientes_state', label: 'Editar estado de solicitud ', dependency: 'view_solicitudes_clientes_details' },
+         { id: 'edit_solicitudes_clientes_finalize', label: 'Finalizar solicitud', dependency: 'edit_solicitudes_clientes_state' },
+         { id: 'edit_solicitudes_clientes_archive', label: 'Archivar solicitud', dependency: 'edit_solicitudes_clientes_state' },
+      ]
+   },
+   //check
+   solicitudes_a_cliente: {
+      label: 'Vista: Solicitudes a Cliente',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_solicitudes_a_cliente', label: 'Acceso a la vista' },
+         { id: 'create_solicitudes_a_cliente', label: 'Crear solicitudes a cliente', dependency: 'view_solicitudes_a_cliente' },
+      ]
+   },
+   tickets: {
+      label: 'Vista: Tickets',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_tickets', label: 'Acceso a la vista' },
+         { id: 'delete_tickets', label: 'Eliminar solicitudes de clientes' },
+         { id: 'view_tickets_details', label: 'Acceso a detalles de tickets' },
+         { id: 'view_tickets_answers', label: 'Ver tickets', dependency: 'view_tickets_details' },
+         { id: 'accept_tickets_answers', label: 'Aceptar tickets', dependency: 'view_tickets_details' },
 
-            { id: 'view_tickets_attach', label: 'Ver documento adjunto', dependency: 'view_tickets_details' },
-            { id: 'download_tickets_attach', label: 'Descargar documento adjunto', dependency: 'view_tickets_attach' },
-            { id: 'preview_tickets_attach', label: 'vista previa documento adjunto', dependency: 'view_tickets_attach' },
+         { id: 'view_tickets_attach', label: 'Ver documento adjunto', dependency: 'view_tickets_details' },
+         { id: 'download_tickets_attach', label: 'Descargar documento adjunto', dependency: 'view_tickets_attach' },
+         { id: 'preview_tickets_attach', label: 'vista previa documento adjunto', dependency: 'view_tickets_attach' },
 
-            { id: 'edit_tickets_state', label: 'Editar estado de ticket ', dependency: 'view_tickets_details' },
-        ]
-    },
-    //check
-    domicilio_virtual: {
-        label: 'Vista: Domicilio Virtual',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_solicitudes_clientes', label: 'Acceso a la vista' },
-            { id: 'delete_solicitudes_clientes', label: 'Eliminar solicitudes de clientes' },
-            { id: 'view_solicitudes_clientes_details', label: 'Acceso a detalles de solicitudes de clientes' },
-            { id: 'view_solicitudes_clientes_answers', label: 'Ver respuestas de solicitud de clientes', dependency: 'view_solicitudes_clientes_details' },
+         { id: 'edit_tickets_state', label: 'Editar estado de ticket ', dependency: 'view_tickets_details' },
+      ]
+   },
+   //check
+   domicilio_virtual: {
+      label: 'Vista: Domicilio Virtual',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_solicitudes_clientes', label: 'Acceso a la vista' },
+         { id: 'delete_solicitudes_clientes', label: 'Eliminar solicitudes de clientes' },
+         { id: 'view_solicitudes_clientes_details', label: 'Acceso a detalles de solicitudes de clientes' },
+         { id: 'view_solicitudes_clientes_answers', label: 'Ver respuestas de solicitud de clientes', dependency: 'view_solicitudes_clientes_details' },
 
-            { id: 'view_solicitudes_clientes_attach', label: 'Ver documento adjunto', dependency: 'view_solicitudes_clientes_details' },
-            { id: 'download_solicitudes_clientes_attach', label: 'Descargar documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
-            { id: 'preview_solicitudes_clientes_attach', label: 'vista previa documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
+         { id: 'view_solicitudes_clientes_attach', label: 'Ver documento adjunto', dependency: 'view_solicitudes_clientes_details' },
+         { id: 'download_solicitudes_clientes_attach', label: 'Descargar documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
+         { id: 'preview_solicitudes_clientes_attach', label: 'vista previa documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
 
-            { id: 'view_solicitudes_clientes_generated', label: 'Ver documento generado', dependency: 'view_solicitudes_clientes_details'  },
-            { id: 'download_solicitudes_clientes_generated', label: 'Descargar documento generado', dependency: 'view_solicitudes_clientes_generated' },
-            { id: 'preview_solicitudes_clientes_generated', label: 'vista previa documento generado', dependency: 'view_solicitudes_clientes_generated' },
-            { id: 'regenerate_solicitudes_clientes_generated', label: 'Regenerar documento', dependency: 'view_solicitudes_clientes_generated' },
+         { id: 'view_solicitudes_clientes_generated', label: 'Ver documento generado', dependency: 'view_solicitudes_clientes_details' },
+         { id: 'download_solicitudes_clientes_generated', label: 'Descargar documento generado', dependency: 'view_solicitudes_clientes_generated' },
+         { id: 'preview_solicitudes_clientes_generated', label: 'vista previa documento generado', dependency: 'view_solicitudes_clientes_generated' },
+         { id: 'regenerate_solicitudes_clientes_generated', label: 'Regenerar documento', dependency: 'view_solicitudes_clientes_generated' },
 
-            { id: 'edit_solicitudes_clientes_state', label: 'Editar estado de solicitud ', dependency: 'view_solicitudes_clientes_details' },
-            
-        ]
-    },
-    //check
-    rendimiento: {
-        label: 'Vista: Rendimiento',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_rendimiento', label: 'Acceso a la vista' },
-            { id: 'view_rendimiento_previo', label: 'Visualizar estadisticas de semanas anteriores', dependency: 'view_rendimiento' },
-            { id: 'view_rendimiento_global', label: 'Visualizar estadisticas globales', dependency: 'view_rendimiento' },
-        ]
-    },
-    //check
-    formularios: {
-        label: 'Vista: Formularios',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_formularios', label: 'Acceso a la vista' },
-            { id: 'create_formularios', label: 'Crear nuevos formularios' , dependency: 'view_formularios' },
-            { id: 'edit_formularios', label: 'Editar formularios existentes', dependency: 'view_formularios' },
-            { id: 'edit_formularios_propiedades', label: 'Editar propiedades de formularios existentes', dependency: 'edit_formularios' },
-            { id: 'edit_formularios_preguntas', label: 'Editar preguntas de formularios existentes', dependency: 'edit_formularios' },
-            { id: 'delete_formularios', label: 'Eliminar formularios', dependency: 'view_formularios' },
-        ]
-    },
-    //check
-    plantillas: {
-        label: 'Vista: Plantillas',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_plantillas', label: 'Acceso a la vista' },
-            { id: 'create_plantillas', label: 'Crear nuevas plantillas', dependency: 'view_plantillas' },
-            { id: 'copy_plantillas', label: 'Copiar plantilla existente', dependency: 'create_plantillas' },
-            { id: 'edit_plantillas', label: 'Editar plantillas existentes', dependency: 'view_plantillas'},
-            { id: 'delete_plantillas', label: 'Eliminar plantillas', dependency: 'view_plantillas' },
-        ]
-    },
-    configuracion_tickets: {
-        label: 'Vista: Configuración de Tickets',
-        tagg: 'admin',
-        permissions: [{ id: 'view_configuracion_tickets', label: 'Acceso a la vista' }]
-    },
-    //check
-    anuncios: {
-        label: 'Vista: Anuncios',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_anuncios', label: 'Acceso a la vista' },
-            { id: 'create_anuncios', label: 'Crear anuncios web', dependency: 'view_anuncios' },
-            { id: 'create_anuncios_web', label: 'Crear anuncios web' , dependency: 'create_anuncios' },
-            { id: 'create_anuncios_mail', label: 'Crear anuncios mail' , dependency: 'create_anuncios'},
-            { id: 'create_anuncios_for_all', label: 'Crear anuncios para todos los usuarios' , dependency: 'create_anuncios'},
-            { id: 'create_anuncios_filter', label: 'Crear anuncios para usuarios filtrados' , dependency: 'create_anuncios'},
-            { id: 'create_anuncios_manual', label: 'Crear anuncios enviados manualmente' , dependency: 'create_anuncios'},
-        ]
-    },
-    //check
-    usuarios: {
-        label: 'Vista: Usuarios',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_usuarios', label: 'Acceso a la vista' },
-            { id: 'edit_usuarios', label: 'Editar Usuarios', dependency: 'view_usuarios' },
-            { id: 'delete_usuarios', label: 'Eliminar Usuarios', dependency: 'view_usuarios' },
-            { id: 'create_usuarios', label: 'Crear Usuarios', dependency: 'view_usuarios' },
-        ]
-    },
-    //check
-    empresas: {
-        label: 'Vista: Empresas',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_empresas', label: 'Acceso a la vista' },
-            { id: 'edit_empresas', label: 'Editar Empresas', dependency: 'view_empresas' },
-            { id: 'delete_empresas', label: 'Eliminar Empresas', dependency: 'view_empresas' },
-            { id: 'create_empresas', label: 'Crear Empresas', dependency: 'view_empresas' },
-        ]
-    },
-    //check
-    gestor_roles: {
-        label: 'Vista: Gestor de Roles',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_gestor_roles', label: 'Acceso a la vista' },
-            { id: 'view_gestor_roles_details', label: 'Acceso a la vista detallada', dependency: 'view_gestor_roles' },
-            { id: 'create_gestor_roles', label: 'Crear nuevos roles', dependency: 'view_gestor_roles' },
-            { id: 'copy_gestor_roles', label: 'Duplicar roles existentes', dependency: 'view_gestor_roles' },
-            { id: 'edit_gestor_roles', label: 'Editar roles existentes', dependency: 'view_gestor_roles_details' },
-            { id: 'edit_gestor_roles_by_self', label: 'Editar rol propio', dependency: 'view_gestor_roles_details' },
-            { id: 'view_gestor_roles_details_admin', label: 'Acceso a la vista detallada (admin)', dependency: 'view_gestor_roles' },
-            { id: 'edit_gestor_roles_admin', label: 'Editar rol existente (Admin)', dependency: 'view_gestor_roles_details' },
-            { id: 'delete_gestor_roles', label: 'Eliminar roles', dependency: 'view_gestor_roles' },
-        ]
-    },
-    //check
-    gestor_notificaciones: {
-        label: 'Vista: Gestor de Notificaciones',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_gestor_notificaciones', label: 'Acceso a la vista' },
-            { id: 'view_gestor_notificaciones_details', label: 'Acceso a la vista detallada' },
-            { id: 'delete_gestor_notificaciones', label: 'Eliminar notificaciones' },
-        ]
-    },
-    //check
-    registro_cambios: {
-        label: 'Vista: Registro de Cambios',
-        tagg: 'admin',
-        permissions: [
-            { id: 'view_registro_cambios', label: 'Acceso a la vista' },
-            { id: 'view_registro_cambios_details', label: 'Acceso a la vista detallada', dependency: 'view_registro_cambios' }
-        ]
-    },
-    //check
-    registro_ingresos: {
-        label: 'Vista: Registro de Ingresos',
-        tagg: 'admin',
-        permissions: [{ id: 'view_registro_ingresos', label: 'Acceso a la vista' }]
-    },
+         { id: 'edit_solicitudes_clientes_state', label: 'Editar estado de solicitud ', dependency: 'view_solicitudes_clientes_details' },
 
-    // --- VISTAS TAGG: CLIENTE ---
-    home: {
-        label: 'Vista: home',
-        tagg: 'cliente',
-        permissions: [
-            { id: 'view_home', label: 'Acceso a la vista' }
-        ]
-    },
-    perfil: {
-        label: 'Vista: Perfil',
-        tagg: 'cliente',
-        permissions: [
-            { id: 'view_perfil', label: 'Acceso a la vista' }
-        ]
-    },
+      ]
+   },
+   //check
+   rendimiento: {
+      label: 'Vista: Rendimiento',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_rendimiento', label: 'Acceso a la vista' },
+         { id: 'view_rendimiento_previo', label: 'Visualizar estadisticas de semanas anteriores', dependency: 'view_rendimiento' },
+         { id: 'view_rendimiento_global', label: 'Visualizar estadisticas globales', dependency: 'view_rendimiento' },
+      ]
+   },
+   //check
+   formularios: {
+      label: 'Vista: Formularios',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_formularios', label: 'Acceso a la vista' },
+         { id: 'create_formularios', label: 'Crear nuevos formularios', dependency: 'view_formularios' },
+         { id: 'edit_formularios', label: 'Editar formularios existentes', dependency: 'view_formularios' },
+         { id: 'edit_formularios_propiedades', label: 'Editar propiedades de formularios existentes', dependency: 'edit_formularios' },
+         { id: 'edit_formularios_preguntas', label: 'Editar preguntas de formularios existentes', dependency: 'edit_formularios' },
+         { id: 'delete_formularios', label: 'Eliminar formularios', dependency: 'view_formularios' },
+      ]
+   },
+   //check
+   plantillas: {
+      label: 'Vista: Plantillas',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_plantillas', label: 'Acceso a la vista' },
+         { id: 'create_plantillas', label: 'Crear nuevas plantillas', dependency: 'view_plantillas' },
+         { id: 'copy_plantillas', label: 'Copiar plantilla existente', dependency: 'create_plantillas' },
+         { id: 'edit_plantillas', label: 'Editar plantillas existentes', dependency: 'view_plantillas' },
+         { id: 'delete_plantillas', label: 'Eliminar plantillas', dependency: 'view_plantillas' },
+      ]
+   },
+   configuracion_tickets: {
+      label: 'Vista: Configuración de Tickets',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_configuracion_tickets', label: 'Acceso a la vista' },
+         { id: 'create_categoria_ticket', label: 'Crear categorías de tickets', dependency: 'view_configuracion_tickets' },
+         { id: 'edit_categoria_ticket', label: 'Editar categorías de tickets', dependency: 'view_configuracion_tickets' },
+         { id: 'delete_categoria_ticket', label: 'Eliminar categorías de tickets', dependency: 'edit_categoria_ticket' },
+      ]
+   },
 
-    mis_solicitudes: {
-        label: 'Vista: Mis solicitudes',
-        tagg: 'cliente',
-        permissions: [
-            { id: 'view_mis_solicitudes', label: 'Acceso a la vista' },
-            { id: 'share_mis_solicitudes', label: 'Compartir solicitudes' },
-            { id: 'unshare_mis_solicitudes', label: 'Dejar de compartir solicitudes' },
-            
-        ]
-    },
-    formularios: {
-        label: 'Vista: Formularios',
-        tagg: 'cliente',
-        permissions: [
-            { id: 'view_formularios', label: 'Acceso a la vista' }
-        ]
-    },
-    formulario: {
-        label: 'Vista: Formulario',
-        tagg: 'cliente',
-        permissions: [
-            { id: 'view_formulario', label: 'Acceso a la vista' }
-        ]
-    }
+   anuncios: {
+      label: 'Vista: Anuncios',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_anuncios', label: 'Acceso a la vista' },
+         { id: 'create_anuncios', label: 'Crear anuncios web', dependency: 'view_anuncios' },
+         { id: 'create_anuncios_web', label: 'Crear anuncios web', dependency: 'create_anuncios' },
+         { id: 'create_anuncios_mail', label: 'Crear anuncios mail', dependency: 'create_anuncios' },
+         { id: 'create_anuncios_for_all', label: 'Crear anuncios para todos los usuarios', dependency: 'create_anuncios' },
+         { id: 'create_anuncios_filter', label: 'Crear anuncios para usuarios filtrados', dependency: 'create_anuncios' },
+         { id: 'create_anuncios_manual', label: 'Crear anuncios enviados manualmente', dependency: 'create_anuncios' },
+      ]
+   },
+   //check
+   usuarios: {
+      label: 'Vista: Usuarios',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_usuarios', label: 'Acceso a la vista' },
+         { id: 'edit_usuarios', label: 'Editar Usuarios', dependency: 'view_usuarios' },
+         { id: 'delete_usuarios', label: 'Eliminar Usuarios', dependency: 'view_usuarios' },
+         { id: 'create_usuarios', label: 'Crear Usuarios', dependency: 'view_usuarios' },
+      ]
+   },
+   //check
+   empresas: {
+      label: 'Vista: Empresas',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_empresas', label: 'Acceso a la vista' },
+         { id: 'edit_empresas', label: 'Editar Empresas', dependency: 'view_empresas' },
+         { id: 'delete_empresas', label: 'Eliminar Empresas', dependency: 'view_empresas' },
+         { id: 'create_empresas', label: 'Crear Empresas', dependency: 'view_empresas' },
+      ]
+   },
+   //check
+   gestor_roles: {
+      label: 'Vista: Gestor de Roles',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_gestor_roles', label: 'Acceso a la vista' },
+         { id: 'view_gestor_roles_details', label: 'Acceso a la vista detallada', dependency: 'view_gestor_roles' },
+         { id: 'create_gestor_roles', label: 'Crear nuevos roles', dependency: 'view_gestor_roles' },
+         { id: 'copy_gestor_roles', label: 'Duplicar roles existentes', dependency: 'view_gestor_roles' },
+         { id: 'edit_gestor_roles', label: 'Editar roles existentes', dependency: 'view_gestor_roles_details' },
+         { id: 'edit_gestor_roles_by_self', label: 'Editar rol propio', dependency: 'view_gestor_roles_details' },
+         { id: 'view_gestor_roles_details_admin', label: 'Acceso a la vista detallada (admin)', dependency: 'view_gestor_roles' },
+         { id: 'edit_gestor_roles_admin', label: 'Editar rol existente (Admin)', dependency: 'view_gestor_roles_details' },
+         { id: 'delete_gestor_roles', label: 'Eliminar roles', dependency: 'view_gestor_roles' },
+      ]
+   },
+   gestor_notificaciones: {
+      label: 'Vista: Gestor de Notificaciones',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_gestor_notificaciones', label: 'Acceso a la vista' },
+         { id: 'view_gestor_notificaciones_details', label: 'Acceso a la vista detallada' },
+         { id: 'delete_gestor_notificaciones', label: 'Eliminar notificaciones' },
+      ]
+   },
+   //check
+   registro_cambios: {
+      label: 'Vista: Registro de Cambios',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_registro_cambios', label: 'Acceso a la vista' },
+         { id: 'view_registro_cambios_details', label: 'Acceso a la vista detallada', dependency: 'view_registro_cambios' }
+      ]
+   },
+   //check
+   registro_ingresos: {
+      label: 'Vista: Registro de Ingresos',
+      tagg: 'admin',
+      permissions: [{ id: 'view_registro_ingresos', label: 'Acceso a la vista' }]
+   },
+
+   // --- VISTAS TAGG: CLIENTE ---
+   home: {
+      label: 'Vista: home',
+      tagg: 'cliente',
+      permissions: [
+         { id: 'view_home', label: 'Acceso a la vista' }
+      ]
+   },
+   perfil: {
+      label: 'Vista: Perfil',
+      tagg: 'cliente',
+      permissions: [
+         { id: 'view_perfil', label: 'Acceso a la vista' }
+      ]
+   },
+
+   mis_solicitudes: {
+      label: 'Vista: Mis solicitudes',
+      tagg: 'cliente',
+      permissions: [
+         { id: 'view_mis_solicitudes', label: 'Acceso a la vista' },
+         { id: 'share_mis_solicitudes', label: 'Compartir solicitudes' },
+         { id: 'unshare_mis_solicitudes', label: 'Dejar de compartir solicitudes' },
+
+      ]
+   },
+   formularios: {
+      label: 'Vista: Formularios',
+      tagg: 'cliente',
+      permissions: [
+         { id: 'view_formularios', label: 'Acceso a la vista' }
+      ]
+   },
+   formulario: {
+      label: 'Vista: Formulario',
+      tagg: 'cliente',
+      permissions: [
+         { id: 'view_formulario', label: 'Acceso a la vista' }
+      ]
+   }
 };
 
 
-export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos}) {
-    const [isSaving, setIsSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState('admin'); 
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        permissions: [],
-        color: '#4f46e5'
-    });
+export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos }) {
+   const [isSaving, setIsSaving] = useState(false);
+   const [activeTab, setActiveTab] = useState('admin');
+   const [formData, setFormData] = useState({
+      name: '',
+      description: '',
+      permissions: [],
+      color: '#4f46e5'
+   });
 
    const isClientPanelEnabled = formData.permissions.includes("view_panel_cliente");
    const isAdminPanelEnabled = formData.permissions.includes("view_panel_admin");
@@ -452,23 +456,21 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos}) 
       }
    };
 
-   const isAdminRole = role.name?.toLowerCase() === "administrador";
+   const roleName = role.name?.toLowerCase();
+   const myRoleName = sessionStorage.getItem("cargo")?.toLowerCase();
+
+   const isAdminRole = roleName === "administrador";
+   const itsMyRole = roleName === myRoleName;
 
    const canEditAdmin = isAdminRole && permisos.edit_gestor_roles_admin;
+   const canEditMyRole = itsMyRole && permisos.edit_gestor_roles_by_self;
+   const canEditOtherRoles =
+      !isAdminRole &&
+      !itsMyRole &&
+      permisos.edit_gestor_roles;
 
-   const itsMyRole = role.name?.toLowerCase() === sessionStorage.getItem('cargo').toLowerCase();
+   const canEdit = canEditAdmin || canEditMyRole || canEditOtherRoles;
 
-   const canEditOther = !isAdminRole && !itsMyRole && permisos.edit_gestor_roles;
-
-   const canEdit = canEditAdmin || canEditOther;
-
-   console.log("isAdminRole", isAdminRole)
-   console.log("canEditAdmin", canEditAdmin)
-   console.log("canEditOther", canEditOther)
-   console.log("canEdit", canEdit)
-   console.log("itsMyRole", itsMyRole)
-   console.log("role", role)
-   console.log("sessionStorage.getItem('cargo')", sessionStorage.getItem('cargo'))
 
    return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
@@ -560,7 +562,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos}) 
                   {/* VISTAS Y PERMISOS CON DEPENDENCIA */}
                   <div className="space-y-4">
                      {(activeTab === "admin" && isAdminPanelEnabled) ||
-                     (activeTab === "cliente" && isClientPanelEnabled) ? (
+                        (activeTab === "cliente" && isClientPanelEnabled) ? (
                         Object.entries(PERMISSION_GROUPS)
                            .filter(([_, g]) => g.tagg === activeTab)
                            .map(([groupId, group]) => {
@@ -642,7 +644,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos}) 
             </div>
 
             <div className="px-6 py-4 border-t border-border flex justify-end gap-3 bg-muted/10 shrink-0">
-               {canEdit || true? (
+               {canEdit ? (
                   <>
                      <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-muted-foreground">
                         Cancelar

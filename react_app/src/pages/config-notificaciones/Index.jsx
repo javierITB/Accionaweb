@@ -4,9 +4,8 @@ import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import { apiFetch, API_BASE_URL } from '../../utils/api';
-// import { toast } from 'sonner'; // Not installed
 
-const AdminNotificationManager = () => {
+const AdminNotificationManager = ({ userPermissions = [] }) => {
     // Sidebar State
     const [isDesktopOpen, setIsDesktopOpen] = useState(true);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -30,6 +29,10 @@ const AdminNotificationManager = () => {
     const [uniqueCompanies, setUniqueCompanies] = useState([]);
     const [uniqueRoles, setUniqueRoles] = useState([]);
     const [uniqueCargos, setUniqueCargos] = useState([]);
+
+    // Permisos
+    const canViewDetails = userPermissions.includes('view_gestor_notificaciones_details');
+    const canDelete = userPermissions.includes('delete_gestor_notificaciones');
 
     useEffect(() => {
         const handleResize = () => {
@@ -60,7 +63,8 @@ const AdminNotificationManager = () => {
                             const groupKeyObj = {
                                 titulo: noti.titulo,
                                 descripcion: noti.descripcion,
-                                tipo: noti.icono
+                                tipo: noti.icono,
+                                fecha: new Date(noti.fecha_creacion).toISOString().split('T')[0]
                             };
                             const groupKey = JSON.stringify(groupKeyObj);
 
@@ -70,6 +74,7 @@ const AdminNotificationManager = () => {
                                     titulo: noti.titulo,
                                     descripcion: noti.descripcion,
                                     tipo: noti.icono,
+                                    fecha: noti.fecha_creacion,
                                     count: 0,
                                     usuarios: []
                                 };
@@ -91,7 +96,10 @@ const AdminNotificationManager = () => {
                     }
                 });
 
-                const groupsArray = Object.values(groupsMap).sort((a, b) => b.count - a.count);
+                const groupsArray = Object.values(groupsMap).map(group => ({
+                    ...group,
+                    uniqueUserCount: new Set(group.usuarios.map(u => u._id)).size
+                })).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
                 setNotificationGroups(groupsArray);
 
             } else {
@@ -110,6 +118,7 @@ const AdminNotificationManager = () => {
 
     // Handlers
     const handleOpenGroup = (group) => {
+        if (!canViewDetails) return;
         setSelectedGroup(group);
         setSelectedUserIds([]);
         setDetailsFilter("");
@@ -185,6 +194,10 @@ const AdminNotificationManager = () => {
     const processedUsers = getProcessedUsers();
 
     const handleDelete = async () => {
+        if (!canDelete) {
+            alert("No tienes permisos para eliminar notificaciones");
+            return;
+        }
         if (!selectedGroup || selectedUserIds.length === 0) return;
 
         if (!confirm(`¿Estás seguro de eliminar esta notificación para ${selectedUserIds.length} usuario(s)?`)) return;
@@ -257,7 +270,7 @@ const AdminNotificationManager = () => {
                                         <th className="px-6 py-3">Tipo</th>
                                         <th className="px-6 py-3">Título / Descripción</th>
                                         <th className="px-6 py-3 text-center">Usuarios Afectados</th>
-                                        <th className="px-6 py-3 text-right">Acción</th>
+                                        {canViewDetails && <th className="px-6 py-3 text-right">Acción</th>}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
@@ -277,22 +290,28 @@ const AdminNotificationManager = () => {
                                                     <div>
                                                         <p className="font-semibold text-foreground break-words leading-tight">{group.titulo}</p>
                                                         <p className="text-xs text-muted-foreground break-words line-clamp-2 mt-1">{group.descripcion}</p>
+                                                        <p className="text-[10px] text-muted-foreground mt-1 opacity-70">
+                                                            {new Date(group.fecha).toLocaleDateString()}
+                                                        </p>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                                        {group.count}
+                                                        {group.uniqueUserCount}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => handleOpenGroup(group)}
-                                                    >
-                                                        Ver Detalles
-                                                    </Button>
-                                                </td>
+                                                {canViewDetails && (
+                                                    <td className="px-6 py-4 text-right">
+
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => handleOpenGroup(group)}
+                                                        >
+                                                            Ver Detalles
+                                                        </Button>
+                                                    </td>
+                                                )}
                                             </tr>
                                         ))
                                     )}
@@ -377,30 +396,25 @@ const AdminNotificationManager = () => {
 
                             {/* Actions & Stats Bar */}
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 sm:pt-0">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <input
-                                        type="checkbox"
-                                        className="rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                                        checked={processedUsers.length > 0 && processedUsers.every(u => selectedUserIds.includes(u._id))}
-                                        onChange={() => toggleSelectAllUsers(processedUsers)}
-                                    />
-                                    <span className="cursor-pointer" onClick={() => toggleSelectAllUsers(processedUsers)}>
-                                        Seleccionar Visibles ({processedUsers.length})
-                                    </span>
-                                </div>
-
-                                {selectedUserIds.length > 0 && (
-                                    <Button
-                                        variant="danger"
-                                        size="sm"
-                                        iconName="Trash"
-                                        onClick={handleDelete}
-                                        loading={isDeleting}
-                                        className="w-full sm:w-auto"
-                                    >
-                                        Eliminar ({selectedUserIds.length})
-                                    </Button>
+                                {canDelete ? (
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                                            checked={processedUsers.length > 0 && processedUsers.every(u => selectedUserIds.includes(u._id))}
+                                            onChange={() => toggleSelectAllUsers(processedUsers)}
+                                        />
+                                        <span className="cursor-pointer" onClick={() => toggleSelectAllUsers(processedUsers)}>
+                                            Seleccionar Visibles ({processedUsers.length})
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-muted-foreground">
+                                        Mostrando {processedUsers.length} usuarios
+                                    </div>
                                 )}
+
+
                             </div>
                         </div>
 
@@ -409,7 +423,7 @@ const AdminNotificationManager = () => {
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-card sticky top-0 z-10 shadow-sm">
                                     <tr className="border-b border-border">
-                                        <th className="px-6 py-4 w-12 font-medium text-muted-foreground"></th>
+                                        {canDelete && <th className="px-6 py-4 w-12 font-medium text-muted-foreground"></th>}
                                         <th className="px-6 py-4 font-medium text-muted-foreground">Usuario</th>
                                         <th className="px-6 py-4 font-medium text-muted-foreground">Empresa</th>
                                         <th className="px-6 py-4 font-medium text-muted-foreground">Rol</th>
@@ -420,14 +434,16 @@ const AdminNotificationManager = () => {
                                 <tbody className="divide-y divide-border bg-card">
                                     {processedUsers.map((u, i) => (
                                         <tr key={i} className={`hover:bg-muted/5 transition-colors ${selectedUserIds.includes(u._id) ? 'bg-primary/5' : ''}`}>
-                                            <td className="px-6 py-3 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    className="rounded border-gray-300 text-primary focus:ring-primary/50"
-                                                    checked={selectedUserIds.includes(u._id)}
-                                                    onChange={() => toggleSelectUser(u._id)}
-                                                />
-                                            </td>
+                                            {canDelete && (
+                                                <td className="px-6 py-3 text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="rounded border-gray-300 text-primary focus:ring-primary/50"
+                                                        checked={selectedUserIds.includes(u._id)}
+                                                        onChange={() => toggleSelectUser(u._id)}
+                                                    />
+                                                </td>
+                                            )}
                                             <td className="px-6 py-3">
                                                 <div className="font-medium">{u.nombre}</div>
                                                 <div className="text-xs text-muted-foreground">{u.mail}</div>
@@ -451,6 +467,21 @@ const AdminNotificationManager = () => {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Modal Footer */}
+                        {selectedUserIds.length > 0 && canDelete && (
+                            <div className="p-4 border-t border-border bg-card flex justify-end gap-3 shrink-0 rounded-b-xl">
+                                <Button
+                                    variant="danger"
+                                    size="sm"
+                                    iconName="Trash"
+                                    onClick={handleDelete}
+                                    loading={isDeleting}
+                                >
+                                    Eliminar ({selectedUserIds.length})
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

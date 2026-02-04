@@ -15,14 +15,6 @@ const TicketConfig = () => {
     const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
 
     useEffect(() => {
-        const checkAccess = () => {
-            const rol = sessionStorage.getItem('rol');
-            if (rol?.toLowerCase() !== 'admin') {
-                window.location.href = '/dashboard';
-            }
-        };
-        checkAccess();
-
         const handleResize = () => {
             const isMobile = window.innerWidth < 768;
             setIsMobileScreen(isMobile);
@@ -57,6 +49,39 @@ const TicketConfig = () => {
     const [dropdownType, setDropdownType] = useState(null); // 'icon' | 'color'
     const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0, placement: 'bottom' });
 
+    // --- PERMISOS DE USUARIO ---
+    const [userPermissions, setUserPermissions] = useState({
+        view: false,
+        create: false,
+        edit: false,
+        delete: false
+    });
+
+    const checkPermissions = async () => {
+        try {
+            const role = sessionStorage.getItem('cargo')?.toLowerCase();
+            if (role === 'administrador' || role === 'admin') {
+                setUserPermissions({ view: true, create: true, edit: true, delete: true });
+                return;
+            }
+
+            const res = await apiFetch(`${API_BASE_URL}/roles/name/${role}`);
+            if (res.ok) {
+                const roleData = await res.json();
+                const perms = roleData.permissions || [];
+                const hasAll = perms.includes('all');
+                setUserPermissions({
+                    view: hasAll || perms.includes('view_configuracion_tickets'),
+                    create: hasAll || perms.includes('create_categoria_ticket'),
+                    edit: hasAll || perms.includes('edit_categoria_ticket'),
+                    delete: hasAll || perms.includes('delete_categoria_ticket')
+                });
+            }
+        } catch (error) {
+            console.error("Error checking permissions:", error);
+        }
+    };
+
     // Cargar Configuraciones
     const fetchConfigs = async () => {
         try {
@@ -74,6 +99,7 @@ const TicketConfig = () => {
     };
 
     useEffect(() => {
+        checkPermissions();
         fetchConfigs();
     }, []);
 
@@ -314,7 +340,9 @@ const TicketConfig = () => {
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                         <Button onClick={fetchConfigs} variant="outline" iconName="RefreshCw" size="sm" className="w-full sm:w-auto">Actualizar</Button>
-                        <Button onClick={handleCreateClick} variant="default" iconName="Plus" size="sm" className="w-full sm:w-auto">Nueva Categoría</Button>
+                        {userPermissions.create && (
+                            <Button onClick={handleCreateClick} variant="default" iconName="Plus" size="sm" className="w-full sm:w-auto">Nueva Categoría</Button>
+                        )}
                     </div>
                 </div>
 
@@ -394,14 +422,16 @@ const TicketConfig = () => {
                                     </div>
                                 </div>
 
-                                <Button
-                                    variant="default"
-                                    className="w-full mt-auto"
-                                    iconName="Settings"
-                                    onClick={() => handleEditClick(cat)}
-                                >
-                                    Editar Categoría
-                                </Button>
+                                {userPermissions.edit && (
+                                    <Button
+                                        variant="default"
+                                        className="w-full mt-auto"
+                                        iconName="Settings"
+                                        onClick={() => handleEditClick(cat)}
+                                    >
+                                        Editar Categoría
+                                    </Button>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -717,7 +747,7 @@ const TicketConfig = () => {
                         </div>
 
                         <div className="p-6 border-t border-border bg-muted/10 flex justify-between gap-3">
-                            {!editingCategory.isNew ? (
+                            {!editingCategory.isNew && userPermissions.delete ? (
                                 <Button
                                     variant="ghost"
                                     className="text-red-600 hover:text-red-700 hover:bg-red-50"

@@ -36,9 +36,23 @@ const RequestDetails = ({
   isStandalone = false,
   endpointPrefix = "respuestas",
   onGenerateDoc,
+  userPermissions = []
 }) => {
   // --- ESTADOS DE UI ---
   const [activeTab, setActiveTab] = useState("details");
+
+  // --- PERMISOS ---
+  const canViewAttachments = userPermissions.includes('view_solicitudes_clientes_attach');
+  const canDownloadAttachments = userPermissions.includes('download_solicitudes_clientes_attach');
+  const canPreviewAttachments = userPermissions.includes('preview_solicitudes_clientes_attach');
+
+  const canViewGenerated = userPermissions.includes('view_solicitudes_clientes_generated');
+  const canDownloadGenerated = userPermissions.includes('download_solicitudes_clientes_generated');
+  const canPreviewGenerated = userPermissions.includes('preview_solicitudes_clientes_generated');
+  const canRegenerate = userPermissions.includes('regenerate_solicitudes_clientes_generated');
+
+  const canEditState = userPermissions.includes('edit_solicitudes_clientes_state');
+  const canViewSignature = canViewGenerated;
 
   const [correctedFiles, setCorrectedFiles] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -107,7 +121,6 @@ const RequestDetails = ({
 
   const fetchApprovedData = async (responseId) => {
     setIsLoadingApprovedData(true);
-    setIsLoadingApprovedData(true);
     try {
       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/data-approved/${responseId}`);
       if (response.ok) {
@@ -125,7 +138,8 @@ const RequestDetails = ({
   };
 
   const checkClientSignature = async () => {
-    setIsCheckingSignature(true);
+    if (!canViewSignature) return; // Permission check
+
     setIsCheckingSignature(true);
     try {
       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/has-client-signature`);
@@ -148,6 +162,8 @@ const RequestDetails = ({
   };
 
   const getDocumentInfo = async (responseId) => {
+    if (!canViewGenerated) return null; // Permission check
+
     try {
       const response = await apiFetch(`${API_BASE_URL}/generador/info-by-response/${responseId}`);
       if (response.ok) {
@@ -167,6 +183,7 @@ const RequestDetails = ({
   // };
 
   const fetchAttachments = async (responseId) => {
+    if (!canViewAttachments) return; // Permission check
     setAttachmentsLoading(true);
     try {
       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos`);
@@ -1176,7 +1193,7 @@ const RequestDetails = ({
 
       <div>
         {/* Archivos Adjuntos Header - Always visible if loading or has attachments */}
-        {(attachmentsLoading || fullRequestData?.adjuntos?.length > 0) && (
+        {canViewAttachments && (attachmentsLoading || fullRequestData?.adjuntos?.length > 0) && (
           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
             Archivos Adjuntos
             {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
@@ -1184,7 +1201,7 @@ const RequestDetails = ({
         )}
 
         {/* Archivos Adjuntos List */}
-        {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
+        {canViewAttachments && !attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
           <div className="space-y-2">
             {fullRequestData.adjuntos.map((adjunto, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -1198,18 +1215,20 @@ const RequestDetails = ({
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
-                    iconPosition="left"
-                    iconSize={16}
-                    onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
-                    disabled={downloadingAttachmentIndex !== null}
-                  >
-                    {downloadingAttachmentIndex === index ? "Descargando..." : "Descargar"}
-                  </Button>
-                  {canPreviewAdjunto(adjunto.mimeType) && (
+                  {canDownloadAttachments && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
+                      disabled={downloadingAttachmentIndex !== null}
+                    >
+                      {downloadingAttachmentIndex === index ? "Descargando..." : "Descargar"}
+                    </Button>
+                  )}
+                  {canPreviewAttachments && canPreviewAdjunto(adjunto.mimeType) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1230,31 +1249,34 @@ const RequestDetails = ({
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-          Documento Generado
-          {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-          {endpointPrefix.includes("domicilio-virtual") && realAttachments?.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 ml-2 text-muted-foreground hover:text-accent"
-              onClick={() => {
-                openAsyncDialog({
-                  title: "¿Está seguro de que desea regenerar el documento?",
-                  loadingText: "Regenerando documento...",
-                  successText: "Documento regenerado con exito!",
-                  errorText: "Error al regenerar documento!",
-                  onConfirm: handleRegenerateDocument
-                })
-              }}
-              disabled={isRegenerating}
-              title="Regenerar Documento"
-            >
-              <Icon name={isRegenerating ? "Loader" : "RefreshCw"} size={14} className={isRegenerating ? "animate-spin" : ""} />
-            </Button>
-          )}
-        </h3>
-        {realAttachments?.length > 0 ? (
+        {canViewGenerated && (
+          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+            Documento Generado
+            {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+            {canRegenerate && endpointPrefix.includes("domicilio-virtual") && realAttachments?.length > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 ml-2 text-muted-foreground hover:text-accent"
+                onClick={() => {
+                  openAsyncDialog({
+                    title: "¿Está seguro de que desea regenerar el documento?",
+                    loadingText: "Regenerando documento...",
+                    successText: "Documento regenerado con exito!",
+                    errorText: "Error al regenerar documento!",
+                    onConfirm: handleRegenerateDocument
+                  })
+                }}
+                disabled={isRegenerating}
+                title="Regenerar Documento"
+              >
+                <Icon name={isRegenerating ? "Loader" : "RefreshCw"} size={14} className={isRegenerating ? "animate-spin" : ""} />
+              </Button>
+            )}
+          </h3>
+        )}
+
+        {canViewGenerated && (realAttachments?.length > 0 ? (
           <div className="space-y-2">
             {realAttachments?.map((file) => (
               <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -1270,28 +1292,32 @@ const RequestDetails = ({
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    iconName={isDownloading ? "Loader" : "Download"}
-                    iconPosition="left"
-                    iconSize={16}
-                    onClick={handleDownload}
-                    disabled={isDownloading}
-                  >
-                    {isDownloading ? "Descargando..." : "Descargar"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handlePreviewGenerated}
-                    iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
-                    iconPosition="left"
-                    iconSize={16}
-                    disabled={isLoadingPreviewGenerated}
-                  >
-                    {isLoadingPreviewGenerated ? "Cargando..." : "Vista Previa"}
-                  </Button>
+                  {canDownloadGenerated && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      iconName={isDownloading ? "Loader" : "Download"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={handleDownload}
+                      disabled={isDownloading}
+                    >
+                      {isDownloading ? "Descargando..." : "Descargar"}
+                    </Button>
+                  )}
+                  {canPreviewGenerated && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handlePreviewGenerated}
+                      iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
+                      iconPosition="left"
+                      iconSize={16}
+                      disabled={isLoadingPreviewGenerated}
+                    >
+                      {isLoadingPreviewGenerated ? "Cargando..." : "Vista Previa"}
+                    </Button>
+                  )}
 
                 </div>
               </div>
@@ -1305,10 +1331,10 @@ const RequestDetails = ({
                 : "No hay documentos generados para este formulario"}
             </p>
           </div>
-        )}
+        ))}
       </div>
 
-      {fullRequestData?.status !== "pendiente" && fullRequestData?.status !== "en_revision" && (
+      {(fullRequestData?.status !== "pendiente" && fullRequestData?.status !== "en_revision") && canViewSignature && (
         <div>
           {isCheckingSignature && (
             <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -1336,36 +1362,42 @@ const RequestDetails = ({
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    iconName={isDownloadingSignature ? "Loader" : "Download"}
-                    iconPosition="left"
-                    iconSize={16}
-                    onClick={() => handleDownloadClientSignature(fullRequestData._id)}
-                    disabled={isDownloadingSignature}
-                  >
-                    {isDownloadingSignature ? "Descargando..." : "Descargar"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handlePreviewClientSignature}
-                    iconName={isLoadingPreviewSignature ? "Loader" : "Eye"}
-                    iconPosition="left"
-                    iconSize={16}
-                    disabled={isLoadingPreviewSignature}
-                  >
-                    {isLoadingPreviewSignature ? "Cargando..." : "Vista Previa"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteClientSignature(fullRequestData._id)}
-                    className="text-error hover:bg-error/10"
-                  >
-                    <Icon name="Trash2" size={16} />
-                  </Button>
+                  {canDownloadGenerated && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      iconName={isDownloadingSignature ? "Loader" : "Download"}
+                      iconPosition="left"
+                      iconSize={16}
+                      onClick={() => handleDownloadClientSignature(fullRequestData._id)}
+                      disabled={isDownloadingSignature}
+                    >
+                      {isDownloadingSignature ? "Descargando..." : "Descargar"}
+                    </Button>
+                  )}
+                  {canPreviewGenerated && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handlePreviewClientSignature}
+                      iconName={isLoadingPreviewSignature ? "Loader" : "Eye"}
+                      iconPosition="left"
+                      iconSize={16}
+                      disabled={isLoadingPreviewSignature}
+                    >
+                      {isLoadingPreviewSignature ? "Cargando..." : "Vista Previa"}
+                    </Button>
+                  )}
+                  {canEditState && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteClientSignature(fullRequestData._id)}
+                      className="text-error hover:bg-error/10"
+                    >
+                      <Icon name="Trash2" size={16} />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1485,7 +1517,7 @@ const RequestDetails = ({
               </div>
 
               <div className="flex items-center space-x-2">
-                {!isStandalone && (
+                {!isStandalone && canEditState && (
                   <div className="relative" ref={statusDropdownRef}>
                     {(() => {
                       const currentStatus = fullRequestData?.status;
