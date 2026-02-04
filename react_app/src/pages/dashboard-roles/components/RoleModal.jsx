@@ -23,12 +23,38 @@ const PERMISSION_GROUPS = {
             { id: 'view_solicitudes_clientes', label: 'Acceso a la vista' },
             { id: 'delete_solicitudes_clientes', label: 'Eliminar solicitudes de clientes' },
             { id: 'view_solicitudes_clientes_details', label: 'Acceso a detalles de solicitudes de clientes' },
+            { id: 'view_solicitudes_clientes_answers', label: 'Ver respuestas de solicitud de clientes', dependency: 'view_solicitudes_clientes_details' },
+            { id: 'view_solicitudes_clientes_shared', label: 'Ver usuarios compartidos', dependency: 'view_solicitudes_clientes_details' },
+
             { id: 'view_solicitudes_clientes_messages', label: 'Acceso a mensajes de solicitudes de clientes' },
-            { id: 'view_solicitudes_clientes_messages_admin', label: 'Acceso a mensajes internos de solicitudes de clientes', dependency: 'view_solicitudes_clientes_messages' },
             { id: 'create_solicitudes_clientes_messages', label: 'Crear mensajes de solicitudes de clientes', dependency: 'view_solicitudes_clientes_messages' },
             { id: 'create_solicitudes_clientes_messages_mail', label: 'Crear mensajes de solicitudes de clientes con mail', dependency: 'view_solicitudes_clientes_messages' },
+            { id: 'view_solicitudes_clientes_messages_admin', label: 'Acceso a mensajes internos de solicitudes de clientes', dependency: 'view_solicitudes_clientes_messages' },
             { id: 'create_solicitudes_clientes_messages_admin', label: 'Crear mensajes internos en solicitudes de clientes', dependency: 'view_solicitudes_clientes_messages_admin' },
             
+            { id: 'view_solicitudes_clientes_attach', label: 'Ver documento adjunto', dependency: 'view_solicitudes_clientes_details' },
+            { id: 'download_solicitudes_clientes_attach', label: 'Descargar documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
+            { id: 'preview_solicitudes_clientes_attach', label: 'vista previa documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
+            { id: 'delete_solicitudes_clientes_attach', label: 'Eliminar documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
+
+            { id: 'view_solicitudes_clientes_generated', label: 'Ver documento generado', dependency: 'view_solicitudes_clientes_details'  },
+            { id: 'download_solicitudes_clientes_generated', label: 'Descargar documento generado', dependency: 'view_solicitudes_clientes_generated' },
+            { id: 'preview_solicitudes_clientes_generated', label: 'vista previa documento generado', dependency: 'view_solicitudes_clientes_generated' },
+            { id: 'regenerate_solicitudes_clientes_generated', label: 'Regenerar documento', dependency: 'view_solicitudes_clientes_generated' },
+
+            { id: 'view_solicitudes_clientes_send', label: 'Ver documento enviado', dependency: 'view_solicitudes_clientes_details'  },
+            { id: 'download_solicitudes_clientes_send', label: 'Descargar documento enviado', dependency: 'view_solicitudes_clientes_send' },
+            { id: 'preview_solicitudes_clientes_send', label: 'vista previa documento enviado', dependency: 'view_solicitudes_clientes_send' },
+            { id: 'delete_solicitudes_clientes_send', label: 'Eliminar documento enviado', dependency: 'view_solicitudes_clientes_send' },
+            
+            { id: 'view_solicitudes_clientes_signed', label: 'Ver documento firmado', dependency: 'view_solicitudes_clientes_details' },
+            { id: 'download_solicitudes_clientes_signed', label: 'Descargar documento firmado', dependency: 'view_solicitudes_clientes_signed' },
+            { id: 'preview_solicitudes_clientes_signed', label: 'vista previa documento firmado', dependency: 'view_solicitudes_clientes_signed' },
+            { id: 'delete_solicitudes_clientes_signed', label: 'Eliminar documento firmado', dependency: 'view_solicitudes_clientes_signed' },
+
+            { id: 'edit_solicitudes_clientes_state', label: 'Editar estado de solicitud ', dependency: 'view_solicitudes_clientes_details' },
+            { id: 'edit_solicitudes_clientes_finalize', label: 'Finalizar solicitud', dependency: 'edit_solicitudes_clientes_state' },
+            { id: 'edit_solicitudes_clientes_archive', label: 'Archivar solicitud', dependency: 'edit_solicitudes_clientes_state' },
         ]
     },
     solicitudes_a_cliente: {
@@ -46,25 +72,30 @@ const PERMISSION_GROUPS = {
         tagg: 'admin',
         permissions: [{ id: 'view_domicilio_virtual', label: 'Acceso a la vista' }]
     },
+    //check
     rendimiento: {
         label: 'Vista: Rendimiento',
         tagg: 'admin',
         permissions: [
             { id: 'view_rendimiento', label: 'Acceso a la vista' },
-            { id: 'view_rendimiento_previo', label: 'Visualizar estadisticas de semanas anteriores' },
-            { id: 'view_rendimiento_global', label: 'Visualizar estadisticas globales' },
+            { id: 'view_rendimiento_previo', label: 'Visualizar estadisticas de semanas anteriores', dependency: 'view_rendimiento' },
+            { id: 'view_rendimiento_global', label: 'Visualizar estadisticas globales', dependency: 'view_rendimiento' },
         ]
     },
+    //check
     formularios: {
         label: 'Vista: Formularios',
         tagg: 'admin',
         permissions: [
             { id: 'view_formularios', label: 'Acceso a la vista' },
-            { id: 'create_formularios', label: 'Crear nuevos formularios' },
-            { id: 'edit_formularios', label: 'Editar formularios existentes' },
-            { id: 'delete_formularios', label: 'Eliminar formularios' },
+            { id: 'create_formularios', label: 'Crear nuevos formularios' , dependency: 'view_formularios' },
+            { id: 'edit_formularios', label: 'Editar formularios existentes', dependency: 'view_formularios' },
+            { id: 'edit_formularios_propiedades', label: 'Editar propiedades de formularios existentes', dependency: 'edit_formularios' },
+            { id: 'edit_formularios_preguntas', label: 'Editar preguntas de formularios existentes', dependency: 'edit_formularios' },
+            { id: 'delete_formularios', label: 'Eliminar formularios', dependency: 'view_formularios' },
         ]
     },
+    //check
     plantillas: {
         label: 'Vista: Plantillas',
         tagg: 'admin',
@@ -121,6 +152,7 @@ const PERMISSION_GROUPS = {
             { id: 'view_gestor_roles', label: 'Acceso a la vista' },
             { id: 'create_gestor_roles', label: 'Crear nuevos roles' },
             { id: 'edit_gestor_roles', label: 'Editar roles existentes' },
+            { id: 'edit_gestor_roles_admin', label: 'Editar rol existente (Admin)' },
             { id: 'delete_gestor_roles', label: 'Eliminar roles' },
         ]
     },
