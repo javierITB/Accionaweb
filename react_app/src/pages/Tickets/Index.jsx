@@ -10,9 +10,20 @@ import RequestDetails from './components/RequestDetails';
 import StatsOverview from './components/StatsOverview';
 import { getStatusIcon } from '../../utils/ticketStatusStyles';
 
-const RequestTracking = () => {
+const RequestTracking = ({userPermissions = []}) => {
   const urlParams = new URLSearchParams(window.location.search);
   const formId = urlParams?.get('id');
+
+  const permisos = useMemo(() => ({
+    eliminar: userPermissions.includes("delete_tickets"),
+    verDetalles: userPermissions.includes("view_tickets_details"),
+    verRespuestas: userPermissions.includes("view_tickets_answers"),
+    aceptarRespuestas: userPermissions.includes("accept_tickets_answers"),
+    verAdjuntos: userPermissions.includes("view_tickets_attach"),
+    descargarAdjuntos: userPermissions.includes("download_tickets_attach"),
+    previsualizarAdjuntos: userPermissions.includes("preview_tickets_attach"),
+    cambiarEstado: userPermissions.includes("edit_tickets_state")
+}), [userPermissions])
 
   // ESTADOS DEL SIDEBAR
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
@@ -27,7 +38,6 @@ const RequestTracking = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [isLoading, setIsLoading] = useState(false);
   const [ticketConfigs, setTicketConfigs] = useState([]);
-
   // --- PAGINACIÓN Y FILTROS SERVER-SIDE ---
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -203,6 +213,11 @@ const RequestTracking = () => {
   };
 
   const handleRemove = async (request) => {
+
+    if(!permisos.eliminar) {
+      alert("No tienes permisos para eliminar tickets.");
+      return;
+  }
     const requestId = request?._id
     if (!requestId) return alert("ID no válido para eliminar.");
     if (!window.confirm("¿Seguro que deseas eliminar esta solicitud?")) return;
@@ -224,6 +239,7 @@ const RequestTracking = () => {
   };
 
   const handleViewDetails = (request) => {
+    if(!permisos.verDetalles) return;
     setSelectedRequest(request);
     setShowRequestDetails(true);
   };
@@ -445,6 +461,7 @@ const RequestTracking = () => {
                   onRemove={handleRemove}
                   onViewDetails={handleViewDetails}
                   viewMode={viewMode}
+                  permisos = {permisos}
                 />
               ))
             ) : (
@@ -483,6 +500,7 @@ const RequestTracking = () => {
         isVisible={showRequestDetails}
         onClose={handleCloseRequestDetails}
         onUpdate={updateRequest}
+        permisos = {permisos}
       />
     </div >
   );

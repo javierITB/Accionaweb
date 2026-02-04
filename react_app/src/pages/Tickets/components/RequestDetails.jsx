@@ -19,7 +19,7 @@ import useAsyncDialog from 'hooks/useAsyncDialog';
 const MAX_FILES = 5; // Máximo de archivos
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
 
-const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }) => {
+const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, permisos }) => {
   // --- ESTADOS DE UI ---
   const [activeTab, setActiveTab] = useState('details');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -321,6 +321,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
   // ... (existing effects)
 
   const handleStatusChange = async (newStatus) => {
+    if(!permisos.cambiarEstado) return; 
     const response = await apiFetch(
       `${API_BASE_URL}/soporte/${request._id}/status`,
       {
@@ -433,6 +434,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
 
   const handlePreviewAdjunto = async (responseId, index) => {
+    if(!permisos.previsualizarAdjuntos) return;
     try {
       setIsLoadingPreviewAdjunto(true);
       const adjunto = fullRequestData.adjuntos[index];
@@ -491,6 +493,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
 
   const handleDownloadAdjunto = async (responseId, index) => {
+    if(!permisos.descargarAdjuntos) return;
     setDownloadingAttachmentIndex(index);
     try {
       const adjunto = fullRequestData.adjuntos[index];
@@ -542,6 +545,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
 
   const handleTakeTicket = async () => {
+    if(!permisos.aceptarRespuestas) return;
     if (!currentUser) {
       throw new Error(
         "No se pudo identificar al usuario actual. Por favor, recarga la página o inicia sesión nuevamente."
@@ -649,6 +653,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
 
   const handleApprovewithoutFile = async () => {
+    if(!permisos.cambiarEstado) return;
     // guard lógico (no UI)
     if (request?.status === "finalizado") return { type: "info", message: "Formulario ya finalizado" };
 
@@ -677,6 +682,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
 
   const handleArchieve = async () => {
+    if(!permisos.cambiarEstado) return;
     const response = await apiFetch(
       `${API_BASE_URL}/soporte/${request._id}/status`,
       {
@@ -915,32 +921,39 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
 
       {/* Attachments Section */}
       <div>
-        {attachmentsLoading &&
-          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-            Archivos Adjuntos
-            {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-          </h3>
-        }
-        {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 &&
-          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Icon name="Paperclip" size={18} />
-            Archivos Adjuntos
-          </h3>
-        }
-        {fullRequestData?.adjuntos?.length > 0 && (
-          <div className="space-y-2">
-            {fullRequestData.adjuntos.map((adjunto, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group hover:bg-muted transition-colors">
-                <div className="flex items-center space-x-3">
-                  <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent group-hover:scale-110 transition-transform" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
-                    </p>
-                  </div>
+  {permisos.verAdjuntos && (
+    <>
+      {attachmentsLoading && (
+        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+          Archivos Adjuntos
+          <Icon name="Loader" size={16} className="animate-spin text-accent" />
+        </h3>
+      )}
+
+      {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
+        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Icon name="Paperclip" size={18} />
+          Archivos Adjuntos
+        </h3>
+      )}
+
+      {fullRequestData?.adjuntos?.length > 0 && (
+        <div className="space-y-2">
+          {fullRequestData.adjuntos.map((adjunto, index) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group hover:bg-muted transition-colors">
+              <div className="flex items-center space-x-3">
+                <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent group-hover:scale-110 transition-transform" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
+                  </p>
                 </div>
-                <div className="flex items-center space-x-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+              </div>
+
+              <div className="flex items-center space-x-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                
+                {permisos.descargarAdjuntos && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -951,31 +964,39 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                     disabled={downloadingAttachmentIndex !== null}
                     className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:h-9"
                   >
-                    <span className="hidden sm:inline">{downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}</span>
+                    <span className="hidden sm:inline">
+                      {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
+                    </span>
                   </Button>
-                  {canPreviewAdjunto(adjunto.mimeType) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      iconName={isLoadingPreviewAdjunto ? "Loader" : "Eye"}
-                      iconPosition="left"
-                      iconSize={16}
-                      onClick={() => handlePreviewAdjunto(fullRequestData._id, index)}
-                      disabled={isLoadingPreviewAdjunto}
-                      className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:h-9"
-                    >
-                      <span className="hidden sm:inline">{isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}</span>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                )}
 
-    </div>
-  );
+                {/* 3. LIMITAR LA PREVISUALIZACIÓN */}
+                {permisos.previsualizarAdjuntos && canPreviewAdjunto(adjunto.mimeType) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconName={isLoadingPreviewAdjunto ? "Loader" : "Eye"}
+                    iconPosition="left"
+                    iconSize={16}
+                    onClick={() => handlePreviewAdjunto(fullRequestData._id, index)}
+                    disabled={isLoadingPreviewAdjunto}
+                    className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:h-9"
+                  >
+                    <span className="hidden sm:inline">
+                      {isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}
+                    </span>
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  )}
+  </div>
+</div>
+);
 
   const renderResponsesTab = () => {
     const responses = fullRequestData?.responses || {};
@@ -1077,7 +1098,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                     return (
                       <>
                         <button
-                          onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                          onClick={() => permisos.cambiarEstado && setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                           className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-opacity hover:opacity-80 ${triggerColorClass}`}
                           title="Cambiar estado"
                         >
@@ -1152,6 +1173,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
           </div>
 
           <div className="px-6 flex space-x-6 ">
+            {permisos.verDetalles && (
             <button
               onClick={() => setActiveTab('details')}
               className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'details'
@@ -1162,7 +1184,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
             >
               Detalles
             </button>
-            {fullRequestData?.origin !== 'domicilio_virtual' && (
+            )}
+            {permisos.verRespuestas && fullRequestData?.origin !== 'domicilio_virtual' && (
               <button
                 onClick={() => setActiveTab('responses')}
                 className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'responses'
@@ -1189,9 +1212,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
             </div>
             <div className="flex items-center space-x-3">
 
-              {(isInitialStatus() || (fullRequestData?.status === 'en_revision' && !isUserAssigned())) && (
-
-
+            {permisos.aceptarRespuestas && (isInitialStatus() || (fullRequestData?.status === 'en_revision' && !isUserAssigned())) && (
+                
                 <Button
                   variant="default"
                   iconName={isApproving ? "Loader" : "UserCheck"}
@@ -1212,7 +1234,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                 </Button>
               )}
 
-              {fullRequestData?.status === 'en_revision' && (
+              {permisos.cambiarEstado && fullRequestData?.status === 'en_revision' && (
                 <Button
                   variant="default"
                   iconName={isApproving ? "Loader" : "CheckCircle"}
@@ -1233,7 +1255,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs }
                 </Button>
               )}
 
-              {fullRequestData?.status == 'finalizado' && (
+              {permisos.cambiarEstado && fullRequestData?.status == 'finalizado' && (
                 <Button
                   variant="default"
                   iconName={isApproving ? "Loader" : "Folder"}

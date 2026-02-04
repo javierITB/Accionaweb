@@ -4,7 +4,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { getStatusColorClass, findConfigForCategory, getStatusIcon, getDefaultStatusColor, formatStatusText } from '../../../utils/ticketStatusStyles';
 
-const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
+const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs, permisos }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
 
   useEffect(() => {
@@ -233,6 +233,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
               {currentRequest.priority}
             </div>
           )}
+          {permisos.eliminar && (
           <Button
             variant="ghost"
             size="icon"
@@ -242,7 +243,8 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
           >
             <Icon name="Trash2" size={12} className="sm:w-3.5 sm:h-3.5" />
           </Button>
-
+          )}
+          {permisos.verDetalles && (
           <Button
             variant="ghost"
             size="icon"
@@ -251,7 +253,8 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
           >
             <Icon name="Info" size={12} className="sm:w-3.5 sm:h-3.5" />
           </Button>
-
+          )}
+          {permisos.verDetalles && (
           <Button
             variant="ghost"
             size="sm"
@@ -264,6 +267,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, ticketConfigs }) => {
           >
             Detalles
           </Button>
+)}
         </div>
       </div>
     </div >
