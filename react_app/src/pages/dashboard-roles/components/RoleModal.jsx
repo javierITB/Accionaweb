@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, Shield, Check, Loader2, Lock, UserCircle, LayoutGrid, ChevronRight } from "lucide-react";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
 import Button from "components/ui/Button";
+
 const PERMISSION_GROUPS = {
    // --- CONTROLADORES RAÍZ ---
    acceso_panel_cliente: {
@@ -358,7 +359,7 @@ const PERMISSION_GROUPS = {
 };
 
 
- const RoleModal = ({ isOpen, onClose, onSuccess, role = null, permisos }) => {
+const RoleModal = ({ isOpen, onClose, onSuccess, role = null, permisos }) => {
    const [isSaving, setIsSaving] = useState(false);
    const [activeTab, setActiveTab] = useState('admin');
    const [formData, setFormData] = useState({
