@@ -78,6 +78,9 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
 
   // Función para eliminar plantilla
   const handleDeleteTemplate = async (formId, plantillaId) => {
+    // Validación de permisos agregada
+    if (!permisos.eliminar) return;
+
     if (!confirm('¿Estás seguro de que deseas eliminar esta plantilla? Esta acción no se puede deshacer.')) {
       return;
     }
@@ -111,6 +114,9 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
 
   // Función para crear desde cero
   const handleCreateFromScratch = () => {
+    // Validación de permisos agregada
+    if (!permisos.crear) return;
+
     const newTemplateData = {
       // Datos del formulario base
       id: selectedFormForTemplate.id,
@@ -139,6 +145,9 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
 
   // Función para duplicar desde plantilla existente
   const handleDuplicateFromTemplate = async () => {
+    // Validación de permisos agregada
+    if (!permisos.copiar) return;
+
     if (!selectedTemplateForDuplicate) {
       alert('Por favor selecciona una plantilla para usar como base');
       return;
@@ -183,6 +192,8 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
 
   // Función para editar plantilla existente
   const handleEditTemplate = (form) => {
+    // Validación de permisos agregada
+    if (!permisos.editar) return;
     onUpdateFormData(form);
   };
 
@@ -251,7 +262,7 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
                           const selected = availableTemplates.find(t => t._id === e.target.value);
                           setSelectedTemplateForDuplicate(selected);
                         }}
-                        className="w-full p-2 border border-border rounded-md text-sm bg-background text-foreground"
+                      className="w-full p-2 border border-border rounded-md text-sm bg-background text-foreground" // AGREGADO: bg-background text-foreground
                       >
                         <option value="">Selecciona una plantilla...</option>
                         {availableTemplates.map(template => (
