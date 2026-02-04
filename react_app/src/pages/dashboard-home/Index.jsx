@@ -6,8 +6,9 @@ import Button from "../../components/ui/Button";
 import { API_BASE_URL, apiFetch } from "../../utils/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import SummaryCard from "./components/SummaryCard";
+import { useMemo } from "react";
 
-const DashboardHome = () => {
+const DashboardHome = ({ userPermissions = {} }) => {
    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
    const [isMobileOpen, setIsMobileOpen] = useState(false);
    const [isMobileScreen, setIsMobileScreen] = useState(false);
@@ -28,6 +29,12 @@ const DashboardHome = () => {
       archivado: "#6B7280", // Gray-500 (Muted)
       borrador: "#9CA3AF", // Gray-400
    };
+
+   const permisos = useMemo(()=>({
+      view_rendimiento_previo: userPermissions.includes("view_rendimiento_previo"),
+      view_rendimiento_global: userPermissions.includes("view_rendimiento_global"),
+   }), [userPermissions]);
+
 
    const getStatusColor = (status) => STATUS_COLORS[status?.toLowerCase()] || "#8B5CF6"; // Default Purple
 
@@ -86,7 +93,7 @@ const DashboardHome = () => {
 
       // 1. Totales
       const totalRequests = requests.length;
-      const finalizedRequests = requests.filter(r => r.status === 'finalizado').length;
+      const finalizedRequests = requests.filter((r) => r.status === "finalizado").length;
       const globalRate = totalRequests > 0 ? Math.round((finalizedRequests / totalRequests) * 100) : 0;
 
       // 2. Preparar datos para tiempos
@@ -99,35 +106,47 @@ const DashboardHome = () => {
       };
 
       const calculateAverages = (reqs) => {
-         let sumReview = 0, countReview = 0;
-         let sumApprove = 0, countApprove = 0;
-         let sumFinalize = 0, countFinalize = 0;
+         let sumReview = 0,
+            countReview = 0;
+         let sumApprove = 0,
+            countApprove = 0;
+         let sumFinalize = 0,
+            countFinalize = 0;
 
-         reqs.forEach(r => {
+         reqs.forEach((r) => {
             // Creación -> Revisión
             if (r.reviewedAt) {
                const val = diffHours(r.reviewedAt, r.createdAt);
-               if (val !== null) { sumReview += val; countReview++; }
-            } else if (['revision', 'en_revision'].includes(r.status)) {
+               if (val !== null) {
+                  sumReview += val;
+                  countReview++;
+               }
+            } else if (["revision", "en_revision"].includes(r.status)) {
             }
 
             // Creación -> Aprobado
             if (r.approvedAt) {
                const val = diffHours(r.approvedAt, r.createdAt);
-               if (val !== null) { sumApprove += val; countApprove++; }
+               if (val !== null) {
+                  sumApprove += val;
+                  countApprove++;
+               }
             }
 
             // Firmado -> Finalizado
-            if (r.status === 'finalizado' && r.signedAt) {
+            if (r.status === "finalizado" && r.signedAt) {
                const val = diffHours(r.updatedAt, r.signedAt); // updatedAt es finalizado
-               if (val !== null) { sumFinalize += val; countFinalize++; }
+               if (val !== null) {
+                  sumFinalize += val;
+                  countFinalize++;
+               }
             }
          });
 
          return {
             creationToReview: countReview > 0 ? parseFloat((sumReview / countReview).toFixed(1)) : 0,
             creationToApproved: countApprove > 0 ? parseFloat((sumApprove / countApprove).toFixed(1)) : 0,
-            signedToFinalized: countFinalize > 0 ? parseFloat((sumFinalize / countFinalize).toFixed(1)) : 0
+            signedToFinalized: countFinalize > 0 ? parseFloat((sumFinalize / countFinalize).toFixed(1)) : 0,
          };
       };
 
@@ -135,7 +154,7 @@ const DashboardHome = () => {
       const timeMetrics = calculateAverages(requests);
 
       // 3. Filtros Semanales
-      const weeklyRequestsList = requests.filter(r => new Date(r.createdAt) >= oneWeekAgo);
+      const weeklyRequestsList = requests.filter((r) => new Date(r.createdAt) >= oneWeekAgo);
       const weeklyRequests = weeklyRequestsList.length;
 
       // Tiempos Semanales (sobre solicitudes de la última semana)
@@ -143,48 +162,47 @@ const DashboardHome = () => {
 
       // 4. Distribución por Estado
       const statusCountMap = {};
-      requests.forEach(r => {
-         const s = r.status || 'Desconocido';
+      requests.forEach((r) => {
+         const s = r.status || "Desconocido";
          statusCountMap[s] = (statusCountMap[s] || 0) + 1;
       });
-      const statusDistribution = Object.keys(statusCountMap).map(key => ({
+      const statusDistribution = Object.keys(statusCountMap).map((key) => ({
          name: key,
-         value: statusCountMap[key]
+         value: statusCountMap[key],
       }));
 
       // 5. Performance Semanal
-      const daysName = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+      const daysName = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
       const weeklyPerformance = [];
 
       for (let i = 6; i >= 0; i--) {
          const d = new Date(now);
-         d.setDate(d.getDate() - i - (chartOffset * 7));
+         d.setDate(d.getDate() - i - chartOffset * 7);
 
          const dayName = daysName[d.getDay()];
-         const dayNum = String(d.getDate()).padStart(2, '0');
-         const monthNum = String(d.getMonth() + 1).padStart(2, '0');
+         const dayNum = String(d.getDate()).padStart(2, "0");
+         const monthNum = String(d.getMonth() + 1).padStart(2, "0");
          const dateLabel = `${dayName} ${dayNum}/${monthNum}`;
 
          // Contar solicitudes de ese día
-         const localDateStr = d.toLocaleDateString('en-CA');
+         const localDateStr = d.toLocaleDateString("en-CA");
 
-         const count = requests.filter(r => {
+         const count = requests.filter((r) => {
             const rDate = new Date(r.createdAt);
-            return rDate.toLocaleDateString('en-CA') === localDateStr;
+            return rDate.toLocaleDateString("en-CA") === localDateStr;
          }).length;
-
 
          weeklyPerformance.push({
             name: dateLabel, // Recharts usa 'name' como eje X por defecto
             dayNameRaw: dayName, // Para filtro
             solicitudes: count,
-            fullDate: localDateStr
+            fullDate: localDateStr,
          });
       }
 
       // Filtrar Domingo si no tiene solicitudes
-      const finalWeeklyPerformance = weeklyPerformance.filter(d => {
-         if (d.dayNameRaw === 'Dom' && d.solicitudes === 0) return false;
+      const finalWeeklyPerformance = weeklyPerformance.filter((d) => {
+         if (d.dayNameRaw === "Dom" && d.solicitudes === 0) return false;
          return true;
       });
 
@@ -196,9 +214,8 @@ const DashboardHome = () => {
          timeMetrics,
          weeklyTimeMetrics,
          statusDistribution,
-         weeklyPerformance: finalWeeklyPerformance
+         weeklyPerformance: finalWeeklyPerformance,
       };
-
    }, [rawData, chartOffset]);
 
    useEffect(() => {
@@ -210,14 +227,14 @@ const DashboardHome = () => {
    // No ordenar, respetar orden cronológico generado
    const performanceData = metrics?.weeklyPerformance || [];
    const statusOrder = {
-      'pendiente': 1,
-      'en_revision': 2,
-      'en_revisión': 2,
-      'aprobado': 3,
-      'firmado': 4,
-      'finalizado': 5,
-      'archivado': 6,
-      'borrador': 0
+      pendiente: 1,
+      en_revision: 2,
+      en_revisión: 2,
+      aprobado: 3,
+      firmado: 4,
+      finalizado: 5,
+      archivado: 6,
+      borrador: 0,
    };
    const statusData = [...(metrics?.statusDistribution || [])].sort((a, b) => {
       const orderA = statusOrder[a.name?.toLowerCase()] || 99;
@@ -225,12 +242,12 @@ const DashboardHome = () => {
       return orderA - orderB;
    });
 
-   const mainMarginClass = isMobileScreen ? 'ml-0' : sidebarCollapsed ? 'ml-16' : 'ml-64';
+   const mainMarginClass = isMobileScreen ? "ml-0" : sidebarCollapsed ? "ml-16" : "ml-64";
 
    return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white selection:bg-blue-500 selection:text-white">
          <Header />
-         
+
          {/* IMPLEMENTACIÓN DEL SIDEBAR - CORREGIDA */}
          {(isMobileOpen || !isMobileScreen) && (
             <>
@@ -245,10 +262,7 @@ const DashboardHome = () => {
 
          {/* OVERLAY PARA MÓVIL - SEPARADO Y CORREGIDO */}
          {isMobileScreen && isMobileOpen && (
-            <div 
-               className="fixed inset-0 bg-black/50 z-40" 
-               onClick={() => setIsMobileOpen(false)}
-            ></div>
+            <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileOpen(false)}></div>
          )}
 
          <main className={`transition-all duration-300 ${mainMarginClass} pt-20 lg:pt-24 p-6`}>
@@ -303,35 +317,38 @@ const DashboardHome = () => {
                            <div className="p-2 bg-indigo-50 dark:bg-indigo-500/20 rounded-lg text-indigo-600 dark:text-indigo-400">
                               <Icon name="Clock" size={24} />
                            </div>
-                           <h3 className="text-xl font-bold text-gray-900 dark:text-white">Tiempos de Ciclo (Promedios)</h3>
+                           <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                              Tiempos de Ciclo (Promedios)
+                           </h3>
                         </div>
 
                         {/* Toggle Button */}
                         {/* Toggle Button GroupContainer */}
-                        <div className="flex gap-2">
+                       {permisos.view_rendimiento_global && ( <div className="flex gap-2">
                            {/* Selector Semana/Global */}
                            <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
                               <button
                                  onClick={() => setIsGlobalTime(false)}
-                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!isGlobalTime
-                                    ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
-                                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
-                                    }`}
+                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                                    !isGlobalTime
+                                       ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                       : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                 }`}
                               >
                                  Semana
                               </button>
                               <button
                                  onClick={() => setIsGlobalTime(true)}
-                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${isGlobalTime
-                                    ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
-                                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
-                                    }`}
+                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                                    isGlobalTime
+                                       ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                       : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                 }`}
                               >
                                  Global
                               </button>
                            </div>
-
-                        </div>
+                        </div>)}
 
                         {/* Selector Días/Horas eliminado por formateo inteligente */}
                      </div>
@@ -339,21 +356,33 @@ const DashboardHome = () => {
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <TimeMetricItem
                            label="Creación → Revisión"
-                           value={isGlobalTime ? metrics?.timeMetrics?.creationToReview : metrics?.weeklyTimeMetrics?.creationToReview}
+                           value={
+                              isGlobalTime
+                                 ? metrics?.timeMetrics?.creationToReview
+                                 : metrics?.weeklyTimeMetrics?.creationToReview
+                           }
                            globalValue={metrics?.timeMetrics?.creationToReview}
                            color="bg-blue-500"
                            showComparison={!isGlobalTime}
                         />
                         <TimeMetricItem
                            label="Creación → Aprobado"
-                           value={isGlobalTime ? metrics?.timeMetrics?.creationToApproved : metrics?.weeklyTimeMetrics?.creationToApproved}
+                           value={
+                              isGlobalTime
+                                 ? metrics?.timeMetrics?.creationToApproved
+                                 : metrics?.weeklyTimeMetrics?.creationToApproved
+                           }
                            globalValue={metrics?.timeMetrics?.creationToApproved}
                            color="bg-purple-500"
                            showComparison={!isGlobalTime}
                         />
                         <TimeMetricItem
                            label="Firmado → Finalizado"
-                           value={isGlobalTime ? metrics?.timeMetrics?.signedToFinalized : metrics?.weeklyTimeMetrics?.signedToFinalized}
+                           value={
+                              isGlobalTime
+                                 ? metrics?.timeMetrics?.signedToFinalized
+                                 : metrics?.weeklyTimeMetrics?.signedToFinalized
+                           }
                            globalValue={metrics?.timeMetrics?.signedToFinalized}
                            color="bg-emerald-500"
                            showComparison={!isGlobalTime}
@@ -369,38 +398,53 @@ const DashboardHome = () => {
                               if (chartOffset === 0) return "Solicitudes por Día (Última Semana)";
                               const now = new Date();
                               const startDate = new Date(now);
-                              startDate.setDate(startDate.getDate() - 6 - (chartOffset * 7));
-                              const dateStr = startDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+                              startDate.setDate(startDate.getDate() - 6 - chartOffset * 7);
+                              const dateStr = startDate.toLocaleDateString("es-ES", {
+                                 day: "numeric",
+                                 month: "long",
+                                 year: "numeric",
+                              });
                               return `Semana del ${dateStr}`;
                            })()}
                         </h3>
-                        <div className="flex gap-2">
+                       {permisos.view_rendimiento_previo && ( <div className="flex gap-2">
                            <button
-                              onClick={() => setChartOffset(prev => prev + 1)}
+                              onClick={() => setChartOffset((prev) => prev + 1)}
                               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-500 transition-colors"
                               title="Semana Anterior"
                            >
                               <Icon name="ChevronLeft" size={20} />
                            </button>
                            <button
-                              onClick={() => setChartOffset(prev => Math.max(0, prev - 1))}
+                              onClick={() => setChartOffset((prev) => Math.max(0, prev - 1))}
                               disabled={chartOffset === 0}
-                              className={`p-1 rounded-md transition-colors ${chartOffset === 0 ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                              className={`p-1 rounded-md transition-colors ${chartOffset === 0 ? "text-gray-300 dark:text-gray-600 cursor-not-allowed" : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                               title="Semana Siguiente"
                            >
                               <Icon name="ChevronRight" size={20} />
                            </button>
-                        </div>
+                        </div>)}
                      </div>
                      <div className="h-56 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                            <BarChart data={performanceData}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} opacity={0.3} />
                               <XAxis dataKey="name" stroke="#9CA3AF" axisLine={false} tickLine={false} />
-                              <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} allowDecimals={false} domain={[0, 'auto']} />
+                              <YAxis
+                                 stroke="#9CA3AF"
+                                 axisLine={false}
+                                 tickLine={false}
+                                 allowDecimals={false}
+                                 domain={[0, "auto"]}
+                              />
                               <Tooltip
-                                 cursor={{ fill: '#374151', opacity: 0.1 }}
-                                 contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#fff', borderRadius: '8px' }}
+                                 cursor={{ fill: "#374151", opacity: 0.1 }}
+                                 contentStyle={{
+                                    backgroundColor: "#1F2937",
+                                    borderColor: "#374151",
+                                    color: "#fff",
+                                    borderRadius: "8px",
+                                 }}
                               />
                               <Bar dataKey="solicitudes" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={48} />
                            </BarChart>
@@ -498,8 +542,8 @@ const TimeMetricItem = ({ label, value, globalValue, color, showComparison }) =>
          const days = Math.floor(vNum / 24);
          const remHours = Math.round(vNum % 24);
 
-         const dayText = `${days} día${days !== 1 ? 's' : ''}`;
-         const hourText = remHours > 0 ? ` ${remHours} hr${remHours !== 1 ? 's' : ''}` : '';
+         const dayText = `${days} día${days !== 1 ? "s" : ""}`;
+         const hourText = remHours > 0 ? ` ${remHours} hr${remHours !== 1 ? "s" : ""}` : "";
 
          return { val: dayText + hourText, unit: "", rawDays: vNum / 24, isText: true };
       }
@@ -509,7 +553,7 @@ const TimeMetricItem = ({ label, value, globalValue, color, showComparison }) =>
    const global = formatSmart(globalValue);
 
    const maxScaleDays = 30;
-   const currentDays = value ? (value / 24) : 0;
+   const currentDays = value ? value / 24 : 0;
    const widthPerc = Math.min((currentDays / maxScaleDays) * 100, 100);
 
    let comparison = null;
@@ -536,7 +580,7 @@ const TimeMetricItem = ({ label, value, globalValue, color, showComparison }) =>
             <Icon name="Clock" size={14} className="text-gray-400 dark:text-gray-500" />
          </div>
          <div className="flex items-end gap-1 mb-3">
-            <span className={`font-bold text-gray-900 dark:text-white ${current.isText ? 'text-xl' : 'text-3xl'}`}>
+            <span className={`font-bold text-gray-900 dark:text-white ${current.isText ? "text-xl" : "text-3xl"}`}>
                {current.val}
             </span>
             {!current.isText && <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">{current.unit}</span>}

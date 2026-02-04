@@ -2,7 +2,7 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const FormCard = ({ form, onSelect, className = '' }) => {
+const FormCard = ({ form, onSelect, className = '', permisos = {} }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -119,7 +119,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
         </div>
 
         {/* BOTÓN - MANTIENE TAMAÑO PEQUEÑO ORIGINAL EN TODAS LAS PANTALLAS */}
-        <Button
+        {permisos.edit_formularios && (<Button
           variant={form?.status === 'borrador' ? 'outline' : 'default'}
           size="sm"
           onClick={() => window.location.href = `/form-builder?id=${form?.id}`}
@@ -129,7 +129,7 @@ const FormCard = ({ form, onSelect, className = '' }) => {
           className="flex-shrink-0 text-xs sm:text-sm"
         >
           {form?.status === 'borrador' ? 'Continuar' : 'Editar'}
-        </Button>
+        </Button>)}
       </div>
     </div>
   );
