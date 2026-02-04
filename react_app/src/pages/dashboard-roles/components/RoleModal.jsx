@@ -450,7 +450,9 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos}) 
 
    const canEditAdmin = isAdminRole && permisos.edit_gestor_roles_admin;
 
-   const canEditOther = !isAdminRole && permisos.edit_gestor_roles
+   const itsMyRole = role.name?.toLowerCase() === sessionStorage.getItem('cargo').toLowerCase();
+
+   const canEditOther = !isAdminRole && !itsMyRole && permisos.edit_gestor_roles;
 
    const canEdit = canEditAdmin || canEditOther;
 
@@ -458,6 +460,9 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos}) 
    console.log("canEditAdmin", canEditAdmin)
    console.log("canEditOther", canEditOther)
    console.log("canEdit", canEdit)
+   console.log("itsMyRole", itsMyRole)
+   console.log("role", role)
+   console.log("sessionStorage.getItem('cargo')", sessionStorage.getItem('cargo'))
 
    return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
