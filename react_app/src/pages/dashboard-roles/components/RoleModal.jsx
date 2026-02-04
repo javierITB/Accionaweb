@@ -65,12 +65,42 @@ const PERMISSION_GROUPS = {
     tickets: {
         label: 'Vista: Tickets',
         tagg: 'admin',
-        permissions: [{ id: 'view_tickets', label: 'Acceso a la vista' }]
+        permissions: [
+            { id: 'view_tickets', label: 'Acceso a la vista' },
+            { id: 'delete_tickets', label: 'Eliminar solicitudes de clientes' },
+            { id: 'view_tickets_details', label: 'Acceso a detalles de tickets'},
+            { id: 'view_tickets_answers', label: 'Ver tickets', dependency: 'view_tickets_details' },
+
+            { id: 'view_tickets_attach', label: 'Ver documento adjunto', dependency: 'view_tickets_details' },
+            { id: 'download_tickets_attach', label: 'Descargar documento adjunto', dependency: 'view_tickets_attach' },
+            { id: 'preview_tickets_attach', label: 'vista previa documento adjunto', dependency: 'view_tickets_attach' },
+
+            { id: 'edit_tickets_state', label: 'Editar estado de ticket ', dependency: 'view_tickets_details' },
+            
+        ]
     },
     domicilio_virtual: {
         label: 'Vista: Domicilio Virtual',
         tagg: 'admin',
-        permissions: [{ id: 'view_domicilio_virtual', label: 'Acceso a la vista' }]
+        permissions: [
+            { id: 'view_solicitudes_clientes', label: 'Acceso a la vista' },
+            { id: 'delete_solicitudes_clientes', label: 'Eliminar solicitudes de clientes' },
+            { id: 'view_solicitudes_clientes_details', label: 'Acceso a detalles de solicitudes de clientes' },
+            { id: 'view_solicitudes_clientes_answers', label: 'Ver respuestas de solicitud de clientes', dependency: 'view_solicitudes_clientes_details' },
+            { id: 'view_solicitudes_clientes_shared', label: 'Ver usuarios compartidos', dependency: 'view_solicitudes_clientes_details' },
+
+            { id: 'view_solicitudes_clientes_attach', label: 'Ver documento adjunto', dependency: 'view_solicitudes_clientes_details' },
+            { id: 'download_solicitudes_clientes_attach', label: 'Descargar documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
+            { id: 'preview_solicitudes_clientes_attach', label: 'vista previa documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
+
+            { id: 'view_solicitudes_clientes_generated', label: 'Ver documento generado', dependency: 'view_solicitudes_clientes_details'  },
+            { id: 'download_solicitudes_clientes_generated', label: 'Descargar documento generado', dependency: 'view_solicitudes_clientes_generated' },
+            { id: 'preview_solicitudes_clientes_generated', label: 'vista previa documento generado', dependency: 'view_solicitudes_clientes_generated' },
+            { id: 'regenerate_solicitudes_clientes_generated', label: 'Regenerar documento', dependency: 'view_solicitudes_clientes_generated' },
+
+            { id: 'edit_solicitudes_clientes_state', label: 'Editar estado de solicitud ', dependency: 'view_solicitudes_clientes_details' },
+            
+        ]
     },
     //check
     rendimiento: {
@@ -125,6 +155,7 @@ const PERMISSION_GROUPS = {
             { id: 'create_anuncios_manual', label: 'Crear anuncios enviados manualmente' , dependency: 'create_anuncios'},
         ]
     },
+    
     usuarios: {
         label: 'Vista: Usuarios',
         tagg: 'admin',
@@ -135,6 +166,7 @@ const PERMISSION_GROUPS = {
             { id: 'create_usuarios', label: 'Crear Usuarios' },
         ]
     },
+    //check
     empresas: {
         label: 'Vista: Empresas',
         tagg: 'admin',
@@ -153,6 +185,7 @@ const PERMISSION_GROUPS = {
             { id: 'view_gestor_roles_details', label: 'Acceso a la vista detallada', dependency: 'view_gestor_roles' },
             { id: 'create_gestor_roles', label: 'Crear nuevos roles', dependency: 'view_gestor_roles' },
             { id: 'edit_gestor_roles', label: 'Editar roles existentes', dependency: 'view_gestor_roles_details' },
+            { id: 'edit_gestor_roles_by_self', label: 'Editar rol propio', dependency: 'view_gestor_roles_details' },
             { id: 'edit_gestor_roles_admin', label: 'Editar rol existente (Admin)', dependency: 'view_gestor_roles_details' },
             { id: 'delete_gestor_roles', label: 'Eliminar roles', dependency: 'view_gestor_roles' },
         ]
@@ -178,15 +211,44 @@ const PERMISSION_GROUPS = {
     },
 
     // --- VISTAS TAGG: CLIENTE ---
-    mis_tramites: {
-        label: 'Vista: Mis Trámites',
+    home: {
+        label: 'Vista: home',
         tagg: 'cliente',
-        permissions: [{ id: 'view_mis_tramites', label: 'Acceso a la vista' }]
+        permissions: [
+            { id: 'view_home', label: 'Acceso a la vista' }
+        ]
     },
-    soporte_cliente: {
-        label: 'Vista: Soporte y Ayuda',
+    perfil: {
+        label: 'Vista: Perfil',
         tagg: 'cliente',
-        permissions: [{ id: 'view_soporte_cliente', label: 'Acceso a la vista' }]
+        permissions: [
+            { id: 'view_perfil', label: 'Acceso a la vista' }
+        ]
+    },
+
+    mis_solicitudes: {
+        label: 'Vista: Mis solicitudes',
+        tagg: 'cliente',
+        permissions: [
+            { id: 'view_mis_solicitudes', label: 'Acceso a la vista' },
+            { id: 'share_mis_solicitudes', label: 'Compartir solicitudes' },
+            { id: 'unshare_mis_solicitudes', label: 'Dejar de compartir solicitudes' },
+            
+        ]
+    },
+    formularios: {
+        label: 'Vista: Formularios',
+        tagg: 'cliente',
+        permissions: [
+            { id: 'view_formularios', label: 'Acceso a la vista' }
+        ]
+    },
+    formulario: {
+        label: 'Vista: Formulario',
+        tagg: 'cliente',
+        permissions: [
+            { id: 'view_formulario', label: 'Acceso a la vista' }
+        ]
     }
 };
 
