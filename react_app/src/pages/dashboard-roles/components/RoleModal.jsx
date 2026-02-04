@@ -150,10 +150,11 @@ const PERMISSION_GROUPS = {
         tagg: 'admin',
         permissions: [
             { id: 'view_gestor_roles', label: 'Acceso a la vista' },
-            { id: 'create_gestor_roles', label: 'Crear nuevos roles' },
-            { id: 'edit_gestor_roles', label: 'Editar roles existentes' },
-            { id: 'edit_gestor_roles_admin', label: 'Editar rol existente (Admin)' },
-            { id: 'delete_gestor_roles', label: 'Eliminar roles' },
+            { id: 'view_gestor_roles_details', label: 'Acceso a la vista detallada', dependency: 'view_gestor_roles' },
+            { id: 'create_gestor_roles', label: 'Crear nuevos roles', dependency: 'view_gestor_roles' },
+            { id: 'edit_gestor_roles', label: 'Editar roles existentes', dependency: 'view_gestor_roles_details' },
+            { id: 'edit_gestor_roles_admin', label: 'Editar rol existente (Admin)', dependency: 'view_gestor_roles_details' },
+            { id: 'delete_gestor_roles', label: 'Eliminar roles', dependency: 'view_gestor_roles' },
         ]
     },
     gestor_notificaciones: {
