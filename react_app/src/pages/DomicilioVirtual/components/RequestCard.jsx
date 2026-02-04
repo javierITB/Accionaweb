@@ -19,8 +19,9 @@ const domicilioConfig = {
   ]
 };
 
-const RequestCard = ({ request, onRemove, onViewDetails }) => {
+const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
+  const canDelete = userPermissions.includes('delete_solicitudes_clientes');
 
   useEffect(() => {
     setCurrentRequest(request);
@@ -150,15 +151,17 @@ const RequestCard = ({ request, onRemove, onViewDetails }) => {
 
         <div className="flex items-center space-x-1 sm:space-x-2">
           {/* Delete Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Eliminar"
-            onClick={() => onRemove(currentRequest)}
-            className="h-7 w-7 sm:h-8 sm:w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <Icon name="Trash2" size={12} className="sm:w-3.5 sm:h-3.5" />
-          </Button>
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Eliminar"
+              onClick={() => onRemove(currentRequest)}
+              className="h-7 w-7 sm:h-8 sm:w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Icon name="Trash2" size={12} className="sm:w-3.5 sm:h-3.5" />
+            </Button>
+          )}
 
           {/* Message Buttons Removed */}
 
