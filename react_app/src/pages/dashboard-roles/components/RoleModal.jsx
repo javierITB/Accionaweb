@@ -232,6 +232,7 @@ const PERMISSION_GROUPS = {
         tagg: 'admin',
         permissions: [{ id: 'view_configuracion_tickets', label: 'Acceso a la vista' }]
     },
+    
     anuncios: {
         label: 'Vista: Anuncios',
         tagg: 'admin',
@@ -267,6 +268,7 @@ const PERMISSION_GROUPS = {
             { id: 'create_empresas', label: 'Crear Empresas', dependency: 'view_empresas' },
         ]
     },
+    //check
     gestor_roles: {
         label: 'Vista: Gestor de Roles',
         tagg: 'admin',
