@@ -78,7 +78,7 @@ const fileToBase64 = (file) => {
 };
 
 // --- Componente Principal ---
-const MessageForm = () => {
+const MessageForm = ({ userPermissions = [] }) => {
   // 1. Estados del Formulario
   const [formData, setFormData] = useState({
     destino: '', // Valor del select (Email o ID)
@@ -92,6 +92,9 @@ const MessageForm = () => {
   const [files, setFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
+
+  // PERMISO DE CREACIÓN
+  const canCreate = userPermissions.includes('create_solicitudes_a_cliente');
 
   // 2. Estados de Layout
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
@@ -203,6 +206,11 @@ const MessageForm = () => {
   // *** LÓGICA DE ENVÍO DE FORMULARIO (MODIFICADA PARA INYECTAR) ***
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!canCreate) {
+      alert("No tienes permisos para crear solicitudes.");
+      return;
+    }
 
     if (!formData.destino || !formData.asunto || files.length === 0) {
       alert("Por favor selecciona un destinatario, ingresa un asunto y adjunta al menos un archivo.");
@@ -420,6 +428,12 @@ const MessageForm = () => {
           {/* Formulario */}
           <div className="bg-card border border-border rounded-lg shadow-sm">
             <div className="p-6">
+              {!canCreate && (
+                <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded-lg text-sm flex items-center gap-2">
+                  <Icon name="AlertTriangle" size={16} />
+                  <span>No tienes permisos para crear o enviar solicitudes. Modo de solo lectura.</span>
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-6">
 
                 {/* CAMPO: DESTINATARIO (SELECT) */}
@@ -429,7 +443,7 @@ const MessageForm = () => {
                     name="destino"
                     value={formData.destino}
                     onChange={handleInputChange}
-                    disabled={isLoadingRecipients || isLoading}
+                    disabled={isLoadingRecipients || isLoading || !canCreate}
                     required
                   >
                     <option value="">
@@ -456,7 +470,7 @@ const MessageForm = () => {
                     onChange={handleInputChange}
                     placeholder="Escribe el asunto del mensaje/documento"
                     required
-                    disabled={isLoading}
+                    disabled={isLoading || !canCreate}
                   />
                 </div>
 
@@ -469,21 +483,26 @@ const MessageForm = () => {
                     onChange={handleInputChange}
                     placeholder="Escribe tu mensaje aquí..."
                     rows={6}
-                    disabled={isLoading}
+                    disabled={isLoading || !canCreate}
                   />
                 </div>
 
                 {/* Campo: Carga de Archivos */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Adjuntar Archivos (Se mapea a: "{Q_DOCUMENTO_ADJUNTO_TITLE}")</label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 hover:bg-muted/50 transition-colors text-center" onClick={() => !isLoading && fileInputRef.current?.click()}>
+                  <div
+                    className={`border-2 border-dashed border-border rounded-lg p-6 transition-colors text-center ${(!isLoading && canCreate) ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
+                    onClick={() => {
+                      if (!isLoading && canCreate) fileInputRef.current?.click();
+                    }}
+                  >
                     <input
                       type="file"
                       multiple
                       ref={fileInputRef}
                       onChange={handleFileChange}
                       className="hidden"
-                      disabled={isLoading}
+                      disabled={isLoading || !canCreate}
                     />
                     <Icon name="UploadCloud" size={32} className="mx-auto text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">
@@ -527,28 +546,30 @@ const MessageForm = () => {
                       setFiles([]);
                       if (fileInputRef.current) fileInputRef.current.value = "";
                     }}
-                    disabled={isLoading}
+                    disabled={isLoading || !canCreate}
                   >
                     Cancelar
                   </Button>
-                  <Button
-                    type="submit"
-                    variant="default"
-                    disabled={isLoading}
-                    className="bg-primary text-white"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Icon name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
-                        Enviando...
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="Send" className="mr-2 h-4 w-4" />
-                        Enviar Documento/Solicitud
-                      </>
-                    )}
-                  </Button>
+                  {canCreate && (
+                    <Button
+                      type="submit"
+                      variant="default"
+                      disabled={isLoading}
+                      className="bg-primary text-white"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Icon name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="Send" className="mr-2 h-4 w-4" />
+                          Enviar Documento/Solicitud
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
 
               </form>
