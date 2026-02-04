@@ -274,6 +274,7 @@ const PERMISSION_GROUPS = {
             { id: 'view_gestor_roles', label: 'Acceso a la vista' },
             { id: 'view_gestor_roles_details', label: 'Acceso a la vista detallada', dependency: 'view_gestor_roles' },
             { id: 'create_gestor_roles', label: 'Crear nuevos roles', dependency: 'view_gestor_roles' },
+            { id: 'copy_gestor_roles', label: 'Duplicar roles existentes', dependency: 'view_gestor_roles' },
             { id: 'edit_gestor_roles', label: 'Editar roles existentes', dependency: 'view_gestor_roles_details' },
             { id: 'edit_gestor_roles_by_self', label: 'Editar rol propio', dependency: 'view_gestor_roles_details' },
             { id: 'view_gestor_roles_details_admin', label: 'Acceso a la vista detallada (admin)', dependency: 'view_gestor_roles' },
