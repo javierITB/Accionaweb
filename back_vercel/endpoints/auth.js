@@ -637,9 +637,10 @@ router.post("/borrarpass", async (req, res) => {
       }
 
       if (recoveryRecord.expiresAt < now) {
-         await req.db
-            .collection("recovery_codes")
-            .updateOne({ _id: recoveryRecord._id }, { $set: { active: false, revokedAt: now, reason: "expired" } });
+         await req.db.collection("recovery_codes").updateOne(
+            { _id: recoveryRecord._id },
+            { $set: { active: false, revokedAt: now, reason: "expired" } }
+         );
 
          return res.status(401).json({
             message: "Código expirado. Solicita uno nuevo.",
@@ -664,7 +665,7 @@ router.post("/borrarpass", async (req, res) => {
                pass: hashedPassword,
                updatedAt: now.toISOString(),
             },
-         },
+         }
       );
 
       if (updateUserResult.matchedCount === 0) {
@@ -681,12 +682,12 @@ router.post("/borrarpass", async (req, res) => {
                revokedAt: now,
                reason: "consumed",
             },
-         },
+         }
       );
 
       return res.json({
          success: true,
-         uid: userId,
+         uid: userId, 
       });
    } catch (err) {
       console.error("Error en /borrarpass:", err);
@@ -695,6 +696,7 @@ router.post("/borrarpass", async (req, res) => {
       });
    }
 });
+
 
 router.post("/send-2fa-code", async (req, res) => {
    try {
@@ -1292,32 +1294,20 @@ router.delete("/users/:id", async (req, res) => {
       if (!auth.ok) {
          return res.status(403).json({ error: auth.error });
       }
-
-      const userId = req.params.id;
-      if (!ObjectId.isValid(userId)) {
-         return res.status(400).json({ error: "ID inválido" });
-      }
-      const result = await req.db.collection("usuarios").findOneAndDelete({
-         _id: new ObjectId(userId),
+      const result = await req.db.collection("usuarios").deleteOne({
+         _id: new ObjectId(req.params.id),
       });
 
-      // Si no se encontró el usuario
-      if (!result.value) {
+      if (result.deletedCount === 0) {
          return res.status(404).json({ error: "Usuario no encontrado" });
       }
 
-      // 🔹 Acá tienes el documento completo eliminado
-      const deletedUser = result.value;
+      registerUserRemovedEvent(req, auth);
 
-      // Puedes pasar el usuario eliminado
-      registerUserRemovedEvent(req, auth, deletedUser);
-
-      res.json({
-         message: "Usuario eliminado exitosamente",
-      });
+      res.json({ message: "Usuario eliminado exitosamente" });
    } catch (err) {
       console.error("Error eliminando usuario:", err);
-      res.status(500).json({ error: "Error al eliminar usuario: " + err.message });
+      res.status(500).json({ error: "Error al eliminar usuario" });
    }
 });
 
