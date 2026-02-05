@@ -658,7 +658,7 @@ router.get("/mail/:mail", async (req, res) => {
 
     const cleanMail = req.params.mail.toLowerCase().trim();
 
-    // 1. Buscar usuario por Blind Index (el mail está cifrado en la BD)
+    // 1. Buscar usuario por Blind Index
     const user = await req.db.collection("usuarios").findOne({
       mail_index: createBlindIndex(cleanMail)
     });
@@ -671,55 +671,83 @@ router.get("/mail/:mail", async (req, res) => {
     }
 
     const userIdString = user._id.toString();
+    const userCargo = user?.cargo?.toLowerCase().trim();
 
-    // Descifrar el nombre del usuario para la respuesta
-    let nombreUsuario = "Usuario";
-    if (user.nombre && user.nombre.includes(':')) {
+    // Determinar si es jefatura
+    const isJefatura = userCargo === "jefatura";
+
+    // Desencriptar empresa del usuario (si aplica)
+    let userEmpresa = null;
+    if (user.empresa) {
       try {
-        nombreUsuario = decrypt(user.nombre);
-      } catch (decryptError) {
-        console.error("Error descifrando nombre:", decryptError);
+        userEmpresa = user.empresa.includes(":")
+          ? decrypt(user.empresa)
+          : user.empresa;
+      } catch {
+        userEmpresa = null;
       }
     }
 
-    // 2. Traer todas las respuestas para filtrar en memoria (debido a la encriptación del UID)
+    // Desencriptar nombre del usuario
+    let nombreUsuario = "Usuario";
+    if (user.nombre && user.nombre.includes(":")) {
+      try {
+        nombreUsuario = decrypt(user.nombre);
+      } catch (e) {
+        console.error("Error descifrando nombre:", e);
+      }
+    }
+
+    // 2. Traer TODAS las respuestas (modo legacy / sin migración)
     const allAnswers = await req.db.collection("respuestas").find({}).toArray();
 
     const answers = allAnswers.filter(answer => {
       if (!answer.user) return false;
 
-      // --- Lógica para Solicitudes Propias ---
+      // --- Solicitudes propias ---
       let isOwner = false;
       if (answer.user.uid) {
         let uidToCheck = answer.user.uid;
-        // Si el UID está encriptado, lo desencriptamos para comparar
-        if (typeof uidToCheck === 'string' && uidToCheck.includes(':')) {
+        if (typeof uidToCheck === "string" && uidToCheck.includes(":")) {
           try {
             uidToCheck = decrypt(uidToCheck);
-          } catch (e) {
+          } catch {
             return false;
           }
         }
         isOwner = uidToCheck === userIdString;
       }
 
-      // --- Lógica para Solicitudes Compartidas ---
-      // Verificamos si el ID del usuario está en el array 'compartidos' dentro del objeto 'user'
+      // --- Solicitudes compartidas ---
       let isShared = false;
       if (answer.user.compartidos && Array.isArray(answer.user.compartidos)) {
         isShared = answer.user.compartidos.includes(userIdString);
       }
 
-      return isOwner || isShared;
+      // --- Solicitudes por empresa (SOLO JEFATURA) ---
+      let isSameCompany = false;
+      if (isJefatura && userEmpresa && answer.user.empresa) {
+        try {
+          const empresaRespuesta = answer.user.empresa.includes(":")
+            ? decrypt(answer.user.empresa)
+            : answer.user.empresa;
+
+          isSameCompany = empresaRespuesta === userEmpresa;
+        } catch {
+          isSameCompany = false;
+        }
+      }
+
+      return isOwner || isShared || isSameCompany;
     });
 
     // --- Helpers de Desencriptación ---
     const descifrarCampo = (valor) => {
       const encryptedRegex = /^[a-f0-9]{24}:[a-f0-9]{32}:[a-f0-9]+$/i;
-      if (typeof valor === 'string' && encryptedRegex.test(valor)) {
+      if (typeof valor === "string" && encryptedRegex.test(valor)) {
         try {
           return decrypt(valor);
-        } catch (error) {
+        } catch {
           return valor;
         }
       }
@@ -727,15 +755,15 @@ router.get("/mail/:mail", async (req, res) => {
     };
 
     const descifrarObjeto = (obj) => {
-      if (!obj || typeof obj !== 'object') return obj;
+      if (!obj || typeof obj !== "object") return obj;
       if (Array.isArray(obj)) return obj.map(item => descifrarCampo(item));
 
       const resultado = {};
       for (const key in obj) {
         const valor = obj[key];
-        if (typeof valor === 'string') {
+        if (typeof valor === "string") {
           resultado[key] = descifrarCampo(valor);
-        } else if (typeof valor === 'object' && valor !== null) {
+        } else if (typeof valor === "object" && valor !== null) {
           resultado[key] = descifrarObjeto(valor);
         } else {
           resultado[key] = valor;
@@ -744,69 +772,66 @@ router.get("/mail/:mail", async (req, res) => {
       return resultado;
     };
 
-    // 3. Procesar y Desencriptar cada respuesta
+    // 3. Procesar y desencriptar respuestas
     const answersProcessed = answers.map(answer => {
       const answerDescifrada = { ...answer };
 
-      // Desencriptar estructuras principales
-      if (answerDescifrada.user) answerDescifrada.user = descifrarObjeto(answerDescifrada.user);
-      if (answerDescifrada.responses) answerDescifrada.responses = descifrarObjeto(answerDescifrada.responses);
+      if (answerDescifrada.user) {
+        answerDescifrada.user = descifrarObjeto(answerDescifrada.user);
+      }
+      if (answerDescifrada.responses) {
+        answerDescifrada.responses = descifrarObjeto(answerDescifrada.responses);
+      }
 
-      // Extraer trabajador de los responses descifrados
       let trabajador = "No especificado";
       if (answerDescifrada.responses) {
-        trabajador = answerDescifrada.responses["Nombre del trabajador"] ||
+        trabajador =
+          answerDescifrada.responses["Nombre del trabajador"] ||
           answerDescifrada.responses["NOMBRE DEL TRABAJADOR"] ||
           answerDescifrada.responses["Nombre del solicitante responsable de la empresa"] ||
           "No especificado";
       }
 
-      // Determinar si es compartida comparando el UID original descifrado con el ID del solicitante
-      // Si el UID no coincide con el usuario que consulta, es porque le fue compartida
       const esCompartida = answerDescifrada.user?.uid !== userIdString;
 
       return {
         _id: answerDescifrada._id,
         formId: answerDescifrada.formId,
         formTitle: answerDescifrada.formTitle,
-        trabajador: trabajador,
+        trabajador,
         user: answerDescifrada.user,
         status: answerDescifrada.status,
         createdAt: answerDescifrada.createdAt,
         updatedAt: answerDescifrada.updatedAt,
         updateAdmin: answerDescifrada.updateAdmin,
         updateClient: answerDescifrada.updateClient,
-        compartida: esCompartida, // TAG SOLICITADO
-        isShared: esCompartida,    // Alias para compatibilidad
+        compartida: esCompartida,
+        isShared: esCompartida,
         metadata: {
-          esPropia: !esCompartida
+          esPropia: !esCompartida,
+          scope: isJefatura && !esCompartida ? "empresa" : esCompartida ? "compartida" : "propia"
         },
-        // Placeholder for form data, to be populated below
         form: null
       };
     });
 
-    // --- OPTIMIZACIÓN: BUSCAR DATOS DE FORMULARIOS DEL SERVIDOR (LOOKUP) ---
-    // Recolectar IDs únicos de formularios
-    const formIds = [...new Set(answersProcessed.map(a => a.formId).filter(id => id))];
+    // --- Lookup de formularios ---
+    const formIds = [...new Set(answersProcessed.map(a => a.formId).filter(Boolean))];
 
-    // Buscar detalles de formularios
     const formsDetails = await req.db.collection("forms").find({
-      _id: { $in: formIds.map(id => new ObjectId(id)) } // Asumiendo que formId es string de ObjectId
+      _id: { $in: formIds.map(id => new ObjectId(id)) }
     }).project({
       title: 1,
       icon: 1,
       primaryColor: 1,
       section: 1,
-      description: 1, // Útil para mostrar detalles
+      description: 1,
       updatedAt: 1
     }).toArray();
 
-    // Crear mapa para acceso rápido
     const formsMap = new Map();
     formsDetails.forEach(f => formsMap.set(f._id.toString(), f));
 
-    // Inyectar datos del formulario en cada respuesta
     answersProcessed.forEach(answer => {
       if (answer.formId && formsMap.has(answer.formId)) {
         const formData = formsMap.get(answer.formId);
@@ -819,17 +844,16 @@ router.get("/mail/:mail", async (req, res) => {
           description: formData.description,
           updatedAt: formData.updatedAt
         };
-
-        // Si no tiene título propio la respuesta, usar el del formulario
         if (!answer.formTitle) {
           answer.formTitle = formData.title;
         }
       }
     });
-    // -----------------------------------------------------------------------
 
-    // Ordenar por fecha (más recientes primero)
-    answersProcessed.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // Ordenar por fecha
+    answersProcessed.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
 
     res.json({
       success: true,
@@ -843,10 +867,11 @@ router.get("/mail/:mail", async (req, res) => {
     console.error("Error en GET /mail/:mail:", err);
     res.status(500).json({
       success: false,
-      error: "Error al procesar la solicitud de formularios compartidos."
+      error: "Error al procesar la solicitud de formularios"
     });
   }
 });
+
 
 // quitar acceso a solicitudes compartidas 
 
