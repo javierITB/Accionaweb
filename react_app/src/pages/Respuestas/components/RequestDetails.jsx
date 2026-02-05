@@ -1581,6 +1581,25 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               Límite máximo alcanzado. Puedes eliminar algunos archivos para agregar otros nuevos.
                            </div>
                         )}
+
+                        <div className="flex justify-end pt-2">
+                           <Button
+                              variant="outlineTeal"
+                              size="sm"
+                              onClick={() => {
+                                 openAsyncDialog({
+                                    title: "Confirmar Subida",
+                                    message: `¿Estás seguro de que deseas subir ${correctedFiles.length} archivo(s)?`,
+                                    confirmLabel: "Subir Archivos",
+                                    onConfirm: handleUploadAdditionalFiles,
+                                 });
+                              }}
+                              iconName="Upload"
+                              iconPosition="left"
+                           >
+                              Subir Archivos
+                           </Button>
+                        </div>
                      </div>
                   )}
 
@@ -1735,79 +1754,82 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   )}
                </div>
             </div>
-         )}
+         )
+         }
 
-         {fullRequestData?.status !== "pendiente" && fullRequestData?.status !== "en_revision" && userPermissions?.viewSigned && (
-            <div>
-               {isCheckingSignature && (
-                  <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                     Documento Firmado por Cliente
-                     {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-                  </h3>
-               )}
-               {!isCheckingSignature && clientSignature && (
-                  <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                     Documento Firmado por Cliente
-                  </h3>
-               )}
+         {
+            fullRequestData?.status !== "pendiente" && fullRequestData?.status !== "en_revision" && userPermissions?.viewSigned && (
+               <div>
+                  {isCheckingSignature && (
+                     <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                        Documento Firmado por Cliente
+                        {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+                     </h3>
+                  )}
+                  {!isCheckingSignature && clientSignature && (
+                     <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                        Documento Firmado por Cliente
+                     </h3>
+                  )}
 
-               {clientSignature && (
-                  <div className="bg-success/10 rounded-lg p-4">
-                     <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                           <Icon name="FileSignature" size={20} className="text-success" />
-                           <div>
-                              <p className="text-sm font-medium text-foreground">{clientSignature.fileName}</p>
-                              <p className="text-xs text-muted-foreground">
-                                 Subido el {formatDate(clientSignature.uploadedAt)} •{" "}
-                                 {formatFileSize(clientSignature.fileSize)}
-                              </p>
+                  {clientSignature && (
+                     <div className="bg-success/10 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                           <div className="flex items-center space-x-3">
+                              <Icon name="FileSignature" size={20} className="text-success" />
+                              <div>
+                                 <p className="text-sm font-medium text-foreground">{clientSignature.fileName}</p>
+                                 <p className="text-xs text-muted-foreground">
+                                    Subido el {formatDate(clientSignature.uploadedAt)} •{" "}
+                                    {formatFileSize(clientSignature.fileSize)}
+                                 </p>
+                              </div>
+                           </div>
+                           <div className="flex items-center space-x-2">
+                              {userPermissions?.downloadSigned && (
+                                 <Button
+                                    variant="outline"
+                                    size="sm"
+                                    iconName={isDownloadingSignature ? "Loader" : "Download"}
+                                    iconPosition="left"
+                                    iconSize={16}
+                                    onClick={() => handleDownloadClientSignature(fullRequestData._id)}
+                                    disabled={isDownloadingSignature}
+                                 >
+                                    {isDownloadingSignature ? "Descargando..." : "Descargar"}
+                                 </Button>
+                              )}
+                              {userPermissions?.previewSigned && (
+                                 <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handlePreviewClientSignature}
+                                    iconName={isLoadingPreviewSignature ? "Loader" : "Eye"}
+                                    iconPosition="left"
+                                    iconSize={16}
+                                    disabled={isLoadingPreviewSignature}
+                                 >
+                                    {isLoadingPreviewSignature ? "Cargando..." : "Vista Previa"}
+                                 </Button>
+                              )}
+                              {/* Solo ocultamos el botón de eliminar firma si la solicitud está archivada */}
+                              {fullRequestData?.status !== "archivado" && userPermissions?.deleteSignature && (
+                                 <Button
+                                    variant="ghostError"
+                                    size="icon"
+                                    onClick={() => handleDeleteClientSignature(fullRequestData._id)}
+                                 >
+                                    <Icon name="Trash2" size={16} />
+                                 </Button>
+                              )}
                            </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                           {userPermissions?.downloadSigned && (
-                              <Button
-                                 variant="outline"
-                                 size="sm"
-                                 iconName={isDownloadingSignature ? "Loader" : "Download"}
-                                 iconPosition="left"
-                                 iconSize={16}
-                                 onClick={() => handleDownloadClientSignature(fullRequestData._id)}
-                                 disabled={isDownloadingSignature}
-                              >
-                                 {isDownloadingSignature ? "Descargando..." : "Descargar"}
-                              </Button>
-                           )}
-                           {userPermissions?.previewSigned && (
-                              <Button
-                                 variant="ghost"
-                                 size="sm"
-                                 onClick={handlePreviewClientSignature}
-                                 iconName={isLoadingPreviewSignature ? "Loader" : "Eye"}
-                                 iconPosition="left"
-                                 iconSize={16}
-                                 disabled={isLoadingPreviewSignature}
-                              >
-                                 {isLoadingPreviewSignature ? "Cargando..." : "Vista Previa"}
-                              </Button>
-                           )}
-                           {/* Solo ocultamos el botón de eliminar firma si la solicitud está archivada */}
-                           {fullRequestData?.status !== "archivado" && userPermissions?.deleteSignature && (
-                              <Button
-                                 variant="ghostError"
-                                 size="icon"
-                                 onClick={() => handleDeleteClientSignature(fullRequestData._id)}
-                              >
-                                 <Icon name="Trash2" size={16} />
-                              </Button>
-                           )}
-                        </div>
                      </div>
-                  </div>
-               )}
-            </div>
-         )}
-      </div>
+                  )}
+               </div>
+            )
+         }
+      </div >
    );
 
    const handleUploadFiles = async () => {
