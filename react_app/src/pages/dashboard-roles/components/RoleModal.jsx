@@ -368,20 +368,32 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
       color: '#4f46e5'
    });
 
+   console.log(role)
+
+   
+
    const isClientPanelEnabled = formData.permissions.includes("view_panel_cliente");
    const isAdminPanelEnabled = formData.permissions.includes("view_panel_admin");
 
-   useEffect(() => {
-      if (role) {
-         setFormData({
-            id: role._id,
-            name: role.name,
-            description: role.description,
-            permissions: role.permissions || [],
-            color: role.color || "#4f46e5",
-         });
-      }
-   }, [role, isOpen]);
+useEffect(() => {
+   if (role) {
+      setFormData({
+         id: role._id,
+         name: role.name,
+         description: role.description,
+         permissions: role.permissions || [],
+         color: role.color || "#4f46e5",
+      });
+   } else {
+      setFormData({
+         name: '',
+         description: '',
+         permissions: [],
+         color: '#4f46e5',
+      });
+   }
+}, [role, isOpen]);
+
 
    if (!isOpen) return null;
 
@@ -456,20 +468,22 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
       }
    };
 
-   const roleName = role.name?.toLowerCase();
-   const myRoleName = sessionStorage.getItem("cargo")?.toLowerCase();
+const isCreating = !role;
 
-   const isAdminRole = roleName === "administrador";
-   const itsMyRole = roleName === myRoleName;
+const roleName = role?.name?.toLowerCase();
+const myRoleName = sessionStorage.getItem("cargo")?.toLowerCase();
 
-   const canEditAdmin = isAdminRole && permisos.edit_gestor_roles_admin;
-   const canEditMyRole = itsMyRole && permisos.edit_gestor_roles_by_self;
-   const canEditOtherRoles =
-      !isAdminRole &&
-      !itsMyRole &&
-      permisos.edit_gestor_roles;
+const isAdminRole = roleName === "administrador";
+const itsMyRole = roleName === myRoleName;
 
-   const canEdit = canEditAdmin || canEditMyRole || canEditOtherRoles;
+const canEditAdmin = isAdminRole && permisos.edit_gestor_roles_admin;
+const canEditMyRole = itsMyRole && permisos.edit_gestor_roles_by_self;
+const canEditOtherRoles =
+   !isAdminRole &&
+   !itsMyRole &&
+   permisos.edit_gestor_roles;
+
+const canEdit = isCreating || canEditAdmin || canEditMyRole || canEditOtherRoles;
 
 
    return (
