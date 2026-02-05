@@ -3,7 +3,7 @@ import Icon from "../../../components/AppIcon";
 import Button from "../../../components/ui/Button";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
 
-const MessageModal = ({ isOpen, onClose, request, formId }) => {
+const MessageModal = ({ isOpen, onClose, request, formId, userPermissions }) => {
    const [message, setMessage] = useState("");
    const [isSending, setIsSending] = useState(false);
    const [sendToEmail, setSendToEmail] = useState(false);
@@ -237,27 +237,28 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                <div className="flex px-6 space-x-6">
                   <button
                      onClick={() => handleTabChange("general")}
-                     className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === "general"
-                           ? "border-primary text-primary"
-                           : "border-transparent text-muted-foreground hover:text-foreground"
-                     }`}
+                     className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 ${activeTab === "general"
+                        ? "border-primary text-primary"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
                      title="Ver mensajes generales"
                   >
                      General
                   </button>
-                  <button
-                     onClick={() => handleTabChange("admin")}
-                     className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
-                        activeTab === "admin"
+
+                  {userPermissions?.viewMessagesAdmin && (
+                     <button
+                        onClick={() => handleTabChange("admin")}
+                        className={`pb-3 pt-1 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${activeTab === "admin"
                            ? "border-error text-error"
                            : "border-transparent text-muted-foreground hover:text-foreground"
-                     }`}
-                     title="Ver mensajes internos"
-                  >
-                     <Icon name="Lock" size={12} />
-                     Interno
-                  </button>
+                           }`}
+                        title="Ver mensajes internos"
+                     >
+                        <Icon name="Lock" size={12} />
+                        Interno
+                     </button>
+                  )}
                </div>
             </div>
 
@@ -266,21 +267,19 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                <div
                   ref={chatRef}
                   onScroll={handleScroll}
-                  className={`h-full overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 ${
-                     activeTab === "admin" ? "bg-error/5" : ""
-                  }`}
+                  className={`h-full overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 ${activeTab === "admin" ? "bg-error/5" : ""
+                     }`}
                >
                   {filteredMessages.length > 0 ? (
                      filteredMessages.map((msg, i) => (
                         <div key={i} className={`flex ${msg.autor === user ? "justify-end" : "justify-start"}`}>
                            <div
-                              className={`max-w-[90%] sm:max-w-[85%] rounded-lg px-3 py-2 ${
-                                 msg.autor === user
-                                    ? activeTab === "admin"
-                                       ? "bg-error text-error-foreground"
-                                       : "bg-primary text-primary-foreground"
-                                    : "bg-muted text-muted-foreground"
-                              }`}
+                              className={`max-w-[90%] sm:max-w-[85%] rounded-lg px-3 py-2 ${msg.autor === user
+                                 ? activeTab === "admin"
+                                    ? "bg-error text-error-foreground"
+                                    : "bg-primary text-primary-foreground"
+                                 : "bg-muted text-muted-foreground"
+                                 }`}
                            >
                               {msg.autor !== user && (
                                  <div className="flex items-center justify-between mb-1 sm:mb-2">
@@ -312,33 +311,43 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                <div className="p-3 sm:p-4">
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-end space-y-2 sm:space-y-0 sm:space-x-2">
                      <div className="flex-1 min-w-0">
-                        <textarea
-                           value={message}
-                           onChange={(e) => setMessage(e.target.value)}
-                           onKeyPress={handleKeyPress}
-                           placeholder={
-                              activeTab === "admin"
-                                 ? "Escribir nota interna (solo admins)..."
-                                 : "Escribe tu mensaje aquí..."
-                           }
-                           className="w-full min-h-[60px] sm:min-h-[80px] p-3 border border-border rounded-lg resize-none bg-input text-foreground focus:ring-2 focus:ring-ring text-sm sm:text-base"
-                           disabled={isSending}
-                           rows={3}
-                        />
+                        {(activeTab === "admin" ? userPermissions?.createMessagesAdmin : userPermissions?.createMessages) ? (
+                           <>
+                              <textarea
+                                 value={message}
+                                 onChange={(e) => setMessage(e.target.value)}
+                                 onKeyPress={handleKeyPress}
+                                 placeholder={
+                                    activeTab === "admin"
+                                       ? "Escribir nota interna (solo admins)..."
+                                       : "Escribe tu mensaje aquí..."
+                                 }
+                                 className="w-full min-h-[60px] sm:min-h-[80px] p-3 border border-border rounded-lg resize-none bg-input text-foreground focus:ring-2 focus:ring-ring text-sm sm:text-base"
+                                 disabled={isSending}
+                                 rows={3}
+                              />
+                           </>
+                        ) : (
+                           <div className="w-full min-h-[60px] p-3 border border-border rounded-lg bg-muted text-muted-foreground text-sm flex items-center justify-center">
+                              No tienes permisos para enviar mensajes en este chat.
+                           </div>
+                        )}
                      </div>
-                     <Button
-                        variant={activeTab === "admin" ? "danger" : "default"}
-                        onClick={handleSend}
-                        disabled={!message.trim() || isSending}
-                        loading={isSending}
-                        iconName="Send"
-                        iconPosition="left"
-                        iconSize={16}
-                        className="w-full sm:w-auto sm:min-w-[100px] h-12 sm:h-auto"
-                     >
-                        <span className="hidden xs:inline">Enviar</span>
-                        <span className="xs:hidden">Enviar</span>
-                     </Button>
+                     {(activeTab === "admin" ? userPermissions?.createMessagesAdmin : userPermissions?.createMessages) && (
+                        <Button
+                           variant={activeTab === "admin" ? "danger" : "default"}
+                           onClick={handleSend}
+                           disabled={!message.trim() || isSending}
+                           loading={isSending}
+                           iconName="Send"
+                           iconPosition="left"
+                           iconSize={16}
+                           className="w-full sm:w-auto sm:min-w-[100px] h-12 sm:h-auto"
+                        >
+                           <span className="hidden xs:inline">Enviar</span>
+                           <span className="xs:hidden">Enviar</span>
+                        </Button>
+                     )}
                      {/* AGREGADO: Botón para bajar rápido a la derecha del enviar */}
                      {showScrollToBottom && (
                         <div className="flex-shrink-0">
@@ -354,7 +363,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                      )}
                   </div>
 
-                  {activeTab !== "admin" && (
+                  {activeTab !== "admin" && userPermissions?.createMessagesMail && (
                      <div className="mt-3 flex items-center space-x-2">
                         <div className="flex items-center">
                            <input
@@ -390,7 +399,7 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
                </div>
             </div>
          </div>
-      </div>
+      </div >
    );
 };
 

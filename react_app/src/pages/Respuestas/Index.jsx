@@ -83,43 +83,49 @@ const RequestTracking = () => {
         const perms = roleData.permissions || [];
         const hasAll = perms.includes('all');
         setUserPermissions({
-          // Base Views
+          // Vistas Base
           view: hasAll || perms.includes('view_solicitudes_clientes'),
           delete: hasAll || perms.includes('delete_solicitudes_clientes'),
           viewDetails: hasAll || perms.includes('view_solicitudes_clientes_details'),
+          viewAnswers: hasAll || perms.includes('view_solicitudes_clientes_answers'),
+          viewShared: hasAll || perms.includes('view_solicitudes_clientes_shared'),
+          viewMessages: hasAll || perms.includes('view_solicitudes_clientes_messages'),
 
-          // State Management
+          // Estados
           editState: hasAll || perms.includes('edit_solicitudes_clientes_state'),
           finalize: hasAll || perms.includes('edit_solicitudes_clientes_finalize'),
           archive: hasAll || perms.includes('edit_solicitudes_clientes_archive'),
 
-          // Attachments (Adjuntos)
+          // Adjuntos
           viewAttachments: hasAll || perms.includes('view_solicitudes_clientes_attach'),
           downloadAttachment: hasAll || perms.includes('download_solicitudes_clientes_attach'),
           previewAttachment: hasAll || perms.includes('preview_solicitudes_clientes_attach'),
           deleteAttachment: hasAll || perms.includes('delete_solicitudes_clientes_attach'),
 
-          // Generated Documents
+          // Documentos Generado
           viewGenerated: hasAll || perms.includes('view_solicitudes_clientes_generated'),
           downloadGenerated: hasAll || perms.includes('download_solicitudes_clientes_generated'),
           previewGenerated: hasAll || perms.includes('preview_solicitudes_clientes_generated'),
           regenerate: hasAll || perms.includes('regenerate_solicitudes_clientes_generated'),
 
-          // Sent Documents (Enviado/Corregido)
+          // Enviado/Corregido
           viewSent: hasAll || perms.includes('view_solicitudes_clientes_send'),
           downloadSent: hasAll || perms.includes('download_solicitudes_clientes_send'),
           previewSent: hasAll || perms.includes('preview_solicitudes_clientes_send'),
           deleteSent: hasAll || perms.includes('delete_solicitudes_clientes_send'),
 
-          // Signed Documents (Firmado)
+          // Firmado
           viewSigned: hasAll || perms.includes('view_solicitudes_clientes_signed'),
           downloadSigned: hasAll || perms.includes('download_solicitudes_clientes_signed'),
           previewSigned: hasAll || perms.includes('preview_solicitudes_clientes_signed'),
           deleteSignature: hasAll || perms.includes('delete_solicitudes_clientes_signed'),
 
-          // Helper for Upload (uses editState as proxy if not defined otherwise, or maybe use viewSent/editState combo)
-          // Sticking to editState for upload "ability" as it implies modifying the request flow
-          canUpload: hasAll || perms.includes('edit_solicitudes_clientes_state'),
+
+          // Mensajes
+          createMessages: hasAll || perms.includes('create_solicitudes_clientes_messages'),
+          createMessagesMail: hasAll || perms.includes('create_solicitudes_clientes_messages_mail'),
+          viewMessagesAdmin: hasAll || perms.includes('view_solicitudes_clientes_messages_admin'),
+          createMessagesAdmin: hasAll || perms.includes('create_solicitudes_clientes_messages_admin'),
         });
       }
     } catch (error) {
@@ -553,7 +559,7 @@ const RequestTracking = () => {
         </div>
       </main>
 
-      <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} request={messageRequest} formId={formId} onSendMessage={console.log} />
+      <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} request={messageRequest} formId={formId} onSendMessage={console.log} userPermissions={userPermissions} />
       <RequestDetails
         request={selectedRequest}
         isVisible={showRequestDetails}
