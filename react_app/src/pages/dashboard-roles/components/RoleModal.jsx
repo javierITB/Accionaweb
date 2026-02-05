@@ -117,6 +117,11 @@ const PERMISSION_GROUPS = {
             label: "Eliminar documento enviado",
             dependency: "view_solicitudes_clientes_send",
          },
+         {
+            id: "create_solicitudes_clientes_send",
+            label: "Enviar documento a cliente",
+            dependency: "view_solicitudes_clientes_send",
+         },
 
          {
             id: "view_solicitudes_clientes_signed",

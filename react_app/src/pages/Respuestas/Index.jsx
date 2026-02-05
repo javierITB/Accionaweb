@@ -65,69 +65,66 @@ const RequestTracking = () => {
   const checkPermissions = async () => {
     try {
       const role = sessionStorage.getItem('cargo')?.toLowerCase();
-      if (role === 'administrador' || role === 'admin') {
-        setUserPermissions({
-          view: true,
-          delete: true,
-          viewDetails: true,
-          editState: true,
-          edit: true,
-          regenerate: true
-        });
-        return;
-      }
+      let perms = [];
+      let hasAll = false;
 
       const res = await apiFetch(`${API_BASE_URL}/roles/name/${role}`);
       if (res.ok) {
         const roleData = await res.json();
-        const perms = roleData.permissions || [];
-        const hasAll = perms.includes('all');
-        setUserPermissions({
-          // Vistas Base
-          view: hasAll || perms.includes('view_solicitudes_clientes'),
-          delete: hasAll || perms.includes('delete_solicitudes_clientes'),
-          viewDetails: hasAll || perms.includes('view_solicitudes_clientes_details'),
-          viewAnswers: hasAll || perms.includes('view_solicitudes_clientes_answers'),
-          viewShared: hasAll || perms.includes('view_solicitudes_clientes_shared'),
-          viewMessages: hasAll || perms.includes('view_solicitudes_clientes_messages'),
-
-          // Estados
-          editState: hasAll || perms.includes('edit_solicitudes_clientes_state'),
-          finalize: hasAll || perms.includes('edit_solicitudes_clientes_finalize'),
-          archive: hasAll || perms.includes('edit_solicitudes_clientes_archive'),
-
-          // Adjuntos
-          viewAttachments: hasAll || perms.includes('view_solicitudes_clientes_attach'),
-          downloadAttachment: hasAll || perms.includes('download_solicitudes_clientes_attach'),
-          previewAttachment: hasAll || perms.includes('preview_solicitudes_clientes_attach'),
-          deleteAttachment: hasAll || perms.includes('delete_solicitudes_clientes_attach'),
-
-          // Documentos Generado
-          viewGenerated: hasAll || perms.includes('view_solicitudes_clientes_generated'),
-          downloadGenerated: hasAll || perms.includes('download_solicitudes_clientes_generated'),
-          previewGenerated: hasAll || perms.includes('preview_solicitudes_clientes_generated'),
-          regenerate: hasAll || perms.includes('regenerate_solicitudes_clientes_generated'),
-
-          // Enviado/Corregido
-          viewSent: hasAll || perms.includes('view_solicitudes_clientes_send'),
-          downloadSent: hasAll || perms.includes('download_solicitudes_clientes_send'),
-          previewSent: hasAll || perms.includes('preview_solicitudes_clientes_send'),
-          deleteSent: hasAll || perms.includes('delete_solicitudes_clientes_send'),
-
-          // Firmado
-          viewSigned: hasAll || perms.includes('view_solicitudes_clientes_signed'),
-          downloadSigned: hasAll || perms.includes('download_solicitudes_clientes_signed'),
-          previewSigned: hasAll || perms.includes('preview_solicitudes_clientes_signed'),
-          deleteSignature: hasAll || perms.includes('delete_solicitudes_clientes_signed'),
-
-
-          // Mensajes
-          createMessages: hasAll || perms.includes('create_solicitudes_clientes_messages'),
-          createMessagesMail: hasAll || perms.includes('create_solicitudes_clientes_messages_mail'),
-          viewMessagesAdmin: hasAll || perms.includes('view_solicitudes_clientes_messages_admin'),
-          createMessagesAdmin: hasAll || perms.includes('create_solicitudes_clientes_messages_admin'),
-        });
+        perms = roleData.permissions || [];
+        hasAll = perms.includes('all');
+        console.log("DEBUG PERMISSIONS - Role:", role);
+        console.log("DEBUG PERMISSIONS - Raw Perms:", perms);
+        console.log("DEBUG PERMISSIONS - HasAll:", hasAll);
       }
+
+      setUserPermissions({
+        // Vistas Base
+        view: hasAll || perms.includes('view_solicitudes_clientes'),
+        delete: hasAll || perms.includes('delete_solicitudes_clientes'),
+        viewDetails: hasAll || perms.includes('view_solicitudes_clientes_details'),
+        viewAnswers: hasAll || perms.includes('view_solicitudes_clientes_answers'),
+        viewShared: hasAll || perms.includes('view_solicitudes_clientes_shared'),
+        viewMessages: hasAll || perms.includes('view_solicitudes_clientes_messages'),
+
+        // Estados
+        editState: hasAll || perms.includes('edit_solicitudes_clientes_state'),
+        finalize: hasAll || perms.includes('edit_solicitudes_clientes_finalize'),
+        archive: hasAll || perms.includes('edit_solicitudes_clientes_archive'),
+
+        // Adjuntos
+        viewAttachments: hasAll || perms.includes('view_solicitudes_clientes_attach'),
+        downloadAttachment: hasAll || perms.includes('download_solicitudes_clientes_attach'),
+        previewAttachment: hasAll || perms.includes('preview_solicitudes_clientes_attach'),
+        deleteAttachment: hasAll || perms.includes('delete_solicitudes_clientes_attach'),
+
+        // Documentos Generado
+        viewGenerated: hasAll || perms.includes('view_solicitudes_clientes_generated'),
+        downloadGenerated: hasAll || perms.includes('download_solicitudes_clientes_generated'),
+        previewGenerated: hasAll || perms.includes('preview_solicitudes_clientes_generated'),
+        regenerate: hasAll || perms.includes('regenerate_solicitudes_clientes_generated'),
+
+        // Enviado/Corregido
+        viewSent: hasAll || perms.includes('view_solicitudes_clientes_send'),
+        downloadSent: hasAll || perms.includes('download_solicitudes_clientes_send'),
+        previewSent: hasAll || perms.includes('preview_solicitudes_clientes_send'),
+        deleteSent: hasAll || perms.includes('delete_solicitudes_clientes_send'),
+        create_solicitudes_clientes_send: hasAll || perms.includes('create_solicitudes_clientes_send'),
+
+        // Firmado
+        viewSigned: hasAll || perms.includes('view_solicitudes_clientes_signed'),
+        downloadSigned: hasAll || perms.includes('download_solicitudes_clientes_signed'),
+        previewSigned: hasAll || perms.includes('preview_solicitudes_clientes_signed'),
+        deleteSignature: hasAll || perms.includes('delete_solicitudes_clientes_signed'),
+
+
+        // Mensajes
+        createMessages: hasAll || perms.includes('create_solicitudes_clientes_messages'),
+        createMessagesMail: hasAll || perms.includes('create_solicitudes_clientes_messages_mail'),
+        viewMessagesAdmin: hasAll || perms.includes('view_solicitudes_clientes_messages_admin'),
+        createMessagesAdmin: hasAll || perms.includes('create_solicitudes_clientes_messages_admin'),
+      });
+
     } catch (error) {
       console.error("Error checking permissions:", error);
     }

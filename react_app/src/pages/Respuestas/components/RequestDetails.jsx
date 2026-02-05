@@ -1490,7 +1490,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      >
                         Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
                      </span>
-                     {!["archivado", "finalizado"].includes(fullRequestData?.status) && userPermissions?.canUpload && (
+                     {userPermissions?.create_solicitudes_clientes_send && (
                         <Button
                            variant="outlineTeal"
                            size="sm"
