@@ -505,6 +505,12 @@ router.post("/:id/adjuntos", async (req, res) => {
       );
     }
 
+    // ACTUALIZAR TIMESTAMP EN RESPUESTA PADRE
+    await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { updatedAt: new Date(), updateClient: new Date() } }
+    );
+
     res.json({
       success: true,
       message: `Adjunto ${index + 1} de ${total} subido exitosamente`,
@@ -1129,7 +1135,7 @@ router.get("/filtros", async (req, res) => {
     delete statsQuery.status;
 
     const [answers, statusCounts] = await Promise.all([
-      collection.find(query).sort({ createdAt: -1 }).toArray(),
+      collection.find(query).sort({ updatedAt: -1 }).toArray(),
       collection.aggregate([
         { $match: statsQuery },
         { $group: { _id: "$status", count: { $sum: 1 } } }
@@ -1183,13 +1189,15 @@ router.get("/filtros", async (req, res) => {
         submittedAt: answer.submittedAt,
         status: answer.status,
         createdAt: answer.createdAt,
+        updatedAt: answer.updatedAt,
         adjuntosCount: answer.adjuntosCount || 0,
         submittedBy: nombreUsuario || 'Usuario Desconocido',
         company: empresaUsuario || 'Empresa Desconocida',
         user: {
           nombre: nombreUsuario,
           empresa: empresaUsuario
-        }
+        },
+        updateClient: answer.updateClient
       };
     });
 
@@ -1231,9 +1239,16 @@ router.get("/filtros", async (req, res) => {
 
     // 6.2 ORDENAMIENTO PERSONALIZADO
     answersProcessed.sort((a, b) => {
-      const dateA = new Date(a.updateClient || 0);
-      const dateB = new Date(b.updateClient || 0);
-      return dateB - dateA;
+      // Relevance for Admin: MAX(createdAt, updateClient)
+      const aCreated = new Date(a.createdAt || a.submittedAt || 0).getTime();
+      const bCreated = new Date(b.createdAt || b.submittedAt || 0).getTime();
+      const aClient = new Date(a.updateClient || 0).getTime();
+      const bClient = new Date(b.updateClient || 0).getTime();
+
+      const aRelevant = Math.max(aCreated, aClient);
+      const bRelevant = Math.max(bCreated, bClient);
+
+      return bRelevant - aRelevant;
     });
 
     // 7. Paginación manual tras el filtrado
@@ -1867,7 +1882,16 @@ router.post("/chat", async (req, res) => {
     }
 
     // --- RECUPERADO: Determinar qué fecha actualizar ---
-    const updateField = isSenderAdmin ? { updateAdmin: new Date() } : { updateClient: new Date() };
+    let updateField = {};
+    if (isSenderAdmin) {
+      // Si es ADMIN, solo actualizamos updateAdmin si NO es un mensaje interno
+      if (!req.body.internal) {
+        updateField = { updateAdmin: new Date() };
+      }
+    } else {
+      // Si es CLIENTE, siempre actualizamos updateClient
+      updateField = { updateClient: new Date() };
+    }
 
     // --- ACTUALIZACIÓN EN BD (Mantiene toda la estructura original) ---
     await req.db.collection("respuestas").updateOne(
@@ -1960,13 +1984,13 @@ router.post("/chat", async (req, res) => {
               <div class="message-box">
                   <p><strong>Formulario:</strong> ${formName}</p>
                   <p><strong>Fecha y hora:</strong> ${new Date().toLocaleDateString('es-CL', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                  })}</p>
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          })}</p>
               </div>
               <p>Para ver los detalles de la solicitud y responder al mensaje, haz clic en el siguiente botón:</p>
               <div style="text-align: center; margin: 30px 0;">
@@ -2833,7 +2857,8 @@ router.post("/:id/approve", async (req, res) => {
         $set: {
           status: nuevoEstado,
           approvedAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          updateAdmin: new Date()
         },
         $unset: {
           correctedFile: ""
@@ -3109,7 +3134,7 @@ router.post("/:responseId/upload-client-signature", upload.single('signedPdf'), 
 
     await req.db.collection("respuestas").updateOne(
       { _id: new ObjectId(responseId) },
-      { $set: { status: "firmado", signedAt: new Date() } }
+      { $set: { status: "firmado", signedAt: new Date(), updateClient: new Date() } }
     );
 
     await addNotification(req.db, {
@@ -3221,7 +3246,8 @@ router.delete("/:responseId/client-signature", async (req, res) => {
       {
         $set: {
           status: "aprobado",
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          updateAdmin: new Date()
         }
       }
     );
@@ -3296,6 +3322,12 @@ router.post("/:id/regenerate-document", async (req, res) => {
     const form = await req.db.collection("forms").findOne({
       _id: new ObjectId(respuesta.formId)
     });
+
+    // Actualizar timestamp solo si se regenera documentos (acción admin)
+    await req.db.collection("respuestas").updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { updateAdmin: new Date() } }
+    );
 
     if (!form) {
       return res.status(404).json({ error: "Formulario original no encontrado" });
@@ -3417,7 +3449,8 @@ router.put("/:id/status", async (req, res) => {
     // Configurar campos según el estado
     const updateData = {
       status: status,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      updateAdmin: new Date()
     };
 
     // Agregar timestamp específico según el estado
