@@ -309,9 +309,7 @@ const RolesView = ({ userPermissions = {} }) => {
                         setEditingRole(null);
                     }}
                     onSuccess={() => {
-                        setIsRoleModalOpen(false);
-                        setEditingRole(null);
-                        fetchRoles(); // Recargar tras guardar
+                        fetchRoles(); // Recargar data y mantener modal abierto
                     }}
                     role={editingRole}
                     permisos={permisos}

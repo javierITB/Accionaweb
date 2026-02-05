@@ -360,6 +360,7 @@ const PERMISSION_GROUPS = {
 
 export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos }) {
    const [isSaving, setIsSaving] = useState(false);
+   const [isSuccess, setIsSuccess] = useState(false);
    const [activeTab, setActiveTab] = useState('admin');
    const [formData, setFormData] = useState({
       name: '',
@@ -368,34 +369,40 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
       color: '#4f46e5'
    });
 
-   
+   // Reset success state when modal opens/closes or role changes
+   useEffect(() => {
+      if (isOpen) setIsSuccess(false);
+   }, [isOpen, role]);
+
+
 
    const isClientPanelEnabled = formData.permissions.includes("view_panel_cliente");
    const isAdminPanelEnabled = formData.permissions.includes("view_panel_admin");
 
-useEffect(() => {
-   if (role) {
-      setFormData({
-         id: role._id,
-         name: role.name,
-         description: role.description,
-         permissions: role.permissions || [],
-         color: role.color || "#4f46e5",
-      });
-   } else {
-      setFormData({
-         name: '',
-         description: '',
-         permissions: [],
-         color: '#4f46e5',
-      });
-   }
-}, [role, isOpen]);
+   useEffect(() => {
+      if (role) {
+         setFormData({
+            id: role._id,
+            name: role.name,
+            description: role.description,
+            permissions: role.permissions || [],
+            color: role.color || "#4f46e5",
+         });
+      } else {
+         setFormData({
+            name: '',
+            description: '',
+            permissions: [],
+            color: '#4f46e5',
+         });
+      }
+   }, [role, isOpen]);
 
 
    if (!isOpen) return null;
 
    const togglePermission = (permId) => {
+      if (isSuccess) setIsSuccess(false); // Reset success on change
       setFormData((prev) => {
          const hasPerm = prev.permissions.includes(permId);
          let newPerms = hasPerm ? prev.permissions.filter((p) => p !== permId) : [...prev.permissions, permId];
@@ -431,6 +438,7 @@ useEffect(() => {
    };
 
    const toggleAllInTab = () => {
+      if (isSuccess) setIsSuccess(false); // Reset success on change
       const permsInTab = Object.values(PERMISSION_GROUPS)
          .filter((g) => g.tagg === activeTab)
          .flatMap((g) => g.permissions);
@@ -457,8 +465,12 @@ useEffect(() => {
             method: "POST",
             body: JSON.stringify(formData),
          });
-         if (res.ok) onSuccess();
-         else alert("Error al guardar el rol");
+         if (res.ok) {
+            setIsSuccess(true);
+            onSuccess();
+         } else {
+            alert("Error al guardar el rol");
+         }
       } catch (error) {
          alert("Error de conexión");
       } finally {
@@ -466,22 +478,22 @@ useEffect(() => {
       }
    };
 
-const isCreating = !role;
+   const isCreating = !role;
 
-const roleName = role?.name?.toLowerCase();
-const myRoleName = sessionStorage.getItem("cargo")?.toLowerCase();
+   const roleName = role?.name?.toLowerCase();
+   const myRoleName = sessionStorage.getItem("cargo")?.toLowerCase();
 
-const isAdminRole = roleName === "administrador";
-const itsMyRole = roleName === myRoleName;
+   const isAdminRole = roleName === "administrador";
+   const itsMyRole = roleName === myRoleName;
 
-const canEditAdmin = isAdminRole && permisos.edit_gestor_roles_admin;
-const canEditMyRole = itsMyRole && permisos.edit_gestor_roles_by_self;
-const canEditOtherRoles =
-   !isAdminRole &&
-   !itsMyRole &&
-   permisos.edit_gestor_roles;
+   const canEditAdmin = isAdminRole && permisos.edit_gestor_roles_admin;
+   const canEditMyRole = itsMyRole && permisos.edit_gestor_roles_by_self;
+   const canEditOtherRoles =
+      !isAdminRole &&
+      !itsMyRole &&
+      permisos.edit_gestor_roles;
 
-const canEdit = isCreating || canEditAdmin || canEditMyRole || canEditOtherRoles;
+   const canEdit = isCreating || canEditAdmin || canEditMyRole || canEditOtherRoles;
 
 
    return (
@@ -508,13 +520,19 @@ const canEdit = isCreating || canEditAdmin || canEditMyRole || canEditOtherRoles
                      type="text"
                      placeholder="Nombre del Cargo"
                      value={formData.name}
-                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                     onChange={(e) => {
+                        if (isSuccess) setIsSuccess(false);
+                        setFormData({ ...formData, name: e.target.value });
+                     }}
                      className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none"
                   />
                   <textarea
                      placeholder="Descripción de funciones"
                      value={formData.description}
-                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                     onChange={(e) => {
+                        if (isSuccess) setIsSuccess(false);
+                        setFormData({ ...formData, description: e.target.value });
+                     }}
                      rows={2}
                      className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground resize-none focus:ring-2 focus:ring-accent outline-none"
                   />
@@ -589,6 +607,7 @@ const canEdit = isCreating || canEditAdmin || canEditMyRole || canEditOtherRoles
                                     <div
                                        className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between cursor-pointer hover:bg-muted/50"
                                        onClick={() => {
+                                          if (isSuccess) setIsSuccess(false);
                                           // Al seleccionar todo el grupo, solo seleccionamos los que no tienen dependencia o ya tienen el padre marcado
                                           const availableIds = group.permissions
                                              .filter((p) => !p.dependency || formData.permissions.includes(p.dependency))
@@ -664,11 +683,22 @@ const canEdit = isCreating || canEditAdmin || canEditMyRole || canEditOtherRoles
 
                      <button
                         onClick={handleSubmit}
-                        disabled={isSaving || !formData.name}
-                        className="px-8 py-2 bg-accent text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-accent/20"
+                        disabled={isSaving || !formData.name || isSuccess}
+                        className="px-8 py-2 bg-accent text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20 min-w-[200px] transition-all duration-200"
                      >
-                        {isSaving && <Loader2 size={16} className="animate-spin" />}
-                        {role ? "Actualizar Cargo" : "Guardar Cargo"}
+                        {isSaving ? (
+                           <>
+                              <Loader2 size={16} className="animate-spin" />
+                              Guardando...
+                           </>
+                        ) : isSuccess ? (
+                           <>
+                              <Check size={16} />
+                              Guardado Exitosamente
+                           </>
+                        ) : (
+                           role ? "Actualizar Cargo" : "Guardar Cargo"
+                        )}
                      </button>
                   </>
                ) : (
