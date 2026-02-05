@@ -10,6 +10,14 @@ export default function ProtectedRoute({ children }) {
    const location = useLocation();
 
    useEffect(() => {
+      document.documentElement.classList.add("dark");
+
+      return () => {
+         document.documentElement.classList.remove("dark");
+      };
+   }, []);
+
+   useEffect(() => {
       const validarToken = async () => {
          const token = sessionStorage.getItem("token");
          const email = sessionStorage.getItem("email");
