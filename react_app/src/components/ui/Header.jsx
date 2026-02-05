@@ -124,7 +124,15 @@ const Header = ({ className = '' }) => {
   };
 
   return (
-    <div className="fixed top-4 right-1 sm:right-1 lg:right-2 z-50 flex flex-col items-end pointer-events-none">
+    <div 
+      className={`
+        fixed top-4 z-50 flex flex-col pointer-events-none transition-all duration-500
+        /* Lógica Responsiva: */
+        ${isHeaderHidden 
+          ? 'right-1 sm:right-1 lg:right-2 items-end' 
+          : 'left-1/2 -translate-x-1/2 w-full max-w-[95%] items-center md:left-auto md:translate-x-0 md:right-1 lg:right-2 md:w-auto md:items-end'}
+      `}
+    >
       <header 
         ref={(el) => {
           menuRef.current = el;
@@ -135,12 +143,12 @@ const Header = ({ className = '' }) => {
           bg-card border border-border 
           rounded-2xl shadow-brand 
           transition-all duration-500 ease-in-out
-          flex items-center
-          ${isHeaderHidden ? 'w-14 h-14 justify-center' : 'h-16 md:h-20 pl-3 pr-1 md:pl-5 md:pr-1 min-w-[320px] md:min-w-[550px] lg:min-w-[200px] justify-between'}
+          flex items-center px-2
+          ${isHeaderHidden ? 'w-14 h-14 justify-center' : 'h-16 md:h-20 w-auto justify-center gap-2 md:gap-3'}
           ${className}
         `}
       >
-        <div className="flex items-center space-x-2 md:space-x-3">
+        <div className="flex items-center gap-2 md:gap-3">
           
           <Button 
               variant="ghost" 
@@ -156,16 +164,14 @@ const Header = ({ className = '' }) => {
 
           {!isHeaderHidden && (
             <>
-              <div className="hidden sm:block">
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={toggleTheme} 
-                    iconName={theme === 'dark' ? "Sun" : "Moon"} 
-                    className="rounded-xl w-10 h-10 md:w-11 md:h-11" 
-                    iconSize={20}
-                />
-              </div>
+              <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={toggleTheme} 
+                  iconName={theme === 'dark' ? "Sun" : "Moon"} 
+                  className="rounded-xl w-10 h-10 md:w-11 md:h-11" 
+                  iconSize={20}
+              />
 
               <div>
                 <Button
@@ -187,7 +193,7 @@ const Header = ({ className = '' }) => {
                 </Button>
               </div>
 
-              <div className="flex items-center space-x-2 md:space-x-3 pl-2 md:pl-3 border-l border-border/60">
+              <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-3 border-l border-border/60">
                 {user && (
                   <div className="hidden lg:block text-right leading-tight pr-1">
                     <p className="text-sm font-bold text-foreground truncate max-w-[150px]">{user}</p>
@@ -217,67 +223,18 @@ const Header = ({ className = '' }) => {
                   <Icon name={user ? "LogOut" : "LogIn"} size={16} />
                 </button>
               </div>
-
-              <div className="md:hidden">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleMenu}
-                    className="rounded-xl w-10 h-10"
-                    iconName={isMenuOpen ? "X" : "Menu"}
-                />
-              </div>
             </>
           )}
         </div>
 
         {isNotiOpen && !isHeaderHidden && (
-          <div className="absolute top-full right-0 mt-3 pointer-events-auto animate-scale-in origin-top-right w-full min-w-full">
+          <div className="absolute top-full left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-0 mt-3 pointer-events-auto animate-scale-in origin-top w-full min-w-full">
             <div className="bg-popover border border-border rounded-xl shadow-brand-hover overflow-hidden w-full">
               <NotificationsCard user={userMail} onUnreadChange={setUnreadCount} />
             </div>
           </div>
         )}
       </header>
-
-      {isMenuOpen && !isHeaderHidden && (
-        <div className="md:hidden pointer-events-auto w-full mt-2 px-4 pb-4 pt-1 space-y-2 bg-card rounded-2xl border border-border shadow-xl">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleTheme}
-            iconName={theme === 'dark' ? "Sun" : "Moon"}
-            className="w-full justify-start rounded-xl text-muted-foreground py-3"
-            iconPosition="left"
-          >
-            {theme === 'dark' ? "Modo Claro" : "Modo Oscuro"}
-          </Button>
-          {user && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleNavigation('/perfil')}
-                iconName="User"
-                className="w-full justify-start rounded-xl text-muted-foreground py-3"
-                iconPosition="left"
-              >
-                Mi Perfil
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                iconName="LogOut"
-                className="w-full justify-start rounded-xl text-error hover:bg-error/5 py-3"
-                iconPosition="left"
-              >
-                Cerrar Sesión
-              </Button>
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 };
