@@ -36,12 +36,44 @@ const FormBuilder = ({ userPermissions = {} }) => {
    const [isSaving, setIsSaving] = useState(false);
    const [isPublishing, setIsPublishing] = useState(false);
 
+   const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
+
    const permisos = useMemo(
       () => ({
+         create_formularios: userPermissions.includes("create_formularios"),
+         edit_formularios: userPermissions.includes("edit_formularios"),
          delete_formularios: userPermissions.includes("delete_formularios"),
       }),
       [userPermissions],
    );
+
+   // Permission Check Effect
+   useEffect(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const formId = urlParams?.get("id");
+
+      const checkAccess = () => {
+         if (formId) {
+            // Editing mode
+            if (!permisos.edit_formularios) {
+               alert("No tienes permisos para editar formularios.");
+               window.location.href = "/form-center";
+               return;
+            }
+         } else {
+            // Creating mode
+            if (!permisos.create_formularios) {
+               alert("No tienes permisos para crear formularios.");
+               window.location.href = "/form-center";
+               return;
+            }
+         }
+         setIsLoadingPermissions(false);
+      };
+
+      checkAccess();
+
+   }, [permisos]);
 
    // Detectar cambios en el tamaño de pantalla - ACTUALIZADO
    useEffect(() => {
@@ -430,6 +462,17 @@ const FormBuilder = ({ userPermissions = {} }) => {
       }
    };
 
+   if (isLoadingPermissions) {
+      return (
+         <div className="flex items-center justify-center min-h-screen bg-background">
+            <div className="flex flex-col items-center gap-4">
+               <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+               <p className="text-muted-foreground font-medium">Verificando permisos...</p>
+            </div>
+         </div>
+      );
+   }
+
    return (
       <div className="min-h-screen bg-background">
          <Header />
@@ -501,11 +544,10 @@ const FormBuilder = ({ userPermissions = {} }) => {
                      </div>
 
                      <div
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                           formData?.status === "publicado"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-yellow-100 text-yellow-700"
-                        }`}
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === "publicado"
+                           ? "bg-green-100 text-green-700"
+                           : "bg-yellow-100 text-yellow-700"
+                           }`}
                      >
                         {formData?.status === "publicado" ? "Publicado" : "Borrador"}
                      </div>
@@ -576,22 +618,20 @@ const FormBuilder = ({ userPermissions = {} }) => {
                            <button
                               key={tab?.id}
                               onClick={() => setActiveTab(tab?.id)}
-                              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                 activeTab === tab?.id
-                                    ? "border-primary text-primary"
-                                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground"
-                              }`}
+                              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab?.id
+                                 ? "border-primary text-primary"
+                                 : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                                 }`}
                               title={`Ir a la sección de ${tab?.label}`}
                            >
                               <Icon name={tab?.icon} size={16} />
                               <span>{tab?.label}</span>
                               {tab?.count !== undefined && (
                                  <span
-                                    className={`px-2 py-1 text-xs rounded-full ${
-                                       activeTab === tab?.id
-                                          ? "bg-primary text-primary-foreground"
-                                          : "bg-muted text-muted-foreground"
-                                    }`}
+                                    className={`px-2 py-1 text-xs rounded-full ${activeTab === tab?.id
+                                       ? "bg-primary text-primary-foreground"
+                                       : "bg-muted text-muted-foreground"
+                                       }`}
                                  >
                                     {tab?.count}
                                  </span>
