@@ -234,8 +234,13 @@ const RequestTracking = () => {
          switch (sortBy) {
             case "date":
             case "date":
-               aValue = new Date(a.updateAdmin || 0);
-               bValue = new Date(b.updateAdmin || 0);
+               const aCreated = new Date(a.createdAt || a.submittedAt || 0).getTime();
+               const bCreated = new Date(b.createdAt || b.submittedAt || 0).getTime();
+               const aAdmin = new Date(a.updateAdmin || 0).getTime();
+               const bAdmin = new Date(b.updateAdmin || 0).getTime();
+
+               aValue = Math.max(aCreated, aAdmin);
+               bValue = Math.max(bCreated, bAdmin);
                break;
             case "title":
                aValue = a?.title?.toLowerCase();
