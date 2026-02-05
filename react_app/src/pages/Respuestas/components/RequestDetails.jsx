@@ -19,6 +19,7 @@ const RequestDetails = ({
    isStandalone = false,
    endpointPrefix = "respuestas",
    onGenerateDoc,
+   userPermissions,
 }) => {
    // --- ESTADOS DE UI ---
    const [activeTab, setActiveTab] = useState("details");
@@ -1331,18 +1332,20 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                           <Button
-                              variant="outline"
-                              size="sm"
-                              iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
-                              iconPosition="left"
-                              iconSize={16}
-                              onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
-                              disabled={downloadingAttachmentIndex !== null}
-                           >
-                              {downloadingAttachmentIndex === index ? "Descargando..." : "Descargar"}
-                           </Button>
-                           {canPreviewAdjunto(adjunto.mimeType) && (
+                           {userPermissions?.downloadAttachment && (
+                              <Button
+                                 variant="outline"
+                                 size="sm"
+                                 iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
+                                 iconPosition="left"
+                                 iconSize={16}
+                                 onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
+                                 disabled={downloadingAttachmentIndex !== null}
+                              >
+                                 {downloadingAttachmentIndex === index ? "Descargando..." : "Descargar"}
+                              </Button>
+                           )}
+                           {canPreviewAdjunto(adjunto.mimeType) && userPermissions?.previewAttachment && (
                               <Button
                                  variant="ghost"
                                  size="sm"
@@ -1369,7 +1372,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   {endpointPrefix.includes("domicilio-virtual") ? "Documentos Adjuntos" : "Documento Generado"}
 
                   {/* Botón Regenerar al lado del título (Si hay plantilla y NO es domicilio virtual) */}
-                  {fullRequestData?.formId && !endpointPrefix.includes("domicilio-virtual") && (
+                  {fullRequestData?.formId && !endpointPrefix.includes("domicilio-virtual") && userPermissions?.regenerate && (
                      <Button
                         variant="ghost"
                         size="icon"
@@ -1409,37 +1412,40 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               </div>
                            </div>
                            <div className="flex items-center space-x-2">
-                              <Button
-                                 variant="outline"
-                                 size="sm"
-                                 iconName={isDownloading ? "Loader" : "Download"}
-                                 iconPosition="left"
-                                 iconSize={16}
-                                 onClick={
-                                    endpointPrefix.includes("domicilio-virtual")
-                                       ? () => handleDownloadAdjunto(fullRequestData._id, 0)
-                                       : handleDownload
-                                 }
-                                 disabled={isDownloading}
-                              >
-                                 {isDownloading ? "Descargando..." : "Descargar"}
-                              </Button>
-                              <Button
-                                 variant="ghost"
-                                 size="sm"
-                                 onClick={
-                                    endpointPrefix.includes("domicilio-virtual")
-                                       ? () => handlePreviewAdjunto(fullRequestData._id, 0)
-                                       : handlePreviewGenerated
-                                 }
-                                 iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
-                                 iconPosition="left"
-                                 iconSize={16}
-                                 disabled={isLoadingPreviewGenerated}
-                              >
-                                 {isLoadingPreviewGenerated ? "Cargando..." : "Vista Previa"}
-                              </Button>
-
+                              {userPermissions?.downloadGenerated && (
+                                 <Button
+                                    variant="outline"
+                                    size="sm"
+                                    iconName={isDownloading ? "Loader" : "Download"}
+                                    iconPosition="left"
+                                    iconSize={16}
+                                    onClick={
+                                       endpointPrefix.includes("domicilio-virtual")
+                                          ? () => handleDownloadAdjunto(fullRequestData._id, 0)
+                                          : handleDownload
+                                    }
+                                    disabled={isDownloading}
+                                 >
+                                    {isDownloading ? "Descargando..." : "Descargar"}
+                                 </Button>
+                              )}
+                              {userPermissions?.previewGenerated && (
+                                 <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={
+                                       endpointPrefix.includes("domicilio-virtual")
+                                          ? () => handlePreviewAdjunto(fullRequestData._id, 0)
+                                          : handlePreviewGenerated
+                                    }
+                                    iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
+                                    iconPosition="left"
+                                    iconSize={16}
+                                    disabled={isLoadingPreviewGenerated}
+                                 >
+                                    {isLoadingPreviewGenerated ? "Cargando..." : "Vista Previa"}
+                                 </Button>
+                              )}
                            </div>
                         </div>
                      ))}
@@ -1481,7 +1487,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   >
                      Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
                   </span>
-                  {!["archivado", "finalizado"].includes(fullRequestData?.status) && (
+                  {!["archivado", "finalizado"].includes(fullRequestData?.status) && userPermissions?.canUpload && (
                      <Button
                         variant="outlineTeal"
                         size="sm"
@@ -1557,9 +1563,11 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               >
                                  Vista Previa
                               </Button>
-                              <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
-                                 <Icon name="Trash2" size={16} />
-                              </Button>
+                              {userPermissions?.deleteAttachment && (
+                                 <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
+                                    <Icon name="Trash2" size={16} />
+                                 </Button>
+                              )}
                            </div>
                         </div>
                      ))}
@@ -1615,48 +1623,54 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                  </div>
                               </div>
                               <div className="flex items-center space-x-2">
-                                 <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    onClick={() => handleDownloadCorrected(index, "approved")}
-                                    disabled={downloadingCorrectedIndex === index || isMarkedForDelete}
-                                 >
-                                    {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
-                                 </Button>
-                                 <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handlePreviewCorrectedFile(index, "approved")}
-                                    iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    disabled={isLoadingPreviewCorrected || isMarkedForDelete}
-                                 >
-                                    {isLoadingPreviewCorrected && previewIndex === index
-                                       ? "Cargando..."
-                                       : "Vista Previa"}
-                                 </Button>
+                                 {userPermissions?.downloadSent && (
+                                    <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
+                                       iconPosition="left"
+                                       iconSize={16}
+                                       onClick={() => handleDownloadCorrected(index, "approved")}
+                                       disabled={downloadingCorrectedIndex === index || isMarkedForDelete}
+                                    >
+                                       {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
+                                    </Button>
+                                 )}
+                                 {userPermissions?.previewSent && (
+                                    <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       onClick={() => handlePreviewCorrectedFile(index, "approved")}
+                                       iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                                       iconPosition="left"
+                                       iconSize={16}
+                                       disabled={isLoadingPreviewCorrected || isMarkedForDelete}
+                                    >
+                                       {isLoadingPreviewCorrected && previewIndex === index
+                                          ? "Cargando..."
+                                          : "Vista Previa"}
+                                    </Button>
+                                 )}
                                  {fullRequestData?.status !== "archivado" && (
                                     isMarkedForDelete ? (
                                        <Button variant="ghost" size="icon" onClick={() => handleUndoDelete(file.fileName)}>
                                           <Icon name="RotateCcw" size={16} />
                                        </Button>
                                     ) : (
-                                       <Button
-                                          variant="ghostError"
-                                          size="icon"
-                                          onClick={() => handleDeleteUploadedFile(file.fileName, index)}
-                                          disabled={isDeletingFile === index}
-                                       >
-                                          <Icon
-                                             name={isDeletingFile === index ? "Loader" : "Trash2"}
-                                             size={16}
-                                             className={isDeletingFile === index ? "animate-spin" : ""}
-                                          />
-                                       </Button>
+                                       userPermissions?.deleteAttachment && (
+                                          <Button
+                                             variant="ghostError"
+                                             size="icon"
+                                             onClick={() => handleDeleteUploadedFile(file.fileName, index)}
+                                             disabled={isDeletingFile === index}
+                                          >
+                                             <Icon
+                                                name={isDeletingFile === index ? "Loader" : "Trash2"}
+                                                size={16}
+                                                className={isDeletingFile === index ? "animate-spin" : ""}
+                                             />
+                                          </Button>
+                                       )
                                     )
                                  )}
                               </div>
@@ -1747,30 +1761,34 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                           <Button
-                              variant="outline"
-                              size="sm"
-                              iconName={isDownloadingSignature ? "Loader" : "Download"}
-                              iconPosition="left"
-                              iconSize={16}
-                              onClick={() => handleDownloadClientSignature(fullRequestData._id)}
-                              disabled={isDownloadingSignature}
-                           >
-                              {isDownloadingSignature ? "Descargando..." : "Descargar"}
-                           </Button>
-                           <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={handlePreviewClientSignature}
-                              iconName={isLoadingPreviewSignature ? "Loader" : "Eye"}
-                              iconPosition="left"
-                              iconSize={16}
-                              disabled={isLoadingPreviewSignature}
-                           >
-                              {isLoadingPreviewSignature ? "Cargando..." : "Vista Previa"}
-                           </Button>
+                           {userPermissions?.downloadSigned && (
+                              <Button
+                                 variant="outline"
+                                 size="sm"
+                                 iconName={isDownloadingSignature ? "Loader" : "Download"}
+                                 iconPosition="left"
+                                 iconSize={16}
+                                 onClick={() => handleDownloadClientSignature(fullRequestData._id)}
+                                 disabled={isDownloadingSignature}
+                              >
+                                 {isDownloadingSignature ? "Descargando..." : "Descargar"}
+                              </Button>
+                           )}
+                           {userPermissions?.previewSigned && (
+                              <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={handlePreviewClientSignature}
+                                 iconName={isLoadingPreviewSignature ? "Loader" : "Eye"}
+                                 iconPosition="left"
+                                 iconSize={16}
+                                 disabled={isLoadingPreviewSignature}
+                              >
+                                 {isLoadingPreviewSignature ? "Cargando..." : "Vista Previa"}
+                              </Button>
+                           )}
                            {/* Solo ocultamos el botón de eliminar firma si la solicitud está archivada */}
-                           {fullRequestData?.status !== "archivado" && (
+                           {fullRequestData?.status !== "archivado" && userPermissions?.deleteSignature && (
                               <Button
                                  variant="ghostError"
                                  size="icon"
@@ -2139,7 +2157,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      </div>
 
                      <div className="flex items-center space-x-2">
-                        {!isStandalone && (
+                        {!isStandalone && userPermissions?.editState && (
                            <Button
                               variant="ghost"
                               size="icon"
@@ -2166,7 +2184,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            {fullRequestData?.status?.replace("_", " ")?.toUpperCase()}
                         </span>
 
-                        {!isStandalone && (
+                        {!isStandalone && userPermissions?.editState && (
                            <Button
                               variant="ghost"
                               size="icon"
@@ -2276,7 +2294,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
                            {/* BOTÓN "ACTUALIZAR" - Para agregar archivos cuando ya está aprobado */}
                            {(fullRequestData?.status === "aprobado" || fullRequestData?.status === "firmado") &&
-                              (correctedFiles.length > 0 || filesToDelete.length > 0) && (
+                              (correctedFiles.length > 0 || filesToDelete.length > 0) && userPermissions?.canUpload && (
                                  <Button
                                     variant="outlineTeal"
                                     iconName={isUploading ? "Loader" : "RefreshCw"}
@@ -2301,7 +2319,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
                            {/* BOTÓN "APROBAR" - Para estados pendiente/en_revision */}
                            {(fullRequestData?.status === "en_revision" || fullRequestData?.status === "pendiente") &&
-                              correctedFiles.length > 0 && (
+                              correctedFiles.length > 0 && userPermissions?.editState && (
                                  <Button
                                     variant="default"
                                     iconName={isApproving ? "Loader" : "CheckCircle"}
@@ -2315,7 +2333,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               )}
 
                            {/* BOTÓN "FINALIZAR" */}
-                           {fullRequestData?.status !== "finalizado" && fullRequestData?.status !== "archivado" && (
+                           {fullRequestData?.status !== "finalizado" && fullRequestData?.status !== "archivado" && userPermissions?.finalize && (
                               <Button
                                  variant="default"
                                  iconName={isApproving ? "Loader" : "CheckCircle"}
@@ -2337,7 +2355,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            )}
 
                            {/* BOTÓN "ARCHIVAR" */}
-                           {fullRequestData?.status === "finalizado" && (
+                           {fullRequestData?.status === "finalizado" && userPermissions?.archive && (
                               <Button
                                  variant="default"
                                  iconName={isApproving ? "Loader" : "Folder"}

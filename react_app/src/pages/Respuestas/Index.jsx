@@ -50,8 +50,86 @@ const RequestTracking = () => {
     startDate: '',
     endDate: '',
     company: '',
-    submittedBy: ''
   });
+
+  // --- PERMISOS DE USUARIO ---
+  const [userPermissions, setUserPermissions] = useState({
+    view: false,
+    delete: false,
+    viewDetails: false,
+    editState: false,
+    edit: false, // General edit (files, etc)
+    regenerate: false
+  });
+
+  const checkPermissions = async () => {
+    try {
+      const role = sessionStorage.getItem('cargo')?.toLowerCase();
+      if (role === 'administrador' || role === 'admin') {
+        setUserPermissions({
+          view: true,
+          delete: true,
+          viewDetails: true,
+          editState: true,
+          edit: true,
+          regenerate: true
+        });
+        return;
+      }
+
+      const res = await apiFetch(`${API_BASE_URL}/roles/name/${role}`);
+      if (res.ok) {
+        const roleData = await res.json();
+        const perms = roleData.permissions || [];
+        const hasAll = perms.includes('all');
+        setUserPermissions({
+          // Base Views
+          view: hasAll || perms.includes('view_solicitudes_clientes'),
+          delete: hasAll || perms.includes('delete_solicitudes_clientes'),
+          viewDetails: hasAll || perms.includes('view_solicitudes_clientes_details'),
+
+          // State Management
+          editState: hasAll || perms.includes('edit_solicitudes_clientes_state'),
+          finalize: hasAll || perms.includes('edit_solicitudes_clientes_finalize'),
+          archive: hasAll || perms.includes('edit_solicitudes_clientes_archive'),
+
+          // Attachments (Adjuntos)
+          viewAttachments: hasAll || perms.includes('view_solicitudes_clientes_attach'),
+          downloadAttachment: hasAll || perms.includes('download_solicitudes_clientes_attach'),
+          previewAttachment: hasAll || perms.includes('preview_solicitudes_clientes_attach'),
+          deleteAttachment: hasAll || perms.includes('delete_solicitudes_clientes_attach'),
+
+          // Generated Documents
+          viewGenerated: hasAll || perms.includes('view_solicitudes_clientes_generated'),
+          downloadGenerated: hasAll || perms.includes('download_solicitudes_clientes_generated'),
+          previewGenerated: hasAll || perms.includes('preview_solicitudes_clientes_generated'),
+          regenerate: hasAll || perms.includes('regenerate_solicitudes_clientes_generated'),
+
+          // Sent Documents (Enviado/Corregido)
+          viewSent: hasAll || perms.includes('view_solicitudes_clientes_send'),
+          downloadSent: hasAll || perms.includes('download_solicitudes_clientes_send'),
+          previewSent: hasAll || perms.includes('preview_solicitudes_clientes_send'),
+          deleteSent: hasAll || perms.includes('delete_solicitudes_clientes_send'),
+
+          // Signed Documents (Firmado)
+          viewSigned: hasAll || perms.includes('view_solicitudes_clientes_signed'),
+          downloadSigned: hasAll || perms.includes('download_solicitudes_clientes_signed'),
+          previewSigned: hasAll || perms.includes('preview_solicitudes_clientes_signed'),
+          deleteSignature: hasAll || perms.includes('delete_solicitudes_clientes_signed'),
+
+          // Helper for Upload (uses editState as proxy if not defined otherwise, or maybe use viewSent/editState combo)
+          // Sticking to editState for upload "ability" as it implies modifying the request flow
+          canUpload: hasAll || perms.includes('edit_solicitudes_clientes_state'),
+        });
+      }
+    } catch (error) {
+      console.error("Error checking permissions:", error);
+    }
+  };
+
+  useEffect(() => {
+    checkPermissions();
+  }, []);
 
   const limitRef = useRef(null);
 
@@ -276,6 +354,7 @@ const RequestTracking = () => {
   };
 
   const handleRemove = async (request) => {
+    if (!userPermissions.delete) return;
     if (!window.confirm("¿Seguro que deseas eliminar esta solicitud?")) return;
     try {
       const res = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`, { method: 'DELETE' });
@@ -304,14 +383,14 @@ const RequestTracking = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       {(isMobileOpen || !isMobileScreen) && (
         <>
-          <Sidebar 
-            isCollapsed={!isDesktopOpen} 
-            onToggleCollapse={toggleSidebar} 
-            isMobileOpen={isMobileOpen} 
-            onNavigate={handleNavigation} 
+          <Sidebar
+            isCollapsed={!isDesktopOpen}
+            onToggleCollapse={toggleSidebar}
+            isMobileOpen={isMobileOpen}
+            onNavigate={handleNavigation}
           />
           {isMobileScreen && isMobileOpen && (
             <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileOpen(false)}></div>
@@ -370,7 +449,7 @@ const RequestTracking = () => {
 
               <div className="flex items-center space-x-2 text-sm text-muted-foreground border border-border rounded-lg p-1 bg-card">
                 <Button variant="ghost" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 || isLoading} iconName="ChevronLeft" />
-                
+
                 {/* NUEVO: Diseño x/y Compacto Superior */}
                 <div className="flex items-center gap-0 text-muted-foreground">
                   <input
@@ -419,6 +498,7 @@ const RequestTracking = () => {
                   onRemove={handleRemove}
                   onViewDetails={(req) => { setSelectedRequest(req); setShowRequestDetails(true); }}
                   onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }}
+                  userPermissions={userPermissions}
                 />
               ))
             ) : (
@@ -432,17 +512,17 @@ const RequestTracking = () => {
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 py-8 border-t border-border mt-6">
               <div className="flex items-center space-x-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1 || isLoading}
                   className="w-28 sm:w-auto"
                 >
                   <Icon name="ChevronLeft" size={16} className="mr-2" />
                   Anterior
                 </Button>
-                
+
                 {/* NUEVO: Diseño x/y Compacto Inferior */}
                 <div className="flex items-center gap-0 bg-muted px-4 py-1.5 rounded-full text-muted-foreground">
                   <input
@@ -457,10 +537,10 @@ const RequestTracking = () => {
                   <span className="font-medium text-left min-w-[1.5rem]">{totalPages}</span>
                 </div>
 
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages || isLoading}
                   className="w-28 sm:w-auto"
                 >
@@ -474,7 +554,14 @@ const RequestTracking = () => {
       </main>
 
       <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} request={messageRequest} formId={formId} onSendMessage={console.log} />
-      <RequestDetails request={selectedRequest} isVisible={showRequestDetails} onClose={handleCloseRequestDetails} onUpdate={updateRequest} onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }} />
+      <RequestDetails
+        request={selectedRequest}
+        isVisible={showRequestDetails}
+        onClose={handleCloseRequestDetails}
+        onUpdate={updateRequest}
+        onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }}
+        userPermissions={userPermissions}
+      />
     </div>
   );
 };

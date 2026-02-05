@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
+const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, userPermissions }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
 
   useEffect(() => {
@@ -198,15 +198,17 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage }) => {
 
         <div className="flex items-center space-x-1 sm:space-x-2">
           {/* Delete Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Eliminar"
-            onClick={() => onRemove(currentRequest)}
-            className="h-7 w-7 sm:h-8 sm:w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <Icon name="Trash2" size={12} className="sm:w-3.5 sm:h-3.5" />
-          </Button>
+          {userPermissions?.delete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Eliminar"
+              onClick={() => onRemove(currentRequest)}
+              className="h-7 w-7 sm:h-8 sm:w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Icon name="Trash2" size={12} className="sm:w-3.5 sm:h-3.5" />
+            </Button>
+          )}
 
           {/* Message Button - ICON ONLY ON MOBILE */}
           <Button
