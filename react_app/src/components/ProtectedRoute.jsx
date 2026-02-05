@@ -10,10 +10,15 @@ export default function ProtectedRoute({ children }) {
    const location = useLocation();
 
    useEffect(() => {
-      document.documentElement.classList.add("dark");
+      const theme = localStorage.getItem("theme");
+      if (theme === "dark") {
+         document.documentElement.classList.add("dark");
+      }
 
       return () => {
-         document.documentElement.classList.remove("dark");
+         if (theme === "dark") {
+            document.documentElement.classList.remove("dark");
+         }
       };
    }, []);
 
@@ -43,7 +48,7 @@ export default function ProtectedRoute({ children }) {
             if (!cargo) throw new Error("Rol no definido");
 
             const roleRes = await fetch(`${API_BASE_URL}/roles/name/${encodeURIComponent(cargo)}`, {
-               headers: { "Authorization": `Bearer ${token}` }
+               headers: { Authorization: `Bearer ${token}` },
             });
 
             if (!roleRes.ok) throw new Error("Error verificando permisos del rol");
@@ -62,7 +67,6 @@ export default function ProtectedRoute({ children }) {
                window.location.href = "/"; // Redirigir al home público o login
                setIsAuth(false);
             }
-
          } catch (err) {
             console.error("Error en ProtectedRoute:", err);
             setIsAuth(false);
@@ -88,7 +92,7 @@ export default function ProtectedRoute({ children }) {
    }
 
    // Pasamos los permisos a los componentes hijos vía props
-   return React.Children.map(children, child => {
+   return React.Children.map(children, (child) => {
       if (React.isValidElement(child)) {
          return React.cloneElement(child, { userPermissions });
       }
