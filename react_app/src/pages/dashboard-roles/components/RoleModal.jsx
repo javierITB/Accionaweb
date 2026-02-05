@@ -369,7 +369,6 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
       color: '#4f46e5'
    });
 
-   // Reset success state when modal opens/closes or role changes
    useEffect(() => {
       if (isOpen) setIsSuccess(false);
    }, [isOpen, role]);
@@ -402,7 +401,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
    if (!isOpen) return null;
 
    const togglePermission = (permId) => {
-      if (isSuccess) setIsSuccess(false); // Reset success on change
+      if (isSuccess) setIsSuccess(false);
       setFormData((prev) => {
          const hasPerm = prev.permissions.includes(permId);
          let newPerms = hasPerm ? prev.permissions.filter((p) => p !== permId) : [...prev.permissions, permId];
@@ -438,7 +437,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
    };
 
    const toggleAllInTab = () => {
-      if (isSuccess) setIsSuccess(false); // Reset success on change
+      if (isSuccess) setIsSuccess(false);
       const permsInTab = Object.values(PERMISSION_GROUPS)
          .filter((g) => g.tagg === activeTab)
          .flatMap((g) => g.permissions);
