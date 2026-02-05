@@ -109,7 +109,7 @@ async function registerUserCreationEvent(req, auth, profileData = {}) {
    const metadata = { Usuario: { nombre, apellido, mail, empresa, cargo, rol, estado } };
 
    const descriptionBuilder = (actor) =>
-      `${decrypt(actor?.name) || "desconocido"} ${decrypt(actor?.last_name) || ""} creó un nuevo usuario`;
+      `${formatActor(actor)} creó el usuario ${formatName(nombre, apellido)}`;
 
    const payload = {
       code: CODES.USUARIO_CREACION,
