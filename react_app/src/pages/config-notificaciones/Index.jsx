@@ -239,7 +239,34 @@ const AdminNotificationManager = ({ userPermissions = [] }) => {
     return (
         <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
             <Header />
-            <Sidebar isCollapsed={!isDesktopOpen} onToggleCollapse={toggleSidebar} isMobileOpen={isMobileOpen} onNavigate={handleNavigation} />
+
+            {/* SIDEBAR LOGIC INTEGRATED */}
+            {(isMobileOpen || !isMobileScreen) && (
+                <>
+                    <Sidebar 
+                        isCollapsed={!isDesktopOpen} 
+                        onToggleCollapse={toggleSidebar} 
+                        isMobileOpen={isMobileOpen} 
+                        onNavigate={handleNavigation} 
+                    />
+                    {isMobileScreen && isMobileOpen && (
+                        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileOpen(false)}></div>
+                    )}
+                </>
+            )}
+
+            {/* MOBILE FLOATING BUTTON */}
+            {!isMobileOpen && isMobileScreen && (
+                <div className="fixed bottom-4 left-4 z-50">
+                    <Button 
+                        variant="default" 
+                        size="icon" 
+                        onClick={toggleSidebar} 
+                        iconName="Menu" 
+                        className="w-12 h-12 rounded-full shadow-lg" 
+                    />
+                </div>
+            )}
 
             <main className={`transition-all duration-300 ${mainMarginClass} pt-20 h-screen overflow-hidden flex flex-col`}>
                 <div className="p-6 container-main flex-1 flex flex-col min-h-0">
@@ -302,7 +329,6 @@ const AdminNotificationManager = ({ userPermissions = [] }) => {
                                                 </td>
                                                 {canViewDetails && (
                                                     <td className="px-6 py-4 text-right">
-
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
@@ -343,9 +369,7 @@ const AdminNotificationManager = ({ userPermissions = [] }) => {
 
                         {/* Details Toolbar & Filters */}
                         <div className="p-4 border-b border-border bg-card flex flex-col gap-4">
-                            {/* Filter Grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                                {/* Search */}
                                 <div className="relative">
                                     <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                     <input
@@ -357,7 +381,6 @@ const AdminNotificationManager = ({ userPermissions = [] }) => {
                                     />
                                 </div>
 
-                                {/* Company Filter */}
                                 <select
                                     className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                                     value={companyFilter}
@@ -369,7 +392,6 @@ const AdminNotificationManager = ({ userPermissions = [] }) => {
                                     ))}
                                 </select>
 
-                                {/* Role Filter */}
                                 <select
                                     className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                                     value={roleFilter}
@@ -381,7 +403,6 @@ const AdminNotificationManager = ({ userPermissions = [] }) => {
                                     ))}
                                 </select>
 
-                                {/* Cargo Filter */}
                                 <select
                                     className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                                     value={cargoFilter}
@@ -394,7 +415,6 @@ const AdminNotificationManager = ({ userPermissions = [] }) => {
                                 </select>
                             </div>
 
-                            {/* Actions & Stats Bar */}
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 sm:pt-0">
                                 {canDelete ? (
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -413,8 +433,6 @@ const AdminNotificationManager = ({ userPermissions = [] }) => {
                                         Mostrando {processedUsers.length} usuarios
                                     </div>
                                 )}
-
-
                             </div>
                         </div>
 
@@ -452,7 +470,6 @@ const AdminNotificationManager = ({ userPermissions = [] }) => {
                                             <td className="px-6 py-3 text-sm text-muted-foreground">{u.rol}</td>
                                             <td className="px-6 py-3 text-sm text-muted-foreground">{u.cargo}</td>
                                             <td className="px-6 py-3 text-xs text-muted-foreground">
-                                                {/* Mostrar Rango de Fechas o Conteo */}
                                                 {u.count > 1 ? (
                                                     <div className="flex flex-col">
                                                         <span className="font-semibold text-primary">{u.count} ocurrencias</span>

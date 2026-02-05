@@ -150,7 +150,7 @@ const CompanyReg = ({userPermissions = [] }) => {
       return (
          <div className="space-y-4">
             {pagination && (
-               <div className="flex items-center justify-between">
+               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex gap-1 items-center">
                      <h3 className="text-lg font-semibold text-foreground">Eventos registrados</h3>
                      {pagination && <span className="text-sm text-muted-foreground">({pagination.total})</span>}
@@ -175,9 +175,7 @@ const CompanyReg = ({userPermissions = [] }) => {
                               <input
                                  type="text"
                                  value={pagination.page}
-                                 //   onChange={handlePageInputChange}
-                                 //   onBlur={handlePageInputBlurOrSubmit}
-                                 //   onKeyDown={handlePageInputKeyDown}
+                                 readOnly
                                  className="w-6 bg-transparent border-none text-right font-medium text-muted-foreground focus:outline-none p-0"
                               />
                               <span className="font-medium mx-0.5">/</span>
@@ -206,28 +204,28 @@ const CompanyReg = ({userPermissions = [] }) => {
             ) : registros.length === 0 ? (
                <p className="text-muted-foreground">No hay Eventos registrados.</p>
             ) : (
-               <div className="overflow-x-auto">
+               <div className="overflow-x-auto w-full">
                   <table className="min-w-full border border-border rounded-lg">
                      <thead className="bg-muted text-sm text-muted-foreground">
                         <tr>
-                           <th className="px-4 py-2 text-center">Código</th>
-                           <th className="px-4 py-2 text-center">Rol</th>
-                           <th className="px-4 py-2 text-left">Descripción</th>
-                           <th className="px-4 py-2 text-center">Afectado</th>
-                           <th className="px-4 py-2 text-center">Fecha</th>
-                           {permisos.ver && <th className="px-4 py-2 text-center">Detalles</th>}
+                           <th className="px-4 py-2 text-center whitespace-nowrap">Código</th>
+                           <th className="px-4 py-2 text-center whitespace-nowrap">Rol</th>
+                           <th className="px-4 py-2 text-left min-w-[200px]">Descripción</th>
+                           <th className="px-4 py-2 text-center whitespace-nowrap">Afectado</th>
+                           <th className="px-4 py-2 text-center whitespace-nowrap">Fecha</th>
+                           {permisos.ver && <th className="px-4 py-2 text-center whitespace-nowrap">Detalles</th>}
                         </tr>
                      </thead>
                      <tbody>
                         {registros.map((registro, index) => (
                            <tr key={index} className="border-t hover:bg-muted/30 transition">
-                              <td className="px-4 py-2 text-[11px] text-center">{registro.code}</td>
-                              <td className="px-4 py-2 text-sm text-center">{registro.actor.role}</td>
+                              <td className="px-4 py-2 text-[11px] text-center whitespace-nowrap">{registro.code}</td>
+                              <td className="px-4 py-2 text-sm text-center whitespace-nowrap">{registro.actor.role}</td>
                               <td className="px-4 py-2 text-sm">{registro.description}</td>
-                              <td className="px-4 py-2 text-sm text-center">{registro.target.type || "—"}</td>
-                              <td className="px-4 py-2 text-sm">{formatDateSplit(registro.createdAt) || "—"}</td>
+                              <td className="px-4 py-2 text-sm text-center whitespace-nowrap">{registro.target.type || "—"}</td>
+                              <td className="px-4 py-2 text-sm whitespace-nowrap">{formatDateSplit(registro.createdAt) || "—"}</td>
                               {(permisos.ver) && ( 
-                              <td className="px-4 py-2 text-sm">
+                              <td className="px-4 py-2 text-sm text-center whitespace-nowrap">
                                  <Button variant="outlineTeal" size="sm" onClick={() => openModal(registro)}>
                                     Ver más
                                  </Button>
@@ -239,7 +237,7 @@ const CompanyReg = ({userPermissions = [] }) => {
                   </table>
 
                   {pagination.totalPages > 1 && (
-                     <div className="flex flex-col sm:flex-row justify-center items-center gap-4 py-8  mt-6">
+                     <div className="flex flex-col sm:flex-row justify-center items-center gap-4 py-8 mt-6">
                         <div className="flex items-center space-x-4">
                            <Button
                               variant="outline"
@@ -257,9 +255,7 @@ const CompanyReg = ({userPermissions = [] }) => {
                               <input
                                  type="text"
                                  value={pagination.page}
-                                 //   onChange={handlePageInputChange}
-                                 //   onBlur={handlePageInputBlurOrSubmit}
-                                 //   onKeyDown={handlePageInputKeyDown}
+                                 readOnly
                                  className="w-6 bg-transparent border-none text-right font-medium text-muted-foreground focus:outline-none p-0"
                               />
                               <span className="font-medium mx-0.5">/</span>
@@ -284,11 +280,11 @@ const CompanyReg = ({userPermissions = [] }) => {
 
             {modalOpen && selectedRegistro && (
                <div
-                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                  className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
                   onClick={closeModal}
                >
                   <div
-                     className="bg-background rounded-lg shadow-2xl w-11/12 max-w-lg p-6 relative overflow-y-auto max-h-[90vh]"
+                     className="bg-background rounded-lg shadow-2xl w-full max-w-lg p-6 relative overflow-y-auto max-h-[90vh]"
                      onClick={(e) => e.stopPropagation()}
                   >
                      <button
@@ -301,10 +297,10 @@ const CompanyReg = ({userPermissions = [] }) => {
                         <div className="flex items-center gap-3">
                            <Icon name="CheckCircle" size={28} className="text-success" />
 
-                           <h2 className="text-2xl font-bold  ">Detalles del Evento</h2>
+                           <h2 className="text-xl md:text-2xl font-bold">Detalles del Evento</h2>
                         </div>
 
-                        <p className="pr-4">{formatDate(selectedRegistro.createdAt)}</p>
+                        <p className="pr-4 text-xs md:text-sm">{formatDate(selectedRegistro.createdAt)}</p>
                      </div>
 
                      <div className="flex flex-col gap-4 divide-y divide-border text-sm">
@@ -337,6 +333,9 @@ const CompanyReg = ({userPermissions = [] }) => {
                               <span className="font-semibold pl-2">Email:</span> {selectedRegistro.actor.email}
                            </p>
                            <p>
+                              <span className="font-semibold pl-2">Email:</span> {selectedRegistro.actor.email}
+                           </p>
+                           <p>
                               <span className="font-semibold pl-2">Empresa:</span> {selectedRegistro.actor.empresa}
                            </p>
                            <p>
@@ -363,9 +362,10 @@ const CompanyReg = ({userPermissions = [] }) => {
    const mainMarginClass = isMobileScreen ? "ml-0" : isDesktopOpen ? "ml-64" : "ml-16";
 
    return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
          <Header />
 
+         {/* SIDEBAR LOGIC INTEGRADA CON OVERLAY */}
          {(isMobileOpen || !isMobileScreen) && (
             <>
                <Sidebar
@@ -376,11 +376,12 @@ const CompanyReg = ({userPermissions = [] }) => {
                />
 
                {isMobileScreen && isMobileOpen && (
-                  <div className="fixed inset-0 bg-foreground/50 z-40" onClick={toggleSidebar}></div>
+                  <div className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300" onClick={toggleSidebar}></div>
                )}
             </>
          )}
 
+         {/* BOTÓN MÓVIL ESTÁTICO (FLOATING) */}
          {!isMobileOpen && isMobileScreen && (
             <div className="fixed bottom-4 left-4 z-50">
                <Button
@@ -388,16 +389,16 @@ const CompanyReg = ({userPermissions = [] }) => {
                   size="icon"
                   onClick={toggleSidebar}
                   iconName="Menu"
-                  className="w-12 h-12 rounded-full shadow-brand-active"
+                  className="w-12 h-12 rounded-full shadow-brand-active active:scale-95 transition-transform"
                />
             </div>
          )}
 
-         {/* CONTENIDO PRINCIPAL - ACTUALIZADO */}
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
-            <div className="pb-6 space-y-6 container-main">
+         {/* CONTENIDO PRINCIPAL - AJUSTADO PARA EVITAR DESBORDAMIENTO */}
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16 flex-1 flex flex-col overflow-x-hidden`}>
+            <div className="pb-6 space-y-6 container-main w-full max-w-full overflow-x-hidden">
                {/* HEADER CON BOTÓN DE TOGGLE - AGREGADO */}
-               <div className="flex flex-col md:flex-row items-start md:items-center justify-between pt-3">
+               <div className="flex flex-col md:flex-row items-start md:items-center justify-between pt-3 gap-4">
                   <div className="mb-4 md:mb-0">
                      <h1 className="text-2xl md:text-3xl font-bold text-foreground">Registro de Eventos</h1>
                      <p className="text-muted-foreground mt-1 text-sm md:text-base">
@@ -405,7 +406,7 @@ const CompanyReg = ({userPermissions = [] }) => {
                      </p>
                   </div>
 
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 self-end md:self-auto">
                      {/* BOTÓN DE TOGGLE DEL SIDEBAR - AGREGADO */}
                      <div className="hidden md:flex items-center">
                         <Button
@@ -419,8 +420,8 @@ const CompanyReg = ({userPermissions = [] }) => {
                   </div>
                </div>
 
-               <div className="bg-card border border-border rounded-lg">
-                  <div className="p-6">{getTabContent()}</div>
+               <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+                  <div className="p-4 md:p-6">{getTabContent()}</div>
                </div>
             </div>
          </main>
