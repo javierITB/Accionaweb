@@ -368,8 +368,6 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
       color: '#4f46e5'
    });
 
-   console.log(role)
-
    
 
    const isClientPanelEnabled = formData.permissions.includes("view_panel_cliente");
