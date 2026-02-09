@@ -19,7 +19,7 @@ const createDataURL = (logoObj) => {
  * Recupera lógica de ordenamiento completa y aplica permisos del ProtectedRoute
  */
 const CompanyReg = ({ userPermissions = [] }) => {
-  
+
   // --- LÓGICA DE PERMISOS ---
   const permisos = useMemo(() => ({
     crear: userPermissions.includes("create_empresas"),
@@ -33,7 +33,7 @@ const CompanyReg = ({ userPermissions = [] }) => {
     nombre: '', rut: '', direccion: '', encargado: '', rut_encargado: '', logo: null, logoUrl: null
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('list'); 
+  const [activeTab, setActiveTab] = useState('list');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'asc' });
@@ -262,7 +262,7 @@ const CompanyReg = ({ userPermissions = [] }) => {
           </div>
         </div>
 
-        {empresas.length <= 1 ? (
+        {empresas.length < 1 ? (
           <p className="text-muted-foreground">No hay empresas registradas.</p>
         ) : (
           <div className="overflow-x-auto border border-border rounded-lg shadow-sm">
