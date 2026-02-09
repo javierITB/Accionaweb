@@ -1490,7 +1490,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      >
                         Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
                      </span>
-                     {userPermissions?.create_solicitudes_clientes_send && (
+                     {!["archivado", "finalizado"].includes(fullRequestData?.status) && userPermissions?.create_solicitudes_clientes_send && (
                         <Button
                            variant="outlineTeal"
                            size="sm"
@@ -1582,24 +1582,26 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            </div>
                         )}
 
-                        <div className="flex justify-end pt-2">
-                           <Button
-                              variant="outlineTeal"
-                              size="sm"
-                              onClick={() => {
-                                 openAsyncDialog({
-                                    title: "Confirmar Subida",
-                                    message: `¿Estás seguro de que deseas subir ${correctedFiles.length} archivo(s)?`,
-                                    confirmLabel: "Subir Archivos",
-                                    onConfirm: handleUploadAdditionalFiles,
-                                 });
-                              }}
-                              iconName="Upload"
-                              iconPosition="left"
-                           >
-                              Subir Archivos
-                           </Button>
-                        </div>
+                        {!["archivado", "finalizado"].includes(fullRequestData?.status) && (
+                           <div className="flex justify-end pt-2">
+                              <Button
+                                 variant="outlineTeal"
+                                 size="sm"
+                                 onClick={() => {
+                                    openAsyncDialog({
+                                       title: "Confirmar Subida",
+                                       message: `¿Estás seguro de que deseas subir ${correctedFiles.length} archivo(s)?`,
+                                       confirmLabel: "Subir Archivos",
+                                       onConfirm: handleUploadAdditionalFiles,
+                                    });
+                                 }}
+                                 iconName="Upload"
+                                 iconPosition="left"
+                              >
+                                 Subir Archivos
+                              </Button>
+                           </div>
+                        )}
                      </div>
                   )}
 
