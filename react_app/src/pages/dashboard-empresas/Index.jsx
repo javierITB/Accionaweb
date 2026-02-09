@@ -39,6 +39,15 @@ const EmpresasView = ({ userPermissions = {} }) => {
          if (res.ok) {
             const data = await res.json();
             setCompanies(data);
+         } else {
+            // Intentar leer el error del backend
+            try {
+               const errData = await res.json();
+               console.error("Error backend:", errData);
+               alert(`Error cargando empresas: ${errData.error || res.statusText}`);
+            } catch (e) {
+               alert(`Error ${res.status}: ${res.statusText}`);
+            }
          }
       } catch (error) {
          console.error("Error cargando empresas:", error);
