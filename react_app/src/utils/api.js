@@ -1,20 +1,6 @@
 /**
  * Para poder autenticas las api requests
  */
-const getSubdomain = () => {
-    if (typeof window === 'undefined') return "api";
-
-    const hostname = window.location.hostname; // ej: acciona.solunex.cl
-    const parts = hostname.split('.');
-
-    // Si tiene más de 2 partes (subdominio.dominio.ext), tomamos la primera
-    // Si es localhost o una IP, devolvemos "api" por defecto para desarrollo
-    if (parts.length > 2) {
-        return parts[0]; 
-    }
-
-    return "api"; // Fallback para solunex.cl o localhost
-};
 
 const getAuthHeaders = () => {
     const token = sessionStorage.getItem("token");
@@ -29,21 +15,7 @@ const getAuthHeaders = () => {
     return headers;
 };
 
-const tenant = getSubdomain();
-const BASE_DOMAIN = "https://back-desa.vercel.app";
-
-// Exportamos el tenant por si lo necesitas en otros componentes (como el login)
-export const CURRENT_TENANT = tenant;
-
-export const API_BASE_URL = `${BASE_DOMAIN}/${tenant}`;
-
-export const apiFetch = async (endpoint, options = {}) => {
-    // Si el endpoint ya es una URL completa, la usamos. 
-    // Si no, le anteponemos nuestra BASE_URL dinámica.
-    const fullUrl = endpoint.startsWith('http') 
-        ? endpoint 
-        : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
-
+export const apiFetch = async (url, options = {}) => {
     const headers = {
         ...getAuthHeaders(),
         ...options.headers
@@ -59,12 +31,14 @@ export const apiFetch = async (endpoint, options = {}) => {
     };
 
     try {
-        const response = await fetch(fullUrl, config); // Usamos fullUrl aquí
+        const response = await fetch(url, config);
 
         if (response.status === 401) {
-            console.warn("Unauthorized access - Redirecting...");
+            console.warn("Unauthorized access - Token might be invalid or expired. Redirecting to login...");
             if (typeof window !== 'undefined') {
                 sessionStorage.clear();
+                // Opcional: Guardar la URL actual para redirigir después del login (si se implementa)
+                // sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
                 window.location.href = '/login';
             }
         }
@@ -75,3 +49,5 @@ export const apiFetch = async (endpoint, options = {}) => {
         throw error;
     }
 };
+
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://back-desa.vercel.app/api";
