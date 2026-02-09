@@ -129,9 +129,19 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
 
     try {
       const autor = sessionStorage.getItem("user") || "Anónimo";
+      
+      // LOGICA AGREGADA: Detectar si el remitente es Staff para activar flag internal
+      const userRole = sessionStorage.getItem("rol");
+      const isStaff = ['Administrador', 'RRHH', 'root'].includes(userRole);
+
       const res = await apiFetch(`${API_BASE_URL}/respuestas/chat`, {
         method: "POST",
-        body: JSON.stringify({ formId: id, autor, mensaje: message.trim() }),
+        body: JSON.stringify({ 
+          formId: id, 
+          autor, 
+          mensaje: message.trim(),
+          internal: isStaff // Si es Staff, el mensaje es interno (notifica solo a Staff)
+        }),
       });
 
       const data = await res.json();
