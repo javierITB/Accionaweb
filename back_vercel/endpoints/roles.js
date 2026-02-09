@@ -45,7 +45,7 @@ router.post("/", async (req, res) => {
       const result = await req.db.collection("roles").insertOne(roleData);
 
       registerCargoCreationEvent(req, tokenCheck, roleData);
-      
+
       res.status(201).json({ _id: result.insertedId, ...roleData });
     } else {
       // ACTUALIZAR ROL
