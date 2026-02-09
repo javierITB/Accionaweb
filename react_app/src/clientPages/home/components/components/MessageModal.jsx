@@ -130,7 +130,8 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
     try {
       const autor = sessionStorage.getItem("user") || "Anónimo";
       
-      // LOGICA AGREGADA: Detectar si el remitente es Staff para activar flag internal
+      // LOGICA PARA NOTIFICACIONES:
+      // Para que el cliente lo vea y se le notifique, 'internal' DEBE ser false.
       const userRole = sessionStorage.getItem("rol");
       const isStaff = ['Administrador', 'RRHH', 'root'].includes(userRole);
 
@@ -140,7 +141,9 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
           formId: id, 
           autor, 
           mensaje: message.trim(),
-          internal: isStaff // Si es Staff, el mensaje es interno (notifica solo a Staff)
+          // Si es este modal (el general), internal es false para que llegue al cliente
+          internal: false, 
+          admin: isStaff // Mantenemos admin true para que el backend sepa que eres Staff
         }),
       });
 
@@ -196,15 +199,18 @@ const MessageModal = ({ isOpen, onClose, request, formId }) => {
           onScroll={handleScroll}
         >
           {messages.length > 0 ? messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] rounded-lg p-4 ${msg.autor === user ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">{msg.autor}</span>
+            // FILTRO VISUAL: Mostramos mensajes si no son internos
+            !msg.internal && (
+              <div key={i} className={`flex ${msg.autor === user ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-lg p-4 ${msg.autor === user ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">{msg.autor}</span>
+                  </div>
+                  <p className="text-sm mb-2">{msg.mensaje}</p>
+                  <span className="text-xs opacity-75">{formatMessageTime(msg.fecha)}</span>
                 </div>
-                <p className="text-sm mb-2">{msg.mensaje}</p>
-                <span className="text-xs opacity-75">{formatMessageTime(msg.fecha)}</span>
               </div>
-            </div>
+            )
           )) : <p className="text-center text-muted-foreground">Sin mensajes aún.</p>}
         </div>
 
