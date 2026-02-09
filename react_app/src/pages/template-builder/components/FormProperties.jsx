@@ -197,6 +197,12 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
     onUpdateFormData(form);
   };
 
+  // Función para VER plantilla existente (Read Only)
+  const handleViewTemplate = (form) => {
+    // No validamos permisos de edición aquí, el padre (Index.jsx) controlará el readOnly
+    onUpdateFormData(form);
+  };
+
   return (
     <div className="space-y-8">
       {/* 1. Encabezado */}
@@ -242,7 +248,7 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
                 </div>
               ) : (
                 <div className="border-2 border-dashed border-border rounded-lg p-4 opacity-60 bg-muted/10">
-                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight">Acceso Restringido</p>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight">Acceso Restringido</p>
                 </div>
               )}
 
@@ -262,7 +268,7 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
                           const selected = availableTemplates.find(t => t._id === e.target.value);
                           setSelectedTemplateForDuplicate(selected);
                         }}
-                      className="w-full p-2 border border-border rounded-md text-sm bg-background text-foreground" // AGREGADO: bg-background text-foreground
+                        className="w-full p-2 border border-border rounded-md text-sm bg-background text-foreground" // AGREGADO: bg-background text-foreground
                       >
                         <option value="">Selecciona una plantilla...</option>
                         {availableTemplates.map(template => (
@@ -367,7 +373,16 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
                           Editar Plantilla
                         </Button>
                       ) : (
-                        <span className="text-xs font-bold text-muted-foreground uppercase italic tracking-tight">Acceso Restringido</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewTemplate(form)}
+                          iconName="Eye"
+                          iconPosition="left"
+                          className="w-full max-w-[160px] text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          Vista Previa
+                        </Button>
                       )
                     ) : (
                       permisos.crear ? (
@@ -388,33 +403,36 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
                   </td>
 
                   {/* Columna Eliminar Dinámica */}
-                  {permisos.eliminar && (
-                    <td className="px-4 py-3 text-center">
-                      {form.formId && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteTemplate(form.id, form.formId)}
-                          disabled={deletingId === form.formId}
-                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          type="button"
-                        >
-                          {deletingId === form.formId ? (
-                            <Icon name="Loader" size={14} className="animate-spin" />
-                          ) : (
-                            <Icon name="Trash2" size={14} />
-                          )}
-                        </Button>
-                      )}
-                    </td>
-                  )}
+                  {
+                    permisos.eliminar && (
+                      <td className="px-4 py-3 text-center">
+                        {form.formId && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteTemplate(form.id, form.formId)}
+                            disabled={deletingId === form.formId}
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            type="button"
+                          >
+                            {deletingId === form.formId ? (
+                              <Icon name="Loader" size={14} className="animate-spin" />
+                            ) : (
+                              <Icon name="Trash2" size={14} />
+                            )}
+                          </Button>
+                        )}
+                      </td>
+                    )
+                  }
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
 
