@@ -135,11 +135,15 @@ const MessageModal = ({ isOpen, onClose, request, formId, userPermissions }) => 
       onClose();
    };
 
+   // --- FILTRO CORREGIDO ---
    const filteredMessages = messages.filter((msg) => {
       if (activeTab === "admin") {
-         return msg.admin === true;
+         // En la pestaña interna, solo lo que sea explícitamente interno
+         return msg.internal === true;
       }
-      return !msg.admin;
+      // En la pestaña general, todo lo que NO sea interno 
+      // (así ves tus respuestas admin y los mensajes del cliente)
+      return msg.internal !== true;
    });
 
    const handleSend = async () => {
@@ -149,12 +153,15 @@ const MessageModal = ({ isOpen, onClose, request, formId, userPermissions }) => 
 
       try {
          const autor = sessionStorage.getItem("user") || "Anónimo";
+         const isInternalMessage = activeTab === "admin";
+
          const payload = {
             formId: id,
             autor,
             mensaje: message.trim(),
-            admin: activeTab === "admin",
-            sendToEmail: activeTab !== "admin" && sendToEmail,
+            admin: true, 
+            internal: isInternalMessage, 
+            sendToEmail: !isInternalMessage && sendToEmail,
          };
 
          const res = await apiFetch(`${API_BASE_URL}/respuestas/chat`, {
@@ -177,7 +184,7 @@ const MessageModal = ({ isOpen, onClose, request, formId, userPermissions }) => 
             setSendToEmail(false);
          } else {
             console.error("Error enviando mensaje:", data.error || data);
-         }
+          }
       } catch (err) {
          console.error("Error enviando mensaje:", err);
       } finally {
@@ -218,7 +225,7 @@ const MessageModal = ({ isOpen, onClose, request, formId, userPermissions }) => 
                   <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
                      <Icon name="MessageSquare" size={20} className="text-accent flex-shrink-0" />
                      <div className="min-w-0 flex-1">
-                        <h2 className="text-lg sm:text-xl font-semibold text-foreground truncate">Mensajes</h2>
+                        <h2 className="text-lg sm:text-xl font-semibold text-foreground">Mensajes</h2>
                         <p className="text-xs sm:text-sm text-muted-foreground truncate">
                            {formName || request?.title || request?.formTitle} {request?.trabajador}
                         </p>
@@ -262,7 +269,6 @@ const MessageModal = ({ isOpen, onClose, request, formId, userPermissions }) => 
                </div>
             </div>
 
-            {/* Contenedor de mensajes con altura fija */}
             <div className="flex-1 min-h-0 overflow-hidden">
                <div
                   ref={chatRef}
@@ -348,7 +354,6 @@ const MessageModal = ({ isOpen, onClose, request, formId, userPermissions }) => 
                            <span className="xs:hidden">Enviar</span>
                         </Button>
                      )}
-                     {/* AGREGADO: Botón para bajar rápido a la derecha del enviar */}
                      {showScrollToBottom && (
                         <div className="flex-shrink-0">
                            <Button
@@ -382,13 +387,6 @@ const MessageModal = ({ isOpen, onClose, request, formId, userPermissions }) => 
                               Enviar al correo
                            </label>
                         </div>
-                     </div>
-                  )}
-
-                  {activeTab === "admin" && (
-                     <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
-                        <Icon name="Info" size={12} />
-                        Los mensajes internos no se envian por correo
                      </div>
                   )}
 
