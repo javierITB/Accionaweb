@@ -10,6 +10,13 @@ import AsyncActionDialog from "@/components/AsyncActionDialog";
 const MAX_FILES = 5; // Máximo de archivos
 const MAX_FILE_SIZE = 3 * 1024 * 1024; // 1MB en bytes
 
+import {
+   getStatusColorClass,
+   getStatusIcon as getStatusIconUtil,
+   getDefaultStatusColor,
+   formatStatusText
+} from "../../../utils/ticketStatusStyles";
+
 const RequestDetails = ({
    request,
    isVisible,
@@ -21,6 +28,18 @@ const RequestDetails = ({
    onGenerateDoc,
    userPermissions,
 }) => {
+   // --- CONFIGURACIÓN DE ESTADOS ---
+   const requestsConfig = {
+      statuses: [
+         { value: 'pendiente', label: 'Pendiente', className: 'bg-error text-error-foreground', listIconClass: 'text-error', icon: 'Clock' },
+         { value: 'en_revision', label: 'En Revisión', className: 'bg-secondary text-secondary-foreground', listIconClass: 'text-secondary', icon: 'Eye' },
+         { value: 'aprobado', label: 'Aprobado', className: 'bg-warning text-warning-foreground', listIconClass: 'text-yellow-600', icon: 'CheckCircle' },
+         { value: 'firmado', label: 'Firmado', className: 'bg-success text-success-foreground', listIconClass: 'text-success', icon: 'CheckSquare' },
+         { value: 'finalizado', label: 'Finalizado', className: 'bg-accent text-accent-foreground', listIconClass: 'text-accent', icon: 'CheckCircle' },
+         { value: 'archivado', label: 'Archivado', className: 'bg-card text-primary', listIconClass: 'text-muted-foreground', icon: 'Folder' }
+      ]
+   };
+
    // --- ESTADOS DE UI ---
    const [activeTab, setActiveTab] = useState("details");
 
@@ -33,6 +52,27 @@ const RequestDetails = ({
    const [downloadingCorrectedIndex, setDownloadingCorrectedIndex] = useState(null);
    const [showPreview, setShowPreview] = useState(false);
    const [previewDocument, setPreviewDocument] = useState(null);
+
+   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+   const statusDropdownRef = useRef(null);
+
+   useEffect(() => {
+      const handleClickOutside = (event) => {
+         if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
+            setIsStatusDropdownOpen(false);
+         }
+      };
+
+      if (isStatusDropdownOpen) {
+         document.addEventListener("mousedown", handleClickOutside);
+      } else {
+         document.removeEventListener("mousedown", handleClickOutside);
+      }
+
+      return () => {
+         document.removeEventListener("mousedown", handleClickOutside);
+      };
+   }, [isStatusDropdownOpen]);
 
    // Estados de carga para vistas previas
    const [isLoadingPreviewGenerated, setIsLoadingPreviewGenerated] = useState(false);
@@ -2185,56 +2225,70 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      </div>
 
                      <div className="flex items-center space-x-2">
-                        {!isStandalone && userPermissions?.editState && (
-                           <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                 openAsyncDialog({
-                                    title: `¿Estás seguro de que quieres cambiar el estado a '${getPreviousStatus(fullRequestData?.status)}'?`,
-                                    loadingText: `Cambiando estado a "${getPreviousStatus(fullRequestData?.status)}"...`,
-                                    successText: `Estado cambiado a "${getPreviousStatus(fullRequestData?.status)}" correctamente`,
-                                    errorText: `No se pudo cambiar el estado a "${getPreviousStatus(fullRequestData?.status)}"`,
-                                    onConfirm: () => handleStatusChange(getPreviousStatus(fullRequestData?.status)),
-                                 });
-                              }}
-                              disabled={!getPreviousStatus(fullRequestData?.status)}
-                              iconName="ChevronLeft"
-                              iconSize={16}
-                              className="text-muted-foreground hover:text-foreground"
-                           />
-                        )}
+                        <div className="relative" ref={statusDropdownRef}>
+                           {(() => {
+                              const currentStatus = fullRequestData?.status;
+                              // Find config or fallback
+                              const statusDef = requestsConfig.statuses.find(s => s.value === currentStatus);
 
-                        <span
-                           className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fullRequestData?.status)}`}
-                        >
-                           <Icon name={getStatusIcon(fullRequestData?.status)} size={14} className="mr-2" />
-                           {fullRequestData?.status?.replace("_", " ")?.toUpperCase()}
-                        </span>
+                              // Calculate classes based on config or default utils
+                              const triggerColorClass = statusDef
+                                 ? statusDef.className
+                                 : getDefaultStatusColor(currentStatus);
 
-                        {!isStandalone && userPermissions?.editState && (
-                           <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                 openAsyncDialog({
-                                    title: `¿Estás seguro de que quieres cambiar el estado a '${getNextStatus(fullRequestData?.status)}'?`,
-                                    loadingText: `Cambiando estado a "${getNextStatus(fullRequestData?.status)}"...`,
-                                    successText: `Estado cambiado a "${getNextStatus(fullRequestData?.status)}" correctamente`,
-                                    errorText: `No se pudo cambiar el estado a "${getNextStatus(fullRequestData?.status)}"`,
-                                    onConfirm: () => handleStatusChange(getNextStatus(fullRequestData?.status)),
-                                 });
-                              }}
-                              disabled={
-                                 !getNextStatus(fullRequestData?.status) ||
-                                 (getNextStatus(fullRequestData?.status) === "finalizado" && !userPermissions?.finalize) ||
-                                 (getNextStatus(fullRequestData?.status) === "archivado" && !userPermissions?.archive)
-                              }
-                              iconName="ChevronRight"
-                              iconSize={16}
-                              className="text-muted-foreground hover:text-foreground"
-                           />
-                        )}
+                              const triggerIconName = statusDef ? statusDef.icon : getStatusIcon(currentStatus);
+                              const triggerLabel = statusDef ? statusDef.label : formatStatusText(currentStatus);
+
+                              return (
+                                 <>
+                                    <button
+                                       onClick={() => !isStandalone && userPermissions?.editState && setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80 whitespace-nowrap ${triggerColorClass} ${!userPermissions?.editState ? 'cursor-default' : ''}`}
+                                       title={userPermissions?.editState ? "Cambiar estado" : "Estado actual"}
+                                       disabled={!userPermissions?.editState}
+                                    >
+                                       <Icon name={triggerIconName} size={14} className="mr-2" />
+                                       <span className="uppercase">{triggerLabel}</span>
+                                       {userPermissions?.editState && <Icon name="ChevronDown" size={14} className="ml-2 opacity-50" />}
+                                    </button>
+
+                                    {isStatusDropdownOpen && userPermissions?.editState && (
+                                       <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-popover border border-border rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                          <div className="p-1">
+                                             {requestsConfig.statuses.filter(st => {
+                                                if (st.value === 'finalizado') return userPermissions?.finalize;
+                                                if (st.value === 'archivado') return userPermissions?.archive;
+                                                return true;
+                                             }).map((st) => (
+                                                <button
+                                                   key={st.value}
+                                                   onClick={() => {
+                                                      openAsyncDialog({
+                                                         title: `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
+                                                         loadingText: `Cambiando estado a "${st.label}"...`,
+                                                         successText: "Estado cambiado correctamente",
+                                                         errorText: "No se pudo cambiar el estado",
+                                                         onConfirm: () => handleStatusChange(st.value)
+                                                      });
+                                                      setIsStatusDropdownOpen(false);
+                                                   }}
+                                                   className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${currentStatus === st.value
+                                                      ? 'bg-accent/10 text-accent font-medium'
+                                                      : 'hover:bg-accent/5 text-foreground'
+                                                      }`}
+                                                >
+                                                   <Icon name={st.icon || 'Circle'} size={14} className={st.listIconClass || 'text-foreground'} />
+                                                   <span className="text-foreground">{st.label}</span>
+                                                   {currentStatus === st.value && <Icon name="Check" size={14} className="ml-auto opacity-70 text-accent" />}
+                                                </button>
+                                             ))}
+                                          </div>
+                                       </div>
+                                    )}
+                                 </>
+                              );
+                           })()}
+                        </div>
                      </div>
 
                      {/* Botón Regenerar en Header (Si hay plantilla asignada y NO hay documento) */}
