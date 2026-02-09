@@ -192,7 +192,7 @@ const FormBuilder = ({ userPermissions = [] }) => {
 
     // Detectar el tipo de operación
     const isDuplicating = selectedTemplateData.documentTitle && selectedTemplateData.paragraphs;
-    
+
     // BLOQUEO POR PERMISOS EN COPIA
     if (isDuplicating && !permisos.copiar) {
       alert("No tienes permisos para copiar plantillas.");
@@ -389,9 +389,16 @@ const FormBuilder = ({ userPermissions = [] }) => {
     }
   };
 
+  const isReadOnly = useMemo(() => {
+    // Si hay un ID (edición), revisar permiso de editar
+    if (formData.id) return !permisos.editar;
+    // Si no hay ID (creación), revisar permiso de crear
+    return !permisos.crear;
+  }, [formData.id, permisos]);
+
   const tabs = [
     { id: 'properties', label: 'Seleccionar Formulario', icon: 'Settings' },
-    { id: 'document', label: 'Editar Plantilla', icon: 'FileText', count: formData.paragraphs?.length },
+    { id: 'document', label: isReadOnly ? 'Vista Previa' : 'Editar Plantilla', icon: isReadOnly ? 'Eye' : 'FileText', count: formData.paragraphs?.length },
   ];
 
   const getTabContent = () => {
@@ -445,6 +452,7 @@ const FormBuilder = ({ userPermissions = [] }) => {
             onDeleteParagraph={handleDeleteParagraph}
             onMoveParagraph={handleMoveParagraph}
             onSave={() => handleSaveTemplate('publicado')}
+            readOnly={isReadOnly}
           />
         );
       default:
@@ -485,11 +493,11 @@ const FormBuilder = ({ userPermissions = [] }) => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => window.location.href = '/form-center'}
+                  onClick={() => window.location.href = '/template-builder'}
                   iconName="ArrowLeft"
                   iconPosition="left"
                 >
-                  Volver al Centro de Formularios
+                  Volver al Centro de Plantillas
                 </Button>
               </div>
 
@@ -519,7 +527,7 @@ const FormBuilder = ({ userPermissions = [] }) => {
               </div>
 
               {/* LÓGICA DE FELIPE: BOTÓN O MENSAJE SEGÚN PERMISOS */}
-              {(formData.id ? permisos.editar : permisos.crear) ? (
+              {!isReadOnly ? (
                 <Button
                   type="button"
                   variant="default"
@@ -533,8 +541,8 @@ const FormBuilder = ({ userPermissions = [] }) => {
                   {isSaving ? 'Guardando...' : 'Guardar Plantilla'}
                 </Button>
               ) : (
-                <div className="px-4 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-medium border border-border">
-                  Sin permisos
+                <div className="px-4 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-medium border border-border flex items-center gap-2">
+                  <Icon name="Eye" size={16} /> Modo Vista Previa
                 </div>
               )}
             </div>

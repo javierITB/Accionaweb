@@ -129,7 +129,8 @@ const DocumentTemplateEditor = ({
   staticVariables = [],
   templateData,
   onUpdateTemplateData,
-  onSave
+  onSave,
+  readOnly = false
 }) => {
   const [staticVarsExpanded, setStaticVarsExpanded] = useState(true);
   const [dynamicVarsExpanded, setDynamicVarsExpanded] = useState(true);
@@ -140,6 +141,14 @@ const DocumentTemplateEditor = ({
 
   // Estado para controlar la visibilidad del panel de configuración de firmas
   const [showSignatureConfig, setShowSignatureConfig] = useState(false);
+
+  // EFECTO FORZAR PREVIEW SI ES READ ONLY
+  useEffect(() => {
+    if (readOnly) {
+      setIsPreview(true);
+      setShowSignatureConfig(false);
+    }
+  }, [readOnly]);
 
   // -- ESTADOS DE REDIMENSIONAMIENTO --
   const [leftPanelWidth, setLeftPanelWidth] = useState(320);
@@ -202,6 +211,7 @@ const DocumentTemplateEditor = ({
   }, [logoConfig]);
 
   const toggleLogo = (side) => {
+    if (readOnly) return;
     setLogoConfig(prev => ({ ...prev, [side]: !prev[side] }));
   };
 
@@ -252,6 +262,7 @@ const DocumentTemplateEditor = ({
   }, []);
 
   const handleLogoUpload = (e) => {
+    if (readOnly) return;
     const file = e.target.files[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
@@ -498,9 +509,20 @@ const DocumentTemplateEditor = ({
   // Efecto para controlar modo solo lectura (Vista Previa)
   React.useEffect(() => {
     if (editor) {
-      editor.setEditable(!isPreview);
+      editor.setEditable(!isPreview && !readOnly);
     }
-  }, [editor, isPreview]);
+  }, [editor, isPreview, readOnly]);
+
+  // EFECTO ESCAPE PARA SALIR DE PANTALLA COMPLETA
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullScreen) {
+        setIsFullScreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullScreen]);
 
   const generatePreviewHtml = (html) => {
     let content = html;
@@ -577,210 +599,224 @@ const DocumentTemplateEditor = ({
   return (
     <div className={`flex flex-col border rounded-xl bg-background shadow-lg overflow-hidden border-border transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 h-screen m-0 rounded-none' : 'h-[calc(100vh-140px)]'}`}>
 
-      {/* BARRA DE HERRAMIENTAS */}
-      <div className="flex flex-wrap items-center gap-2 p-2 border-b bg-muted/20">
+      {/* BARRA DE HERRAMIENTAS - CONDICIONAL: SI es ReadOnly, solo mostrar FullScreen */}
+      {!readOnly ? (
+        <div className="flex flex-wrap items-center gap-2 p-2 border-b bg-muted/20">
 
-        {/* Botones de Control Global */}
-        <div className="flex items-center gap-1 border-r pr-2 mr-2">
+          {/* Botones de Control Global */}
+          <div className="flex items-center gap-1 border-r pr-2 mr-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsFullScreen(!isFullScreen)}
+              title={isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
+            >
+              <Icon name={isFullScreen ? "Minimize" : "Maximize"} size={16} />
+            </Button>
+
+          </div>
+          <select
+            className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-28"
+            value={getActiveFontFamily()}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (focusedField.type === 'signature') {
+                const { index, field } = focusedField;
+                if (field) {
+                  setFocusedField({ type: 'signature', index, field });
+                  updateSignature(index, `${field}FontFamily`, val);
+                  setTimeout(() => {
+                    const el = document.getElementById(`sig-${field}-${index}`);
+                    if (el) el.focus();
+                  }, 50);
+                }
+              } else {
+                editor.chain().focus().setFontFamily(val).run();
+              }
+            }}
+          >
+            <option value="">Fuente</option>
+            {fontFamilies.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+          </select>
+
+          <select
+            className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-20"
+            value={getActiveFontSize()}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (focusedField.type === 'signature') {
+                const { index, field } = focusedField;
+                if (field) {
+                  setFocusedField({ type: 'signature', index, field });
+                  updateSignature(index, `${field}FontSize`, val);
+                  setTimeout(() => {
+                    const el = document.getElementById(`sig-${field}-${index}`);
+                    if (el) el.focus();
+                  }, 50);
+                }
+              } else {
+                if (!val) {
+                  editor.chain().focus().setMark('textStyle', { fontSize: null }).run();
+                } else {
+                  editor.chain().focus().setFontSize(`${val}pt`).run();
+                }
+              }
+            }}
+          >
+            <option value="">Tam.</option>
+            {fontSizes.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+
+          <div className="w-px h-6 bg-border mx-1" />
+
+          {/* Mayúsculas / Minúsculas / Default */}
+          <div className="flex bg-card border rounded-md p-0.5 gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('upper')}`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => changeCase('upper')}
+              title="Mayúsculas"
+            >
+              M ↑
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('lower')}`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => changeCase('lower')}
+              title="Minúsculas"
+            >
+              m ↓
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('default')}`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => changeCase('default')}
+              title="Default (Como se ingresó)"
+            >
+              d
+            </Button>
+          </div>
+
+          {/* Estilos basicos */}
+          <div className="flex bg-card border rounded-md p-0.5">
+            <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('bold') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('bold')}>
+              <Icon name="Bold" size={14} />
+            </Button>
+            <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('italic') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('italic')}>
+              <Icon name="Italic" size={14} />
+            </Button>
+            <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('underline') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('underline')}>
+              <Icon name="Underline" size={14} />
+            </Button>
+          </div>
+
+          {/* Alineacion */}
+          <div className="flex bg-card border rounded-md p-0.5">
+            <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'left' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
+              <Icon name="AlignLeft" size={14} />
+            </Button>
+            <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'center' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
+              <Icon name="AlignCenter" size={14} />
+            </Button>
+            <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
+              <Icon name="AlignJustify" size={14} />
+            </Button>
+          </div>
+
+
+
+
+
+          <div className="flex gap-1 ml-auto items-center">
+            <div className="flex items-center gap-2 mr-3 border-r pr-3">
+              <span className={`text-[10px] font-bold ${!isPreview ? 'text-primary' : 'text-muted-foreground'}`}>EDICIÓN</span>
+              <button
+                className={`w-9 h-5 rounded-full px-0.5 transition-colors duration-200 flex items-center ${isPreview ? 'bg-primary' : 'bg-slate-300'}`}
+                onClick={() => setIsPreview(!isPreview)}
+                title="Alternar Vista Previa"
+              >
+                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${isPreview ? 'translate-x-4' : 'translate-x-0'}`} />
+              </button>
+              <span className={`text-[10px] font-bold ${isPreview ? 'text-primary' : 'text-muted-foreground'}`}>VISTA PREVIA</span>
+            </div>
+
+            <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => {
+              if (focusedField.type === 'signature') {
+                addVariable('{{NUMERAL}}');
+              } else {
+                editor.chain().focus().setMark('bold').insertContent('{{NUMERAL}}').unsetMark('bold').run();
+              }
+            }} disabled={isPreview}>
+              + NUMERAL
+            </Button>
+            <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-blue-200 text-blue-600" onClick={() => {
+              const cond = prompt("Variable para condicionar (IF):");
+              if (cond) {
+                const tagStart = `[[IF:${cond.toUpperCase()}]]`;
+                const tagEnd = `[[ENDIF]]`;
+
+                if (editor.state.selection.empty) {
+                  editor.chain().focus().insertContent(`<p>${tagStart}</p><p>Contenido...</p><p>${tagEnd}</p>`).run();
+                } else {
+                  const { from, to } = editor.state.selection;
+                  editor.chain().focus()
+                    .insertContentAt(to, `<p>${tagEnd}</p>`)
+                    .insertContentAt(from, `<p>${tagStart}</p>`)
+                    .run();
+                }
+              }
+            }}>
+              + CONDICIONAL
+            </Button>
+            <Button
+              variant={showSignatureConfig ? "default" : "outline"}
+              size="sm"
+              className={`h-8 text-[10px] font-bold ${showSignatureConfig ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
+              onClick={() => setShowSignatureConfig(!showSignatureConfig)}
+              disabled={isPreview}
+              title={showSignatureConfig ? "Ocultar Configuración de Firmas" : "Configurar Firmas"}
+            >
+              <Icon name="PenTool" size={12} className="mr-1" /> {showSignatureConfig ? "FIRMA" : "+ FIRMA"}
+            </Button>
+
+            {onSave && (
+              <Button
+                variant="default"
+                size="sm"
+                className="h-8 text-[10px] px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white ml-2 shadow-sm"
+                onClick={onSave}
+                title="Guardar Plantilla"
+              >
+                <Icon name="Save" size={12} /> GUARDAR
+              </Button>
+            )}
+          </div>
+        </div>
+      ) : (
+        // BARRA DE HERRAMIENTAS - READ ONLY
+        <div className="flex flex-wrap items-center gap-2 p-2 border-b bg-muted/20 justify-start">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsFullScreen(!isFullScreen)}
-            title={isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
+            title={isFullScreen ? "Salir de Pantalla Completa (ESC)" : "Pantalla Completa"}
           >
             <Icon name={isFullScreen ? "Minimize" : "Maximize"} size={16} />
           </Button>
-
         </div>
-        <select
-          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-28"
-          value={getActiveFontFamily()}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (focusedField.type === 'signature') {
-              const { index, field } = focusedField;
-              if (field) {
-                setFocusedField({ type: 'signature', index, field });
-                updateSignature(index, `${field}FontFamily`, val);
-                setTimeout(() => {
-                  const el = document.getElementById(`sig-${field}-${index}`);
-                  if (el) el.focus();
-                }, 50);
-              }
-            } else {
-              editor.chain().focus().setFontFamily(val).run();
-            }
-          }}
-        >
-          <option value="">Fuente</option>
-          {fontFamilies.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-        </select>
-
-        <select
-          className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-20"
-          value={getActiveFontSize()}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (focusedField.type === 'signature') {
-              const { index, field } = focusedField;
-              if (field) {
-                setFocusedField({ type: 'signature', index, field });
-                updateSignature(index, `${field}FontSize`, val);
-                setTimeout(() => {
-                  const el = document.getElementById(`sig-${field}-${index}`);
-                  if (el) el.focus();
-                }, 50);
-              }
-            } else {
-              if (!val) {
-                editor.chain().focus().setMark('textStyle', { fontSize: null }).run();
-              } else {
-                editor.chain().focus().setFontSize(`${val}pt`).run();
-              }
-            }
-          }}
-        >
-          <option value="">Tam.</option>
-          {fontSizes.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-
-        <div className="w-px h-6 bg-border mx-1" />
-
-        {/* Mayúsculas / Minúsculas / Default */}
-        <div className="flex bg-card border rounded-md p-0.5 gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('upper')}`}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => changeCase('upper')}
-            title="Mayúsculas"
-          >
-            M ↑
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('lower')}`}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => changeCase('lower')}
-            title="Minúsculas"
-          >
-            m ↓
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('default')}`}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => changeCase('default')}
-            title="Default (Como se ingresó)"
-          >
-            d
-          </Button>
-        </div>
-
-        {/* Estilos basicos */}
-        <div className="flex bg-card border rounded-md p-0.5">
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('bold') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('bold')}>
-            <Icon name="Bold" size={14} />
-          </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('italic') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('italic')}>
-            <Icon name="Italic" size={14} />
-          </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('underline') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('underline')}>
-            <Icon name="Underline" size={14} />
-          </Button>
-        </div>
-
-        {/* Alineacion */}
-        <div className="flex bg-card border rounded-md p-0.5">
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'left' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
-            <Icon name="AlignLeft" size={14} />
-          </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'center' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
-            <Icon name="AlignCenter" size={14} />
-          </Button>
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
-            <Icon name="AlignJustify" size={14} />
-          </Button>
-        </div>
-
-
-
-
-
-        <div className="flex gap-1 ml-auto items-center">
-          <div className="flex items-center gap-2 mr-3 border-r pr-3">
-            <span className={`text-[10px] font-bold ${!isPreview ? 'text-primary' : 'text-muted-foreground'}`}>EDICIÓN</span>
-            <button
-              className={`w-9 h-5 rounded-full px-0.5 transition-colors duration-200 flex items-center ${isPreview ? 'bg-primary' : 'bg-slate-300'}`}
-              onClick={() => setIsPreview(!isPreview)}
-              title="Alternar Vista Previa"
-            >
-              <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${isPreview ? 'translate-x-4' : 'translate-x-0'}`} />
-            </button>
-            <span className={`text-[10px] font-bold ${isPreview ? 'text-primary' : 'text-muted-foreground'}`}>VISTA PREVIA</span>
-          </div>
-
-          <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => {
-            if (focusedField.type === 'signature') {
-              addVariable('{{NUMERAL}}');
-            } else {
-              editor.chain().focus().setMark('bold').insertContent('{{NUMERAL}}').unsetMark('bold').run();
-            }
-          }} disabled={isPreview}>
-            + NUMERAL
-          </Button>
-          <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-blue-200 text-blue-600" onClick={() => {
-            const cond = prompt("Variable para condicionar (IF):");
-            if (cond) {
-              const tagStart = `[[IF:${cond.toUpperCase()}]]`;
-              const tagEnd = `[[ENDIF]]`;
-
-              if (editor.state.selection.empty) {
-                editor.chain().focus().insertContent(`<p>${tagStart}</p><p>Contenido...</p><p>${tagEnd}</p>`).run();
-              } else {
-                const { from, to } = editor.state.selection;
-                editor.chain().focus()
-                  .insertContentAt(to, `<p>${tagEnd}</p>`)
-                  .insertContentAt(from, `<p>${tagStart}</p>`)
-                  .run();
-              }
-            }
-          }}>
-            + CONDICIONAL
-          </Button>
-          <Button
-            variant={showSignatureConfig ? "default" : "outline"}
-            size="sm"
-            className={`h-8 text-[10px] font-bold ${showSignatureConfig ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
-            onClick={() => setShowSignatureConfig(!showSignatureConfig)}
-            disabled={isPreview}
-            title={showSignatureConfig ? "Ocultar Configuración de Firmas" : "Configurar Firmas"}
-          >
-            <Icon name="PenTool" size={12} className="mr-1" /> {showSignatureConfig ? "FIRMA" : "+ FIRMA"}
-          </Button>
-
-          {onSave && (
-            <Button
-              variant="default"
-              size="sm"
-              className="h-8 text-[10px] px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white ml-2 shadow-sm"
-              onClick={onSave}
-              title="Guardar Plantilla"
-            >
-              <Icon name="Save" size={12} /> GUARDAR
-            </Button>
-          )}
-        </div>
-      </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden">
         {/* PANEL LATERAL DE VARIABLES */}
         <div
-          className="border-r bg-muted/5 p-4 overflow-y-auto shrink-0 transition-all duration-75"
-          style={{ width: leftPanelWidth }}
+          className={`border-r bg-muted/5 p-4 overflow-y-auto shrink-0 transition-all duration-75 ${readOnly ? 'w-0 p-0 border-none' : ''}`}
+          style={{ width: readOnly ? 0 : leftPanelWidth }}
         >
           <div className="space-y-6">
             {/* Variables del Formulario */}
@@ -842,12 +878,15 @@ const DocumentTemplateEditor = ({
         </div>
 
         {/* DRAG HANDLE IZQUIERDO */}
-        <div
-          className="w-1 cursor-col-resize bg-border hover:bg-blue-500 transition-colors z-10 flex flex-col justify-center items-center group"
-          onMouseDown={() => startResizing('left')}
-        >
-          <div className="h-8 w-1 bg-border group-hover:bg-blue-300 rounded-full" />
-        </div>
+        {/* DRAG HANDLE IZQUIERDO - Solo si no es read only */}
+        {!readOnly && (
+          <div
+            className="w-1 cursor-col-resize bg-border hover:bg-blue-500 transition-colors z-10 flex flex-col justify-center items-center group"
+            onMouseDown={() => startResizing('left')}
+          >
+            <div className="h-8 w-1 bg-border group-hover:bg-blue-300 rounded-full" />
+          </div>
+        )}
 
         {/* AREA DE EDICION (HOJA) */}
         <div className="editor-paper-container flex-1 bg-muted/30 overflow-y-auto">
@@ -1044,6 +1083,19 @@ const DocumentTemplateEditor = ({
                 <div className="signature-area grid grid-cols-2 gap-x-8 gap-y-8 mt-8">
                   {signatures.map((sig, i) => {
                     const isLastAndOdd = (i === signatures.length - 1) && (signatures.length % 2 !== 0);
+
+                    // Lógica para limpiar contenido en vista previa
+                    let displayText = sig.text || '';
+                    if (isPreview) {
+                      // Reemplazo básico de artifactos como [[]] y {{}}
+                      displayText = displayText.replace(/\[\[.*?\]\]/g, '');
+
+                      // Reemplazo de variables {{VAR}} por un placeholder visual
+                      displayText = displayText.replace(/{{([^}]+)}}/g, (match, varName) => {
+                        return varName.replace(/_/g, ' ');
+                      });
+                    }
+
                     return (
                       <div
                         className={`signature-col flex flex-col items-center text-center ${isLastAndOdd ? 'col-span-2 place-self-center' : ''}`}
@@ -1063,10 +1115,11 @@ const DocumentTemplateEditor = ({
                           className={`${sig.textBold ? 'font-bold' : ''} ${sig.textItalic ? 'italic' : ''} ${sig.textUnderline ? 'underline' : ''}`}
                           style={{
                             fontFamily: sig.textFontFamily,
-                            fontSize: sig.textFontSize ? `${sig.textFontSize}pt` : 'inherit'
+                            fontSize: sig.textFontSize ? `${sig.textFontSize}pt` : 'inherit',
+                            whiteSpace: 'pre-wrap'
                           }}
                         >
-                          {sig.text?.split('\n').map((line, j) => (
+                          {displayText.split('\n').map((line, j) => (
                             <div key={j}>{line}</div>
                           ))}
                         </div>
