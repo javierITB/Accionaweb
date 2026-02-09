@@ -180,21 +180,21 @@ const PERMISSION_GROUPS = {
       label: 'Vista: Domicilio Virtual',
       tagg: 'admin',
       permissions: [
-         { id: 'view_solicitudes_clientes', label: 'Acceso a la vista' },
-         { id: 'delete_solicitudes_clientes', label: 'Eliminar solicitudes de clientes' },
-         { id: 'view_solicitudes_clientes_details', label: 'Acceso a detalles de solicitudes de clientes' },
-         { id: 'view_solicitudes_clientes_answers', label: 'Ver respuestas de solicitud de clientes', dependency: 'view_solicitudes_clientes_details' },
+         { id: 'view_domicilio_virtual', label: 'Acceso a la vista' },
+         { id: 'delete_domicilio_virtual', label: 'Eliminar solicitudes de clientes' },
+         { id: 'view_domicilio_virtual_details', label: 'Acceso a detalles de solicitudes de clientes' },
+         { id: 'view_domicilio_virtual_answers', label: 'Ver respuestas de solicitud de clientes', dependency: 'view_domicilio_virtual_details' },
 
-         { id: 'view_solicitudes_clientes_attach', label: 'Ver documento adjunto', dependency: 'view_solicitudes_clientes_details' },
-         { id: 'download_solicitudes_clientes_attach', label: 'Descargar documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
-         { id: 'preview_solicitudes_clientes_attach', label: 'vista previa documento adjunto', dependency: 'view_solicitudes_clientes_attach' },
+         { id: 'view_domicilio_virtual_attach', label: 'Ver documento adjunto', dependency: 'view_domicilio_virtual_details' },
+         { id: 'download_domicilio_virtual_attach', label: 'Descargar documento adjunto', dependency: 'view_domicilio_virtual_attach' },
+         { id: 'preview_domicilio_virtual_attach', label: 'vista previa documento adjunto', dependency: 'view_domicilio_virtual_attach' },
 
-         { id: 'view_solicitudes_clientes_generated', label: 'Ver documento generado', dependency: 'view_solicitudes_clientes_details' },
-         { id: 'download_solicitudes_clientes_generated', label: 'Descargar documento generado', dependency: 'view_solicitudes_clientes_generated' },
-         { id: 'preview_solicitudes_clientes_generated', label: 'vista previa documento generado', dependency: 'view_solicitudes_clientes_generated' },
-         { id: 'regenerate_solicitudes_clientes_generated', label: 'Regenerar documento', dependency: 'view_solicitudes_clientes_generated' },
+         { id: 'view_domicilio_virtual_generated', label: 'Ver documento generado', dependency: 'view_domicilio_virtual_details' },
+         { id: 'download_domicilio_virtual_generated', label: 'Descargar documento generado', dependency: 'view_domicilio_virtual_generated' },
+         { id: 'preview_domicilio_virtual_generated', label: 'vista previa documento generado', dependency: 'view_domicilio_virtual_generated' },
+         { id: 'regenerate_domicilio_virtual_generated', label: 'Regenerar documento', dependency: 'view_domicilio_virtual_generated' },
 
-         { id: 'edit_solicitudes_clientes_state', label: 'Editar estado de solicitud ', dependency: 'view_solicitudes_clientes_details' },
+         { id: 'edit_domicilio_virtual_state', label: 'Editar estado de solicitud ', dependency: 'view_domicilio_virtual_details' },
 
       ]
    },

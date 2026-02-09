@@ -42,16 +42,16 @@ const RequestDetails = ({
   const [activeTab, setActiveTab] = useState("details");
 
   // --- PERMISOS ---
-  const canViewAttachments = userPermissions.includes('view_solicitudes_clientes_attach');
-  const canDownloadAttachments = userPermissions.includes('download_solicitudes_clientes_attach');
-  const canPreviewAttachments = userPermissions.includes('preview_solicitudes_clientes_attach');
+  const canViewAttachments = userPermissions.includes('view_domicilio_virtual_attach');
+  const canDownloadAttachments = userPermissions.includes('download_domicilio_virtual_attach');
+  const canPreviewAttachments = userPermissions.includes('preview_domicilio_virtual_attach');
 
-  const canViewGenerated = userPermissions.includes('view_solicitudes_clientes_generated');
-  const canDownloadGenerated = userPermissions.includes('download_solicitudes_clientes_generated');
-  const canPreviewGenerated = userPermissions.includes('preview_solicitudes_clientes_generated');
-  const canRegenerate = userPermissions.includes('regenerate_solicitudes_clientes_generated');
+  const canViewGenerated = userPermissions.includes('view_domicilio_virtual_generated');
+  const canDownloadGenerated = userPermissions.includes('download_domicilio_virtual_generated');
+  const canPreviewGenerated = userPermissions.includes('preview_domicilio_ virtual_generated');
+  const canRegenerate = userPermissions.includes('regenerate_domicilio_virtual_generated');
 
-  const canEditState = userPermissions.includes('edit_solicitudes_clientes_state');
+  const canEditState = userPermissions.includes('edit_domicilio_virtual_state');
   const canViewSignature = canViewGenerated;
 
   const [correctedFiles, setCorrectedFiles] = useState([]);
