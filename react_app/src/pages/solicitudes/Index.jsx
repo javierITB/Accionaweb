@@ -414,15 +414,7 @@ const MessageForm = ({ userPermissions = [] }) => {
                 Envía un documento/solicitud que aparecerá en el menú del usuario destinatario.
               </p>
             </div>
-            <div className="hidden md:flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
-                iconSize={20}
-              />
-            </div>
+
           </div>
 
           {/* Formulario */}

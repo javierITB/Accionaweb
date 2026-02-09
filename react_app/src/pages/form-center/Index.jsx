@@ -294,15 +294,7 @@ const FormCenter = ({ userPermissions = {} }) => {
 
                      <div className="flex items-center space-x-2 lg:space-x-3 flex-wrap justify-center md:justify-end">
                         {/* Botón de toggle del sidebar en desktop - RESPONSIVE */}
-                        <div className="hidden lg:flex items-center">
-                           <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={toggleSidebar}
-                              iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
-                              iconSize={20}
-                           />
-                        </div>
+                     
 
                         <Button
                            variant="outline"

@@ -173,18 +173,6 @@ const CompanyReg = () => {
               </p>
             </div>
 
-            <div className="flex items-center space-x-3">
-              {/* BOTÓN DE TOGGLE DEL SIDEBAR - AGREGADO */}
-              <div className="hidden md:flex items-center">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleSidebar}
-                  iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
-                  iconSize={20}
-                />
-              </div>
-            </div>
           </div>
 
           <div className="bg-card border border-border rounded-lg">

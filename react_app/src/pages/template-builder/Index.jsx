@@ -515,16 +515,6 @@ const FormBuilder = ({ userPermissions = [] }) => {
             </div>
 
             <div className="flex items-center justify-between md:justify-end space-x-3">
-              {/* BOTÓN DE TOGGLE DEL SIDEBAR - AGREGADO */}
-              <div className="hidden md:flex items-center space-x-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleSidebar}
-                  iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
-                  iconSize={20}
-                />
-              </div>
 
               {/* LÓGICA DE FELIPE: BOTÓN O MENSAJE SEGÚN PERMISOS */}
               {!isReadOnly ? (

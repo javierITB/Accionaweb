@@ -72,7 +72,6 @@ const FormBuilder = ({ userPermissions = {} }) => {
       };
 
       checkAccess();
-
    }, [permisos]);
 
    // Detectar cambios en el tamaño de pantalla - ACTUALIZADO
@@ -533,21 +532,12 @@ const FormBuilder = ({ userPermissions = {} }) => {
                   </div>
 
                   <div className="flex items-center space-x-3">
-                     <div className="hidden md:flex items-center space-x-3">
-                        <Button
-                           variant="ghost"
-                           size="icon"
-                           onClick={toggleSidebar}
-                           iconName={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"}
-                           iconSize={20}
-                        />
-                     </div>
-
                      <div
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === "publicado"
-                           ? "bg-green-100 text-green-700"
-                           : "bg-yellow-100 text-yellow-700"
-                           }`}
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                           formData?.status === "publicado"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-yellow-100 text-yellow-700"
+                        }`}
                      >
                         {formData?.status === "publicado" ? "Publicado" : "Borrador"}
                      </div>
@@ -618,20 +608,22 @@ const FormBuilder = ({ userPermissions = {} }) => {
                            <button
                               key={tab?.id}
                               onClick={() => setActiveTab(tab?.id)}
-                              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab?.id
-                                 ? "border-primary text-primary"
-                                 : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground"
-                                 }`}
+                              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                                 activeTab === tab?.id
+                                    ? "border-primary text-primary"
+                                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                              }`}
                               title={`Ir a la sección de ${tab?.label}`}
                            >
                               <Icon name={tab?.icon} size={16} />
                               <span>{tab?.label}</span>
                               {tab?.count !== undefined && (
                                  <span
-                                    className={`px-2 py-1 text-xs rounded-full ${activeTab === tab?.id
-                                       ? "bg-primary text-primary-foreground"
-                                       : "bg-muted text-muted-foreground"
-                                       }`}
+                                    className={`px-2 py-1 text-xs rounded-full ${
+                                       activeTab === tab?.id
+                                          ? "bg-primary text-primary-foreground"
+                                          : "bg-muted text-muted-foreground"
+                                    }`}
                                  >
                                     {tab?.count}
                                  </span>
