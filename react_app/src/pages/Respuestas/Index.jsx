@@ -13,8 +13,6 @@ import { Navigate } from 'react-router-dom';
 
 const RequestTracking = ({ userPermissions = {} }) => {
 
-
-
   const urlParams = new URLSearchParams(window.location.search);
   const formId = urlParams?.get('id');
 
@@ -81,7 +79,7 @@ const RequestTracking = ({ userPermissions = {} }) => {
         perms = roleData.permissions || [];
         hasAll = perms.includes('all');
 
-        
+
 
 
         setPermissions({
