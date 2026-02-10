@@ -1,13 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Icon from "../AppIcon";
-import logo from "/logo2.png";
-import { API_BASE_URL } from "../../utils/api";
+// Importamos LOGO_TENANT para la lógica de imágenes y API_BASE_URL para los permisos
+import { API_BASE_URL, LOGO_TENANT } from "../../utils/api";
 import { MENU_STRUCTURE } from "../../config/menuStructure";
 
 const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobileOpen = false, onNavigate }) => {
 
-   // Definimos permisos requeridos por ITEM
+   // --- LÓGICA DINÁMICA DEL LOGO ---
+   const [logoSrc, setLogoSrc] = useState(`/logos/${LOGO_TENANT}/logo-header.png`);
+
+   useEffect(() => {
+      setLogoSrc(`/logos/${LOGO_TENANT}/logo-header.png`);
+   }, [LOGO_TENANT]);
+
+   const handleImageError = (e) => {
+      e.target.onerror = null;
+      // Fallback al logo por defecto si no existe la ruta específica
+      setLogoSrc("/logo-header.png");
+   };
 
    const location = useLocation();
    const navigate = useNavigate();
@@ -164,11 +175,19 @@ const toggleAccordion = (name) => {
                   onClick={handleLogoClick}
                >
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden bg-background/50 border border-border/50 shadow-sm shrink-0">
-                     <img src={logo} alt="Logo Acciona" className="max-w-full max-h-full p-1" style={{ objectFit: 'contain' }} />
+                     <img 
+                        src={logoSrc} 
+                        alt={`Logo ${LOGO_TENANT}`} 
+                        onError={handleImageError} 
+                        className="max-w-full max-h-full p-1" 
+                        style={{ objectFit: 'contain' }} 
+                     />
                   </div>
                   {isTextVisible && (
                      <div className="flex flex-col overflow-hidden">
-                        <h1 className="text-lg font-semibold text-foreground leading-tight truncate">NexoDesk Acciona</h1>
+                        <h1 className="text-lg font-semibold text-foreground leading-tight truncate capitalize">
+                           {LOGO_TENANT === 'api' ? 'NexoDesk Acciona' : LOGO_TENANT}
+                        </h1>
                         <span className="text-[10px] text-muted-foreground font-mono truncate">Panel de administración</span>
                      </div>
                   )}

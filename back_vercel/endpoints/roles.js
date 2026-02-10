@@ -74,6 +74,25 @@ router.post("/", async (req, res) => {
 });
 
 /**
+ * @route   GET /roles/config
+ * @desc    Obtener la configuración de roles (permisos disponibles) de la empresa actual
+ */
+router.get("/config", async (req, res) => {
+  try {
+    const tokenCheck = await verifyRequest(req);
+    if (!tokenCheck.ok) return res.status(401).json({ error: "Unauthorized" });
+
+    // Intentamos obtener la configuración desde la colección config_roles
+    const configRoles = await req.db.collection("config_roles").find({}).toArray();
+
+    res.json(configRoles);
+  } catch (err) {
+    console.error("Error en GET /roles/config:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
  * @route   GET /roles
  * @desc    Obtener todos los roles (para la vista de administración)
  */
@@ -201,5 +220,7 @@ router.get("/check-permission/:permission", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+
 
 module.exports = router;

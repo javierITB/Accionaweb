@@ -2,9 +2,8 @@ import React, { useState, useEffect } from "react";
 import { X, Shield, Check, Loader2, Lock, UserCircle, LayoutGrid, ChevronRight } from "lucide-react";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
 import Button from "components/ui/Button";
-import { PERMISSION_GROUPS } from "../../../config/permissionGroups";
 
-export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos }) {
+export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, availablePermissions = [] }) {
    const [isSaving, setIsSaving] = useState(false);
    const [isSuccess, setIsSuccess] = useState(false);
    const [activeTab, setActiveTab] = useState("admin");
@@ -43,6 +42,15 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
 
    if (!isOpen) return null;
 
+   // Helper para buscar permisos en la config dinámica
+   const findPermissionById = (id) => {
+      for (const group of availablePermissions) {
+         const found = group.permissions.find(p => p.id === id);
+         if (found) return found;
+      }
+      return null;
+   };
+
    const togglePermission = (permId) => {
       if (isSuccess) setIsSuccess(false);
       setFormData((prev) => {
@@ -51,13 +59,13 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
 
          // 1. Limpieza por Paneles Raíz
          if (permId === "view_panel_admin" && hasPerm) {
-            const adminIds = Object.values(PERMISSION_GROUPS)
+            const adminIds = availablePermissions
                .filter((g) => g.tagg === "admin")
                .flatMap((g) => g.permissions.map((p) => p.id));
             newPerms = newPerms.filter((p) => !adminIds.includes(p));
          }
          if (permId === "view_panel_cliente" && hasPerm) {
-            const clienteIds = Object.values(PERMISSION_GROUPS)
+            const clienteIds = availablePermissions
                .filter((g) => g.tagg === "cliente")
                .flatMap((g) => g.permissions.map((p) => p.id));
             newPerms = newPerms.filter((p) => !clienteIds.includes(p));
@@ -65,8 +73,10 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
 
          // 2. Lógica de Dependencias: Si quito el padre, quito los hijos
          if (hasPerm) {
-            const dependentPerms = Object.values(PERMISSION_GROUPS)
-               .flatMap((g) => g.permissions)
+            // Buscamos en todos los grupos
+            const allPermissions = availablePermissions.flatMap(g => g.permissions);
+
+            const dependentPerms = allPermissions
                .filter((p) => p.dependency === permId)
                .map((p) => p.id);
 
@@ -81,7 +91,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
 
    const toggleAllInTab = () => {
       if (isSuccess) setIsSuccess(false);
-      const permsInTab = Object.values(PERMISSION_GROUPS)
+      const permsInTab = availablePermissions
          .filter((g) => g.tagg === activeTab)
          .flatMap((g) => g.permissions);
 
@@ -207,14 +217,19 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
 
                <div className="space-y-4">
                   {/* HABILITADOR DE PANEL */}
-                  {Object.entries(PERMISSION_GROUPS)
-                     .filter(([_, g]) => g.tagg === "root" && g.label.toLowerCase().includes(activeTab))
-                     .map(([key, group]) => {
-                        const isEnabled = formData.permissions.includes(group.permissions[0].id);
+                  {availablePermissions
+                     .filter((g) => g.tagg === "root" && g.label.toLowerCase().includes(activeTab))
+                     .map((group) => {
+                        // Asumimos que los root tienen un permiso principal
+                        if (!group.permissions || group.permissions.length === 0) return null;
+
+                        const permId = group.permissions[0].id;
+                        const isEnabled = formData.permissions.includes(permId);
+
                         return (
                            <div
-                              key={key}
-                              onClick={() => togglePermission(group.permissions[0].id)}
+                              key={group.key || group.label} // Usar key si existe, sino label
+                              onClick={() => togglePermission(permId)}
                               className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${isEnabled ? "border-accent bg-accent/5 ring-1 ring-accent" : "border-border bg-muted/20 opacity-60"}`}
                            >
                               <span className="text-sm font-bold text-foreground">{group.label}</span>
@@ -230,16 +245,16 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos })
                   {/* VISTAS Y PERMISOS CON DEPENDENCIA */}
                   <div className="space-y-4">
                      {(activeTab === "admin" && isAdminPanelEnabled) ||
-                     (activeTab === "cliente" && isClientPanelEnabled) ? (
-                        Object.entries(PERMISSION_GROUPS)
-                           .filter(([_, g]) => g.tagg === activeTab)
-                           .map(([groupId, group]) => {
+                        (activeTab === "cliente" && isClientPanelEnabled) ? (
+                        availablePermissions
+                           .filter((g) => g.tagg === activeTab)
+                           .map((group) => {
                               const ids = group.permissions.map((p) => p.id);
                               const isAllSelected = ids.every((id) => formData.permissions.includes(id));
 
                               return (
                                  <div
-                                    key={groupId}
+                                    key={group.key || group.label}
                                     className="rounded-xl border border-border bg-muted/10 overflow-hidden"
                                  >
                                     <div

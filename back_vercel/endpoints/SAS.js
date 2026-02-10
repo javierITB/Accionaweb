@@ -22,7 +22,22 @@ router.get("/companies", async (req, res) => {
         const companies = await db.collection("config_empresas").find().toArray();
         console.log(`[SAS] Found ${companies.length} companies`);
 
-        res.json(companies);
+        // Enriquecer con el tamaño de la DB
+        const companiesWithStats = await Promise.all(companies.map(async (company) => {
+            if (company.dbName) {
+                try {
+                    const companyDb = req.mongoClient.db(company.dbName);
+                    const stats = await companyDb.stats();
+                    return { ...company, sizeOnDisk: stats.storageSize || 0 }; // storageSize es más preciso para el espacio ocupado
+                } catch (e) {
+                    console.error(`Error fetching stats for ${company.dbName}:`, e.message);
+                    return { ...company, sizeOnDisk: 0 };
+                }
+            }
+            return { ...company, sizeOnDisk: 0 };
+        }));
+
+        res.json(companiesWithStats);
     } catch (error) {
         console.error("[SAS] Error al obtener empresas:", error);
         res.status(500).json({ error: "Error al obtener empresas", details: error.message });
@@ -108,7 +123,13 @@ router.post("/companies", async (req, res) => {
         });
 
         if (rolesConfig.length > 0) {
-            await newDb.collection("config_roles").insertMany(rolesConfig);
+            // Verificar si ya existen roles configurados para no sobrescribir/duplicar en DBs existentes
+            const existingConfigCount = await newDb.collection("config_roles").countDocuments();
+            if (existingConfigCount === 0) {
+                await newDb.collection("config_roles").insertMany(rolesConfig);
+            } else {
+                console.log(`[SAS] config_roles already has ${existingConfigCount} entries. Skipping initialization.`);
+            }
         }
 
         console.log(`[SAS] Company created successfully: ${name}`);
@@ -232,43 +253,6 @@ router.delete("/companies/:id", async (req, res) => {
     } catch (error) {
         console.error("Error al eliminar empresa:", error);
         res.status(500).json({ error: "Error al eliminar empresa" });
-    }
-});
-
-
-// POST /fix-roles: Endpoint utilitario para arreglar roles de DB existente (ej: domiciliovirtual)
-router.post("/fix-roles", async (req, res) => {
-    try {
-        const { dbName } = req.body;
-        if (!dbName) return res.status(400).json({ error: "dbName requerido" });
-
-        const targetDb = req.mongoClient.db(dbName);
-
-        // Limpiamos config_roles actual
-        await targetDb.collection("config_roles").deleteMany({});
-
-        // Regeneramos con TODOS los permisos (o lógica específica)
-        // Para domiciliovirtual, asumiremos que tiene TODAS las features activas para que funcione todo.
-        const rolesConfig = [];
-
-        Object.entries(PERMISSION_GROUPS).forEach(([key, group]) => {
-            rolesConfig.push({
-                key: key,
-                label: group.label,
-                tagg: group.tagg,
-                permissions: group.permissions
-            });
-        });
-
-        if (rolesConfig.length > 0) {
-            await targetDb.collection("config_roles").insertMany(rolesConfig);
-        }
-
-        res.json({ message: `Roles regenerados para ${dbName}`, count: rolesConfig.length });
-
-    } catch (error) {
-        console.error("Error fixing roles:", error);
-        res.status(500).json({ error: "Error fixing roles" });
     }
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, Database, Users, Trash2, CheckCircle2, Server, Loader2, Play, HardDrive } from "lucide-react";
+import { Search, Database, Users, Trash2, CheckCircle2, Loader2, Play, HardDrive } from "lucide-react";
 
 // Helpers y componentes de UI
 import { apiFetch, API_BASE_URL } from "../../utils/api";
@@ -25,8 +25,10 @@ const EmpresasView = ({ userPermissions = {} }) => {
 
    const permisos = useMemo(
       () => ({
-         create_empresas: userPermissions.includes("create_gestor_roles") || userPermissions.includes("create_empresas") || true, // fallback temporal
-         delete_empresas: userPermissions.includes("delete_gestor_roles") || userPermissions.includes("delete_empresas") || true,
+         create_empresas: userPermissions.includes("create_gestor_empresas"),
+         canAccess: userPermissions.includes("view_gestor_empresas"),
+         edit_empresas: userPermissions.includes("edit_gestor_empresas"),
+         delete_empresas: userPermissions.includes("delete_gestor_empresas"),
       }),
       [userPermissions],
    );
@@ -102,26 +104,7 @@ const EmpresasView = ({ userPermissions = {} }) => {
       }
    };
 
-   const handleFixRoles = async (company) => {
-      if (!confirm(`¿Regenerar roles y permisos para ${company.name}? Esto sobrescribirá la colección config_roles.`)) return;
 
-      try {
-         const res = await apiFetch(`${API_BASE_URL}/sas/fix-roles`, {
-            method: "POST",
-            body: JSON.stringify({ dbName: company.dbName || company.name }), // Fallback si dbName no está presente
-         });
-
-         if (res.ok) {
-            const data = await res.json();
-            alert(`Éxito: ${data.message}`);
-         } else {
-            alert("Error al actualizar roles");
-         }
-      } catch (e) {
-         console.error(e);
-         alert("Error de conexión");
-      }
-   };
 
    const formatBytes = (bytes, decimals = 2) => {
       if (!+bytes) return '0 Bytes';
@@ -212,13 +195,7 @@ const EmpresasView = ({ userPermissions = {} }) => {
                               className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col"
                            >
                               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                                 <button
-                                    onClick={() => handleFixRoles(company)}
-                                    className="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
-                                    title="Regenerar Roles y Permisos"
-                                 >
-                                    <Server size={16} />
-                                 </button>
+
 
                                  {/* Botón de Editar */}
                                  {permisos.create_empresas && (

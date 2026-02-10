@@ -40,16 +40,28 @@ const RolesView = ({ userPermissions = {} }) => {
     );
 
     // --- CARGA DE DATOS DESDE API ---
+    const [configRoles, setConfigRoles] = useState([]);
+
     const fetchRoles = async () => {
         try {
             setIsLoading(true);
-            const res = await apiFetch(`${API_BASE_URL}/roles`);
-            if (res.ok) {
-                const data = await res.json();
+            const [rolesRes, configRes] = await Promise.all([
+                apiFetch(`${API_BASE_URL}/roles`),
+                apiFetch(`${API_BASE_URL}/roles/config`)
+            ]);
+
+            if (rolesRes.ok) {
+                const data = await rolesRes.json();
                 setRoles(data);
             }
+
+            if (configRes.ok) {
+                const configData = await configRes.json();
+                setConfigRoles(configData);
+            }
+
         } catch (error) {
-            console.error("Error cargando roles:", error);
+            console.error("Error cargando roles o configuración:", error);
         } finally {
             setIsLoading(false);
         }
@@ -316,10 +328,12 @@ const RolesView = ({ userPermissions = {} }) => {
                     }}
                     role={editingRole}
                     permisos={permisos}
+                    availablePermissions={configRoles}
                 />
             )}
         </div>
     );
 };
+
 
 export default RolesView;
