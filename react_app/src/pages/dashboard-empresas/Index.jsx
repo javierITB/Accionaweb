@@ -198,7 +198,7 @@ const EmpresasView = ({ userPermissions = {} }) => {
 
 
                                  {/* Botón de Editar */}
-                                 {permisos.create_empresas && (
+                                 {permisos.create_empresas && company.dbName !== 'formsdb' && !company.isSystem && (
                                     <button
                                        onClick={() => {
                                           setEditingCompany(company);
@@ -211,7 +211,7 @@ const EmpresasView = ({ userPermissions = {} }) => {
                                     </button>
                                  )}
 
-                                 {permisos.delete_empresas && (
+                                 {permisos.delete_empresas && company.dbName !== 'formsdb' && !company.isSystem && (
                                     <button
                                        onClick={() => handleDelete(company)}
                                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"

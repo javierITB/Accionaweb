@@ -34,11 +34,18 @@ export const MENU_STRUCTURE = [
       children: [
          { name: "Usuarios", path: "/users", icon: "User", permission: "view_usuarios" },
          { name: "Empresas", path: "/empresas", icon: "Building2", permission: "view_empresas" },
-         { name: "Gestor Empresas", path: "/gestor-empresas", icon: "Building2", permission: "view_gestor_empresas" },
          { name: "Gestor de Roles", path: "/gestor-roles", icon: "Users", permission: "view_gestor_roles" },
          { name: "Gestor Notificaciones", path: "/config-notificaciones", icon: "Bell", permission: "view_gestor_notificaciones" },
          { name: "Registro de cambios", path: "/registro-cambios", icon: "FileText", permission: "view_registro_cambios" },
          { name: "Registro de ingresos", path: "/registro-ingresos", icon: "LogIn", permission: "view_registro_ingresos" },
+      ]
+   },
+   {
+      name: "Planes y Servicios",
+      icon: "CircleDollarSign",
+      isAccordion: true,
+      children: [
+         { name: "Gestor Empresas", path: "/gestor-empresas", icon: "Building2", permission: "view_gestor_empresas" },
       ]
    },
 ];
