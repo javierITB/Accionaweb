@@ -25,8 +25,9 @@ const EmpresasView = ({ userPermissions = {} }) => {
 
    const permisos = useMemo(
       () => ({
-         create_empresas: userPermissions.includes("create_gestor_roles") || userPermissions.includes("create_empresas") || true, // fallback temporal
-         delete_empresas: userPermissions.includes("delete_gestor_roles") || userPermissions.includes("delete_empresas") || true,
+         create_empresas: userPermissions.includes("create_gestor_empresas"),
+         canAccess: userPermissions.includes("view_gestor_empresas"),
+         edit_empresas: userPermissions.includes("edit_gestor_empresas"),
       }),
       [userPermissions],
    );
