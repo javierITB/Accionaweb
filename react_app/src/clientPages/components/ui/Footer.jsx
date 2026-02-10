@@ -1,23 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import Icon from '@/components/AppIcon';
-import { LOGO_TENANT } from "@/utils/api";
-
+const logoPath = "public/logos/acciona/logo-header.png";
 export default function Footer() {
-  // --- LÓGICA DINÁMICA DEL LOGO ---
-  const [logoSrc, setLogoSrc] = useState(`/logos/${LOGO_TENANT}/logo-header.png`);
-
-  useEffect(() => {
-    setLogoSrc(`/logos/${LOGO_TENANT}/logo-header.png`);
-  }, [LOGO_TENANT]);
-
   return (
               <div className="bg-card rounded-xl shadow-brand border border-border p-4 lg:p-6 mt-6 lg:mt-8 w-full">
             <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
               <div className="flex items-center space-x-3 lg:space-x-4">
                   <div className="flex items-center justify-center w-8 h-8 lg:w-10 lg:h-10 rounded-lg overflow-hidden">
             <img
-              src={logoSrc}
-              alt={`Logo ${LOGO_TENANT}`}
+              src={logoPath}
+              alt="Logo Acciona"
               className="max-w-full max-h-full"
               style={{ objectFit: 'contain' }}
               onError={(e) => {
@@ -29,9 +21,7 @@ export default function Footer() {
           </div>
                 
                 <div>
-                  <h4 className="font-semibold text-foreground text-sm lg:text-base capitalize">
-                    {LOGO_TENANT === 'api' ? 'Acciona' : LOGO_TENANT} HR Portal
-                  </h4>
+                  <h4 className="font-semibold text-foreground text-sm lg:text-base">Portal Acciona</h4>
                   <p className="text-xs lg:text-sm text-muted-foreground">
                     Tu plataforma integral de recursos humanos
                   </p>
@@ -54,9 +44,9 @@ export default function Footer() {
             </div>
             <div className="mt-3 lg:mt-4 pt-3 lg:pt-4 border-t border-border text-center">
               <p className="text-xs text-muted-foreground">
-                © {new Date()?.getFullYear()} <span className="capitalize">{LOGO_TENANT === 'api' ? 'Acciona' : LOGO_TENANT}</span>. Todos los derechos reservados. 
+                © {new Date()?.getFullYear()} Acciona. Todos los derechos reservados. 
                 <br className="sm:hidden" />
-                Portal desarrollado para mejorar tu experiencia laboral.
+                Portal desarrollado por Acciona Centro de Negocios Spa.
               </p>
             </div>
           </div>

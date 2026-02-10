@@ -186,7 +186,7 @@ const toggleAccordion = (name) => {
                   {isTextVisible && (
                      <div className="flex flex-col overflow-hidden">
                         <h1 className="text-lg font-semibold text-foreground leading-tight truncate capitalize">
-                           {LOGO_TENANT === 'api' ? 'NexoDesk Acciona' : LOGO_TENANT}
+                           {LOGO_TENANT === 'api' ? 'Solunex Acciona' : `Solunex ${LOGO_TENANT}`}
                         </h1>
                         <span className="text-[10px] text-muted-foreground font-mono truncate">Panel de administración</span>
                      </div>
