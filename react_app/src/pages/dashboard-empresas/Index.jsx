@@ -83,15 +83,15 @@ const EmpresasView = ({ userPermissions = {} }) => {
          company.name?.toLowerCase().includes(searchQuery.toLowerCase())
    );
 
-   const handleDelete = async (companyName) => {
-      if (window.confirm(`¿Estás seguro de ELIMINAR la empresa (Base de Datos) "${companyName}"? \n\n⚠️ ESTA ACCIÓN BORRA TODOS LOS DATOS Y NO SE PUEDE DESHACER.`)) {
+   const handleDelete = async (company) => {
+      if (window.confirm(`¿Estás seguro de ELIMINAR la empresa (Base de Datos) "${company.name}"? \n\n ESTA ACCIÓN BORRA TODOS LOS DATOS Y NO SE PUEDE DESHACER.`)) {
          try {
-            const res = await apiFetch(`${API_BASE_URL}/sas/companies/${companyName}`, {
+            const res = await apiFetch(`${API_BASE_URL}/sas/companies/${company._id}`, {
                method: "DELETE",
             });
 
             if (res.ok) {
-               setCompanies((prev) => prev.filter((c) => c.name !== companyName));
+               setCompanies((prev) => prev.filter((c) => c._id !== company._id));
             } else {
                const err = await res.json();
                alert(err.error || "Error al eliminar la empresa");
@@ -99,6 +99,27 @@ const EmpresasView = ({ userPermissions = {} }) => {
          } catch (error) {
             alert("Error de conexión con el servidor");
          }
+      }
+   };
+
+   const handleFixRoles = async (company) => {
+      if (!confirm(`¿Regenerar roles y permisos para ${company.name}? Esto sobrescribirá la colección config_roles.`)) return;
+
+      try {
+         const res = await apiFetch(`${API_BASE_URL}/sas/fix-roles`, {
+            method: "POST",
+            body: JSON.stringify({ dbName: company.dbName || company.name }), // Fallback si dbName no está presente
+         });
+
+         if (res.ok) {
+            const data = await res.json();
+            alert(`Éxito: ${data.message}`);
+         } else {
+            alert("Error al actualizar roles");
+         }
+      } catch (e) {
+         console.error(e);
+         alert("Error de conexión");
       }
    };
 
@@ -187,13 +208,20 @@ const EmpresasView = ({ userPermissions = {} }) => {
                      {filteredCompanies.map((company) => {
                         return (
                            <div
-                              key={company.name}
+                              key={company._id || company.name}
                               className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col"
                            >
                               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                                 <button
+                                    onClick={() => handleFixRoles(company)}
+                                    className="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+                                    title="Regenerar Roles y Permisos"
+                                 >
+                                    <Server size={16} />
+                                 </button>
                                  {permisos.delete_empresas && (
                                     <button
-                                       onClick={() => handleDelete(company.name)}
+                                       onClick={() => handleDelete(company)}
                                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                                        title="Eliminar Base de Datos"
                                     >
@@ -213,9 +241,14 @@ const EmpresasView = ({ userPermissions = {} }) => {
                               <h3 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2 break-all">
                                  {company.name}
                               </h3>
+                              {company.dbName && (
+                                 <p className="text-xs text-muted-foreground mb-2 font-mono">
+                                    {company.dbName}
+                                 </p>
+                              )}
                               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                                  <HardDrive size={14} />
-                                 <span>{formatBytes(company.sizeOnDisk)}</span>
+                                 <span>{formatBytes(company.sizeOnDisk || 0)}</span>
                               </div>
 
                               <div className="mt-auto space-y-4">
