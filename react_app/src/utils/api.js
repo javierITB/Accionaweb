@@ -1,5 +1,5 @@
 /**
- * Para poder autenticas las api requests
+ * Para poder autenticar las api requests
  */
 
 // VARIABLE DE CONTROL: Cámbiala manualmente para testear logos localmente.
@@ -37,26 +37,22 @@ const getAuthHeaders = () => {
 const tenant = getSubdomain();
 const BASE_DOMAIN = "https://back-desa.vercel.app";
 
-// Exportamos el tenant por si lo necesitas en otros componentes (como el login)
+// 1. Identificador real para la API y Textos (en local será "api")
 export const CURRENT_TENANT = tenant;
 
-// --- LÓGICA PARA ELEGIR CARPETA DE LOGOS EN EL FRONT ---
-const aliasAcciona = ["solunex", "infoacciona", "acciona", "infodesa"];
-
-// 1. Decidimos qué nombre evaluar (el temporal o el de la URL)
-const nombreAEvaluar = (domain_temporal && domain_temporal !== "") ? domain_temporal : tenant;
-
-// 2. Evaluamos si ese nombre es un alias de acciona para elegir la carpeta correcta
-export const LOGO_TENANT = aliasAcciona.includes(nombreAEvaluar.toLowerCase()) 
-    ? "acciona" 
-    : nombreAEvaluar;
-// -------------------------------------------------------
-
+// 2. Base de la URL para las peticiones al backend
 export const API_BASE_URL = `${BASE_DOMAIN}/${tenant}`;
 
+// --- LÓGICA DE MARCA (LOGOS) ---
+// Agregamos "api" a los alias para que en localhost cargue la carpeta de acciona
+const aliasAcciona = ["solunex", "infoacciona", "acciona", "infodesa", "api"];
+
+export const LOGO_TENANT = aliasAcciona.includes(tenant.toLowerCase()) 
+    ? "acciona" 
+    : tenant;
+// -------------------------------
+
 export const apiFetch = async (endpoint, options = {}) => {
-    // Si el endpoint ya es una URL completa, la usamos. 
-    // Si no, le anteponemos nuestra BASE_URL dinámica.
     const fullUrl = endpoint.startsWith('http')
         ? endpoint
         : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
@@ -76,7 +72,7 @@ export const apiFetch = async (endpoint, options = {}) => {
     };
 
     try {
-        const response = await fetch(fullUrl, config); // Usamos fullUrl aquí
+        const response = await fetch(fullUrl, config);
 
         if (response.status === 401) {
             console.warn("Unauthorized access - Redirecting...");
