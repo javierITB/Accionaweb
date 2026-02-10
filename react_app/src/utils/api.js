@@ -10,7 +10,7 @@ const getSubdomain = () => {
     // Si tiene más de 2 partes (subdominio.dominio.ext), tomamos la primera
     // Si es localhost o una IP, devolvemos "api" por defecto para desarrollo
     if (parts.length > 2) {
-        return parts[0]; 
+        return parts[0];
     }
 
     return "api"; // Fallback para solunex.cl o localhost
@@ -39,10 +39,15 @@ export const API_BASE_URL = `${BASE_DOMAIN}/${tenant}`;
 
 export const apiFetch = async (endpoint, options = {}) => {
     // Si el endpoint ya es una URL completa, la usamos. 
-    // Si no, le anteponemos nuestra BASE_URL dinámica.
-    const fullUrl = endpoint.startsWith('http') 
-        ? endpoint 
-        : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+    // Si es una ruta SAS (Sistema de Administración), no usamos el tenant prefix
+    let fullUrl;
+    if (endpoint.startsWith('http')) {
+        fullUrl = endpoint;
+    } else if (endpoint.startsWith('/sas')) {
+        fullUrl = `${BASE_DOMAIN}${endpoint}`;
+    } else {
+        fullUrl = `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+    }
 
     const headers = {
         ...getAuthHeaders(),
