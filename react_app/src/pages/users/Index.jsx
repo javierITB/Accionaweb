@@ -5,6 +5,7 @@ import Sidebar from "../../components/ui/Sidebar";
 import RegisterForm from "./components/RegisterForm";
 import Icon from "../../components/AppIcon";
 import Button from "../../components/ui/Button";
+import { Navigate } from "react-router-dom";
 
 const FormReg = ({ userPermissions = [] }) => {
    // --- LÓGICA DE PERMISOS BASADA EN PROPS ---
@@ -387,6 +388,8 @@ const FormReg = ({ userPermissions = [] }) => {
 
    const mainMarginClass = isMobileScreen ? "ml-0" : isDesktopOpen ? "ml-64" : "ml-16";
 
+   const canAccess = userPermissions.includes("view_usuarios");
+   if (!canAccess) return <Navigate to="/panel" replace />;
    return (
       <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
          <Header />

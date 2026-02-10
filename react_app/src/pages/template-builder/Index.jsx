@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import TemplateList from './components/FormProperties';
 import DocumentTemplateEditor from './components/TemplateBuilder';
 import { API_BASE_URL, apiFetch } from '../../utils/api';
+import { Navigate } from 'react-router-dom';
 
 const FormBuilder = ({ userPermissions = [] }) => {
 
@@ -173,6 +174,9 @@ const FormBuilder = ({ userPermissions = [] }) => {
       fetchForm();
     }
   }, []);
+
+  const canAccess = userPermissions.includes('view_plantillas');
+  if (!canAccess) return <Navigate to="/panel" replace />;
 
   const updateFormData = (field, value) => {
     if (field === 'title' && value.length > 50) {

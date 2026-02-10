@@ -4,7 +4,7 @@ import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import { apiFetch, API_BASE_URL } from '../../utils/api';
-
+import { Navigate } from 'react-router-dom';
 const AdminNotificationManager = ({ userPermissions = [] }) => {
     // Sidebar State
     const [isDesktopOpen, setIsDesktopOpen] = useState(true);
@@ -115,6 +115,9 @@ const AdminNotificationManager = ({ userPermissions = [] }) => {
     useEffect(() => {
         fetchNotifications();
     }, [fetchNotifications]);
+
+    const canAccess = userPermissions.includes('view_gestor_notificaciones');
+    if (!canAccess) return <Navigate to="/panel" replace />;
 
     // Handlers
     const handleOpenGroup = (group) => {

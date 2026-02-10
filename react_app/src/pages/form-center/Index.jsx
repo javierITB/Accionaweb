@@ -8,6 +8,7 @@ import CategoryFilter from "./components/CategoryFilter";
 import SearchBar from "./components/SearchBar";
 import { API_BASE_URL, apiFetch } from "../../utils/api";
 import { useMemo } from "react";
+import { Navigate } from "react-router-dom";
 
 const FormCenter = ({ userPermissions = {} }) => {
    const [searchQuery, setSearchQuery] = useState("");
@@ -171,6 +172,10 @@ const FormCenter = ({ userPermissions = {} }) => {
       setFilteredForms(filtered);
    }, [filters.isRecent, filters.priority, filters.documentsRequired, allForms]); // REMOVED searchQuery, activeCategory etc.
 
+
+   const canAccess = userPermissions.includes("view_formularios");
+   if (!canAccess) return <Navigate to="/panel" replace />;
+   
    const categories = [
       { id: "all", name: "Todos", count: stats.total || 0 },
       { id: "Remuneraciones", name: "Remuneraciones", count: stats.section["Remuneraciones"] || 0 },

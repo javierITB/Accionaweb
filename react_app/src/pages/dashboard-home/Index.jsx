@@ -7,6 +7,7 @@ import { API_BASE_URL, apiFetch } from "../../utils/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import SummaryCard from "./components/SummaryCard";
 import { useMemo } from "react";
+import { Navigate } from "react-router-dom";
 
 const DashboardHome = ({ userPermissions = {} }) => {
    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -223,6 +224,9 @@ const DashboardHome = ({ userPermissions = {} }) => {
          setMetrics(processedMetrics);
       }
    }, [processedMetrics]);
+
+   const canAccess = userPermissions.includes("view_rendimiento");
+   if (!canAccess) return <Navigate to="/panel" replace />;
 
    // No ordenar, respetar orden cronológico generado
    const performanceData = metrics?.weeklyPerformance || [];

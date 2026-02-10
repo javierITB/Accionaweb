@@ -6,6 +6,7 @@ import Sidebar from "../../components/ui/Sidebar";
 import AnuncioCreator from "./components/AnuncioCreator";
 import Button from "../../components/ui/Button";
 import "./anuncios.css";
+import { Navigate } from "react-router-dom";
 
 const AnunciosPage = ({ userPermissions = {} }) => {
    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -38,6 +39,9 @@ const AnunciosPage = ({ userPermissions = {} }) => {
       handleResize();
       return () => window.removeEventListener("resize", handleResize);
    }, []);
+
+   const canAccess = userPermissions.includes("view_anuncios");
+   if (!canAccess) return <Navigate to="/panel" replace />;
 
    const toggleSidebar = () => {
       if (isMobileScreen) {

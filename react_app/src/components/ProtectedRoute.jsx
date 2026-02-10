@@ -58,7 +58,7 @@ export default function ProtectedRoute({ children }) {
 
             setUserPermissions(permissions);
 
-            const hasAccess = permissions.includes("view_panel_admin") || roleData.name === "Admin";
+            const hasAccess = permissions.includes("view_panel_admin")
 
             if (hasAccess) {
                setIsAuth(true);
