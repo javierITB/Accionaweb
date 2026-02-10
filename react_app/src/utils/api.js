@@ -4,7 +4,7 @@
 
 // VARIABLE DE CONTROL: Cámbiala manualmente para testear logos localmente.
 // En producción déjala vacía "" para que el front use el subdominio.
-const domain_temporal = "";
+const domain_temporal = "infodesa";
 
 const getSubdomain = () => {
     if (typeof window === 'undefined') return "api";
@@ -41,7 +41,7 @@ const BASE_DOMAIN = "https://back-desa.vercel.app";
 export const CURRENT_TENANT = tenant;
 
 // --- LÓGICA PARA ELEGIR CARPETA DE LOGOS EN EL FRONT ---
-const aliasAcciona = ["solunex", "infoacciona", "aacciona, infodesa"];
+const aliasAcciona = ["solunex", "infoacciona", "acciona", "infodesa"];
 
 // 1. Decidimos qué nombre evaluar (el temporal o el de la URL)
 const nombreAEvaluar = (domain_temporal && domain_temporal !== "") ? domain_temporal : tenant;
