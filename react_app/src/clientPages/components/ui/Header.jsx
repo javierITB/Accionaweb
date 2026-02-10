@@ -180,7 +180,7 @@ const Header = ({ className = "" }) => {
 
                <div className="flex flex-col">
                   <h1 className="text-base lg:text-lg font-semibold text-foreground leading-tight group-hover:text-primary transition-colors capitalize">
-                     Portal {LOGO_TENANT === 'api' ? 'Acciona' : LOGO_TENANT}
+                      {LOGO_TENANT === 'api' ? 'Solunex acciona' :  `Solunex ${LOGO_TENANT}`}
                   </h1>
                   <span className="text-[10px] sm:text-xs text-amber-900/80 font-mono block leading-tight">
                      plataforma de asistencia a clientes

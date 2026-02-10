@@ -4,7 +4,7 @@
 
 // VARIABLE DE CONTROL: Cámbiala manualmente para testear logos localmente.
 // En producción déjala vacía "" para que el front use el subdominio.
-const domain_temporal = "infodesa";
+const domain_temporal = "";
 
 const getSubdomain = () => {
     if (typeof window === 'undefined') return "api";
