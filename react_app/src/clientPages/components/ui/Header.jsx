@@ -5,16 +5,25 @@ import Icon from "../AppIcon";
 import Button from "./Button";
 // 💡 Ruta ajustada: Asume que NotificationsCard es un componente hermano.
 import NotificationsCard from "../../../components/ui/NotificationsCard";
-import { API_BASE_URL } from "../../../utils/api";
-
-// 💡 Constante para usar la ruta del logo en JSX
-const logoPath = "/logo2.png";
+import { API_BASE_URL, LOGO_TENANT } from "../../../utils/api";
 
 const Header = ({ className = "" }) => {
    const [isMenuOpen, setIsMenuOpen] = useState(false);
    const [isNotiOpen, setIsNotiOpen] = useState(false);
    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
    const [unreadCount, setUnreadCount] = useState(0);
+
+   // --- LÓGICA DINÁMICA DEL LOGO ---
+   const [logoSrc, setLogoSrc] = useState(`/logos/${LOGO_TENANT}/logo-header.png`);
+
+   useEffect(() => {
+      setLogoSrc(`/logos/${LOGO_TENANT}/logo-header.png`);
+   }, [LOGO_TENANT]);
+
+   const handleImageError = (e) => {
+      e.currentTarget.onerror = null;
+      e.currentTarget.src = "/placeholder-logo.png";
+   };
 
    // NUEVO ESTADO: Controla la agitación de la campana
    const [shouldShake, setShouldShake] = useState(false);
@@ -160,21 +169,18 @@ const Header = ({ className = "" }) => {
             >
                <div className="flex items-center justify-center w-8 h-8 lg:w-10 lg:h-10 rounded-lg overflow-hidden">
                   <img
-                     src={logoPath}
-                     alt="Logo Acciona"
+                     src={logoSrc}
+                     alt={`Logo ${LOGO_TENANT}`}
                      className="max-w-full max-h-full"
                      style={{ objectFit: "contain" }}
-                     onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = "/placeholder-logo.png";
-                     }}
+                     onError={handleImageError}
                      loading="lazy"
                   />
                </div>
 
                <div className="flex flex-col">
-                  <h1 className="text-base lg:text-lg font-semibold text-foreground leading-tight group-hover:text-primary transition-colors">
-                     Portal Acciona
+                  <h1 className="text-base lg:text-lg font-semibold text-foreground leading-tight group-hover:text-primary transition-colors capitalize">
+                     Portal {LOGO_TENANT === 'api' ? 'Acciona' : LOGO_TENANT}
                   </h1>
                   <span className="text-[10px] sm:text-xs text-amber-900/80 font-mono block leading-tight">
                      plataforma de asistencia a clientes

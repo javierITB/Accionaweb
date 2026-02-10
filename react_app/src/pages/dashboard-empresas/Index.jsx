@@ -219,6 +219,21 @@ const EmpresasView = ({ userPermissions = {} }) => {
                                  >
                                     <Server size={16} />
                                  </button>
+
+                                 {/* Botón de Editar */}
+                                 {permisos.create_empresas && (
+                                    <button
+                                       onClick={() => {
+                                          setEditingCompany(company);
+                                          setIsModalOpen(true);
+                                       }}
+                                       className="p-1.5 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+                                       title="Editar Permisos"
+                                    >
+                                       <Database size={16} />
+                                    </button>
+                                 )}
+
                                  {permisos.delete_empresas && (
                                     <button
                                        onClick={() => handleDelete(company)}
@@ -291,8 +306,9 @@ const EmpresasView = ({ userPermissions = {} }) => {
                   setEditingCompany(null);
                }}
                onSuccess={() => {
-                  fetchCompanies(); // Recargar data y mantener modal abierto
+                  fetchCompanies(); // Recargar data
                   setIsModalOpen(false);
+                  setEditingCompany(null);
                }}
                company={editingCompany}
             />
