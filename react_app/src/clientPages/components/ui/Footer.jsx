@@ -1,6 +1,6 @@
 import React from 'react'
 import Icon from '@/components/AppIcon';
-const logoPath = "public/logos/acciona/logo-header.png";
+import logoPath from "../../../../public/logos/acciona/logo-header.png"
 export default function Footer() {
   return (
               <div className="bg-card rounded-xl shadow-brand border border-border p-4 lg:p-6 mt-6 lg:mt-8 w-full">
