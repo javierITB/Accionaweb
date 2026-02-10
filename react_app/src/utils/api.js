@@ -1,6 +1,11 @@
 /**
  * Para poder autenticas las api requests
  */
+
+// VARIABLE DE CONTROL: Cámbiala manualmente para testear logos localmente.
+// En producción déjala vacía "" para que el front use el subdominio.
+const domain_temporal = "";
+
 const getSubdomain = () => {
     if (typeof window === 'undefined') return "api";
 
@@ -10,7 +15,7 @@ const getSubdomain = () => {
     // Si tiene más de 2 partes (subdominio.dominio.ext), tomamos la primera
     // Si es localhost o una IP, devolvemos "api" por defecto para desarrollo
     if (parts.length > 2) {
-        return parts[0];
+        return parts[0]; 
     }
 
     return "api"; // Fallback para solunex.cl o localhost
@@ -34,6 +39,18 @@ const BASE_DOMAIN = "https://back-desa.vercel.app";
 
 // Exportamos el tenant por si lo necesitas en otros componentes (como el login)
 export const CURRENT_TENANT = tenant;
+
+// --- LÓGICA PARA ELEGIR CARPETA DE LOGOS EN EL FRONT ---
+const aliasAcciona = ["solunex", "infoacciona", "aacciona, infodesa"];
+
+// 1. Decidimos qué nombre evaluar (el temporal o el de la URL)
+const nombreAEvaluar = (domain_temporal && domain_temporal !== "") ? domain_temporal : tenant;
+
+// 2. Evaluamos si ese nombre es un alias de acciona para elegir la carpeta correcta
+export const LOGO_TENANT = aliasAcciona.includes(nombreAEvaluar.toLowerCase()) 
+    ? "acciona" 
+    : nombreAEvaluar;
+// -------------------------------------------------------
 
 export const API_BASE_URL = `${BASE_DOMAIN}/${tenant}`;
 
