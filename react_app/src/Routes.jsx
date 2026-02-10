@@ -13,7 +13,7 @@ import TicketBuilder from './pages/ticket-builder/Index.jsx';
 import FormBuilder from './pages/form-builder/Index.jsx';
 import TemplateBuilder from './pages/template-builder/Index.jsx';
 import Login from './pages/login/Index.jsx';
-
+import PanelEntry from './components/PanelEntry.jsx';
 import Recuperacion from './pages/login/Recuperacion.jsx';
 import SupportPortal from './pages/support-portal/Index.jsx';
 import DashboardHome from './pages/dashboard-home/Index.jsx';
@@ -58,8 +58,10 @@ const Routes = () => {
           <Route path="/perfil" element={<ProtectedClient><Profile /></ProtectedClient>} />
           <Route path="/soporte" element={<SupportPortal />} />
           <Route path="/recuperacion" element={<Recuperacion />} />
+
           {/* Rutas protegidas */}
 
+          <Route path="/panel" element={ <ProtectedRoute> <PanelEntry /> </ProtectedRoute> } />
           <Route path="/form-builder" element={<ProtectedRoute><FormBuilder /></ProtectedRoute>} />
           <Route path="/template-builder" element={<ProtectedRoute><TemplateBuilder /></ProtectedRoute>} />
           <Route path="/form-center" element={<ProtectedRoute><FormCenter /></ProtectedRoute>} />

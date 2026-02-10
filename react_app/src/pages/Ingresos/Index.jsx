@@ -4,15 +4,9 @@ import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import { Navigate } from 'react-router-dom';
 
-const createDataURL = (logoObj) => {
-  if (logoObj && logoObj.fileData && logoObj.mimeType) {
-    return `data:${logoObj.mimeType};base64,${logoObj.fileData}`;
-  }
-  return null;
-};
-
-const CompanyReg = () => {
+const CompanyReg = ({userPermissions = {}}) => {
   const [Logins, setLogins] = useState([]);
   const [formData, setFormData] = useState({
     nombre: '',
@@ -23,8 +17,8 @@ const CompanyReg = () => {
     logo: null,
     logoUrl: null
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('register');
+  // const [isLoading, setIsLoading] = useState(false);
+  // const [activeTab, setActiveTab] = useState('register');
 
   // ESTADOS DEL SIDEBAR - ACTUALIZADOS
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
@@ -77,6 +71,9 @@ const CompanyReg = () => {
   useEffect(() => {
     fetchLogins();
   }, []);
+
+  const canAccess = userPermissions.includes('view_registro_ingresos');
+  if (!canAccess) return <Navigate to="/panel" replace />;
 
   const getTabContent = () => {
     return (

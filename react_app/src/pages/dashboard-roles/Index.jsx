@@ -6,8 +6,8 @@ import { apiFetch, API_BASE_URL } from "../../utils/api";
 import Header from "../../components/ui/Header";
 import Sidebar from "../../components/ui/Sidebar";
 import Button from "../../components/ui/Button";
-import Icon from "../../components/AppIcon";
 import { RoleModal } from "./components/RoleModal";
+import { Navigate } from "react-router-dom";
 
 const RolesView = ({ userPermissions = {} }) => {
     // --- ESTADOS DE DATOS ---
@@ -71,6 +71,9 @@ const RolesView = ({ userPermissions = {} }) => {
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
     }, []);
+
+    const canAccess = userPermissions.includes("view_gestor_roles");
+    if (!canAccess) return <Navigate to="/panel" replace />;
 
     const toggleSidebar = () => {
         if (isMobileScreen) setIsMobileOpen(!isMobileOpen);

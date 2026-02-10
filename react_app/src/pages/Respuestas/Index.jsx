@@ -9,8 +9,12 @@ import FilterPanel from './components/FilterPanel';
 import MessageModal from './components/MessageModal';
 import RequestDetails from './components/RequestDetails';
 import StatsOverview from './components/StatsOverview';
+import { Navigate } from 'react-router-dom';
 
-const RequestTracking = () => {
+const RequestTracking = ({ userPermissions = {} }) => {
+
+
+
   const urlParams = new URLSearchParams(window.location.search);
   const formId = urlParams?.get('id');
 
@@ -53,7 +57,7 @@ const RequestTracking = () => {
   });
 
   // --- PERMISOS DE USUARIO ---
-  const [userPermissions, setUserPermissions] = useState({
+  const [permissions, setPermissions] = useState({
     view: false,
     delete: false,
     viewDetails: false,
@@ -61,6 +65,9 @@ const RequestTracking = () => {
     edit: false, // General edit (files, etc)
     regenerate: false
   });
+
+  const canAccess = userPermissions.includes('view_solicitudes_clientes');
+  if (!canAccess) return <Navigate to="/panel" replace />;
 
   const checkPermissions = async () => {
     try {
@@ -74,8 +81,10 @@ const RequestTracking = () => {
         perms = roleData.permissions || [];
         hasAll = perms.includes('all');
 
+        
 
-        setUserPermissions({
+
+        setPermissions({
           // Vistas Base
           view: hasAll || perms.includes('view_solicitudes_clientes'),
           delete: hasAll || perms.includes('delete_solicitudes_clientes'),
@@ -354,7 +363,7 @@ const RequestTracking = () => {
   };
 
   const handleRemove = async (request) => {
-    if (!userPermissions.delete) return;
+    if (!permissions.delete) return;
     if (!window.confirm("¿Seguro que deseas eliminar esta solicitud?")) return;
     try {
       const res = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`, { method: 'DELETE' });
@@ -498,7 +507,7 @@ const RequestTracking = () => {
                   onRemove={handleRemove}
                   onViewDetails={(req) => { setSelectedRequest(req); setShowRequestDetails(true); }}
                   onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }}
-                  userPermissions={userPermissions}
+                  permissions={permissions}
                 />
               ))
             ) : (
@@ -553,14 +562,14 @@ const RequestTracking = () => {
         </div>
       </main>
 
-      <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} request={messageRequest} formId={formId} onSendMessage={console.log} userPermissions={userPermissions} />
+      <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} request={messageRequest} formId={formId} onSendMessage={console.log} permissions={permissions} />
       <RequestDetails
         request={selectedRequest}
         isVisible={showRequestDetails}
         onClose={handleCloseRequestDetails}
         onUpdate={updateRequest}
         onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }}
-        userPermissions={userPermissions}
+        permissions={permissions}
       />
     </div>
   );

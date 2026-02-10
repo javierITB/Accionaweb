@@ -5,19 +5,15 @@ import Sidebar from "../../components/ui/Sidebar";
 import Icon from "../../components/AppIcon";
 import Button from "../../components/ui/Button";
 import LoadingCard from "clientPages/components/LoadingCard";
+import { Navigate } from "react-router-dom";
 
-// const createDataURL = (logoObj) => {
-//   if (logoObj && logoObj.fileData && logoObj.mimeType) {
-//     return `data:${logoObj.mimeType};base64,${logoObj.fileData}`;
-//   }
-//   return null;
-// };
-
-const CompanyReg = ({userPermissions = [] }) => {
-
-   const permisos = useMemo(() =>({
-      ver: userPermissions.includes("view_registro_cambios_details")
-   }), [userPermissions])
+const CompanyReg = ({ userPermissions = [] }) => {
+   const permisos = useMemo(
+      () => ({
+         ver: userPermissions.includes("view_registro_cambios_details"),
+      }),
+      [userPermissions],
+   );
 
    const [registros, setRegistros] = useState([]);
    const [modalOpen, setModalOpen] = useState(false);
@@ -29,7 +25,7 @@ const CompanyReg = ({userPermissions = [] }) => {
    const [loading, setLoading] = useState(false);
 
    const openModal = (registro) => {
-      if(!permisos.ver) return;
+      if (!permisos.ver) return;
       setSelectedRegistro(registro);
       setModalOpen(true);
    };
@@ -94,6 +90,9 @@ const CompanyReg = ({userPermissions = [] }) => {
    useEffect(() => {
       fetchRegistros();
    }, [page]);
+
+   const canAccess = userPermissions.includes("view_registro_cambios");
+   if (!canAccess) return <Navigate to="/panel" replace />;
 
    const formatDate = (dateString) => {
       if (!dateString) return "—";
@@ -222,14 +221,18 @@ const CompanyReg = ({userPermissions = [] }) => {
                               <td className="px-4 py-2 text-[11px] text-center whitespace-nowrap">{registro.code}</td>
                               <td className="px-4 py-2 text-sm text-center whitespace-nowrap">{registro.actor.role}</td>
                               <td className="px-4 py-2 text-sm">{registro.description}</td>
-                              <td className="px-4 py-2 text-sm text-center whitespace-nowrap">{registro.target.type || "—"}</td>
-                              <td className="px-4 py-2 text-sm whitespace-nowrap">{formatDateSplit(registro.createdAt) || "—"}</td>
-                              {(permisos.ver) && ( 
                               <td className="px-4 py-2 text-sm text-center whitespace-nowrap">
-                                 <Button variant="outlineTeal" size="sm" onClick={() => openModal(registro)}>
-                                    Ver más
-                                 </Button>
+                                 {registro.target.type || "—"}
                               </td>
+                              <td className="px-4 py-2 text-sm whitespace-nowrap">
+                                 {formatDateSplit(registro.createdAt) || "—"}
+                              </td>
+                              {permisos.ver && (
+                                 <td className="px-4 py-2 text-sm text-center whitespace-nowrap">
+                                    <Button variant="outlineTeal" size="sm" onClick={() => openModal(registro)}>
+                                       Ver más
+                                    </Button>
+                                 </td>
                               )}
                            </tr>
                         ))}
@@ -376,7 +379,10 @@ const CompanyReg = ({userPermissions = [] }) => {
                />
 
                {isMobileScreen && isMobileOpen && (
-                  <div className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300" onClick={toggleSidebar}></div>
+                  <div
+                     className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
+                     onClick={toggleSidebar}
+                  ></div>
                )}
             </>
          )}
@@ -395,7 +401,9 @@ const CompanyReg = ({userPermissions = [] }) => {
          )}
 
          {/* CONTENIDO PRINCIPAL - AJUSTADO PARA EVITAR DESBORDAMIENTO */}
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16 flex-1 flex flex-col overflow-x-hidden`}>
+         <main
+            className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16 flex-1 flex flex-col overflow-x-hidden`}
+         >
             <div className="pb-6 space-y-6 container-main w-full max-w-full overflow-x-hidden">
                {/* HEADER CON BOTÓN DE TOGGLE - AGREGADO */}
                <div className="flex flex-col md:flex-row items-start md:items-center justify-between pt-3 gap-4">
@@ -405,7 +413,6 @@ const CompanyReg = ({userPermissions = [] }) => {
                         Verifica el registro e información de Eventos en la plataforma
                      </p>
                   </div>
-
                </div>
 
                <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">

@@ -38,7 +38,7 @@ const Header = ({ className = "" }) => {
 
    const moreMenuItems = [
       { name: "Ayuda", path: "/soporte", icon: "Search" },
-      { name: "Admin", path: "/RespuestasForms", icon: "Shield" },
+      { name: "Admin", path: "/panel", icon: "Shield" },
    ];
 
    // const userMenuItems = [{ name: "Iniciar Sesión", path: "/login", icon: "LogIn" }];

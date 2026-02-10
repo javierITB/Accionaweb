@@ -4,6 +4,7 @@ import Sidebar from '../../components/ui/Sidebar';
 import { apiFetch, API_BASE_URL } from '../../utils/api';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import { Navigate } from 'react-router-dom';
 
 // Usar componentes locales de Domicilio Virtual
 import RequestCard from './components/RequestCard';
@@ -147,6 +148,9 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
             setShowRequestDetails(true);
         }
     }, [formId, resp]);
+
+    const canAccess = userPermissions.includes('view_domicilio_virtual');
+    if (!canAccess) return <Navigate to="/panel" replace />;
 
     const handleApplyFilters = () => {
         setResp([]);
