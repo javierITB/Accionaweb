@@ -11,7 +11,7 @@ const WelcomeCard = ({ user }) => {
 
     const fetchCompanyLogo = async () => {
       try {
-        const res = await apiFetch(`${API_BASE_URL}/empresas/logo`);
+        const res = await apiFetch(`${API_BASE_URL}/auth/empresas/logo`);
 
         if (!res.ok) {
           console.error("Error fetching company logo");
