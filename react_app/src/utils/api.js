@@ -39,15 +39,10 @@ export const API_BASE_URL = `${BASE_DOMAIN}/${tenant}`;
 
 export const apiFetch = async (endpoint, options = {}) => {
     // Si el endpoint ya es una URL completa, la usamos. 
-    // Si es una ruta SAS (Sistema de Administración), no usamos el tenant prefix
-    let fullUrl;
-    if (endpoint.startsWith('http')) {
-        fullUrl = endpoint;
-    } else if (endpoint.startsWith('/sas')) {
-        fullUrl = `${BASE_DOMAIN}${endpoint}`;
-    } else {
-        fullUrl = `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
-    }
+    // Si no, le anteponemos nuestra BASE_URL dinámica.
+    const fullUrl = endpoint.startsWith('http')
+        ? endpoint
+        : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
     const headers = {
         ...getAuthHeaders(),

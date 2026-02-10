@@ -18,7 +18,6 @@ const configTicketsRoutes = require("./endpoints/configTickets");
 const dashboardRoutes = require("./endpoints/dashboard");
 const registroRoutes = require("./endpoints/registro");
 const roles = require("./endpoints/roles");
-const sasRoutes = require("./endpoints/SAS");
 
 const app = express();
 
@@ -72,13 +71,21 @@ tenantRouter.use(async (req, res, next) => {
     const { company } = req.params;
     // Inyectamos la base de datos específica en el objeto request
     req.db = await getTenantDB(company);
-    req.mongoClient = client;
     next();
   } catch (err) {
     console.error("Error crítico de conexión Multi-tenant:", err);
     res.status(500).json({ error: "Error interno con la base de datos de la empresa" });
   }
 });
+
+// Montaje final: todas las rutas ahora requieren un prefijo (ej: /acciona/auth)
+app.use((req, res, next) => {
+  req.mongoClient = client;
+  next();
+});
+
+const sasRoutes = require("./endpoints/SAS");
+app.use("/sas", sasRoutes);
 
 // Definición de todos los endpoints bajo el control del tenantRouter
 tenantRouter.use("/auth", authRoutes);
@@ -96,9 +103,13 @@ tenantRouter.use("/config-tickets", configTicketsRoutes);
 tenantRouter.use("/dashboard", dashboardRoutes);
 tenantRouter.use("/registro", registroRoutes);
 tenantRouter.use("/roles", roles);
-tenantRouter.use("/sas", sasRoutes);
 
 // Montaje final: todas las rutas ahora requieren un prefijo (ej: /acciona/auth)
+app.use((req, res, next) => {
+  req.mongoClient = client;
+  next();
+});
+
 app.use("/:company", tenantRouter);
 
 // Ruta raíz para verificación simple
@@ -110,18 +121,8 @@ app.get("/", (req, res) => {
 });
 
 // Manejo de errores global para rutas no encontradas
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).json({ error: "Ruta no encontrada o empresa no especificada correctamente" });
-});
-
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error("Unhandled Error:", err);
-  res.status(500).json({
-    error: "CRITICAL SERVER ERROR",
-    details: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
 });
 
 module.exports = app;
