@@ -28,6 +28,7 @@ const EmpresasView = ({ userPermissions = {} }) => {
          create_empresas: userPermissions.includes("create_gestor_empresas"),
          canAccess: userPermissions.includes("view_gestor_empresas"),
          edit_empresas: userPermissions.includes("edit_gestor_empresas"),
+         delete_empresas: userPermissions.includes("delete_gestor_empresas"),
       }),
       [userPermissions],
    );
