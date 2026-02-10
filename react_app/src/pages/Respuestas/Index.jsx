@@ -81,7 +81,7 @@ const RequestTracking = ({ userPermissions = {} }) => {
         perms = roleData.permissions || [];
         hasAll = perms.includes('all');
 
-        
+
 
 
         setPermissions({
