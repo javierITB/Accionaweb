@@ -1,117 +1,76 @@
 import React, { useState, useEffect } from "react";
-import { X, Shield, Check, Loader2, Lock, UserCircle, LayoutGrid, ChevronRight } from "lucide-react";
+import { X, Database, Check, Loader2, Lock, UserCircle, LayoutGrid, ChevronRight, Server } from "lucide-react";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
 import Button from "components/ui/Button";
 import { PERMISSION_GROUPS } from "../../../config/permissionGroups";
 
-export function EmpresaModal({ isOpen, onClose, onSuccess, role = null, permisos }) {
+export function EmpresaModal({ isOpen, onClose, onSuccess, company = null }) {
    const [isSaving, setIsSaving] = useState(false);
    const [isSuccess, setIsSuccess] = useState(false);
    const [activeTab, setActiveTab] = useState("admin");
    const [formData, setFormData] = useState({
       name: "",
-      description: "",
-      permissions: [],
-      color: "#4f46e5",
+      features: [], // Array de strings con los keys de las colecciones/features
    });
 
    useEffect(() => {
       if (isOpen) setIsSuccess(false);
-   }, [isOpen, role]);
+   }, [isOpen, company]);
 
-   const isClientPanelEnabled = formData.permissions.includes("view_panel_cliente");
-   const isAdminPanelEnabled = formData.permissions.includes("view_panel_admin");
-
+   // Mapeo inverso si estuviéramos editando (aunque por ahora solo es crear)
    useEffect(() => {
-      if (role) {
+      if (company) {
          setFormData({
-            id: role._id,
-            name: role.name,
-            description: role.description,
-            permissions: role.permissions || [],
-            color: role.color || "#4f46e5",
+            id: company.name, // Usamos el nombre como ID
+            name: company.name,
+            features: [], // No tenemos info de features activas en el GET /companies list, así que empezamos vacío o asumimos
          });
       } else {
          setFormData({
             name: "",
-            description: "",
-            permissions: [],
-            color: "#4f46e5",
+            features: [],
          });
       }
-   }, [role, isOpen]);
+   }, [company, isOpen]);
 
    if (!isOpen) return null;
 
-   const togglePermission = (permId) => {
+   // En este modal, "features" son las funcionalidades macro (Keys de PERMISSION_GROUPS)
+   // No se seleccionan permisos individuales, sino grupos completos (Funcionalidades)
+   const toggleFeature = (featureKey) => {
       if (isSuccess) setIsSuccess(false);
+
       setFormData((prev) => {
-         const hasPerm = prev.permissions.includes(permId);
-         let newPerms = hasPerm ? prev.permissions.filter((p) => p !== permId) : [...prev.permissions, permId];
+         const hasFeature = prev.features.includes(featureKey);
+         let newFeatures = hasFeature
+            ? prev.features.filter((f) => f !== featureKey)
+            : [...prev.features, featureKey];
 
-         // 1. Limpieza por Paneles Raíz
-         if (permId === "view_panel_admin" && hasPerm) {
-            const adminIds = Object.values(PERMISSION_GROUPS)
-               .filter((g) => g.tagg === "admin")
-               .flatMap((g) => g.permissions.map((p) => p.id));
-            newPerms = newPerms.filter((p) => !adminIds.includes(p));
-         }
-         if (permId === "view_panel_cliente" && hasPerm) {
-            const clienteIds = Object.values(PERMISSION_GROUPS)
-               .filter((g) => g.tagg === "cliente")
-               .flatMap((g) => g.permissions.map((p) => p.id));
-            newPerms = newPerms.filter((p) => !clienteIds.includes(p));
-         }
-
-         // 2. Lógica de Dependencias: Si quito el padre, quito los hijos
-         if (hasPerm) {
-            const dependentPerms = Object.values(PERMISSION_GROUPS)
-               .flatMap((g) => g.permissions)
-               .filter((p) => p.dependency === permId)
-               .map((p) => p.id);
-
-            if (dependentPerms.length > 0) {
-               newPerms = newPerms.filter((p) => !dependentPerms.includes(p));
-            }
-         }
-
-         return { ...prev, permissions: newPerms };
+         return { ...prev, features: newFeatures };
       });
-   };
-
-   const toggleAllInTab = () => {
-      if (isSuccess) setIsSuccess(false);
-      const permsInTab = Object.values(PERMISSION_GROUPS)
-         .filter((g) => g.tagg === activeTab)
-         .flatMap((g) => g.permissions);
-
-      // Filtramos solo los que no tienen dependencia o cuya dependencia ya está marcada
-      const availablePerms = permsInTab
-         .filter((p) => !p.dependency || formData.permissions.includes(p.dependency))
-         .map((p) => p.id);
-      const allSelected = availablePerms.every((id) => formData.permissions.includes(id));
-
-      setFormData((prev) => ({
-         ...prev,
-         permissions: allSelected
-            ? prev.permissions.filter((p) => !availablePerms.includes(p))
-            : [...new Set([...prev.permissions, ...availablePerms])],
-      }));
    };
 
    const handleSubmit = async () => {
       if (!formData.name) return;
       setIsSaving(true);
       try {
-         const res = await apiFetch(`${API_BASE_URL}/roles`, {
+         // Transformamos el payload para el endpoint SAS
+         const payload = {
+            name: formData.name,
+            features: formData.features
+         };
+
+         const res = await apiFetch(`${API_BASE_URL}/sas/companies`, {
             method: "POST",
-            body: JSON.stringify(formData),
+            body: JSON.stringify(payload),
          });
+
          if (res.ok) {
             setIsSuccess(true);
             onSuccess();
          } else {
-            alert("Error al guardar el rol");
+            const err = await res.json();
+            alert(err.error || "Error al crear la empresa");
          }
       } catch (error) {
          alert("Error de conexión");
@@ -120,19 +79,14 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, role = null, permisos
       }
    };
 
-   const isCreating = !role;
-
-   const roleName = role?.name?.toLowerCase();
-   const myRoleName = sessionStorage.getItem("cargo")?.toLowerCase();
-
-   const isAdminRole = roleName === "administrador";
-   const itsMyRole = roleName === myRoleName;
-
-   const canEditAdmin = isAdminRole && permisos.edit_gestor_roles_admin;
-   const canEditMyRole = itsMyRole && permisos.edit_gestor_roles_by_self;
-   const canEditOtherRoles = !isAdminRole && !itsMyRole && permisos.edit_gestor_roles;
-
-   const canEdit = isCreating || canEditAdmin || canEditMyRole || canEditOtherRoles;
+   // Filtramos los grupos de permisos para mostrarlos como "Features"
+   // Asumimos que cada top-level key en PERMISSION_GROUPS es una feature (ej: 'gestor_usuarios', 'tickets')
+   const featuresList = Object.entries(PERMISSION_GROUPS).map(([key, group]) => ({
+      key: key, // Esto será el nombre de la colección/feature
+      label: group.label,
+      tagg: group.tagg,
+      description: group.permissions?.[0]?.label || "Funcionalidad del sistema" // Descripción simple
+   }));
 
    return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
@@ -140,8 +94,8 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, role = null, permisos
             {/* HEADER */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Shield size={20} className="text-accent" />
-                  {role ? "Editar Rol / Cargo" : "Crear Nuevo Rol"}
+                  <Database size={20} className="text-accent" />
+                  {company ? "Ver Empresa (Solo Lectura)" : "Crear Nueva Empresa"}
                </h2>
                <button
                   onClick={onClose}
@@ -154,201 +108,95 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, role = null, permisos
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
                {/* INFO BÁSICA */}
                <div className="grid grid-cols-1 gap-4">
-                  <input
-                     type="text"
-                     placeholder="Nombre del Cargo"
-                     value={formData.name}
-                     onChange={(e) => {
-                        if (isSuccess) setIsSuccess(false);
-                        setFormData({ ...formData, name: e.target.value });
-                     }}
-                     className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none"
-                  />
-                  <textarea
-                     placeholder="Descripción de funciones"
-                     value={formData.description}
-                     onChange={(e) => {
-                        if (isSuccess) setIsSuccess(false);
-                        setFormData({ ...formData, description: e.target.value });
-                     }}
-                     rows={2}
-                     className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground resize-none focus:ring-2 focus:ring-accent outline-none"
-                  />
+                  <div>
+                     <label className="text-sm font-medium text-muted-foreground mb-1 block">Nombre de la Empresa (Base de Datos)</label>
+                     <input
+                        type="text"
+                        placeholder="Ej: Constructora Del Sur"
+                        value={formData.name}
+                        onChange={(e) => {
+                           if (isSuccess) setIsSuccess(false);
+                           setFormData({ ...formData, name: e.target.value });
+                        }}
+                        disabled={!!company}
+                        className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none disabled:opacity-50"
+                     />
+                     <p className="text-xs text-muted-foreground mt-1">
+                        Esto creará una base de datos física llamada <strong>{formData.name.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase() || "..."}</strong>
+                     </p>
+                  </div>
                </div>
 
                <div className="h-px bg-border" />
 
-               {/* TABS */}
-               <div className="flex flex-col space-y-4">
-                  <div className="flex p-1 bg-muted rounded-xl space-x-1">
-                     <button
-                        onClick={() => setActiveTab("admin")}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === "admin" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                     >
-                        <Shield size={16} /> Administración
-                     </button>
-                     <button
-                        onClick={() => setActiveTab("cliente")}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === "cliente" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                     >
-                        <UserCircle size={16} /> Cliente
-                     </button>
-                  </div>
+               {/* SELECCIÓN DE FUNCIONALIDADES */}
+               <div>
+                  <h3 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                     <Server size={18} /> Funcionalidades y Colecciones
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                     Selecciona los módulos que tendrá habilitados esta empresa. Se crearán las colecciones correspondientes en su base de datos.
+                  </p>
 
-                  <button
-                     type="button"
-                     onClick={toggleAllInTab}
-                     className="flex items-center justify-center gap-2 py-2 px-4 border border-dashed border-accent/50 text-accent bg-accent/5 hover:bg-accent/10 rounded-xl text-xs font-bold transition-all"
-                  >
-                     <LayoutGrid size={14} />
-                     Seleccionar / Desmarcar disponibles en esta pestaña
-                  </button>
-               </div>
-
-               <div className="space-y-4">
-                  {/* HABILITADOR DE PANEL */}
-                  {Object.entries(PERMISSION_GROUPS)
-                     .filter(([_, g]) => g.tagg === "root" && g.label.toLowerCase().includes(activeTab))
-                     .map(([key, group]) => {
-                        const isEnabled = formData.permissions.includes(group.permissions[0].id);
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                     {featuresList.map((feature) => {
+                        const isSelected = formData.features.includes(feature.key);
                         return (
                            <div
-                              key={key}
-                              onClick={() => togglePermission(group.permissions[0].id)}
-                              className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${isEnabled ? "border-accent bg-accent/5 ring-1 ring-accent" : "border-border bg-muted/20 opacity-60"}`}
+                              key={feature.key}
+                              onClick={() => !company && toggleFeature(feature.key)}
+                              className={`
+                                       p-3 rounded-xl border flex items-start gap-3 transition-all cursor-pointer
+                                       ${isSelected ? "border-accent bg-accent/5 ring-1 ring-accent" : "border-border hover:bg-muted/50"}
+                                       ${company ? "cursor-default opacity-80" : ""}
+                                   `}
                            >
-                              <span className="text-sm font-bold text-foreground">{group.label}</span>
-                              <div
-                                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isEnabled ? "bg-accent border-accent" : "border-muted-foreground"}`}
-                              >
-                                 {isEnabled && <Check size={12} strokeWidth={4} className="text-white" />}
+                              <div className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 ${isSelected ? "bg-accent border-accent" : "border-muted-foreground"}`}>
+                                 {isSelected && <Check size={14} className="text-white" strokeWidth={3} />}
+                              </div>
+                              <div>
+                                 <p className="text-sm font-bold text-foreground">{feature.label}</p>
+                                 <p className="text-xs text-muted-foreground line-clamp-2">{feature.description}</p>
+                                 <p className="text-[10px] uppercase font-mono text-muted-foreground mt-1 bg-muted inline-block px-1 rounded">
+                                    Coll: {feature.key}
+                                 </p>
                               </div>
                            </div>
-                        );
+                        )
                      })}
-
-                  {/* VISTAS Y PERMISOS CON DEPENDENCIA */}
-                  <div className="space-y-4">
-                     {(activeTab === "admin" && isAdminPanelEnabled) ||
-                     (activeTab === "cliente" && isClientPanelEnabled) ? (
-                        Object.entries(PERMISSION_GROUPS)
-                           .filter(([_, g]) => g.tagg === activeTab)
-                           .map(([groupId, group]) => {
-                              const ids = group.permissions.map((p) => p.id);
-                              const isAllSelected = ids.every((id) => formData.permissions.includes(id));
-
-                              return (
-                                 <div
-                                    key={groupId}
-                                    className="rounded-xl border border-border bg-muted/10 overflow-hidden"
-                                 >
-                                    <div
-                                       className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between cursor-pointer hover:bg-muted/50"
-                                       onClick={() => {
-                                          if (isSuccess) setIsSuccess(false);
-                                          // Al seleccionar todo el grupo, solo seleccionamos los que no tienen dependencia o ya tienen el padre marcado
-                                          const availableIds = group.permissions
-                                             .filter((p) => !p.dependency || formData.permissions.includes(p.dependency))
-                                             .map((p) => p.id);
-                                          setFormData((prev) => ({
-                                             ...prev,
-                                             permissions: isAllSelected
-                                                ? prev.permissions.filter((p) => !ids.includes(p))
-                                                : [...new Set([...prev.permissions, ...availableIds])],
-                                          }));
-                                       }}
-                                    >
-                                       <span className="text-xs font-bold text-foreground">{group.label}</span>
-                                       <div
-                                          className={`w-4 h-4 rounded border flex items-center justify-center ${isAllSelected ? "bg-accent border-accent text-white" : "bg-background border-border"}`}
-                                       >
-                                          {isAllSelected && <Check size={12} strokeWidth={3} />}
-                                       </div>
-                                    </div>
-                                    <div className="p-3 grid grid-cols-1 gap-1">
-                                       {group.permissions.map((perm) => {
-                                          // VALIDACIÓN DE DEPENDENCIA PARA RENDERIZADO
-                                          if (perm.dependency && !formData.permissions.includes(perm.dependency)) {
-                                             return null;
-                                          }
-
-                                          const isSelected = formData.permissions.includes(perm.id);
-                                          const isChild = !!perm.dependency;
-
-                                          return (
-                                             <label
-                                                key={perm.id}
-                                                className={`flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${isChild ? "ml-6 border-l border-border pl-4" : ""}`}
-                                             >
-                                                {isChild && <ChevronRight size={12} className="text-muted-foreground" />}
-                                                <div
-                                                   className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-accent border-accent text-white" : "bg-background border-border"}`}
-                                                >
-                                                   {isSelected && <Check size={10} strokeWidth={3} />}
-                                                </div>
-                                                <span className="text-xs text-muted-foreground">{perm.label}</span>
-                                                <input
-                                                   type="checkbox"
-                                                   className="hidden"
-                                                   checked={isSelected}
-                                                   onChange={() => togglePermission(perm.id)}
-                                                />
-                                             </label>
-                                          );
-                                       })}
-                                    </div>
-                                 </div>
-                              );
-                           })
-                     ) : (
-                        <div className="py-10 text-center border border-dashed border-border rounded-xl">
-                           <Lock size={24} className="mx-auto mb-2 text-muted-foreground opacity-20" />
-                           <p className="text-xs text-muted-foreground">
-                              Habilita el panel superior para configurar vistas
-                           </p>
-                        </div>
-                     )}
                   </div>
                </div>
             </div>
 
             <div className="px-6 py-4 border-t border-border flex justify-end gap-3 bg-muted/10 shrink-0">
-               {canEdit ? (
-                  <>
-                     <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-muted-foreground">
-                        Cancelar
-                     </button>
+               <Button
+                  onClick={onClose}
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground"
+                  variant="outlineTeal"
+               >
+                  Cerrar
+               </Button>
 
-                     <button
-                        onClick={handleSubmit}
-                        disabled={isSaving || !formData.name || isSuccess}
-                        className="px-8 py-2 bg-accent text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20 min-w-[200px] transition-all duration-200"
-                     >
-                        {isSaving ? (
-                           <>
-                              <Loader2 size={16} className="animate-spin" />
-                              Guardando...
-                           </>
-                        ) : isSuccess ? (
-                           <>
-                              <Check size={16} />
-                              Guardado Exitosamente
-                           </>
-                        ) : role ? (
-                           "Actualizar Cargo"
-                        ) : (
-                           "Guardar Cargo"
-                        )}
-                     </button>
-                  </>
-               ) : (
-                  <Button
-                     onClick={onClose}
-                     className="px-4 py-2 text-sm font-medium text-muted-foreground"
-                     variant="outlineTeal"
+               {!company && (
+                  <button
+                     onClick={handleSubmit}
+                     disabled={isSaving || !formData.name || isSuccess}
+                     className="px-8 py-2 bg-accent text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20 min-w-[200px] transition-all duration-200"
                   >
-                     Cerrar
-                  </Button>
+                     {isSaving ? (
+                        <>
+                           <Loader2 size={16} className="animate-spin" />
+                           Creando DB...
+                        </>
+                     ) : isSuccess ? (
+                        <>
+                           <Check size={16} />
+                           Creada Exitosamente
+                        </>
+                     ) : (
+                        "Crear Empresa"
+                     )}
+                  </button>
                )}
             </div>
          </div>

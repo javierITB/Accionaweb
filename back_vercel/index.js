@@ -55,7 +55,7 @@ async function getTenantDB(tenantName) {
   // Si no existe, creamos la instancia y la guardamos
   const dbInstance = client.db(dbName);
   dbCache[dbName] = dbInstance;
-  
+
   console.log(`Base de datos activa: ${dbName}`);
   return dbInstance;
 }
@@ -78,6 +78,15 @@ tenantRouter.use(async (req, res, next) => {
   }
 });
 
+// Montaje final: todas las rutas ahora requieren un prefijo (ej: /acciona/auth)
+app.use((req, res, next) => {
+  req.mongoClient = client;
+  next();
+});
+
+const sasRoutes = require("./endpoints/SAS");
+app.use("/sas", sasRoutes);
+
 // Definición de todos los endpoints bajo el control del tenantRouter
 tenantRouter.use("/auth", authRoutes);
 tenantRouter.use("/forms", formRoutes);
@@ -96,13 +105,18 @@ tenantRouter.use("/registro", registroRoutes);
 tenantRouter.use("/roles", roles);
 
 // Montaje final: todas las rutas ahora requieren un prefijo (ej: /acciona/auth)
+app.use((req, res, next) => {
+  req.mongoClient = client;
+  next();
+});
+
 app.use("/:company", tenantRouter);
 
 // Ruta raíz para verificación simple
 app.get("/", (req, res) => {
-  res.json({ 
+  res.json({
     message: "API Multi-tenant de Solunex funcionando",
-    status: "online" 
+    status: "online"
   });
 });
 

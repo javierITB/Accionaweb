@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, Shield, Users, Trash2, CheckCircle2, Lock, Loader2, Eye, Copy } from "lucide-react";
+import { Search, Database, Users, Trash2, CheckCircle2, Server, Loader2, Play, HardDrive } from "lucide-react";
 
 // Helpers y componentes de UI
 import { apiFetch, API_BASE_URL } from "../../utils/api";
@@ -10,8 +10,7 @@ import { EmpresaModal } from "./components/EmpresaModal";
 
 const EmpresasView = ({ userPermissions = {} }) => {
    // --- ESTADOS DE DATOS ---
-   const [roles, setRoles] = useState([]);
-   const [users, setUsers] = useState([]);
+   const [companies, setCompanies] = useState([]);
    const [isLoading, setIsLoading] = useState(true);
 
    // --- ESTADOS DE ESTRUCTURA ---
@@ -19,36 +18,39 @@ const EmpresasView = ({ userPermissions = {} }) => {
    const [isMobileOpen, setIsMobileOpen] = useState(false);
    const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
 
-   // --- ESTADOS DE LÓGICA DE ROLES ---
+   // --- ESTADOS DE LÓGICA ---
    const [searchQuery, setSearchQuery] = useState("");
-   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
-   const [editingRole, setEditingRole] = useState(null);
+   const [isModalOpen, setIsModalOpen] = useState(false);
+   const [editingCompany, setEditingCompany] = useState(null);
 
    const permisos = useMemo(
       () => ({
-         view_gestor_roles_details: userPermissions.includes("view_gestor_roles_details"),
-         view_gestor_roles_details_admin: userPermissions.includes("view_gestor_roles_details_admin"),
-         create_gestor_roles: userPermissions.includes("create_gestor_roles"),
-         edit_gestor_roles: userPermissions.includes("edit_gestor_roles"),
-         edit_gestor_roles_admin: userPermissions.includes("edit_gestor_roles_admin"),
-         edit_gestor_roles_by_self: userPermissions.includes("edit_gestor_roles_by_self"),
-         delete_gestor_roles: userPermissions.includes("delete_gestor_roles"),
-         copy_gestor_roles: userPermissions.includes("copy_gestor_roles"),
+         create_empresas: userPermissions.includes("create_gestor_roles") || userPermissions.includes("create_empresas") || true, // fallback temporal
+         delete_empresas: userPermissions.includes("delete_gestor_roles") || userPermissions.includes("delete_empresas") || true,
       }),
       [userPermissions],
    );
 
    // --- CARGA DE DATOS DESDE API ---
-   const fetchRoles = async () => {
+   const fetchCompanies = async () => {
       try {
          setIsLoading(true);
-         const res = await apiFetch(`${API_BASE_URL}/roles`);
+         const res = await apiFetch(`${API_BASE_URL}/sas/companies`);
          if (res.ok) {
             const data = await res.json();
-            setRoles(data);
+            setCompanies(data);
+         } else {
+            // Intentar leer el error del backend
+            try {
+               const errData = await res.json();
+               console.error("Error backend:", errData);
+               alert(`Error cargando empresas: ${errData.error || res.statusText}`);
+            } catch (e) {
+               alert(`Error ${res.status}: ${res.statusText}`);
+            }
          }
       } catch (error) {
-         console.error("Error cargando roles:", error);
+         console.error("Error cargando empresas:", error);
       } finally {
          setIsLoading(false);
       }
@@ -56,8 +58,7 @@ const EmpresasView = ({ userPermissions = {} }) => {
 
    // Efecto inicial
    useEffect(() => {
-      fetchRoles();
-      // Aquí podrías cargar también los usuarios para el conteo
+      fetchCompanies();
    }, []);
 
    // --- RESPONSIVIDAD ---
@@ -77,63 +78,23 @@ const EmpresasView = ({ userPermissions = {} }) => {
    };
 
    // --- LÓGICA DE NEGOCIO ---
-   const filteredRoles = roles.filter(
-      (role) =>
-         role.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         role.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+   const filteredCompanies = companies.filter(
+      (company) =>
+         company.name?.toLowerCase().includes(searchQuery.toLowerCase())
    );
 
-   const getUserCount = (roleId) => {
-      // Asumiendo que users es un array de objetos con propiedad roleId o similar
-      return users.filter((u) => u.roleId === roleId || u.role === roleId).length;
-   };
-
-   const handleDuplicate = async (role) => {
-      try {
-         setIsLoading(true);
-         // Preparamos el payload ignorando el _id original para que la API cree uno nuevo
-         const duplicateData = {
-            name: `${role.name} (copia)`,
-            description: role.description,
-            permissions: role.permissions || [],
-            color: role.color || "#4f46e5",
-         };
-
-         const res = await apiFetch(`${API_BASE_URL}/roles`, {
-            method: "POST",
-            body: JSON.stringify(duplicateData),
-         });
-
-         if (res.ok) {
-            await fetchRoles(); // Recargamos la lista
-         } else {
-            const err = await res.json();
-            alert(err.error || "Error al duplicar el rol");
-         }
-      } catch (error) {
-         alert("Error de conexión con el servidor");
-      } finally {
-         setIsLoading(false);
-      }
-   };
-
-   const handleDelete = async (roleId) => {
-      if (roleId === "admin") {
-         alert("No se puede eliminar el rol de Administrador de sistema.");
-         return;
-      }
-
-      if (window.confirm("¿Estás seguro de eliminar este rol? Esta acción no se puede deshacer.")) {
+   const handleDelete = async (company) => {
+      if (window.confirm(`¿Estás seguro de ELIMINAR la empresa (Base de Datos) "${company.name}"? \n\n ESTA ACCIÓN BORRA TODOS LOS DATOS Y NO SE PUEDE DESHACER.`)) {
          try {
-            const res = await apiFetch(`${API_BASE_URL}/roles/${roleId}`, {
+            const res = await apiFetch(`${API_BASE_URL}/sas/companies/${company._id}`, {
                method: "DELETE",
             });
 
             if (res.ok) {
-               setRoles((prev) => prev.filter((r) => r._id !== roleId));
+               setCompanies((prev) => prev.filter((c) => c._id !== company._id));
             } else {
                const err = await res.json();
-               alert(err.error || "Error al eliminar el rol");
+               alert(err.error || "Error al eliminar la empresa");
             }
          } catch (error) {
             alert("Error de conexión con el servidor");
@@ -141,10 +102,34 @@ const EmpresasView = ({ userPermissions = {} }) => {
       }
    };
 
-   const getPermissionCount = (role) => {
-      if (!role.permissions) return "0 permisos";
-      if (role.permissions.includes("all")) return "Acceso Total";
-      return `${role.permissions.length} permisos`;
+   const handleFixRoles = async (company) => {
+      if (!confirm(`¿Regenerar roles y permisos para ${company.name}? Esto sobrescribirá la colección config_roles.`)) return;
+
+      try {
+         const res = await apiFetch(`${API_BASE_URL}/sas/fix-roles`, {
+            method: "POST",
+            body: JSON.stringify({ dbName: company.dbName || company.name }), // Fallback si dbName no está presente
+         });
+
+         if (res.ok) {
+            const data = await res.json();
+            alert(`Éxito: ${data.message}`);
+         } else {
+            alert("Error al actualizar roles");
+         }
+      } catch (e) {
+         console.error(e);
+         alert("Error de conexión");
+      }
+   };
+
+   const formatBytes = (bytes, decimals = 2) => {
+      if (!+bytes) return '0 Bytes';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
    };
 
    const mainMarginClass = isMobileScreen ? "ml-0" : isDesktopOpen ? "lg:ml-64" : "lg:ml-16";
@@ -184,20 +169,20 @@ const EmpresasView = ({ userPermissions = {} }) => {
                         Empresas y Funcionalidades
                      </h1>
                      <p className="text-muted-foreground mt-1 text-sm lg:text-base">
-                        Configuración de empresas del sistema.
+                        Configuración de empresas y funcionalidades
                      </p>
                   </div>
 
-                  {permisos.create_gestor_roles && (
+                  {permisos.create_empresas && (
                      <Button
                         variant="default"
                         iconName="Plus"
                         onClick={() => {
-                           setEditingRole(null);
-                           setIsRoleModalOpen(true);
+                           setEditingCompany(null);
+                           setIsModalOpen(true);
                         }}
                      >
-                        Registrar Nueva Empresa
+                        Nueva Empresa
                      </Button>
                   )}
                </div>
@@ -206,7 +191,7 @@ const EmpresasView = ({ userPermissions = {} }) => {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                   <input
                      type="text"
-                     placeholder="Buscar roles..."
+                     placeholder="Buscar empresas (db)..."
                      value={searchQuery}
                      onChange={(e) => setSearchQuery(e.target.value)}
                      className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
@@ -216,48 +201,29 @@ const EmpresasView = ({ userPermissions = {} }) => {
                {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                      <Loader2 className="w-10 h-10 animate-spin mb-4 text-accent" />
-                     <p>Cargando configuración de seguridad...</p>
+                     <p>Cargando empresas del cluster...</p>
                   </div>
                ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-                     {filteredRoles.map((role) => {
-                        const userCount = getUserCount(role._id);
-                        const isAdmin = role.id === "admin" || role.name?.toLowerCase() === "administrador";
-                        const canViewDetailsAdmin = isAdmin && permisos.view_gestor_roles_details_admin;
-                        const canViewDetailsOther = !isAdmin && permisos.view_gestor_roles_details;
-                        const canViewDetails = canViewDetailsAdmin || canViewDetailsOther;
-
+                     {filteredCompanies.map((company) => {
                         return (
                            <div
-                              key={role._id}
+                              key={company._id || company.name}
                               className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col"
                            >
                               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                                 {permisos.copy_gestor_roles && (
+                                 <button
+                                    onClick={() => handleFixRoles(company)}
+                                    className="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+                                    title="Regenerar Roles y Permisos"
+                                 >
+                                    <Server size={16} />
+                                 </button>
+                                 {permisos.delete_empresas && (
                                     <button
-                                       onClick={() => handleDuplicate(role)}
-                                       title="Duplicar cargo"
-                                       className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                                    >
-                                       <Copy size={16} />
-                                    </button>
-                                 )}
-                                 {canViewDetails && (
-                                    <button
-                                       onClick={() => {
-                                          setEditingRole(role);
-                                          setIsRoleModalOpen(true);
-                                       }}
-                                       className="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
-                                    >
-                                       <Eye size={21} />
-                                    </button>
-                                 )}
-
-                                 {!isAdmin && permisos.delete_gestor_roles && (
-                                    <button
-                                       onClick={() => handleDelete(role._id)}
+                                       onClick={() => handleDelete(company)}
                                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                                       title="Eliminar Base de Datos"
                                     >
                                        <Trash2 size={16} />
                                     </button>
@@ -266,35 +232,46 @@ const EmpresasView = ({ userPermissions = {} }) => {
 
                               <div className="flex items-start justify-between mb-4">
                                  <div
-                                    className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg"
-                                    style={{ backgroundColor: role.color || "#4f46e5" }}
+                                    className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg bg-indigo-600"
                                  >
-                                    <Shield size={24} />
+                                    <Database size={24} />
                                  </div>
                               </div>
 
-                              <h3 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2">
-                                 {role.name}
-                                 {isAdmin && <Lock size={14} className="text-amber-500" />}
+                              <h3 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2 break-all">
+                                 {company.name}
                               </h3>
-                              <p className="text-sm text-muted-foreground mb-6 line-clamp-2 min-h-[40px]">
-                                 {role.description}
-                              </p>
+                              {company.dbName && (
+                                 <p className="text-xs text-muted-foreground mb-2 font-mono">
+                                    {company.dbName}
+                                 </p>
+                              )}
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                                 <HardDrive size={14} />
+                                 <span>{formatBytes(company.sizeOnDisk || 0)}</span>
+                              </div>
 
                               <div className="mt-auto space-y-4">
                                  <div className="flex items-center gap-2 text-sm text-foreground bg-muted/50 px-3 py-2 rounded-lg">
-                                    <CheckCircle2 size={16} className="text-emerald-500" />
-                                    <span>{getPermissionCount(role)}</span>
+                                    {company.empty ? (
+                                       <>
+                                          <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                          <span>Vacía</span>
+                                       </>
+                                    ) : (
+                                       <>
+                                          <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                          <span>Activa</span>
+                                       </>
+                                    )}
                                  </div>
 
                                  <div className="h-px bg-border" />
 
                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-muted-foreground">
-                                       <Users size={16} />
-                                       <span className="text-sm">Usuarios asignados</span>
-                                    </div>
-                                    <span className="text-lg font-bold text-foreground">{userCount}</span>
+                                    <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+                                       MongoDB Database
+                                    </span>
                                  </div>
                               </div>
                            </div>
@@ -305,19 +282,19 @@ const EmpresasView = ({ userPermissions = {} }) => {
             </div>
          </main>
 
-         {/* Modal de Rol */}
-         {isRoleModalOpen && (
+         {/* Modal de Empresa */}
+         {isModalOpen && (
             <EmpresaModal
-               isOpen={isRoleModalOpen}
+               isOpen={isModalOpen}
                onClose={() => {
-                  setIsRoleModalOpen(false);
-                  setEditingRole(null);
+                  setIsModalOpen(false);
+                  setEditingCompany(null);
                }}
                onSuccess={() => {
-                  fetchRoles(); // Recargar data y mantener modal abierto
+                  fetchCompanies(); // Recargar data y mantener modal abierto
+                  setIsModalOpen(false);
                }}
-               role={editingRole}
-               permisos={permisos}
+               company={editingCompany}
             />
          )}
       </div>
