@@ -22,7 +22,7 @@ const PublicRequestDetails = ({ request }) => {
 
         const interval = setInterval(async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
+                const response = await fetch(`${API_BASE_URL}/respuestas/public/${request._id}`);
                 if (response.ok) {
                     const updatedRequest = await response.json();
                     // Aqui podriamos actualizar el estado si cambia, pero por ahora solo logueamos

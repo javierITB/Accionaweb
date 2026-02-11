@@ -29,7 +29,7 @@ const PublicPreview = () => {
 
                 if (data.formId) {
                     try {
-                        const formRes = await apiFetch(`${API_BASE_URL}/forms/${data.formId}`);
+                        const formRes = await apiFetch(`${API_BASE_URL}/forms/${data.formId}`, { skipRedirect: true });
                         if (formRes.ok) {
                             const formData = await formRes.json();
                             data.formDef = formData;
