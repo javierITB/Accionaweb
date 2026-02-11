@@ -25,7 +25,11 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
    const location = useLocation();
    const navigate = useNavigate();
 
-   const [openMenus, setOpenMenus] = useState({ "Gestión Principal": true });
+   const [openMenus, setOpenMenus] = useState(() => {
+      const saved = sessionStorage.getItem("sidebar_open_menus");
+      return saved ? JSON.parse(saved) : { "Gestión Principal": true };
+   });
+
    const { userPermissions, isAdminRole, userRole } = usePermissions();
    const accordionRefs = useRef({});
    const floatingMenuRef = useRef(null);
@@ -33,10 +37,17 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
 
    const user = sessionStorage.getItem("user") || "Usuario";
 
+   // Guardar estado de menús en cada cambio
+   useEffect(() => {
+      sessionStorage.setItem("sidebar_open_menus", JSON.stringify(openMenus));
+   }, [openMenus]);
+
    useEffect(() => {
       MENU_STRUCTURE.forEach(item => {
          if (item.isAccordion && item.children) {
-            const hasActiveChild = item.children.some(child => child.path === location.pathname);
+            const hasActiveChild = item.children.some(child =>
+               child.path === location.pathname || child.activeOn?.includes(location.pathname)
+            );
             if (hasActiveChild) {
                setOpenMenus(prev => ({
                   ...prev,
@@ -130,7 +141,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
    const renderNavLink = (item, isChild = false) => {
       if (!hasPermission(item.permission)) return null;
 
-      const isActive = location.pathname === item.path;
+      const isActive = location.pathname === item.path || item.activeOn?.includes(location.pathname);
       return (
          <button
             key={item.path}
@@ -193,8 +204,10 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                   const isFloating = activeFloatingMenu === item.name;
 
                   // Lógica de resaltado azul para categorías activas con menú cerrado
-                  const hasActiveChild = isAccordion && item.children?.some(child => location.pathname === child.path);
-                  const isDirectActive = !isAccordion && location.pathname === item.path;
+                  const hasActiveChild = isAccordion && item.children?.some(child =>
+                     location.pathname === child.path || child.activeOn?.includes(location.pathname)
+                  );
+                  const isDirectActive = !isAccordion && (location.pathname === item.path || item.activeOn?.includes(location.pathname));
                   const shouldHighlight = hasActiveChild || isDirectActive;
 
                   return (
@@ -203,8 +216,8 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                            ref={(el) => (buttonRefs.current[item.name] = el)}
                            onClick={() => handleItemClick(item)}
                            className={`w-full flex items-center rounded-lg px-3 py-3 transition-all
-                              ${shouldHighlight && !isTextVisible ? "bg-primary text-primary-foreground shadow-md" : 
-                                (isOpen && isTextVisible) || isFloating ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"}
+                              ${shouldHighlight && !isTextVisible ? "bg-primary text-primary-foreground shadow-md" :
+                                 (isOpen && isTextVisible) || isFloating ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"}
                               ${!isTextVisible ? "justify-center" : "justify-between"}`}
                            title={!isTextVisible ? item.name : ""}
                         >
@@ -232,15 +245,18 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                               </div>
                               <div className="px-2 space-y-0.5">
                                  {item.children ? (
-                                    item.children.map(child => (
-                                       <button key={child.path} onClick={() => handleNavigation(child.path)} className={`w-full flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${location.pathname === child.path ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
-                                          <Icon name={child.icon} size={16} className={`mr-3 ${location.pathname === child.path ? "text-primary" : "opacity-70"}`} />
-                                          <span className="truncate">{child.name}</span>
-                                       </button>
-                                    ))
+                                    item.children.map(child => {
+                                       const isChildActive = location.pathname === child.path || child.activeOn?.includes(location.pathname);
+                                       return (
+                                          <button key={child.path} onClick={() => handleNavigation(child.path)} className={`w-full flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${isChildActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+                                             <Icon name={child.icon} size={16} className={`mr-3 ${isChildActive ? "text-primary" : "opacity-70"}`} />
+                                             <span className="truncate">{child.name}</span>
+                                          </button>
+                                       );
+                                    })
                                  ) : (
-                                    <button onClick={() => handleNavigation(item.path)} className={`w-full flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${location.pathname === item.path ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
-                                       <Icon name={item.icon} size={16} className={`mr-3 ${location.pathname === item.path ? "text-primary" : "opacity-70"}`} />
+                                    <button onClick={() => handleNavigation(item.path)} className={`w-full flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${location.pathname === item.path || item.activeOn?.includes(location.pathname) ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+                                       <Icon name={item.icon} size={16} className={`mr-3 ${location.pathname === item.path || item.activeOn?.includes(location.pathname) ? "text-primary" : "opacity-70"}`} />
                                        <span className="truncate">{item.name}</span>
                                     </button>
                                  )}

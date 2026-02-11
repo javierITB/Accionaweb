@@ -21,9 +21,9 @@ export const MENU_STRUCTURE = [
       icon: "Settings",
       isAccordion: true,
       children: [
-         { name: "Formularios", path: "/form-center", icon: "FileText", permission: "view_formularios" },
+         { name: "Formularios", path: "/form-center", activeOn: ["/form-builder"], icon: "FileText", permission: "view_formularios" },
          { name: "Plantillas", path: "/template-builder", icon: "FileText", permission: "view_plantillas" },
-         { name: "Config. Tickets", path: "/config-tickets", icon: "Settings", permission: "view_configuracion_tickets" },
+         { name: "Config. Tickets", path: "/config-tickets", activeOn: ["/ticket-builder"], icon: "Settings", permission: "view_configuracion_tickets" },
          { name: "Anuncios", path: "/anuncios", icon: "Megaphone", permission: "view_anuncios" },
       ]
    },
