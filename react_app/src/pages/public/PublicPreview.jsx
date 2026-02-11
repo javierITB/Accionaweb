@@ -24,7 +24,6 @@ const PublicPreview = () => {
             try {
                 const res = await apiFetch(`${API_BASE_URL}/respuestas/public/${id}`);
                 if (!res.ok) throw new Error("No se pudo cargar la información de la solicitud.");
-                if (!res.ok) throw new Error("No se pudo cargar la información de la solicitud.");
 
                 const data = await res.json();
 
