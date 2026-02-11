@@ -51,22 +51,33 @@ export default function ProtectedRoute({ children }) {
             if (hasAccess) {
                setIsAuth(true);
             } else {
-               alert("No tienes permisos para acceder al panel de clientes.");
-               sessionStorage.clear();
-               setIsAuth(false);
+               // --- INTEGRACIÓN: Volver a Vista A sin cerrar sesión ---
+               alert("No tienes permisos para acceder a esta sección.");
+               
+               if (window.history.length > 1) {
+                  window.history.back(); // Regresa a la vista anterior (Vista A)
+               } else {
+                  window.location.href = "/"; // Fallback si no hay historial
+               }
+               
+               // No ejecutamos sessionStorage.clear() ni setIsAuth(false) 
+               // para que el usuario mantenga su sesión activa en la vista anterior.
             }
 
          } catch (err) {
             console.error("Error en ProtectedClient:", err);
-            setIsAuth(false);
-            if (err.message === "Sesión inválida") sessionStorage.clear();
+            // Solo cerramos sesión si el token es realmente inválido (401)
+            if (err.message === "Sesión inválida") {
+               sessionStorage.clear();
+               setIsAuth(false);
+            }
          } finally {
             setLoading(false);
          }
       };
 
       validarToken();
-   }, []);
+   }, []); // Se mantiene el array de dependencias original
 
    if (loading) {
       return (

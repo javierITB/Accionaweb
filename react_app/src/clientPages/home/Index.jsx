@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Header from '../components/ui/Header';
-import WelcomeCard from './components/WelcomeCard';
 import QuickActionsCard from './components/QuickActionsCard';
 import RecentActivityCard from './components/RecentActivityCard';
 import Icon from '../components/AppIcon';
@@ -8,30 +7,30 @@ import Button from '../components/ui/Button';
 import Footer from 'clientPages/components/ui/Footer';
 
 const DashboardHome = ({ userPermissions = [] }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  // const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  // const [currentTime, setCurrentTime] = useState(new Date());
 
   const user = sessionStorage.getItem("user");
-  const mail = sessionStorage.getItem("email");
+  // const mail = sessionStorage.getItem("email");
 
   // Mock user data
-  const currentUser = {
-    id: 1,
-    name: user,
-    email: mail,
-    department: "Recursos Humanos",
-    position: "HR Specialist",
-    employeeId: "ACC-2024-001",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
-  };
+  // const currentUser = {
+  //   id: 1,
+  //   name: user,
+  //   email: mail,
+  //   department: "Recursos Humanos",
+  //   position: "HR Specialist",
+  //   employeeId: "ACC-2024-001",
+  //   avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
+  // };
 
   // Update time every minute
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-    return () => clearInterval(timer);
-  }, []);
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setCurrentTime(new Date());
+  //   }, 60000);
+  //   return () => clearInterval(timer);
+  // }, []);
 
 
   const handleLoginRedirect = () => {
@@ -60,17 +59,13 @@ const DashboardHome = ({ userPermissions = [] }) => {
       <main className={`transition-all duration-300 pt-16 lg:pt-20`}>
         {/* CONTENEDOR PRINCIPAL RESPONSIVE */}
         <div className="px-4 sm:px-6 lg:px-8 xl:px-20 py-4 lg:py-6 space-y-4 lg:space-y-6 max-w-8xl mx-auto">
-          {/* Welcome Section (Se mueve dentro de la columna derecha) */}
-          <div className="w-full">
-            <WelcomeCard user={currentUser} />
-          </div>
+         
           {/* Main Dashboard Grid - ESTRUCTURA DE DOS COLUMNAS PRINCIPALES */}
           <div className="w-full xl:flex xl:space-x-6">
 
             {/* 1. Columna Izquierda: Acciones Rápidas (Ancho fijo) */}
             {user && (
               <div className="w-full xl:w-80 flex-shrink-0 mb-4 xl:mb-0">
-                {/* El WelcomeCard ya no está aquí */}
                 <QuickActionsCard orientation="vertical" />
               </div>
             )}

@@ -6,12 +6,14 @@ import Button from "./Button";
 // 💡 Ruta ajustada: Asume que NotificationsCard es un componente hermano.
 import NotificationsCard from "../../../components/ui/NotificationsCard";
 import { API_BASE_URL, CURRENT_TENANT, LOGO_TENANT } from "../../../utils/api";
+import { getCompanyLogo } from "../../../utils/getCompanyLogo";
 
 const Header = ({ className = "" }) => {
    const [isMenuOpen, setIsMenuOpen] = useState(false);
    const [isNotiOpen, setIsNotiOpen] = useState(false);
    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
    const [unreadCount, setUnreadCount] = useState(0);
+   const [companyLogo, setCompanyLogo] = useState(null);
 
    // --- LÓGICA DINÁMICA DEL LOGO ---
    const [logoSrc, setLogoSrc] = useState(`/logos/${LOGO_TENANT}/logo-header.png`);
@@ -152,6 +154,18 @@ const Header = ({ className = "" }) => {
       setIsUserMenuOpen(false);
    };
 
+   useEffect(() => {
+      const controller = new AbortController();
+
+      getCompanyLogo(controller.signal)
+         .then(setCompanyLogo)
+         .catch((err) => {
+            if (err.name !== "AbortError") console.error(err);
+         });
+
+      return () => controller.abort();
+   }, []);
+
    return (
       <header className={`fixed top-0 left-0 right-0 bg-card border-b border-border shadow-brand z-30 ${className}`}>
          <div className="flex items-center justify-between h-16 lg:h-20 px-4 sm:px-6 lg:px-8 bg-warning">
@@ -180,7 +194,7 @@ const Header = ({ className = "" }) => {
 
                <div className="flex flex-col">
                   <h1 className="text-base lg:text-lg font-semibold text-foreground leading-tight group-hover:text-primary transition-colors capitalize">
-                      {LOGO_TENANT === 'api' ? 'Solunex acciona' :  `Solunex ${CURRENT_TENANT}`}
+                     {LOGO_TENANT === "api" ? "Solunex acciona" : `Solunex ${CURRENT_TENANT}`}
                   </h1>
                   <span className="text-[10px] sm:text-xs text-amber-900/80 font-mono block leading-tight">
                      plataforma de asistencia a clientes
@@ -291,13 +305,20 @@ const Header = ({ className = "" }) => {
                            onClick={() => {
                               window.location.href = "/perfil";
                            }}
-                           className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+                           className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-white to-[#F2F2F2] rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
                            title="Perfil de usuario"
                         >
-                           {user ? (
-                              <span className="text-sm font-semibold text-white">{user.charAt(0).toUpperCase()}</span>
+                           {companyLogo ? (
+                              <img
+                                 src={companyLogo}
+                                 alt="Logo de la empresa"
+                                 className="w-full h-full object-cover rounded-full"
+                                 onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                 }}
+                              />
                            ) : (
-                              <Icon name="User" size={16} className="text-white" />
+                              <span className="text-base font-semibold text-primary">{user.charAt(0).toUpperCase()}</span>
                            )}
                         </button>
                      </div>

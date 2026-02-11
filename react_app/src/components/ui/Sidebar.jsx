@@ -10,6 +10,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
 
    // --- LÓGICA DINÁMICA DEL LOGO ---
    const [logoSrc, setLogoSrc] = useState(`/logos/${LOGO_TENANT}/logo-header.png`);
+   const [activeFloatingMenu, setActiveFloatingMenu] = useState(null);
 
    useEffect(() => {
       setLogoSrc(`/logos/${LOGO_TENANT}/logo-header.png`);
@@ -27,6 +28,8 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
    const [openMenus, setOpenMenus] = useState({ "Gestión Principal": true });
    const { userPermissions, isAdminRole, userRole } = usePermissions();
    const accordionRefs = useRef({});
+   const floatingMenuRef = useRef(null);
+   const buttonRefs = useRef({});
 
    const user = sessionStorage.getItem("user") || "Usuario";
 
@@ -43,6 +46,18 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          }
       });
    }, [location.pathname]);
+
+   // Lógica de cierre del menú flotante al hacer clic fuera
+   useEffect(() => {
+      const handleClickOutside = (event) => {
+         const isClickOnButton = Object.values(buttonRefs.current).some(ref => ref?.contains(event.target));
+         if (floatingMenuRef.current && !floatingMenuRef.current.contains(event.target) && !isClickOnButton) {
+            setActiveFloatingMenu(null);
+         }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+   }, []);
 
 
    const hasPermission = (itemPermission) => {
@@ -86,6 +101,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
    const handleNavigation = (path) => {
       navigate(path);
       if (onNavigate) onNavigate(path);
+      setActiveFloatingMenu(null);
    };
 
    // Corrección: Función específica para el logo que limpia el modo oscuro
@@ -97,6 +113,20 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
 
    const isTextVisible = !(isCollapsed && !isMobileOpen);
 
+   // Lógica de clic unificada para manejar el modo colapsado (Toggle)
+   const handleItemClick = (item) => {
+      if (isTextVisible) {
+         if (item.isAccordion) {
+            toggleAccordion(item.name);
+         } else {
+            handleNavigation(item.path);
+         }
+      } else {
+         // Toggle: si clickeo el mismo que está abierto, lo cierro
+         setActiveFloatingMenu(prev => prev === item.name ? null : item.name);
+      }
+   };
+
    const renderNavLink = (item, isChild = false) => {
       if (!hasPermission(item.permission)) return null;
 
@@ -104,12 +134,12 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
       return (
          <button
             key={item.path}
-            onClick={() => handleNavigation(item.path)}
+            onClick={() => isChild ? handleNavigation(item.path) : handleItemClick(item)}
             className={`w-full flex items-center rounded-lg transition-all duration-200 mb-1
                ${isActive ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-muted hover:text-foreground"}
                ${!isTextVisible ? "justify-center px-2 py-3" : isChild ? "pl-10 pr-3 py-2" : "px-3 py-3"}
             `}
-            title={!isTextVisible ? item.name : ""}
+            title={!isTextVisible && !isChild ? item.name : ""}
          >
             <Icon name={item.icon} size={isChild ? 16 : 20} className={isTextVisible && !isChild ? "mr-3" : ""} />
             {isTextVisible && (
@@ -131,7 +161,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
             {/* Header del Sidebar */}
             <div className={`flex items-center px-4 py-6 border-b border-border/50 ${!isTextVisible ? "justify-center" : "justify-between"}`}>
                <div
-                  className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+                  className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity w-full"
                   onClick={handleLogoClick}
                >
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden bg-background/50 border border-border/50 shadow-sm shrink-0">
@@ -144,8 +174,8 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                      />
                   </div>
                   {isTextVisible && (
-                     <div className="flex flex-col overflow-hidden">
-                        <h1 className="text-lg font-semibold text-foreground leading-tight truncate capitalize">
+                     <div className="flex flex-col min-w-0 flex-1">
+                        <h1 className="text-md font-semibold text-foreground leading-snug capitalize break-words whitespace-normal">
                            {LOGO_TENANT === 'api' ? 'Solunex Acciona' : `Solunex ${CURRENT_TENANT}`}
                         </h1>
                         <span className="text-[10px] text-muted-foreground font-mono truncate">Panel de administración</span>
@@ -157,29 +187,64 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
             <nav className={`flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden`}>
                {MENU_STRUCTURE.map((item) => {
                   if (!shouldShowSection(item)) return null;
-                  if (!item.isAccordion) return renderNavLink(item);
 
+                  const isAccordion = !!item.isAccordion;
                   const isOpen = openMenus[item.name];
+                  const isFloating = activeFloatingMenu === item.name;
+
+                  // Lógica de resaltado azul para categorías activas con menú cerrado
+                  const hasActiveChild = isAccordion && item.children?.some(child => location.pathname === child.path);
+                  const isDirectActive = !isAccordion && location.pathname === item.path;
+                  const shouldHighlight = hasActiveChild || isDirectActive;
 
                   return (
-                     <div key={item.name} className="space-y-1" ref={(el) => (accordionRefs.current[item.name] = el)}>
+                     <div key={item.name} className="relative space-y-1" ref={(el) => (accordionRefs.current[item.name] = el)}>
                         <button
-                           onClick={() => toggleAccordion(item.name)}
-                           className={`w-full flex items-center rounded-lg px-3 py-3 text-muted-foreground hover:bg-muted transition-all
+                           ref={(el) => (buttonRefs.current[item.name] = el)}
+                           onClick={() => handleItemClick(item)}
+                           className={`w-full flex items-center rounded-lg px-3 py-3 transition-all
+                              ${shouldHighlight && !isTextVisible ? "bg-primary text-primary-foreground shadow-md" : 
+                                (isOpen && isTextVisible) || isFloating ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"}
                               ${!isTextVisible ? "justify-center" : "justify-between"}`}
+                           title={!isTextVisible ? item.name : ""}
                         >
                            <div className="flex items-center">
                               <Icon name={item.icon} size={20} className={isTextVisible ? "mr-3" : ""} />
                               {isTextVisible && <span className="text-sm font-semibold">{item.name}</span>}
                            </div>
-                           {isTextVisible && (
+                           {isTextVisible && isAccordion && (
                               <Icon name={isOpen ? "ChevronDown" : "ChevronRight"} size={14} className="opacity-50" />
                            )}
                         </button>
 
-                        {isOpen && isTextVisible && (
+                        {/* Menú Normal Desplegable */}
+                        {isAccordion && isOpen && isTextVisible && (
                            <div className="space-y-1 mx-2 mt-1 animate-in fade-in slide-in-from-top-1">
                               {item.children.map(child => renderNavLink(child, true))}
+                           </div>
+                        )}
+
+                        {/* Menú Flotante para modo colapsado */}
+                        {!isTextVisible && isFloating && (
+                           <div ref={floatingMenuRef} className="fixed left-16 ml-2 w-56 bg-card border border-border rounded-xl shadow-xl z-[100] py-2 animate-in fade-in zoom-in-95 slide-in-from-left-2">
+                              <div className="px-4 py-2 mb-1 border-b border-border/50">
+                                 <span className="text-[10px] font-bold text-primary uppercase tracking-[0.15em] opacity-80">{item.name}</span>
+                              </div>
+                              <div className="px-2 space-y-0.5">
+                                 {item.children ? (
+                                    item.children.map(child => (
+                                       <button key={child.path} onClick={() => handleNavigation(child.path)} className={`w-full flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${location.pathname === child.path ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+                                          <Icon name={child.icon} size={16} className={`mr-3 ${location.pathname === child.path ? "text-primary" : "opacity-70"}`} />
+                                          <span className="truncate">{child.name}</span>
+                                       </button>
+                                    ))
+                                 ) : (
+                                    <button onClick={() => handleNavigation(item.path)} className={`w-full flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${location.pathname === item.path ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+                                       <Icon name={item.icon} size={16} className={`mr-3 ${location.pathname === item.path ? "text-primary" : "opacity-70"}`} />
+                                       <span className="truncate">{item.name}</span>
+                                    </button>
+                                 )}
+                              </div>
                            </div>
                         )}
                      </div>
@@ -206,7 +271,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                <button
                   onClick={() => handleNavigation("/perfil")}
                   className={`w-full flex items-center rounded-lg transition-all duration-200 px-3 py-3 text-muted-foreground hover:bg-muted hover:text-foreground
-                     ${!isTextVisible ? "justify-center" : ""}
+                     ${!isTextVisible ? "justify-center" : ""} ${location.pathname === "/perfil" && !isTextVisible ? "bg-primary text-primary-foreground shadow-md" : ""}
                   `}
                   title={!isTextVisible ? "Ir a mi Perfil" : ""}
                >
