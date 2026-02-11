@@ -166,6 +166,14 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null }) {
                            : <>Esto creará una base de datos física llamada <strong>{formData.name.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase() || "..."}</strong></>
                         }
                      </p>
+                     {!company && (
+                        <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-start gap-3">
+                           <Server size={18} className="text-blue-500 shrink-0 mt-0.5" />
+                           <p className="text-xs text-blue-700 leading-relaxed">
+                              <strong>Plantilla activa:</strong> Esta nueva empresa se creará clonando los formularios, plantillas, roles y usuarios base desde la base de datos <strong>desarrollo</strong>.
+                           </p>
+                        </div>
+                     )}
                   </div>
                </div>
 

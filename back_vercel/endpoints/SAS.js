@@ -97,24 +97,44 @@ router.post("/companies", async (req, res) => {
 
         await dbForms.collection("config_empresas").insertOne(newCompany);
 
-        // 3. Inicializar la nueva Base de Datos
-        console.log(`[SAS] Initializing database: ${dbName}`);
+        // 3. Inicializar la nueva Base de Datos clonando de 'desarrollo'
+        console.log(`[SAS] Initializing database: ${dbName} from template 'desarrollo'`);
         const newDb = req.mongoClient.db(dbName);
+        const templateDb = req.mongoClient.db("desarrollo");
 
-        // 3.1 Crear colecciones base (excluyendo config_empresas)
-        const collectionsToCreate = [
-            "usuarios",
+        // 3.1 Colecciones a clonar desde 'desarrollo'
+        const collectionsToClone = [
+            "forms",
+            "plantillas",
             "roles",
-            "config_roles"
+            "usuarios"
         ];
 
-        // Crear colecciones explícitamente y/o índices si fuera necesario
-        for (const col of collectionsToCreate) {
-            const cols = await newDb.listCollections({ name: col }).toArray();
-            if (cols.length === 0) {
-                await newDb.createCollection(col);
+        for (const colName of collectionsToClone) {
+            try {
+                const data = await templateDb.collection(colName).find().toArray();
+                if (data.length > 0) {
+                    console.log(`[SAS] Cloning ${data.length} documents from ${colName}...`);
+                    // Quitamos los _id para que se generen nuevos en la nueva DB
+                    const cleanData = data.map(doc => {
+                        const { _id, ...rest } = doc;
+                        return rest;
+                    });
+                    await newDb.collection(colName).insertMany(cleanData);
+                } else {
+                    console.log(`[SAS] Collection ${colName} is empty in 'desarrollo'. Creating empty collection.`);
+                    await newDb.createCollection(colName);
+                }
+            } catch (err) {
+                console.error(`[SAS] Error cloning collection ${colName}:`, err.message);
+                // Si falla la clonación, al menos creamos la colección vacía
+                try { await newDb.createCollection(colName); } catch (e) { }
             }
         }
+
+        // 3.2 Asegurar existencia de config_roles (se llena más abajo)
+        const hasConfigRoles = (await newDb.listCollections({ name: "config_roles" }).toArray()).length > 0;
+        if (!hasConfigRoles) await newDb.createCollection("config_roles");
 
         // 3.2 Generar config_roles basado en PERMISOS seleccionados
         // Iteramos sobre todos los grupos de permisos.
@@ -126,12 +146,6 @@ router.post("/companies", async (req, res) => {
         Object.entries(PERMISSION_GROUPS).forEach(([key, group]) => {
 
             // Filtramos los permisos de este grupo que están en la lista seleccionada
-            // OJO: 'root' permissions (como ver panel) suelen ser necesarios si se seleccionan hijos, 
-            // pero el frontend ya maneja la lógica de dependencias. Aquí confiamos en el payload.
-
-            // IMPORTANTE: También debemos incluir permisos 'root' implícitos si queremos forzarlos, 
-            // pero mejor respetar lo que manda el front.
-
             const groupPermissionsIncluded = group.permissions.filter(p => selectedPermissions.includes(p.id));
 
             if (groupPermissionsIncluded.length > 0) {
@@ -178,9 +192,6 @@ router.put("/companies/:id", async (req, res) => {
             query = { _id: new ObjectId(id) };
         } catch (e) {
             // Fallback por si usamos el nombre como ID o un string custom
-            // Pero idealmente el front manda el _id. Si el front manda nombre en modal, ajustar.
-            // El modal actual usa company._id si existe, o company.name si no.
-            // Vamos a intentar buscar por _id primero, si falla, asumimos que id es el nombre (deprecated pero safe)
             query = { name: id };
         }
 
@@ -280,14 +291,15 @@ router.delete("/companies/:id", async (req, res) => {
             return res.status(403).json({ error: "No se puede eliminar la base de datos principal del sistema." });
         }
 
-        // 1. Eliminar de config_empresas
-        await dbForms.collection("config_empresas").deleteOne(query);
-
-        // 2. Eliminar la base de datos física
+        // 1. Eliminar la base de datos física primero
         if (company.dbName) {
+            console.log(`[SAS] Dropping database: ${company.dbName}`);
             const dbDrop = req.mongoClient.db(company.dbName);
             await dbDrop.dropDatabase();
         }
+
+        // 2. Eliminar de config_empresas después
+        await dbForms.collection("config_empresas").deleteOne(query);
 
         res.json({ message: "Empresa y base de datos eliminadas" });
 
