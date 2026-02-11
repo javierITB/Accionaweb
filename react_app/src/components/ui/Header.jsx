@@ -3,6 +3,7 @@ import { apiFetch, API_BASE_URL } from '../../utils/api';
 import Icon from '../AppIcon';
 import Button from './Button';
 import NotificationsCard from './NotificationsCard';
+import { usePermissions } from '../../context/PermissionsContext';
 
 const Header = ({ className = '' }) => {
   const [isHeaderHidden, setIsHeaderHidden] = useState(false);
@@ -11,10 +12,9 @@ const Header = ({ className = '' }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const user = sessionStorage.getItem("user");
-  const cargo = sessionStorage.getItem("cargo");
   const userMail = sessionStorage.getItem("email");
+  const { userRole } = usePermissions();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [userRole, setUserRole] = useState(cargo || 'Usuario');
   const [shouldShake, setShouldShake] = useState(false);
 
   // REF para el audio y para seguir el rastro del conteo anterior sin disparar re-renders
@@ -33,22 +33,7 @@ const Header = ({ className = '' }) => {
     audioRef.current.volume = 1.0;
   }, []);
 
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      try {
-        if (!userMail) return;
-        const response = await apiFetch(`${API_BASE_URL}/auth/full/${userMail}`);
-        if (response.ok) {
-          const userData = await response.json();
-          setUserRole(userData.rol || cargo || 'Usuario');
-          return;
-        }
-      } catch (error) {
-        console.error('Error obteniendo rol del usuario:', error);
-      }
-    };
-    fetchUserRole();
-  }, [userMail, cargo]);
+
 
   useEffect(() => {
     const root = document.documentElement;
@@ -124,16 +109,16 @@ const Header = ({ className = '' }) => {
   };
 
   return (
-    <div 
+    <div
       className={`
         fixed top-4 z-50 flex flex-col pointer-events-none transition-all duration-500
         /* Lógica Responsiva: */
-        ${isHeaderHidden 
-          ? 'right-1 sm:right-1 lg:right-2 items-end' 
+        ${isHeaderHidden
+          ? 'right-1 sm:right-1 lg:right-2 items-end'
           : 'left-1/2 -translate-x-1/2 w-full max-w-[95%] items-center md:left-auto md:translate-x-0 md:right-1 lg:right-2 md:w-auto md:items-end'}
       `}
     >
-      <header 
+      <header
         ref={(el) => {
           menuRef.current = el;
           notiRef.current = el;
@@ -149,28 +134,28 @@ const Header = ({ className = '' }) => {
         `}
       >
         <div className="flex items-center gap-2 md:gap-3">
-          
-          <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => {
-                setIsHeaderHidden(!isHeaderHidden);
-                setIsNotiOpen(false);
-              }} 
-              iconName={isHeaderHidden ? "Eye" : "EyeOff"} 
-              className="rounded-xl w-10 h-10 md:w-11 md:h-11 text-muted-foreground" 
-              iconSize={20}
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setIsHeaderHidden(!isHeaderHidden);
+              setIsNotiOpen(false);
+            }}
+            iconName={isHeaderHidden ? "Eye" : "EyeOff"}
+            className="rounded-xl w-10 h-10 md:w-11 md:h-11 text-muted-foreground"
+            iconSize={20}
           />
 
           {!isHeaderHidden && (
             <>
-              <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={toggleTheme} 
-                  iconName={theme === 'dark' ? "Sun" : "Moon"} 
-                  className="rounded-xl w-10 h-10 md:w-11 md:h-11" 
-                  iconSize={20}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                iconName={theme === 'dark' ? "Sun" : "Moon"}
+                className="rounded-xl w-10 h-10 md:w-11 md:h-11"
+                iconSize={20}
               />
 
               <div>
@@ -200,12 +185,12 @@ const Header = ({ className = '' }) => {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-tight">{userRole}</p>
                   </div>
                 )}
-                
+
                 {user && (
                   <div className="relative" ref={userMenuRef}>
-                    <button 
+                    <button
                       /* RECUPERADO: window.location.href directo */
-                      onClick={() => { window.location.href = "/perfil" }} 
+                      onClick={() => { window.location.href = "/perfil" }}
                       className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white font-bold text-base shadow-sm hover:scale-105 active:scale-95 transition-all"
                     >
                       {user.charAt(0).toUpperCase()}
@@ -213,8 +198,8 @@ const Header = ({ className = '' }) => {
                   </div>
                 )}
 
-                <button 
-                  onClick={() => { user ? handleLogout() : handleNavigation('/login') }} 
+                <button
+                  onClick={() => { user ? handleLogout() : handleNavigation('/login') }}
                   className="w-10 h-10 md:w-12 md:h-12 bg-muted/50 hover:bg-error/10 hover:text-error rounded-xl flex items-center justify-center text-muted-foreground transition-colors"
                   /* RECUPERADO: Atributo title */
                   title={user ? "Cerrar Sesión" : "Iniciar Sesión"}

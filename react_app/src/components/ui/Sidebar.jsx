@@ -4,6 +4,7 @@ import Icon from "../AppIcon";
 // Importamos LOGO_TENANT para la lógica de imágenes y API_BASE_URL para los permisos
 import { API_BASE_URL, LOGO_TENANT } from "../../utils/api";
 import { MENU_STRUCTURE } from "../../config/menuStructure";
+import { usePermissions } from "../../context/PermissionsContext";
 
 const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobileOpen = false, onNavigate }) => {
 
@@ -24,12 +25,10 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
    const navigate = useNavigate();
 
    const [openMenus, setOpenMenus] = useState({ "Gestión Principal": true });
-   const [userPermissions, setUserPermissions] = useState([]);
-   const [isAdminRole, setIsAdminRole] = useState(false);
+   const { userPermissions, isAdminRole, userRole } = usePermissions();
    const accordionRefs = useRef({});
 
    const user = sessionStorage.getItem("user") || "Usuario";
-   const userRole = sessionStorage.getItem("cargo"); // Nombre del Rol
 
    useEffect(() => {
       MENU_STRUCTURE.forEach(item => {
@@ -44,45 +43,6 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
          }
       });
    }, [location.pathname]);
-
-   // Fetch permissons based on Role Name
-   useEffect(() => {
-      const fetchPermissions = async () => {
-         if (!userRole) return;
-
-         // 1. Intentar leer de sessionStorage
-         const cachedPermissions = sessionStorage.getItem("permissions");
-         if (cachedPermissions) {
-            try {
-               const parsed = JSON.parse(cachedPermissions);
-               setUserPermissions(parsed);
-               if (userRole === 'Admin') setIsAdminRole(true);
-               return;
-            } catch (e) {
-               console.error("Error parsing permissions from storage", e);
-            }
-         }
-
-         // 2. Fallback: Fetch si no están en storage
-         try {
-            const token = sessionStorage.getItem("token");
-            const res = await fetch(`${API_BASE_URL}/roles/name/${encodeURIComponent(userRole)}`, {
-               headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (res.ok) {
-               const data = await res.json();
-               const perms = data.permissions || [];
-               setUserPermissions(perms);
-               sessionStorage.setItem("permissions", JSON.stringify(perms));
-               if (data.name === 'Admin') setIsAdminRole(true);
-            }
-         } catch (error) {
-            console.error("Error fetching permissions for sidebar:", error);
-         }
-      };
-      fetchPermissions();
-   }, [userRole]);
 
 
    const hasPermission = (itemPermission) => {
@@ -105,22 +65,22 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
       return hasPermission(item.permission);
    };
 
-const toggleAccordion = (name) => {
-  setOpenMenus((prev) => {
-    const willOpen = !prev[name];
+   const toggleAccordion = (name) => {
+      setOpenMenus((prev) => {
+         const willOpen = !prev[name];
 
-    if (willOpen) {
-      setTimeout(() => {
-        accordionRefs.current[name]?.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-        });
-      }, 100);
-    }
+         if (willOpen) {
+            setTimeout(() => {
+               accordionRefs.current[name]?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "nearest",
+               });
+            }, 100);
+         }
 
-    return { ...prev, [name]: willOpen };
-  });
-};
+         return { ...prev, [name]: willOpen };
+      });
+   };
 
 
    const handleNavigation = (path) => {
@@ -175,12 +135,12 @@ const toggleAccordion = (name) => {
                   onClick={handleLogoClick}
                >
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden bg-background/50 border border-border/50 shadow-sm shrink-0">
-                     <img 
-                        src={logoSrc} 
-                        alt={`Logo ${LOGO_TENANT}`} 
-                        onError={handleImageError} 
-                        className="max-w-full max-h-full p-1" 
-                        style={{ objectFit: 'contain' }} 
+                     <img
+                        src={logoSrc}
+                        alt={`Logo ${LOGO_TENANT}`}
+                        onError={handleImageError}
+                        className="max-w-full max-h-full p-1"
+                        style={{ objectFit: 'contain' }}
                      />
                   </div>
                   {isTextVisible && (
