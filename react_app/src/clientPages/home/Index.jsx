@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Header from '../components/ui/Header';
 import QuickActionsCard from './components/QuickActionsCard';
 import RecentActivityCard from './components/RecentActivityCard';
@@ -7,30 +7,30 @@ import Button from '../components/ui/Button';
 import Footer from 'clientPages/components/ui/Footer';
 
 const DashboardHome = ({ userPermissions = [] }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  // const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  // const [currentTime, setCurrentTime] = useState(new Date());
 
   const user = sessionStorage.getItem("user");
-  const mail = sessionStorage.getItem("email");
+  // const mail = sessionStorage.getItem("email");
 
   // Mock user data
-  const currentUser = {
-    id: 1,
-    name: user,
-    email: mail,
-    department: "Recursos Humanos",
-    position: "HR Specialist",
-    employeeId: "ACC-2024-001",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
-  };
+  // const currentUser = {
+  //   id: 1,
+  //   name: user,
+  //   email: mail,
+  //   department: "Recursos Humanos",
+  //   position: "HR Specialist",
+  //   employeeId: "ACC-2024-001",
+  //   avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
+  // };
 
   // Update time every minute
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-    return () => clearInterval(timer);
-  }, []);
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setCurrentTime(new Date());
+  //   }, 60000);
+  //   return () => clearInterval(timer);
+  // }, []);
 
 
   const handleLoginRedirect = () => {
