@@ -14,7 +14,7 @@ const getSubdomain = () => {
     // Si tiene más de 2 partes (subdominio.dominio.ext), tomamos la primera
     // Si es localhost o una IP, devolvemos "api" por defecto para desarrollo
     if (parts.length > 2) {
-        return parts[0]; 
+        return parts[0];
     }
 
     return "api"; // Fallback para solunex.cl o localhost
@@ -46,8 +46,8 @@ export const API_BASE_URL = `${BASE_DOMAIN}/${tenant}`;
 // Agregamos "api" a los alias para que en localhost cargue la carpeta de acciona
 const aliasAcciona = ["solunex", "infoacciona", "acciona", "infodesa", "api"];
 
-export const LOGO_TENANT = aliasAcciona.includes(tenant.toLowerCase()) 
-    ? "acciona" 
+export const LOGO_TENANT = aliasAcciona.includes(tenant.toLowerCase())
+    ? "acciona"
     : tenant;
 // -------------------------------
 
@@ -73,17 +73,17 @@ export const apiFetch = async (endpoint, options = {}) => {
     try {
         const response = await fetch(fullUrl, config);
 
-        if (response.status === 401) {
+        if (response.status === 401 && !options.skipRedirect) {
             console.warn("Unauthorized access - Redirecting...");
             if (typeof window !== 'undefined') {
                 sessionStorage.clear();
                 window.location.href = '/login';
             }
         }
-        if (response.status === 403) {
+        if (response.status === 403 && !options.skipRedirect) {
             console.warn("Acceso denegado - Volviendo a la ruta anterior");
             if (typeof window !== 'undefined') {
-                window.history.back(); 
+                window.history.back();
             }
             return response;
         }
