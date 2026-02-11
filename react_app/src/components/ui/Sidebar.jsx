@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Icon from "../AppIcon";
 // Importamos LOGO_TENANT para la lógica de imágenes y API_BASE_URL para los permisos
-import { API_BASE_URL, LOGO_TENANT } from "../../utils/api";
+import { API_BASE_URL, CURRENT_TENANT, LOGO_TENANT } from "../../utils/api";
 import { MENU_STRUCTURE } from "../../config/menuStructure";
 import { usePermissions } from "../../context/PermissionsContext";
 
@@ -146,7 +146,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                   {isTextVisible && (
                      <div className="flex flex-col overflow-hidden">
                         <h1 className="text-lg font-semibold text-foreground leading-tight truncate capitalize">
-                           {LOGO_TENANT === 'api' ? 'Solunex Acciona' : `Solunex ${LOGO_TENANT}`}
+                           {LOGO_TENANT === 'api' ? 'Solunex Acciona' : `Solunex ${CURRENT_TENANT}`}
                         </h1>
                         <span className="text-[10px] text-muted-foreground font-mono truncate">Panel de administración</span>
                      </div>
