@@ -509,10 +509,10 @@ const RequestTracking = ({ userPermissions = [] }) => {
                                 className="mx-auto mb-3 lg:mb-4 text-muted-foreground opacity-50 sm:w-12 sm:h-12"
                              />
                              <h3 className="text-base lg:text-lg font-semibold text-foreground mb-2">
-                                No se encontraron solicitudes
+                                No se encontraron Tickets
                              </h3>
                              <p className="text-muted-foreground mb-4 text-sm lg:text-base px-4">
-                                Intenta ajustar los filtros o crear una nueva solicitud
+                                Intenta ajustar los filtros o crear una nueva Tickets
                              </p>
                           </div>
                        )}
