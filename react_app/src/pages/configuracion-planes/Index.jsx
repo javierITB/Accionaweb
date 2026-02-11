@@ -70,6 +70,15 @@ const PlanesConfigView = ({ userPermissions = {} }) => {
         else setIsDesktopOpen(!isDesktopOpen);
     };
 
+    const formatBytes = (bytes, decimals = 2) => {
+        if (!+bytes) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+    };
+
     const filteredCompanies = companies.filter(
         (company) =>
             company.name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -141,78 +150,63 @@ const PlanesConfigView = ({ userPermissions = {} }) => {
                                         key={company._id || company.name}
                                         className="bg-card rounded-2xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col overflow-hidden"
                                     >
-                                        {/* Decoración superior */}
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-
-                                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="absolute top-4 right-4 flex items-center gap-2">
                                             {permisos.edit_empresas && (
                                                 <button
                                                     onClick={() => {
                                                         setEditingPlan(company);
                                                         setIsModalOpen(true);
                                                     }}
-                                                    className="p-2 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 rounded-xl transition-all"
+                                                    className="p-1.5 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
                                                     title="Configurar Plan"
                                                 >
-                                                    <ShieldCheck size={20} />
+                                                    <ShieldCheck size={16} />
                                                 </button>
                                             )}
                                         </div>
 
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg bg-gradient-to-br from-indigo-600 to-purple-700 shrink-0">
-                                                <LayoutDashboard size={28} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h3 className="text-lg font-bold text-foreground truncate">
-                                                    {company.name}
-                                                </h3>
-                                                <p className="text-xs text-muted-foreground font-mono truncate">
-                                                    {company.dbName}
-                                                </p>
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div
+                                                className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg bg-indigo-600"
+                                            >
+                                                <Database size={24} />
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 gap-3 mb-6">
-                                            <div className="flex items-center justify-between p-3 bg-muted rounded-xl border border-border/50">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg">
-                                                        <FileText size={16} />
-                                                    </div>
-                                                    <span className="text-sm font-medium">Solicitudes</span>
-                                                </div>
-                                                <span className="font-bold text-sm">{(company.limits?.solicitudes) || "Naranjo"}</span>
-                                            </div>
+                                        <h3 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2 break-all">
+                                            {company.name}
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground mb-2 font-mono">
+                                            {company.dbName || "Sin DB"}
+                                        </p>
 
-                                            <div className="flex items-center justify-between p-3 bg-muted rounded-xl border border-border/50">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-orange-500/10 text-orange-500 rounded-lg">
-                                                        <Bell size={16} />
-                                                    </div>
-                                                    <span className="text-sm font-medium">Tickets</span>
-                                                </div>
-                                                <span className="font-bold text-sm">{(company.limits?.tickets) || "50"}</span>
-                                            </div>
-
-                                            <div className="flex items-center justify-between p-3 bg-muted rounded-xl border border-border/50">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-purple-500/10 text-purple-500 rounded-lg">
-                                                        <Users size={16} />
-                                                    </div>
-                                                    <span className="text-sm font-medium">Usuarios</span>
-                                                </div>
-                                                <span className="font-bold text-sm">{(company.limits?.usuarios) || "10"}</span>
-                                            </div>
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                                            <HardDrive size={14} />
+                                            <span>{formatBytes(company.sizeOnDisk || 0)}</span>
                                         </div>
 
-                                        <div className="mt-auto pt-4 border-t border-border flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Activity size={14} className="text-emerald-500" />
-                                                <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Plan Activo</span>
+                                        <div className="mt-auto space-y-4">
+                                            <div className="flex items-center gap-2 text-sm text-foreground bg-muted/50 px-3 py-2 rounded-lg">
+                                                {company.empty ? (
+                                                    <>
+                                                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                                        <span>Vacía</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                                        <span>Activa</span>
+                                                    </>
+                                                )}
                                             </div>
-                                            <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-1 rounded-lg">
-                                                Standard
-                                            </span>
+
+                                            <div className="h-px bg-border" />
+
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+                                                    Gestión de Límites
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -231,7 +225,7 @@ const PlanesConfigView = ({ userPermissions = {} }) => {
                         setEditingPlan(null);
                     }}
                     onSuccess={() => {
-                        // fetchCompanies(); // For now just close, no real back update
+                        fetchCompanies();
                         setIsModalOpen(false);
                         setEditingPlan(null);
                     }}

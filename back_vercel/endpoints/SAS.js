@@ -208,8 +208,12 @@ router.put("/companies/:id", async (req, res) => {
         }
 
         // 1. Actualizar config_empresas
+        const updateData = {};
+        if (permissions) updateData.permissions = permissions;
+        if (req.body.planLimits) updateData.planLimits = req.body.planLimits;
+
         await dbForms.collection("config_empresas").updateOne(query, {
-            $set: { permissions: permissions || [] }
+            $set: updateData
         });
 
         // 2. Regenerar config_roles en la DB objetivo
@@ -306,6 +310,34 @@ router.delete("/companies/:id", async (req, res) => {
     } catch (error) {
         console.error("Error al eliminar empresa:", error);
         res.status(500).json({ error: "Error al eliminar empresa" });
+    }
+});
+
+// GET /companies/:id: Obtener detalles de una empresa (incluyendo planLimits)
+router.get("/companies/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const dbForms = getFormsDB(req);
+        const { ObjectId } = require("mongodb");
+
+        let query = {};
+        if (ObjectId.isValid(id)) {
+            query = { _id: new ObjectId(id) };
+        } else {
+            query = { name: id };
+        }
+
+        const company = await dbForms.collection("config_empresas").findOne(query);
+
+        if (!company) {
+            return res.status(404).json({ error: "Empresa no encontrada" });
+        }
+
+        res.json(company);
+
+    } catch (error) {
+        console.error("Error al obtener detalles de empresa:", error);
+        res.status(500).json({ error: "Error al obtener detalles de empresa" });
     }
 });
 

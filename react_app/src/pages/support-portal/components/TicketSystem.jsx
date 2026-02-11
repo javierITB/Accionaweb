@@ -239,7 +239,13 @@ const TicketSystem = () => {
             fetchTickets();
          } else {
             const errData = await res.json();
-            alert(`Error al crear ticket: ${errData.error || "Error desconocido"}`);
+            const errorMessage = errData.error || "Error desconocido";
+
+            if (res.status === 403 && errorMessage.includes("Plan limit")) {
+               alert("Límite del Plan Alcanzado\n\nNo puedes crear más tickets porque tu empresa ha alcanzado el límite de su plan actual.\n\nPor favor contacta al administrador.");
+            } else {
+               alert(`Error al crear ticket: ${errorMessage}`);
+            }
          }
       } catch (error) {
          console.error("Error creating ticket:", error);
@@ -292,7 +298,7 @@ const TicketSystem = () => {
          {/* Contenedor adaptativo: flex-col en móvil, flex-row en escritorio */}
          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full pb-4 gap-4">
             <h2 className="text-xl sm:text-2xl font-bold text-foreground">Sistema de Tickets</h2>
-            
+
             {/* Tabs adaptativos: w-full en móvil, w-fit en escritorio */}
             <div className="flex space-x-1 bg-muted p-1 rounded-lg w-full sm:w-fit overflow-hidden">
                <Button
