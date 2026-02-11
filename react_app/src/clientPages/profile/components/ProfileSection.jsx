@@ -3,8 +3,8 @@ import Icon from '../../components/AppIcon';
 import Image from '../../components/AppImage';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
 import { API_BASE_URL } from '../../../utils/api';
+import { getCompanyLogo } from '../../../utils/getCompanyLogo';
 
 // Recibimos los datos del usuario como props
 const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading }) => {
@@ -14,6 +14,7 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
   const [profileData, setProfileData] = useState(initialProfileData);
   const [formData, setFormData] = useState(initialProfileData);
   const [errors, setErrors] = useState({});
+  const [companyLogo, setCompanyLogo] = useState(null);
 
   // Sincronizar data si el prop inicial cambia (solo debería cambiar una vez al inicio)
   useEffect(() => {
@@ -30,6 +31,10 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
       setFormData(syncedData);
     }
   }, [initialProfileData]);
+
+  useEffect(() => {
+    getCompanyLogo().then(setCompanyLogo);
+  }, []);
 
 
   const departmentOptions = [
@@ -134,19 +139,6 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
     setIsEditing(false);
   };
 
-  const handleImageUpload = (event) => {
-    const file = event?.target?.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFormData((prev) => ({
-          ...prev,
-          profileImage: e?.target?.result
-        }));
-      };
-      reader?.readAsDataURL(file);
-    }
-  };
 
 
   if (isParentLoading || !profileData) {
@@ -179,24 +171,14 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
           <div className="lg:w-1/3">
             <div className="flex flex-col items-center space-y-4">
               <div className="relative">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-border">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-white to-[#F2F2F2] rounded-full overflow-hidden border-4 border-border">
                   <Image
-                    src={formData?.profileImage}
+                    src={companyLogo ? companyLogo : formData?.profileImage}
                     alt={`Foto de perfil de ${formData.firstName}`}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                {isEditing && (
-                  <label className="absolute bottom-0 right-0 w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
-                    <Icon name="Camera" size={14} color="white" className="sm:w-4 sm:h-4" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
-                )}
+                
               </div>
 
               <div className="text-center">
