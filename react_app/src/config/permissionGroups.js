@@ -205,7 +205,7 @@ export const PERMISSION_GROUPS = {
       ]
    },
    //check
-   formularios: {
+   formularios_admin: {
       label: 'Vista: Formularios',
       tagg: 'admin',
       permissions: [
@@ -353,11 +353,11 @@ export const PERMISSION_GROUPS = {
 
       ]
    },
-   formularios: {
+   formularios_cliente: {
       label: 'Vista: Formularios',
       tagg: 'cliente',
       permissions: [
-         { id: 'view_formularios', label: 'Acceso a la vista' }
+         { id: 'view_formularios_cliente', label: 'Acceso a la vista' }
       ]
    },
    formulario: {

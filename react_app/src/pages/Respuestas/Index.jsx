@@ -13,8 +13,6 @@ import { Navigate } from 'react-router-dom';
 
 const RequestTracking = ({ userPermissions = {} }) => {
 
-
-
   const urlParams = new URLSearchParams(window.location.search);
   const formId = urlParams?.get('id');
 
@@ -507,7 +505,7 @@ const RequestTracking = ({ userPermissions = {} }) => {
                   onRemove={handleRemove}
                   onViewDetails={(req) => { setSelectedRequest(req); setShowRequestDetails(true); }}
                   onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }}
-                  permissions={permissions}
+                  userPermissions={permissions}
                 />
               ))
             ) : (
@@ -562,14 +560,14 @@ const RequestTracking = ({ userPermissions = {} }) => {
         </div>
       </main>
 
-      <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} request={messageRequest} formId={formId} onSendMessage={console.log} permissions={permissions} />
+      <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} request={messageRequest} formId={formId} onSendMessage={console.log} userPermissions={permissions} />
       <RequestDetails
         request={selectedRequest}
         isVisible={showRequestDetails}
         onClose={handleCloseRequestDetails}
         onUpdate={updateRequest}
         onSendMessage={(req) => { setMessageRequest(req); setShowMessageModal(true); }}
-        permissions={permissions}
+        userPermissions={permissions}
       />
     </div>
   );
