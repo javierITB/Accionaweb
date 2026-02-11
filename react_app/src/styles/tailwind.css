@@ -309,7 +309,7 @@
   /* 🏗️ NUEVO: Contenedor principal adaptable */
   /* Aplicar esta clase a un <div> que envuelva tu contenido principal */
   .container-main {
-    @apply mx-auto w-full px-4;
+    @apply mx-auto w-full px-1;
     /* padding-x de 1rem por defecto (móvil) */
   }
 
