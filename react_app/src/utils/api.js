@@ -4,7 +4,6 @@
 
 // VARIABLE DE CONTROL: Cámbiala manualmente para testear logos localmente.
 // En producción déjala vacía "" para que el front use el subdominio.
-const domain_temporal = "";
 
 const getSubdomain = () => {
     if (typeof window === 'undefined') return "api";
@@ -80,6 +79,13 @@ export const apiFetch = async (endpoint, options = {}) => {
                 sessionStorage.clear();
                 window.location.href = '/login';
             }
+        }
+        if (response.status === 403) {
+            console.warn("Acceso denegado - Volviendo a la ruta anterior");
+            if (typeof window !== 'undefined') {
+                window.history.back(); 
+            }
+            return response;
         }
 
         return response;
