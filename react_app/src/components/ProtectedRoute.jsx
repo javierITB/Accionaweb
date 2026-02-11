@@ -82,7 +82,7 @@ export default function ProtectedRoute({ children }) {
    if (loading) {
       return (
          <div className="flex items-center justify-center h-screen">
-            <LoadingCard />
+            <LoadingCard text = "validando sesión"/>
          </div>
       );
    }
