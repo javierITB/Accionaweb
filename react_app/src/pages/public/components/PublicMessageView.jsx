@@ -32,7 +32,8 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
     const fetchMessages = async () => {
         if (!id) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/respuestas/${id}/chat`);
+            const res = await fetch(`${API_BASE_URL}/respuestas/public/${id}/chat`);
+            if (!res.ok) throw new Error("Error al obtener chat");
             if (!res.ok) throw new Error("Error al obtener chat");
             const data = await res.json();
 
