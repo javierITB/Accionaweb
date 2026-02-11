@@ -1045,6 +1045,14 @@ router.post("/register", async (req, res) => {
          return res.status(400).json({ error: "El usuario ya existe" });
       }
 
+      // PLAN LIMITES USUARIOS
+      const { checkPlanLimits } = require("../utils/planLimits");
+      try {
+         await checkPlanLimits(req, 'users', { empresa });
+      } catch (limitErr) {
+         return res.status(403).json({ error: limitErr.message });
+      }
+
       const newUser = {
          nombre: encrypt(nombre),
          apellido: encrypt(apellido),
@@ -1082,7 +1090,7 @@ router.post("/register", async (req, res) => {
                <h2 style="color: #3B82F6;">¡Bienvenido, ${nombre}!</h2>
                <p>Has sido registrado en la plataforma. Para activar tu cuenta, haz clic en el botón:</p>
                <div style="text-align: center; margin: 30px 0;">
-                  <a href="${process.env.PORTAL_URL}/set-password?userId=${userId}" 
+                  <a href="${global.currentPortal}/set-password?userId=${userId}" 
                      style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
                      Configurar mi Contraseña
                   </a>
@@ -1549,6 +1557,15 @@ router.post("/empresas/register", upload.single("logo"), async (req, res) => {
       if (!auth.ok) {
          return res.status(403).json({ error: auth.error });
       }
+
+      // Plan Limites Empresas
+      const { checkPlanLimits } = require("../utils/planLimits");
+      try {
+         await checkPlanLimits(req, 'companies');
+      } catch (limitErr) {
+         return res.status(403).json({ error: limitErr.message });
+      }
+
       const { nombre, rut, direccion, encargado, rut_encargado } = req.body;
       if (!nombre || !rut) return res.status(400).json({ error: "Nombre y RUT obligatorios" });
 

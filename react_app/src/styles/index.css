@@ -85,13 +85,3 @@ body {
 .sidebar-collapsed:hover::-webkit-scrollbar-thumb:hover {
    background-color: rgba(100, 100, 100, 0.6);
 }
-
-/* Si el header tiene la clase que lo hace pequeño, el main sube */
-body:has(header.w-14) main {
-   padding-top: 0.5rem !important;
-}
-
-/* Si el header está expandido (no tiene w-14), el main baja */
-body:has(header:not(.w-14)) main {
-   padding-top: 4.5rem !important; /* Espacio para el header normal */
-}

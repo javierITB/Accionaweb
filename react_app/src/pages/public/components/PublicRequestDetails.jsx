@@ -22,7 +22,7 @@ const PublicRequestDetails = ({ request }) => {
 
         const interval = setInterval(async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/respuestas/${request._id}`);
+                const response = await fetch(`${API_BASE_URL}/respuestas/public/${request._id}`);
                 if (response.ok) {
                     const updatedRequest = await response.json();
                     // Aqui podriamos actualizar el estado si cambia, pero por ahora solo logueamos
@@ -652,7 +652,7 @@ const PublicRequestDetails = ({ request }) => {
                 </div>
                 <div className="p-4 sm:p-6 border-t border-border bg-gray-50/50 flex justify-end">
                     <a
-                        href="https://infodesa.vercel.app/"
+                        href="/?id=698a0015ac5b6f785bb8da78"
                         className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
                     >
                         Ir al Portal

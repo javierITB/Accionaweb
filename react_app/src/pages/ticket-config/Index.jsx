@@ -351,136 +351,138 @@ const TicketConfig = ({ userPermissions = {} }) => {
             </div>
          )}
 
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-20 px-6 pb-10`}>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-               <div className="text-left">
-                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Configuración de Tickets</h1>
-                  <p className="text-muted-foreground mt-1 text-sm md:text-base">
-                     Gestiona los estados y flujos de las categorías de tickets.
-                  </p>
-               </div>
-               <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                  <Button
-                     onClick={fetchConfigs}
-                     variant="outline"
-                     iconName="RefreshCw"
-                     size="sm"
-                     className="w-full sm:w-auto"
-                  >
-                     Actualizar
-                  </Button>
-                  {permissions.create && (
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-24`}>
+            <div className="p-6 space-y-6">
+               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="text-left">
+                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Configuración de Tickets</h1>
+                     <p className="text-muted-foreground mt-1 text-sm md:text-base">
+                        Gestiona los estados y flujos de las categorías de tickets.
+                     </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                      <Button
-                        onClick={handleCreateClick}
-                        variant="default"
-                        iconName="Plus"
+                        onClick={fetchConfigs}
+                        variant="outline"
+                        iconName="RefreshCw"
                         size="sm"
                         className="w-full sm:w-auto"
                      >
-                        Nueva Categoría
+                        Actualizar
                      </Button>
-                  )}
+                     {permissions.create && (
+                        <Button
+                           onClick={handleCreateClick}
+                           variant="default"
+                           iconName="Plus"
+                           size="sm"
+                           className="w-full sm:w-auto"
+                        >
+                           Nueva Categoría
+                        </Button>
+                     )}
+                  </div>
                </div>
-            </div>
 
-            {isLoading ? (
-               <div className="text-center py-10">
-                  <Icon name="Loader" className="animate-spin mx-auto text-primary" size={32} />
-                  <p className="mt-2 text-muted-foreground">Cargando configuración...</p>
-               </div>
-            ) : (
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {configs.map((cat) => (
-                     <div key={cat.key} className="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col">
-                        <div className="flex items-center justify-between mb-4">
-                           <h2 className="text-xl font-semibold flex items-center">
-                              <Icon
-                                 name={cat.icon || (cat.key === "sistema" ? "Monitor" : "FileText")}
-                                 className="mr-2 text-primary"
-                                 size={20}
-                              />
-                              {cat.name}
-                           </h2>
-                        </div>
-
-                        <div className="flex-1 space-y-3 mb-6">
-                           <details className="group" open>
-                              <summary className="list-none cursor-pointer flex items-center justify-between text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                                 <span>Subcategorías</span>
+               {isLoading ? (
+                  <div className="text-center py-10">
+                     <Icon name="Loader" className="animate-spin mx-auto text-primary" size={32} />
+                     <p className="mt-2 text-muted-foreground">Cargando configuración...</p>
+                  </div>
+               ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     {configs.map((cat) => (
+                        <div key={cat.key} className="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col">
+                           <div className="flex items-center justify-between mb-4">
+                              <h2 className="text-xl font-semibold flex items-center">
                                  <Icon
-                                    name="ChevronDown"
-                                    size={14}
-                                    className="transition-transform group-open:rotate-180"
+                                    name={cat.icon || (cat.key === "sistema" ? "Monitor" : "FileText")}
+                                    className="mr-2 text-primary"
+                                    size={20}
                                  />
-                              </summary>
-                              <div className="flex flex-wrap gap-2 pt-1">
-                                 {cat.subcategories?.length > 0 ? (
-                                    cat.subcategories.map((sub, idx) => (
-                                       <span
-                                          key={idx}
-                                          className="px-2 py-1 rounded-md text-xs font-medium border border-border bg-muted text-muted-foreground"
-                                       >
-                                          {sub.label}
-                                       </span>
-                                    ))
-                                 ) : (
-                                    <p className="text-xs text-muted-foreground italic">Sin subcategorías definidas</p>
-                                 )}
-                              </div>
-                           </details>
+                                 {cat.name}
+                              </h2>
+                           </div>
 
-                           <div className="space-y-3">
-                              <div className="flex items-center justify-between text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                                 <span>Flujo de Estados</span>
-                              </div>
-                              <div className="flex w-full overflow-x-auto pb-4 pt-2 px-1 snap-x scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                                 {cat.statuses?.map((st, idx) => {
-                                    const isFirst = idx === 0;
-                                    const isLast = idx === cat.statuses.length - 1;
+                           <div className="flex-1 space-y-3 mb-6">
+                              <details className="group" open>
+                                 <summary className="list-none cursor-pointer flex items-center justify-between text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                                    <span>Subcategorías</span>
+                                    <Icon
+                                       name="ChevronDown"
+                                       size={14}
+                                       className="transition-transform group-open:rotate-180"
+                                    />
+                                 </summary>
+                                 <div className="flex flex-wrap gap-2 pt-1">
+                                    {cat.subcategories?.length > 0 ? (
+                                       cat.subcategories.map((sub, idx) => (
+                                          <span
+                                             key={idx}
+                                             className="px-2 py-1 rounded-md text-xs font-medium border border-border bg-muted text-muted-foreground"
+                                          >
+                                             {sub.label}
+                                          </span>
+                                       ))
+                                    ) : (
+                                       <p className="text-xs text-muted-foreground italic">Sin subcategorías definidas</p>
+                                    )}
+                                 </div>
+                              </details>
 
-                                    const bgClass = getStatusColorClass(st.color);
+                              <div className="space-y-3">
+                                 <div className="flex items-center justify-between text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                                    <span>Flujo de Estados</span>
+                                 </div>
+                                 <div className="flex w-full overflow-x-auto pb-4 pt-2 px-1 snap-x scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                                    {cat.statuses?.map((st, idx) => {
+                                       const isFirst = idx === 0;
+                                       const isLast = idx === cat.statuses.length - 1;
 
-                                    return (
-                                       <div
-                                          key={idx}
-                                          className={`
+                                       const bgClass = getStatusColorClass(st.color);
+
+                                       return (
+                                          <div
+                                             key={idx}
+                                             className={`
                                                             relative flex flex-col items-center justify-center
                                                             h-16 min-w-[140px] px-6
                                                             ${bgClass}
                                                             text-xs font-bold uppercase tracking-wider
                                                             snap-start flex-shrink-0 shadow-md transition-transform hover:scale-105
                                                         `}
-                                          style={{
-                                             clipPath: isFirst
-                                                ? "polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%)"
-                                                : "polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%, 15px 50%)",
-                                             marginRight: "-5px", // Small overlapping for tighter flow
-                                             filter: "drop-shadow(0 4px 3px rgb(0 0 0 / 0.07))",
-                                          }}
-                                       >
-                                          {st.icon && <Icon name={st.icon} size={20} className="mb-1" />}
-                                          <span className="text-center leading-tight">{st.label}</span>
-                                       </div>
-                                    );
-                                 })}
+                                             style={{
+                                                clipPath: isFirst
+                                                   ? "polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%)"
+                                                   : "polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%, 15px 50%)",
+                                                marginRight: "-5px", // Small overlapping for tighter flow
+                                                filter: "drop-shadow(0 4px 3px rgb(0 0 0 / 0.07))",
+                                             }}
+                                          >
+                                             {st.icon && <Icon name={st.icon} size={20} className="mb-1" />}
+                                             <span className="text-center leading-tight">{st.label}</span>
+                                          </div>
+                                       );
+                                    })}
+                                 </div>
                               </div>
                            </div>
-                        </div>
 
-                        {permissions.edit && (
-                           <Button
-                              variant="default"
-                              className="w-full mt-auto"
-                              iconName="Settings"
-                              onClick={() => handleEditClick(cat)}
-                           >
-                              Editar Categoría
-                           </Button>
-                        )}
-                     </div>
-                  ))}
-               </div>
-            )}
+                           {permissions.edit && (
+                              <Button
+                                 variant="default"
+                                 className="w-full mt-auto"
+                                 iconName="Settings"
+                                 onClick={() => handleEditClick(cat)}
+                              >
+                                 Editar Categoría
+                              </Button>
+                           )}
+                        </div>
+                     ))}
+                  </div>
+               )}
+            </div>
          </main>
 
          {/* MODAL DE EDICIÓN */}

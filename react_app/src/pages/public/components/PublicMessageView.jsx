@@ -32,7 +32,8 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
     const fetchMessages = async () => {
         if (!id) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/respuestas/${id}/chat`);
+            const res = await fetch(`${API_BASE_URL}/respuestas/public/${id}/chat`);
+            if (!res.ok) throw new Error("Error al obtener chat");
             if (!res.ok) throw new Error("Error al obtener chat");
             const data = await res.json();
 
@@ -247,7 +248,7 @@ const PublicMessageView = ({ isOpen, onClose, request, formId }) => {
                         )}
 
                         <a
-                            href="https://infodesa.vercel.app/"
+                            href="/?id=698a0015ac5b6f785bb8da78"
                             className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
                         >
                             Ir al Portal
