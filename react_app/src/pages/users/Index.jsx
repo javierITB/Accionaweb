@@ -244,6 +244,58 @@ const FormReg = ({ userPermissions = [] }) => {
       return processData;
    }, [users, filters, sortConfig, searchTerm]);
 
+   const capitalizeWord = (palabra) => {
+      return palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase();
+   };
+   const renderInlineWordsCorrectly = (text) => {
+      return text.split(" ").map((word, index) => (
+         <span key={index} className="block capitalize text-center">
+            {capitalizeWord(word)}
+         </span>
+      ));
+   };
+   const renderInlineEmailCorrectly = (text) => {
+      if (!text) return "";
+
+      // Caso especial: si el @ está antes del límite de 23 caracteres
+      const LIMIT = 15;
+      const atIndex = text.indexOf("@");
+      if (atIndex !== -1 && atIndex <= LIMIT) {
+         return (
+            <>
+               <span className="block">{text.slice(0, atIndex)}</span>
+               <span className="block">{text.slice(atIndex)}</span>
+            </>
+         );
+      }
+
+      // divide cada 23 caracteres
+      const lineas = [];
+      let remainingText = text;
+
+      while (remainingText.length > 0) {
+         lineas.push(remainingText.slice(0, LIMIT));
+         remainingText = remainingText.slice(LIMIT);
+      }
+
+      return lineas.map((linea, index) => (
+         <span key={index} className="block break-all">
+            {linea}
+         </span>
+      ));
+   };
+
+   const capitalizeCompleteText = (text) => {
+      if (!text) return "";
+      return text
+         .split(" ")
+         .map((word) => {
+            if (word.length <= 2) return word;
+            return capitalizeWord(word);
+         })
+         .join(" ");
+   };
+
    const getTabContent = () => {
       if (activeTab === "register") {
          return (
@@ -260,7 +312,9 @@ const FormReg = ({ userPermissions = [] }) => {
             />
          );
       }
-
+      // const thead = ["nombre", "empresa", "mail", "cargo", "rol", "estado", "Fecha"];
+      const thead = ["nombre", "empresa", "mail", "cargo", "estado", "Fecha"];
+      const canEdit = permisos.editar || permisos.eliminar;
       return (
          <div className="space-y-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -298,22 +352,24 @@ const FormReg = ({ userPermissions = [] }) => {
                   )}
                </div>
             </div>
-            <div className="overflow-x-auto border border-border rounded-xl">
-               <table className="min-w-full divide-y divide-border text-sm">
+            <div className="overflow-x-auto border border-border rounded-xl md:mx-0">
+               <table className="w-full divide-y divide-border text-xs md:text-sm">
                   <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                      <tr>
-                        {["nombre", "empresa", "mail", "cargo", "rol", "estado", "createdAt"].map((k) => (
+                        {thead.map((k, index) => (
                            <th
                               key={k}
-                              className="px-4 py-3 text-left cursor-pointer hover:bg-muted"
+                              className={`py-3 pl-0.5 md:px-4 break-words cursor-pointer hover:text-primary cursor-pointer hover:bg-muted ${index === 0 && " pl-1.5"} ${index === thead.length - 1 && !canEdit && " pr-1.5"}`}
                               onClick={() => handleSort(k)}
                            >
-                              <div className="flex items-center">
-                                 {k.replace("createdAt", "Fecha")} {getSortIcon(k)}
+                              <div className={`flex items-center  ${isMobileScreen && "capitalize"} ${k === "Fecha" && " justify-center"}`}>
+                                 {k} {getSortIcon(k)}
                               </div>
                            </th>
                         ))}
-                        {(permisos.editar || permisos.eliminar) && <th className="px-4 py-3 text-left">Acciones</th>}
+                        {canEdit && (
+                           <th className={"px-1 py-2 md:px-4 md:py-3 text-left" + isMobileScreen && " capitalize"}>Acciones</th>
+                        )}
                      </tr>
                   </thead>
                   <tbody className="divide-y divide-border bg-card">
@@ -321,40 +377,52 @@ const FormReg = ({ userPermissions = [] }) => {
                         <tr key={u._id} className="hover:bg-muted/20 transition">
                            {/* ELIMINADAS CLASES whitespace-nowrap PARA RECUPERAR EL ESPACIO ORIGINAL */}
                            <td
-                              className="px-4 py-3 font-medium cursor-pointer hover:text-primary"
+                              className={"pr-2 py-2 md:px-4 md:py-3 text-xs md:text-sm cursor-pointer hover:text-primary" + (isMobileScreen && "break-words")}
                               onClick={() => handleFilter("nombre", u.nombre)}
                            >
-                              {u.nombre} {u.apellido}
+                              {isMobileScreen ? (
+                                 <>
+                                    {renderInlineWordsCorrectly(u.nombre)}
+                                    {renderInlineWordsCorrectly(u.apellido)}
+                                 </>
+                              ) : (
+                                 u.nombre + " " + u.apellido
+                              )}
                            </td>
                            <td
-                              className="px-4 py-3 cursor-pointer hover:text-primary"
+                              className="pr-1 py-3 cursor-pointer hover:text-primary"
                               onClick={() => handleFilter("empresa", u.empresa)}
                            >
-                              {u.empresa || "—"}
+                              {isMobileScreen ? capitalizeCompleteText(u.empresa) || "—" : u.empresa || "—"}
                            </td>
-                           <td className="px-4 py-3 text-muted-foreground">{u.mail}</td>
+                           <td className="pr-1 py-2 md:px-4 md:py-3  text-muted-foreground">
+                              {isMobileScreen ? renderInlineEmailCorrectly(u.mail) : u.mail || "—"}
+                           </td>
                            <td
-                              className="px-4 py-3 cursor-pointer hover:text-primary"
+                              className={
+                                 "pr-1.5 py-2 md:px-4 md:py-3 break-words cursor-pointer hover:text-primary" +
+                                 (isMobileScreen ? " max-w-[50px]" : "")
+                              }
                               onClick={() => handleFilter("cargo", u.cargo)}
                            >
                               {u.cargo || "—"}
                            </td>
-                           <td className="px-4 py-3">{u.rol}</td>
-                           <td className="px-4 py-3">
+                           {/* <td className="pr-1.5 py-2 md:px-4 md:py-3">{u.rol}</td> */}
+                           <td className="pr-1.5 py-2 md:px-4 md:py-3 text-center">
                               <span
-                                 className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md ${u.estado === "pendiente" ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-800"}`}
+                                 className={`pr-1.5 py-0.5 md:px-2 md:py-1 text-[9px] md:text-[10px] font-bold uppercase rounded-md ${u.estado === "pendiente" ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-800"}`}
                               >
                                  {u.estado}
                               </span>
                            </td>
-                           <td className="px-4 py-3 text-muted-foreground text-xs">
+                           <td className=" py-2 md:px-4 md:py-3 text-muted-foreground text-xs text-center">
                               {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
                            </td>
 
                            {/* Columna Acciones dinâmica */}
                            {(permisos.editar || permisos.eliminar) && (
                               <td className="px-4 py-3">
-                                 <div className="flex gap-3">
+                                 <div className={"flex gap-2 md:gap-3 text-xs md:text-sm" + (isMobileScreen && " flex-col")}>
                                     {permisos.editar && (
                                        <button
                                           onClick={() => {
@@ -409,11 +477,16 @@ const FormReg = ({ userPermissions = [] }) => {
          )}
 
          <main className={`transition-all duration-300 ${mainMarginClass} pt-20`}>
-            <div className="p-6 space-y-6 container-main">
+            <div className="py-6 space-y-6 container-main">
                <div className="flex items-center justify-between">
                   <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
                </div>
-               <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+               <div
+                  className="bg-card border border-border rounded-xl md:rounded-2xl shadow-sm overflow-hidden 
+                w-full max-w-full mx-auto md:mx-0 
+                md:border 
+                border-muted/40"
+               >
                   <div className="flex gap-2 p-4 bg-muted/20 border-b border-border">
                      {/* Pestaña dinámica */}
                      {permisos.crear || editingUser ? (
@@ -437,7 +510,7 @@ const FormReg = ({ userPermissions = [] }) => {
                         <Icon name="List" size={16} className="inline mr-2" /> Lista ({users.length})
                      </button>
                   </div>
-                  <div className="p-6">{getTabContent()}</div>
+                  <div className="py-6 px-1 md:px-6">{getTabContent()}</div>
                </div>
             </div>
          </main>

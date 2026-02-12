@@ -69,8 +69,25 @@ const tenantRouter = express.Router({ mergeParams: true });
 tenantRouter.use(async (req, res, next) => {
   try {
     const { company } = req.params;
+
+    // Evitar que archivos estáticos o rutas con punto sean tratados como tenant
+    if (company.includes(".")) {
+      return res.status(404).json({ error: "Recurso no encontrado" });
+    }
+
     // Inyectamos la base de datos específica en el objeto request
     req.db = await getTenantDB(company);
+
+    req.nombreEmpresa = (company === "api") ? "ACCIONA" : company;
+
+    // Lógica de redirección global solicitada
+    // api, infoacciona y solunex redirigen a solunex.cl
+    if (company === "api" || company === "infoacciona" || company === "solunex") {
+      req.urlPortal = "https://solunex.cl";
+    } else {
+      req.urlPortal = `https://${company}.solunex.cl`;
+    }
+
     next();
   } catch (err) {
     console.error("Error crítico de conexión Multi-tenant:", err);

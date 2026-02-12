@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, Database, Users, Trash2, CheckCircle2, Loader2, Play, HardDrive, LayoutDashboard, FileText, Bell, ShieldCheck, Activity } from "lucide-react";
+import { Search, Database, Users, Trash2, CheckCircle2, Loader2, Play, HardDrive, LayoutDashboard, FileText, Bell, ShieldCheck, Activity, Lock, Calendar } from "lucide-react";
 
 // Helpers y componentes de UI
 import { apiFetch, API_BASE_URL } from "../../utils/api";
@@ -26,8 +26,8 @@ const PlanesConfigView = ({ userPermissions = {} }) => {
     const permisos = useMemo(
         () => ({
             create_empresas: userPermissions.includes("create_gestor_empresas"), // Reusing same permissions for now
-            canAccess: userPermissions.includes("view_gestor_empresas"),
-            edit_empresas: userPermissions.includes("edit_gestor_empresas"),
+            canAccess: userPermissions.includes("view_configuracion_planes"),
+            edit_empresas: userPermissions.includes("edit_configuracion_planes"),
             delete_empresas: userPermissions.includes("delete_gestor_empresas"),
         }),
         [userPermissions],
@@ -68,6 +68,15 @@ const PlanesConfigView = ({ userPermissions = {} }) => {
     const toggleSidebar = () => {
         if (isMobileScreen) setIsMobileOpen(!isMobileOpen);
         else setIsDesktopOpen(!isDesktopOpen);
+    };
+
+    const formatBytes = (bytes, decimals = 2) => {
+        if (!+bytes) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
     };
 
     const filteredCompanies = companies.filter(
@@ -139,80 +148,76 @@ const PlanesConfigView = ({ userPermissions = {} }) => {
                                 return (
                                     <div
                                         key={company._id || company.name}
-                                        className="bg-card rounded-2xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col overflow-hidden"
+                                        className="bg-card rounded-2xl border border-white/5 shadow-xl hover:shadow-2xl transition-all group relative flex flex-col overflow-hidden max-w-full"
                                     >
-                                        {/* Decoración superior */}
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
 
-                                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {permisos.edit_empresas && (
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingPlan(company);
-                                                        setIsModalOpen(true);
-                                                    }}
-                                                    className="p-2 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 rounded-xl transition-all"
-                                                    title="Configurar Plan"
-                                                >
-                                                    <ShieldCheck size={20} />
-                                                </button>
-                                            )}
-                                        </div>
 
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg bg-gradient-to-br from-indigo-600 to-purple-700 shrink-0">
-                                                <LayoutDashboard size={28} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h3 className="text-lg font-bold text-foreground truncate">
-                                                    {company.name}
-                                                </h3>
-                                                <p className="text-xs text-muted-foreground font-mono truncate">
-                                                    {company.dbName}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 gap-3 mb-6">
-                                            <div className="flex items-center justify-between p-3 bg-muted rounded-xl border border-border/50">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg">
-                                                        <FileText size={16} />
-                                                    </div>
-                                                    <span className="text-sm font-medium">Solicitudes</span>
+                                        <div className="p-6">
+                                            <div className="flex items-center gap-4 mb-6">
+                                                {/* ICON CONTAINER STYLE MATCH */}
+                                                <div className="w-16 h-16 rounded-3xl shrink-0 flex items-center justify-center text-white shadow-lg bg-indigo-600">
+                                                    <LayoutDashboard size={28} />
                                                 </div>
-                                                <span className="font-bold text-sm">{(company.limits?.solicitudes) || "Naranjo"}</span>
-                                            </div>
-
-                                            <div className="flex items-center justify-between p-3 bg-muted rounded-xl border border-border/50">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-orange-500/10 text-orange-500 rounded-lg">
-                                                        <Bell size={16} />
-                                                    </div>
-                                                    <span className="text-sm font-medium">Tickets</span>
+                                                <div className="min-w-0">
+                                                    <h3 className="text-lg font-black text-foreground truncate uppercase tracking-tight">
+                                                        {company.name}
+                                                    </h3>
+                                                    <p className="text-xs text-muted-foreground truncate font-mono uppercase tracking-widest opacity-60">
+                                                        {company.dbName || "no-db"}
+                                                    </p>
                                                 </div>
-                                                <span className="font-bold text-sm">{(company.limits?.tickets) || "50"}</span>
                                             </div>
 
-                                            <div className="flex items-center justify-between p-3 bg-muted rounded-xl border border-border/50">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-purple-500/10 text-purple-500 rounded-lg">
-                                                        <Users size={16} />
-                                                    </div>
-                                                    <span className="text-sm font-medium">Usuarios</span>
+                                            <div className="flex flex-col gap-2 pl-1 mb-6">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                    <HardDrive size={14} />
+                                                    <span>{formatBytes(company.sizeOnDisk || 0)}</span>
                                                 </div>
-                                                <span className="font-bold text-sm">{(company.limits?.usuarios) || "10"}</span>
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground" title="Usuarios Máximos">
+                                                    <Users size={14} />
+                                                    <span>{company.planLimits?.users?.maxUsers || "∞"} <span className="text-xs opacity-70">usuarios</span></span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground" title="Formularios Máximos">
+                                                    <FileText size={14} />
+                                                    <span>{company.planLimits?.forms?.maxQuantity || "∞"} <span className="text-xs opacity-70">formularios</span></span>
+                                                </div>
+                                                {company.dbName !== 'formsdb' && !company.isSystem && (
+                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground" title="Fecha de Creación">
+                                                        <Calendar size={14} />
+                                                        <span>{company.createdAt ? new Date(company.createdAt).toLocaleDateString() : "-"}</span>
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
 
-                                        <div className="mt-auto pt-4 border-t border-border flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Activity size={14} className="text-emerald-500" />
-                                                <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Plan Activo</span>
+                                            <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
+                                                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${company.empty
+                                                    ? "bg-orange-500/10 text-orange-500 border border-orange-500/20"
+                                                    : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                                    }`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${company.empty ? "bg-orange-500 animate-pulse" : "bg-emerald-500"}`} />
+                                                    {company.empty ? "Vacía" : "Activa"}
+                                                </div>
+
+                                                {permisos.edit_empresas && (
+                                                    (company.dbName === 'formsdb' || company.isSystem) ? (
+                                                        <div className="px-4 py-2 bg-muted/50 text-muted-foreground text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-2 cursor-not-allowed border border-white/5 opacity-50">
+                                                            <Lock size={14} />
+                                                            Sistema
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingPlan(company);
+                                                                setIsModalOpen(true);
+                                                            }}
+                                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95 shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+                                                        >
+                                                            <ShieldCheck size={14} />
+                                                            Límites
+                                                        </button>
+                                                    )
+                                                )}
                                             </div>
-                                            <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-1 rounded-lg">
-                                                Standard
-                                            </span>
                                         </div>
                                     </div>
                                 );
@@ -231,7 +236,7 @@ const PlanesConfigView = ({ userPermissions = {} }) => {
                         setEditingPlan(null);
                     }}
                     onSuccess={() => {
-                        // fetchCompanies(); // For now just close, no real back update
+                        fetchCompanies();
                         setIsModalOpen(false);
                         setEditingPlan(null);
                     }}

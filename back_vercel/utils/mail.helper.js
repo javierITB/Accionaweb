@@ -61,24 +61,66 @@ function validarDestinatarios(raw) {
  * @param {Object} data - { to, subject, html, text, from }
  * @returns {Promise<Object>} Resultado del envío o lanza un error
  */
-const sendEmail = async ({ to, subject, html, text, from }) => {
+// --- FUNCIÓN PRINCIPAL EXPORTADA ---
+// --- FUNCIÓN PRINCIPAL EXPORTADA ---
+const sendEmail = async ({ to, subject, html, text, from }, req) => {
   // 1. Validar destinatarios
   const valid = validarDestinatarios(to);
-  if (valid.error) {
-    throw { status: 400, message: valid.error };
-  }
+  if (valid.error) throw { status: 400, message: valid.error };
 
   // 2. Validar contenido
   if (!subject) throw { status: 400, message: "Campo 'subject' requerido." };
   if (!html && !text) throw { status: 400, message: "Debe incluir 'html' o 'text'." };
 
+  // --- LÓGICA DE NOMBRE DE EMPRESA ---
+  // Si recibimos "api", lo cambiamos a "ACCIONA". Si no, usamos el global.
+  const tenantRaw = req?.nombreEmpresa || "Plataforma";
+  const nombreEmpresa = tenantRaw.toUpperCase();
+
+  // Estilo que combina con 'Segoe UI' del correo original, centrado y elegante
+  const empresaHtml = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin-bottom: 30px;">
+      <div style="
+        font-size: 28px; 
+        font-weight: 800; 
+        color: #1f2937; /* Color oscuro original */
+        text-transform: uppercase; 
+        letter-spacing: 3px; 
+        display: inline-block;
+        border-bottom: 3px solid #1f2937; /* Subrayado del mismo color */
+        padding-bottom: 5px;
+      ">
+        ${nombreEmpresa}
+      </div>
+    </div>`;
+
+  // --- INYECCIÓN DENTRO DEL RECUADRO BLANCO ---
+  // Buscamos el segundo <div> del HTML. 
+  // El primero es el fondo gris, el segundo es el cuadro blanco (max-width: 500px).
+  // Insertamos el nombre justo después de que se abra ese segundo contenedor.
+  let htmlConEmpresa = html;
+  if (html) {
+    const divs = html.split(/(<div[^>]*>)/i);
+    if (divs.length >= 5) { 
+      // divs[0] = previo
+      // divs[1] = opening div 1 (fondo gris)
+      // divs[2] = contenido intermedio
+      // divs[3] = opening div 2 (cuadro blanco) -> Aquí inyectamos
+      divs[3] = divs[3] + empresaHtml;
+      htmlConEmpresa = divs.join('');
+    } else {
+      // Fallback por si la estructura cambia, lo mete al inicio del primer div
+      htmlConEmpresa = html.replace(/(<div[^>]*>)/i, `$1${empresaHtml}`);
+    }
+  }
+
   // 3. Construir opciones
   const mailOptions = {
     from: from || MAIL_CREDENTIALS.auth.user,
     to: valid.lista.join(", "),
-    subject,
-    html,
-    text,
+    subject: subject,
+    html: htmlConEmpresa,
+    text: text ? `${nombreEmpresa}\n\n${text}` : text,
   };
 
   // 4. Enviar
@@ -90,5 +132,4 @@ const sendEmail = async ({ to, subject, html, text, from }) => {
     throw { status: 500, message: "Fallo interno al enviar correo." };
   }
 };
-
 module.exports = { sendEmail };

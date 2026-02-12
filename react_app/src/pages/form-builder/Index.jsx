@@ -503,9 +503,9 @@ const FormBuilder = ({ userPermissions = {} }) => {
             </div>
          )}
 
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-16`}>
-            <div className="p-6 space-y-6">
-               <div className="flex items-center justify-between">
+         <main className={`transition-all duration-300 ${mainMarginClass} md:pt-16`}>
+            <div className="py-6 md:pt-10 space-y-6 md:px-6">
+               <div className="flex flex-col items-center md:items-start px-3 md:flex-row md:px-6 gap-4">
                   <div className="space-y-2">
                      <div className="flex items-center space-x-2">
                         <Button
@@ -519,7 +519,7 @@ const FormBuilder = ({ userPermissions = {} }) => {
                         </Button>
                      </div>
 
-                     <div>
+                     <div className="flex flex-col gap-2">
                         <h1 className="text-3xl font-bold text-foreground">
                            {formData?.id ? "Editar Formulario" : "Crear Formulario Personalizado"}
                         </h1>
@@ -531,7 +531,7 @@ const FormBuilder = ({ userPermissions = {} }) => {
                      </div>
                   </div>
 
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center">
                      <div
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
                            formData?.status === "publicado"
@@ -553,22 +553,21 @@ const FormBuilder = ({ userPermissions = {} }) => {
                      >
                         Guardar Borrador
                      </Button>
-
-                     <Button
-                        type="button"
-                        variant="default"
-                        onClick={publishForm}
-                        loading={isPublishing}
-                        iconName="Send"
-                        iconPosition="left"
-                        disabled={isSaving}
-                     >
-                        Publicar Formulario
-                     </Button>
                   </div>
+                  <Button
+                     type="button"
+                     variant="default"
+                     onClick={publishForm}
+                     loading={isPublishing}
+                     iconName="Send"
+                     iconPosition="left"
+                     disabled={isSaving}
+                  >
+                     Publicar Formulario
+                  </Button>
                </div>
 
-               <div className="bg-card border border-border rounded-lg p-4">
+               <div className="bg-card border border-border rounded-lg p-4 mx-1.5 md:mx-0">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                      <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">Título</p>
@@ -601,34 +600,63 @@ const FormBuilder = ({ userPermissions = {} }) => {
                   </div>
                </div>
 
-               <div className="bg-card border border-border rounded-lg">
+               <div className="bg-card border border-border rounded-lg m-1.5 md:m-0">
                   <div className="border-b border-border">
-                     <nav className="flex space-x-8 px-6">
+                     <nav className="flex px-1 md:space-x-8 md:px-6 overflow-x-auto">
                         {tabs?.map((tab) => (
-                           <button
-                              key={tab?.id}
-                              onClick={() => setActiveTab(tab?.id)}
-                              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                 activeTab === tab?.id
-                                    ? "border-primary text-primary"
-                                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground"
-                              }`}
-                              title={`Ir a la sección de ${tab?.label}`}
-                           >
-                              <Icon name={tab?.icon} size={16} />
-                              <span>{tab?.label}</span>
-                              {tab?.count !== undefined && (
-                                 <span
-                                    className={`px-2 py-1 text-xs rounded-full ${
-                                       activeTab === tab?.id
-                                          ? "bg-primary text-primary-foreground"
-                                          : "bg-muted text-muted-foreground"
-                                    }`}
-                                 >
-                                    {tab?.count}
-                                 </span>
-                              )}
-                           </button>
+                           
+                              isMobileScreen ? (
+                              <button
+                                 key={tab?.id}
+                                 onClick={() => setActiveTab(tab?.id)}
+                                 className={`flex items-center space-x-2 py-4 px-1 border-r border-b-2  font-medium text-sm transition-colors ${
+                                    activeTab === tab?.id
+                                       ? "border-b-primary text-primary"
+                                       : "border-b-transparent  text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                                 }`}
+                                 title={`Ir a la sección de ${tab?.label}`}
+                              >
+                                 <Icon name={tab?.icon} size={16} />
+                                 <span>{tab?.label}</span>
+                                 {tab?.count !== undefined && (
+                                    <span
+                                       className={`px-2 py-1 text-xs rounded-full ${
+                                          activeTab === tab?.id
+                                             ? "bg-primary text-primary-foreground"
+                                             : "bg-muted text-muted-foreground"
+                                       }`}
+                                    >
+                                       {tab?.count}
+                                    </span>
+                                 )}
+                              </button>
+                              ):(
+                              <button
+                                 key={tab?.id}
+                                 onClick={() => setActiveTab(tab?.id)}
+                                 className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                                    activeTab === tab?.id
+                                       ? "border-primary text-primary"
+                                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                                 }`}
+                                 title={`Ir a la sección de ${tab?.label}`}
+                              >
+                                 <Icon name={tab?.icon} size={16} />
+                                 <span>{tab?.label}</span>
+                                 {tab?.count !== undefined && (
+                                    <span
+                                       className={`px-2 py-1 text-xs rounded-full ${
+                                          activeTab === tab?.id
+                                             ? "bg-primary text-primary-foreground"
+                                             : "bg-muted text-muted-foreground"
+                                       }`}
+                                    >
+                                       {tab?.count}
+                                    </span>
+                                 )}
+                              </button>
+                              )
+                           
                         ))}
                         {permisos.delete_formularios && (
                            <Button

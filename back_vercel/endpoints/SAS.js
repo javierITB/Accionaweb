@@ -91,6 +91,7 @@ router.post("/companies", async (req, res) => {
             name,
             dbName,
             permissions: permissions || [], // Guardamos los permisos granulares
+            planLimits: req.body.planLimits || {}, // Guardamos los límites de plan si existen
             createdAt: new Date(),
             active: true
         };
@@ -143,7 +144,12 @@ router.post("/companies", async (req, res) => {
         const rolesConfig = [];
         const selectedPermissions = permissions || [];
 
+        const SYSTEM_ONLY_GROUPS = ['gestor_empresas', 'configuracion_planes'];
+
         Object.entries(PERMISSION_GROUPS).forEach(([key, group]) => {
+            if (dbName !== "formsdb" && SYSTEM_ONLY_GROUPS.includes(key)) {
+                return;
+            }
 
             // Filtramos los permisos de este grupo que están en la lista seleccionada
             const groupPermissionsIncluded = group.permissions.filter(p => selectedPermissions.includes(p.id));
@@ -166,6 +172,36 @@ router.post("/companies", async (req, res) => {
             } else {
                 console.log(`[SAS] config_roles already has ${existingConfigCount} entries. Skipping initialization.`);
             }
+        }
+
+        // 3.3 Inicializar Plan Limits en la nueva DB (Dual-Write)
+        if (req.body.planLimits) {
+            console.log(`[SAS] Initializing plan limits for ${dbName}`);
+            await newDb.collection("config_plan").insertOne({
+                planLimits: req.body.planLimits,
+                updatedAt: new Date()
+            });
+        }
+
+        // 3.4 Actualizar permisos del rol 'Administrador'
+        const permissionsForAdmin = (permissions || []).filter(pId => {
+            let isRestricted = false;
+            Object.entries(PERMISSION_GROUPS).forEach(([groupKey, groupDef]) => {
+                if (SYSTEM_ONLY_GROUPS.includes(groupKey)) {
+                    if (groupDef.permissions.some(p => p.id === pId)) {
+                        isRestricted = true;
+                    }
+                }
+            });
+            return !isRestricted;
+        });
+
+        if (permissionsForAdmin.length > 0) {
+            console.log(`[SAS] Auto-assigning ${permissionsForAdmin.length} permissions to 'Administrador' role`);
+            await newDb.collection("roles").updateOne(
+                { name: "Administrador" },
+                { $set: { permissions: permissionsForAdmin } }
+            );
         }
 
         console.log(`[SAS] Company created successfully: ${name}`);
@@ -208,8 +244,12 @@ router.put("/companies/:id", async (req, res) => {
         }
 
         // 1. Actualizar config_empresas
+        const updateData = {};
+        if (permissions) updateData.permissions = permissions;
+        if (req.body.planLimits) updateData.planLimits = req.body.planLimits;
+
         await dbForms.collection("config_empresas").updateOne(query, {
-            $set: { permissions: permissions || [] }
+            $set: updateData
         });
 
         // 2. Regenerar config_roles en la DB objetivo
@@ -217,14 +257,27 @@ router.put("/companies/:id", async (req, res) => {
             console.log(`[SAS] Updating roles for DB: ${company.dbName}`);
             const targetDb = req.mongoClient.db(company.dbName);
 
+            // Determinar qué permisos usar: los nuevos o los que ya tenía
+            const selectedPermissions = (permissions !== undefined) ? permissions : (company.permissions || []);
+
+            console.log(`[SAS] Using permissions for sync: ${selectedPermissions.length} active permissions`);
+
             // Limpiar config_roles actual
             await targetDb.collection("config_roles").deleteMany({});
 
-            // Generar nuevo config roles basado en nuevos permisos
+            // Generar nuevo config roles basado en permisos
+            // Generar nuevo config roles basado en permisos
             const rolesConfig = [];
-            const selectedPermissions = permissions || [];
+
+            // Define groups that should NEVER be added to client databases
+            const SYSTEM_ONLY_GROUPS = ['gestor_empresas', 'configuracion_planes', 'empresas', 'acceso_panel_admin'];
 
             Object.entries(PERMISSION_GROUPS).forEach(([key, group]) => {
+                // Skip system-only groups for non-system databases
+                if (company.dbName !== "formsdb" && SYSTEM_ONLY_GROUPS.includes(key)) {
+                    return;
+                }
+
                 const groupPermissionsIncluded = group.permissions.filter(p => selectedPermissions.includes(p.id));
                 if (groupPermissionsIncluded.length > 0) {
                     rolesConfig.push({
@@ -253,6 +306,23 @@ router.put("/companies/:id", async (req, res) => {
                     }
                 }
             }
+        }
+
+        // 3. Actualizar Plan Limits en la DB Cliente (Dual-Write)
+        if (company.dbName && req.body.planLimits) {
+            console.log(`[SAS] Syncing plan limits to client DB: ${company.dbName}`);
+            const targetDb = req.mongoClient.db(company.dbName);
+
+            await targetDb.collection("config_plan").updateOne(
+                {}, // Solo debería haber un documento de config
+                {
+                    $set: {
+                        planLimits: req.body.planLimits,
+                        updatedAt: new Date()
+                    }
+                },
+                { upsert: true }
+            );
         }
 
         res.json({ message: "Empresa actualizada exitosamente" });
@@ -306,6 +376,34 @@ router.delete("/companies/:id", async (req, res) => {
     } catch (error) {
         console.error("Error al eliminar empresa:", error);
         res.status(500).json({ error: "Error al eliminar empresa" });
+    }
+});
+
+// GET /companies/:id: Obtener detalles de una empresa (incluyendo planLimits)
+router.get("/companies/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const dbForms = getFormsDB(req);
+        const { ObjectId } = require("mongodb");
+
+        let query = {};
+        if (ObjectId.isValid(id)) {
+            query = { _id: new ObjectId(id) };
+        } else {
+            query = { name: id };
+        }
+
+        const company = await dbForms.collection("config_empresas").findOne(query);
+
+        if (!company) {
+            return res.status(404).json({ error: "Empresa no encontrada" });
+        }
+
+        res.json(company);
+
+    } catch (error) {
+        console.error("Error al obtener detalles de empresa:", error);
+        res.status(500).json({ error: "Error al obtener detalles de empresa" });
     }
 });
 

@@ -58,13 +58,11 @@ export default function ProtectedRoute({ children }) {
 
             setUserPermissions(permissions);
 
-            const hasAccess = permissions.includes("view_panel_admin")
+            const hasAccess = permissions.includes("view_panel_admin");
 
             if (hasAccess) {
                setIsAuth(true);
             } else {
-               alert("No tienes permisos para acceder al panel de administración.");
-               window.location.href = "/"; // Redirigir al home público o login
                setIsAuth(false);
             }
          } catch (err) {
@@ -87,9 +85,18 @@ export default function ProtectedRoute({ children }) {
       );
    }
 
-   if (!isAuth) {
+if (!isAuth) {
+   const token = sessionStorage.getItem("token");
+
+   // Si no hay token → login
+   if (!token) {
       return <Navigate to="/login" state={{ from: location }} replace />;
    }
+
+   // Si hay token pero no tiene permiso → home
+   return <Navigate to="/" replace />;
+}
+
 
    // Pasamos los permisos a los componentes hijos vía props
    return React.Children.map(children, (child) => {

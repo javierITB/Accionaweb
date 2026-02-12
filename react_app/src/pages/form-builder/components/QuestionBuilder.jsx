@@ -752,7 +752,7 @@ const QuestionBuilder = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between md:flex-row flex-col gap-2">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-primary/10 rounded-lg">
             <Icon name="HelpCircle" size={20} className="text-primary" />

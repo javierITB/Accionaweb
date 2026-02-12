@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, Database, Users, Trash2, CheckCircle2, Loader2, Play, HardDrive } from "lucide-react";
+import { Search, Database, Users, Trash2, CheckCircle2, Loader2, Play, HardDrive, Calendar } from "lucide-react";
 
 // Helpers y componentes de UI
 import { apiFetch, API_BASE_URL } from "../../utils/api";
@@ -242,6 +242,12 @@ const EmpresasView = ({ userPermissions = {} }) => {
                                  <HardDrive size={14} />
                                  <span>{formatBytes(company.sizeOnDisk || 0)}</span>
                               </div>
+                              {company.dbName !== 'formsdb' && !company.isSystem && (
+                                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                                    <Calendar size={14} />
+                                    <span>{company.createdAt ? new Date(company.createdAt).toLocaleDateString() : "-"}</span>
+                                 </div>
+                              )}
 
                               <div className="mt-auto space-y-4">
                                  <div className="flex items-center gap-2 text-sm text-foreground bg-muted/50 px-3 py-2 rounded-lg">

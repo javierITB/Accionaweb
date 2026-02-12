@@ -7,6 +7,7 @@ import Button from "./Button";
 import NotificationsCard from "../../../components/ui/NotificationsCard";
 import { API_BASE_URL, CURRENT_TENANT, LOGO_TENANT } from "../../../utils/api";
 import { getCompanyLogo } from "../../../utils/getCompanyLogo";
+import { useNavigate } from "react-router-dom";
 
 const Header = ({ className = "" }) => {
    const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -14,6 +15,7 @@ const Header = ({ className = "" }) => {
    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
    const [unreadCount, setUnreadCount] = useState(0);
    const [companyLogo, setCompanyLogo] = useState(null);
+   const navigate = useNavigate();
 
    // --- LÓGICA DINÁMICA DEL LOGO ---
    const [logoSrc, setLogoSrc] = useState(`/logos/${LOGO_TENANT}/logo-header.png`);
@@ -126,14 +128,22 @@ const Header = ({ className = "" }) => {
 
    // --- FUNCIONES AUXILIARES ---
 
+   // const handleNavigation = (path) => {
+   //    window.location.href = path;
+   //    setIsMenuOpen(false);
+   //    setIsUserMenuOpen(false);
+   // };
    const handleNavigation = (path) => {
-      window.location.href = path;
+      navigate(path);
       setIsMenuOpen(false);
       setIsUserMenuOpen(false);
    };
 
+   // const handleLogoClick = () => {
+   //    window.location.href = "/";
+   // };
    const handleLogoClick = () => {
-      window.location.href = "/";
+      navigate("/");
    };
 
    const toggleNoti = () => {
@@ -148,11 +158,17 @@ const Header = ({ className = "" }) => {
    //    setIsUserMenuOpen(!isUserMenuOpen);
    // };
 
-   const handleLogout = () => {
-      sessionStorage.clear();
-      window.location.href = "/";
-      setIsUserMenuOpen(false);
-   };
+   // const handleLogout = () => {
+   //    sessionStorage.clear();
+   //    window.location.href = "/";
+   //    setIsUserMenuOpen(false);
+   // };
+
+const handleLogout = () => {
+   sessionStorage.clear();
+   window.location.href = "/";
+};
+
 
    useEffect(() => {
       const controller = new AbortController();
@@ -302,9 +318,11 @@ const Header = ({ className = "" }) => {
                   {user && (
                      <div className="relative" ref={userMenuRef}>
                         <button
-                           onClick={() => {
-                              window.location.href = "/perfil";
-                           }}
+                           // onClick={() => {
+                           //    window.location.href = "/perfil";
+                           // }}
+                           onClick={() => navigate("/perfil")}
+
                            className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-white to-[#F2F2F2] rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
                            title="Perfil de usuario"
                         >
@@ -318,7 +336,9 @@ const Header = ({ className = "" }) => {
                                  }}
                               />
                            ) : (
-                              <span className="text-base font-semibold text-primary">{user.charAt(0).toUpperCase()}</span>
+                              <span className="text-base font-semibold text-primary">
+                                 {user.charAt(0).toUpperCase()}
+                              </span>
                            )}
                         </button>
                      </div>

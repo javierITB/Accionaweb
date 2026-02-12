@@ -3,20 +3,9 @@ import Header from '../components/ui/Header';
 import QuickActionsCard from './components/QuickActionsCard';
 import { API_BASE_URL, apiFetch } from '../../utils/api';
 import Footer from '../components/ui/Footer';
-
+import LoadingCard from 'clientPages/components/LoadingCard';
 const DashboardHome = ({ userPermissions = [] }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
-  if (!userPermissions.includes('view_formulario')) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center p-6 bg-card rounded-xl shadow-lg border border-border">
-          <h2 className="text-xl font-bold text-red-500 mb-2">Acceso Restringido</h2>
-          <p className="text-muted-foreground">No tienes permisos para ver el formulario.</p>
-        </div>
-      </div>
-    );
-  }
   const [formData, setFormData] = useState({
     id: null,
     title: '',
@@ -31,6 +20,7 @@ const DashboardHome = ({ userPermissions = [] }) => {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -59,10 +49,12 @@ const DashboardHome = ({ userPermissions = [] }) => {
         };
 
         setFormData(normalizedForm);
+        
       } catch (err) {
         console.error('Error cargando el formulario:', err);
-        alert('No se pudo cargar el formulario');
+        // alert('No se pudo cargar el formulario');
       }
+      setIsLoading(false);
     };
 
     if (formId) {
@@ -70,9 +62,20 @@ const DashboardHome = ({ userPermissions = [] }) => {
     }
   }, []);
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
+    if (!userPermissions.includes('view_formulario')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center p-6 bg-card rounded-xl shadow-lg border border-border">
+          <h2 className="text-xl font-bold text-red-500 mb-2">Acceso Restringido</h2>
+          <p className="text-muted-foreground">No tienes permisos para ver el formulario.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // const toggleSidebar = () => {
+  //   setSidebarCollapsed(!sidebarCollapsed);
+  // };
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,16 +86,18 @@ const DashboardHome = ({ userPermissions = [] }) => {
       <main className={`transition-all duration-300 pt-16 lg:pt-20`}>
         <div className="px-4 sm:px-6 lg:p-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto">
           {/* Page Header */}
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
 
-          </div>
+          </div> */}
 
           {/* Main Dashboard Grid */}
           <div className="grid grid-cols-1 gap-4 lg:gap-6 w-full">
             {/* Left Column - Primary Actions */}
             <div className="xl:col-span-2 space-y-6 lg:space-y-12 w-full">
               {/* Quick Actions - Este componente renderizará el formulario */}
-              <QuickActionsCard formData={formData} />
+              {isLoading && <LoadingCard text="Cargando formulario..." />}
+
+              {!isLoading && <QuickActionsCard formData={formData} />}
             </div>
           </div>
 

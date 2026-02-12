@@ -117,8 +117,8 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
 
    // Corrección: Función específica para el logo que limpia el modo oscuro
    const handleLogoClick = () => {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+      // document.documentElement.classList.remove('dark');
+      // localStorage.setItem('theme', 'light');
       handleNavigation('/');
    };
 

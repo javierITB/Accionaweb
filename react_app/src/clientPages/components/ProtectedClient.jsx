@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../../utils/api";
 import LoadingCard from "./LoadingCard";
 
@@ -8,6 +8,7 @@ export default function ProtectedRoute({ children }) {
    const [isAuth, setIsAuth] = useState(false);
    const [userPermissions, setUserPermissions] = useState([]);
    const location = useLocation();
+   const navigate = useNavigate();
 
    useEffect(() => {
       const validarToken = async () => {
@@ -55,9 +56,10 @@ export default function ProtectedRoute({ children }) {
                alert("No tienes permisos para acceder a esta sección.");
                
                if (window.history.length > 1) {
-                  window.history.back(); // Regresa a la vista anterior (Vista A)
+                  navigate(-1);
+
                } else {
-                  window.location.href = "/"; // Fallback si no hay historial
+                 navigate("/")
                }
                
                // No ejecutamos sessionStorage.clear() ni setIsAuth(false) 
@@ -79,6 +81,19 @@ export default function ProtectedRoute({ children }) {
       validarToken();
    }, []); // Se mantiene el array de dependencias original
 
+ useEffect(() => {
+      const theme = localStorage.getItem("theme");
+      if (theme === "dark") {
+         document.documentElement.classList.remove("dark");
+      }
+
+      return () => {
+         if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+         }
+      };
+   }, []);
+   
    if (loading) {
       return (
          <div className="flex items-center justify-center h-screen">
