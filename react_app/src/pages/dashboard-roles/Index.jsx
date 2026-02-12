@@ -117,14 +117,15 @@ const RolesView = ({ userPermissions = {} }) => {
 
             const res = await apiFetch(`${API_BASE_URL}/roles`, {
                 method: 'POST',
-                body: JSON.stringify(duplicateData)
+                body: JSON.stringify(duplicateData),
+                skipRedirect: true, // No redirigir para ver errores de límite
             });
 
             if (res.ok) {
                 await fetchRoles(); // Recargamos la lista
             } else {
-                const err = await res.json();
-                alert(err.error || "Error al duplicar el rol");
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || err.message || "Error al duplicar el rol");
             }
         } catch (error) {
             alert("Error de conexión con el servidor");
@@ -148,8 +149,8 @@ const RolesView = ({ userPermissions = {} }) => {
                 if (res.ok) {
                     setRoles((prev) => prev.filter((r) => r._id !== roleId));
                 } else {
-                    const err = await res.json();
-                    alert(err.error || "Error al eliminar el rol");
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || err.message || "Error al eliminar el rol");
                 }
             } catch (error) {
                 alert("Error de conexión con el servidor");

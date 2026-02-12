@@ -194,6 +194,7 @@ const TicketConfig = ({ userPermissions = {} }) => {
       try {
          const res = await apiFetch(`${API_BASE_URL}/config-tickets/${editingCategory.key}`, {
             method: "DELETE",
+            skipRedirect: true,
          });
 
          if (res.ok) {
@@ -201,8 +202,8 @@ const TicketConfig = ({ userPermissions = {} }) => {
             await fetchConfigs();
             handleCloseModal();
          } else {
-            const err = await res.json();
-            alert("Error al eliminar: " + (err.error || err.message));
+            const err = await res.json().catch(() => ({}));
+            alert("Error al eliminar: " + (err.error || err.message || "Error desconocido"));
          }
       } catch (error) {
          console.error(error);
@@ -249,6 +250,7 @@ const TicketConfig = ({ userPermissions = {} }) => {
             method: method,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
+            skipRedirect: true, // No redirigir para poder ver el error de límite
          });
 
          if (res.ok) {
@@ -256,8 +258,8 @@ const TicketConfig = ({ userPermissions = {} }) => {
             await fetchConfigs(); // Recargar datos frescos
             handleCloseModal();
          } else {
-            const err = await res.json();
-            alert("Error al guardar: " + (err.error || err.message));
+            const err = await res.json().catch(() => ({}));
+            alert("Error al guardar: " + (err.error || err.message || "Error desconocido"));
          }
       } catch (error) {
          console.error(error);

@@ -141,11 +141,12 @@ const FormReg = ({ userPermissions = [] }) => {
             body: JSON.stringify(
                isUpdating ? { ...formData, estado: formData.estado } : { ...formData, pass: "", estado: "pendiente" },
             ),
+            skipRedirect: true, // No redirigir para poder ver el error de límite
          });
 
          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Error en la operación");
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || errorData.message || "Error en la operación");
          }
 
          // REINTEGRACIÓN DE ALERTAS ORIGINALES
@@ -192,8 +193,16 @@ const FormReg = ({ userPermissions = [] }) => {
       if (!window.confirm("¿Estás seguro?")) return;
       try {
          setIsLoading(true);
-         const response = await apiFetch(`${API_BASE_URL}/auth/users/${userId}`, { method: "DELETE" });
-         if (response.ok) fetchUsers();
+         const response = await apiFetch(`${API_BASE_URL}/auth/users/${userId}`, {
+            method: "DELETE",
+            skipRedirect: true,
+         });
+         if (response.ok) {
+            fetchUsers();
+         } else {
+            const errData = await response.json().catch(() => ({}));
+            alert(errData.error || errData.message || "Error al eliminar usuario");
+         }
       } catch (error) {
          alert(error.message);
       } finally {

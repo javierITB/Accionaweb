@@ -116,12 +116,14 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
          const res = await apiFetch(`${API_BASE_URL}/roles`, {
             method: "POST",
             body: JSON.stringify(formData),
+            skipRedirect: true, // No redirigir para poder mostrar el error de límite
          });
          if (res.ok) {
             setIsSuccess(true);
             onSuccess();
          } else {
-            alert("Error al guardar el rol");
+            const errData = await res.json().catch(() => ({}));
+            alert(errData.error || errData.message || "Error al guardar el rol");
          }
       } catch (error) {
          alert("Error de conexión");
