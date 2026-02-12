@@ -213,7 +213,11 @@ const CompanyReg = ({ userPermissions = [] }) => {
          const url = isUpdating
             ? `${API_BASE_URL}/auth/empresas/${editingEmpresa._id}`
             : `${API_BASE_URL}/auth/empresas/register`;
-         const response = await apiFetch(url, { method: isUpdating ? "PUT" : "POST", body: submitData });
+         const response = await apiFetch(url, {
+            method: isUpdating ? "PUT" : "POST",
+            body: submitData,
+            skipRedirect: true, // No redirigir para poder ver el error de límite
+         });
 
          if (response.ok) {
             alert(`Empresa ${isUpdating ? "actualizada" : "registrada"} exitosamente`);
@@ -221,8 +225,8 @@ const CompanyReg = ({ userPermissions = [] }) => {
             fetchEmpresas();
             setActiveTab("list");
          } else {
-            const errData = await response.json();
-            throw new Error(errData.message || "Error en el servidor");
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || errData.message || "Error en el servidor");
          }
       } catch (error) {
          alert("Error al guardar: " + error.message);
