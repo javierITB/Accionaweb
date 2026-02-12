@@ -4,6 +4,17 @@ import { apiFetch, API_BASE_URL } from "../../../utils/api";
 import Button from "components/ui/Button";
 import { PERMISSION_GROUPS } from "../../../config/permissionGroups";
 
+const DEFAULT_LOCKED_PERMISSIONS = [
+   "view_panel_cliente", "view_home", "view_perfil", "view_mis_solicitudes",
+   "share_mis_solicitudes", "unshare_mis_solicitudes", "view_formulario",
+   "view_panel_admin", "view_usuarios", "edit_usuarios", "delete_usuarios",
+   "create_usuarios", "view_empresas", "edit_empresas", "delete_empresas",
+   "create_empresas", "view_gestor_roles", "view_gestor_roles_details",
+   "create_gestor_roles", "copy_gestor_roles", "view_gestor_roles_details_admin",
+   "delete_gestor_roles", "edit_gestor_roles", "edit_gestor_roles_by_self",
+   "edit_gestor_roles_admin"
+];
+
 export function EmpresaModal({ isOpen, onClose, onSuccess, company = null }) {
    const [isSaving, setIsSaving] = useState(false);
    const [isSuccess, setIsSuccess] = useState(false);
@@ -27,7 +38,7 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null }) {
       } else {
          setFormData({
             name: "",
-            permissions: [],
+            permissions: DEFAULT_LOCKED_PERMISSIONS, // Preseleccionar permisos bloqueados
          });
       }
    }, [company, isOpen]);
@@ -36,6 +47,10 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null }) {
 
    const togglePermission = (permId) => {
       if (isSuccess) setIsSuccess(false);
+
+      // Si es creación y el permiso es bloqueado, no hacer nada
+      if (!company && DEFAULT_LOCKED_PERMISSIONS.includes(permId)) return;
+
       setFormData((prev) => {
          const hasPerm = prev.permissions.includes(permId);
          let newPerms = hasPerm ? prev.permissions.filter((p) => p !== permId) : [...prev.permissions, permId];
@@ -66,6 +81,14 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null }) {
             }
          }
 
+         // Re-verificar bloqueados si es creación (por seguridad en dependencias)
+         if (!company) {
+            const missingLocked = DEFAULT_LOCKED_PERMISSIONS.filter(p => !newPerms.includes(p));
+            if (missingLocked.length > 0) {
+               newPerms = [...new Set([...newPerms, ...missingLocked])];
+            }
+         }
+
          return { ...prev, permissions: newPerms };
       });
    };
@@ -82,12 +105,20 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null }) {
          .map((p) => p.id);
       const allSelected = availablePerms.every((id) => formData.permissions.includes(id));
 
-      setFormData((prev) => ({
-         ...prev,
-         permissions: allSelected
-            ? prev.permissions.filter((p) => !availablePerms.includes(p))
-            : [...new Set([...prev.permissions, ...availablePerms])],
-      }));
+      setFormData((prev) => {
+         let newPerms;
+         if (allSelected) {
+            // Deseleccionar todo, pero mantener los bloqueados si es creación
+            newPerms = prev.permissions.filter((p) => !availablePerms.includes(p));
+            if (!company) {
+               newPerms = [...new Set([...newPerms, ...DEFAULT_LOCKED_PERMISSIONS])];
+            }
+         } else {
+            // Seleccionar todo
+            newPerms = [...new Set([...prev.permissions, ...availablePerms])];
+         }
+         return { ...prev, permissions: newPerms };
+      });
    };
 
    const handleSubmit = async () => {
@@ -277,23 +308,25 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null }) {
 
                                           const isSelected = formData.permissions.includes(perm.id);
                                           const isChild = !!perm.dependency;
+                                          const isLocked = !company && DEFAULT_LOCKED_PERMISSIONS.includes(perm.id);
 
                                           return (
                                              <label
                                                 key={perm.id}
-                                                className={`flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${isChild ? "ml-6 border-l border-border pl-4" : ""}`}
+                                                className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isChild ? "ml-6 border-l border-border pl-4" : ""} ${isLocked ? "bg-muted/30 cursor-not-allowed opacity-80" : "hover:bg-muted/50 cursor-pointer"}`}
                                              >
                                                 {isChild && <ChevronRight size={12} className="text-muted-foreground" />}
                                                 <div
                                                    className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-accent border-accent text-white" : "bg-background border-border"}`}
                                                 >
-                                                   {isSelected && <Check size={10} strokeWidth={3} />}
+                                                   {isSelected && (isLocked ? <Lock size={10} strokeWidth={3} /> : <Check size={10} strokeWidth={3} />)}
                                                 </div>
                                                 <span className="text-xs text-muted-foreground">{perm.label}</span>
                                                 <input
                                                    type="checkbox"
                                                    className="hidden"
                                                    checked={isSelected}
+                                                   disabled={isLocked}
                                                    onChange={() => togglePermission(perm.id)}
                                                 />
                                              </label>
