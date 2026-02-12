@@ -573,6 +573,7 @@ router.post("/recuperacion", async (req, res) => {
       const primaryColor = "#2563eb"; // Azul elegante
       const bgColor = "#f3f4f6"; // Gris claro de fondo
 
+      // CAMBIO AQUÍ: Llamamos a sendEmail pasando 'req' al final
       await sendEmail({
          to: userEmail,
          subject: "Restablecer Contraseña",
@@ -599,12 +600,12 @@ router.post("/recuperacion", async (req, res) => {
 
                   <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; font-size: 12px; color: #9ca3af; text-align: center;">
                      <p style="margin: 0;">Este es un correo automático, por favor no respondas a este mensaje.</p>
-                     <p style="margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} Soporte Plataforma</p>
+                     <p style="margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} Plataforma Acciona</p> 
                   </div>
                </div>
             </div>
          `,
-      });
+      }, req);
 
       res.json({ success: true, message: "Enviado." });
    } catch (err) {
@@ -1090,7 +1091,7 @@ router.post("/register", async (req, res) => {
                <h2 style="color: #3B82F6;">¡Bienvenido, ${nombre}!</h2>
                <p>Has sido registrado en la plataforma. Para activar tu cuenta, haz clic en el botón:</p>
                <div style="text-align: center; margin: 30px 0;">
-                  <a href="${global.currentPortal}/set-password?userId=${userId}" 
+                  <a href="${req.urlPortal}/set-password?userId=${userId}"
                      style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
                      Configurar mi Contraseña
                   </a>
@@ -1103,7 +1104,7 @@ router.post("/register", async (req, res) => {
             to: m,
             subject: "Completa tu registro",
             html: htmlContent,
-         });
+         }, req);
       } catch (mailError) {
          console.error("Error enviando email:", mailError);
       }
