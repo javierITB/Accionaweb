@@ -6,7 +6,11 @@ import NotificationsCard from './NotificationsCard';
 import { usePermissions } from '../../context/PermissionsContext';
 
 const Header = ({ className = '' }) => {
-  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+  // Estado corregido para persistir en localStorage
+  const [isHeaderHidden, setIsHeaderHidden] = useState(() => {
+    return localStorage.getItem('isHeaderHidden') === 'true';
+  });
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotiOpen, setIsNotiOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -33,7 +37,10 @@ const Header = ({ className = '' }) => {
     audioRef.current.volume = 1.0;
   }, []);
 
-
+  // Guardar estado del notch cuando cambie
+  useEffect(() => {
+    localStorage.setItem('isHeaderHidden', isHeaderHidden);
+  }, [isHeaderHidden]);
 
   useEffect(() => {
     const root = document.documentElement;
