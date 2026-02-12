@@ -76,26 +76,26 @@ const RequestCard = ({ request, onRemove, onViewDetails, onSendMessage, userPerm
     return statusMap[status?.toLowerCase()] || status?.replace('_', ' ')?.toUpperCase() || 'DESCONOCIDO';
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority?.toLowerCase()) {
-      case 'high':
-        return 'text-error';
-      case 'medium':
-        return 'text-warning';
-      case 'low':
-        return 'text-success';
-      default:
-        return 'text-muted-foreground';
-    }
-  };
+  // const getPriorityColor = (priority) => {
+  //   switch (priority?.toLowerCase()) {
+  //     case 'high':
+  //       return 'text-error';
+  //     case 'medium':
+  //       return 'text-warning';
+  //     case 'low':
+  //       return 'text-success';
+  //     default:
+  //       return 'text-muted-foreground';
+  //   }
+  // };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString)?.toLocaleDateString('es-CL', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
+  // const formatDate = (dateString) => {
+  //   return new Date(dateString)?.toLocaleDateString('es-CL', {
+  //     day: '2-digit',
+  //     month: '2-digit',
+  //     year: 'numeric'
+  //   });
+  // };
 
   const getRelativeTime = (dateString) => {
     if (!dateString) return 'fecha desconocida';

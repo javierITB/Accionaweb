@@ -16,6 +16,7 @@ import {
    getDefaultStatusColor,
    formatStatusText
 } from "../../../utils/ticketStatusStyles";
+import TimelineView from "pages/request-tracking/components/TimelineView";
 
 const RequestDetails = ({
    request,
@@ -1874,46 +1875,68 @@ Máximo permitido: ${MAX_FILES} archivos.`;
       </div >
    );
 
-   const handleUploadFiles = async () => {
-      if (correctedFiles.length === 0) {
-         alert("No hay archivos para subir");
-         return;
-      }
+     const mockTimeline = [
+    {
+      id: 1,
+      title: "Solicitud Enviada",
+      description: "La solicitud ha sido enviada y está pendiente de revisión inicial.",
+      status: "completed",
+      completedAt: "2025-01-18T09:30:00Z",
+      assignedTo: "Sistema Automático",
+      notes: "Solicitud recibida correctamente."
+    },
+    {
+      id: 2,
+      title: "Revisión Inicial",
+      description: "El equipo de RR.HH. está realizando la revisión inicial.",
+      status: "current",
+      completedAt: null,
+      assignedTo: "María González",
+      estimatedCompletion: "2025-01-22T17:00:00Z"
+    }
+  ];
 
-      try {
-         const formData = new FormData();
 
-         // Agregar cada archivo
-         correctedFiles.forEach((file) => {
-            formData.append("files", file);
-         });
+   // const handleUploadFiles = async () => {
+   //    if (correctedFiles.length === 0) {
+   //       alert("No hay archivos para subir");
+   //       return;
+   //    }
 
-         // Agregar responseId
-         formData.append("responseId", request._id);
+   //    try {
+   //       const formData = new FormData();
 
-         // Obtener token si es necesario (ajusta según tu auth)
-         // Usar apiFetch para upload (automáticamente maneja headers y formData)
-         const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
-            method: "POST",
-            body: formData,
-         });
+   //       // Agregar cada archivo
+   //       correctedFiles.forEach((file) => {
+   //          formData.append("files", file);
+   //       });
 
-         if (response.ok) {
-            const result = await response.json();
-            console.log("Archivos subidos exitosamente:", result);
-            alert(`${correctedFiles.length} archivo(s) subido(s) exitosamente`);
-            return true;
-         } else {
-            const error = await response.json();
-            alert(`Error subiendo archivos: ${error.error}`);
-            return false;
-         }
-      } catch (error) {
-         console.error("Error subiendo archivos:", error);
-         alert("Error subiendo archivos: " + error.message);
-         return false;
-      }
-   };
+   //       // Agregar responseId
+   //       formData.append("responseId", request._id);
+
+   //       // Obtener token si es necesario (ajusta según tu auth)
+   //       // Usar apiFetch para upload (automáticamente maneja headers y formData)
+   //       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
+   //          method: "POST",
+   //          body: formData,
+   //       });
+
+   //       if (response.ok) {
+   //          const result = await response.json();
+   //          console.log("Archivos subidos exitosamente:", result);
+   //          alert(`${correctedFiles.length} archivo(s) subido(s) exitosamente`);
+   //          return true;
+   //       } else {
+   //          const error = await response.json();
+   //          alert(`Error subiendo archivos: ${error.error}`);
+   //          return false;
+   //       }
+   //    } catch (error) {
+   //       console.error("Error subiendo archivos:", error);
+   //       alert("Error subiendo archivos: " + error.message);
+   //       return false;
+   //    }
+   // };
 
    const handleDownloadCorrected = async (index = 0, source = "auto") => {
       try {
@@ -2010,31 +2033,31 @@ Máximo permitido: ${MAX_FILES} archivos.`;
       const entries = Object.entries(responses);
 
       // Preparar lista de archivos corregidos para mostrar
-      let filesToShow = [];
-      let isLocal = false;
+      // let filesToShow = [];
+      // let isLocal = false;
 
-      if (correctedFiles.length > 0) {
-         filesToShow = correctedFiles.map((f) => ({
-            name: f.name,
-            size: f.size,
-            uploadedAt: new Date().toISOString(),
-         }));
-         isLocal = true;
-      } else if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
-         filesToShow = approvedData.correctedFiles.map((f) => ({
-            name: f.fileName,
-            size: f.fileSize,
-            uploadedAt: f.uploadedAt,
-         }));
-      } else if (fullRequestData?.correctedFile) {
-         filesToShow = [
-            {
-               name: fullRequestData.correctedFile.fileName,
-               size: fullRequestData.correctedFile.fileSize,
-               uploadedAt: fullRequestData.submittedAt, // Fallback
-            },
-         ];
-      }
+      // if (correctedFiles.length > 0) {
+      //    filesToShow = correctedFiles.map((f) => ({
+      //       name: f.name,
+      //       size: f.size,
+      //       uploadedAt: new Date().toISOString(),
+      //    }));
+      //    isLocal = true;
+      // } else if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
+      //    filesToShow = approvedData.correctedFiles.map((f) => ({
+      //       name: f.fileName,
+      //       size: f.fileSize,
+      //       uploadedAt: f.uploadedAt,
+      //    }));
+      // } else if (fullRequestData?.correctedFile) {
+      //    filesToShow = [
+      //       {
+      //          name: fullRequestData.correctedFile.fileName,
+      //          size: fullRequestData.correctedFile.fileSize,
+      //          uploadedAt: fullRequestData.submittedAt, // Fallback
+      //       },
+      //    ];
+      // }
 
       /* 
        Si no hay respuestas y no hay archivos corregidos, mostramos mensaje de vacío.
@@ -2328,6 +2351,16 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   >
                      Detalles
                   </button>
+                  <button
+                     onClick={() => setActiveTab("chronology")}
+                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "chronology"
+                        ? "border-accent text-accent"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
+                     title="Ver detalles de la solicitud"
+                  >
+                     Cronología
+                  </button>
                   {userPermissions?.viewAnswers && (
                      <button
                         onClick={() => setActiveTab("responses")}
@@ -2358,6 +2391,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
             <div className="p-6">
                {activeTab === "details"
                   ? renderDetailsTab()
+                  : activeTab === "chronology"
+                     ? <TimelineView timeline={mockTimeline} isVisible={true} />
                   : activeTab === "responses" && userPermissions?.viewAnswers
                      ? renderResponsesTab()
                      : activeTab === "shared" && userPermissions?.viewShared
