@@ -227,6 +227,7 @@ const RequestDetails = ({
                const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
                if (response.ok) {
                   const data = await response.json();
+                  console.log(data)
                   setFullRequestData((prev) => ({ ...prev, ...data }));
                }
             } catch (error) {
@@ -2494,7 +2495,7 @@ const mockTimeline = [
                {activeTab === "details" ? (
                   renderDetailsTab()
                ) : activeTab === "chronology" ? (
-                  <TimelineView timeline={mockTimeline} isVisible={true} />
+                  <TimelineView timeline={fullRequestData?.cambios} isVisible={true} />
                ) : activeTab === "responses" && userPermissions?.viewAnswers ? (
                   renderResponsesTab()
                ) : activeTab === "shared" && userPermissions?.viewShared ? (

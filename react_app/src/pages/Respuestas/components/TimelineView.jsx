@@ -34,7 +34,7 @@ const TimelineView = ({ timeline, isVisible }) => {
         <h3 className="text-lg font-semibold text-foreground">Cronología de la Solicitud</h3>
       </div>
       <div className="relative">
-        {timeline?.map((step, index) => {
+        {timeline ? (timeline?.map((step, index) => {
           const isLast = index === timeline?.length - 1;
           const isCompleted = step?.status === 'completed';
           const isCurrent = step?.status === 'current';
@@ -97,7 +97,11 @@ const TimelineView = ({ timeline, isVisible }) => {
               </div>
             </div>
           );
-        })}
+        })): (
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm">No hay registros de solicitud</p>
+          </div>
+        )}
       </div>
     </div>
   );
