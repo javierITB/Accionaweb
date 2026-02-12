@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, Database, Users, Trash2, CheckCircle2, Loader2, Play, HardDrive, LayoutDashboard, FileText, Bell, ShieldCheck, Activity, Lock } from "lucide-react";
+import { Search, Database, Users, Trash2, CheckCircle2, Loader2, Play, HardDrive, LayoutDashboard, FileText, Bell, ShieldCheck, Activity, Lock, Calendar } from "lucide-react";
 
 // Helpers y componentes de UI
 import { apiFetch, API_BASE_URL } from "../../utils/api";
@@ -150,13 +150,12 @@ const PlanesConfigView = ({ userPermissions = {} }) => {
                                         key={company._id || company.name}
                                         className="bg-card rounded-2xl border border-white/5 shadow-xl hover:shadow-2xl transition-all group relative flex flex-col overflow-hidden max-w-full"
                                     >
-                                        {/* GRADIENT TOP BORDER */}
-                                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 opacity-80" />
+
 
                                         <div className="p-6">
                                             <div className="flex items-center gap-4 mb-6">
                                                 {/* ICON CONTAINER STYLE MATCH */}
-                                                <div className="w-16 h-16 rounded-3xl shrink-0 flex items-center justify-center text-white shadow-lg bg-gradient-to-br from-indigo-600 to-purple-700">
+                                                <div className="w-16 h-16 rounded-3xl shrink-0 flex items-center justify-center text-white shadow-lg bg-indigo-600">
                                                     <LayoutDashboard size={28} />
                                                 </div>
                                                 <div className="min-w-0">
@@ -169,21 +168,25 @@ const PlanesConfigView = ({ userPermissions = {} }) => {
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-3 mb-6">
-                                                <div className="flex flex-col p-3 rounded-xl bg-muted/30 border border-white/5">
-                                                    <span className="text-[10px] font-black text-muted-foreground uppercase mb-1">Database</span>
-                                                    <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                                                        <Database size={14} className="text-indigo-500" />
-                                                        <span className="truncate">{company.dbName || "---"}</span>
-                                                    </div>
+                                            <div className="flex flex-col gap-2 pl-1 mb-6">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                    <HardDrive size={14} />
+                                                    <span>{formatBytes(company.sizeOnDisk || 0)}</span>
                                                 </div>
-                                                <div className="flex flex-col p-3 rounded-xl bg-muted/30 border border-white/5">
-                                                    <span className="text-[10px] font-black text-muted-foreground uppercase mb-1">Espacio</span>
-                                                    <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                                                        <HardDrive size={14} className="text-purple-500" />
-                                                        <span>{formatBytes(company.sizeOnDisk || 0)}</span>
-                                                    </div>
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground" title="Usuarios Máximos">
+                                                    <Users size={14} />
+                                                    <span>{company.planLimits?.users?.maxUsers || "∞"} <span className="text-xs opacity-70">usuarios</span></span>
                                                 </div>
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground" title="Formularios Máximos">
+                                                    <FileText size={14} />
+                                                    <span>{company.planLimits?.forms?.maxQuantity || "∞"} <span className="text-xs opacity-70">formularios</span></span>
+                                                </div>
+                                                {company.dbName !== 'formsdb' && !company.isSystem && (
+                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground" title="Fecha de Creación">
+                                                        <Calendar size={14} />
+                                                        <span>{company.createdAt ? new Date(company.createdAt).toLocaleDateString() : "-"}</span>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
