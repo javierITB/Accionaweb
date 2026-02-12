@@ -28,7 +28,7 @@ const TimelineView = ({ timeline, isVisible }) => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6">
+    <div className="bg-card">
       <div className="flex items-center space-x-2 mb-6">
         <Icon name="GitBranch" size={20} className="text-accent" />
         <h3 className="text-lg font-semibold text-foreground">Cronología de la Solicitud</h3>
