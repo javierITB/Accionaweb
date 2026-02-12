@@ -6,6 +6,7 @@ import RegisterForm from "./components/RegisterForm";
 import Icon from "../../components/AppIcon";
 import Button from "../../components/ui/Button";
 import { Navigate } from "react-router-dom";
+import LoadingCard from "clientPages/components/LoadingCard";
 
 const FormReg = ({ userPermissions = [] }) => {
    // --- LÓGICA DE PERMISOS BASADA EN PROPS ---
@@ -449,6 +450,7 @@ const FormReg = ({ userPermissions = [] }) => {
                      ))}
                   </tbody>
                </table>
+               {loadingEmpresas && <LoadingCard text="Cargando usuarios..." />}
             </div>
          </div>
       );

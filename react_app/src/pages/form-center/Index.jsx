@@ -8,7 +8,8 @@ import CategoryFilter from "./components/CategoryFilter";
 import SearchBar from "./components/SearchBar";
 import { API_BASE_URL, apiFetch } from "../../utils/api";
 import { useMemo } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import LoadingCard from "clientPages/components/LoadingCard";
 
 const FormCenter = ({ userPermissions = {} }) => {
    const [searchQuery, setSearchQuery] = useState("");
@@ -16,6 +17,7 @@ const FormCenter = ({ userPermissions = {} }) => {
    const [filters, setFilters] = useState({});
    const [filteredForms, setFilteredForms] = useState([]);
    const [viewMode, setViewMode] = useState("grid");
+   const navigate = useNavigate();
 
    // Estado del Sidebar - RESPONSIVE
    const [isDesktopOpen, setIsDesktopOpen] = useState(true);
@@ -319,7 +321,7 @@ const FormCenter = ({ userPermissions = {} }) => {
                            iconName="Plus"
                            iconPosition="left"
                            iconSize={16}
-                           onClick={() => (window.location.href = "/form-builder")}
+                           onClick={() => (navigate("/form-builder"))}
                            className="mb-2 md:mb-0 text-xs sm:text-sm"
                         >
                            Crear Formulario
@@ -415,14 +417,7 @@ const FormCenter = ({ userPermissions = {} }) => {
 
                <div className="space-y-4 lg:space-y-6">
                   {isLoading ? (
-                     <div className="text-center py-8 lg:py-12">
-                        <div className="w-12 h-12 lg:w-16 lg:h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
-                           <Icon name="Loader" size={20} className="text-muted-foreground animate-spin lg:w-6 lg:h-6" />
-                        </div>
-                        <h3 className="text-base lg:text-lg font-medium text-foreground mb-2">
-                           Cargando formularios...
-                        </h3>
-                     </div>
+                     <LoadingCard text="Cargando formularios..." />
                   ) : (
                      <div className="space-y-3 lg:space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">

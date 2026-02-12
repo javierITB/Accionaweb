@@ -493,7 +493,7 @@ const FormBuilder = ({ userPermissions = [] }) => {
           {/* HEADER CON BOTÓN DE TOGGLE - MODIFICADO ÚNICAMENTE AQUÍ PARA RESPONSIVIDAD */}
           <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
             <div className="space-y-2">
-              <div className="flex items-center space-x-2">
+              {/* <div className="flex items-center space-x-2">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -503,7 +503,7 @@ const FormBuilder = ({ userPermissions = [] }) => {
                 >
                   Volver al Centro de Plantillas
                 </Button>
-              </div>
+              </div> */}
 
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">

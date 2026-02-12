@@ -8,6 +8,7 @@ import QuestionBuilder from "./components/QuestionBuilder";
 import FormPreview from "./components/FormPreview";
 import { API_BASE_URL, apiFetch } from "../../utils/api";
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 const FormBuilder = ({ userPermissions = {} }) => {
    // Estados para el sidebar - ACTUALIZADOS
    const [isDesktopOpen, setIsDesktopOpen] = useState(true);
@@ -35,6 +36,7 @@ const FormBuilder = ({ userPermissions = {} }) => {
    const [activeTab, setActiveTab] = useState("properties");
    const [isSaving, setIsSaving] = useState(false);
    const [isPublishing, setIsPublishing] = useState(false);
+   const navigate = useNavigate();
 
    const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
 
@@ -511,7 +513,7 @@ const FormBuilder = ({ userPermissions = {} }) => {
                         <Button
                            variant="ghost"
                            size="sm"
-                           onClick={() => (window.location.href = "/form-center")}
+                           onClick={() => navigate("/form-center")}
                            iconName="ArrowLeft"
                            iconPosition="left"
                         >
@@ -603,9 +605,8 @@ const FormBuilder = ({ userPermissions = {} }) => {
                <div className="bg-card border border-border rounded-lg m-1.5 md:m-0">
                   <div className="border-b border-border">
                      <nav className="flex px-1 md:space-x-8 md:px-6 overflow-x-auto">
-                        {tabs?.map((tab) => (
-                           
-                              isMobileScreen ? (
+                        {tabs?.map((tab) =>
+                           isMobileScreen ? (
                               <button
                                  key={tab?.id}
                                  onClick={() => setActiveTab(tab?.id)}
@@ -630,7 +631,7 @@ const FormBuilder = ({ userPermissions = {} }) => {
                                     </span>
                                  )}
                               </button>
-                              ):(
+                           ) : (
                               <button
                                  key={tab?.id}
                                  onClick={() => setActiveTab(tab?.id)}
@@ -655,9 +656,8 @@ const FormBuilder = ({ userPermissions = {} }) => {
                                     </span>
                                  )}
                               </button>
-                              )
-                           
-                        ))}
+                           ),
+                        )}
                         {permisos.delete_formularios && (
                            <Button
                               variant="ghost"
