@@ -5,17 +5,18 @@ import CleanDocumentPreview from "./CleanDocumentPreview";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
 import useAsyncDialog from "hooks/useAsyncDialog";
 import AsyncActionDialog from "@/components/AsyncActionDialog";
-
-// Límites configurados
-const MAX_FILES = 5; // Máximo de archivos
-const MAX_FILE_SIZE = 3 * 1024 * 1024; // 1MB en bytes
-
 import {
    getStatusColorClass,
    getStatusIcon as getStatusIconUtil,
    getDefaultStatusColor,
-   formatStatusText
+   formatStatusText,
 } from "../../../utils/ticketStatusStyles";
+
+import TimelineView from "../components/TimelineView";
+
+// Límites configurados
+const MAX_FILES = 5; // Máximo de archivos
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 1MB en bytes
 
 const RequestDetails = ({
    request,
@@ -31,13 +32,49 @@ const RequestDetails = ({
    // --- CONFIGURACIÓN DE ESTADOS ---
    const requestsConfig = {
       statuses: [
-         { value: 'pendiente', label: 'Pendiente', className: 'bg-error text-error-foreground', listIconClass: 'text-error', icon: 'Clock' },
-         { value: 'en_revision', label: 'En Revisión', className: 'bg-secondary text-secondary-foreground', listIconClass: 'text-secondary', icon: 'Eye' },
-         { value: 'aprobado', label: 'Aprobado', className: 'bg-warning text-warning-foreground', listIconClass: 'text-yellow-600', icon: 'CheckCircle' },
-         { value: 'firmado', label: 'Firmado', className: 'bg-success text-success-foreground', listIconClass: 'text-success', icon: 'CheckSquare' },
-         { value: 'finalizado', label: 'Finalizado', className: 'bg-accent text-accent-foreground', listIconClass: 'text-accent', icon: 'CheckCircle' },
-         { value: 'archivado', label: 'Archivado', className: 'bg-card text-primary', listIconClass: 'text-muted-foreground', icon: 'Folder' }
-      ]
+         {
+            value: "pendiente",
+            label: "Pendiente",
+            className: "bg-error text-error-foreground",
+            listIconClass: "text-error",
+            icon: "Clock",
+         },
+         {
+            value: "en_revision",
+            label: "En Revisión",
+            className: "bg-secondary text-secondary-foreground",
+            listIconClass: "text-secondary",
+            icon: "Eye",
+         },
+         {
+            value: "aprobado",
+            label: "Aprobado",
+            className: "bg-warning text-warning-foreground",
+            listIconClass: "text-yellow-600",
+            icon: "CheckCircle",
+         },
+         {
+            value: "firmado",
+            label: "Firmado",
+            className: "bg-success text-success-foreground",
+            listIconClass: "text-success",
+            icon: "CheckSquare",
+         },
+         {
+            value: "finalizado",
+            label: "Finalizado",
+            className: "bg-accent text-accent-foreground",
+            listIconClass: "text-accent",
+            icon: "CheckCircle",
+         },
+         {
+            value: "archivado",
+            label: "Archivado",
+            className: "bg-card text-primary",
+            listIconClass: "text-muted-foreground",
+            icon: "Folder",
+         },
+      ],
    };
 
    // --- ESTADOS DE UI ---
@@ -648,7 +685,7 @@ const RequestDetails = ({
                   const updatedRes = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}`);
                   if (updatedRes.ok) {
                      const data = await updatedRes.json();
-                     setFullRequestData(prev => ({ ...prev, ...data }));
+                     setFullRequestData((prev) => ({ ...prev, ...data }));
                      if (onUpdate) onUpdate(data);
                   }
                   return true;
@@ -660,7 +697,7 @@ const RequestDetails = ({
                console.error("Error eliminando firma:", error);
                throw error;
             }
-         }
+         },
       });
    };
 
@@ -1028,7 +1065,9 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
       const oversizedFiles = correctedFiles.filter((f) => f.size > MAX_FILE_SIZE);
       if (oversizedFiles.length > 0) {
-         throw new Error(`No se puede aprobar. Los siguientes archivos exceden 3MB: ${oversizedFiles.map((f) => f.name).join(", ")}`);
+         throw new Error(
+            `No se puede aprobar. Los siguientes archivos exceden 3MB: ${oversizedFiles.map((f) => f.name).join(", ")}`,
+         );
       }
 
       if (isApproving || ["aprobado", "firmado"].includes(request?.status)) {
@@ -1357,7 +1396,9 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   </h3>
                )}
                {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
-                  <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">Archivos Adjuntos</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                     Archivos Adjuntos
+                  </h3>
                )}
                {fullRequestData?.adjuntos?.length > 0 && (
                   <div className="space-y-2">
@@ -1368,7 +1409,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               <div>
                                  <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
                                  <p className="text-xs text-muted-foreground">
-                                    {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
+                                    {adjunto.pregunta} • {formatFileSize(adjunto.size)} •{" "}
+                                    {formatDate(adjunto.uploadedAt)}
                                  </p>
                               </div>
                            </div>
@@ -1414,27 +1456,33 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   {endpointPrefix.includes("domicilio-virtual") ? "Documentos Adjuntos" : "Documento Generado"}
 
                   {/* Botón Regenerar al lado del título (Si hay plantilla y NO es domicilio virtual) */}
-                  {fullRequestData?.formId && !endpointPrefix.includes("domicilio-virtual") && userPermissions?.regenerate && (
-                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-primary ml-1"
-                        title="Regenerar Documento"
-                        onClick={(e) => {
-                           e.stopPropagation();
-                           openAsyncDialog({
-                              title: "¿Estás seguro de regenerar el documento? Esto sobrescribirá el documento actual.",
-                              loadingText: "Regenerando documento...",
-                              successText: "Documento regenerado exitosamente",
-                              errorText: "Error al regenerar documento",
-                              onConfirm: handleRegenerateDocument,
-                           });
-                        }}
-                        disabled={isRegenerating}
-                     >
-                        <Icon name={isRegenerating ? "Loader" : "RefreshCw"} size={14} className={isRegenerating ? "animate-spin" : ""} />
-                     </Button>
-                  )}
+                  {fullRequestData?.formId &&
+                     !endpointPrefix.includes("domicilio-virtual") &&
+                     userPermissions?.regenerate && (
+                        <Button
+                           variant="ghost"
+                           size="icon"
+                           className="h-6 w-6 text-muted-foreground hover:text-primary ml-1"
+                           title="Regenerar Documento"
+                           onClick={(e) => {
+                              e.stopPropagation();
+                              openAsyncDialog({
+                                 title: "¿Estás seguro de regenerar el documento? Esto sobrescribirá el documento actual.",
+                                 loadingText: "Regenerando documento...",
+                                 successText: "Documento regenerado exitosamente",
+                                 errorText: "Error al regenerar documento",
+                                 onConfirm: handleRegenerateDocument,
+                              });
+                           }}
+                           disabled={isRegenerating}
+                        >
+                           <Icon
+                              name={isRegenerating ? "Loader" : "RefreshCw"}
+                              size={14}
+                              className={isRegenerating ? "animate-spin" : ""}
+                           />
+                        </Button>
+                     )}
 
                   {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
                </h3>
@@ -1504,8 +1552,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
             </div>
          )}
 
-
-
          {userPermissions?.viewSent && (
             <div>
                <div className="flex items-center justify-between mb-3 pr-4">
@@ -1523,25 +1569,27 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   {/* BOTÓN PARA SUBIR ARCHIVOS */}
                   <div className="flex items-center gap-2">
                      <span
-                        className={`text-sm pr-1  ${(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES
-                           ? "text-blue-600"
-                           : "text-muted-foreground"
-                           }`}
+                        className={`text-sm pr-1  ${
+                           (approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES
+                              ? "text-blue-600"
+                              : "text-muted-foreground"
+                        }`}
                      >
                         Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
                      </span>
-                     {!["archivado", "finalizado"].includes(fullRequestData?.status) && userPermissions?.create_solicitudes_clientes_send && (
-                        <Button
-                           variant="outlineTeal"
-                           size="sm"
-                           onClick={handleUploadClick}
-                           iconName="Plus"
-                           iconPosition="left"
-                           disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
-                        >
-                           Añadir Archivos
-                        </Button>
-                     )}
+                     {!["archivado", "finalizado"].includes(fullRequestData?.status) &&
+                        userPermissions?.create_solicitudes_clientes_send && (
+                           <Button
+                              variant="outlineTeal"
+                              size="sm"
+                              onClick={handleUploadClick}
+                              iconName="Plus"
+                              iconPosition="left"
+                              disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
+                           >
+                              Añadir Archivos
+                           </Button>
+                        )}
                   </div>
 
                   {/* Input de archivo oculto */}
@@ -1569,7 +1617,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               onClick={() => setCorrectedFiles([])}
                               iconName="Trash2"
                               iconPosition="left"
-                           // className="text-error hover:bg-error/10"
+                              // className="text-error hover:bg-error/10"
                            >
                               Eliminar todos
                            </Button>
@@ -1661,8 +1709,9 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            return (
                               <div
                                  key={index}
-                                 className={`flex items-center justify-between p-3 rounded border ${isMarkedForDelete ? "bg-error/10 border-error/30" : "bg-success/5 border-success/20"
-                                    }`}
+                                 className={`flex items-center justify-between p-3 rounded border ${
+                                    isMarkedForDelete ? "bg-error/10 border-error/30" : "bg-success/5 border-success/20"
+                                 }`}
                               >
                                  <div className="flex items-center space-x-3">
                                     <Icon
@@ -1672,8 +1721,9 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                     />
                                     <div>
                                        <p
-                                          className={`text-sm font-medium ${isMarkedForDelete ? "text-error line-through" : "text-foreground"
-                                             }`}
+                                          className={`text-sm font-medium ${
+                                             isMarkedForDelete ? "text-error line-through" : "text-foreground"
+                                          }`}
                                        >
                                           {file.fileName}
                                           {isMarkedForDelete && (
@@ -1705,7 +1755,9 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                           variant="ghost"
                                           size="sm"
                                           onClick={() => handlePreviewCorrectedFile(index, "approved")}
-                                          iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                                          iconName={
+                                             isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"
+                                          }
                                           iconPosition="left"
                                           iconSize={16}
                                           disabled={isLoadingPreviewCorrected || isMarkedForDelete}
@@ -1715,9 +1767,13 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                              : "Vista Previa"}
                                        </Button>
                                     )}
-                                    {fullRequestData?.status !== "archivado" && (
-                                       isMarkedForDelete ? (
-                                          <Button variant="ghost" size="icon" onClick={() => handleUndoDelete(file.fileName)}>
+                                    {fullRequestData?.status !== "archivado" &&
+                                       (isMarkedForDelete ? (
+                                          <Button
+                                             variant="ghost"
+                                             size="icon"
+                                             onClick={() => handleUndoDelete(file.fileName)}
+                                          >
                                              <Icon name="RotateCcw" size={16} />
                                           </Button>
                                        ) : (
@@ -1735,8 +1791,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                                 />
                                              </Button>
                                           )
-                                       )
-                                    )}
+                                       ))}
                                  </div>
                               </div>
                            );
@@ -1796,11 +1851,11 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   )}
                </div>
             </div>
-         )
-         }
+         )}
 
-         {
-            fullRequestData?.status !== "pendiente" && fullRequestData?.status !== "en_revision" && userPermissions?.viewSigned && (
+         {fullRequestData?.status !== "pendiente" &&
+            fullRequestData?.status !== "en_revision" &&
+            userPermissions?.viewSigned && (
                <div>
                   {isCheckingSignature && (
                      <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -1869,51 +1924,71 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      </div>
                   )}
                </div>
-            )
-         }
-      </div >
+            )}
+      </div>
    );
 
-   const handleUploadFiles = async () => {
-      if (correctedFiles.length === 0) {
-         alert("No hay archivos para subir");
-         return;
-      }
+   const mockTimeline = [
+      {
+         id: 1,
+         title: "Solicitud Enviada",
+         description: "La solicitud ha sido enviada y está pendiente de revisión inicial.",
+         status: "completed",
+         completedAt: "2025-01-18T09:30:00Z",
+         assignedTo: "Sistema Automático",
+         notes: "Solicitud recibida correctamente.",
+      },
+      {
+         id: 2,
+         title: "Revisión Inicial",
+         description: "El equipo de RR.HH. está realizando la revisión inicial.",
+         status: "current",
+         completedAt: null,
+         assignedTo: "María González",
+         estimatedCompletion: "2025-01-22T17:00:00Z",
+      },
+   ];
 
-      try {
-         const formData = new FormData();
+   // const handleUploadFiles = async () => {
+   //    if (correctedFiles.length === 0) {
+   //       alert("No hay archivos para subir");
+   //       return;
+   //    }
 
-         // Agregar cada archivo
-         correctedFiles.forEach((file) => {
-            formData.append("files", file);
-         });
+   //    try {
+   //       const formData = new FormData();
 
-         // Agregar responseId
-         formData.append("responseId", request._id);
+   //       // Agregar cada archivo
+   //       correctedFiles.forEach((file) => {
+   //          formData.append("files", file);
+   //       });
 
-         // Obtener token si es necesario (ajusta según tu auth)
-         // Usar apiFetch para upload (automáticamente maneja headers y formData)
-         const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
-            method: "POST",
-            body: formData,
-         });
+   //       // Agregar responseId
+   //       formData.append("responseId", request._id);
 
-         if (response.ok) {
-            const result = await response.json();
-            console.log("Archivos subidos exitosamente:", result);
-            alert(`${correctedFiles.length} archivo(s) subido(s) exitosamente`);
-            return true;
-         } else {
-            const error = await response.json();
-            alert(`Error subiendo archivos: ${error.error}`);
-            return false;
-         }
-      } catch (error) {
-         console.error("Error subiendo archivos:", error);
-         alert("Error subiendo archivos: " + error.message);
-         return false;
-      }
-   };
+   //       // Obtener token si es necesario (ajusta según tu auth)
+   //       // Usar apiFetch para upload (automáticamente maneja headers y formData)
+   //       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
+   //          method: "POST",
+   //          body: formData,
+   //       });
+
+   //       if (response.ok) {
+   //          const result = await response.json();
+   //          console.log("Archivos subidos exitosamente:", result);
+   //          alert(`${correctedFiles.length} archivo(s) subido(s) exitosamente`);
+   //          return true;
+   //       } else {
+   //          const error = await response.json();
+   //          alert(`Error subiendo archivos: ${error.error}`);
+   //          return false;
+   //       }
+   //    } catch (error) {
+   //       console.error("Error subiendo archivos:", error);
+   //       alert("Error subiendo archivos: " + error.message);
+   //       return false;
+   //    }
+   // };
 
    const handleDownloadCorrected = async (index = 0, source = "auto") => {
       try {
@@ -2010,31 +2085,31 @@ Máximo permitido: ${MAX_FILES} archivos.`;
       const entries = Object.entries(responses);
 
       // Preparar lista de archivos corregidos para mostrar
-      let filesToShow = [];
-      let isLocal = false;
+      // let filesToShow = [];
+      // let isLocal = false;
 
-      if (correctedFiles.length > 0) {
-         filesToShow = correctedFiles.map((f) => ({
-            name: f.name,
-            size: f.size,
-            uploadedAt: new Date().toISOString(),
-         }));
-         isLocal = true;
-      } else if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
-         filesToShow = approvedData.correctedFiles.map((f) => ({
-            name: f.fileName,
-            size: f.fileSize,
-            uploadedAt: f.uploadedAt,
-         }));
-      } else if (fullRequestData?.correctedFile) {
-         filesToShow = [
-            {
-               name: fullRequestData.correctedFile.fileName,
-               size: fullRequestData.correctedFile.fileSize,
-               uploadedAt: fullRequestData.submittedAt, // Fallback
-            },
-         ];
-      }
+      // if (correctedFiles.length > 0) {
+      //    filesToShow = correctedFiles.map((f) => ({
+      //       name: f.name,
+      //       size: f.size,
+      //       uploadedAt: new Date().toISOString(),
+      //    }));
+      //    isLocal = true;
+      // } else if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
+      //    filesToShow = approvedData.correctedFiles.map((f) => ({
+      //       name: f.fileName,
+      //       size: f.fileSize,
+      //       uploadedAt: f.uploadedAt,
+      //    }));
+      // } else if (fullRequestData?.correctedFile) {
+      //    filesToShow = [
+      //       {
+      //          name: fullRequestData.correctedFile.fileName,
+      //          size: fullRequestData.correctedFile.fileSize,
+      //          uploadedAt: fullRequestData.submittedAt, // Fallback
+      //       },
+      //    ];
+      // }
 
       /* 
        Si no hay respuestas y no hay archivos corregidos, mostramos mensaje de vacío.
@@ -2193,7 +2268,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
    const modalClass = isStandalone
       ? "flex flex-col flex-1 h-full w-full overflow-y-auto"
-      : "bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl max-h-[90vh] overflow-y-auto";
+      : "bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl min-h-[75vh] max-h-[75vh] overflow-y-auto flex flex-col";
 
    return (
       <div className={containerClass}>
@@ -2219,7 +2294,11 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               title="Click para copiar enlace directo"
                            >
                               ID: {fullRequestData?._id}
-                              {isCopied && <span className="text-xs text-muted-foreground ml-2 transition-all duration-300">Enlace copiado</span>}
+                              {isCopied && (
+                                 <span className="text-xs text-muted-foreground ml-2 transition-all duration-300">
+                                    Enlace copiado
+                                 </span>
+                              )}
                            </p>
                         </div>
                      </div>
@@ -2229,7 +2308,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            {(() => {
                               const currentStatus = fullRequestData?.status;
                               // Find config or fallback
-                              const statusDef = requestsConfig.statuses.find(s => s.value === currentStatus);
+                              const statusDef = requestsConfig.statuses.find((s) => s.value === currentStatus);
 
                               // Calculate classes based on config or default utils
                               const triggerColorClass = statusDef
@@ -2242,46 +2321,65 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               return (
                                  <>
                                     <button
-                                       onClick={() => !isStandalone && userPermissions?.editState && setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80 whitespace-nowrap ${triggerColorClass} ${!userPermissions?.editState ? 'cursor-default' : ''}`}
+                                       onClick={() =>
+                                          !isStandalone &&
+                                          userPermissions?.editState &&
+                                          setIsStatusDropdownOpen(!isStatusDropdownOpen)
+                                       }
+                                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80 whitespace-nowrap ${triggerColorClass} ${!userPermissions?.editState ? "cursor-default" : ""}`}
                                        title={userPermissions?.editState ? "Cambiar estado" : "Estado actual"}
                                        disabled={!userPermissions?.editState}
                                     >
                                        <Icon name={triggerIconName} size={14} className="mr-2" />
                                        <span className="uppercase">{triggerLabel}</span>
-                                       {userPermissions?.editState && <Icon name="ChevronDown" size={14} className="ml-2 opacity-50" />}
+                                       {userPermissions?.editState && (
+                                          <Icon name="ChevronDown" size={14} className="ml-2 opacity-50" />
+                                       )}
                                     </button>
 
                                     {isStatusDropdownOpen && userPermissions?.editState && (
                                        <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-popover border border-border rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                           <div className="p-1">
-                                             {requestsConfig.statuses.filter(st => {
-                                                if (st.value === 'finalizado') return userPermissions?.finalize;
-                                                if (st.value === 'archivado') return userPermissions?.archive;
-                                                return true;
-                                             }).map((st) => (
-                                                <button
-                                                   key={st.value}
-                                                   onClick={() => {
-                                                      openAsyncDialog({
-                                                         title: `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
-                                                         loadingText: `Cambiando estado a "${st.label}"...`,
-                                                         successText: "Estado cambiado correctamente",
-                                                         errorText: "No se pudo cambiar el estado",
-                                                         onConfirm: () => handleStatusChange(st.value)
-                                                      });
-                                                      setIsStatusDropdownOpen(false);
-                                                   }}
-                                                   className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${currentStatus === st.value
-                                                      ? 'bg-accent/10 text-accent font-medium'
-                                                      : 'hover:bg-accent/5 text-foreground'
+                                             {requestsConfig.statuses
+                                                .filter((st) => {
+                                                   if (st.value === "finalizado") return userPermissions?.finalize;
+                                                   if (st.value === "archivado") return userPermissions?.archive;
+                                                   return true;
+                                                })
+                                                .map((st) => (
+                                                   <button
+                                                      key={st.value}
+                                                      onClick={() => {
+                                                         openAsyncDialog({
+                                                            title: `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
+                                                            loadingText: `Cambiando estado a "${st.label}"...`,
+                                                            successText: "Estado cambiado correctamente",
+                                                            errorText: "No se pudo cambiar el estado",
+                                                            onConfirm: () => handleStatusChange(st.value),
+                                                         });
+                                                         setIsStatusDropdownOpen(false);
+                                                      }}
+                                                      className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${
+                                                         currentStatus === st.value
+                                                            ? "bg-accent/10 text-accent font-medium"
+                                                            : "hover:bg-accent/5 text-foreground"
                                                       }`}
-                                                >
-                                                   <Icon name={st.icon || 'Circle'} size={14} className={st.listIconClass || 'text-foreground'} />
-                                                   <span className="text-foreground">{st.label}</span>
-                                                   {currentStatus === st.value && <Icon name="Check" size={14} className="ml-auto opacity-70 text-accent" />}
-                                                </button>
-                                             ))}
+                                                   >
+                                                      <Icon
+                                                         name={st.icon || "Circle"}
+                                                         size={14}
+                                                         className={st.listIconClass || "text-foreground"}
+                                                      />
+                                                      <span className="text-foreground">{st.label}</span>
+                                                      {currentStatus === st.value && (
+                                                         <Icon
+                                                            name="Check"
+                                                            size={14}
+                                                            className="ml-auto opacity-70 text-accent"
+                                                         />
+                                                      )}
+                                                   </button>
+                                                ))}
                                           </div>
                                        </div>
                                     )}
@@ -2310,7 +2408,11 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            }}
                            disabled={isRegenerating}
                         >
-                           <Icon name={isRegenerating ? "Loader" : "RefreshCw"} size={16} className={isRegenerating ? "animate-spin" : ""} />
+                           <Icon
+                              name={isRegenerating ? "Loader" : "RefreshCw"}
+                              size={16}
+                              className={isRegenerating ? "animate-spin" : ""}
+                           />
                         </Button>
                      )}
                   </div>
@@ -2320,21 +2422,34 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                <div className="px-6 flex space-x-6 ">
                   <button
                      onClick={() => setActiveTab("details")}
-                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "details"
-                        ? "border-accent text-accent"
-                        : "border-transparent text-muted-foreground hover:text-foreground"
-                        }`}
+                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
+                        activeTab === "details"
+                           ? "border-accent text-accent"
+                           : "border-transparent text-muted-foreground hover:text-foreground"
+                     }`}
                      title="Ver detalles de la solicitud"
                   >
                      Detalles
                   </button>
+                  <button
+                     onClick={() => setActiveTab("chronology")}
+                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
+                        activeTab === "chronology"
+                           ? "border-accent text-accent"
+                           : "border-transparent text-muted-foreground hover:text-foreground"
+                     }`}
+                     title="Ver detalles de la solicitud"
+                  >
+                     Cronología
+                  </button>
                   {userPermissions?.viewAnswers && (
                      <button
                         onClick={() => setActiveTab("responses")}
-                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "responses"
-                           ? "border-accent text-accent"
-                           : "border-transparent text-muted-foreground hover:text-foreground"
-                           }`}
+                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
+                           activeTab === "responses"
+                              ? "border-accent text-accent"
+                              : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
                         title="Ver respuestas del formulario"
                      >
                         Respuestas
@@ -2343,10 +2458,11 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   {userPermissions?.viewShared && (
                      <button
                         onClick={() => setActiveTab("shared")}
-                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "shared"
-                           ? "border-accent text-accent"
-                           : "border-transparent text-muted-foreground hover:text-foreground"
-                           }`}
+                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
+                           activeTab === "shared"
+                              ? "border-accent text-accent"
+                              : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
                         title="Ver usuarios con acceso"
                      >
                         Compartidos
@@ -2356,13 +2472,17 @@ Máximo permitido: ${MAX_FILES} archivos.`;
             </div>
 
             <div className="p-6">
-               {activeTab === "details"
-                  ? renderDetailsTab()
-                  : activeTab === "responses" && userPermissions?.viewAnswers
-                     ? renderResponsesTab()
-                     : activeTab === "shared" && userPermissions?.viewShared
-                        ? renderSharedTab()
-                        : renderDetailsTab()}
+               {activeTab === "details" ? (
+                  renderDetailsTab()
+               ) : activeTab === "chronology" ? (
+                  <TimelineView timeline={mockTimeline} isVisible={true} />
+               ) : activeTab === "responses" && userPermissions?.viewAnswers ? (
+                  renderResponsesTab()
+               ) : activeTab === "shared" && userPermissions?.viewShared ? (
+                  renderSharedTab()
+               ) : (
+                  renderDetailsTab()
+               )}
             </div>
 
             <div className="sticky bottom-0 bg-card border-t border-border p-6">
@@ -2388,7 +2508,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
                            {/* BOTÓN "ACTUALIZAR" - Para agregar archivos cuando ya está aprobado */}
                            {(fullRequestData?.status === "aprobado" || fullRequestData?.status === "firmado") &&
-                              (correctedFiles.length > 0 || filesToDelete.length > 0) && userPermissions?.canUpload && (
+                              (correctedFiles.length > 0 || filesToDelete.length > 0) &&
+                              userPermissions?.canUpload && (
                                  <Button
                                     variant="outlineTeal"
                                     iconName={isUploading ? "Loader" : "RefreshCw"}
@@ -2413,7 +2534,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
                            {/* BOTÓN "APROBAR" - Para estados pendiente/en_revision */}
                            {(fullRequestData?.status === "en_revision" || fullRequestData?.status === "pendiente") &&
-                              correctedFiles.length > 0 && userPermissions?.editState && (
+                              correctedFiles.length > 0 &&
+                              userPermissions?.editState && (
                                  <Button
                                     variant="default"
                                     iconName={isApproving ? "Loader" : "CheckCircle"}
