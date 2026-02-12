@@ -3,10 +3,11 @@ import Icon from '../../../components/AppIcon';
 import { API_BASE_URL, apiFetch } from '../../../utils/api';
 import { useState, useEffect } from 'react';
 import LoadingCard from 'clientPages/components/LoadingCard';
-
+import { useNavigate } from 'react-router-dom';
 const QuickActionsCard = ({ section }) => {
   const [allForms, setAllForms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchForms = async () => {
@@ -58,7 +59,8 @@ const QuickActionsCard = ({ section }) => {
   }, [section]);
 
   const handleActionClick = (path) => {
-    window.location.href = path;
+    // window.location.href = path;
+    navigate(path);
   };
 
   return (
