@@ -2,7 +2,8 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
+// Añadida la prop onViewTimeline
+const RequestCard = ({ request, onViewDetails, onSendMessage, onViewTimeline }) => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved':
@@ -107,21 +108,35 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
           </span>
         </div>
       </div>
-      <div className="flex items-center justify-between">
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-t border-border/50 pt-4 mt-2 gap-4">
         <div className="flex items-center space-x-4">
           <div className="text-sm">
             <span className="text-muted-foreground">Categoría: </span>
             <span className="font-medium text-foreground">{request?.category}</span>
           </div>
           {request?.assignedTo && (
-            <div className="text-sm">
-              <span className="text-muted-foreground">Asignado a: </span>
+            <div className="text-sm border-l border-border pl-4">
+              <span className="text-muted-foreground">Asignado: </span>
               <span className="font-medium text-foreground">{request?.assignedTo}</span>
             </div>
           )}
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
+          {/* Nuevo botón de Timeline */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onViewTimeline(request)}
+            iconName="History"
+            iconPosition="left"
+            iconSize={16}
+            title="Ver Cronología"
+          >
+            Cronología
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -132,6 +147,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
           >
             Mensaje
           </Button>
+
           <Button
             variant="default"
             size="sm"
@@ -140,7 +156,7 @@ const RequestCard = ({ request, onViewDetails, onSendMessage }) => {
             iconPosition="left"
             iconSize={16}
           >
-            Ver Detalles
+            Detalles
           </Button>
         </div>
       </div>

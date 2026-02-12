@@ -308,7 +308,7 @@ const AnuncioCreator = ({ onSuccess, permisos = {} }) => {
                   </div>
                )}
 
-               {!permisos.create_anuncios ? (
+               {permisos.create_anuncios ? (
                   <div className="flex justify-end space-x-3 pt-6 border-t border-border">
                      <Button type="button" onClick={() => window.history.back()} variant="outline" className="px-6">
                         Cancelar

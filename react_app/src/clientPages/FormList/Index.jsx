@@ -8,7 +8,7 @@ import Footer from 'clientPages/components/ui/Footer.jsx';
 const DashboardHome = ({ section, userPermissions = [] }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
-  if (!userPermissions.includes('view_formularios')) {
+  if (!userPermissions.includes('view_formularios_cliente')) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center p-6 bg-card rounded-xl shadow-lg border border-border">
