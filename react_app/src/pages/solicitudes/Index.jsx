@@ -277,19 +277,12 @@ const MessageForm = ({ userPermissions = [] }) => {
                "Content-Type": "application/json",
             },
             body: JSON.stringify(payloadBase),
+            skipRedirect: true, // No redirigir para ver errores de límite
          });
 
          if (!res.ok) {
-            const errorText = await res.text();
-            // Intentar parsear el JSON para mostrar el error específico del backend (401 o 400)
-            let errorBody = { error: errorText };
-            try {
-               errorBody = JSON.parse(errorText);
-            } catch (e) {
-               /* no es JSON */
-            }
-
-            throw new Error(`Error al enviar respuestas base: ${errorBody.error || errorText}`);
+            const errorBody = await res.json().catch(() => ({}));
+            throw new Error(errorBody.error || "Error al enviar la solicitud");
          }
 
          const data = await res.json();

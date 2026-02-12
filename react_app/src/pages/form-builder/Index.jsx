@@ -326,10 +326,12 @@ const FormBuilder = ({ userPermissions = {} }) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(dataToSend),
+            skipRedirect: true, // No redirigir para ver errores de límite
          });
 
          if (!response.ok) {
-            throw new Error(`Error ${response.status}: ${await response.text()}`);
+            const errorBody = await response.json().catch(() => ({}));
+            throw new Error(errorBody.error || `Error ${response.status}: al guardar formulario`);
          }
 
          const savedForm = await response.json();
@@ -409,7 +411,13 @@ const FormBuilder = ({ userPermissions = {} }) => {
                questions: processedQuestions, // Usar preguntas procesadas
                status: "publicado",
             }),
+            skipRedirect: true, // No redirigir para ver errores de límite
          });
+
+         if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            throw new Error(errorBody.error || "Error al publicar el formulario");
+         }
 
          const updatedForm = await response.json();
          setFormData((prev) => ({
@@ -535,11 +543,10 @@ const FormBuilder = ({ userPermissions = {} }) => {
 
                   <div className="flex items-center">
                      <div
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                           formData?.status === "publicado"
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === "publicado"
                               ? "bg-green-100 text-green-700"
                               : "bg-yellow-100 text-yellow-700"
-                        }`}
+                           }`}
                      >
                         {formData?.status === "publicado" ? "Publicado" : "Borrador"}
                      </div>
@@ -610,22 +617,20 @@ const FormBuilder = ({ userPermissions = {} }) => {
                               <button
                                  key={tab?.id}
                                  onClick={() => setActiveTab(tab?.id)}
-                                 className={`flex items-center space-x-2 py-4 px-1 border-r border-b-2  font-medium text-sm transition-colors ${
-                                    activeTab === tab?.id
+                                 className={`flex items-center space-x-2 py-4 px-1 border-r border-b-2  font-medium text-sm transition-colors ${activeTab === tab?.id
                                        ? "border-b-primary text-primary"
                                        : "border-b-transparent  text-muted-foreground hover:text-foreground hover:border-muted-foreground"
-                                 }`}
+                                    }`}
                                  title={`Ir a la sección de ${tab?.label}`}
                               >
                                  <Icon name={tab?.icon} size={16} />
                                  <span>{tab?.label}</span>
                                  {tab?.count !== undefined && (
                                     <span
-                                       className={`px-2 py-1 text-xs rounded-full ${
-                                          activeTab === tab?.id
+                                       className={`px-2 py-1 text-xs rounded-full ${activeTab === tab?.id
                                              ? "bg-primary text-primary-foreground"
                                              : "bg-muted text-muted-foreground"
-                                       }`}
+                                          }`}
                                     >
                                        {tab?.count}
                                     </span>
@@ -635,22 +640,20 @@ const FormBuilder = ({ userPermissions = {} }) => {
                               <button
                                  key={tab?.id}
                                  onClick={() => setActiveTab(tab?.id)}
-                                 className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                    activeTab === tab?.id
+                                 className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab?.id
                                        ? "border-primary text-primary"
                                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground"
-                                 }`}
+                                    }`}
                                  title={`Ir a la sección de ${tab?.label}`}
                               >
                                  <Icon name={tab?.icon} size={16} />
                                  <span>{tab?.label}</span>
                                  {tab?.count !== undefined && (
                                     <span
-                                       className={`px-2 py-1 text-xs rounded-full ${
-                                          activeTab === tab?.id
+                                       className={`px-2 py-1 text-xs rounded-full ${activeTab === tab?.id
                                              ? "bg-primary text-primary-foreground"
                                              : "bg-muted text-muted-foreground"
-                                       }`}
+                                          }`}
                                     >
                                        {tab?.count}
                                     </span>

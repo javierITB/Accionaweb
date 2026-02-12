@@ -362,13 +362,15 @@ const FormBuilder = ({ userPermissions = [] }) => {
         method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
+        skipRedirect: true, // No redirigir para poder mostrar el error de límite
       });
 
       if (!response.ok) {
-        throw new Error('Error al guardar la plantilla');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Error al guardar la plantilla');
       }
 
-      const savedData = await response.json();
+      const savedData = await response.json().catch(() => ({}));
 
       // FORZAR la corrección
       const finalId = savedData.id || savedData._id?.toString() || savedData._id;
