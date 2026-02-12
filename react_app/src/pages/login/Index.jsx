@@ -132,8 +132,8 @@ export default function App() {
                sessionStorage.setItem("email", data?.usr?.email);
                sessionStorage.setItem("user", data?.usr?.name);
                sessionStorage.setItem("token", data?.token);
-      
-              navigate("/panel", { replace: true });
+
+               navigate("/panel", { replace: true });
             }
          } else {
             registerFailedAttempt();
@@ -160,7 +160,7 @@ export default function App() {
 
    return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 sm:p-6 font-sans">
-         <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-xl">
+         <div className="w-full max-w-md bg-white text-slate-900 p-8 rounded-xl shadow-xl">
             <div className="text-center mb-8">
                <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
                   {view === "login" ? "Iniciar Sesión" : "Verificación 2FA"}
@@ -203,8 +203,8 @@ export default function App() {
                            id="email"
                            type="email"
                            disabled={isLocked}
-                           className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl transition duration-150 shadow-sm
-                          ${isLocked ? "bg-gray-100 cursor-not-allowed" : `focus:ring-2 focus:ring-[${ORANGE_COLOR}] focus:border-[${ORANGE_COLOR}]`}`}
+                           className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl transition duration-150 shadow-sm text-slate-900
+                          ${isLocked ? "bg-gray-100 cursor-not-allowed" : `focus:ring-2 focus:ring-orange-500 focus:border-orange-500`}`}
                            value={email}
                            onChange={(e) => setEmail(e.target.value)}
                            required
@@ -223,8 +223,8 @@ export default function App() {
                            id="password"
                            type="password"
                            disabled={isLocked}
-                           className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl transition duration-150 shadow-sm
-                          ${isLocked ? "bg-gray-100 cursor-not-allowed" : `focus:ring-2 focus:ring-[${ORANGE_COLOR}] focus:border-[${ORANGE_COLOR}]`}`}
+                           className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl transition duration-150 shadow-sm text-slate-900
+                          ${isLocked ? "bg-gray-100 cursor-not-allowed" : `focus:ring-2 focus:ring-orange-500 focus:border-orange-500`}`}
                            value={password}
                            onChange={(e) => setPassword(e.target.value)}
                            required
@@ -279,8 +279,8 @@ export default function App() {
                         id="twoFACode"
                         type="text"
                         inputMode="numeric"
-                        className={`w-full pl-4 pr-4 py-3 border border-gray-300 rounded-xl text-center transition duration-150 shadow-sm text-lg font-bold tracking-widest
-                            focus:ring-2 focus:ring-[${ORANGE_COLOR}] focus:border-[${ORANGE_COLOR}]`}
+                        className={`w-full pl-4 pr-4 py-3 border border-gray-300 rounded-xl text-center transition duration-150 shadow-sm text-lg font-bold tracking-widest text-slate-900
+                            focus:ring-2 focus:ring-orange-500 focus:border-orange-500`}
                         value={twoFACode}
                         onChange={(e) => setTwoFACode(e.target.value)}
                         maxLength={6}
