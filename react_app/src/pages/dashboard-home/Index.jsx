@@ -334,8 +334,8 @@ const DashboardHome = ({ userPermissions = {} }) => {
                               <button
                                  onClick={() => setIsGlobalTime(false)}
                                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!isGlobalTime
-                                       ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
-                                       : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                    ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
                                     }`}
                               >
                                  Semana
@@ -343,8 +343,8 @@ const DashboardHome = ({ userPermissions = {} }) => {
                               <button
                                  onClick={() => setIsGlobalTime(true)}
                                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${isGlobalTime
-                                       ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
-                                       : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                                    ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
+                                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
                                     }`}
                               >
                                  Global

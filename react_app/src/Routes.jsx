@@ -31,7 +31,7 @@ import Solicitudes from './pages/solicitudes/Index.jsx';
 import DomicilioVirtualIndex from './pages/DomicilioVirtual/Index.jsx';
 import AdminNotificationManager from './pages/config-notificaciones/Index.jsx';
 import Anuncios from './pages/anuncios/Index.jsx';
-import PlanesConfig from './pages/configuracion-planes/Index.jsx';
+
 
 import Home from './clientPages/home/Index.jsx';
 import FormList from './clientPages/FormList/Index.jsx';
@@ -60,7 +60,7 @@ const Routes = () => {
             <Route path="/forms" element={<ProtectedClient><Form /></ProtectedClient>} />
             <Route path="/set-password" element={<SetPassword />} />
             <Route path="/perfil" element={<ProtectedClient><Profile /></ProtectedClient>} />
-            <Route path="/soporte" element={ <ProtectedClient> <SupportPortal /></ProtectedClient>} />
+            <Route path="/soporte" element={<ProtectedClient> <SupportPortal /></ProtectedClient>} />
             <Route path="/recuperacion" element={<Recuperacion />} />
 
             {/* Rutas protegidas */}
@@ -77,7 +77,7 @@ const Routes = () => {
             <Route path="/gestor-roles" element={<ProtectedRoute> <Roles /> </ProtectedRoute>} />
             <Route path="/gestor-empresas" element={<ProtectedRoute> <EmpresasDashboard /> </ProtectedRoute>} />
             <Route path="/config-notificaciones" element={<ProtectedRoute> <AdminNotificationManager /> </ProtectedRoute>} />
-            <Route path="/config-planes" element={<ProtectedRoute> <PlanesConfig /> </ProtectedRoute>} />
+
 
             <Route path="/users" element={<ProtectedRoute> <Users /> </ProtectedRoute>} />
             <Route path="/empresas" element={<ProtectedRoute> <Empresas /> </ProtectedRoute>} />

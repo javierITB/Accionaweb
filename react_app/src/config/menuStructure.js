@@ -45,8 +45,7 @@ export const MENU_STRUCTURE = [
       icon: "CircleDollarSign",
       isAccordion: true,
       children: [
-         { name: "Gestor Empresas", path: "/gestor-empresas", icon: "Building2", permission: "view_gestor_empresas" },
-         { name: "Configuración de Planes", path: "/config-planes", icon: "ShieldCheck", permission: "view_configuracion_planes" },
+         { name: "Gestor de Empresas", path: "/gestor-empresas", icon: "Building2", permission: "view_gestor_empresas" },
       ]
    },
 ];

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, Database, Users, Trash2, CheckCircle2, Loader2, Play, HardDrive, Calendar } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 
 // Helpers y componentes de UI
 import { apiFetch, API_BASE_URL } from "../../utils/api";
@@ -8,7 +8,10 @@ import Sidebar from "../../components/ui/Sidebar";
 import Button from "../../components/ui/Button";
 import { EmpresaModal } from "./components/EmpresaModal";
 
-const EmpresasView = ({ userPermissions = {} }) => {
+import { EmpresasTab } from "./components/EmpresasTab";
+import { PlanesTab } from "./components/PlanesTab";
+
+const EmpresasView = ({ userPermissions = [] }) => {
    // --- ESTADOS DE DATOS ---
    const [companies, setCompanies] = useState([]);
    const [isLoading, setIsLoading] = useState(true);
@@ -18,20 +21,35 @@ const EmpresasView = ({ userPermissions = {} }) => {
    const [isMobileOpen, setIsMobileOpen] = useState(false);
    const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
 
+   // --- PERMISOS DE VISTA ---
+   const canViewEmpresas = userPermissions.includes("view_gestor_empresas");
+   const canViewPlanes = userPermissions.includes("view_configuracion_planes");
+
    // --- ESTADOS DE LÓGICA ---
    const [searchQuery, setSearchQuery] = useState("");
-   const [isModalOpen, setIsModalOpen] = useState(false);
-   const [editingCompany, setEditingCompany] = useState(null);
+   // Inicializar activeTab basado en permisos
+   const [activeTab, setActiveTab] = useState(() => {
+      if (canViewEmpresas) return "empresas";
+      if (canViewPlanes) return "funcionalidades";
+      return "";
+   });
 
-   const permisos = useMemo(
-      () => ({
-         create_empresas: userPermissions.includes("create_gestor_empresas"),
-         canAccess: userPermissions.includes("view_gestor_empresas"),
-         edit_empresas: userPermissions.includes("edit_gestor_empresas"),
-         delete_empresas: userPermissions.includes("delete_gestor_empresas"),
-      }),
-      [userPermissions],
-   );
+   // Actualizar activeTab si cambian los permisos (por si acaso)
+   useEffect(() => {
+      if (activeTab === "empresas" && !canViewEmpresas) {
+         if (canViewPlanes) setActiveTab("funcionalidades");
+         else setActiveTab("");
+      }
+      else if (activeTab === "funcionalidades" && !canViewPlanes) {
+         if (canViewEmpresas) setActiveTab("empresas");
+         else setActiveTab("");
+      }
+      else if (!activeTab) {
+         if (canViewEmpresas) setActiveTab("empresas");
+         else if (canViewPlanes) setActiveTab("funcionalidades");
+      }
+   }, [canViewEmpresas, canViewPlanes, activeTab]);
+
 
    // --- CARGA DE DATOS DESDE API ---
    const fetchCompanies = async () => {
@@ -60,8 +78,12 @@ const EmpresasView = ({ userPermissions = {} }) => {
 
    // Efecto inicial
    useEffect(() => {
-      fetchCompanies();
-   }, []);
+      if (canViewEmpresas || canViewPlanes) {
+         fetchCompanies();
+      } else {
+         setIsLoading(false);
+      }
+   }, [canViewEmpresas, canViewPlanes]);
 
    // --- RESPONSIVIDAD ---
    useEffect(() => {
@@ -85,37 +107,19 @@ const EmpresasView = ({ userPermissions = {} }) => {
          company.name?.toLowerCase().includes(searchQuery.toLowerCase())
    );
 
-   const handleDelete = async (company) => {
-      if (window.confirm(`¿Estás seguro de ELIMINAR la empresa (Base de Datos) "${company.name}"? \n\n ESTA ACCIÓN BORRA TODOS LOS DATOS Y NO SE PUEDE DESHACER.`)) {
-         try {
-            const res = await apiFetch(`${API_BASE_URL}/sas/companies/${company._id}`, {
-               method: "DELETE",
-            });
-
-            if (res.ok) {
-               setCompanies((prev) => prev.filter((c) => c._id !== company._id));
-            } else {
-               const err = await res.json();
-               alert(err.error || "Error al eliminar la empresa");
-            }
-         } catch (error) {
-            alert("Error de conexión con el servidor");
-         }
-      }
-   };
-
-
-
-   const formatBytes = (bytes, decimals = 2) => {
-      if (!+bytes) return '0 Bytes';
-      const k = 1024;
-      const dm = decimals < 0 ? 0 : decimals;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
-   };
-
    const mainMarginClass = isMobileScreen ? "ml-0" : isDesktopOpen ? "lg:ml-64" : "lg:ml-16";
+
+   // Permisos para cada tab
+   const permisosEmpresas = useMemo(() => ({
+      create_empresas: userPermissions.includes("create_gestor_empresas"),
+      edit_empresas: userPermissions.includes("edit_gestor_empresas"),
+      delete_empresas: userPermissions.includes("delete_gestor_empresas"),
+   }), [userPermissions]);
+
+   const permisosPlanes = useMemo(() => ({
+      edit_empresas: userPermissions.includes("edit_configuracion_planes"),
+   }), [userPermissions]);
+
 
    return (
       <div className="min-h-screen bg-background">
@@ -144,158 +148,101 @@ const EmpresasView = ({ userPermissions = {} }) => {
             </div>
          )}
 
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-10 lg:pt-20`}>
             <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
+
+               {/* Tabs Selector ABOVE Title */}
+               {(canViewEmpresas || canViewPlanes) && (
+                  <div className="flex space-x-1 rounded-xl bg-card p-1 shadow-sm border border-border w-fit mb-6">
+                     {canViewEmpresas && (
+                        <button
+                           onClick={() => setActiveTab("empresas")}
+                           className={`
+                                    px-4 py-2 text-sm font-medium rounded-lg transition-all
+                                    ${activeTab === "empresas"
+                                 ? "bg-indigo-600 text-white shadow-md"
+                                 : "text-muted-foreground hover:bg-muted hover:text-foreground"}
+                                `}
+                        >
+                           Empresas y Funcionalidades
+                        </button>
+                     )}
+                     {canViewPlanes && (
+                        <button
+                           onClick={() => setActiveTab("funcionalidades")}
+                           className={`
+                                    px-4 py-2 text-sm font-medium rounded-lg transition-all
+                                    ${activeTab === "funcionalidades"
+                                 ? "bg-indigo-600 text-white shadow-md"
+                                 : "text-muted-foreground hover:bg-muted hover:text-foreground"}
+                                `}
+                        >
+                           Configuración del Plan
+                        </button>
+                     )}
+                  </div>
+               )}
+
                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <div className="min-w-0 flex-1">
                      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight">
-                        Empresas y Funcionalidades
+                        {activeTab === "empresas" ? "Empresas y Funcionalidades" : "Configuración del Plan"}
                      </h1>
                      <p className="text-muted-foreground mt-1 text-sm lg:text-base">
-                        Configuración de empresas y funcionalidades
+                        {activeTab === "empresas"
+                           ? "Gestión de bases de datos y empresas del sistema"
+                           : "Gestión de límites y planes por empresa"}
                      </p>
                   </div>
-
-                  {permisos.create_empresas && (
-                     <Button
-                        variant="default"
-                        iconName="Plus"
-                        onClick={() => {
-                           setEditingCompany(null);
-                           setIsModalOpen(true);
-                        }}
-                     >
-                        Nueva Empresa
-                     </Button>
-                  )}
                </div>
 
-               <div className="relative max-w-md w-full">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                  <input
-                     type="text"
-                     placeholder="Buscar empresas (db)..."
-                     value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                     className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                  />
-               </div>
-
-               {isLoading ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                     <Loader2 className="w-10 h-10 animate-spin mb-4 text-accent" />
-                     <p>Cargando empresas del cluster...</p>
-                  </div>
-               ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-                     {filteredCompanies.map((company) => {
-                        return (
-                           <div
-                              key={company._id || company.name}
-                              className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col"
-                           >
-                              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-
-
-                                 {/* Botón de Editar */}
-                                 {permisos.create_empresas && company.dbName !== 'formsdb' && !company.isSystem && (
-                                    <button
-                                       onClick={() => {
-                                          setEditingCompany(company);
-                                          setIsModalOpen(true);
-                                       }}
-                                       className="p-1.5 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
-                                       title="Editar Permisos"
-                                    >
-                                       <Database size={16} />
-                                    </button>
-                                 )}
-
-                                 {permisos.delete_empresas && company.dbName !== 'formsdb' && !company.isSystem && (
-                                    <button
-                                       onClick={() => handleDelete(company)}
-                                       className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                                       title="Eliminar Base de Datos"
-                                    >
-                                       <Trash2 size={16} />
-                                    </button>
-                                 )}
-                              </div>
-
-                              <div className="flex items-start justify-between mb-4">
-                                 <div
-                                    className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg bg-indigo-600"
-                                 >
-                                    <Database size={24} />
-                                 </div>
-                              </div>
-
-                              <h3 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2 break-all">
-                                 {company.name}
-                              </h3>
-                              {company.dbName && (
-                                 <p className="text-xs text-muted-foreground mb-2 font-mono">
-                                    {company.dbName}
-                                 </p>
-                              )}
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                                 <HardDrive size={14} />
-                                 <span>{formatBytes(company.sizeOnDisk || 0)}</span>
-                              </div>
-                              {company.dbName !== 'formsdb' && !company.isSystem && (
-                                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                                    <Calendar size={14} />
-                                    <span>{company.createdAt ? new Date(company.createdAt).toLocaleDateString() : "-"}</span>
-                                 </div>
-                              )}
-
-                              <div className="mt-auto space-y-4">
-                                 <div className="flex items-center gap-2 text-sm text-foreground bg-muted/50 px-3 py-2 rounded-lg">
-                                    {company.empty ? (
-                                       <>
-                                          <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                          <span>Vacía</span>
-                                       </>
-                                    ) : (
-                                       <>
-                                          <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                          <span>Activa</span>
-                                       </>
-                                    )}
-                                 </div>
-
-                                 <div className="h-px bg-border" />
-
-                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                                       MongoDB Database
-                                    </span>
-                                 </div>
-                              </div>
-                           </div>
-                        );
-                     })}
+               {/* Common Search Bar */}
+               {(canViewEmpresas || canViewPlanes) && (
+                  <div className="relative max-w-md w-full mt-6">
+                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                     <input
+                        type="text"
+                        placeholder="Buscar empresas (db)..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                     />
                   </div>
                )}
+
+
+               {/* Tab Content */}
+               {!canViewEmpresas && !canViewPlanes ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                     <p>No tienes permisos para ver esta sección.</p>
+                  </div>
+               ) : (
+                  <>
+                     {activeTab === "empresas" && canViewEmpresas && (
+                        <div className="mt-6">
+                           <EmpresasTab
+                              companies={filteredCompanies}
+                              isLoading={isLoading}
+                              permisos={permisosEmpresas}
+                              onRefresh={fetchCompanies}
+                           />
+                        </div>
+                     )}
+                     {activeTab === "funcionalidades" && canViewPlanes && (
+                        <div className="mt-6">
+                           <PlanesTab
+                              companies={filteredCompanies}
+                              isLoading={isLoading}
+                              permisos={permisosPlanes}
+                              onRefresh={fetchCompanies}
+                           />
+                        </div>
+                     )}
+                  </>
+               )}
+
             </div>
          </main>
-
-         {/* Modal de Empresa */}
-         {isModalOpen && (
-            <EmpresaModal
-               isOpen={isModalOpen}
-               onClose={() => {
-                  setIsModalOpen(false);
-                  setEditingCompany(null);
-               }}
-               onSuccess={() => {
-                  fetchCompanies(); // Recargar data
-                  setIsModalOpen(false);
-                  setEditingCompany(null);
-               }}
-               company={editingCompany}
-            />
-         )}
       </div>
    );
 };
