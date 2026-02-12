@@ -113,6 +113,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
       if (!formData.name) return;
       setIsSaving(true);
       try {
+         console.log("Saving Role - FormData Permissions:", formData.permissions);
          const res = await apiFetch(`${API_BASE_URL}/roles`, {
             method: "POST",
             body: JSON.stringify(formData),
