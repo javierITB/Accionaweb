@@ -13,6 +13,7 @@ import {
 } from "../../../utils/ticketStatusStyles";
 
 import TimelineView from "../components/TimelineView";
+import LoadingCard from "clientPages/components/LoadingCard";
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
@@ -1403,7 +1404,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                     )}
 
                     {/* ARCHIVOS EN SERVIDOR */}
-                    {(approvedData?.correctedFiles || fullRequestData?.correctedFile) && (
+                    {(approvedData?.correctedFiles || fullRequestData?.correctedFile) ? (
                         <div className="space-y-2 pt-2">
                             {approvedData?.correctedFiles?.map((file, index) => {
                                 const isMarked = filesToDelete.some((f) => f.fileName === file.fileName);
@@ -1432,6 +1433,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                 );
                             })}
                         </div>
+                    ):(
+                     <LoadingCard text="Cargando archivos..." />
                     )}
 
                     {/* BOTÓN ACTUALIZAR PARA CAMBIOS EN EXISTENTES */}
