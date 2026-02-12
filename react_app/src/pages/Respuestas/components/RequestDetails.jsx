@@ -1928,26 +1928,45 @@ Máximo permitido: ${MAX_FILES} archivos.`;
       </div>
    );
 
-   const mockTimeline = [
-      {
-         id: 1,
-         title: "Solicitud Enviada",
-         description: "La solicitud ha sido enviada y está pendiente de revisión inicial.",
-         status: "completed",
-         completedAt: "2025-01-18T09:30:00Z",
-         assignedTo: "Sistema Automático",
-         notes: "Solicitud recibida correctamente.",
-      },
-      {
-         id: 2,
-         title: "Revisión Inicial",
-         description: "El equipo de RR.HH. está realizando la revisión inicial.",
-         status: "current",
-         completedAt: null,
-         assignedTo: "María González",
-         estimatedCompletion: "2025-01-22T17:00:00Z",
-      },
-   ];
+const mockTimeline = [
+    {
+      id: 1,
+      title: "Solicitud Enviada",
+      description: "La solicitud ha sido enviada y está pendiente de revisión inicial.",
+      status: "completed",
+      completedAt: "2025-01-18T09:30:00Z",
+      assignedTo: "Sistema Automático",
+      notes: "Solicitud recibida correctamente."
+    },
+    {
+      id: 2,
+      title: "Revisión Inicial",
+      description: "El equipo de RR.HH. está realizando la revisión inicial.",
+      status: "completed",
+      completedAt: "2025-01-22T17:00:00Z",
+      assignedTo: "María González",
+      estimatedCompletion: "2025-01-22T17:00:00Z"
+    }
+    ,
+    {
+      id: 3,
+      title: "Aprobación Final",
+      description: "La solicitud ha sido aprobada por el responsable.",
+      status: "completed",
+      completedAt: "2025-01-23T10:00:00Z",
+      assignedTo: "María González",
+      estimatedCompletion: "2025-01-22T17:00:00Z"
+    },
+    {
+      id: 4,
+      title: "cierre de la solicitud",
+      description: "La solicitud ha sido cerrada por el responsable.",
+      status: "current",
+      completedAt: null,
+      assignedTo: "María González",
+      estimatedCompletion: "2025-01-22T17:00:00Z"
+    }
+  ];
 
    // const handleUploadFiles = async () => {
    //    if (correctedFiles.length === 0) {
@@ -2268,7 +2287,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
    const modalClass = isStandalone
       ? "flex flex-col flex-1 h-full w-full overflow-y-auto"
-      : "bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl min-h-[75vh] max-h-[75vh] overflow-y-auto flex flex-col";
+      : "bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl min-h-[75vh] max-h-[75vh] flex flex-col";
 
    return (
       <div className={containerClass}>
@@ -2471,7 +2490,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                </div>
             </div>
 
-            <div className="p-6">
+            <div className="flex-1 overflow-y-auto p-6">
                {activeTab === "details" ? (
                   renderDetailsTab()
                ) : activeTab === "chronology" ? (
@@ -2485,7 +2504,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                )}
             </div>
 
-            <div className="sticky bottom-0 bg-card border-t border-border p-6">
+            <div className="bg-card border-t border-border p-6">
                <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                      <Icon name="Clock" size={16} />
