@@ -1,7 +1,8 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
-
+import { useNavigate } from 'react-router-dom';
 const QuickActionsCard = ({ orientation = 'horizontal' }) => { // Agregamos la prop orientation
+  const navigate = useNavigate();
   const quickActions = [
     {
       id: 2,
@@ -54,7 +55,8 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => { // Agregamos la p
   ];
 
   const handleActionClick = (path) => {
-    window.location.href = path;
+    // window.location.href = path;
+    navigate(path);
   };
 
   // 💡 Definimos las clases de layout según la orientación
