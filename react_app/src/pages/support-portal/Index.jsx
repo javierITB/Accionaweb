@@ -1,5 +1,5 @@
 import React from 'react';
-import Header from '../../components/ui/Header.jsx';
+import Header from '../../clientPages/components/ui/Header.jsx';
 import TicketSystem from './components/TicketSystem.jsx';
 import ContactSupport from './components/ContactSupport.jsx';
 

@@ -18,28 +18,28 @@ const DashboardHome = ({ section, userPermissions = [] }) => {
       </div>
     );
   }
-  const [currentTime, setCurrentTime] = useState(new Date());
+  // const [currentTime, setCurrentTime] = useState(new Date());
 
   // Update time every minute
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setCurrentTime(new Date());
+  //   }, 60000);
 
-    return () => clearInterval(timer);
-  }, []);
+  //   return () => clearInterval(timer);
+  // }, []);
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
+  // const toggleSidebar = () => {
+  //   setSidebarCollapsed(!sidebarCollapsed);
+  // };
 
-  const handleEmergencyContact = () => {
-    window.location.href = '/support-portal?category=emergency';
-  };
+  // const handleEmergencyContact = () => {
+  //   window.location.href = '/support-portal?category=emergency';
+  // };
 
-  const handleQuickHelp = () => {
-    window.location.href = '/support-portal?section=help';
-  };
+  // const handleQuickHelp = () => {
+  //   window.location.href = '/support-portal?section=help';
+  // };
 
   return (
     <div className="min-h-screen bg-background">
