@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Check, Loader2, ShieldCheck, Activity } from "lucide-react";
+import { X, Check, Loader2, ShieldCheck, Activity, ChevronUp, ChevronDown } from "lucide-react";
 import { apiFetch } from "../../../utils/api";
 
 export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
@@ -35,6 +35,13 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
 
     if (!isOpen) return null;
     if (company?.dbName === 'formsdb' || company?.isSystem) return null;
+
+    const handleAdjust = (key, delta) => {
+        setFormData(prev => ({
+            ...prev,
+            [key]: Math.max(0, (parseInt(prev[key]) || 0) + delta).toString()
+        }));
+    };
 
     const handleSubmit = async () => {
         console.log("Saving plan limits...", formData);
@@ -132,13 +139,31 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
                         ].map((item, idx, arr) => (
                             <div key={item.key} className="flex items-center justify-between py-3 px-2 border-b border-border last:border-0 hover:bg-muted/50 transition-colors rounded-lg">
                                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">{item.label}</span>
-                                <input
-                                    type="number"
-                                    value={formData[item.key]}
-                                    onChange={(e) => setFormData({ ...formData, [item.key]: e.target.value })}
-                                    className="w-24 px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-bold text-foreground text-right focus:border-indigo-600 outline-none transition-all"
-                                    placeholder="0"
-                                />
+                                <div className="flex items-center w-24 bg-background border border-border rounded-lg overflow-hidden focus-within:border-indigo-600 transition-all h-9">
+                                    <input
+                                        type="number"
+                                        value={formData[item.key]}
+                                        onChange={(e) => setFormData({ ...formData, [item.key]: e.target.value })}
+                                        className="w-full h-full px-2 bg-transparent text-center text-xs font-bold text-foreground outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        placeholder="0"
+                                    />
+                                    <div className="flex flex-col border-l border-border divide-y divide-border bg-muted/20 w-8 h-full">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAdjust(item.key, 1)}
+                                            className="flex-1 flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-all active:scale-95"
+                                        >
+                                            <ChevronUp size={12} strokeWidth={3} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAdjust(item.key, -1)}
+                                            className="flex-1 flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-all active:scale-95"
+                                        >
+                                            <ChevronDown size={12} strokeWidth={3} />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>
