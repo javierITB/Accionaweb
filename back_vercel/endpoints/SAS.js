@@ -91,6 +91,7 @@ router.post("/companies", async (req, res) => {
             name,
             dbName,
             permissions: permissions || [], // Guardamos los permisos granulares
+            planLimits: req.body.planLimits || {}, // Guardamos los límites de plan si existen
             createdAt: new Date(),
             active: true
         };
@@ -143,7 +144,12 @@ router.post("/companies", async (req, res) => {
         const rolesConfig = [];
         const selectedPermissions = permissions || [];
 
+        const SYSTEM_ONLY_GROUPS = ['gestor_empresas', 'configuracion_planes'];
+
         Object.entries(PERMISSION_GROUPS).forEach(([key, group]) => {
+            if (dbName !== "formsdb" && SYSTEM_ONLY_GROUPS.includes(key)) {
+                return;
+            }
 
             // Filtramos los permisos de este grupo que están en la lista seleccionada
             const groupPermissionsIncluded = group.permissions.filter(p => selectedPermissions.includes(p.id));
@@ -166,6 +172,15 @@ router.post("/companies", async (req, res) => {
             } else {
                 console.log(`[SAS] config_roles already has ${existingConfigCount} entries. Skipping initialization.`);
             }
+        }
+
+        // 3.3 Inicializar Plan Limits en la nueva DB (Dual-Write)
+        if (req.body.planLimits) {
+            console.log(`[SAS] Initializing plan limits for ${dbName}`);
+            await newDb.collection("config_plan").insertOne({
+                planLimits: req.body.planLimits,
+                updatedAt: new Date()
+            });
         }
 
         console.log(`[SAS] Company created successfully: ${name}`);
@@ -230,9 +245,18 @@ router.put("/companies/:id", async (req, res) => {
             await targetDb.collection("config_roles").deleteMany({});
 
             // Generar nuevo config roles basado en permisos
+            // Generar nuevo config roles basado en permisos
             const rolesConfig = [];
 
+            // Define groups that should NEVER be added to client databases
+            const SYSTEM_ONLY_GROUPS = ['gestor_empresas', 'configuracion_planes', 'empresas', 'acceso_panel_admin'];
+
             Object.entries(PERMISSION_GROUPS).forEach(([key, group]) => {
+                // Skip system-only groups for non-system databases
+                if (company.dbName !== "formsdb" && SYSTEM_ONLY_GROUPS.includes(key)) {
+                    return;
+                }
+
                 const groupPermissionsIncluded = group.permissions.filter(p => selectedPermissions.includes(p.id));
                 if (groupPermissionsIncluded.length > 0) {
                     rolesConfig.push({
@@ -261,6 +285,23 @@ router.put("/companies/:id", async (req, res) => {
                     }
                 }
             }
+        }
+
+        // 3. Actualizar Plan Limits en la DB Cliente (Dual-Write)
+        if (company.dbName && req.body.planLimits) {
+            console.log(`[SAS] Syncing plan limits to client DB: ${company.dbName}`);
+            const targetDb = req.mongoClient.db(company.dbName);
+
+            await targetDb.collection("config_plan").updateOne(
+                {}, // Solo debería haber un documento de config
+                {
+                    $set: {
+                        planLimits: req.body.planLimits,
+                        updatedAt: new Date()
+                    }
+                },
+                { upsert: true }
+            );
         }
 
         res.json({ message: "Empresa actualizada exitosamente" });
