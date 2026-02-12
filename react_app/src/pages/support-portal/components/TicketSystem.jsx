@@ -226,6 +226,7 @@ const TicketSystem = () => {
          const res = await apiFetch(`${API_BASE_URL}/soporte/`, {
             method: "POST",
             body: formData,
+            skipRedirect: true,
          });
 
          if (res.ok) {
@@ -239,14 +240,9 @@ const TicketSystem = () => {
             setActiveTab("my-tickets");
             fetchTickets();
          } else {
-            const errData = await res.json();
-            const errorMessage = errData.error || "Error desconocido";
-
-            if (res.status === 403 && errorMessage.includes("Plan limit")) {
-               alert("Límite del Plan Alcanzado\n\nNo puedes crear más tickets porque tu empresa ha alcanzado el límite de su plan actual.\n\nPor favor contacta al administrador.");
-            } else {
-               alert(`Error al crear ticket: ${errorMessage}`);
-            }
+            const errData = await res.json().catch(() => ({}));
+            const errorMessage = errData.error || errData.message || "Error desconocido";
+            alert(`Error al crear ticket: ${errorMessage}`);
          }
       } catch (error) {
          console.error("Error creating ticket:", error);

@@ -31,7 +31,7 @@ const DashboardHome = ({ userPermissions = {} }) => {
       borrador: "#9CA3AF", // Gray-400
    };
 
-   const permisos = useMemo(()=>({
+   const permisos = useMemo(() => ({
       view_rendimiento_previo: userPermissions.includes("view_rendimiento_previo"),
       view_rendimiento_global: userPermissions.includes("view_rendimiento_global"),
    }), [userPermissions]);
@@ -328,26 +328,24 @@ const DashboardHome = ({ userPermissions = {} }) => {
 
                         {/* Toggle Button */}
                         {/* Toggle Button GroupContainer */}
-                       {permisos.view_rendimiento_global && ( <div className="flex gap-2">
+                        {permisos.view_rendimiento_global && (<div className="flex gap-2">
                            {/* Selector Semana/Global */}
                            <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
                               <button
                                  onClick={() => setIsGlobalTime(false)}
-                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                                    !isGlobalTime
+                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!isGlobalTime
                                        ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
-                                 }`}
+                                    }`}
                               >
                                  Semana
                               </button>
                               <button
                                  onClick={() => setIsGlobalTime(true)}
-                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                                    isGlobalTime
+                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${isGlobalTime
                                        ? "bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white"
                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
-                                 }`}
+                                    }`}
                               >
                                  Global
                               </button>
@@ -411,7 +409,7 @@ const DashboardHome = ({ userPermissions = {} }) => {
                               return `Semana del ${dateStr}`;
                            })()}
                         </h3>
-                       {permisos.view_rendimiento_previo && ( <div className="flex gap-2">
+                        {permisos.view_rendimiento_previo && (<div className="flex gap-2">
                            <button
                               onClick={() => setChartOffset((prev) => prev + 1)}
                               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-500 transition-colors"
@@ -539,25 +537,38 @@ const TimeMetricItem = ({ label, value, globalValue, color, showComparison }) =>
    const formatSmart = (v) => {
       if (v === null || v === undefined) return { val: "-", unit: "", fullText: "" };
 
-      const vNum = parseFloat(v);
-      if (vNum < 24) {
-         return { val: vNum.toFixed(1), unit: "hrs", rawDays: vNum / 24 };
+      const totalMinutes = Math.round(parseFloat(v) * 60);
+      if (totalMinutes === 0) return { val: "0 minutos", unit: "", rawDays: 0, isText: true };
+
+      const days = Math.floor(totalMinutes / (24 * 60));
+      const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+      const minutes = totalMinutes % 60;
+
+      const parts = [];
+
+      if (days > 0) parts.push(`${days} día${days !== 1 ? "s" : ""}`);
+      if (hours > 0) parts.push(`${hours} hora${hours !== 1 ? "s" : ""}`);
+      if (minutes > 0) parts.push(`${minutes} minuto${minutes !== 1 ? "s" : ""}`);
+
+      if (parts.length === 0) return { val: "0 minutos", unit: "", rawDays: 0, isText: true };
+
+      // Join with commas and "y" for the last item
+      let text = "";
+      if (parts.length === 1) {
+         text = parts[0];
       } else {
-         const days = Math.floor(vNum / 24);
-         const remHours = Math.round(vNum % 24);
-
-         const dayText = `${days} día${days !== 1 ? "s" : ""}`;
-         const hourText = remHours > 0 ? ` ${remHours} hr${remHours !== 1 ? "s" : ""}` : "";
-
-         return { val: dayText + hourText, unit: "", rawDays: vNum / 24, isText: true };
+         const last = parts.pop();
+         text = parts.join(", ") + " y " + last;
       }
+
+      return { val: text, unit: "", rawDays: totalMinutes / (24 * 60), isText: true };
    };
 
    const current = formatSmart(value);
-   const global = formatSmart(globalValue);
 
+   // Visualization width calculation
    const maxScaleDays = 30;
-   const currentDays = value ? value / 24 : 0;
+   const currentDays = current.rawDays || 0;
    const widthPerc = Math.min((currentDays / maxScaleDays) * 100, 100);
 
    let comparison = null;
@@ -565,10 +576,8 @@ const TimeMetricItem = ({ label, value, globalValue, color, showComparison }) =>
       const diff = globalValue - value;
 
       if (Math.abs(diff) > 0.1) {
-         const diffAbs = Math.abs(diff);
-         let diffText = "";
-         if (diffAbs < 24) diffText = `${diffAbs.toFixed(1)} hrs`;
-         else diffText = `${(diffAbs / 24).toFixed(1)} días`;
+         const diffObj = formatSmart(Math.abs(diff));
+         const diffText = diffObj.val;
 
          if (diff > 0) comparison = { text: `${diffText} más rápido`, color: "text-emerald-500", icon: "TrendingUp" };
          else comparison = { text: `${diffText} más lento`, color: "text-red-500", icon: "TrendingDown" };
@@ -584,10 +593,9 @@ const TimeMetricItem = ({ label, value, globalValue, color, showComparison }) =>
             <Icon name="Clock" size={14} className="text-gray-400 dark:text-gray-500" />
          </div>
          <div className="flex items-end gap-1 mb-3">
-            <span className={`font-bold text-gray-900 dark:text-white ${current.isText ? "text-xl" : "text-3xl"}`}>
+            <span className="font-bold text-gray-900 dark:text-white text-lg">
                {current.val}
             </span>
-            {!current.isText && <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">{current.unit}</span>}
          </div>
          <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden mb-2">
             <div className={`h-full ${color}`} style={{ width: `${widthPerc}%` }}></div>

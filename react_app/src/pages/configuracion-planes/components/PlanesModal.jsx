@@ -128,14 +128,14 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
                     {/* LISTA DE LÍMITES */}
                     <div className="space-y-1">
                         {[
-                            { label: "Límite de Solicitudes", key: "solicitudes" },
-                            { label: "Límite de Tickets", key: "tickets" },
-                            { label: "Límite de Usuarios", key: "usuarios" },
-                            { label: "Límite de Formularios", key: "formularios" },
-                            { label: "Límite de Plantillas", key: "plantillas" },
-                            { label: "Límite de Roles", key: "roles" },
-                            { label: "Límite de Categorías", key: "categorias" },
-                            { label: "Límite de Sub-Empresas", key: "empresas" },
+                            { label: "Solicitudes", key: "solicitudes" },
+                            { label: "Tickets", key: "tickets" },
+                            { label: "Categoría de Tickets", key: "categorias" },
+                            { label: "Formularios", key: "formularios" },
+                            { label: "Plantillas", key: "plantillas" },
+                            { label: "Usuarios", key: "usuarios" },
+                            { label: "Roles", key: "roles" },
+                            { label: "Sub-Empresas", key: "empresas" },
                         ].map((item, idx, arr) => (
                             <div key={item.key} className="flex items-center justify-between py-3 px-2 border-b border-border last:border-0 hover:bg-muted/50 transition-colors rounded-lg">
                                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">{item.label}</span>
