@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Check, Loader2, ShieldCheck, Activity } from "lucide-react";
+import { apiFetch } from "../../../utils/api";
 
 export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
     const [isSaving, setIsSaving] = useState(false);
@@ -33,30 +34,36 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
     }, [isOpen, company]);
 
     if (!isOpen) return null;
+    if (company?.dbName === 'formsdb' || company?.isSystem) return null;
 
     const handleSubmit = async () => {
+        console.log("Saving plan limits...", formData);
         setIsSaving(true);
         try {
-            const token = localStorage.getItem("token");
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/sas/companies/${company._id}`, {
+
+            const payload = {
+                planLimits: {
+                    solicitudes: { maxTotal: parseInt(formData.solicitudes) || 0 },
+                    tickets: { maxQuantity: parseInt(formData.tickets) || 0 },
+                    users: { maxUsers: parseInt(formData.usuarios) || 0 },
+                    forms: { maxQuantity: parseInt(formData.formularios) || 0 },
+                    templates: { maxQuantity: parseInt(formData.plantillas) || 0 },
+                    roles: { maxRoles: parseInt(formData.roles) || 0 },
+                    configTickets: { maxCategories: parseInt(formData.categorias) || 0 },
+                    companies: { maxQuantity: parseInt(formData.empresas) || 0 }
+                }
+            };
+
+            console.log("Sending payload:", JSON.stringify(payload));
+
+            console.log("Sending payload via apiFetch:", JSON.stringify(payload));
+
+            const res = await apiFetch(`/sas/companies/${company._id}`, {
                 method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    planLimits: {
-                        solicitudes: { maxTotal: parseInt(formData.solicitudes) || 0 },
-                        tickets: { maxQuantity: parseInt(formData.tickets) || 0 },
-                        users: { maxUsers: parseInt(formData.usuarios) || 0 },
-                        forms: { maxQuantity: parseInt(formData.formularios) || 0 },
-                        templates: { maxQuantity: parseInt(formData.plantillas) || 0 },
-                        roles: { maxRoles: parseInt(formData.roles) || 0 },
-                        configTickets: { maxCategories: parseInt(formData.categorias) || 0 },
-                        companies: { maxQuantity: parseInt(formData.empresas) || 0 }
-                    }
-                }),
+                body: JSON.stringify(payload),
             });
+
+            console.log("Response status:", res.status);
 
             if (res.ok) {
                 setIsSuccess(true);
@@ -65,9 +72,11 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
                     onClose();
                 }, 1000);
             } else {
+                console.warn("Save failed with status:", res.status);
                 setIsSaving(false);
             }
         } catch (error) {
+            console.error("Error saving plan limits:", error);
             setIsSaving(false);
         }
     };
@@ -76,15 +85,24 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
             <div className="bg-[#0f172a] rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col border border-white/10 overflow-hidden animate-in fade-in zoom-in duration-200">
 
-                {/* HEADER SIMPLE */}
-                <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2">
-                        <ShieldCheck size={18} className="text-blue-500" />
-                        <h2 className="text-sm font-bold text-white uppercase tracking-wider">Configuración de Plan</h2>
-                    </div>
-                    <button onClick={onClose} className="text-white/50 hover:text-white p-1">
-                        <X size={18} />
+                {/* HEADER COMPACTO CON DEGRADADO */}
+                <div className="relative h-32 bg-gradient-to-br from-indigo-700 to-blue-600 flex items-center px-8 shrink-0">
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 text-white/50 hover:text-white p-1.5 hover:bg-white/10 rounded-xl transition-all"
+                    >
+                        <X size={20} />
                     </button>
+
+                    <div className="flex items-center gap-5">
+                        <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner">
+                            <ShieldCheck size={24} className="text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-white uppercase tracking-tight">Configuración de Plan</h2>
+                            <p className="text-white/70 text-xs font-bold">{company?.name}</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">

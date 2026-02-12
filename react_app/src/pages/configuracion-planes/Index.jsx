@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, Database, Users, Trash2, CheckCircle2, Loader2, Play, HardDrive, LayoutDashboard, FileText, Bell, ShieldCheck, Activity } from "lucide-react";
+import { Search, Database, Users, Trash2, CheckCircle2, Loader2, Play, HardDrive, LayoutDashboard, FileText, Bell, ShieldCheck, Activity, Lock } from "lucide-react";
 
 // Helpers y componentes de UI
 import { apiFetch, API_BASE_URL } from "../../utils/api";
@@ -26,8 +26,8 @@ const PlanesConfigView = ({ userPermissions = {} }) => {
     const permisos = useMemo(
         () => ({
             create_empresas: userPermissions.includes("create_gestor_empresas"), // Reusing same permissions for now
-            canAccess: userPermissions.includes("view_gestor_empresas"),
-            edit_empresas: userPermissions.includes("edit_gestor_empresas"),
+            canAccess: userPermissions.includes("view_configuracion_planes"),
+            edit_empresas: userPermissions.includes("edit_configuracion_planes"),
             delete_empresas: userPermissions.includes("delete_gestor_empresas"),
         }),
         [userPermissions],
@@ -148,64 +148,72 @@ const PlanesConfigView = ({ userPermissions = {} }) => {
                                 return (
                                     <div
                                         key={company._id || company.name}
-                                        className="bg-card rounded-2xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col overflow-hidden"
+                                        className="bg-card rounded-2xl border border-white/5 shadow-xl hover:shadow-2xl transition-all group relative flex flex-col overflow-hidden max-w-full"
                                     >
-                                        <div className="absolute top-4 right-4 flex items-center gap-2">
-                                            {permisos.edit_empresas && (
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingPlan(company);
-                                                        setIsModalOpen(true);
-                                                    }}
-                                                    className="p-1.5 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
-                                                    title="Configurar Plan"
-                                                >
-                                                    <ShieldCheck size={16} />
-                                                </button>
-                                            )}
-                                        </div>
+                                        {/* GRADIENT TOP BORDER */}
+                                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 opacity-80" />
 
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div
-                                                className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg bg-indigo-600"
-                                            >
-                                                <Database size={24} />
+                                        <div className="p-6">
+                                            <div className="flex items-center gap-4 mb-6">
+                                                {/* ICON CONTAINER STYLE MATCH */}
+                                                <div className="w-16 h-16 rounded-3xl shrink-0 flex items-center justify-center text-white shadow-lg bg-gradient-to-br from-indigo-600 to-purple-700">
+                                                    <LayoutDashboard size={28} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h3 className="text-lg font-black text-foreground truncate uppercase tracking-tight">
+                                                        {company.name}
+                                                    </h3>
+                                                    <p className="text-xs text-muted-foreground truncate font-mono uppercase tracking-widest opacity-60">
+                                                        {company.dbName || "no-db"}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <h3 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2 break-all">
-                                            {company.name}
-                                        </h3>
-                                        <p className="text-xs text-muted-foreground mb-2 font-mono">
-                                            {company.dbName || "Sin DB"}
-                                        </p>
+                                            <div className="grid grid-cols-2 gap-3 mb-6">
+                                                <div className="flex flex-col p-3 rounded-xl bg-muted/30 border border-white/5">
+                                                    <span className="text-[10px] font-black text-muted-foreground uppercase mb-1">Database</span>
+                                                    <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                                                        <Database size={14} className="text-indigo-500" />
+                                                        <span className="truncate">{company.dbName || "---"}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col p-3 rounded-xl bg-muted/30 border border-white/5">
+                                                    <span className="text-[10px] font-black text-muted-foreground uppercase mb-1">Espacio</span>
+                                                    <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                                                        <HardDrive size={14} className="text-purple-500" />
+                                                        <span>{formatBytes(company.sizeOnDisk || 0)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                                            <HardDrive size={14} />
-                                            <span>{formatBytes(company.sizeOnDisk || 0)}</span>
-                                        </div>
+                                            <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
+                                                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${company.empty
+                                                    ? "bg-orange-500/10 text-orange-500 border border-orange-500/20"
+                                                    : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                                    }`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${company.empty ? "bg-orange-500 animate-pulse" : "bg-emerald-500"}`} />
+                                                    {company.empty ? "Vacía" : "Activa"}
+                                                </div>
 
-                                        <div className="mt-auto space-y-4">
-                                            <div className="flex items-center gap-2 text-sm text-foreground bg-muted/50 px-3 py-2 rounded-lg">
-                                                {company.empty ? (
-                                                    <>
-                                                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                                        <span>Vacía</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                                        <span>Activa</span>
-                                                    </>
+                                                {permisos.edit_empresas && (
+                                                    (company.dbName === 'formsdb' || company.isSystem) ? (
+                                                        <div className="px-4 py-2 bg-muted/50 text-muted-foreground text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-2 cursor-not-allowed border border-white/5 opacity-50">
+                                                            <Lock size={14} />
+                                                            Sistema
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingPlan(company);
+                                                                setIsModalOpen(true);
+                                                            }}
+                                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95 shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+                                                        >
+                                                            <ShieldCheck size={14} />
+                                                            Límites
+                                                        </button>
+                                                    )
                                                 )}
-                                            </div>
-
-                                            <div className="h-px bg-border" />
-
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                                                    Gestión de Límites
-                                                </span>
                                             </div>
                                         </div>
                                     </div>

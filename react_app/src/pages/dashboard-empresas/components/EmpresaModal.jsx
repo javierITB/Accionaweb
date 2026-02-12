@@ -234,8 +234,8 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null }) {
                         (activeTab === "cliente" && isClientPanelEnabled) ? (
                         Object.entries(PERMISSION_GROUPS)
                            .filter(([_, g]) => g.tagg === activeTab)
-                           // Filtramos gestor_empresas para que no aparezca en empresas hijas o nuevas
-                           .filter(([key, _]) => key !== 'gestor_empresas')
+                           // Filtramos gestor_empresas y configuracion_planes para que no aparezca en empresas hijas o nuevas
+                           .filter(([key, _]) => key !== 'gestor_empresas' && key !== 'configuracion_planes')
                            .map(([groupId, group]) => {
                               const ids = group.permissions.map((p) => p.id);
                               const isAllSelected = ids.every((id) => formData.permissions.includes(id));
