@@ -5,6 +5,7 @@ import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Select from "../../../components/ui/Select";
 import BackButton from "@/clientPages/components/BackButton.jsx";
+import LoadingCard from "clientPages/components/LoadingCard";
 
 const TicketSystem = () => {
    const [activeTab, setActiveTab] = useState("create");
@@ -332,7 +333,7 @@ const TicketSystem = () => {
             </div>
          </div>
 
-         {isLoading && <div className="text-center py-4">Cargando...</div>}
+         {isLoading && <LoadingCard text="Cargando..." />}
 
          {/* Create Ticket Tab */}
          {!isLoading && activeTab === "create" && (

@@ -2,6 +2,7 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import { API_BASE_URL, apiFetch } from '../../../utils/api';
 import { useState, useEffect } from 'react';
+import LoadingCard from 'clientPages/components/LoadingCard';
 
 const QuickActionsCard = ({ section }) => {
   const [allForms, setAllForms] = useState([]);
@@ -54,7 +55,7 @@ const QuickActionsCard = ({ section }) => {
     };
 
     fetchForms();
-  }, []);
+  }, [section]);
 
   const handleActionClick = (path) => {
     window.location.href = path;
@@ -77,10 +78,8 @@ const QuickActionsCard = ({ section }) => {
       {/* Forms Grid - RESPONSIVE */}
       <div className="p-4 sm:p-6">
         {isLoading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="text-sm text-muted-foreground mt-2">Cargando formularios...</p>
-          </div>
+           <LoadingCard text="Cargando formularios..." />
+
         ) : (
           <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {allForms?.map((action) => (

@@ -7,15 +7,16 @@ import MessageModal from "./components/MessageModal";
 import ShareModal from "./components/ShareModal";
 import RequestDetails from "./components/RequestDetails";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
+import LoadingCard from "clientPages/components/LoadingCard";
 
 const RequestTracking = () => {
    const urlParams = new URLSearchParams(window.location.search);
    const formId = urlParams?.get("id");
 
    const [selectedRequest, setSelectedRequest] = useState(null);
-   const [showTimeline, setShowTimeline] = useState(false);
+   // const [showTimeline, setShowTimeline] = useState(false);
    const [showFilters, setShowFilters] = useState(false);
-   const [forms, setAllForms] = useState([]);
+   // const [forms, setAllForms] = useState([]);
    const [resp, setResp] = useState([]);
    const [showMessageModal, setShowMessageModal] = useState(false);
    const [showRequestDetails, setShowRequestDetails] = useState(false);
@@ -142,6 +143,11 @@ const RequestTracking = () => {
       fetchForms();
    }, []);
 
+   useEffect(() => {
+      const cargo = sessionStorage.getItem("cargo");
+      if (cargo !== "Cliente Jefatura") return;
+      setViewMode("grid");
+   }, []);
    // Filter and sort requests
    const filteredRequests = resp
       ?.filter((request) => {
@@ -193,12 +199,13 @@ const RequestTracking = () => {
                   endDate = new Date(today);
                   endDate.setHours(23, 59, 59, 999);
                   break;
-               case "quarter":
+               case "quarter": {
                   const quarter = Math.floor(today.getMonth() / 3);
                   startDate = new Date(today.getFullYear(), quarter * 3, 1);
                   endDate = new Date(today);
                   endDate.setHours(23, 59, 59, 999);
                   break;
+               }
                case "year":
                   startDate = new Date(today.getFullYear(), 0, 1);
                   endDate = new Date(today);
@@ -232,8 +239,7 @@ const RequestTracking = () => {
          let aValue, bValue;
 
          switch (sortBy) {
-            case "date":
-            case "date":
+            case "date": {
                const aCreated = new Date(a.createdAt || a.submittedAt || 0).getTime();
                const bCreated = new Date(b.createdAt || b.submittedAt || 0).getTime();
                const aAdmin = new Date(a.updateAdmin || 0).getTime();
@@ -242,6 +248,7 @@ const RequestTracking = () => {
                aValue = Math.max(aCreated, aAdmin);
                bValue = Math.max(bCreated, bAdmin);
                break;
+            }
             case "title":
                aValue = a?.title?.toLowerCase();
                bValue = b?.title?.toLowerCase();
@@ -250,11 +257,12 @@ const RequestTracking = () => {
                aValue = a?.status;
                bValue = b?.status;
                break;
-            case "priority":
+            case "priority": {
                const priorityOrder = { high: 3, medium: 2, low: 1 };
                aValue = priorityOrder?.[a?.priority];
                bValue = priorityOrder?.[b?.priority];
                break;
+            }
             default:
                return 0;
          }
@@ -313,95 +321,98 @@ const RequestTracking = () => {
                <Icon name="Activity" size={20} className="text-accent flex-shrink-0 ml-4 sm:w-6 sm:h-6" />
             </div>
          </div>
+         {isLoading ? (
+            <LoadingCard text="Cargando solicitudes" />
+         ) : (
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+               {/* Filters */}
+               <FilterPanel
+                  filters={filters}
+                  onFilterChange={setFilters}
+                  onClearFilters={handleClearFilters}
+                  isVisible={showFilters}
+                  onToggle={() => setShowFilters(!showFilters)}
+               />
 
-         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-            {/* Filters */}
-            <FilterPanel
-               filters={filters}
-               onFilterChange={setFilters}
-               onClearFilters={handleClearFilters}
-               isVisible={showFilters}
-               onToggle={() => setShowFilters(!showFilters)}
-            />
-
-            {/* Controls - MEJORADO PARA MÓVIL */}
-            {filteredRequests?.length > 0 && (
-               <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-card border border-border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-0">
-                  <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-4">
-                     {/* View Mode Toggle */}
-                     <div className="flex items-center space-x-2">
-                        <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
-                        <div className="flex items-center border border-border rounded-lg">
+               {/* Controls - MEJORADO PARA MÓVIL */}
+               {filteredRequests?.length > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-card border border-border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-0">
+                     <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-4">
+                        {/* View Mode Toggle */}
+                        <div className="flex items-center space-x-2">
+                           <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Vista:</span>
+                           <div className="flex items-center border border-border rounded-lg">
+                              <Button
+                                 variant={viewMode === "grid" ? "default" : "ghost"}
+                                 size="sm"
+                                 onClick={() => setViewMode("grid")}
+                                 iconName="Grid3X3"
+                                 iconSize={14}
+                                 className="rounded-r-none px-2 sm:px-3"
+                              />
+                              <Button
+                                 variant={viewMode === "list" ? "default" : "ghost"}
+                                 size="sm"
+                                 onClick={() => setViewMode("list")}
+                                 iconName="List"
+                                 iconSize={14}
+                                 className="rounded-l-none border-l px-2 sm:px-3"
+                              />
+                           </div>
                            <Button
-                              variant={viewMode === "grid" ? "default" : "ghost"}
-                              size="sm"
-                              onClick={() => setViewMode("grid")}
-                              iconName="Grid3X3"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                              iconName={sortOrder === "asc" ? "ArrowUp" : "ArrowDown"}
                               iconSize={14}
-                              className="rounded-r-none px-2 sm:px-3"
-                           />
-                           <Button
-                              variant={viewMode === "list" ? "default" : "ghost"}
-                              size="sm"
-                              onClick={() => setViewMode("list")}
-                              iconName="List"
-                              iconSize={14}
-                              className="rounded-l-none border-l px-2 sm:px-3"
+                              className="w-8 h-8 sm:w-9 sm:h-9"
                            />
                         </div>
-                        <Button
-                           variant="ghost"
-                           size="icon"
-                           onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                           iconName={sortOrder === "asc" ? "ArrowUp" : "ArrowDown"}
-                           iconSize={14}
-                           className="w-8 h-8 sm:w-9 sm:h-9"
-                        />
+                     </div>
+
+                     {/* Results Count */}
+                     <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground justify-center sm:justify-end">
+                        <Icon name="FileText" size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span className="whitespace-nowrap">{filteredRequests?.length} solicitudes encontradas</span>
                      </div>
                   </div>
-
-                  {/* Results Count */}
-                  <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground justify-center sm:justify-end">
-                     <Icon name="FileText" size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
-                     <span className="whitespace-nowrap">{filteredRequests?.length} solicitudes encontradas</span>
-                  </div>
-               </div>
-            )}
-            {/* Requests List - RESPONSIVE GRID */}
-            <div
-               className={
-                  viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6" : "space-y-4"
-               }
-            >
-               {filteredRequests?.length > 0 ? (
-                  filteredRequests?.map((request) => (
-                     <RequestCard
-                        key={request?._id || request?.id}
-                        request={request}
-                        onViewDetails={handleViewDetails}
-                        onSendMessage={handleSendMessage}
-                        onUpdate={handleRequestUpdate} // AGREGADO
-                        onShare={() => handleShareRequest(request)}
-                        viewMode={viewMode}
-                     />
-                  ))
-               ) : (
-                  <div className="text-center py-8 sm:py-12 bg-card border border-border rounded-lg col-span-full">
-                     <Icon
-                        name="Search"
-                        size={32}
-                        className="mx-auto mb-3 sm:mb-4 text-muted-foreground opacity-50 sm:w-12 sm:h-12"
-                     />
-                     <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
-                        No se encontraron solicitudes
-                     </h3>
-                     <p className="text-xs sm:text-sm text-muted-foreground mb-4 px-4">
-                        Intenta ajustar los filtros o rellenar un primer formulario
-                     </p>
-                  </div>
                )}
+               {/* Requests List - RESPONSIVE GRID */}
+               <div
+                  className={
+                     viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6" : "space-y-4"
+                  }
+               >
+                  {filteredRequests?.length > 0 ? (
+                     filteredRequests?.map((request) => (
+                        <RequestCard
+                           key={request?._id || request?.id}
+                           request={request}
+                           onViewDetails={handleViewDetails}
+                           onSendMessage={handleSendMessage}
+                           onUpdate={handleRequestUpdate} // AGREGADO
+                           onShare={() => handleShareRequest(request)}
+                           viewMode={viewMode}
+                        />
+                     ))
+                  ) : (
+                     <div className="text-center py-8 sm:py-12 bg-card border border-border rounded-lg col-span-full">
+                        <Icon
+                           name="Search"
+                           size={32}
+                           className="mx-auto mb-3 sm:mb-4 text-muted-foreground opacity-50 sm:w-12 sm:h-12"
+                        />
+                        <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
+                           No se encontraron solicitudes
+                        </h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-4 px-4">
+                           Intenta ajustar los filtros o rellenar un primer formulario
+                        </p>
+                     </div>
+                  )}
+               </div>
             </div>
-         </div>
+         )}
 
          {/* Modals */}
          <MessageModal
