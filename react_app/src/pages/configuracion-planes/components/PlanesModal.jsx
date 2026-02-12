@@ -43,7 +43,7 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
 
             const payload = {
                 planLimits: {
-                    solicitudes: { maxTotal: parseInt(formData.solicitudes) || 0 },
+                    requests: { maxTotal: parseInt(formData.solicitudes) || 0 },
                     tickets: { maxQuantity: parseInt(formData.tickets) || 0 },
                     users: { maxUsers: parseInt(formData.usuarios) || 0 },
                     forms: { maxQuantity: parseInt(formData.formularios) || 0 },
