@@ -1369,6 +1369,111 @@ Máximo permitido: ${MAX_FILES} archivos.`;
    const canPreviewAdjunto = (mimeType) => mimeType === "application/pdf";
 
    const realAttachments = getRealAttachments();
+   const renderNewFilesList = () => (
+      correctedFiles.map((file, index) => (
+         <div
+            key={`new-${index}`}
+            className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20 cursor-pointer hover:bg-accent/10 transition-colors group"
+            onClick={() => handlePreviewCorrectedFile(index, "new")} // ✅ Click en el item activa preview
+         >
+            <div className="flex items-center space-x-3">
+               <Icon name="FileText" size={20} className="text-accent group-hover:scale-110 transition-transform" />
+               <div>
+                  <p className="text-sm font-medium text-foreground">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                     {formatFileSize(file.size)} • PDF •{" "}
+                     {file.size > MAX_FILE_SIZE ? (
+                        <span className="text-error">EXCEDE LÍMITE</span>
+                     ) : (
+                        <span className="text-accent/80">Por subir</span>
+                     )}
+                  </p>
+               </div>
+            </div>
+            <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+               {/* stopPropagation para que los botones internos no disparen el click del padre */}
+               <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePreviewCorrectedFile(index, "new")}
+                  iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                  iconSize={16}
+               />
+               {userPermissions?.deleteSent && (
+                  <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
+                     <Icon name="Trash2" size={16} />
+                  </Button>
+               )}
+            </div>
+         </div>
+      ))
+   );
+
+   // --- RENDERIZADO DE ARCHIVOS APROBADOS (SERVIDOR) ---
+   const renderApprovedFilesList = () => (
+      approvedData?.correctedFiles?.map((file, index) => {
+         const isMarkedForDelete = file.markedForDelete || filesToDelete.some((f) => f.fileName === file.fileName);
+
+         return (
+            <div
+               key={`approved-${index}`}
+               className={`flex items-center justify-between p-3 rounded border transition-colors cursor-pointer group ${isMarkedForDelete
+                     ? "bg-error/10 border-error/30 opacity-60 cursor-not-allowed"
+                     : "bg-success/5 border-success/20 hover:bg-success/10"
+                  }`}
+               onClick={() => !isMarkedForDelete && handlePreviewCorrectedFile(index, "approved")} // ✅ Click en el item
+            >
+               <div className="flex items-center space-x-3">
+                  <Icon
+                     name="FileText"
+                     size={20}
+                     className={`${isMarkedForDelete ? "text-error" : "text-success group-hover:scale-110 transition-transform"}`}
+                  />
+                  <div>
+                     <p className={`text-sm font-medium ${isMarkedForDelete ? "text-error line-through" : "text-foreground"}`}>
+                        {file.fileName}
+                        {isMarkedForDelete && <span className="ml-2 text-xs font-medium">(Para eliminar)</span>}
+                     </p>
+                     <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.fileSize)} • Subido el {formatDate(file.uploadedAt)}
+                     </p>
+                  </div>
+               </div>
+               <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                  {userPermissions?.downloadSent && (
+                     <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
+                        onClick={() => handleDownloadCorrected(index, "approved")}
+                        disabled={isMarkedForDelete}
+                     />
+                  )}
+                  {userPermissions?.previewSent && (
+                     <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handlePreviewCorrectedFile(index, "approved")}
+                        iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                        disabled={isMarkedForDelete}
+                     />
+                  )}
+                  {fullRequestData?.status !== "archivado" && userPermissions?.deleteSent && (
+                     isMarkedForDelete ? (
+                        <Button variant="ghost" size="icon" onClick={() => handleUndoDelete(file.fileName)}>
+                           <Icon name="RotateCcw" size={16} />
+                        </Button>
+                     ) : (
+                        <Button variant="ghostError" size="icon" onClick={() => handleDeleteUploadedFile(file.fileName, index)}>
+                           <Icon name="Trash2" size={16} />
+                        </Button>
+                     )
+                  )}
+               </div>
+            </div>
+         );
+      })
+   );
 
    const renderDetailsTab = () => (
       <div className="space-y-6">
@@ -1389,57 +1494,47 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
          {userPermissions?.viewAttachments && (
             <div>
-               {attachmentsLoading && (
+               {(attachmentsLoading || fullRequestData?.adjuntos?.length > 0) && (
                   <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                      Archivos Adjuntos
                      {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
                   </h3>
                )}
-               {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
-                  <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                     Archivos Adjuntos
-                  </h3>
-               )}
                {fullRequestData?.adjuntos?.length > 0 && (
                   <div className="space-y-2">
                      {fullRequestData.adjuntos.map((adjunto, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div
+                           key={index}
+                           className={`flex items-center justify-between p-3 bg-muted/50 rounded-lg transition-colors ${canPreviewAdjunto(adjunto.mimeType) ? 'cursor-pointer hover:bg-muted/80 group' : ''}`}
+                           onClick={() => canPreviewAdjunto(adjunto.mimeType) && handlePreviewAdjunto(fullRequestData._id, index)}
+                        >
                            <div className="flex items-center space-x-3">
-                              <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
+                              <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent group-hover:scale-110 transition-transform" />
                               <div>
                                  <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
                                  <p className="text-xs text-muted-foreground">
-                                    {adjunto.pregunta} • {formatFileSize(adjunto.size)} •{" "}
-                                    {formatDate(adjunto.uploadedAt)}
+                                    {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
                                  </p>
                               </div>
                            </div>
-                           <div className="flex items-center space-x-2">
+                           <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                               {userPermissions?.downloadAttachment && (
                                  <Button
                                     variant="outline"
                                     size="sm"
                                     iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
-                                    iconPosition="left"
-                                    iconSize={16}
                                     onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
                                     disabled={downloadingAttachmentIndex !== null}
-                                 >
-                                    {downloadingAttachmentIndex === index ? "Descargando..." : "Descargar"}
-                                 </Button>
+                                 />
                               )}
                               {canPreviewAdjunto(adjunto.mimeType) && userPermissions?.previewAttachment && (
                                  <Button
                                     variant="ghost"
                                     size="sm"
                                     iconName={isLoadingPreviewAdjunto ? "Loader" : "Eye"}
-                                    iconPosition="left"
-                                    iconSize={16}
                                     onClick={() => handlePreviewAdjunto(fullRequestData._id, index)}
                                     disabled={isLoadingPreviewAdjunto}
-                                 >
-                                    {isLoadingPreviewAdjunto ? "Cargando..." : "Vista Previa"}
-                                 </Button>
+                                 />
                               )}
                            </div>
                         </div>
@@ -1449,109 +1544,73 @@ Máximo permitido: ${MAX_FILES} archivos.`;
             </div>
          )}
 
-         {/* SECCIÓN DOCUMENTO GENERADO */}
+         {/* SECCIÓN DOCUMENTO GENERADO / DOMICILIO VIRTUAL */}
          {(documentInfo || endpointPrefix.includes("domicilio-virtual")) && userPermissions?.viewGenerated && (
             <div>
                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                   {endpointPrefix.includes("domicilio-virtual") ? "Documentos Adjuntos" : "Documento Generado"}
-
-                  {/* Botón Regenerar al lado del título (Si hay plantilla y NO es domicilio virtual) */}
-                  {fullRequestData?.formId &&
-                     !endpointPrefix.includes("domicilio-virtual") &&
-                     userPermissions?.regenerate && (
-                        <Button
-                           variant="ghost"
-                           size="icon"
-                           className="h-6 w-6 text-muted-foreground hover:text-primary ml-1"
-                           title="Regenerar Documento"
-                           onClick={(e) => {
-                              e.stopPropagation();
-                              openAsyncDialog({
-                                 title: "¿Estás seguro de regenerar el documento? Esto sobrescribirá el documento actual.",
-                                 loadingText: "Regenerando documento...",
-                                 successText: "Documento regenerado exitosamente",
-                                 errorText: "Error al regenerar documento",
-                                 onConfirm: handleRegenerateDocument,
-                              });
-                           }}
-                           disabled={isRegenerating}
-                        >
-                           <Icon
-                              name={isRegenerating ? "Loader" : "RefreshCw"}
-                              size={14}
-                              className={isRegenerating ? "animate-spin" : ""}
-                           />
-                        </Button>
-                     )}
-
-                  {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+                  {fullRequestData?.formId && !endpointPrefix.includes("domicilio-virtual") && userPermissions?.regenerate && (
+                     <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-primary ml-1"
+                        onClick={(e) => {
+                           e.stopPropagation();
+                           openAsyncDialog({
+                              title: "¿Estás seguro de regenerar el documento?",
+                              loadingText: "Regenerando...",
+                              onConfirm: handleRegenerateDocument,
+                           });
+                        }}
+                        disabled={isRegenerating}
+                     >
+                        <Icon name={isRegenerating ? "Loader" : "RefreshCw"} size={14} className={isRegenerating ? "animate-spin" : ""} />
+                     </Button>
+                  )}
                </h3>
                {realAttachments?.length > 0 ? (
                   <div className="space-y-2">
-                     {realAttachments?.map((file) => (
-                        <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                     {realAttachments?.map((file, index) => (
+                        <div
+                           key={file?.id}
+                           className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted/80 group transition-colors"
+                           onClick={() => endpointPrefix.includes("domicilio-virtual") ? handlePreviewAdjunto(fullRequestData._id, index) : handlePreviewGenerated()}
+                        >
                            <div className="flex items-center space-x-3">
-                              <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
+                              <Icon name={getFileIcon(file?.type)} size={20} className="text-accent group-hover:scale-110 transition-transform" />
                               <div>
-                                 <p className="text-sm font-medium text-foreground" title={file?.name}>
-                                    {file?.name?.length > 45 ? `${file.name.substring(0, 45)}...` : file?.name}
-                                 </p>
-                                 <p className="text-xs text-muted-foreground">
-                                    {file?.size} • Generado el {formatDate(file?.uploadedAt)}
-                                 </p>
+                                 <p className="text-sm font-medium text-foreground">{file?.name?.length > 45 ? `${file.name.substring(0, 45)}...` : file?.name}</p>
+                                 <p className="text-xs text-muted-foreground">{file?.size} • Generado el {formatDate(file?.uploadedAt)}</p>
                               </div>
                            </div>
-                           <div className="flex items-center space-x-2">
-                              {userPermissions?.downloadGenerated && (
-                                 <Button
-                                    variant="outline"
-                                    size="sm"
-                                    iconName={isDownloading ? "Loader" : "Download"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    onClick={
-                                       endpointPrefix.includes("domicilio-virtual")
-                                          ? () => handleDownloadAdjunto(fullRequestData._id, 0)
-                                          : handleDownload
-                                    }
-                                    disabled={isDownloading}
-                                 >
-                                    {isDownloading ? "Descargando..." : "Descargar"}
-                                 </Button>
-                              )}
-                              {userPermissions?.previewGenerated && (
-                                 <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={
-                                       endpointPrefix.includes("domicilio-virtual")
-                                          ? () => handlePreviewAdjunto(fullRequestData._id, 0)
-                                          : handlePreviewGenerated
-                                    }
-                                    iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    disabled={isLoadingPreviewGenerated}
-                                 >
-                                    {isLoadingPreviewGenerated ? "Cargando..." : "Vista Previa"}
-                                 </Button>
-                              )}
+                           <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                 variant="outline"
+                                 size="sm"
+                                 iconName={isDownloading ? "Loader" : "Download"}
+                                 onClick={endpointPrefix.includes("domicilio-virtual") ? () => handleDownloadAdjunto(fullRequestData._id, index) : handleDownload}
+                                 disabled={isDownloading}
+                              />
+                              <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={endpointPrefix.includes("domicilio-virtual") ? () => handlePreviewAdjunto(fullRequestData._id, index) : handlePreviewGenerated}
+                                 iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
+                                 disabled={isLoadingPreviewGenerated}
+                              />
                            </div>
                         </div>
                      ))}
                   </div>
                ) : (
                   <div className="text-center py-8 text-muted-foreground">
-                     <p className="text-sm">
-                        {endpointPrefix.includes("domicilio-virtual")
-                           ? "No hay archivos adjuntos"
-                           : "No hay documentos generados para este formulario"}
-                     </p>
+                     <p className="text-sm">{endpointPrefix.includes("domicilio-virtual") ? "No hay archivos adjuntos" : "No hay documentos generados"}</p>
                   </div>
                )}
             </div>
          )}
 
+         {/* SECCIÓN ENVIADOS A CLIENTE (REFACTOREADA) */}
          {userPermissions?.viewSent && (
             <div>
                <div className="flex items-center justify-between mb-3 pr-4">
@@ -1559,414 +1618,159 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      Enviados a Cliente
                      {isLoadingApprovedData && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
                   </h3>
-                  {/* Información de límites */}
-                  {/* <div>
-    <p className="text-xs text-muted-foreground">
-      Límite: {MAX_FILES} archivos máximo • 1MB por archivo • Solo PDF
-    </p>
-  </div> */}
-
-                  {/* BOTÓN PARA SUBIR ARCHIVOS */}
                   <div className="flex items-center gap-2">
-                     <span
-                        className={`text-sm pr-1  ${
-                           (approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES
-                              ? "text-blue-600"
-                              : "text-muted-foreground"
-                        }`}
-                     >
+                     <span className={`text-sm pr-1 ${(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES ? "text-blue-600 font-bold" : "text-muted-foreground"}`}>
                         Archivos: {(approvedData?.correctedFiles?.length || 0) + correctedFiles.length}/{MAX_FILES}
                      </span>
-                     {!["archivado", "finalizado"].includes(fullRequestData?.status) &&
-                        userPermissions?.create_solicitudes_clientes_send && (
-                           <Button
-                              variant="outlineTeal"
-                              size="sm"
-                              onClick={handleUploadClick}
-                              iconName="Plus"
-                              iconPosition="left"
-                              disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
-                           >
-                              Añadir Archivos
-                           </Button>
-                        )}
+                     {!["archivado", "finalizado"].includes(fullRequestData?.status) && userPermissions?.create_solicitudes_clientes_send && (
+                        <Button variant="outlineTeal" size="sm" onClick={handleUploadClick} iconName="Plus" disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}>
+                           Añadir Archivos
+                        </Button>
+                     )}
                   </div>
-
-                  {/* Input de archivo oculto */}
-                  <input
-                     type="file"
-                     ref={fileInputRef}
-                     onChange={handleFileSelect}
-                     accept=".pdf"
-                     multiple={true}
-                     className="hidden"
-                  />
+                  <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept=".pdf" multiple className="hidden" />
                </div>
 
                <div className="bg-muted/50 rounded-lg pb-4 px-4 space-y-4">
-                  {/* ===== SECCIÓN 1: NUEVOS ARCHIVOS SELECCIONADOS ===== */}
+                  {/* 1. Nuevos seleccionados */}
                   {correctedFiles.length > 0 && (
-                     <div className="space-y-3">
+                     <div className="space-y-3 pt-4">
                         <div className="flex items-center justify-between">
-                           <span className="text-base font-xl text-accent">
-                              Archivos por subir ({correctedFiles.length})
-                           </span>
-                           <Button
-                              variant="ghostError"
-                              size="sm"
-                              onClick={() => setCorrectedFiles([])}
-                              iconName="Trash2"
-                              iconPosition="left"
-                              // className="text-error hover:bg-error/10"
-                           >
-                              Eliminar todos
-                           </Button>
+                           <span className="text-sm font-bold text-accent uppercase tracking-wider">Por subir ({correctedFiles.length})</span>
+                           <Button variant="ghostError" size="sm" onClick={() => setCorrectedFiles([])} iconName="Trash2">Eliminar todos</Button>
                         </div>
-
                         {correctedFiles.map((file, index) => (
                            <div
-                              key={index}
-                              className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20"
+                              key={`new-${index}`}
+                              className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20 cursor-pointer hover:bg-accent/10 transition-colors group"
+                              onClick={() => handlePreviewCorrectedFile(index, "new")}
                            >
                               <div className="flex items-center space-x-3">
-                                 <Icon name="FileText" size={20} className="text-accent" />
+                                 <Icon name="FileText" size={20} className="text-accent group-hover:scale-110 transition-transform" />
                                  <div>
                                     <p className="text-sm font-medium text-foreground">{file.name}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                       {formatFileSize(file.size)} • PDF •{" "}
-                                       {file.size > MAX_FILE_SIZE ? (
-                                          <span className="text-error">EXCEDE LÍMITE</span>
-                                       ) : (
-                                          "Válido"
-                                       )}
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">{formatFileSize(file.size)} • PDF • {file.size > MAX_FILE_SIZE ? <span className="text-error font-bold">EXCEDE LÍMITE</span> : "Válido"}</p>
                                  </div>
                               </div>
-                              <div className="flex items-center space-x-2">
-                                 <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handlePreviewCorrectedFile(index, "new")}
-                                    iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    disabled={isLoadingPreviewCorrected}
-                                 >
-                                    Vista Previa
-                                 </Button>
-                                 {userPermissions?.deleteSent && (
-                                    <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
-                                       <Icon name="Trash2" size={16} />
-                                    </Button>
-                                 )}
+                              <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                                 <Button variant="ghost" size="sm" onClick={() => handlePreviewCorrectedFile(index, "new")} iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"} disabled={isLoadingPreviewCorrected} />
+                                 <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)} iconName="Trash2" />
                               </div>
                            </div>
                         ))}
-
-                        {!canAddMoreFiles() && (
-                           <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700 flex items-center">
-                              <Icon name="Info" size={14} className="inline mr-1" />
-                              Límite máximo alcanzado. Puedes eliminar algunos archivos para agregar otros nuevos.
-                           </div>
-                        )}
-
-                        {!["archivado", "finalizado"].includes(fullRequestData?.status) && (
-                           <div className="flex justify-end pt-2">
-                              <Button
-                                 variant="outlineTeal"
-                                 size="sm"
-                                 onClick={() => {
-                                    openAsyncDialog({
-                                       title: "Confirmar Subida",
-                                       message: `¿Estás seguro de que deseas subir ${correctedFiles.length} archivo(s)?`,
-                                       confirmLabel: "Subir Archivos",
-                                       onConfirm: handleUploadAdditionalFiles,
-                                    });
-                                 }}
-                                 iconName="Upload"
-                                 iconPosition="left"
-                              >
-                                 Subir Archivos
-                              </Button>
-                           </div>
-                        )}
                      </div>
                   )}
 
-                  {/* ===== SECCIÓN 2: ARCHIVOS YA APROBADOS ===== */}
+                  {/* 2. Ya aprobados */}
                   {(approvedData?.correctedFiles || fullRequestData?.correctedFile) && (
-                     <div className="space-y-3">
-                        {correctedFiles.length > 0 && (
-                           <span className="text-base font-lg text-accent">
-                              Archivos aprobados ({approvedData?.correctedFiles?.length || 1})
-                           </span>
-                        )}
-
+                     <div className="space-y-3 pt-4">
+                        <span className="text-sm font-bold text-success uppercase tracking-wider">Aprobados ({approvedData?.correctedFiles?.length || 1})</span>
                         {approvedData?.correctedFiles?.map((file, index) => {
-                           const isMarkedForDelete =
-                              file.markedForDelete || filesToDelete.some((f) => f.fileName === file.fileName);
-
+                           const isMarked = file.markedForDelete || filesToDelete.some((f) => f.fileName === file.fileName);
                            return (
                               <div
-                                 key={index}
-                                 className={`flex items-center justify-between p-3 rounded border ${
-                                    isMarkedForDelete ? "bg-error/10 border-error/30" : "bg-success/5 border-success/20"
-                                 }`}
+                                 key={`app-${index}`}
+                                 className={`flex items-center justify-between p-3 rounded border transition-colors ${isMarked ? "bg-error/10 border-error/30 opacity-60" : "bg-success/5 border-success/20 cursor-pointer hover:bg-success/10 group"}`}
+                                 onClick={() => !isMarked && handlePreviewCorrectedFile(index, "approved")}
                               >
                                  <div className="flex items-center space-x-3">
-                                    <Icon
-                                       name="FileText"
-                                       size={20}
-                                       className={isMarkedForDelete ? "text-error" : "text-success"}
-                                    />
+                                    <Icon name="FileText" size={20} className={isMarked ? "text-error" : "text-success group-hover:scale-110 transition-transform"} />
                                     <div>
-                                       <p
-                                          className={`text-sm font-medium ${
-                                             isMarkedForDelete ? "text-error line-through" : "text-foreground"
-                                          }`}
-                                       >
-                                          {file.fileName}
-                                          {isMarkedForDelete && (
-                                             <span className="ml-2 text-xs text-error font-medium">(Eliminar)</span>
-                                          )}
-                                       </p>
-                                       <p className="text-xs text-muted-foreground">
-                                          {formatFileSize(file.fileSize)} • Subido el {formatDate(file.uploadedAt)} •
-                                          Archivo {index + 1}
-                                       </p>
+                                       <p className={`text-sm font-medium ${isMarked ? "text-error line-through" : "text-foreground"}`}>{file.fileName}</p>
+                                       <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)} • {formatDate(file.uploadedAt)}</p>
                                     </div>
                                  </div>
-                                 <div className="flex items-center space-x-2">
-                                    {userPermissions?.downloadSent && (
-                                       <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
-                                          iconPosition="left"
-                                          iconSize={16}
-                                          onClick={() => handleDownloadCorrected(index, "approved")}
-                                          disabled={downloadingCorrectedIndex === index || isMarkedForDelete}
-                                       >
-                                          {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
-                                       </Button>
+                                 <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                                    <Button variant="ghost" size="sm" onClick={() => handleDownloadCorrected(index, "approved")} iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"} disabled={isMarked} />
+                                    <Button variant="ghost" size="sm" onClick={() => handlePreviewCorrectedFile(index, "approved")} iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"} disabled={isMarked} />
+                                    {!["archivado"].includes(fullRequestData?.status) && (
+                                       isMarked ?
+                                          <Button variant="ghost" size="icon" onClick={() => handleUndoDelete(file.fileName)} iconName="RotateCcw" /> :
+                                          <Button variant="ghostError" size="icon" onClick={() => handleDeleteUploadedFile(file.fileName, index)} iconName="Trash2" disabled={isDeletingFile === index} />
                                     )}
-                                    {userPermissions?.previewSent && (
-                                       <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handlePreviewCorrectedFile(index, "approved")}
-                                          iconName={
-                                             isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"
-                                          }
-                                          iconPosition="left"
-                                          iconSize={16}
-                                          disabled={isLoadingPreviewCorrected || isMarkedForDelete}
-                                       >
-                                          {isLoadingPreviewCorrected && previewIndex === index
-                                             ? "Cargando..."
-                                             : "Vista Previa"}
-                                       </Button>
-                                    )}
-                                    {fullRequestData?.status !== "archivado" &&
-                                       (isMarkedForDelete ? (
-                                          <Button
-                                             variant="ghost"
-                                             size="icon"
-                                             onClick={() => handleUndoDelete(file.fileName)}
-                                          >
-                                             <Icon name="RotateCcw" size={16} />
-                                          </Button>
-                                       ) : (
-                                          userPermissions?.deleteSent && (
-                                             <Button
-                                                variant="ghostError"
-                                                size="icon"
-                                                onClick={() => handleDeleteUploadedFile(file.fileName, index)}
-                                                disabled={isDeletingFile === index}
-                                             >
-                                                <Icon
-                                                   name={isDeletingFile === index ? "Loader" : "Trash2"}
-                                                   size={16}
-                                                   className={isDeletingFile === index ? "animate-spin" : ""}
-                                                />
-                                             </Button>
-                                          )
-                                       ))}
                                  </div>
                               </div>
                            );
                         })}
-
-                        {/* Formato antiguo (un solo archivo) */}
-                        {!approvedData?.correctedFiles && fullRequestData?.correctedFile && (
-                           <div className="flex items-center justify-between p-3 bg-success/5 rounded border border-success/20">
-                              <div className="flex items-center space-x-3">
-                                 <Icon name="FileText" size={20} className="text-success" />
-                                 <div>
-                                    <p className="text-sm font-medium text-foreground">
-                                       {fullRequestData.correctedFile.fileName}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                       {formatFileSize(fullRequestData.correctedFile.fileSize)} • Subido el{" "}
-                                       {formatDate(fullRequestData.submittedAt)}
-                                    </p>
-                                 </div>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                 <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    iconName={downloadingCorrectedIndex === 0 ? "Loader" : "Download"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    onClick={() => handleDownloadCorrected(0, "approved")}
-                                    disabled={downloadingCorrectedIndex === 0}
-                                 >
-                                    {downloadingCorrectedIndex === 0 ? "Descargando..." : "Descargar"}
-                                 </Button>
-                                 <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handlePreviewCorrectedFile(0, "approved")}
-                                    iconName={isLoadingPreviewCorrected && previewIndex === 0 ? "Loader" : "Eye"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    disabled={isLoadingPreviewCorrected}
-                                 >
-                                    {isLoadingPreviewCorrected && previewIndex === 0 ? "Cargando..." : "Vista Previa"}
-                                 </Button>
-                              </div>
-                           </div>
-                        )}
                      </div>
                   )}
 
-                  {/* Mensaje cuando no hay archivos */}
+                  {/* Mensaje vacío */}
                   {!correctedFiles.length && !approvedData?.correctedFiles && !fullRequestData?.correctedFile && (
                      <div className="text-center py-6 text-muted-foreground">
                         <Icon name="FileText" size={24} className="mx-auto mb-2 opacity-50" />
                         <p className="text-sm">No hay documentos corregidos aún</p>
-                        <p className="text-xs mt-1">Usa el botón "Añadir Archivos" para agregar documentos PDF</p>
                      </div>
                   )}
                </div>
             </div>
          )}
 
-         {fullRequestData?.status !== "pendiente" &&
-            fullRequestData?.status !== "en_revision" &&
-            userPermissions?.viewSigned && (
-               <div>
-                  {isCheckingSignature && (
-                     <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                        Documento Firmado por Cliente
-                        {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-                     </h3>
-                  )}
-                  {!isCheckingSignature && clientSignature && (
-                     <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                        Documento Firmado por Cliente
-                     </h3>
-                  )}
-
-                  {clientSignature && (
-                     <div className="bg-success/10 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                           <div className="flex items-center space-x-3">
-                              <Icon name="FileSignature" size={20} className="text-success" />
-                              <div>
-                                 <p className="text-sm font-medium text-foreground">{clientSignature.fileName}</p>
-                                 <p className="text-xs text-muted-foreground">
-                                    Subido el {formatDate(clientSignature.uploadedAt)} •{" "}
-                                    {formatFileSize(clientSignature.fileSize)}
-                                 </p>
-                              </div>
-                           </div>
-                           <div className="flex items-center space-x-2">
-                              {userPermissions?.downloadSigned && (
-                                 <Button
-                                    variant="outline"
-                                    size="sm"
-                                    iconName={isDownloadingSignature ? "Loader" : "Download"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    onClick={() => handleDownloadClientSignature(fullRequestData._id)}
-                                    disabled={isDownloadingSignature}
-                                 >
-                                    {isDownloadingSignature ? "Descargando..." : "Descargar"}
-                                 </Button>
-                              )}
-                              {userPermissions?.previewSigned && (
-                                 <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handlePreviewClientSignature}
-                                    iconName={isLoadingPreviewSignature ? "Loader" : "Eye"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    disabled={isLoadingPreviewSignature}
-                                 >
-                                    {isLoadingPreviewSignature ? "Cargando..." : "Vista Previa"}
-                                 </Button>
-                              )}
-                              {/* Solo ocultamos el botón de eliminar firma si la solicitud está archivada */}
-                              {fullRequestData?.status !== "archivado" && userPermissions?.deleteSignature && (
-                                 <Button
-                                    variant="ghostError"
-                                    size="icon"
-                                    onClick={() => handleDeleteClientSignature(fullRequestData._id)}
-                                 >
-                                    <Icon name="Trash2" size={16} />
-                                 </Button>
-                              )}
-                           </div>
-                        </div>
+         {/* SECCIÓN FIRMA CLIENTE */}
+         {fullRequestData?.status !== "pendiente" && fullRequestData?.status !== "en_revision" && userPermissions?.viewSigned && clientSignature && (
+            <div
+               className="bg-success/10 rounded-lg p-4 cursor-pointer hover:bg-success/20 transition-colors group"
+               onClick={handlePreviewClientSignature}
+            >
+               <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                     <Icon name="FileSignature" size={20} className="text-success group-hover:scale-110 transition-transform" />
+                     <div>
+                        <p className="text-sm font-medium text-foreground">{clientSignature.fileName}</p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(clientSignature.fileSize)} • {formatDate(clientSignature.uploadedAt)}</p>
                      </div>
-                  )}
+                  </div>
+                  <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                     <Button variant="outline" size="sm" onClick={() => handleDownloadClientSignature(fullRequestData._id)} iconName={isDownloadingSignature ? "Loader" : "Download"} />
+                     <Button variant="ghost" size="sm" onClick={handlePreviewClientSignature} iconName={isLoadingPreviewSignature ? "Loader" : "Eye"} />
+                     {fullRequestData?.status !== "archivado" && userPermissions?.deleteSignature && (
+                        <Button variant="ghostError" size="icon" onClick={() => handleDeleteClientSignature(fullRequestData._id)} iconName="Trash2" />
+                     )}
+                  </div>
                </div>
-            )}
+            </div>
+         )}
       </div>
    );
-
-const mockTimeline = [
-    {
-      id: 1,
-      title: "Solicitud Enviada",
-      description: "La solicitud ha sido enviada y está pendiente de revisión inicial.",
-      status: "completed",
-      completedAt: "2025-01-18T09:30:00Z",
-      assignedTo: "Sistema Automático",
-      notes: "Solicitud recibida correctamente."
-    },
-    {
-      id: 2,
-      title: "Revisión Inicial",
-      description: "El equipo de RR.HH. está realizando la revisión inicial.",
-      status: "completed",
-      completedAt: "2025-01-22T17:00:00Z",
-      assignedTo: "María González",
-      estimatedCompletion: "2025-01-22T17:00:00Z"
-    }
-    ,
-    {
-      id: 3,
-      title: "Aprobación Final",
-      description: "La solicitud ha sido aprobada por el responsable.",
-      status: "completed",
-      completedAt: "2025-01-23T10:00:00Z",
-      assignedTo: "María González",
-      estimatedCompletion: "2025-01-22T17:00:00Z"
-    },
-    {
-      id: 4,
-      title: "cierre de la solicitud",
-      description: "La solicitud ha sido cerrada por el responsable.",
-      status: "current",
-      completedAt: null,
-      assignedTo: "María González",
-      estimatedCompletion: "2025-01-22T17:00:00Z"
-    }
-  ];
+   const mockTimeline = [
+      {
+         id: 1,
+         title: "Solicitud Enviada",
+         description: "La solicitud ha sido enviada y está pendiente de revisión inicial.",
+         status: "completed",
+         completedAt: "2025-01-18T09:30:00Z",
+         assignedTo: "Sistema Automático",
+         notes: "Solicitud recibida correctamente."
+      },
+      {
+         id: 2,
+         title: "Revisión Inicial",
+         description: "El equipo de RR.HH. está realizando la revisión inicial.",
+         status: "completed",
+         completedAt: "2025-01-22T17:00:00Z",
+         assignedTo: "María González",
+         estimatedCompletion: "2025-01-22T17:00:00Z"
+      }
+      ,
+      {
+         id: 3,
+         title: "Aprobación Final",
+         description: "La solicitud ha sido aprobada por el responsable.",
+         status: "completed",
+         completedAt: "2025-01-23T10:00:00Z",
+         assignedTo: "María González",
+         estimatedCompletion: "2025-01-22T17:00:00Z"
+      },
+      {
+         id: 4,
+         title: "cierre de la solicitud",
+         description: "La solicitud ha sido cerrada por el responsable.",
+         status: "current",
+         completedAt: null,
+         assignedTo: "María González",
+         estimatedCompletion: "2025-01-22T17:00:00Z"
+      }
+   ];
 
    // const handleUploadFiles = async () => {
    //    if (correctedFiles.length === 0) {
@@ -2279,6 +2083,8 @@ const mockTimeline = [
       );
    };
 
+
+
    const totalFiles = correctedFiles.length > 0 ? correctedFiles.length : approvedData?.correctedFiles?.length || 1;
 
    const containerClass = isStandalone
@@ -2378,11 +2184,10 @@ const mockTimeline = [
                                                          });
                                                          setIsStatusDropdownOpen(false);
                                                       }}
-                                                      className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${
-                                                         currentStatus === st.value
+                                                      className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${currentStatus === st.value
                                                             ? "bg-accent/10 text-accent font-medium"
                                                             : "hover:bg-accent/5 text-foreground"
-                                                      }`}
+                                                         }`}
                                                    >
                                                       <Icon
                                                          name={st.icon || "Circle"}
@@ -2441,22 +2246,20 @@ const mockTimeline = [
                <div className="px-6 flex space-x-6 ">
                   <button
                      onClick={() => setActiveTab("details")}
-                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === "details"
+                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "details"
                            ? "border-accent text-accent"
                            : "border-transparent text-muted-foreground hover:text-foreground"
-                     }`}
+                        }`}
                      title="Ver detalles de la solicitud"
                   >
                      Detalles
                   </button>
                   <button
                      onClick={() => setActiveTab("chronology")}
-                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === "chronology"
+                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "chronology"
                            ? "border-accent text-accent"
                            : "border-transparent text-muted-foreground hover:text-foreground"
-                     }`}
+                        }`}
                      title="Ver detalles de la solicitud"
                   >
                      Cronología
@@ -2464,11 +2267,10 @@ const mockTimeline = [
                   {userPermissions?.viewAnswers && (
                      <button
                         onClick={() => setActiveTab("responses")}
-                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                           activeTab === "responses"
+                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "responses"
                               ? "border-accent text-accent"
                               : "border-transparent text-muted-foreground hover:text-foreground"
-                        }`}
+                           }`}
                         title="Ver respuestas del formulario"
                      >
                         Respuestas
@@ -2477,11 +2279,10 @@ const mockTimeline = [
                   {userPermissions?.viewShared && (
                      <button
                         onClick={() => setActiveTab("shared")}
-                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                           activeTab === "shared"
+                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "shared"
                               ? "border-accent text-accent"
                               : "border-transparent text-muted-foreground hover:text-foreground"
-                        }`}
+                           }`}
                         title="Ver usuarios con acceso"
                      >
                         Compartidos
