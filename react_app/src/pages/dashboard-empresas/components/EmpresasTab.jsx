@@ -53,7 +53,7 @@ export const EmpresasTab = ({ companies, isLoading, permisos, onRefresh, onEdit 
 
 
                                     {/* Botón de Editar */}
-                                    {permisos.create_empresas && company.dbName !== 'formsdb' && !company.isSystem && (
+                                    {permisos.edit_empresas && company.dbName !== 'formsdb' && !company.isSystem && (
                                         <button
                                             onClick={() => onEdit(company)}
                                             className="p-1.5 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
