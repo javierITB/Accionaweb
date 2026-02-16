@@ -272,13 +272,13 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                         <div className="flex p-1 bg-muted rounded-xl space-x-1">
                            <button
                               onClick={() => setActiveTab("admin")}
-                              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === "admin" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === "admin" ? "bg-card text-accent shadow-sm ring-1 ring-accent/20" : "text-muted-foreground hover:text-foreground"}`}
                            >
                               <Shield size={16} /> Administración
                            </button>
                            <button
                               onClick={() => setActiveTab("cliente")}
-                              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === "cliente" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === "cliente" ? "bg-card text-accent shadow-sm ring-1 ring-accent/20" : "text-muted-foreground hover:text-foreground"}`}
                            >
                               <UserCircle size={16} /> Cliente
                            </button>
