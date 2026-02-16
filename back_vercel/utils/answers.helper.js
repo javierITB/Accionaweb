@@ -74,7 +74,7 @@ async function getFirmaEliminadaMetadata(req, auth, currentDate) {
    const formattedActor = formatActor(actor);
 
    return {
-      title: "Firma del cliente eliminada",
+      title: "Cambio de estado a aprobado | Firma eliminada",
       description:
          "La firma del cliente ha sido eliminada y la solicitud ha vuelto a estado aprobado.",
       status: "completed",
