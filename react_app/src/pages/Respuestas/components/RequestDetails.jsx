@@ -417,18 +417,6 @@ const RequestDetails = ({
       }
    };
 
-   const getPreviousStatus = (currentStatus) => {
-      const statusFlow = ["pendiente", "en_revision", "aprobado", "firmado", "finalizado", "archivado"];
-      const currentIndex = statusFlow.indexOf(currentStatus);
-      return currentIndex > 0 ? statusFlow[currentIndex - 1] : null;
-   };
-
-   const getNextStatus = (currentStatus) => {
-      const statusFlow = ["pendiente", "en_revision", "aprobado", "firmado", "finalizado", "archivado"];
-      const currentIndex = statusFlow.indexOf(currentStatus);
-      return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
-   };
-
    if (!isVisible || !request) return null;
 
    const handlePreviewDocument = (documentUrl, documentType) => {
@@ -1389,7 +1377,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
          {userPermissions?.viewAttachments && (
             <div>
-               {attachmentsLoading && (
+               {(attachmentsLoading) && (
                   <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                      Archivos Adjuntos
                      {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
@@ -1403,18 +1391,25 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                {fullRequestData?.adjuntos?.length > 0 && (
                   <div className="space-y-2">
                      {fullRequestData.adjuntos.map((adjunto, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div
+                           key={index}
+                           className={`flex items-center justify-between p-3 bg-muted/50 rounded-lg transition-all group ${userPermissions?.previewAttachment ? 'cursor-pointer hover:bg-muted/70' : 'cursor-default'}`}
+                           onClick={() => userPermissions?.previewAttachment && handlePreviewAdjunto(fullRequestData._id, index)}
+                        >
                            <div className="flex items-center space-x-3">
-                              <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
+                              <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent group-hover:scale-110 transition-transform" />
                               <div>
-                                 <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
+                                 <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
+                                    {isLoadingPreviewAdjunto && <Icon name="Loader" size={14} className="animate-spin text-accent" />}
+                                 </div>
                                  <p className="text-xs text-muted-foreground">
                                     {adjunto.pregunta} • {formatFileSize(adjunto.size)} •{" "}
                                     {formatDate(adjunto.uploadedAt)}
                                  </p>
                               </div>
                            </div>
-                           <div className="flex items-center space-x-2">
+                           <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                               {userPermissions?.downloadAttachment && (
                                  <Button
                                     variant="outline"
@@ -1426,19 +1421,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                     disabled={downloadingAttachmentIndex !== null}
                                  >
                                     {downloadingAttachmentIndex === index ? "Descargando..." : "Descargar"}
-                                 </Button>
-                              )}
-                              {canPreviewAdjunto(adjunto.mimeType) && userPermissions?.previewAttachment && (
-                                 <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    iconName={isLoadingPreviewAdjunto ? "Loader" : "Eye"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    onClick={() => handlePreviewAdjunto(fullRequestData._id, index)}
-                                    disabled={isLoadingPreviewAdjunto}
-                                 >
-                                    {isLoadingPreviewAdjunto ? "Cargando..." : "Vista Previa"}
                                  </Button>
                               )}
                            </div>
@@ -1453,9 +1435,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
          {(documentInfo || endpointPrefix.includes("domicilio-virtual")) && userPermissions?.viewGenerated && (
             <div>
                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  {endpointPrefix.includes("domicilio-virtual") ? "Documentos Adjuntos" : "Documento Generado"}
+                  Documento Generado
 
-                  {/* Botón Regenerar al lado del título (Si hay plantilla y NO es domicilio virtual) */}
                   {fullRequestData?.formId &&
                      !endpointPrefix.includes("domicilio-virtual") &&
                      userPermissions?.regenerate && (
@@ -1487,21 +1468,33 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
                </h3>
                {realAttachments?.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all group">
                      {realAttachments?.map((file) => (
-                        <div key={file?.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div
+                           key={file?.id}
+                           className={`flex items-center justify-between p-3 bg-muted/50 rounded-lg transition-all group ${userPermissions?.previewGenerated ? 'cursor-pointer hover:bg-muted/70' : 'cursor-default'}`}
+                           onClick={() => {
+                              if (!userPermissions?.previewGenerated) return;
+                              endpointPrefix.includes("domicilio-virtual")
+                                 ? handlePreviewAdjunto(fullRequestData._id, 0)
+                                 : handlePreviewGenerated();
+                           }}
+                        >
                            <div className="flex items-center space-x-3">
-                              <Icon name={getFileIcon(file?.type)} size={20} className="text-accent" />
+                              <Icon name={getFileIcon(file?.type)} size={20} className="text-accent group-hover:scale-110 transition-transform" />
                               <div>
-                                 <p className="text-sm font-medium text-foreground" title={file?.name}>
-                                    {file?.name?.length > 45 ? `${file.name.substring(0, 45)}...` : file?.name}
-                                 </p>
+                                 <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium text-foreground" title={file?.name}>
+                                       {file?.name?.length > 45 ? `${file.name.substring(0, 45)}...` : file?.name}
+                                    </p>
+                                    {isLoadingPreviewGenerated && <Icon name="Loader" size={14} className="animate-spin text-accent" />}
+                                 </div>
                                  <p className="text-xs text-muted-foreground">
                                     {file?.size} • Generado el {formatDate(file?.uploadedAt)}
                                  </p>
                               </div>
                            </div>
-                           <div className="flex items-center space-x-2">
+                           <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                               {userPermissions?.downloadGenerated && (
                                  <Button
                                     variant="outline"
@@ -1519,23 +1512,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                     {isDownloading ? "Descargando..." : "Descargar"}
                                  </Button>
                               )}
-                              {userPermissions?.previewGenerated && (
-                                 <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={
-                                       endpointPrefix.includes("domicilio-virtual")
-                                          ? () => handlePreviewAdjunto(fullRequestData._id, 0)
-                                          : handlePreviewGenerated
-                                    }
-                                    iconName={isLoadingPreviewGenerated ? "Loader" : "Eye"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    disabled={isLoadingPreviewGenerated}
-                                 >
-                                    {isLoadingPreviewGenerated ? "Cargando..." : "Vista Previa"}
-                                 </Button>
-                              )}
+                              
                            </div>
                         </div>
                      ))}
@@ -1589,7 +1566,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                </div>
 
                <div className="bg-muted/30 rounded-xl p-4 border border-border/50 space-y-3">
-                  {/* ARCHIVOS NUEVOS (PENDIENTES) */}
                   {correctedFiles.map((file, index) => (
                      <div
                         key={`new-${index}`}
@@ -1599,7 +1575,10 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                         <div className="flex items-center space-x-3">
                            <Icon name="FileText" size={20} className="text-accent group-hover:scale-110 transition-transform" />
                            <div>
-                              <p className="text-sm font-medium text-foreground truncate max-w-[200px]">{file.name}</p>
+                              <div className="flex items-center gap-2">
+                                 <p className="text-sm font-medium text-foreground truncate max-w-[200px]">{file.name}</p>
+                                 {isLoadingPreviewCorrected && previewIndex === index && <Icon name="Loader" size={14} className="animate-spin text-accent" />}
+                              </div>
                               <p className="text-[10px] text-accent font-bold uppercase">Pendiente de subir</p>
                            </div>
                         </div>
@@ -1611,7 +1590,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      </div>
                   ))}
 
-                  {/* BOTÓN SUBIR PARA NUEVOS */}
                   {correctedFiles.length > 0 && (fullRequestData?.status === "en_revision" || fullRequestData?.status === "pendiente") && (
                      <div className="flex justify-end pt-2 border-t border-accent/20">
                         <Button variant="default" size="sm" iconName="CheckCircle" onClick={handleApprove} disabled={isApproving}>
@@ -1620,7 +1598,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      </div>
                   )}
 
-                  {/* ARCHIVOS EN SERVIDOR */}
                   {(approvedData?.correctedFiles || fullRequestData?.correctedFile) ? (
                      <div className="space-y-2 pt-2">
                         {approvedData?.correctedFiles?.map((file, index) => {
@@ -1634,7 +1611,10 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                  <div className="flex items-center space-x-3">
                                     <Icon name="FileText" size={20} className={isMarked ? "text-error" : "text-success group-hover:scale-110 transition-transform"} />
                                     <div className="overflow-hidden">
-                                       <p className={`text-sm font-medium truncate ${isMarked ? "line-through text-muted-foreground" : "text-foreground"}`}>{file.fileName}</p>
+                                       <div className="flex items-center gap-2">
+                                          <p className={`text-sm font-medium truncate ${isMarked ? "line-through text-muted-foreground" : "text-foreground"}`}>{file.fileName}</p>
+                                          {isLoadingPreviewCorrected && previewIndex === index && <Icon name="Loader" size={14} className="animate-spin text-accent" />}
+                                       </div>
                                        <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>
                                     </div>
                                  </div>
@@ -1654,7 +1634,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      null
                   )}
 
-                  {/* BOTÓN ACTUALIZAR PARA CAMBIOS EN EXISTENTES */}
                   {(fullRequestData?.status === "aprobado" || fullRequestData?.status === "firmado") && (correctedFiles.length > 0 || filesToDelete.length > 0) && (
                      <div className="flex justify-end pt-2 border-t border-border">
                         <Button variant="outlineTeal" size="sm" iconName="RefreshCw" onClick={handleUploadAdditionalFiles} disabled={isUploading}>
@@ -1669,33 +1648,34 @@ Máximo permitido: ${MAX_FILES} archivos.`;
          {fullRequestData?.status !== "pendiente" &&
             fullRequestData?.status !== "en_revision" &&
             userPermissions?.viewSigned && (
-               <div>
-                  {isCheckingSignature && (
+               <div className="space-y-4 ">
+                  {(isCheckingSignature || (clientSignature)) && (
                      <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                         Documento Firmado por Cliente
-                        {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-                     </h3>
-                  )}
-                  {!isCheckingSignature && clientSignature && (
-                     <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                        Documento Firmado por Cliente
+                        {(isCheckingSignature ) && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
                      </h3>
                   )}
 
                   {clientSignature && (
-                     <div className="bg-success/10 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                           <div className="flex items-center space-x-3">
-                              <Icon name="FileSignature" size={20} className="text-success" />
+                     <div
+                        className={`bg-success/10 rounded-lg p-4 border transition-all group items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all ${userPermissions?.previewSigned ? 'cursor-pointer hover:bg-success/20' : 'cursor-default'}`}
+                        onClick={() => userPermissions?.previewSigned && handlePreviewClientSignature()}
+                     >
+                        <div className="flex items-center justify-between ">
+                           <div className="flex items-center space-x-3 ">
+                              <Icon name="FileSignature" size={20} className="text-success group-hover:scale-110 transition-transform" />
                               <div>
-                                 <p className="text-sm font-medium text-foreground">{clientSignature.fileName}</p>
+                                 <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium text-foreground">{clientSignature.fileName}</p>
+                                    {isLoadingPreviewSignature && <Icon name="Loader" size={14} className="animate-spin text-accent" />}
+                                 </div>
                                  <p className="text-xs text-muted-foreground">
                                     Subido el {formatDate(clientSignature.uploadedAt)} •{" "}
                                     {formatFileSize(clientSignature.fileSize)}
                                  </p>
                               </div>
                            </div>
-                           <div className="flex items-center space-x-2">
+                           <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                               {userPermissions?.downloadSigned && (
                                  <Button
                                     variant="outline"
@@ -1709,20 +1689,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                     {isDownloadingSignature ? "Descargando..." : "Descargar"}
                                  </Button>
                               )}
-                              {userPermissions?.previewSigned && (
-                                 <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handlePreviewClientSignature}
-                                    iconName={isLoadingPreviewSignature ? "Loader" : "Eye"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    disabled={isLoadingPreviewSignature}
-                                 >
-                                    {isLoadingPreviewSignature ? "Cargando..." : "Vista Previa"}
-                                 </Button>
-                              )}
-                              {/* Solo ocultamos el botón de eliminar firma si la solicitud está archivada */}
                               {fullRequestData?.status !== "archivado" && userPermissions?.deleteSignature && (
                                  <Button
                                     variant="ghostError"
