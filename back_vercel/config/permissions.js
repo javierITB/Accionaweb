@@ -287,6 +287,7 @@ const PERMISSION_GROUPS = {
             { id: 'create_gestor_empresas', label: 'Crear empresas', dependency: 'view_gestor_empresas' },
             { id: 'edit_gestor_empresas', label: 'Editar empresas', dependency: 'view_gestor_empresas' },
             { id: 'delete_gestor_empresas', label: 'Eliminar empresas', dependency: 'view_gestor_empresas' },
+            { id: 'view_empresas_permissions_list', label: 'Ver lista de permisos', dependency: 'view_gestor_empresas' },
         ]
     },
     configuracion_planes: {

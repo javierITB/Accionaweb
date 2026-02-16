@@ -80,6 +80,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                     "edit_empresas",
                     "delete_empresas",
                     "create_empresas",
+                    "view_empresas_permissions_list",
                     "view_gestor_roles",
                     "view_gestor_roles_details",
                     "create_gestor_roles",
