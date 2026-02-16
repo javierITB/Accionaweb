@@ -77,6 +77,7 @@ const Routes = () => {
             <Route path="/gestor-roles" element={<ProtectedRoute> <Roles /> </ProtectedRoute>} />
             <Route path="/gestor-empresas" element={<ProtectedRoute> <EmpresasDashboard /> </ProtectedRoute>} />
             <Route path="/config-notificaciones" element={<ProtectedRoute> <AdminNotificationManager /> </ProtectedRoute>} />
+            <Route path="/config-planes" element={<ProtectedRoute> <EmpresasDashboard /> </ProtectedRoute>} />
 
 
             <Route path="/users" element={<ProtectedRoute> <Users /> </ProtectedRoute>} />

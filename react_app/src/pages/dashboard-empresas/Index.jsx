@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { Search, Loader2 } from "lucide-react";
 
 // Helpers y componentes de UI
@@ -21,14 +22,19 @@ const EmpresasView = ({ userPermissions = [] }) => {
    const [isMobileOpen, setIsMobileOpen] = useState(false);
    const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
 
+   const location = useLocation();
+
    // --- PERMISOS DE VISTA ---
    const canViewEmpresas = userPermissions.includes("view_gestor_empresas");
    const canViewPlanes = userPermissions.includes("view_configuracion_planes");
 
    // --- ESTADOS DE LÓGICA ---
    const [searchQuery, setSearchQuery] = useState("");
-   // Inicializar activeTab basado en permisos
+   const [isModalOpen, setIsModalOpen] = useState(false);
+   const [editingCompany, setEditingCompany] = useState(null);
+   // Inicializar activeTab basado en permisos y ruta
    const [activeTab, setActiveTab] = useState(() => {
+      if (location.pathname === "/config-planes" && canViewPlanes) return "funcionalidades";
       if (canViewEmpresas) return "empresas";
       if (canViewPlanes) return "funcionalidades";
       return "";
@@ -194,6 +200,19 @@ const EmpresasView = ({ userPermissions = [] }) => {
                            : "Gestión de límites y planes por empresa"}
                      </p>
                   </div>
+
+                  {activeTab === "empresas" && canViewEmpresas && permisosEmpresas.create_empresas && (
+                     <Button
+                        variant="default"
+                        iconName="Plus"
+                        onClick={() => {
+                           setEditingCompany(null);
+                           setIsModalOpen(true);
+                        }}
+                     >
+                        Nueva Empresa
+                     </Button>
+                  )}
                </div>
 
                {/* Common Search Bar */}
@@ -225,6 +244,10 @@ const EmpresasView = ({ userPermissions = [] }) => {
                               isLoading={isLoading}
                               permisos={permisosEmpresas}
                               onRefresh={fetchCompanies}
+                              onEdit={(company) => {
+                                 setEditingCompany(company);
+                                 setIsModalOpen(true);
+                              }}
                            />
                         </div>
                      )}
@@ -243,6 +266,23 @@ const EmpresasView = ({ userPermissions = [] }) => {
 
             </div>
          </main>
+
+         {/* Modal de Empresa */}
+         {isModalOpen && (
+            <EmpresaModal
+               isOpen={isModalOpen}
+               onClose={() => {
+                  setIsModalOpen(false);
+                  setEditingCompany(null);
+               }}
+               onSuccess={() => {
+                  fetchCompanies(); // Recargar data
+                  setIsModalOpen(false);
+                  setEditingCompany(null);
+               }}
+               company={editingCompany}
+            />
+         )}
       </div>
    );
 };
