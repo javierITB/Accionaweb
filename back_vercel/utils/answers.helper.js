@@ -83,6 +83,20 @@ async function getFirmaEliminadaMetadata(req, auth, currentDate) {
    };
 }
 
+async function getFilesUploadedMetadata(req, auth, filesCount, date) {
+   const actor = await getActor(req, auth);
+   const formattedActor = formatActor(actor);
+
+   return {
+      title: "Archivos corregidos subidos",
+      description: `Se han subido ${filesCount} archivo(s) corregidos a la solicitud.`,
+      status: "completed",
+      completedAt: date,
+      assignedTo: formattedActor,
+   };
+}
+
+
 
 function formatText(text) {
    const formatted = text.replace(/_/g, " ");
@@ -133,5 +147,6 @@ module.exports = {
    getApprovedMetadata,
    getRequestSentMetadata,
    getFirmadoMetadata,
-   getFirmaEliminadaMetadata
+   getFirmaEliminadaMetadata,
+   getFilesUploadedMetadata
 };
