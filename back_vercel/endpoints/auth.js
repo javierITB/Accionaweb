@@ -235,6 +235,70 @@ router.get("/solicitud", async (req, res) => {
    }
 });
 
+// ruta nueva para enviar anuncios 
+ 
+router.get("/empresas/anuncios", async (req, res) => {
+   try {
+      await verifyRequest(req);
+      const db = req.db;
+
+      // 1. OBTENER EMPRESAS (Basado en tu ruta vieja /empresas/todas)
+      const empresasRaw = await db.collection("empresas").find().toArray();
+      const empresas = empresasRaw.map((emp) => {
+         try {
+            return {
+               _id: emp._id,
+               nombre: (emp.nombre && emp.nombre.includes(':')) ? decrypt(emp.nombre) : emp.nombre,
+               // No incluimos logos aquí para que la ruta cargue rápido en anuncios
+            };
+         } catch (e) {
+            return { _id: emp._id, nombre: "Error al descifrar" };
+         }
+      }).sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es"));
+
+      // 2. OBTENER USUARIOS (Con todos los campos para la vista manual)
+      const usuariosRaw = await db.collection("usuarios").find().toArray();
+      
+      const cargosSet = new Set();
+      const usuariosProcesados = usuariosRaw.map((u) => {
+         try {
+            const cargoDesc = (u.cargo && u.cargo.includes(':')) ? decrypt(u.cargo) : u.cargo;
+            const mailDesc = (u.mail && u.mail.includes(':')) ? decrypt(u.mail) : u.mail;
+            const nombreDesc = (u.nombre && u.nombre.includes(':')) ? decrypt(u.nombre) : u.nombre;
+            const apellidoDesc = (u.apellido && u.apellido.includes(':')) ? decrypt(u.apellido) : u.apellido;
+            const empresaDesc = (u.empresa && u.empresa.includes(':')) ? decrypt(u.empresa) : u.empresa;
+
+            if (cargoDesc) cargosSet.add(cargoDesc);
+
+            return {
+               _id: u._id,
+               nombre: nombreDesc,
+               apellido: apellidoDesc,
+               mail: mailDesc,    // <--- Felipe volverá a tener su mail aquí
+               cargo: cargoDesc,
+               empresa: empresaDesc,
+               estado: u.estado
+            };
+         } catch (err) {
+            return { _id: u._id, nombre: "Error datos", mail: "Error" };
+         }
+      });
+
+      // 3. RESPUESTA FINAL
+      res.json({
+         success: true,
+         empresas,
+         cargos: Array.from(cargosSet).sort(),
+         usuarios: usuariosProcesados
+      });
+
+   } catch (err) {
+      console.error("Error en filtros-anuncios:", err);
+      res.status(500).json({ success: false, error: "Error interno del servidor" });
+   }
+});
+
+
 router.get("/:mail", async (req, res) => {
    try {
       await verifyRequest(req);
@@ -1496,61 +1560,6 @@ router.get("/empresas/todas", async (req, res) => {
    } catch (err) {
       console.error("Error al obtener empresas:", err);
       res.status(500).json({ error: "Error al obtener empresas" });
-   }
-});
-
-// ruta nueva para enviar anuncios 
- 
-router.get("/filtros-anuncios", async (req, res) => {
-   try {
-      await verifyRequest(req);
-      const db = req.db;
-
-      // 1. OBTENER EMPRESAS (Desde la colección empresas)
-      // Solo traemos el nombre para evitar pesar la ruta con logos/Base64
-      const empresasData = await db.collection("empresas")
-         .find()
-         .project({ nombre: 1, _id: 1 })
-         .toArray();
-
-      const empresas = empresasData.map(e => ({
-         _id: e._id,
-         nombre: decrypt(e.nombre)
-      })).sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
-
-      // 2. OBTENER CARGOS ÚNICOS (Desde la colección usuarios)
-      // Buscamos en todos los usuarios para tener el universo completo de cargos
-      const usuariosConCargo = await db.collection("usuarios")
-         .find({})
-         .project({ cargo: 1, _id: 0 })
-         .toArray();
-
-      const cargosSet = new Set();
-      usuariosConCargo.forEach(u => {
-         if (u.cargo) {
-            try {
-               const cargoDescifrado = decrypt(u.cargo);
-               if (cargoDescifrado) cargosSet.add(cargoDescifrado);
-            } catch (err) {
-               // Si no se puede descifrar, ignoramos este registro individual
-            }
-         }
-      });
-
-      // 3. RESPUESTA FINAL
-      // Enviamos success: true para que el front sepa que la carga fue correcta
-      res.json({
-         success: true,
-         empresas,
-         cargos: Array.from(cargosSet).sort()
-      });
-
-   } catch (err) {
-      console.error("Error crítico en filtros-anuncios:", err);
-      res.status(500).json({ 
-         success: false, 
-         error: "Error al cargar los filtros de destinatarios" 
-      });
    }
 });
 

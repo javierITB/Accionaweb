@@ -125,7 +125,10 @@ const CompanyReg = ({ userPermissions = [] }) => {
       );
    };
 
-   const formatText = (text) => text.replace(/_/g, " ").charAt(0).toUpperCase() + text.replace(/_/g, " ").slice(1);
+   function formatText(text) {
+      const formatted = text.replace(/_/g, " ");
+      return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+   }
 
    const renderMetadata = (data, level = 0) => {
       return Object.entries(data).map(([key, value]) => {
