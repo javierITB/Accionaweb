@@ -75,12 +75,6 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
 
    const togglePermission = (permId) => {
       if (isSuccess) setIsSuccess(false);
-
-      // Si es creación y el permiso es bloqueado y NO hay plan previo (o si decidimos mantener locked logic), 
-      // pero aquí queremos permitir override si el usuario lo hace explícitamente.
-      // La lógica "Locked" original era para proteger dependencias base.
-      // Al editar un plan, asumimos que el usuario sabe lo que hace, o mantenemos protections basicas.
-      // Mantendremos locked para DEFAULT_LOCKED_PERMISSIONS si no hay company, pero si ya editó, se vuelve custom.
       if (!company && DEFAULT_LOCKED_PERMISSIONS.includes(permId) && !formData.planId) return;
 
       setFormData((prev) => {
