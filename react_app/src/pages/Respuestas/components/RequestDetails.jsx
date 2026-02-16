@@ -2393,7 +2393,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               )}
 
                            {/* BOTÓN "FINALIZAR" (Solo si está en revisión) */}
-                           {fullRequestData?.status === "en_revision" && userPermissions?.finalize && (
+                           {userPermissions?.finalize && (
                               <Button
                                  variant="default"
                                  iconName={isApproving ? "Loader" : "CheckCircle"}
