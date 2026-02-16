@@ -21,7 +21,8 @@ const AnuncioCreator = ({ onSuccess, permisos = {} }) => {
       enviarCorreo: false,
       destinatarios: {
          tipo: "todos",
-         filtro: { empresas: [], cargos: [], roles: [] },
+         // CAMBIO REALIZADO: Se eliminó 'cargos' de la estructura del filtro
+         filtro: { empresas: [], cargos: [] },
          usuariosManuales: [],
       },
    });
@@ -168,7 +169,6 @@ const AnuncioCreator = ({ onSuccess, permisos = {} }) => {
                         </select>
                      </div>
 
-                     {/* Selector de Icono agregado */}
                      <div className="relative" ref={dropdownRef}>
                         <label className="block text-sm font-medium mb-2 text-foreground">Icono de Notificación</label>
                         <button
@@ -242,6 +242,7 @@ const AnuncioCreator = ({ onSuccess, permisos = {} }) => {
 
                <div className="space-y-6 pt-6 border-t border-border">
                   <h3 className="text-lg font-medium text-foreground">Destinatarios</h3>
+                  {/* El componente interno DestinatariosSelector ahora trabajará solo con Empresas y Roles */}
                   <DestinatariosSelector formData={formData} setFormData={setFormData} permisos={permisos} />
                </div>
 

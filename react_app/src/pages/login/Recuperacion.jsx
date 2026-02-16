@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Loader, CheckCircle, XCircle, KeyRound, ArrowLeft } from "lucide-react";
+import { Mail, Loader, CheckCircle, XCircle, KeyRound, ArrowLeft, Timer } from "lucide-react";
 import { API_BASE_URL } from "../../utils/api";
 import { maskEmail } from "../../utils/maskEmail";
 
@@ -18,6 +18,7 @@ const App = () => {
    const [loading, setLoading] = useState(false);
    const [message, setMessage] = useState("");
    const [isSuccess, setIsSuccess] = useState(false);
+   const [timer, setTimer] = useState(0); 
    const [touched, setTouched] = useState({
       passwordConfirm: false,
    });
@@ -31,6 +32,19 @@ const App = () => {
       bg-orange-500 hover:bg-orange-600 transition duration-150 shadow-lg
       disabled:opacity-70 disabled:hover:bg-orange-500
    `;
+
+   // Lógica del temporizador
+   useEffect(() => {
+      let interval = null;
+      if (timer > 0) {
+         interval = setInterval(() => {
+            setTimer((prev) => prev - 1);
+         }, 1000);
+      } else {
+         clearInterval(interval);
+      }
+      return () => clearInterval(interval);
+   }, [timer]);
 
    /* =========================
       VALIDACIONES
@@ -74,7 +88,7 @@ const App = () => {
    };
 
    const handleEmailSubmit = async (e) => {
-      e.preventDefault();
+      if (e) e.preventDefault();
       const error = validateEmail(email);
       if (error) return setError("email", error);
 
@@ -90,6 +104,7 @@ const App = () => {
 
          if (res.status === 200) {
             setStep(2);
+            setTimer(60); 
             setMessage("Se ha enviado un código de verificación al correo electrónico");
          } else {
             const data = await res.json().catch(() => ({}));
@@ -110,6 +125,11 @@ const App = () => {
 
    const handleCodeSubmit = async (e) => {
       e.preventDefault();
+
+      if (timer === 0) {
+         setError("code", "El tiempo ha expirado. Solicita un nuevo código.");
+         return;
+      }
 
       const newErrors = {
          code: validateCode(code),
@@ -160,6 +180,7 @@ const App = () => {
       setStep(1);
       setMessage("");
       setIsSuccess(false);
+      setTimer(0);
    };
 
    /* =========================
@@ -192,13 +213,21 @@ const App = () => {
 
    const renderCodeStep = () => (
       <form onSubmit={handleCodeSubmit} className="space-y-8" autoComplete="off">
-         <div className="p-3 bg-green-50 border border-green-300 rounded-xl text-sm">
+         <div className="p-3 bg-green-50 border border-green-300 rounded-xl text-sm text-center">
             {message + ": " + maskEmail(email)}
          </div>
+
+         {/* Temporizador UI */}
+         <div className="flex items-center justify-center gap-2 text-orange-600 font-bold">
+            <Timer size={18} />
+            <span>00:{timer < 10 ? `0${timer}` : timer}</span>
+         </div>
+
          <div className="relative">
             <input
                type="text"
                value={code}
+               disabled={timer === 0}
                maxLength={6}
                onChange={(e) => {
                   setCode(e.target.value);
@@ -206,7 +235,7 @@ const App = () => {
                }}
                className={`w-full py-3 text-center text-xl rounded-xl border
                ${errors.code ? "border-red-400" : "border-gray-300"}
-               ${inputFocusClasses}`}
+               ${inputFocusClasses} ${timer === 0 ? "bg-gray-100" : ""}`}
                placeholder="------"
                autoComplete="new-password"
             />
@@ -216,6 +245,7 @@ const App = () => {
             <input
                type="password"
                value={password.first}
+               disabled={timer === 0}
                onChange={(e) => {
                   const v = e.target.value;
                   setPassword((p) => ({ ...p, first: v }));
@@ -237,6 +267,7 @@ const App = () => {
             <input
                type="password"
                value={password.confirm}
+               disabled={timer === 0}
                onChange={(e) => {
                   const v = e.target.value;
                   setPassword((p) => ({ ...p, confirm: v }));
@@ -256,12 +287,24 @@ const App = () => {
             <p className="absolute left-2 text-sm text-red-600 pt-[5px]">{errors.passwordConfirm || " "}</p>
          </div>
 
-         <button disabled={loading || Object.values(errors).some(Boolean)} className={buttonClasses}>
+         <button 
+            disabled={loading || Object.values(errors).some(Boolean) || timer === 0} 
+            className={buttonClasses}
+         >
             {loading ? <Loader className="w-5 h-5 animate-spin" /> : "Cambiar Contraseña"}
          </button>
 
          <div className="text-center">
-            <button type="button" onClick={resetForm} className="text-sm text-gray-500">
+            <button 
+               type="button" 
+               onClick={handleEmailSubmit} 
+               disabled={timer > 0 || loading} // Inactivo mientras corre el tiempo
+               className={`text-sm font-semibold transition-colors ${
+                  timer > 0 || loading 
+                  ? "text-gray-400 cursor-not-allowed" 
+                  : "text-orange-600 hover:underline"
+               }`}
+            >
                Solicitar un nuevo código
             </button>
          </div>
