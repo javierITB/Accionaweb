@@ -40,9 +40,11 @@ const TimelineView = ({ timeline = {}, isVisible }) => {
           const isLast = index === timeline?.length - 1;
           const isCompleted = step?.status === 'completed';
           const isCurrent = step?.status === 'current';
+
+           const stepKey = step?.id || `step-${index}-${step?.title || 'unknown'}`;
           
           return (
-            <div key={step?.id} className="relative flex items-start space-x-4 pb-8">
+            <div key={stepKey} className="relative flex items-start space-x-4 pb-8">
               {/* Timeline Line */}
               {!isLast && (
                 <div className="absolute left-5 top-10 w-0.5 h-full bg-border"></div>
