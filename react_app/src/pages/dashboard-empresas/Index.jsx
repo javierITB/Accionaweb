@@ -11,10 +11,12 @@ import { EmpresaModal } from "./components/EmpresaModal";
 
 import { EmpresasTab } from "./components/EmpresasTab";
 import { PlanesTab } from "./components/PlanesTab";
+import { PlanManagerModal } from "./components/PlanManagerModal";
 
 const EmpresasView = ({ userPermissions = [] }) => {
    // --- ESTADOS DE DATOS ---
    const [companies, setCompanies] = useState([]);
+   const [plans, setPlans] = useState([]);
    const [isLoading, setIsLoading] = useState(true);
 
    // --- ESTADOS DE ESTRUCTURA ---
@@ -31,6 +33,7 @@ const EmpresasView = ({ userPermissions = [] }) => {
    // --- ESTADOS DE LÓGICA ---
    const [searchQuery, setSearchQuery] = useState("");
    const [isModalOpen, setIsModalOpen] = useState(false);
+   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
    const [editingCompany, setEditingCompany] = useState(null);
    // Inicializar activeTab basado en permisos y ruta
    const [activeTab, setActiveTab] = useState(() => {
@@ -66,30 +69,44 @@ const EmpresasView = ({ userPermissions = [] }) => {
             const data = await res.json();
             setCompanies(data);
          } else {
-            // Intentar leer el error del backend
-            try {
-               const errData = await res.json();
-               console.error("Error backend:", errData);
-               alert(`Error cargando empresas: ${errData.error || res.statusText}`);
-            } catch (e) {
-               alert(`Error ${res.status}: ${res.statusText}`);
-            }
+            console.error("Error loading companies");
          }
       } catch (error) {
-         console.error("Error cargando empresas:", error);
+         console.error("Error loading companies:", error);
       } finally {
          setIsLoading(false);
       }
    };
 
-   // Efecto inicial
+   const fetchPlans = async () => {
+      try {
+         setIsLoading(true);
+         const res = await apiFetch(`${API_BASE_URL}/sas/plans`);
+         if (res.ok) {
+            const data = await res.json();
+            setPlans(data);
+         } else {
+            console.error("Error loading plans");
+         }
+      } catch (error) {
+         console.error("Error loading plans:", error);
+      } finally {
+         setIsLoading(false);
+      }
+   };
+
+   // Efecto inicial y por tab
    useEffect(() => {
-      if (canViewEmpresas || canViewPlanes) {
+      if (activeTab === "empresas" && canViewEmpresas) {
          fetchCompanies();
+         // También fetch plans para el modal de empresas (dropdown)
+         fetchPlans();
+      } else if (activeTab === "funcionalidades" && canViewPlanes) {
+         fetchPlans();
       } else {
          setIsLoading(false);
       }
-   }, [canViewEmpresas, canViewPlanes]);
+   }, [activeTab, canViewEmpresas, canViewPlanes]);
 
    // --- RESPONSIVIDAD ---
    useEffect(() => {
@@ -192,12 +209,12 @@ const EmpresasView = ({ userPermissions = [] }) => {
                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <div className="min-w-0 flex-1">
                      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight">
-                        {activeTab === "empresas" ? "Empresas y Funcionalidades" : "Configuración del Plan"}
+                        {activeTab === "empresas" ? "Empresas y Funcionalidades" : "Gestión de Planes Globales"}
                      </h1>
                      <p className="text-muted-foreground mt-1 text-sm lg:text-base">
                         {activeTab === "empresas"
                            ? "Gestión de bases de datos y empresas del sistema"
-                           : "Gestión de límites y planes por empresa"}
+                           : "Configuración centralizada de planes y límites"}
                      </p>
                   </div>
 
@@ -211,6 +228,11 @@ const EmpresasView = ({ userPermissions = [] }) => {
                         }}
                      >
                         Nueva Empresa
+                     </Button>
+                  )}
+                  {activeTab === "funcionalidades" && canViewPlanes && (
+                     <Button variant="default" iconName="Plus" onClick={() => { setIsPlanModalOpen(true); }}>
+                        Nuevo Plan
                      </Button>
                   )}
                </div>
@@ -254,10 +276,10 @@ const EmpresasView = ({ userPermissions = [] }) => {
                      {activeTab === "funcionalidades" && canViewPlanes && (
                         <div className="mt-6">
                            <PlanesTab
-                              companies={filteredCompanies}
+                              plans={plans}
                               isLoading={isLoading}
                               permisos={permisosPlanes}
-                              onRefresh={fetchCompanies}
+                              onRefresh={fetchPlans}
                            />
                         </div>
                      )}
@@ -281,6 +303,19 @@ const EmpresasView = ({ userPermissions = [] }) => {
                   setEditingCompany(null);
                }}
                company={editingCompany}
+               plans={plans} // Pasar planes para el dropdown
+            />
+         )}
+
+         {/* Modal de Planes */}
+         {isPlanModalOpen && (
+            <PlanManagerModal
+               isOpen={isPlanModalOpen}
+               onClose={() => setIsPlanModalOpen(false)}
+               onSuccess={() => {
+                  fetchPlans(); // Recargar planes
+                  setIsPlanModalOpen(false);
+               }}
             />
          )}
       </div>
