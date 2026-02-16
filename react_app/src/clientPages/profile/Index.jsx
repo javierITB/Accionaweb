@@ -80,7 +80,7 @@ const UserProfileSettings = ({ userPermissions = [] }) => {
           position: user.cargo || user.rol || '',
           employeeId: user._id || '',
           department: user.empresa || '',
-          rol: user.rol || 'user',
+          cargo: user.cargo || 'user',
           estado: user.estado || 'activo',
           twoFactorEnabled: user.twoFactorEnabled === true, // 👈 CLAVE
         };
