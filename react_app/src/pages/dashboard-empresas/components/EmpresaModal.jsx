@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Database, Check, Loader2, Lock, UserCircle, LayoutGrid, ChevronRight, Server, Shield } from "lucide-react";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
-import Button from "components/ui/Button";
+import Button from "../../../components/ui/Button";
 import { PERMISSION_GROUPS } from "../../../config/permissionGroups";
 
 const DEFAULT_LOCKED_PERMISSIONS = [
