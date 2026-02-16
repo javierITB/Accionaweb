@@ -230,7 +230,7 @@ const EmpresasView = ({ userPermissions = [] }) => {
                         Nueva Empresa
                      </Button>
                   )}
-                  {activeTab === "funcionalidades" && canViewPlanes && (
+                  {activeTab === "funcionalidades" && canViewPlanes && permisosPlanes.edit_empresas && (
                      <Button variant="default" iconName="Plus" onClick={() => { setIsPlanModalOpen(true); }}>
                         Nuevo Plan
                      </Button>
