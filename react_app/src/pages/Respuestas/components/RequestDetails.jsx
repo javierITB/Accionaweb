@@ -601,6 +601,8 @@ const RequestDetails = ({
             return;
          }
          window.open(`${API_BASE_URL}/generador/download/${info.IDdoc}`, "_blank");
+
+         await handleStatusChange("en_revision")
       } catch (error) {
          console.error("Error:", error);
          openErrorDialog("Error al descargar");

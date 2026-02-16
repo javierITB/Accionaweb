@@ -36,7 +36,7 @@ const TimelineView = ({ timeline = {}, isVisible }) => {
         <h3 className="text-lg font-semibold text-foreground">Cronología de la Solicitud</h3>
       </div>
       <div className="relative">
-        {timeline ? (timeline?.map((step, index) => {
+        {timeline && timeline?.length > 0 ? (timeline?.map((step, index) => {
           const isLast = index === timeline?.length - 1;
           const isCompleted = step?.status === 'completed';
           const isCurrent = step?.status === 'current';
