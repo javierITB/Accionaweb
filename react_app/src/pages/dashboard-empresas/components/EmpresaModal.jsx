@@ -21,6 +21,7 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
    const [isSuccess, setIsSuccess] = useState(false);
    const [activeTab, setActiveTab] = useState("admin");
    const { userPermissions } = usePermissions();
+   const [customSourceLabel, setCustomSourceLabel] = useState(null);
    const [formData, setFormData] = useState({
       name: "",
       permissions: [], // Array de strings con los IDs de permisos individuales
@@ -28,7 +29,10 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
    });
 
    useEffect(() => {
-      if (isOpen) setIsSuccess(false);
+      if (isOpen) {
+         setIsSuccess(false);
+         setCustomSourceLabel(null);
+      }
    }, [isOpen, company]);
 
    useEffect(() => {
@@ -39,12 +43,14 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
             permissions: company.permissions || [],
             planId: company.planId || ""
          });
+         setCustomSourceLabel(null);
       } else {
          setFormData({
             name: "",
             permissions: DEFAULT_LOCKED_PERMISSIONS, // Preseleccionar permisos bloqueados
             planId: ""
          });
+         setCustomSourceLabel(null);
       }
    }, [company, isOpen]);
 
@@ -52,6 +58,7 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
 
    const handlePlanChange = (newPlanId) => {
       if (newPlanId) {
+         setCustomSourceLabel(null);
          const selectedPlan = plans.find(p => p._id === newPlanId);
          if (selectedPlan) {
             setFormData(prev => ({
@@ -61,18 +68,14 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
             }));
          }
       } else {
+         setCustomSourceLabel(null);
          setFormData(prev => ({ ...prev, planId: "" }));
       }
    };
 
    const togglePermission = (permId) => {
-      // Si hay plan seleccionado, no permitir editar permisos manualmente
-      if (formData.planId) return;
-
       if (isSuccess) setIsSuccess(false);
-
-      // Si es creación y el permiso es bloqueado, no hacer nada
-      if (!company && DEFAULT_LOCKED_PERMISSIONS.includes(permId)) return;
+      if (!company && DEFAULT_LOCKED_PERMISSIONS.includes(permId) && !formData.planId) return;
 
       setFormData((prev) => {
          const hasPerm = prev.permissions.includes(permId);
@@ -104,19 +107,24 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
             }
          }
 
-         // Re-verificar bloqueados si es creación (por seguridad en dependencias)
-         if (!company) {
-            const missingLocked = DEFAULT_LOCKED_PERMISSIONS.filter(p => !newPerms.includes(p));
-            if (missingLocked.length > 0) {
-               newPerms = [...new Set([...newPerms, ...missingLocked])];
-            }
-         }
+         // Re-verificar bloqueados si es creación y NO estamos en modo plan (o acabamos de salir de uno)
+         // Si salimos de plan, ya no es "creacion default", es "custom".
 
-         return { ...prev, permissions: newPerms };
+         // AUTO-DETACH: Si tenía un Plan, lo quitamos para que sea "Personalizado"
+         if (prev.planId) {
+            const planName = plans.find(p => p._id === prev.planId)?.name;
+            if (planName) setCustomSourceLabel(`${planName} (Personalizado)`);
+         }
+         const newPlanId = prev.planId ? "" : prev.planId;
+
+         return { ...prev, permissions: newPerms, planId: newPlanId };
       });
    };
 
    const toggleAllInTab = () => {
+      // PERMITIR SIEMPRE (aunque haya plan)
+      // if (formData.planId) return; // REMOVED check
+
       if (isSuccess) setIsSuccess(false);
       const permsInTab = Object.values(PERMISSION_GROUPS)
          .filter((g) => g.tagg === activeTab)
@@ -131,16 +139,25 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
       setFormData((prev) => {
          let newPerms;
          if (allSelected) {
-            // Deseleccionar todo, pero mantener los bloqueados si es creación
+            // Deseleccionar todo, pero mantener los bloqueados si es creación y NO TIENE PLAN
+            // Si tiene plan, asumimos que quiere borrar todo custom => se queda custom vacio (o base locked)
             newPerms = prev.permissions.filter((p) => !availablePerms.includes(p));
-            if (!company) {
+            if (!company && !prev.planId) {
                newPerms = [...new Set([...newPerms, ...DEFAULT_LOCKED_PERMISSIONS])];
             }
          } else {
             // Seleccionar todo
             newPerms = [...new Set([...prev.permissions, ...availablePerms])];
          }
-         return { ...prev, permissions: newPerms };
+
+
+         // AUTO-DETACH
+         if (prev.planId) {
+            const planName = plans.find(p => p._id === prev.planId)?.name;
+            if (planName) setCustomSourceLabel(`${planName} (Personalizado)`);
+         }
+         const newPlanId = prev.planId ? "" : prev.planId;
+         return { ...prev, permissions: newPerms, planId: newPlanId };
       });
    };
 
@@ -208,7 +225,7 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                         onChange={(e) => handlePlanChange(e.target.value)}
                         className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none appearance-none"
                      >
-                        <option value="">-- Personalizado / Sin Plan --</option>
+                        <option value="">{customSourceLabel || "-- Personalizado / Sin Plan --"}</option>
                         {plans.map(p => (
                            <option key={p._id} value={p._id}>{p.name}</option>
                         ))}
@@ -255,13 +272,13 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                         <div className="flex p-1 bg-muted rounded-xl space-x-1">
                            <button
                               onClick={() => setActiveTab("admin")}
-                              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === "admin" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === "admin" ? "bg-card text-accent shadow-sm ring-1 ring-accent/20" : "text-muted-foreground hover:text-foreground"}`}
                            >
                               <Shield size={16} /> Administración
                            </button>
                            <button
                               onClick={() => setActiveTab("cliente")}
-                              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === "cliente" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === "cliente" ? "bg-card text-accent shadow-sm ring-1 ring-accent/20" : "text-muted-foreground hover:text-foreground"}`}
                            >
                               <UserCircle size={16} /> Cliente
                            </button>
@@ -355,7 +372,7 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                                                 return (
                                                    <label
                                                       key={perm.id}
-                                                      className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isChild ? "ml-6 border-l border-border pl-4" : ""} ${isLocked || !!formData.planId ? "bg-muted/30 cursor-not-allowed opacity-80" : "hover:bg-muted/50 cursor-pointer"}`}
+                                                      className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isChild ? "ml-6 border-l border-border pl-4" : ""} ${isLocked ? "bg-muted/30 cursor-not-allowed opacity-80" : "hover:bg-muted/50 cursor-pointer"}`}
                                                    >
                                                       {isChild && <ChevronRight size={12} className="text-muted-foreground" />}
                                                       <div
@@ -368,7 +385,7 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                                                          type="checkbox"
                                                          className="hidden"
                                                          checked={isSelected}
-                                                         disabled={isLocked || !!formData.planId}
+                                                         disabled={isLocked}
                                                          onChange={() => togglePermission(perm.id)}
                                                       />
                                                    </label>
