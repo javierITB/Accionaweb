@@ -274,8 +274,8 @@ const ProfileSection = ({ initialProfileData, userId, isLoading: isParentLoading
                       <p className="text-sm font-medium text-foreground break-words">
                         {profileData.department || 'Sin Empresa Asignada'}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {profileData.position || 'N/A'} - {profileData.rol || 'Cliente'}
+                      <p className="text-xs text-muted-foreground uppercase">
+                      {profileData.position || 'N/A'}
                       </p>
                     </div>
                   </div>
