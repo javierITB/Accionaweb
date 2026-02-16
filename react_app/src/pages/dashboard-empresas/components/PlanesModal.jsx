@@ -101,22 +101,29 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
     const handleSubmit = async () => {
         setIsSaving(true);
         try {
+            // Helper para convertir vacío a null (sin límite) en lugar de 0
+            const parseIntOrNull = (val) => {
+                if (val === "" || val === null || val === undefined) return null;
+                const parsed = parseInt(val);
+                return isNaN(parsed) ? null : parsed;
+            };
+
             const payload = {
                 planLimits: {
                     requests: {
-                        maxTotal: parseInt(formData.requests.maxTotal) || 0,
-                        maxMonthly: parseInt(formData.requests.maxMonthly) || 0, // 0 = sin limite implícitamente, pero mejor enviar valor
-                        maxYearly: parseInt(formData.requests.maxYearly) || 0,
-                        maxArchived: parseInt(formData.requests.maxArchived) || 0,
+                        maxTotal: parseIntOrNull(formData.requests.maxTotal),
+                        maxMonthly: parseIntOrNull(formData.requests.maxMonthly),
+                        maxYearly: parseIntOrNull(formData.requests.maxYearly),
+                        maxArchived: parseIntOrNull(formData.requests.maxArchived),
                         deleteArchivedFiles: formData.requests.deleteArchivedFiles
                     },
-                    tickets: { maxQuantity: parseInt(formData.tickets.maxQuantity) || 0 },
-                    configTickets: { maxCategories: parseInt(formData.tickets.maxCategories) || 0 }, // Separamos para backend
-                    users: { maxUsers: parseInt(formData.resources.users) || 0 },
-                    forms: { maxQuantity: parseInt(formData.resources.forms) || 0 },
-                    templates: { maxQuantity: parseInt(formData.resources.templates) || 0 },
-                    roles: { maxRoles: parseInt(formData.resources.roles) || 0 },
-                    companies: { maxQuantity: parseInt(formData.companies.maxQuantity) || 0 }
+                    tickets: { maxQuantity: parseIntOrNull(formData.tickets.maxQuantity) },
+                    configTickets: { maxCategories: parseIntOrNull(formData.tickets.maxCategories) },
+                    users: { maxUsers: parseIntOrNull(formData.resources.users) },
+                    forms: { maxQuantity: parseIntOrNull(formData.resources.forms) },
+                    templates: { maxQuantity: parseIntOrNull(formData.resources.templates) },
+                    roles: { maxRoles: parseIntOrNull(formData.resources.roles) },
+                    companies: { maxQuantity: parseIntOrNull(formData.companies.maxQuantity) }
                 }
             };
 
@@ -154,7 +161,7 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-            <div className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-border overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl h-[650px] max-h-[90vh] flex flex-col border border-border overflow-hidden animate-in fade-in zoom-in duration-200">
                 {/* HEADER */}
                 <div className="relative h-24 bg-gradient-to-r from-indigo-600 to-indigo-800 flex items-center px-8 shrink-0">
                     <button
@@ -183,8 +190,8 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${activeTab === tab.id
-                                        ? "bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 shadow-sm"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    ? "bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 shadow-sm"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                     }`}
                             >
                                 <tab.icon size={16} />
@@ -201,7 +208,7 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
                             <div className="space-y-6 animate-in slide-in-from-left-4 duration-300">
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-black text-foreground uppercase tracking-widest border-b border-border pb-2">Límites de Cantidad</h3>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4">
                                         <InputGroup label="Máximo Total" value={formData.requests.maxTotal} onChange={(v) => handleRequestChange("maxTotal", v)} />
                                         <InputGroup label="Máximo Mensual" value={formData.requests.maxMonthly} onChange={(v) => handleRequestChange("maxMonthly", v)} />
                                         <InputGroup label="Máximo Anual" value={formData.requests.maxYearly} onChange={(v) => handleRequestChange("maxYearly", v)} />
@@ -210,8 +217,8 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
 
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-black text-foreground uppercase tracking-widest border-b border-border pb-2">Archivado y Limpieza</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <InputGroup label="Límite en Archivo" value={formData.requests.maxArchived} onChange={(v) => handleRequestChange("maxArchived", v)} />
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <InputGroup label="Límite en Archivados" value={formData.requests.maxArchived} onChange={(v) => handleRequestChange("maxArchived", v)} />
                                     </div>
                                     <label className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors cursor-pointer">
                                         <input
@@ -247,7 +254,7 @@ export function PlanesModal({ isOpen, onClose, onSuccess, company = null }) {
                             <div className="space-y-6 animate-in slide-in-from-left-4 duration-300">
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-black text-foreground uppercase tracking-widest border-b border-border pb-2">Límites Generales</h3>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4">
                                         <InputGroup label="Usuarios Máximos" value={formData.resources.users} onChange={(v) => handleResourceChange("users", v)} />
                                         <InputGroup label="Roles Personalizados" value={formData.resources.roles} onChange={(v) => handleResourceChange("roles", v)} />
                                         <InputGroup label="Formularios Activos" value={formData.resources.forms} onChange={(v) => handleResourceChange("forms", v)} />

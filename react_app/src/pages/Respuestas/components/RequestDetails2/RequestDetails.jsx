@@ -1151,7 +1151,9 @@ Máximo permitido: ${MAX_FILES} archivos.`;
       if (isApproving) return;
       setIsApproving(true);
       try {
-         const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/archived`);
+         const approveResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/archived`, {
+            skipRedirect: true
+         });
          if (approveResponse.ok) {
             if (onUpdate) {
                const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
@@ -1163,7 +1165,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
          } else {
             const errorData = await approveResponse.json();
             console.error(errorData);
-            throw new Error("Error archivando trabajo");
+            throw new Error(errorData.error || "Error archivando trabajo");
          }
       } catch (error) {
          console.error(error);
@@ -1443,106 +1445,106 @@ Máximo permitido: ${MAX_FILES} archivos.`;
          {/* 2. SECCIÓN ENVIADOS A CLIENTE (CORREGIDOS/APROBADOS) */}
          {userPermissions?.viewSent && (
             <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <Icon name="Send" size={18} className="text-accent" />
-                        Archivos para el Cliente
-                    </h3>
-                    <div className="flex items-center gap-3">
-                        <span className="text-xs font-medium text-muted-foreground">
-                            {((approvedData?.correctedFiles?.length || 0) + correctedFiles.length)}/{MAX_FILES}
-                        </span>
-                        {!["archivado", "finalizado"].includes(fullRequestData?.status) && (
-                            <Button 
-                                variant="outlineTeal" 
-                                size="sm" 
-                                onClick={(e) => { e.preventDefault(); handleUploadClick(); }} 
-                                iconName="Plus"
-                                disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
-                            >
-                                Añadir Archivo
-                            </Button>
-                        )}
-                    </div>
-                </div>
-
-                <div className="bg-muted/30 rounded-xl p-4 border border-border/50 space-y-3">
-                    {/* ARCHIVOS NUEVOS (PENDIENTES) */}
-                    {correctedFiles.map((file, index) => (
-                        <div 
-                            key={`new-${index}`}
-                            className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all group"
-                            onClick={() => handlePreviewCorrectedFile(index, "new")}
+               <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                     <Icon name="Send" size={18} className="text-accent" />
+                     Archivos para el Cliente
+                  </h3>
+                  <div className="flex items-center gap-3">
+                     <span className="text-xs font-medium text-muted-foreground">
+                        {((approvedData?.correctedFiles?.length || 0) + correctedFiles.length)}/{MAX_FILES}
+                     </span>
+                     {!["archivado", "finalizado"].includes(fullRequestData?.status) && (
+                        <Button
+                           variant="outlineTeal"
+                           size="sm"
+                           onClick={(e) => { e.preventDefault(); handleUploadClick(); }}
+                           iconName="Plus"
+                           disabled={(approvedData?.correctedFiles?.length || 0) + correctedFiles.length >= MAX_FILES}
                         >
-                            <div className="flex items-center space-x-3">
-                                <Icon name="FileText" size={20} className="text-accent group-hover:scale-110 transition-transform" />
-                                <div>
-                                    <p className="text-sm font-medium text-foreground truncate max-w-[200px]">{file.name}</p>
-                                    <p className="text-[10px] text-accent font-bold uppercase">Pendiente de subir</p>
-                                </div>
-                            </div>
-                            <div onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
-                                    <Icon name="Trash2" size={16} />
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
+                           Añadir Archivo
+                        </Button>
+                     )}
+                  </div>
+               </div>
 
-                    {/* BOTÓN SUBIR PARA NUEVOS */}
-                    {correctedFiles.length > 0 && (fullRequestData?.status === "en_revision" || fullRequestData?.status === "pendiente") && (
-                        <div className="flex justify-end pt-2 border-t border-accent/20">
-                            <Button variant="default" size="sm" iconName="CheckCircle" onClick={handleApprove} disabled={isApproving}>
-                                {isApproving ? "Procesando..." : `Aprobar y Subir (${correctedFiles.length})`}
-                            </Button>
+               <div className="bg-muted/30 rounded-xl p-4 border border-border/50 space-y-3">
+                  {/* ARCHIVOS NUEVOS (PENDIENTES) */}
+                  {correctedFiles.map((file, index) => (
+                     <div
+                        key={`new-${index}`}
+                        className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all group"
+                        onClick={() => handlePreviewCorrectedFile(index, "new")}
+                     >
+                        <div className="flex items-center space-x-3">
+                           <Icon name="FileText" size={20} className="text-accent group-hover:scale-110 transition-transform" />
+                           <div>
+                              <p className="text-sm font-medium text-foreground truncate max-w-[200px]">{file.name}</p>
+                              <p className="text-[10px] text-accent font-bold uppercase">Pendiente de subir</p>
+                           </div>
                         </div>
-                    )}
+                        <div onClick={(e) => e.stopPropagation()}>
+                           <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
+                              <Icon name="Trash2" size={16} />
+                           </Button>
+                        </div>
+                     </div>
+                  ))}
 
-                    {/* ARCHIVOS EN SERVIDOR */}
-                    {(approvedData?.correctedFiles || fullRequestData?.correctedFile) ? (
-                        <div className="space-y-2 pt-2">
-                            {approvedData?.correctedFiles?.map((file, index) => {
-                                const isMarked = filesToDelete.some((f) => f.fileName === file.fileName);
-                                return (
-                                    <div 
-                                        key={`srv-${index}`}
-                                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${isMarked ? "bg-error/5 border-error/20 opacity-50" : "bg-card border-border cursor-pointer hover:border-accent/50 group"}`}
-                                        onClick={() => !isMarked && handlePreviewCorrectedFile(index, "approved")}
-                                    >
-                                        <div className="flex items-center space-x-3">
-                                            <Icon name="FileText" size={20} className={isMarked ? "text-error" : "text-success group-hover:scale-110 transition-transform"} />
-                                            <div className="overflow-hidden">
-                                                <p className={`text-sm font-medium truncate ${isMarked ? "line-through text-muted-foreground" : "text-foreground"}`}>{file.fileName}</p>
-                                                <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDownloadCorrected(index, "approved")} iconName="Download" disabled={isMarked} />
-                                            {!["archivado", "finalizado"].includes(fullRequestData?.status) && (
-                                                isMarked ? 
-                                                <Button variant="ghost" size="icon" onClick={() => handleUndoDelete(file.fileName)} iconName="RotateCcw" /> :
-                                                <Button variant="ghostError" size="icon" onClick={() => handleDeleteUploadedFile(file.fileName, index)} iconName="Trash2" />
-                                            )}
-                                        </div>
+                  {/* BOTÓN SUBIR PARA NUEVOS */}
+                  {correctedFiles.length > 0 && (fullRequestData?.status === "en_revision" || fullRequestData?.status === "pendiente") && (
+                     <div className="flex justify-end pt-2 border-t border-accent/20">
+                        <Button variant="default" size="sm" iconName="CheckCircle" onClick={handleApprove} disabled={isApproving}>
+                           {isApproving ? "Procesando..." : `Aprobar y Subir (${correctedFiles.length})`}
+                        </Button>
+                     </div>
+                  )}
+
+                  {/* ARCHIVOS EN SERVIDOR */}
+                  {(approvedData?.correctedFiles || fullRequestData?.correctedFile) ? (
+                     <div className="space-y-2 pt-2">
+                        {approvedData?.correctedFiles?.map((file, index) => {
+                           const isMarked = filesToDelete.some((f) => f.fileName === file.fileName);
+                           return (
+                              <div
+                                 key={`srv-${index}`}
+                                 className={`flex items-center justify-between p-3 rounded-lg border transition-all ${isMarked ? "bg-error/5 border-error/20 opacity-50" : "bg-card border-border cursor-pointer hover:border-accent/50 group"}`}
+                                 onClick={() => !isMarked && handlePreviewCorrectedFile(index, "approved")}
+                              >
+                                 <div className="flex items-center space-x-3">
+                                    <Icon name="FileText" size={20} className={isMarked ? "text-error" : "text-success group-hover:scale-110 transition-transform"} />
+                                    <div className="overflow-hidden">
+                                       <p className={`text-sm font-medium truncate ${isMarked ? "line-through text-muted-foreground" : "text-foreground"}`}>{file.fileName}</p>
+                                       <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    ):(
+                                 </div>
+                                 <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
+                                    <Button variant="ghost" size="icon" onClick={() => handleDownloadCorrected(index, "approved")} iconName="Download" disabled={isMarked} />
+                                    {!["archivado", "finalizado"].includes(fullRequestData?.status) && (
+                                       isMarked ?
+                                          <Button variant="ghost" size="icon" onClick={() => handleUndoDelete(file.fileName)} iconName="RotateCcw" /> :
+                                          <Button variant="ghostError" size="icon" onClick={() => handleDeleteUploadedFile(file.fileName, index)} iconName="Trash2" />
+                                    )}
+                                 </div>
+                              </div>
+                           );
+                        })}
+                     </div>
+                  ) : (
                      <LoadingCard text="Cargando archivos..." />
-                    )}
+                  )}
 
-                    {/* BOTÓN ACTUALIZAR PARA CAMBIOS EN EXISTENTES */}
-                    {(fullRequestData?.status === "aprobado" || fullRequestData?.status === "firmado") && (correctedFiles.length > 0 || filesToDelete.length > 0) && (
-                        <div className="flex justify-end pt-2 border-t border-border">
-                            <Button variant="outlineTeal" size="sm" iconName="RefreshCw" onClick={handleUploadAdditionalFiles} disabled={isUploading}>
-                                {isUploading ? "Actualizando..." : "Aplicar Cambios"}
-                            </Button>
-                        </div>
-                    )}
-                </div>
+                  {/* BOTÓN ACTUALIZAR PARA CAMBIOS EN EXISTENTES */}
+                  {(fullRequestData?.status === "aprobado" || fullRequestData?.status === "firmado") && (correctedFiles.length > 0 || filesToDelete.length > 0) && (
+                     <div className="flex justify-end pt-2 border-t border-border">
+                        <Button variant="outlineTeal" size="sm" iconName="RefreshCw" onClick={handleUploadAdditionalFiles} disabled={isUploading}>
+                           {isUploading ? "Actualizando..." : "Aplicar Cambios"}
+                        </Button>
+                     </div>
+                  )}
+               </div>
             </div>
-        )}
+         )}
 
          {/* 3. SECCIÓN FIRMA (CON VISTA PREVIA) */}
          {clientSignature && (
