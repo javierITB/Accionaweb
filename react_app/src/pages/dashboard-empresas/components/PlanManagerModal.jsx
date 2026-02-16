@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Check, Loader2, ShieldCheck, LayoutGrid, FileText, Ticket, Users, Building, Database, Save, Trash2, FolderOpen } from "lucide-react";
+import { X, Check, Loader2, ShieldCheck, LayoutGrid, FileText, Ticket, Users, Building, Database, Save, Trash2, FolderOpen, MoreHorizontal, Layers, ChevronRight, UserCircle, Lock, Monitor, Shield } from "lucide-react";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
 import { PERMISSION_GROUPS } from "../../../config/permissionGroups";
 
@@ -7,7 +7,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
-    const [activeTab, setActiveTab] = useState("info"); // info, permissions, limits
+    const [activeTab, setActiveTab] = useState("permissions"); // permissions, limits
 
     // State for Basic Info
     const [name, setName] = useState("");
@@ -27,7 +27,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
     useEffect(() => {
         if (isOpen) {
             setIsSuccess(false);
-            setActiveTab("info");
+            setActiveTab("permissions");
             if (plan) {
                 setName(plan.name);
                 setPermissions(plan.permissions || []);
@@ -62,7 +62,34 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                 });
             } else {
                 setName("");
-                setPermissions([]);
+                setPermissions([
+                    "view_panel_cliente",
+                    "view_home",
+                    "view_perfil",
+                    "view_mis_solicitudes",
+                    "share_mis_solicitudes",
+                    "unshare_mis_solicitudes",
+                    "view_formulario",
+                    "view_formularios_cliente",
+                    "view_panel_admin",
+                    "view_usuarios",
+                    "edit_usuarios",
+                    "delete_usuarios",
+                    "create_usuarios",
+                    "view_empresas",
+                    "edit_empresas",
+                    "delete_empresas",
+                    "create_empresas",
+                    "view_gestor_roles",
+                    "view_gestor_roles_details",
+                    "create_gestor_roles",
+                    "copy_gestor_roles",
+                    "view_gestor_roles_details_admin",
+                    "delete_gestor_roles",
+                    "edit_gestor_roles",
+                    "edit_gestor_roles_by_self",
+                    "edit_gestor_roles_admin"
+                ]);
                 setLimits({
                     requests: { maxTotal: "", maxMonthly: "", maxYearly: "", maxArchived: "", deleteArchivedFiles: false },
                     tickets: { maxQuantity: "", maxCategories: "" },
@@ -89,7 +116,21 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
             const hasPerm = prev.includes(permId);
             let newPerms = hasPerm ? prev.filter(p => p !== permId) : [...prev, permId];
 
-            // Logica de dependencias
+            // 1. Limpieza por Paneles Raíz (Simulando RoleModal logic)
+            if (permId === "view_panel_admin" && hasPerm) {
+                const adminIds = Object.values(PERMISSION_GROUPS)
+                    .filter(g => g.tagg === "admin")
+                    .flatMap(g => g.permissions.map(p => p.id));
+                newPerms = newPerms.filter(p => !adminIds.includes(p));
+            }
+            if (permId === "view_panel_cliente" && hasPerm) {
+                const clienteIds = Object.values(PERMISSION_GROUPS)
+                    .filter(g => g.tagg === "cliente")
+                    .flatMap(g => g.permissions.map(p => p.id));
+                newPerms = newPerms.filter(p => !clienteIds.includes(p));
+            }
+
+            // 2. Lógica de Dependencias
             if (hasPerm) {
                 // Eliminar padre elimina hijos
                 const dependentPerms = Object.values(PERMISSION_GROUPS)
@@ -101,13 +142,38 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                     newPerms = newPerms.filter(p => !dependentPerms.includes(p));
                 }
             } else {
-                // Agregar hijo agrega padre
-                const permObj = Object.values(PERMISSION_GROUPS).flatMap(g => g.permissions).find(p => p.id === permId);
-                if (permObj && permObj.dependency && !newPerms.includes(permObj.dependency)) {
-                    newPerms.push(permObj.dependency);
-                }
+                // Agregar hijo puede requerir padre? 
+                // En RoleModal no fuerzan al padre al seleccionar hijo (el hijo queda deshabilitado/oculto en UI si no hay padre).
+                // Pero aquí, si el usuario selecciona algo via código (si fuera posible), deberíamos consistencia.
+                // Sin embargo, replicando RoleModal:
+                // SOLO se forza 'uncheck' de hijos al quitar padre.
+                // Al poner un hijo, la UI se encarga de mostrarlo solo si el padre está.
+                // Pero en este código togglePermission, si el usuario clickea un hijo directamente...
+                // RoleModal UI changes "onClick" so you can't click child if parent not there?
+                // Actually RoleModal renders child `if (perm.dependency && !formData.permissions.includes(perm.dependency)) return null;`
+                // So you CANNOT click it.
             }
             return newPerms;
+        });
+    };
+
+    // "Va de a poco seleccionando" logic
+    const toggleGroup = (group) => {
+        const ids = group.permissions.map(p => p.id);
+        const isAllSelected = ids.every(id => permissions.includes(id));
+
+        const availableIds = group.permissions
+            .filter(p => !p.dependency || permissions.includes(p.dependency))
+            .map(p => p.id);
+
+        setPermissions(prev => {
+            if (isAllSelected) {
+                // Deseleccionar todo el grupo
+                return prev.filter(p => !ids.includes(p));
+            } else {
+                // Seleccionar incrementalmente
+                return [...new Set([...prev, ...availableIds])];
+            }
         });
     };
 
@@ -173,9 +239,6 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
             if (res.ok) {
                 const data = await res.json();
                 setIsSuccess(true);
-                if (data.propagatedTo > 0) {
-                    console.log(`Plan propagado a ${data.propagatedTo} empresas.`);
-                }
                 setTimeout(() => {
                     onSuccess();
                     onClose();
@@ -212,7 +275,6 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
     };
 
     const mainTabs = [
-        { id: "info", label: "Información", icon: FileText },
         { id: "permissions", label: "Permisos", icon: ShieldCheck },
         { id: "limits", label: "Límites", icon: LayoutGrid },
     ];
@@ -224,32 +286,39 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
             <div className="bg-card rounded-2xl shadow-2xl w-full max-w-4xl h-[700px] max-h-[90vh] flex flex-col border border-border overflow-hidden animate-in fade-in zoom-in duration-200">
                 {/* HEADER */}
-                <div className="relative h-20 bg-gradient-to-r from-blue-600 to-indigo-700 flex items-center justify-between px-8 shrink-0">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner">
-                            <FolderOpen size={20} className="text-white" />
+                <div className="relative h-24 bg-gradient-to-r from-blue-600 to-indigo-700 flex items-center justify-between px-8 shrink-0">
+                    <div className="flex items-center gap-6 flex-1">
+                        <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner shrink-0">
+                            <FolderOpen size={24} className="text-white" />
                         </div>
-                        <div>
-                            <h2 className="text-lg font-black text-white uppercase tracking-tight">
-                                {plan ? "Editar Plan" : "Nuevo Plan"}
-                            </h2>
-                            <p className="text-white/70 text-xs font-bold">{plan ? plan.name : "Configuración Global"}</p>
+                        <div className="flex-1 max-w-md">
+                            <label className="text-[10px] font-bold text-blue-100 uppercase tracking-wider mb-1 block opacity-80">
+                                Nombre del Plan Global
+                            </label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Ej: Plan Básico, Plan Gold..."
+                                className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white placeholder:text-white/40 font-bold focus:outline-none focus:ring-2 focus:ring-white/30 transition-all text-lg"
+                                autoFocus={!plan}
+                            />
                         </div>
                     </div>
                     <button onClick={onClose} className="text-white/50 hover:text-white p-2 hover:bg-white/10 rounded-full transition-all">
-                        <X size={20} />
+                        <X size={24} />
                     </button>
                 </div>
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* SIDEBAR TABS */}
-                    <div className="w-56 bg-muted/20 border-r border-border p-4 space-y-2 shrink-0">
+                    <div className="w-56 bg-muted/20 border-r border-border p-4 space-y-2 shrink-0 pt-8">
                         {mainTabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${activeTab === tab.id
-                                    ? "bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 shadow-sm"
+                                    ? "bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 shadow-sm" // Active state
                                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                     }`}
                             >
@@ -260,52 +329,54 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                     </div>
 
                     {/* CONTENT AREA */}
-                    <div className="flex-1 overflow-y-auto p-8">
-
-                        {/* TAB INFO */}
-                        {activeTab === "info" && (
-                            <div className="space-y-6 max-w-lg">
-                                <div>
-                                    <label className="text-sm font-bold text-muted-foreground mb-2 block uppercase">Nombre del Plan</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ej: Plan Básico, Plan Gold..."
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground font-medium focus:ring-2 focus:ring-indigo-500 outline-none text-lg"
-                                    />
-                                </div>
-                                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                                    <p className="text-xs text-blue-600 leading-relaxed">
-                                        <strong>Nota:</strong> Los cambios realizados en este plan se propagarán automáticamente a todas las empresas asignadas.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
+                    <div className="flex-1 overflow-y-auto p-8 bg-background/50">
 
                         {/* TAB PERMISSIONS */}
                         {activeTab === "permissions" && (
                             <div className="h-full flex flex-col">
-                                {/* Sub-tabs */}
-                                <div className="flex p-1 bg-muted rounded-xl space-x-1 mb-6 shrink-0">
-                                    <button onClick={() => setPermTab("admin")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${permTab === "admin" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>Administración</button>
-                                    <button onClick={() => setPermTab("cliente")} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${permTab === "cliente" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>Cliente</button>
+                                {/* Sub-tabs - High Contrast in Dark Mode */}
+                                <div className="flex p-1 bg-muted rounded-xl space-x-1 mb-6 shrink-0 border border-border/50">
+                                    <button
+                                        onClick={() => setPermTab("admin")}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold uppercase rounded-lg transition-all ${permTab === "admin"
+                                            ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
+                                            : "text-muted-foreground hover:text-foreground"
+                                            }`}
+                                    >
+                                        <Shield size={14} /> Administración
+                                    </button>
+                                    <button
+                                        onClick={() => setPermTab("cliente")}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold uppercase rounded-lg transition-all ${permTab === "cliente"
+                                            ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
+                                            : "text-muted-foreground hover:text-foreground"
+                                            }`}
+                                    >
+                                        <UserCircle size={14} /> Cliente
+                                    </button>
                                 </div>
 
-                                <button onClick={toggleAllInPermTab} className="mb-4 w-full py-2 border border-dashed border-indigo-500/30 text-indigo-500 hover:bg-indigo-500/5 rounded-lg text-xs font-bold uppercase">
-                                    Seleccionar / Desmarcar Todo
-                                </button>
+                                <div className="mb-4">
+                                    <button
+                                        type="button"
+                                        onClick={toggleAllInPermTab}
+                                        className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-dashed border-indigo-500/30 text-indigo-600 dark:text-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10 rounded-xl text-xs font-bold transition-all"
+                                    >
+                                        <LayoutGrid size={14} />
+                                        Seleccionar / Desmarcar disponibles en esta pestaña
+                                    </button>
+                                </div>
 
-                                <div className="space-y-4 overflow-y-auto flex-1 pr-2">
+                                <div className="space-y-4 overflow-y-auto flex-1 pr-2 pb-4">
                                     {/* HABILITADOR ROOT */}
                                     {Object.entries(PERMISSION_GROUPS)
                                         .filter(([_, g]) => g.tagg === "root" && g.label.toLowerCase().includes(permTab))
                                         .map(([key, group]) => {
                                             const isEnabled = permissions.includes(group.permissions[0].id);
                                             return (
-                                                <div key={key} onClick={() => togglePermission(group.permissions[0].id)} className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${isEnabled ? "border-indigo-500 bg-indigo-500/5 ring-1 ring-indigo-500" : "border-border bg-muted/20 opacity-60"}`}>
+                                                <div key={key} onClick={() => togglePermission(group.permissions[0].id)} className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${isEnabled ? "border-indigo-600 bg-indigo-600/5 ring-1 ring-indigo-600" : "border-border bg-muted/20 opacity-60"}`}>
                                                     <span className="text-sm font-bold text-foreground">{group.label}</span>
-                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isEnabled ? "bg-indigo-500 border-indigo-500" : "border-muted-foreground"}`}>
+                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isEnabled ? "bg-indigo-600 border-indigo-600" : "border-muted-foreground"}`}>
                                                         {isEnabled && <Check size={12} strokeWidth={4} className="text-white" />}
                                                     </div>
                                                 </div>
@@ -313,7 +384,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                                         })}
 
                                     {/* GRUPOS */}
-                                    {((permTab === "admin" && isAdminPanelEnabled) || (permTab === "cliente" && isClientPanelEnabled)) &&
+                                    {((permTab === "admin" && isAdminPanelEnabled) || (permTab === "cliente" && isClientPanelEnabled)) ? (
                                         Object.entries(PERMISSION_GROUPS)
                                             .filter(([_, g]) => g.tagg === permTab)
                                             // Filter out system-only groups
@@ -323,20 +394,35 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                                                 const isAllSelected = ids.every(id => permissions.includes(id));
                                                 return (
                                                     <div key={groupId} className="rounded-xl border border-border bg-muted/10 overflow-hidden">
-                                                        <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between">
-                                                            <span className="text-xs font-bold text-foreground">{group.label}</span>
-                                                            <div className={`w-3 h-3 rounded-full ${isAllSelected ? "bg-indigo-500" : "bg-muted-foreground/30"}`} />
+                                                        <div
+                                                            className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between group cursor-pointer hover:bg-muted/50"
+                                                            onClick={() => toggleGroup(group)}
+                                                        >
+                                                            <span className="text-xs font-bold text-foreground uppercase tracking-wide">{group.label}</span>
+                                                            <div
+                                                                className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isAllSelected
+                                                                    ? "bg-indigo-600 text-white border-indigo-600"
+                                                                    : "bg-background border-border"
+                                                                    }`}
+                                                            >
+                                                                {isAllSelected && <Check size={12} strokeWidth={3} />}
+                                                            </div>
                                                         </div>
                                                         <div className="p-3 grid grid-cols-1 gap-1">
                                                             {group.permissions.map(perm => {
+                                                                // Show dependency only if parent is selected
                                                                 if (perm.dependency && !permissions.includes(perm.dependency)) return null;
+
                                                                 const isSelected = permissions.includes(perm.id);
+                                                                const isChild = !!perm.dependency;
+
                                                                 return (
-                                                                    <label key={perm.id} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded-lg cursor-pointer">
-                                                                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-border"}`}>
+                                                                    <label key={perm.id} className={`flex items-center gap-3 p-2 hover:bg-muted/50 rounded-lg cursor-pointer transition-colors ${isChild ? "ml-6 border-l border-border pl-4" : ""}`}>
+                                                                        {isChild && <ChevronRight size={12} className="text-muted-foreground" />}
+                                                                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-border bg-background"}`}>
                                                                             {isSelected && <Check size={10} strokeWidth={3} />}
                                                                         </div>
-                                                                        <span className="text-xs text-muted-foreground">{perm.label}</span>
+                                                                        <span className="text-xs text-muted-foreground font-medium">{perm.label}</span>
                                                                         <input type="checkbox" className="hidden" checked={isSelected} onChange={() => togglePermission(perm.id)} />
                                                                     </label>
                                                                 );
@@ -345,40 +431,94 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                                                     </div>
                                                 );
                                             })
-                                    }
+                                    ) : (
+                                        <div className="py-10 text-center border border-dashed border-border rounded-xl">
+                                            <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                                                <Lock size={20} className="text-muted-foreground opacity-50" />
+                                            </div>
+                                            <p className="text-sm text-muted-foreground font-medium">
+                                                Habilita el panel superior para configurar vistas
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
 
                         {/* TAB LIMITS */}
                         {activeTab === "limits" && (
-                            <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
-                                <section>
-                                    <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest border-b border-border pb-2 mb-4">Solicitudes</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <InputGroup label="Total Histórico" value={limits.requests.maxTotal} onChange={(v) => handleLimitChange("requests", "maxTotal", v)} />
-                                        <InputGroup label="Mensual" value={limits.requests.maxMonthly} onChange={(v) => handleLimitChange("requests", "maxMonthly", v)} />
-                                        <InputGroup label="Anual" value={limits.requests.maxYearly} onChange={(v) => handleLimitChange("requests", "maxYearly", v)} />
-                                        <InputGroup label="Archivados" value={limits.requests.maxArchived} onChange={(v) => handleLimitChange("requests", "maxArchived", v)} />
+                            <div className="space-y-8 animate-in slide-in-from-right-4 duration-300 pb-10">
+                                {/* Section: Solicitudes */}
+                                <div className="rounded-xl border border-border bg-card shadow-sm p-6">
+                                    <div className="flex items-center gap-3 mb-6 border-b border-border pb-4">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 shadow-sm">
+                                            <FileText size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black text-foreground uppercase tracking-wide">Límites de Solicitudes</h3>
+                                            <p className="text-[10px] text-muted-foreground font-medium">Controla el volumen de respuestas permitidas</p>
+                                        </div>
                                     </div>
-                                    <label className="flex items-center gap-3 mt-4 p-3 rounded-xl border border-border bg-card hover:bg-muted/50 cursor-pointer">
-                                        <input type="checkbox" checked={limits.requests.deleteArchivedFiles} onChange={(e) => handleLimitChange("requests", "deleteArchivedFiles", e.target.checked)} className="w-4 h-4 rounded border-border text-indigo-600 focus:ring-indigo-500 bg-background" />
-                                        <span className="text-xs font-bold text-foreground">Eliminar archivos al archivar</span>
-                                    </label>
-                                </section>
 
-                                <section>
-                                    <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest border-b border-border pb-2 mb-4">Recursos y Tickets</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <InputGroup label="Tickets Activos" value={limits.tickets.maxQuantity} onChange={(v) => handleLimitChange("tickets", "maxQuantity", v)} />
-                                        <InputGroup label="Categorías Tickets" value={limits.tickets.maxCategories} onChange={(v) => handleLimitChange("tickets", "maxCategories", v)} />
-                                        <InputGroup label="Usuarios" value={limits.resources.users} onChange={(v) => handleLimitChange("resources", "users", v)} />
-                                        <InputGroup label="Roles" value={limits.resources.roles} onChange={(v) => handleLimitChange("resources", "roles", v)} />
-                                        <InputGroup label="Formularios" value={limits.resources.forms} onChange={(v) => handleLimitChange("resources", "forms", v)} />
-                                        <InputGroup label="Plantillas" value={limits.resources.templates} onChange={(v) => handleLimitChange("resources", "templates", v)} />
-                                        <InputGroup label="Sub-Empresas" value={limits.companies.maxQuantity} onChange={(v) => handleLimitChange("companies", "maxQuantity", v)} />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                        <InputGroup label="Total Histórico" value={limits.requests.maxTotal} onChange={(v) => handleLimitChange("requests", "maxTotal", v)} />
+                                        <InputGroup label="Límite Mensual" value={limits.requests.maxMonthly} onChange={(v) => handleLimitChange("requests", "maxMonthly", v)} />
+                                        <InputGroup label="Límite Anual" value={limits.requests.maxYearly} onChange={(v) => handleLimitChange("requests", "maxYearly", v)} />
+                                        <InputGroup label="Max. Archivados" value={limits.requests.maxArchived} onChange={(v) => handleLimitChange("requests", "maxArchived", v)} />
                                     </div>
-                                </section>
+
+                                    <div className="mt-8 pt-4 border-t border-dashed border-border flex justify-end">
+                                        <label className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/50 cursor-pointer w-fit transition-all hover:border-indigo-300">
+                                            <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${limits.requests.deleteArchivedFiles ? "bg-indigo-600 border-indigo-600 text-white" : "bg-background border-border"}`}>
+                                                {limits.requests.deleteArchivedFiles && <Check size={14} />}
+                                            </div>
+                                            <input type="checkbox" className="hidden" checked={limits.requests.deleteArchivedFiles} onChange={(e) => handleLimitChange("requests", "deleteArchivedFiles", e.target.checked)} />
+                                            <span className="text-xs font-bold text-foreground">Eliminar archivos permanentemente al archivar</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Section: Tickets */}
+                                <div className="rounded-xl border border-border bg-card shadow-sm p-6">
+                                    <div className="flex items-center gap-3 mb-6 border-b border-border pb-4">
+                                        <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 shadow-sm">
+                                            <Ticket size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black text-foreground uppercase tracking-wide">Configuración de Tickets</h3>
+                                            <p className="text-[10px] text-muted-foreground font-medium">Gestión del soporte y categorías</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                        <InputGroup label="Tickets Simultáneos" value={limits.tickets.maxQuantity} onChange={(v) => handleLimitChange("tickets", "maxQuantity", v)} icon={<Ticket size={14} />} />
+                                        <InputGroup label="Categorías Permitidas" value={limits.tickets.maxCategories} onChange={(v) => handleLimitChange("tickets", "maxCategories", v)} icon={<Layers size={14} />} />
+                                    </div>
+                                </div>
+
+                                {/* Section: Recursos */}
+                                <div className="rounded-xl border border-border bg-card shadow-sm p-6">
+                                    <div className="flex items-center gap-3 mb-6 border-b border-border pb-4">
+                                        <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 shadow-sm">
+                                            <Database size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black text-foreground uppercase tracking-wide">Recursos Generales</h3>
+                                            <p className="text-[10px] text-muted-foreground font-medium">Capacidad de usuarios y herramientas</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                        <InputGroup label="Usuarios Máximos" value={limits.resources.users} onChange={(v) => handleLimitChange("resources", "users", v)} icon={<Users size={14} />} />
+                                        <InputGroup label="Roles Personalizados" value={limits.resources.roles} onChange={(v) => handleLimitChange("resources", "roles", v)} icon={<ShieldCheck size={14} />} />
+                                        <InputGroup label="Formularios Activos" value={limits.resources.forms} onChange={(v) => handleLimitChange("resources", "forms", v)} icon={<FileText size={14} />} />
+                                        <InputGroup label="Plantillas" value={limits.resources.templates} onChange={(v) => handleLimitChange("resources", "templates", v)} icon={<LayoutGrid size={14} />} />
+                                        <div className="md:col-span-2">
+                                            <InputGroup label="Sub-Empresas Permitidas" value={limits.companies.maxQuantity} onChange={(v) => handleLimitChange("companies", "maxQuantity", v)} icon={<Building size={14} />} />
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
                         )}
                     </div>
@@ -388,7 +528,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                 <div className="px-8 py-5 border-t border-border flex justify-between items-center bg-muted/10 shrink-0">
                     <div>
                         {plan && (
-                            <button onClick={handleDelete} disabled={isDeleting} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-all">
+                            <button onClick={handleDelete} disabled={isDeleting} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-all" title="Eliminar Plan">
                                 {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
                             </button>
                         )}
@@ -406,17 +546,20 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
     );
 }
 
-// Helper Component (Same as PlanesModal but simplified prop drill)
-function InputGroup({ label, value, onChange }) {
+// Helper Component
+function InputGroup({ label, value, onChange, icon }) {
     return (
-        <div className="space-y-1">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">{label}</label>
-            <div className="flex items-center bg-background border border-border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all h-9">
+        <div className="space-y-2 group">
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-tight flex items-center gap-2 group-hover:text-indigo-500 transition-colors">
+                {icon && <span className="opacity-70 text-indigo-500">{icon}</span>}
+                {label}
+            </label>
+            <div className="flex items-center bg-background border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all h-11 shadow-sm">
                 <input
                     type="number"
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    className="w-full h-full px-3 bg-transparent text-sm font-bold text-foreground outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-muted-foreground/30"
+                    className="w-full h-full px-4 bg-transparent text-sm font-bold text-foreground outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-muted-foreground/20"
                     placeholder="∞"
                 />
             </div>
