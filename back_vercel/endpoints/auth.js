@@ -1002,6 +1002,45 @@ router.get("/logins/todos", async (req, res) => {
    }
 });
 
+
+router.get("/logins/registroempresas", async (req, res) => {
+   try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) return res.status(401).json({ message: "No autorizado" });
+      
+      const token = authHeader.split(" ")[1];
+      const { validarToken } = require("../utils/validarToken");
+
+      /**
+       * LA SOLUCIÓN QUIRÚRGICA:
+       * Forzamos la validación en 'formsdb' porque es ahí donde vive tu token de admin.
+       * Usamos 'req.mongoClient' que ya definiste en tu app.js (línea 82).
+       */
+      const dbMaestra = req.mongoClient.db("formsdb"); 
+      const validation = await validarToken(dbMaestra, token);
+
+      if (!validation.ok) {
+         return res.status(401).json({ 
+            message: "Acceso denegado: Token no encontrado en la base maestra",
+            reason: validation.reason 
+         });
+      }
+
+      /**
+       * LA CONSULTA DE DATOS:
+       * Una vez validado por 'formsdb', usamos 'req.db' (la del vecino) 
+       * para obtener los ingresos que solicitaste desde el front.
+       */
+      const tkn = await req.db.collection("ingresos").find().toArray();
+      
+      res.json(tkn);
+
+   } catch (err) {
+      console.error("Error en ruta registroempresas:", err.message);
+      res.status(500).json({ error: "Error interno en el servidor" });
+   }
+});
+
 router.post("/validate", async (req, res) => {
    const { token, email, cargo } = req.body;
 

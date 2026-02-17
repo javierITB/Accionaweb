@@ -48,7 +48,7 @@ const RequestDetails = ({
 
   const canViewGenerated = userPermissions.includes('view_domicilio_virtual_generated');
   const canDownloadGenerated = userPermissions.includes('download_domicilio_virtual_generated');
-  const canPreviewGenerated = userPermissions.includes('preview_domicilio_ virtual_generated');
+  const canPreviewGenerated = userPermissions.includes('preview_domicilio_virtual_generated');
   const canRegenerate = userPermissions.includes('regenerate_domicilio_virtual_generated');
 
   const canEditState = userPermissions.includes('edit_domicilio_virtual_state');
@@ -1253,22 +1253,22 @@ const RequestDetails = ({
           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
             Documento Generado
             {isDetailLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
-            {canRegenerate && endpointPrefix.includes("domicilio-virtual") && realAttachments?.length > 0 && (
+            {canRegenerate && endpointPrefix.includes("domicilio-virtual") && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 ml-2 text-muted-foreground hover:text-accent"
                 onClick={() => {
                   openAsyncDialog({
-                    title: "¿Está seguro de que desea regenerar el documento?",
-                    loadingText: "Regenerando documento...",
-                    successText: "Documento regenerado con exito!",
-                    errorText: "Error al regenerar documento!",
+                    title: "¿Está seguro de que desea generar/regenerar el documento?",
+                    loadingText: "Procesando documento...",
+                    successText: "Documento procesado con exito!",
+                    errorText: "Error al procesar documento!",
                     onConfirm: handleRegenerateDocument
                   })
                 }}
                 disabled={isRegenerating}
-                title="Regenerar Documento"
+                title="Generar / Regenerar Documento"
               >
                 <Icon name={isRegenerating ? "Loader" : "RefreshCw"} size={14} className={isRegenerating ? "animate-spin" : ""} />
               </Button>
