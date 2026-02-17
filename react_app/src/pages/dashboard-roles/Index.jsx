@@ -298,7 +298,7 @@ const RolesView = ({ userPermissions = {} }) => {
 
                                         <h3 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2">
                                             {role.name}
-                                            {isAdmin && <Lock size={14} className="text-amber-500" />}
+                                            {(isAdmin || isMaestro) && <Lock size={14} className="text-amber-500" />}
                                         </h3>
                                         <p className="text-sm text-muted-foreground mb-6 line-clamp-2 min-h-[40px]">
                                             {role.description}
