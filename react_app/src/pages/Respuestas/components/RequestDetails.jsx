@@ -2116,7 +2116,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
    const modalClass = isStandalone
       ? "flex flex-col flex-1 h-full w-full overflow-y-auto"
-      : "bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl h-[clamp(500px,75dvh,800px)] max-h-[calc(100dvh-2rem)] flex flex-col";
+      : "bg-card border border-border rounded-lg shadow-brand-active w-full max-w-4xl h-[clamp(500px,85dvh,800px)] max-h-[calc(100dvh-2rem)] flex flex-col";
 
    return (
       <div className={containerClass}>

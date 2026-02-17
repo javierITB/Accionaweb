@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import Icon from "../../../components/AppIcon";
 import Button from "../../../components/ui/Button";
 import { apiFetch, API_BASE_URL } from "../../../../utils/api";
+import useAsyncDialog from "hooks/useAsyncDialog";
+import AsyncActionDialog from "@/components/AsyncActionDialog";
 
 const MAX_CLIENT_FILES = 3;
 const MAX_CLIENT_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
@@ -19,6 +21,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
    const [loadingApprovedFiles, setLoadingApprovedFiles] = useState(false);
    const [downloadingApprovedFileIndex, setDownloadingApprovedFileIndex] = useState(null);
    const [clientSelectedAdjuntos, setClientSelectedAdjuntos] = useState([]);
+   const { dialogProps, openAsyncDialog } = useAsyncDialog();
 
    // --- Lógica de Permisos ---
    const status = request?.status?.toLowerCase() || "";
@@ -716,7 +719,10 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                </div>
             </div>
          );
-      } else if ((request?.status === "firmado" || request?.status === "finalizado" || request?.status === "archivado") && hasSignedPdf) {
+      } else if (
+         (request?.status === "firmado" || request?.status === "finalizado" || request?.status === "archivado") &&
+         hasSignedPdf
+      ) {
          return (
             <div className="mt-6">
                <h3 className="text-lg font-semibold text-foreground mb-3">Documentos Enviados</h3>
@@ -762,7 +768,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
 
    return (
       <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-         <div className="bg-card border border-border shadow-brand-active w-full overflow-y-auto h-full rounded-none sm:h-auto sm:max-h-[85vh] sm:max-w-4xl sm:rounded-lg">
+         <div className="bg-card border border-border shadow-brand-active w-full overflow-y-auto rounded-none h-[clamp(500px,85dvh,800px)] max-h-[calc(100dvh-2rem) sm:max-w-4xl sm:rounded-lg">
             <div className="sticky top-0 bg-card border-b border-border p-4 sm:p-6 z-10">
                <div className="flex items-start justify-between">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 max-w-[85%] sm:max-w-none">
@@ -852,7 +858,9 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                         {attachmentsLoading && (
                            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                               Archivos Adjuntos
-                              {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+                              {attachmentsLoading && (
+                                 <Icon name="Loader" size={16} className="animate-spin text-accent" />
+                              )}
                            </h3>
                         )}
                         {!attachmentsLoading && (
@@ -862,13 +870,17 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                         )}
                         {/* BOTÓN PARA SUBIR ARCHIVOS */}
                         {canUpload && (
-                           <div className="flex items-center gap-2">
+                           <div
+                              className="flex items-center gap-2"
+                              title={`${(fullRequestData?.adjuntos?.length || 0) >= MAX_CLIENT_FILES ? "Límite alcanzado" : "Subir archivos adicionales"}`}
+                           >
                               <span
-                                 className={`text-sm pr-1  ${(fullRequestData?.adjuntos?.length || 0) + (clientSelectedAdjuntos.length || 0) >=
+                                 className={`text-sm pr-1  ${
+                                    (fullRequestData?.adjuntos?.length || 0) + (clientSelectedAdjuntos.length || 0) >=
                                     MAX_CLIENT_FILES
-                                    ? "text-blue-600"
-                                    : "text-muted-foreground"
-                                    }`}
+                                       ? "text-blue-600"
+                                       : "text-muted-foreground"
+                                 }`}
                               >
                                  Archivos:{" "}
                                  {(fullRequestData?.adjuntos?.length || 0) + (clientSelectedAdjuntos.length || 0) || 0}/
@@ -912,7 +924,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                                     onClick={() => setClientSelectedAdjuntos([])}
                                     iconName="Trash2"
                                     iconPosition="left"
-                                 // className="text-error hover:bg-error/10"
+                                    // className="text-error hover:bg-error/10"
                                  >
                                     Eliminar todos
                                  </Button>
@@ -974,9 +986,16 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                                  </span>
                               )}
                               {fullRequestData.adjuntos.map((adjunto, index) => (
-                                 <div key={index} className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20">
+                                 <div
+                                    key={index}
+                                    className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20"
+                                 >
                                     <div className="flex items-center space-x-3">
-                                       <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent" />
+                                       <Icon
+                                          name={getMimeTypeIcon(adjunto.mimeType)}
+                                          size={20}
+                                          className="text-accent"
+                                       />
                                        <div>
                                           <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
                                           <p className="text-xs text-muted-foreground">
@@ -1120,18 +1139,17 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                            iconPosition="left"
                            iconSize={16}
                            onClick={() =>
-                              //  openAsyncDialog({
-                              //     title: `¿Está seguro de que quieres actualizar ${correctedFiles.length + filesToDelete.length} archivo(s)?`,
-                              //     loadingText: `Actualizando archivos...`,
-                              //     successText: "Archivos actualizados exitosamente",
-                              //     errorText: "Error al actualizar archivos",
-                              //     onConfirm: handleUploadAdditionalFiles,
-                              //  })
-                              handleUploadAdditionalFiles()
+                              openAsyncDialog({
+                                 title: `¿Está seguro de que quieres Subir ${clientSelectedAdjuntos.length} archivo(s)?`,
+                                 loadingText: `Subiendo archivos...`,
+                                 successText: "Archivos subidos exitosamente",
+                                 errorText: "Error al actualizar archivos",
+                                 onConfirm: handleUploadAdditionalFiles,
+                              })
                            }
                            disabled={isUploading || clientSelectedAdjuntos.some((f) => f.size > MAX_CLIENT_FILE_SIZE)}
                         >
-                           {isUploading ? "Actualizando..." : `Actualizar (${clientSelectedAdjuntos.length})`}
+                           {isUploading ? "Subiendo..." : `Subir archivos (${clientSelectedAdjuntos.length})`}
                         </Button>
                      )}
 
@@ -1142,6 +1160,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                </div>
             </div>
          </div>
+         <AsyncActionDialog {...dialogProps} />
       </div>
    );
 };
