@@ -1002,7 +1002,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
       // bob el contructor
 
       const filesToUpload = renameDuplicatedFiles(correctedFiles);
-      let totalFilesLeft = filesToUpload.length;
 
       try {
          for (let i = 0; i < filesToUpload.length; i++) {
@@ -1016,7 +1015,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
             formData.append("responseId", request._id);
             formData.append("index", i.toString());
             formData.append("total", filesToUpload.length.toString());
-            formData.append("totalFilesLeft", totalFilesLeft.toString());
 
             console.log(`Subiendo archivo ${i + 1} de ${filesToUpload.length}: ${file.name}`);
 
@@ -1031,7 +1029,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
                // Subida completada exitosamente
                successfulUploads++;
-               filesLeft--;
             } else {
                const error = await response.json();
                console.error(`Error subiendo archivo ${i + 1}:`, error);
