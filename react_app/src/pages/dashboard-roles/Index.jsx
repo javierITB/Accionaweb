@@ -252,13 +252,15 @@ const RolesView = ({ userPermissions = {} }) => {
                                 const canViewDetailsOther = !isAdmin && permisos.view_gestor_roles_details;
                                 const canViewDetails = canViewDetailsAdmin || canViewDetailsOther;
 
+                                const isMaestro = role.name?.toLowerCase() === "maestro";
+
                                 return (
                                     <div
                                         key={role._id}
                                         className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col"
                                     >
                                         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                                            {permisos.copy_gestor_roles && (<button
+                                            {permisos.copy_gestor_roles && !isMaestro && (<button
                                                 onClick={() => handleDuplicate(role)}
                                                 title="Duplicar cargo"
                                                 className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-zinc-800 rounded-lg transition-colors"
@@ -275,7 +277,7 @@ const RolesView = ({ userPermissions = {} }) => {
                                                 <Eye size={21} />
                                             </button>)}
 
-                                            {!isAdmin && permisos.delete_gestor_roles && (
+                                            {!isAdmin && !isMaestro && permisos.delete_gestor_roles && (
                                                 <button
                                                     onClick={() => handleDelete(role._id)}
                                                     className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
