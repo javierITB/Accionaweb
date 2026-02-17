@@ -13,6 +13,7 @@ import {
 } from "../../../utils/ticketStatusStyles";
 
 import TimelineView from "../components/TimelineView";
+import LoadingCard from "clientPages/components/LoadingCard";
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos
@@ -863,14 +864,19 @@ Puedes agregar máximo ${remainingSlots} archivo(s) más.`,
          if (fileInputRef.current) fileInputRef.current.value = "";
 
          let message = "";
+
+         if (approvedData?.correctedFiles?.length + results.added <= results.deleted) {
+            message += "No hay archivos aprobados, la solicitud volverá a estar en revisión.";
+            message += `\n\n✓ ${results.deleted} archivo(s) eliminados\n`;
+
+            return message;
+         }
+
          if (results.added > 0) message += `✓ ${results.added} archivo(s) agregados\n`;
+
          if (results.deleted > 0) message += `\n✓ ${results.deleted} archivo(s) eliminados\n`;
          if (results.errors.length > 0) {
             message += `\nErrores:\n${results.errors.join("\n")}`;
-         }
-
-         if (approvedData?.correctedFiles?.length + results.added <= results.deleted) {
-            message += "\nNo hay archivos aprobados, la solicitud volverá a estar en revisión.";
          }
 
          return message;
@@ -1740,7 +1746,9 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      </div>
                   )}
 
-                  {!(approvedData?.correctedFiles?.length > 0 || correctedFiles?.length > 0) && (
+                  {isLoadingApprovedData && <LoadingCard text="Cargando archivos..." />}
+
+                  {!(approvedData?.correctedFiles?.length > 0 || correctedFiles?.length > 0) && !isLoadingApprovedData && (
                      <div className="flex flex-col items-center justify-center py-3 rounded-lg bg-muted/30">
                         <Icon name="FolderOpen" size={36} className="text-muted-foreground mb-3" />
 
