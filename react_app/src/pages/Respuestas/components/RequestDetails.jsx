@@ -227,7 +227,6 @@ const RequestDetails = ({
                const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
                if (response.ok) {
                   const data = await response.json();
-                  console.log(data);
                   setFullRequestData((prev) => ({ ...prev, ...data }));
                }
             } catch (error) {
@@ -870,7 +869,6 @@ Puedes agregar máximo ${remainingSlots} archivo(s) más.`,
             message += `\nErrores:\n${results.errors.join("\n")}`;
          }
 
-         console.log(approvedData.correctedFiles.length);
          if (approvedData?.correctedFiles?.length + results.added <= results.deleted) {
             message += "\nNo hay archivos aprobados, la solicitud volverá a estar en revisión.";
          }
@@ -1016,7 +1014,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
             formData.append("index", i.toString());
             formData.append("total", filesToUpload.length.toString());
 
-            console.log(`Subiendo archivo ${i + 1} de ${filesToUpload.length}: ${file.name}`);
+            // console.log(`Subiendo archivo ${i + 1} de ${filesToUpload.length}: ${file.name}`);
 
             const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
                method: "POST",
@@ -1025,7 +1023,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
             if (response.ok) {
                const result = await response.json();
-               console.log(`Archivo ${i + 1} subido:`, result);
+               // console.log(`Archivo ${i + 1} subido:`, result);
 
                // Subida completada exitosamente
                successfulUploads++;
@@ -1044,7 +1042,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
             }
          }
 
-         console.log(`Subida completada: ${successfulUploads}/${correctedFiles.length} archivos exitosos`);
+         // console.log(`Subida completada: ${successfulUploads}/${correctedFiles.length} archivos exitosos`);
          return successfulUploads > 0; // Retorna true si al menos uno se subió
       } catch (error) {
          console.error("Error en proceso de subida:", error);
@@ -1082,7 +1080,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
          const result = await response.json();
 
-         console.log("Archivos subidos:", result);
+         // console.log("Archivos subidos:", result);
 
          return true;
       } catch (error) {
