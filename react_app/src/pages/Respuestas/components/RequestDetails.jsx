@@ -2174,13 +2174,18 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                                 .map((st) => (
                                                    <button
                                                       key={st.value}
+                                                      // ... dentro del .map((st) => ( ...
                                                       onClick={() => {
                                                          openAsyncDialog({
-                                                            title: `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
-                                                            // NUEVO: Descripción dinámica según permiso
-                                                            description: (st.value === "archivado" && userPermissions?.deleteArchivedFiles)
+                                                            // Si el estado seleccionado es "archivado" y el plan borra archivos (!deleteArchivedFiles), 
+                                                            // el título principal será el mensaje de advertencia.
+                                                            title: (st.value === "archivado" && fullRequestData?.deleteArchivedFiles)
                                                                ? "Se eliminarán todos los archivos asociados."
-                                                               : "",
+                                                               : `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
+                                                            
+                                                            // Dejamos la descripción vacía ya que el mensaje ahora es el título principal
+                                                            description: "",
+                                                      
                                                             loadingText: `Cambiando estado a "${st.label}"...`,
                                                             successText: "Estado cambiado correctamente",
                                                             errorText: "No se pudo cambiar el estado",
@@ -2418,34 +2423,29 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               </Button>
                            )}
 
-                           {/* BOTÓN "ARCHIVAR" */}
+                           {/* BOTÓN "ARCHIVAR" - Solo este botón con el cambio de título y alineación original */}
                            {fullRequestData?.status === "finalizado" && userPermissions?.archive && (
-                              <div className="flex flex-col gap-2">
-                                 {userPermissions?.deleteArchivedFiles && (
-                                    <div className="bg-amber-50 border border-amber-200 text-amber-700 text-[10px] px-3 py-1.5 rounded-md shadow-sm">
-                                       Se eliminarán todos los archivos asociados.
-                                    </div>
-                                 )}
-                                 <Button
-                                    variant="default"
-                                    iconName={isApproving ? "Loader" : "Folder"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    onClick={() => {
-                                       openAsyncDialog({
-                                          title: "¿Estás seguro de que quieres archivar este trabajo?",
-                                          description: userPermissions?.deleteArchivedFiles ? "Se eliminarán todos los archivos asociados." : "",
-                                          loadingText: "Archivando...",
-                                          successText: "Trabajo archivado correctamente",
-                                          errorText: "Error al archivar trabajo",
-                                          onConfirm: handleArchieve,
-                                       });
-                                    }}
-                                    disabled={isApproving}
-                                 >
-                                    {isApproving ? "Archivando..." : "Archivar"}
-                                 </Button>
-                              </div>
+                              <Button
+                                 variant="default"
+                                 iconName={isApproving ? "Loader" : "Folder"}
+                                 iconPosition="left"
+                                 iconSize={16}
+                                 onClick={() => {
+                                    openAsyncDialog({
+                                       // Cambia el título si deleteArchivedFiles es false
+                                       title: fullRequestData?.deleteArchivedFiles 
+                                          ? "Se eliminarán todos los archivos asociados." 
+                                          : "¿Estás seguro de que quieres archivar este trabajo?",
+                                       loadingText: "Archivando...",
+                                       successText: "Trabajo archivado correctamente",
+                                       errorText: "Error al archivar trabajo",
+                                       onConfirm: handleArchieve,
+                                    });
+                                 }}
+                                 disabled={isApproving}
+                              >
+                                 {isApproving ? "Archivando..." : "Archivar"}
+                              </Button>
                            )}
                         </>
                      )}
