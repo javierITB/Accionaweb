@@ -53,7 +53,6 @@ const RolesView = ({ userPermissions = {} }) => {
 
          if (rolesRes.ok) {
             const data = await rolesRes.json();
-            console.log(data);
             setRoles(data);
          }
 
@@ -64,12 +63,19 @@ const RolesView = ({ userPermissions = {} }) => {
 
          if (userCountRes.ok) {
             const userCountData = await userCountRes.json();
+
             const cargosCount = countCargos(userCountData);
 
-            setRoles(prev => prev.map(o => ({...o, count: cargosCount[o.name]})));
+            setRoles((prev) =>
+               prev.map((o) => {
+                  const normalized = normalizeCargoName(o.name);
 
-            console.log(cargosCount)
-            console.log(roles)
+                  return {
+                     ...o,
+                     count: cargosCount[normalized] ?? 0,
+                  };
+               }),
+            );
          }
       } catch (error) {
          console.error("Error cargando roles o configuración:", error);
@@ -102,12 +108,21 @@ const RolesView = ({ userPermissions = {} }) => {
       if (isMobileScreen) setIsMobileOpen(!isMobileOpen);
       else setIsDesktopOpen(!isDesktopOpen);
    };
+   function normalizeCargoName(name) {
+      if (typeof name !== "string") return name;
 
+      return name
+         .trim()
+         .replace(/^"+|"+$/g, "") // quita comillas dobles al inicio y final
+         .replace(/^'+|'+$/g, ""); // quita comillas simples al inicio y final
+   }
    function countCargos(cargos) {
-      const result = {};
+      const result = Object.create(null);
 
       for (const str of cargos) {
-         result[str] = (result[str] || 0) + 1;
+         const cargoNormalized = normalizeCargoName(str);
+
+         result[cargoNormalized] = (result[cargoNormalized] ?? 0) + 1;
       }
 
       return result;
@@ -269,7 +284,7 @@ const RolesView = ({ userPermissions = {} }) => {
                ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                      {filteredRoles.map((role) => {
-                        const userCount = getUserCount(role._id);
+                        // const userCount = getUserCount(role._id);
                         const isAdmin = role.id === "admin" || role.name?.toLowerCase() === "administrador";
                         const canViewDetailsAdmin = isAdmin && permisos.view_gestor_roles_details_admin;
                         const canViewDetailsOther = !isAdmin && permisos.view_gestor_roles_details;
@@ -344,7 +359,7 @@ const RolesView = ({ userPermissions = {} }) => {
                                        <Users size={16} />
                                        <span className="text-sm">Usuarios asignados</span>
                                     </div>
-                                    <span className="text-lg font-bold text-foreground">{userCount}</span>
+                                    <span className="text-lg font-bold text-foreground">{role.count}</span>
                                  </div>
                               </div>
                            </div>
