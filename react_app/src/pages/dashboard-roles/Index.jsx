@@ -45,19 +45,26 @@ const RolesView = ({ userPermissions = {} }) => {
     const fetchRoles = async () => {
         try {
             setIsLoading(true);
-            const [rolesRes, configRes] = await Promise.all([
+            const [rolesRes, configRes, userCountRes] = await Promise.all([
                 apiFetch(`${API_BASE_URL}/roles`),
-                apiFetch(`${API_BASE_URL}/roles/config`)
+                apiFetch(`${API_BASE_URL}/roles/config`),
+                apiFetch(`${API_BASE_URL}/roles/user-count`)
             ]);
 
             if (rolesRes.ok) {
                 const data = await rolesRes.json();
+                console.log(data)
                 setRoles(data);
             }
 
             if (configRes.ok) {
                 const configData = await configRes.json();
                 setConfigRoles(configData);
+            }
+
+            if (userCountRes.ok) {
+                const userCountData = await userCountRes.json();
+                console.log(userCountData)
             }
 
         } catch (error) {
