@@ -137,14 +137,17 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
    const roleName = role?.name?.toLowerCase();
    const myRoleName = sessionStorage.getItem("cargo")?.toLowerCase();
 
+   const isMaestroRole = roleName === "maestro";
    const isAdminRole = roleName === "administrador";
    const itsMyRole = roleName === myRoleName;
+   const iAmMaestro = myRoleName === "maestro";
 
-   const canEditAdmin = isAdminRole && permisos.edit_gestor_roles_admin;
+   const canEditMaestro = isMaestroRole && iAmMaestro;
+   const canEditAdmin = isAdminRole && (permisos.edit_gestor_roles_admin || iAmMaestro);
    const canEditMyRole = itsMyRole && permisos.edit_gestor_roles_by_self;
-   const canEditOtherRoles = !isAdminRole && !itsMyRole && permisos.edit_gestor_roles;
+   const canEditOtherRoles = !isAdminRole && !isMaestroRole && !itsMyRole && (permisos.edit_gestor_roles || iAmMaestro);
 
-   const canEdit = isCreating || canEditAdmin || canEditMyRole || canEditOtherRoles;
+   const canEdit = isCreating || canEditMaestro || canEditAdmin || canEditMyRole || canEditOtherRoles;
 
    return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
@@ -250,6 +253,14 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                         (activeTab === "cliente" && isClientPanelEnabled) ? (
                         availablePermissions
                            .filter((g) => g.tagg === activeTab)
+                           // Filtrar gestor_empresas y configuracion_planes para el rol Maestro
+                           .filter((g) => {
+                              if (isMaestroRole) {
+                                 const groupKey = g.key || g.label?.toLowerCase() || "";
+                                 return !groupKey.includes("gestor_empresas") && !groupKey.includes("planes");
+                              }
+                              return true;
+                           })
                            .map((group) => {
                               const ids = group.permissions.map((p) => p.id);
                               const isAllSelected = ids.every((id) => formData.permissions.includes(id));

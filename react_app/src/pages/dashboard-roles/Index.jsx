@@ -93,11 +93,21 @@ const RolesView = ({ userPermissions = {} }) => {
     };
 
     // --- LÓGICA DE NEGOCIO ---
-    const filteredRoles = roles.filter(
-        (role) =>
-            role.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            role.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+    const filteredRoles = roles
+        .filter(
+            (role) =>
+                role.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                role.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+        )
+        .sort((a, b) => {
+            const nameA = a.name?.toLowerCase();
+            const nameB = b.name?.toLowerCase();
+            if (nameA === "maestro") return -1;
+            if (nameB === "maestro") return 1;
+            if (nameA === "administrador") return -1;
+            if (nameB === "administrador") return 1;
+            return nameA.localeCompare(nameB);
+        });
 
     const getUserCount = (roleId) => {
         // Asumiendo que users es un array de objetos con propiedad roleId o similar
