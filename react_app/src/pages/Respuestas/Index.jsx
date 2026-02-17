@@ -69,20 +69,6 @@ const RequestTracking = ({ userPermissions = {} }) => {
          let perms = [];
          let hasAll = false;
    
-         // --- NUEVO: Consultar configuración de limpieza de archivos del plan ---
-         let planDeletesFiles = false;
-         try {
-            const configRes = await apiFetch(`${API_BASE_URL}/config_plan`);
-            if (configRes.ok) {
-               const configData = await configRes.json();
-               const reqLimits = configData?.planLimits?.requests ?? configData?.planLimits?.solicitudes;
-               // Verificamos si es booleano true o string "true"
-               planDeletesFiles = reqLimits?.deleteArchivedFiles === true || reqLimits?.deleteArchivedFiles === "true";
-            }
-         } catch (e) {
-            console.warn("[Permissions] No se pudo cargar config_plan:", e.message);
-         }
-   
          const res = await apiFetch(`${API_BASE_URL}/roles/name/${role}`);
          if (res.ok) {
             const roleData = await res.json();
@@ -103,8 +89,6 @@ const RequestTracking = ({ userPermissions = {} }) => {
                finalize: hasAll || perms.includes("edit_solicitudes_clientes_finalize"),
                archive: hasAll || perms.includes("edit_solicitudes_clientes_archive"),
                
-               // PROPIEDAD DINÁMICA DEL PLAN (Para mostrar la mini carta en el front)
-               deleteArchivedFiles: planDeletesFiles,
    
                // Adjuntos
                viewAttachments: hasAll || perms.includes("view_solicitudes_clientes_attach"),

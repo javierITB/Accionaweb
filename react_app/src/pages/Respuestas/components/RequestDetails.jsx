@@ -2174,13 +2174,16 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                                 .map((st) => (
                                                    <button
                                                       key={st.value}
+                                                      // ... dentro del .map((st) => ( ...
                                                       onClick={() => {
                                                          openAsyncDialog({
                                                             title: `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
-                                                            // NUEVO: Descripción dinámica según permiso
-                                                            description: (st.value === "archivado" && userPermissions?.deleteArchivedFiles)
+                                                            
+                                                            // CAMBIO AQUÍ: Usamos fullRequestData?.deleteArchivedFiles
+                                                            description: (st.value === "archivado" && fullRequestData?.deleteArchivedFiles)
                                                                ? "Se eliminarán todos los archivos asociados."
                                                                : "",
+
                                                             loadingText: `Cambiando estado a "${st.label}"...`,
                                                             successText: "Estado cambiado correctamente",
                                                             errorText: "No se pudo cambiar el estado",
@@ -2420,21 +2423,31 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
                            {/* BOTÓN "ARCHIVAR" */}
                            {fullRequestData?.status === "finalizado" && userPermissions?.archive && (
-                              <div className="flex flex-col gap-2">
-                                 {userPermissions?.deleteArchivedFiles && (
-                                    <div className="bg-amber-50 border border-amber-200 text-amber-700 text-[10px] px-3 py-1.5 rounded-md shadow-sm">
-                                       Se eliminarán todos los archivos asociados.
+                              <div className="flex flex-col gap-2 mt-4">
+                                 
+                                 {/* CAMBIO AQUÍ: Mini carta informativa basada en el dato del backend */}
+                                 {fullRequestData?.deleteArchivedFiles && (
+                                    <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-[11px] px-3 py-1.5 rounded-md shadow-sm">
+                                       <span className="text-sm">⚠️</span>
+                                       <span>Se eliminarán todos los archivos asociados.</span>
                                     </div>
                                  )}
+
                                  <Button
                                     variant="default"
+                                    className="w-full"
                                     iconName={isApproving ? "Loader" : "Folder"}
                                     iconPosition="left"
                                     iconSize={16}
                                     onClick={() => {
                                        openAsyncDialog({
                                           title: "¿Estás seguro de que quieres archivar este trabajo?",
-                                          description: userPermissions?.deleteArchivedFiles ? "Se eliminarán todos los archivos asociados." : "",
+                                          
+                                          // CAMBIO AQUÍ: Descripción dinámica
+                                          description: fullRequestData?.deleteArchivedFiles 
+                                             ? "Se eliminarán todos los archivos asociados." 
+                                             : "",
+                                          
                                           loadingText: "Archivando...",
                                           successText: "Trabajo archivado correctamente",
                                           errorText: "Error al archivar trabajo",
