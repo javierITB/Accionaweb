@@ -56,6 +56,12 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
 
    if (!isOpen) return null;
 
+   const arePermissionsEqual = (p1, p2) => {
+      if (p1.length !== p2.length) return false;
+      const s1 = new Set(p1);
+      return p2.every(p => s1.has(p));
+   };
+
    const handlePlanChange = (newPlanId) => {
       if (newPlanId) {
          setCustomSourceLabel(null);
@@ -110,12 +116,21 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
          // Re-verificar bloqueados si es creación y NO estamos en modo plan (o acabamos de salir de uno)
          // Si salimos de plan, ya no es "creacion default", es "custom".
 
-         // AUTO-DETACH: Si tenía un Plan, lo quitamos para que sea "Personalizado"
-         if (prev.planId) {
+         // AUTO-DETACH / AUTO-REVERSE
+         let newPlanId = prev.planId;
+
+         // 1. Intentar encontrar un plan que coincida EXACTAMENTE con los nuevos permisos
+         const matchingPlan = plans.find(p => arePermissionsEqual(p.permissions || [], newPerms));
+
+         if (matchingPlan) {
+            newPlanId = matchingPlan._id;
+            setCustomSourceLabel(null);
+         } else if (prev.planId) {
+            // Si no hay match y tenía plan, se vuelve personalizado
             const planName = plans.find(p => p._id === prev.planId)?.name;
             if (planName) setCustomSourceLabel(`${planName} (Personalizado)`);
+            newPlanId = "";
          }
-         const newPlanId = prev.planId ? "" : prev.planId;
 
          return { ...prev, permissions: newPerms, planId: newPlanId };
       });
@@ -151,12 +166,19 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
          }
 
 
-         // AUTO-DETACH
-         if (prev.planId) {
+         // AUTO-DETACH / AUTO-REVERSE
+         let newPlanId = prev.planId;
+         const matchingPlan = plans.find(p => arePermissionsEqual(p.permissions || [], newPerms));
+
+         if (matchingPlan) {
+            newPlanId = matchingPlan._id;
+            setCustomSourceLabel(null);
+         } else if (prev.planId) {
             const planName = plans.find(p => p._id === prev.planId)?.name;
             if (planName) setCustomSourceLabel(`${planName} (Personalizado)`);
+            newPlanId = "";
          }
-         const newPlanId = prev.planId ? "" : prev.planId;
+
          return { ...prev, permissions: newPerms, planId: newPlanId };
       });
    };
@@ -284,16 +306,14 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                            </button>
                         </div>
 
-                        {!formData.planId && (
-                           <button
-                              type="button"
-                              onClick={toggleAllInTab}
-                              className="flex items-center justify-center gap-2 py-2 px-4 border border-dashed border-accent/50 text-accent bg-accent/5 hover:bg-accent/10 rounded-xl text-xs font-bold transition-all"
-                           >
-                              <LayoutGrid size={14} />
-                              Seleccionar / Desmarcar disponibles en esta pestaña
-                           </button>
-                        )}
+                        <button
+                           type="button"
+                           onClick={toggleAllInTab}
+                           className="flex items-center justify-center gap-2 py-2 px-4 border border-dashed border-accent/50 text-accent bg-accent/5 hover:bg-accent/10 rounded-xl text-xs font-bold transition-all"
+                        >
+                           <LayoutGrid size={14} />
+                           Seleccionar / Desmarcar disponibles en esta pestaña
+                        </button>
                      </div>
 
                      <div className="space-y-4">
@@ -343,12 +363,30 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                                                 const availableIds = group.permissions
                                                    .filter((p) => !p.dependency || formData.permissions.includes(p.dependency))
                                                    .map((p) => p.id);
-                                                setFormData((prev) => ({
-                                                   ...prev,
-                                                   permissions: isAllSelected
+                                                setFormData((prev) => {
+                                                   const newPerms = isAllSelected
                                                       ? prev.permissions.filter((p) => !ids.includes(p))
-                                                      : [...new Set([...prev.permissions, ...availableIds])],
-                                                }));
+                                                      : [...new Set([...prev.permissions, ...availableIds])];
+
+                                                   // AUTO-DETACH / AUTO-REVERSE
+                                                   let newPlanId = prev.planId;
+                                                   const matchingPlan = plans.find(p => arePermissionsEqual(p.permissions || [], newPerms));
+
+                                                   if (matchingPlan) {
+                                                      newPlanId = matchingPlan._id;
+                                                      setCustomSourceLabel(null);
+                                                   } else if (prev.planId) {
+                                                      const planName = plans.find(p => p._id === prev.planId)?.name;
+                                                      if (planName) setCustomSourceLabel(`${planName} (Personalizado)`);
+                                                      newPlanId = "";
+                                                   }
+
+                                                   return {
+                                                      ...prev,
+                                                      permissions: newPerms,
+                                                      planId: newPlanId
+                                                   };
+                                                });
                                              }}
                                           >
                                              <span className="text-xs font-bold text-foreground">{group.label}</span>
