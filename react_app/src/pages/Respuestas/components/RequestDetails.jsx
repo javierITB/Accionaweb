@@ -838,7 +838,7 @@ Puedes agregar máximo ${remainingSlots} archivo(s) más.`,
 
          // 1. AGREGAR ARCHIVOS
          if (correctedFiles.length > 0) {
-            const uploadSuccess = await uploadFilesMultiple();
+            const uploadSuccess = await uploadFilesOneByOne();
             if (uploadSuccess) {
                results.added = correctedFiles.length;
             }
@@ -1112,7 +1112,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
       try {
          // 2️⃣ Subir archivos uno por uno
-         const uploadSuccess = await uploadFilesMultiple();
+         const uploadSuccess = await uploadFilesOneByOne();
          if (!uploadSuccess) {
             throw new Error("Error subiendo archivos. No se pudo aprobar.");
          }
