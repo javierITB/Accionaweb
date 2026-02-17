@@ -1593,7 +1593,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
             </div>
          )}
 
-         {userPermissions?.viewSent && (
+         {userPermissions?.viewSent && !["archivado"].includes(fullRequestData?.status) && (
             <div className="space-y-4">
                <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
