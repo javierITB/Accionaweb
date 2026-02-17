@@ -2177,6 +2177,10 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                                       onClick={() => {
                                                          openAsyncDialog({
                                                             title: `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
+                                                            // NUEVO: Descripción dinámica según permiso
+                                                            description: (st.value === "archivado" && userPermissions?.deleteArchivedFiles)
+                                                               ? "Se eliminarán todos los archivos asociados."
+                                                               : "",
                                                             loadingText: `Cambiando estado a "${st.label}"...`,
                                                             successText: "Estado cambiado correctamente",
                                                             errorText: "No se pudo cambiar el estado",
@@ -2416,24 +2420,32 @@ Máximo permitido: ${MAX_FILES} archivos.`;
 
                            {/* BOTÓN "ARCHIVAR" */}
                            {fullRequestData?.status === "finalizado" && userPermissions?.archive && (
-                              <Button
-                                 variant="default"
-                                 iconName={isApproving ? "Loader" : "Folder"}
-                                 iconPosition="left"
-                                 iconSize={16}
-                                 onClick={() => {
-                                    openAsyncDialog({
-                                       title: "¿Estás seguro de que quieres archivar este trabajo?",
-                                       loadingText: "Archivando...",
-                                       successText: "Trabajo archivado correctamente",
-                                       errorText: "Error al archivar trabajo",
-                                       onConfirm: handleArchieve,
-                                    });
-                                 }}
-                                 disabled={isApproving}
-                              >
-                                 {isApproving ? "Archivando..." : "Archivar"}
-                              </Button>
+                              <div className="flex flex-col gap-2">
+                                 {userPermissions?.deleteArchivedFiles && (
+                                    <div className="bg-amber-50 border border-amber-200 text-amber-700 text-[10px] px-3 py-1.5 rounded-md shadow-sm">
+                                       Se eliminarán todos los archivos asociados.
+                                    </div>
+                                 )}
+                                 <Button
+                                    variant="default"
+                                    iconName={isApproving ? "Loader" : "Folder"}
+                                    iconPosition="left"
+                                    iconSize={16}
+                                    onClick={() => {
+                                       openAsyncDialog({
+                                          title: "¿Estás seguro de que quieres archivar este trabajo?",
+                                          description: userPermissions?.deleteArchivedFiles ? "Se eliminarán todos los archivos asociados." : "",
+                                          loadingText: "Archivando...",
+                                          successText: "Trabajo archivado correctamente",
+                                          errorText: "Error al archivar trabajo",
+                                          onConfirm: handleArchieve,
+                                       });
+                                    }}
+                                    disabled={isApproving}
+                                 >
+                                    {isApproving ? "Archivando..." : "Archivar"}
+                                 </Button>
+                              </div>
                            )}
                         </>
                      )}
