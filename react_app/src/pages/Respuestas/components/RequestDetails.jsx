@@ -857,7 +857,7 @@ Puedes agregar máximo ${remainingSlots} archivo(s) más.`,
             }
          }
 
-         await fetchApprovedData(request._id);
+         await handleUpdate();
 
          setCorrectedFiles([]);
          setFilesToDelete([]);
@@ -868,6 +868,11 @@ Puedes agregar máximo ${remainingSlots} archivo(s) más.`,
          if (results.deleted > 0) message += `\n✓ ${results.deleted} archivo(s) eliminados\n`;
          if (results.errors.length > 0) {
             message += `\nErrores:\n${results.errors.join("\n")}`;
+         }
+
+         console.log(approvedData.correctedFiles.length);
+         if (approvedData?.correctedFiles?.length + results.added <= results.deleted) {
+            message += "\nNo hay archivos aprobados, la solicitud volverá a estar en revisión.";
          }
 
          return message;
@@ -1086,6 +1091,22 @@ Máximo permitido: ${MAX_FILES} archivos.`;
       }
    };
 
+   const handleUpdate = async () => {
+      if (!onUpdate) return;
+
+      const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
+      if (updatedResponse.ok) {
+         const updatedRequest = await updatedResponse.json();
+         const normalizedRequest = {
+            ...updatedRequest,
+            submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
+            company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
+            submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
+         };
+         onUpdate(normalizedRequest);
+      }
+      await fetchApprovedData(request._id);
+   };
    const handleApprove = async () => {
       // 1️⃣ Validaciones previas
       if (correctedFiles.length === 0) {
@@ -1127,23 +1148,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
             body: JSON.stringify({}),
          });
 
-         const handleUpdate = async () => {
-            if (!onUpdate) return;
-
-            const updatedResponse = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}`);
-            if (updatedResponse.ok) {
-               const updatedRequest = await updatedResponse.json();
-               const normalizedRequest = {
-                  ...updatedRequest,
-                  submittedBy: updatedRequest.user?.nombre || updatedRequest.submittedBy || "Usuario Desconocido",
-                  company: updatedRequest.user?.empresa || updatedRequest.company || "Empresa Desconocida",
-                  submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt,
-               };
-               onUpdate(normalizedRequest);
-            }
-            fetchApprovedData(request._id);
-         };
-
          if (!approveResponse.ok) {
             const errorData = await approveResponse.json();
             // Reintento si no encuentra archivos
@@ -1166,7 +1170,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
          // 5️⃣ Si todo salió bien
          await handleUpdate();
          setCorrectedFiles([]);
-         return `✅ Formulario aprobado exitosamente\n${correctedFiles.length} archivo(s) subido(s)`;
+         return `Solicitud aprobada exitosamente\n\n${correctedFiles.length} archivo(s) subido(s)`;
       } catch (err) {
          console.error("Error aprobando formulario:", err);
          throw new Error(err.message || "Error aprobando formulario");
@@ -1624,38 +1628,39 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   </div>
                </div>
 
-               <div className="bg-muted/30 rounded-xl p-4 border border-border/50 space-y-3">
-                  {correctedFiles.map((file, index) => (
-                     <div
-                        key={`new-${index}`}
-                        className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all group"
-                        onClick={() => handlePreviewCorrectedFile(index, "new")}
-                     >
-                        <div className="flex items-center space-x-3">
-                           <Icon
-                              name="FileText"
-                              size={20}
-                              className="text-accent group-hover:scale-110 transition-transform"
-                           />
-                           <div>
-                              <div className="flex items-center gap-2">
-                                 <p className="text-sm font-medium text-foreground truncate max-w-[200px]">
-                                    {file.name}
-                                 </p>
-                                 {isLoadingPreviewCorrected && previewIndex === index && (
-                                    <Icon name="Loader" size={14} className="animate-spin text-accent" />
-                                 )}
+               <div className="bg-muted/30 rounded-xl p-4 border border-border/50 flex flex-col gap-3">
+                  {correctedFiles?.length > 0 &&
+                     correctedFiles.map((file, index) => (
+                        <div
+                           key={`new-${index}`}
+                           className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all group"
+                           onClick={() => handlePreviewCorrectedFile(index, "new")}
+                        >
+                           <div className="flex items-center space-x-3">
+                              <Icon
+                                 name="FileText"
+                                 size={20}
+                                 className="text-accent group-hover:scale-110 transition-transform"
+                              />
+                              <div>
+                                 <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium text-foreground truncate max-w-[200px]">
+                                       {file.name}
+                                    </p>
+                                    {isLoadingPreviewCorrected && previewIndex === index && (
+                                       <Icon name="Loader" size={14} className="animate-spin text-accent" />
+                                    )}
+                                 </div>
+                                 <p className="text-[10px] text-accent font-bold uppercase">Pendiente de subir</p>
                               </div>
-                              <p className="text-[10px] text-accent font-bold uppercase">Pendiente de subir</p>
+                           </div>
+                           <div onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
+                                 <Icon name="Trash2" size={16} />
+                              </Button>
                            </div>
                         </div>
-                        <div onClick={(e) => e.stopPropagation()}>
-                           <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
-                              <Icon name="Trash2" size={16} />
-                           </Button>
-                        </div>
-                     </div>
-                  ))}
+                     ))}
 
                   {/* {correctedFiles.length > 0 &&
                      (fullRequestData?.status === "en_revision" || fullRequestData?.status === "pendiente") && (
@@ -1672,8 +1677,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                         </div>
                      )} */}
 
-                  {approvedData?.correctedFiles || fullRequestData?.correctedFile ? (
-                     <div className="space-y-2 pt-2">
+                  {approvedData?.correctedFiles?.length > 0 && (
+                     <div className="flex flex-col gap-3">
                         {approvedData?.correctedFiles?.map((file, index) => {
                            const isMarked = filesToDelete.some((f) => f.fileName === file.fileName);
                            return (
@@ -1735,7 +1740,19 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            );
                         })}
                      </div>
-                  ) : null}
+                  )}
+
+                  {!(approvedData?.correctedFiles?.length > 0 || correctedFiles?.length > 0) && (
+                     <div className="flex flex-col items-center justify-center py-3 rounded-lg bg-muted/30">
+                        <Icon name="FolderOpen" size={36} className="text-muted-foreground mb-3" />
+
+                        <p className="text-sm font-medium text-muted-foreground">No hay archivos corregidos</p>
+
+                        <p className="text-xs text-muted-foreground mt-1">
+                           Los archivos corregidos aparecerán aquí cuando sean subidos.
+                        </p>
+                     </div>
+                  )}
 
                   {/* {(fullRequestData?.status === "aprobado" || fullRequestData?.status === "firmado") &&
                      (correctedFiles.length > 0 || filesToDelete.length > 0) && (
@@ -2177,16 +2194,18 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                                       // ... dentro del .map((st) => ( ...
                                                       onClick={() => {
                                                          openAsyncDialog({
-                                                            // Si el estado seleccionado es "archivado" y el plan borra archivos (!deleteArchivedFiles), 
+                                                            // Si el estado seleccionado es "archivado" y el plan borra archivos (!deleteArchivedFiles),
                                                             // el título principal será el mensaje de advertencia.
-                                                            title: (st.value === "archivado" && fullRequestData?.deleteArchivedFiles)
-                                                               ? "Se eliminarán todos los archivos asociados."
-                                                               : `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
-                                                            
+                                                            title:
+                                                               st.value === "archivado" &&
+                                                               fullRequestData?.deleteArchivedFiles
+                                                                  ? "Se eliminarán todos los archivos asociados."
+                                                                  : `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
+
                                                             // Dejamos la descripción vacía ya que el mensaje ahora es el título principal
                                                             description: "",
-                                                      
-                                                            loadingText: `Cambiando estado a "${st.label}"...`,
+
+                                                            loadingText: `Cambiando estado de solicitud a "${st.label}"...`,
                                                             successText: "Estado cambiado correctamente",
                                                             errorText: "No se pudo cambiar el estado",
                                                             onConfirm: () => handleStatusChange(st.value),
@@ -2339,8 +2358,10 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                  Mensajes
                               </Button>
                            )}
-                           {(correctedFiles.length > 0 || filesToDelete.length > 0)  &&
-                              !["archivado", "finalizado", "pendiente", "en_revision"].includes(fullRequestData?.status) && (
+                           {(correctedFiles.length > 0 || filesToDelete.length > 0) &&
+                              !["archivado", "finalizado", "pendiente", "en_revision"].includes(
+                                 fullRequestData?.status,
+                              ) && (
                                  <div className="flex justify-end pt-2">
                                     <Button
                                        variant="outlineTeal"
@@ -2348,6 +2369,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                        onClick={() => {
                                           openAsyncDialog({
                                              title: `¿Estás seguro de que deseas actualizar los archivos para el cliente?`,
+                                             loadingText: "Actualizando archivos...",
                                              confirmLabel: "Subir Archivos",
                                              onConfirm: handleUpdateCorrectedFiles,
                                           });
@@ -2394,7 +2416,16 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                     iconName={isApproving ? "Loader" : "CheckCircle"}
                                     iconPosition="left"
                                     iconSize={16}
-                                    onClick={handleApprove}
+                                    onClick={() =>
+                                       openAsyncDialog({
+                                          title: "¿Está seguro de aprobar este documento?",
+                                          loadingText: "Aprobando solicitud...",
+                                          confirmText: "Confirmar",
+                                          cancelText: "Cancelar",
+                                          onConfirm: () => handleApprove(),
+                                          onClose: () => setIsApproving(false),
+                                       })
+                                    }
                                     disabled={isApproving || correctedFiles.some((f) => f.size > MAX_FILE_SIZE)}
                                  >
                                     {isApproving ? "Aprobando..." : `Aprobar (${correctedFiles.length})`}
@@ -2402,7 +2433,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               )}
 
                            {/* BOTÓN "FINALIZAR" (Solo si está en revisión) */}
-                           {!["archivado", "finalizado"].includes(fullRequestData?.status) && userPermissions?.finalize && (
+                           {["firmado"].includes(fullRequestData?.status) && userPermissions?.finalize && (
                               <Button
                                  variant="default"
                                  iconName={isApproving ? "Loader" : "CheckCircle"}
@@ -2411,7 +2442,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                  onClick={() =>
                                     openAsyncDialog({
                                        title: "¿Estás seguro de que quieres finalizar este trabajo?",
-                                       loadingText: "Finalizando trabajando...",
+                                       loadingText: "Finalizando solicitud...",
                                        successText: "Trabajo finalizado correctamente",
                                        errorText: "Error al finalizar trabajo",
                                        onConfirm: handleApprovewithoutFile,
@@ -2433,9 +2464,9 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                  onClick={() => {
                                     openAsyncDialog({
                                        // Cambia el título si deleteArchivedFiles es false
-                                       title: fullRequestData?.deleteArchivedFiles 
-                                          ? "Se eliminarán todos los archivos asociados." 
-                                          : "¿Estás seguro de que quieres archivar este trabajo?",
+                                       title: fullRequestData?.deleteArchivedFiles
+                                          ? "Se eliminarán todos los archivos asociados."
+                                          : "¿Estás seguro de que quieres archivar esta solicitud?",
                                        loadingText: "Archivando...",
                                        successText: "Trabajo archivado correctamente",
                                        errorText: "Error al archivar trabajo",

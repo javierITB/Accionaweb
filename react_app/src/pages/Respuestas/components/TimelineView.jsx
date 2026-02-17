@@ -4,8 +4,6 @@ import Icon from '../../../components/AppIcon';
 const TimelineView = ({ timeline = {}, isVisible }) => {
   if (!isVisible) return null;
 
-  console.log(timeline)
-
   const getStepIcon = (status, isCompleted, isCurrent) => {
     if (isCompleted) return 'CheckCircle';
     if (isCurrent) return 'Clock';
