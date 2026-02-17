@@ -1657,7 +1657,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      </div>
                   ))}
 
-                  {correctedFiles.length > 0 &&
+                  {/* {correctedFiles.length > 0 &&
                      (fullRequestData?.status === "en_revision" || fullRequestData?.status === "pendiente") && (
                         <div className="flex justify-end pt-2 border-t border-accent/20">
                            <Button
@@ -1670,7 +1670,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               {isApproving ? "Procesando..." : `Aprobar y Subir (${correctedFiles.length})`}
                            </Button>
                         </div>
-                     )}
+                     )} */}
 
                   {approvedData?.correctedFiles || fullRequestData?.correctedFile ? (
                      <div className="space-y-2 pt-2">
@@ -1737,7 +1737,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      </div>
                   ) : null}
 
-                  {(fullRequestData?.status === "aprobado" || fullRequestData?.status === "firmado") &&
+                  {/* {(fullRequestData?.status === "aprobado" || fullRequestData?.status === "firmado") &&
                      (correctedFiles.length > 0 || filesToDelete.length > 0) && (
                         <div className="flex justify-end pt-2 border-t border-border">
                            <Button
@@ -1750,7 +1750,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               {isUploading ? "Actualizando..." : "Aplicar Cambios"}
                            </Button>
                         </div>
-                     )}
+                     )} */}
                </div>
             </div>
          )}
@@ -2330,8 +2330,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                  Mensajes
                               </Button>
                            )}
-                           {correctedFiles.length > 0 &&
-                              !["archivado", "finalizado"].includes(fullRequestData?.status) && (
+                           {(correctedFiles.length > 0 || filesToDelete.length > 0)  &&
+                              !["archivado", "finalizado", "pendiente", "en_revision"].includes(fullRequestData?.status) && (
                                  <div className="flex justify-end pt-2">
                                     <Button
                                        variant="outlineTeal"
