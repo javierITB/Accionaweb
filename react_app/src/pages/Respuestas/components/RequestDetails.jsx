@@ -2422,44 +2422,36 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            )}
 
                            {/* BOTÓN "ARCHIVAR" */}
-                           {fullRequestData?.status === "finalizado" && userPermissions?.archive && (
-                              <div className="flex flex-col gap-2 mt-4">
-                                 
-                                 {/* CAMBIO AQUÍ: Mini carta informativa basada en el dato del backend */}
-                                 {fullRequestData?.deleteArchivedFiles && (
-                                    <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-[11px] px-3 py-1.5 rounded-md shadow-sm">
-                                       <span className="text-sm">⚠️</span>
-                                       <span>Se eliminarán todos los archivos asociados.</span>
-                                    </div>
-                                 )}
-
-                                 <Button
-                                    variant="default"
-                                    className="w-full"
-                                    iconName={isApproving ? "Loader" : "Folder"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    onClick={() => {
-                                       openAsyncDialog({
-                                          title: "¿Estás seguro de que quieres archivar este trabajo?",
-                                          
-                                          // CAMBIO AQUÍ: Descripción dinámica
-                                          description: fullRequestData?.deleteArchivedFiles 
-                                             ? "Se eliminarán todos los archivos asociados." 
-                                             : "",
-                                          
-                                          loadingText: "Archivando...",
-                                          successText: "Trabajo archivado correctamente",
-                                          errorText: "Error al archivar trabajo",
-                                          onConfirm: handleArchieve,
-                                       });
-                                    }}
-                                    disabled={isApproving}
-                                 >
-                                    {isApproving ? "Archivando..." : "Archivar"}
-                                 </Button>
-                              </div>
-                           )}
+{/* BOTÓN "ARCHIVAR" - Código Limpio */}
+{fullRequestData?.status === "finalizado" && userPermissions?.archive && (
+   <div className="mt-4"> 
+      <Button
+         variant="default"
+         className="w-full"
+         iconName={isApproving ? "Loader" : "Folder"}
+         iconPosition="left"
+         iconSize={16}
+         onClick={() => {
+            openAsyncDialog({
+               title: "¿Estás seguro de que quieres archivar este trabajo?",
+               
+               // ESTA ES LA CLAVE: El mensaje se pasa como descripción al diálogo
+               description: fullRequestData?.deleteArchivedFiles 
+                  ? "Se eliminarán todos los archivos asociados." 
+                  : "",
+               
+               loadingText: "Archivando...",
+               successText: "Trabajo archivado correctamente",
+               errorText: "Error al archivar trabajo",
+               onConfirm: handleArchieve,
+            });
+         }}
+         disabled={isApproving}
+      >
+         {isApproving ? "Archivando..." : "Archivar"}
+      </Button>
+   </div>
+)}
                         </>
                      )}
                      {!isStandalone && (
