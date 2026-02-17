@@ -2177,13 +2177,15 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                                       // ... dentro del .map((st) => ( ...
                                                       onClick={() => {
                                                          openAsyncDialog({
-                                                            title: `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
-                                                            
-                                                            // CAMBIO AQUÍ: Usamos fullRequestData?.deleteArchivedFiles
-                                                            description: (st.value === "archivado" && fullRequestData?.deleteArchivedFiles)
+                                                            // Si el estado seleccionado es "archivado" y el plan borra archivos (!deleteArchivedFiles), 
+                                                            // el título principal será el mensaje de advertencia.
+                                                            title: (st.value === "archivado" && fullRequestData?.deleteArchivedFiles)
                                                                ? "Se eliminarán todos los archivos asociados."
-                                                               : "",
-
+                                                               : `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
+                                                            
+                                                            // Dejamos la descripción vacía ya que el mensaje ahora es el título principal
+                                                            description: "",
+                                                      
                                                             loadingText: `Cambiando estado a "${st.label}"...`,
                                                             successText: "Estado cambiado correctamente",
                                                             errorText: "No se pudo cambiar el estado",
@@ -2421,37 +2423,30 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               </Button>
                            )}
 
-                           {/* BOTÓN "ARCHIVAR" */}
-{/* BOTÓN "ARCHIVAR" - Código Limpio */}
-{fullRequestData?.status === "finalizado" && userPermissions?.archive && (
-   <div className="mt-4"> 
-      <Button
-         variant="default"
-         className="w-full"
-         iconName={isApproving ? "Loader" : "Folder"}
-         iconPosition="left"
-         iconSize={16}
-         onClick={() => {
-            openAsyncDialog({
-               title: "¿Estás seguro de que quieres archivar este trabajo?",
-               
-               // ESTA ES LA CLAVE: El mensaje se pasa como descripción al diálogo
-               description: fullRequestData?.deleteArchivedFiles 
-                  ? "Se eliminarán todos los archivos asociados." 
-                  : "",
-               
-               loadingText: "Archivando...",
-               successText: "Trabajo archivado correctamente",
-               errorText: "Error al archivar trabajo",
-               onConfirm: handleArchieve,
-            });
-         }}
-         disabled={isApproving}
-      >
-         {isApproving ? "Archivando..." : "Archivar"}
-      </Button>
-   </div>
-)}
+                           {/* BOTÓN "ARCHIVAR" - Solo este botón con el cambio de título y alineación original */}
+                           {fullRequestData?.status === "finalizado" && userPermissions?.archive && (
+                              <Button
+                                 variant="default"
+                                 iconName={isApproving ? "Loader" : "Folder"}
+                                 iconPosition="left"
+                                 iconSize={16}
+                                 onClick={() => {
+                                    openAsyncDialog({
+                                       // Cambia el título si deleteArchivedFiles es false
+                                       title: fullRequestData?.deleteArchivedFiles 
+                                          ? "Se eliminarán todos los archivos asociados." 
+                                          : "¿Estás seguro de que quieres archivar este trabajo?",
+                                       loadingText: "Archivando...",
+                                       successText: "Trabajo archivado correctamente",
+                                       errorText: "Error al archivar trabajo",
+                                       onConfirm: handleArchieve,
+                                    });
+                                 }}
+                                 disabled={isApproving}
+                              >
+                                 {isApproving ? "Archivando..." : "Archivar"}
+                              </Button>
+                           )}
                         </>
                      )}
                      {!isStandalone && (
