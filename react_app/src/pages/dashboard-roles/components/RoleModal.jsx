@@ -253,14 +253,8 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                         (activeTab === "cliente" && isClientPanelEnabled) ? (
                         availablePermissions
                            .filter((g) => g.tagg === activeTab)
-                           // Filtrar gestor_empresas y configuracion_planes para el rol Maestro
-                           .filter((g) => {
-                              if (isMaestroRole) {
-                                 const groupKey = g.key || g.label?.toLowerCase() || "";
-                                 return !groupKey.includes("gestor_empresas") && !groupKey.includes("planes");
-                              }
-                              return true;
-                           })
+                           // Se elimina el filtro de maestro para permitir asignación en formsdb.
+                           // En clientes, estos grupos no vienen en availablePermissions, así que no se muestran.
                            .map((group) => {
                               const ids = group.permissions.map((p) => p.id);
                               const isAllSelected = ids.every((id) => formData.permissions.includes(id));
