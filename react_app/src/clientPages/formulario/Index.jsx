@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import Header from '../components/ui/Header';
 import QuickActionsCard from './components/QuickActionsCard';
 import { API_BASE_URL, apiFetch } from '../../utils/api';
 import Footer from '../components/ui/Footer';
 import LoadingCard from 'clientPages/components/LoadingCard';
+import AsyncActionDialog from "@/components/AsyncActionDialog";
+import useAsyncDialog from "hooks/useAsyncDialog";
+
 const DashboardHome = ({ userPermissions = [] }) => {
+  
 
   const [formData, setFormData] = useState({
     id: null,
@@ -21,6 +25,7 @@ const DashboardHome = ({ userPermissions = [] }) => {
     updatedAt: new Date().toISOString()
   });
   const [isLoading, setIsLoading] = useState(true);
+  const { dialogProps, openAsyncDialog } = useAsyncDialog();
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -62,6 +67,8 @@ const DashboardHome = ({ userPermissions = [] }) => {
     }
   }, []);
 
+
+
     if (!userPermissions.includes('view_formulario')) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -97,13 +104,14 @@ const DashboardHome = ({ userPermissions = [] }) => {
               {/* Quick Actions - Este componente renderizará el formulario */}
               {isLoading && <LoadingCard text="Cargando formulario..." />}
 
-              {!isLoading && <QuickActionsCard formData={formData} />}
+              {!isLoading && <QuickActionsCard formData={formData} openAsyncDialog={openAsyncDialog} />}
             </div>
           </div>
 
           <Footer />
         </div>
       </main>
+       <AsyncActionDialog {...dialogProps} />
     </div>
   );
 };

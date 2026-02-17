@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import Icon from "../../../components/AppIcon.jsx";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
+import { useNavigate } from "react-router-dom";
 
-const FormPreview = ({ formData }) => {
+const FormPreview = ({ formData, openAsyncDialog }) => {
    const [answers, setAnswers] = useState({});
    const [respaldo, setRespaldo] = useState("");
    const [errors, setErrors] = useState({});
@@ -16,11 +17,14 @@ const FormPreview = ({ formData }) => {
    });
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [selectedFilesByQuestion, setSelectedFilesByQuestion] = useState({});
+   const [shouldNavigate, setShouldNavigate] = useState(false);
 
    const usuario = sessionStorage.getItem("user");
-  //  const cargo = sessionStorage.getItem("cargo");
+   //  const cargo = sessionStorage.getItem("cargo");
    const mail = sessionStorage.getItem("email");
    const token = sessionStorage.getItem("token");
+
+   const navigate = useNavigate();
 
    useEffect(() => {
       const fetchForm = async () => {
@@ -44,6 +48,13 @@ const FormPreview = ({ formData }) => {
 
       fetchForm();
    }, []);
+   
+   useEffect(() => {
+      if (shouldNavigate) {
+         setShouldNavigate(false);
+         navigate("/");
+      }
+   }, [shouldNavigate]);
 
    const getQuestionTitle = (question) => {
       return question.title || "Pregunta sin título";
@@ -863,13 +874,11 @@ const FormPreview = ({ formData }) => {
 
    const handleSubmit = async () => {
       if (!validateForm()) {
-         alert("Por favor completa todos los campos obligatorios y corrige los errores en los archivos");
-         return;
+         throw new Error("Por favor completa todos los campos obligatorios y corrige los errores en los archivos");
       }
 
       if (isSubmitting) {
-         alert("El formulario ya se está enviando, por favor espera...");
-         return;
+         throw new Error("El formulario ya se está enviando, por favor espera...");
       }
 
       setIsSubmitting(true);
@@ -1000,17 +1009,24 @@ const FormPreview = ({ formData }) => {
             }
          }
 
-         alert("Formulario enviado con éxito");
-
-         setAnswers({});
+         // setAnswers({});
          setRespaldo("");
          setErrors({});
          setTouched({});
          setFileErrors({});
          setSelectedFilesByQuestion({});
+
+         return {
+            type: "success",
+            message: "Formulario enviado correctamente",
+         };
       } catch (err) {
          console.error("Error:", err);
-         alert(`No se pudieron enviar las respuestas: ${err.message}`);
+
+         return {
+            type: "error",
+            message: "Error al enviar formulario",
+         };
       } finally {
          setIsSubmitting(false);
       }
@@ -1143,7 +1159,16 @@ const FormPreview = ({ formData }) => {
                            </button>
 
                            <button
-                              onClick={handleSubmit}
+                              onClick={() =>
+                                 openAsyncDialog({
+                                    title: "¿Estás seguro de enviar el formulario?",
+                                    loadingText: "Enviando formulario...",
+                                    successText: "Formulario enviado con éxito",
+                                    errorText: "Error al enviar formulario",
+                                    onConfirm: handleSubmit,
+                                    onAfterSuccess: () => setShouldNavigate(true),
+                                 })
+                              }
                               style={{
                                  backgroundColor: formData?.primaryColor || "#3B82F6",
                               }}
