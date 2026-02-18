@@ -63,8 +63,19 @@ router.get("/todos", async (req, res) => {
 router.get("/todos/registroempresa", async (req, res) => {
    try {
       // 0. VALIDAR CONTEXTO (Tenant)
+      // Asegurar que existe una DB conectada para validar contexto
+      let dbToUse = req.db;
+      if (!dbToUse && req.mongoClient) {
+         dbToUse = req.mongoClient.db("formsdb");
+      }
+
+      if (!dbToUse) {
+         console.error("[Registro] Error: No database connection available for context validation");
+         return res.status(500).json({ error: "Configuration Error: No DB connection" });
+      }
+
       // Asegurarnos de que estamos en formsdb antes de cualquier otra cosa
-      if (req.db.databaseName !== 'formsdb' && req.db.databaseName !== 'api') {
+      if (dbToUse.databaseName !== 'formsdb' && dbToUse.databaseName !== 'api') {
          return res.status(403).json({ message: "Acceso denegado: Contexto inválido" });
       }
 
