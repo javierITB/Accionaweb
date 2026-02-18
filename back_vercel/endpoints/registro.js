@@ -65,12 +65,12 @@ router.get("/todos/registroempresa", async (req, res) => {
       // 1. VALIDACIÓN MANUAL (Lógica de Sesión Centralizada)
       const authHeader = req.headers.authorization;
       if (!authHeader) return res.status(401).json({ message: "No autorizado" });
-      
+
       const token = authHeader.split(" ")[1];
       const { validarToken } = require("../utils/validarToken");
 
       // Validamos contra formsdb (Base Maestra donde reside tu cuenta Admin)
-      const dbMaestra = req.mongoClient.db("formsdb"); 
+      const dbMaestra = req.mongoClient.db("formsdb");
       const validation = await validarToken(dbMaestra, token);
 
       if (!validation.ok) {
@@ -81,8 +81,8 @@ router.get("/todos/registroempresa", async (req, res) => {
       const { createBlindIndex } = require("../utils/seguridad.helper");
       const mailBusqueda = createBlindIndex(validation.data.email);
 
-      const usuarioDB = await dbMaestra.collection("usuarios").findOne({ 
-         mail_index: mailBusqueda 
+      const usuarioDB = await dbMaestra.collection("usuarios").findOne({
+         mail_index: mailBusqueda
       });
 
       if (!usuarioDB || usuarioDB.estado !== "activo") {
@@ -96,7 +96,7 @@ router.get("/todos/registroempresa", async (req, res) => {
          const empresaRequerida = "Acciona Centro de Negocios Spa.";
          // Cargos exactos según tus requerimientos
          const cargosAutorizados = ["Administrador", "Super User Do"];
-         
+
          if (empresaDescifrada !== empresaRequerida || !cargosAutorizados.includes(cargoDescifrado)) {
             return res.status(403).json({ message: "Acceso denegado: Privilegios insuficientes" });
          }
@@ -180,7 +180,7 @@ function decryptMetadata(value) {
    return value;
 }
 
-function decryptActor(actor) {   
+function decryptActor(actor) {
    const campos = ['name', 'last_name', 'email', 'empresa', 'cargo'];
    return decryptByFields(actor, campos);
 }
