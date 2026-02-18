@@ -9,6 +9,7 @@ const Dashboard = () => {
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [filter, setFilter] = useState('Todos');
+    const [searchTerm, setSearchTerm] = useState('');
     const [metrics, setMetrics] = useState({
         income: 0,
         pendingAmount: 0,
@@ -17,8 +18,13 @@ const Dashboard = () => {
     });
 
     const filteredTransactions = transactions.filter(tx => {
-        if (filter === 'Todos') return true;
-        return tx.status === filter;
+        const matchesStatus = filter === 'Todos' ? true : tx.status === filter;
+        const matchesSearch = searchTerm === '' ||
+            tx.concept?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            tx.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            tx.amount?.toString().includes(searchTerm);
+
+        return matchesStatus && matchesSearch;
     });
 
     const fetchTransactions = async () => {
@@ -172,6 +178,20 @@ const Dashboard = () => {
                         onClick={() => setFilter('Rechazado')}
                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Rechazado' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                     >Rechazados</button>
+                </div>
+
+                {/* Search Bar */}
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            className="pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-500 w-full md:w-64 text-slate-900 dark:text-white"
+                            placeholder="Buscar..."
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
             </div>
 
