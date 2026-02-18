@@ -46,6 +46,7 @@ export const MENU_STRUCTURE = [
       isAccordion: true,
       children: [
          { name: "Gestor de Empresas", path: "/gestor-empresas", icon: "Building2", permission: "view_gestor_empresas" },
+         {name: "Registro de Empresas", path: "/registro-empresas", icon: "Building2", permission: "view_registro_empresas"}
       ]
    },
 ];

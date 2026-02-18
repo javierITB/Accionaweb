@@ -31,6 +31,7 @@ import Solicitudes from './pages/solicitudes/Index.jsx';
 import DomicilioVirtualIndex from './pages/DomicilioVirtual/Index.jsx';
 import AdminNotificationManager from './pages/config-notificaciones/Index.jsx';
 import Anuncios from './pages/anuncios/Index.jsx';
+import RegistroEmpresas from "pages/registroEmpresas/registroEmpresas.jsx";
 
 
 import Home from './clientPages/home/Index.jsx';
@@ -78,6 +79,8 @@ const Routes = () => {
             <Route path="/gestor-empresas" element={<ProtectedRoute> <EmpresasDashboard /> </ProtectedRoute>} />
             <Route path="/config-notificaciones" element={<ProtectedRoute> <AdminNotificationManager /> </ProtectedRoute>} />
             <Route path="/config-planes" element={<ProtectedRoute> <EmpresasDashboard /> </ProtectedRoute>} />
+            <Route path="/registro-empresas" element={<ProtectedRoute> <RegistroEmpresas /> </ProtectedRoute>} />
+
 
 
             <Route path="/users" element={<ProtectedRoute> <Users /> </ProtectedRoute>} />
