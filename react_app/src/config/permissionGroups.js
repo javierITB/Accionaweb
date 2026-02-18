@@ -240,6 +240,14 @@ export const PERMISSION_GROUPS = {
       ]
    },
 
+   pagos: {
+      label: 'Vista: Planes y Servicios (Pagos)',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_pagos', label: 'Acceso a la vista' },
+      ]
+   },
+
    anuncios: {
       label: 'Vista: Anuncios',
       tagg: 'admin',
@@ -341,6 +349,15 @@ export const PERMISSION_GROUPS = {
       tagg: 'cliente',
       permissions: [
          { id: 'view_perfil', label: 'Acceso a la vista' }
+      ]
+   },
+
+   comprobantes: {
+      label: 'Vista: Comprobantes de Pago',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_comprobantes', label: 'Acceso a la vista' },
+         { id: 'create_comprobantes', label: 'Subir comprobantes', dependency: 'view_comprobantes' },
       ]
    },
 

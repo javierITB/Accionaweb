@@ -187,7 +187,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                   {isTextVisible && (
                      <div className="flex flex-col min-w-0 flex-1">
                         <h1 className="text-md font-semibold text-foreground leading-snug capitalize break-words whitespace-normal">
-                        { `Solunex ${LOGO_TENANT.toUpperCase()}` }
+                           {`Solunex ${LOGO_TENANT.toUpperCase()}`}
                         </h1>
                         <span className="text-[10px] text-muted-foreground font-mono truncate">Panel de administración</span>
                      </div>
