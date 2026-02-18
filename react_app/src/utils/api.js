@@ -73,13 +73,7 @@ export const apiFetch = async (endpoint, options = {}) => {
     try {
         const response = await fetch(fullUrl, config);
 
-        if (response.status === 401 && !options.skipRedirect) {
-            console.warn("Unauthorized access - Redirecting...");
-            if (typeof window !== 'undefined') {
-                sessionStorage.clear();
-                window.location.href = '/login';
-            }
-        }
+        
         if (response.status === 403 && !options.skipRedirect) {
             console.warn("Acceso denegado - Volviendo a la ruta anterior");
             if (typeof window !== 'undefined') {
