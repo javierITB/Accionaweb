@@ -108,7 +108,7 @@ const Routes = () => {
             <Route path="/request-tracking" element={<ProtectedRoute> <RequestTracking /> </ProtectedRoute>} />
             <Route path="/solicitudes" element={<ProtectedRoute> <Solicitudes /> </ProtectedRoute>} />
             <Route path="/anuncios" element={<ProtectedRoute> <Anuncios /> </ProtectedRoute>} />
-            <Route path="/pagos" element={<ProtectedRoute> <PagosIndex /> </ProtectedRoute>} />
+            <Route path="/pagos" element={<ProtectedRoute permission="view_pagos"> <PagosIndex /> </ProtectedRoute>} />
             <Route path="/ticket-builder" element={<ProtectedRoute><TicketBuilder /></ProtectedRoute>} />
             <Route path="/config-tickets" element={<ProtectedRoute><TicketConfig /></ProtectedRoute>} />
 

@@ -8,11 +8,17 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [filter, setFilter] = useState('Todos');
     const [metrics, setMetrics] = useState({
         income: 0,
         pendingAmount: 0,
         todayCount: 0,
         pendingCount: 0
+    });
+
+    const filteredTransactions = transactions.filter(tx => {
+        if (filter === 'Todos') return true;
+        return tx.status === filter;
     });
 
     const fetchTransactions = async () => {
@@ -84,7 +90,6 @@ const Dashboard = () => {
                         Gestión de pagos y administración de comprobantes empresariales.
                     </p>
                 </div>
-                {/* Search Bar could be implemented here */}
             </header>
 
             {/* Metrics Grid */}
@@ -143,6 +148,28 @@ const Dashboard = () => {
                 </div>
             </div>
 
+            {/* Filters Bar */}
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setFilter('Todos')}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Todos' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                    >Todos</button>
+                    <button
+                        onClick={() => setFilter('Pendiente')}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Pendiente' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                    >Pendientes</button>
+                    <button
+                        onClick={() => setFilter('Aprobado')}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Aprobado' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                    >Aprobados</button>
+                    <button
+                        onClick={() => setFilter('Rechazado')}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Rechazado' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                    >Rechazados</button>
+                </div>
+            </div>
+
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse">
@@ -159,12 +186,12 @@ const Dashboard = () => {
                                 <tr>
                                     <td colSpan="4" className="px-6 py-8 text-center text-slate-500">Cargando datos...</td>
                                 </tr>
-                            ) : transactions.length === 0 ? (
+                            ) : filteredTransactions.length === 0 ? (
                                 <tr>
                                     <td colSpan="4" className="px-6 py-8 text-center text-slate-500">No hay pagos registrados.</td>
                                 </tr>
                             ) : (
-                                transactions.map((tx) => (
+                                filteredTransactions.map((tx) => (
                                     <tr key={tx._id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors">
                                         <td className="px-6 py-5">
                                             {tx.status === 'Aprobado' && (

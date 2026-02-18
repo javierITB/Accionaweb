@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { API_BASE_URL } from "../utils/api";
+import { API_BASE_URL, CURRENT_TENANT } from "../utils/api";
 import LoadingCard from "../clientPages/components/LoadingCard";
 
-export default function ProtectedRoute({ children }) {
+export default function ProtectedRoute({ children, permission }) {
    const [loading, setLoading] = useState(true);
    const [isAuth, setIsAuth] = useState(false);
    const [userPermissions, setUserPermissions] = useState([]);
    const location = useLocation();
+
+   // Definimos los tenants que actúan como "Admin" o "Main DB"
+   const adminTenants = ["api", "formsdb", "infodesa", "acciona", "solunex"];
+   const isAdminContext = adminTenants.includes(CURRENT_TENANT);
 
    useEffect(() => {
       const theme = localStorage.getItem("theme");
@@ -58,9 +62,10 @@ export default function ProtectedRoute({ children }) {
 
             setUserPermissions(permissions);
 
-            const hasAccess = permissions.includes("view_panel_admin");
+            // Validar acceso básico al panel
+            const hasPanelAccess = permissions.includes("view_panel_admin");
 
-            if (hasAccess) {
+            if (hasPanelAccess) {
                setIsAuth(true);
             } else {
                setIsAuth(false);
@@ -85,18 +90,36 @@ export default function ProtectedRoute({ children }) {
       );
    }
 
-if (!isAuth) {
-   const token = sessionStorage.getItem("token");
+   if (!isAuth) {
+      const token = sessionStorage.getItem("token");
 
-   // Si no hay token → login
-   if (!token) {
-      return <Navigate to="/login" state={{ from: location }} replace />;
+      // Si no hay token → login
+      if (!token) {
+         return <Navigate to="/login" state={{ from: location }} replace />;
+      }
+
+      // Si hay token pero no tiene permiso → home
+      return <Navigate to="/" replace />;
    }
 
-   // Si hay token pero no tiene permiso → home
-   return <Navigate to="/" replace />;
-}
+   // --- NUEVA VALIDACIÓN DE PERMISOS ESPECÍFICOS Y CONTEXTO ---
 
+   // 1. Validar Contexto (Tenant) para rutas sensibles
+   if (permission === 'view_comprobantes' && isAdminContext) {
+      console.warn("Acceso denegado: Contexto Admin no puede ver Comprobantes");
+      return <Navigate to="/" replace />;
+   }
+
+   if (permission === 'view_pagos' && !isAdminContext) {
+      console.warn("Acceso denegado: Contexto Cliente no puede ver Pagos");
+      return <Navigate to="/" replace />;
+   }
+
+   // 2. Validar permiso específico si se requiere
+   if (permission && !userPermissions.includes(permission)) {
+      console.warn(`Acceso denegado: Falta el permiso ${permission}`);
+      return <Navigate to="/" replace />;
+   }
 
    // Pasamos los permisos a los componentes hijos vía props
    return React.Children.map(children, (child) => {

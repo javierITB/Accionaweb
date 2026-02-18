@@ -78,6 +78,13 @@ const ComprobantesIndex = () => {
         }
     };
 
+    const [filter, setFilter] = useState('Todos');
+
+    const filteredTransactions = transactions.filter(tx => {
+        if (filter === 'Todos') return true;
+        return tx.status === filter;
+    });
+
     return (
         <div className="min-h-screen bg-background transition-colors duration-200">
             <Header />
@@ -121,10 +128,22 @@ const ComprobantesIndex = () => {
                         {/* Filters Bar */}
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-4">
                             <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-                                <button className="px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary rounded-md transition-colors whitespace-nowrap">Todos</button>
-                                <button className="px-3 py-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors whitespace-nowrap">Pendientes</button>
-                                <button className="px-3 py-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors whitespace-nowrap">Aprobados</button>
-                                <button className="px-3 py-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors whitespace-nowrap">Rechazados</button>
+                                <button
+                                    onClick={() => setFilter('Todos')}
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${filter === 'Todos' ? 'bg-primary/10 text-primary' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                                >Todos</button>
+                                <button
+                                    onClick={() => setFilter('Pendiente')}
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${filter === 'Pendiente' ? 'bg-primary/10 text-primary' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                                >Pendientes</button>
+                                <button
+                                    onClick={() => setFilter('Aprobado')}
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${filter === 'Aprobado' ? 'bg-primary/10 text-primary' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                                >Aprobados</button>
+                                <button
+                                    onClick={() => setFilter('Rechazado')}
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${filter === 'Rechazado' ? 'bg-primary/10 text-primary' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                                >Rechazados</button>
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="relative">
@@ -158,12 +177,12 @@ const ComprobantesIndex = () => {
                                         <tr>
                                             <td colSpan="5" className="px-6 py-8 text-center text-slate-500">Cargando historial...</td>
                                         </tr>
-                                    ) : transactions.length === 0 ? (
+                                    ) : filteredTransactions.length === 0 ? (
                                         <tr>
                                             <td colSpan="5" className="px-6 py-8 text-center text-slate-500">No hay comprobantes registrados</td>
                                         </tr>
                                     ) : (
-                                        transactions.map((tx, index) => (
+                                        filteredTransactions.map((tx, index) => (
                                             <tr key={index} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors group">
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
