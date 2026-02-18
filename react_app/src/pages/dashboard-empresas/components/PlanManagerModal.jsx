@@ -414,7 +414,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                                         Object.entries(PERMISSION_GROUPS)
                                             .filter(([_, g]) => g.tagg === permTab)
                                             // Filter out system-only groups
-                                            .filter(([key, _]) => key !== 'gestor_empresas' && key !== 'configuracion_planes')
+                                            .filter(([key, _]) => !['gestor_empresas', 'configuracion_planes', 'registro_empresas', 'pagos'].includes(key))
                                             .map(([groupId, group]) => {
                                                 const ids = group.permissions.map(p => p.id);
                                                 const isAllSelected = ids.every(id => permissions.includes(id));
