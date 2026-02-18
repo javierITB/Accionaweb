@@ -384,5 +384,14 @@ export const PERMISSION_GROUPS = {
       permissions: [
          { id: 'view_formulario', label: 'Acceso a la vista' }
       ]
-   }
+   },
+   registro_empresas: {
+      label: 'Vista: Registro de Empresas',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_registro_empresas', label: 'Acceso a la vista' },
+      ]
+   },   
+   
+
 };

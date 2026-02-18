@@ -8,16 +8,13 @@ import LoadingCard from "clientPages/components/LoadingCard";
 import { Navigate } from "react-router-dom";
 
 const RegistroEmpresas = ({ userPermissions = [] }) => {
+   // --- PERMISO ÚNICO DE VISTA GENERAL ---
+   const canAccess = useMemo(() => userPermissions.includes("view_registro_empresas"), [userPermissions]);
+
    // --- ESTADOS DE PESTAÑAS Y SELECCIÓN ---
    const [activeTab, setActiveTab] = useState("registro"); 
    const [selectedCompany, setSelectedCompany] = useState("");
    const [empresasOptions, setEmpresasOptions] = useState([]);
-
-   // --- PERMISOS ---
-   const canAccess = useMemo(() => userPermissions.includes("view_gestor_empresas"), [userPermissions]);
-   const permisosDetalle = useMemo(() => ({
-      ver: userPermissions.includes("view_registro_cambios_details"),
-   }), [userPermissions]);
 
    // --- ESTADOS DE DATOS ---
    const [registros, setRegistros] = useState([]);
@@ -65,36 +62,24 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
       loadOptions();
    }, []);
 
-   // --- FETCH DINÁMICO CON ALERTA DE DIAGNÓSTICO ---
+   // --- FETCH DINÁMICO ---
    const fetchDatos = async (currentPage = page) => {
       if (!selectedCompany) return;
       try {
          setLoading(true);
-         
-         // Ajustamos ambos para que usen las rutas quirúrgicas que creamos
          const endpoint = activeTab === "registro" 
-            ? "registro/todos/registroempresa"    // <--- Nueva ruta para cambios
-            : "auth/logins/registroempresas";      // <--- Ruta para logins que ya funciona
+            ? "registro/todos/registroempresa"    
+            : "auth/logins/registroempresas";      
    
          const baseUrl = API_BASE_URL.replace(/\/api$/, "");
-         
          const segment = (selectedCompany === "formsdb" || selectedCompany === "api") ? "api" : selectedCompany;
          const url = `${baseUrl}/${segment}/${endpoint}?page=${currentPage}&limit=${limit}`;
    
-         console.log("Invocando URL dinámica:", url);
-   
          const response = await apiFetch(url);
 
-         // --- BLOQUE DE DIAGNÓSTICO PARA VER POR QUÉ TE SACA ---
          if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
-               window.alert(
-                  `¡Diagnóstico de Seguridad!\n\n` +
-                  `Código de error: ${response.status}\n` +
-                  `Segmento: ${segment}\n` +
-                  `Endpoint: ${endpoint}\n\n` +
-                  `Si después de aceptar esta alerta te saca de la página, confirma que el Backend permite tu Token en la base de datos "${segment}".`
-               );
+               window.alert(`¡Diagnóstico de Seguridad!\n\nError: ${response.status}\nSegmento: ${segment}`);
                setRegistros([]);
                setLoading(false);
                return; 
@@ -109,7 +94,6 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
          }
       } catch (error) {
          console.error("Error cargando datos:", error);
-         window.alert("Error de red o conexión: " + error.message);
       } finally {
          setLoading(false);
       }
@@ -275,9 +259,20 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
                   </div>
                </div>
 
+               {/* PESTAÑAS DISPONIBLES SIEMPRE QUE TENGA ACCESO A LA VISTA */}
                <div className="flex space-x-1 rounded-lg bg-muted/50 p-1 w-fit">
-                  <button onClick={() => { setActiveTab("registro"); setPage(1); }} className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === "registro" ? "bg-indigo-600 text-white shadow-md" : "text-muted-foreground hover:bg-muted"}`}>Registro de Cambios</button>
-                  <button onClick={() => { setActiveTab("ingresos"); setPage(1); }} className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === "ingresos" ? "bg-indigo-600 text-white shadow-md" : "text-muted-foreground hover:bg-muted"}`}>Registro de Ingresos</button>
+                  <button 
+                     onClick={() => { setActiveTab("registro"); setPage(1); }} 
+                     className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === "registro" ? "bg-indigo-600 text-white shadow-md" : "text-muted-foreground hover:bg-muted"}`}
+                  >
+                     Registro de Cambios
+                  </button>
+                  <button 
+                     onClick={() => { setActiveTab("ingresos"); setPage(1); }} 
+                     className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === "ingresos" ? "bg-indigo-600 text-white shadow-md" : "text-muted-foreground hover:bg-muted"}`}
+                  >
+                     Registro de Ingresos
+                  </button>
                </div>
 
                <div className="bg-card border border-border rounded-lg shadow-sm p-6">
@@ -298,7 +293,7 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
                      <div><p><span className="font-semibold">Código:</span> {selectedRegistro.code}</p></div>
                      <div><p><span className="font-semibold">Descripción:</span> {selectedRegistro.description}</p></div>
                      <div className="pt-4">
-                        <p className="font-semibold pb-1">Actor:</p>
+                        <p className="font-semibold pb-1 text-foreground">Actor:</p>
                         <p><span className="pl-2 font-semibold">Nombre:</span> {`${selectedRegistro.actor?.name || ""} ${selectedRegistro.actor?.last_name || ""}`}</p>
                         <p><span className="pl-2 font-semibold">Email:</span> {selectedRegistro.actor?.email}</p>
                      </div>
