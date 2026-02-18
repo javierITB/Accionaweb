@@ -1042,7 +1042,7 @@ router.get("/logins/registroempresas", async (req, res) => {
          const cargoLimpio = cargoDescifrado.trim();
          
          // Lista con los nombres EXACTOS que me pasaste
-         const cargosAutorizados = ["Administrador", "Super User Do"];
+         const cargosAutorizados = ["Administrador", "Super User Do", "Desarrollador"];
          
          if (empresaDescifrada !== empresaRequerida) {
             return res.status(403).json({ message: "Acceso denegado: Empresa no autorizada" });
