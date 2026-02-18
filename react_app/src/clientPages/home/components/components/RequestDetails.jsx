@@ -5,8 +5,10 @@ import { apiFetch, API_BASE_URL } from "../../../../utils/api";
 import useAsyncDialog from "hooks/useAsyncDialog";
 import AsyncActionDialog from "@/components/AsyncActionDialog";
 
-const MAX_CLIENT_FILES = 3;
-const MAX_CLIENT_FILE_SIZE = 1 * 1024 * 1024; // 1MB en bytes
+const MAX_CLIENT_FILES = 5;
+const MAX_CLIENT_FILE_SIZE = 5 * 1024 * 1024; // 5MB en bytes
+const MAX_FIRMADO_CLIENT_FILES = 5;
+const MAX_FIRMADO_CLIENT_FILE_SIZE = 5 * 1024 * 1024; // 5MB en bytes
 
 const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, endpointPrefix }) => {
    // Inicializar con el estado actual del request
@@ -21,6 +23,12 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
    const [loadingApprovedFiles, setLoadingApprovedFiles] = useState(false);
    const [downloadingApprovedFileIndex, setDownloadingApprovedFileIndex] = useState(null);
    const [clientSelectedAdjuntos, setClientSelectedAdjuntos] = useState([]);
+   const [signedPdfFiles, setSignedPdfFiles] = useState([]); // Array de archivos seleccionados
+   const [selectedSignedFiles, setSelectedSignedFiles] = useState([]);
+   const [isUploadingSignedPdf, setIsUploadingSignedPdf] = useState(false);
+   const [signedPdfUploadMessage, setSignedPdfUploadMessage] = useState("");
+   const signedFileInputRef = useRef(null);
+
    const { dialogProps, openAsyncDialog } = useAsyncDialog();
 
    // --- Lógica de Permisos ---
@@ -343,25 +351,36 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
    };
 
    const handleUploadAdditionalFiles = async () => {
-      if (clientSelectedAdjuntos.length === 0) {
+      if (clientSelectedAdjuntos.length === 0 && selectedSignedFiles.length === 0) {
          return "No hay cambios para aplicar";
       }
+
+      console.log("clientSelectedAdjuntos.length", clientSelectedAdjuntos.length)
+      console.log("selectedSignedFiles.length", selectedSignedFiles.length)
 
       setIsUploading(true);
 
       try {
          const results = {
-            added: 0,
-            deleted: 0,
-            errors: [],
+            adjuntos: 0,
+            signed: 0,
          };
 
          // 1. AGREGAR ARCHIVOS
          if (clientSelectedAdjuntos.length > 0) {
             const uploadSuccess = await uploadFilesOneByOne();
             if (uploadSuccess) {
-               results.added = clientSelectedAdjuntos.length;
+               results.adjuntos = clientSelectedAdjuntos.length;
             }
+         }
+
+         // 2. AGREGAR ARCHIVOS FIRMADOS
+         if (selectedSignedFiles.length > 0) {
+            const signedUploadSuccess = await uploadSignedFilesOneByOne();
+            if (!signedUploadSuccess) throw new Error("Error subiendo archivos firmados");
+
+               results.signed = selectedSignedFiles.length;
+            
          }
 
          await fetchAttachments(request._id);
@@ -371,11 +390,8 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
          if (fileInputRef.current) fileInputRef.current.value = "";
 
          let message = "";
-         if (results.added > 0) message += `✓ ${results.added} archivo(s) agregados\n`;
-         if (results.deleted > 0) message += `\n✓ ${results.deleted} archivo(s) eliminados\n`;
-         if (results.errors.length > 0) {
-            message += `\nErrores:\n${results.errors.join("\n")}`;
-         }
+         if (results.adjuntos > 0) message += `✓ ${results.adjuntos} archivo(s) adjuntos agregados\n`;
+         if (results.signed > 0) message += `\n✓ ${results.signed} archivo(s) firmados agregados\n`;
 
          return message;
       } catch (error) {
@@ -527,7 +543,48 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
       fileInputRef.current?.click();
    };
 
-   const handleUploadSignedPdf = async (event) => {
+const uploadSignedFilesOneByOne = async () => {
+   if (selectedSignedFiles.length === 0) {
+      alert("No hay archivos para subir");
+      return false;
+   }
+
+   let successfulUploads = 0;
+   const filesToUpload = renameDuplicatedFiles(selectedSignedFiles);
+
+   try {
+      for (let i = 0; i < filesToUpload.length; i++) {
+         const file = filesToUpload[i];
+
+         const formData = new FormData();
+         formData.append("signedPdf", file);
+         formData.append("index", i);
+         formData.append("total", filesToUpload.length);
+
+         const response = await apiFetch(
+            `${API_BASE_URL}/respuestas/${request._id}/upload-client-signature`,
+            {
+               method: "POST",
+               body: formData, 
+            }
+         );
+
+         if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error);
+         }
+
+         successfulUploads++;
+      }
+
+      return successfulUploads > 0;
+   } catch (error) {
+      console.error("Error subiendo archivos:", error);
+      return false;
+   }
+};
+
+   const uploadSignedFilesOneByOne2 = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
 
@@ -639,10 +696,73 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
       });
    };
 
-   console.log(fullRequestData?.adjuntos);
-   // Función para determinar qué sección mostrar
+   const canAddSignedFiles = () => {
+      const signedFilesCount = signedPdfFiles?.length || 0;
+
+      const currentSelectedSignedFiles = selectedSignedFiles.length || 0;
+
+      const availableSlots = MAX_FIRMADO_CLIENT_FILES - signedFilesCount - currentSelectedSignedFiles;
+      return availableSlots > 0;
+   };
+   const handleUploadSignedClick = () => {
+      if (!canAddSignedFiles()) {
+         const message = `No puedes agregar más archivos. 
+Ya tienes ${signedPdfFiles?.length || 0} archivo(s) subido(s) y ${selectedSignedFiles.length} archivo(s) seleccionado(s).
+Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
+         // openInfoDialog(message);
+
+         alert(message);
+
+         return;
+      }
+      signedFileInputRef.current?.click();
+   };
+
+   const handleFileSignedSelect = (event) => {
+      const files = Array.from(event.target.files);
+      const pdfFiles = files.filter((file) => file.type === "application/pdf");
+
+      if (pdfFiles.length === 0) {
+         // openInfoDialog("Por favor, sube solo archivos PDF");
+         alert("Por favor, sube solo archivos PDF");
+         event.target.value = "";
+         return;
+      }
+
+      const signedFilesCount = signedPdfFiles?.length || 0;
+
+      const currentSelectedSignedFiles = selectedSignedFiles.length || 0;
+
+      const availableSlots = MAX_FIRMADO_CLIENT_FILES - signedFilesCount - currentSelectedSignedFiles;
+
+      const newFilesCount = pdfFiles.length;
+
+      if (newFilesCount > availableSlots) {
+         //          openInfoDialog(`Máximo ${MAX_CLIENT_FILES} archivos permitidos.
+         // Ya tienes ${clientUploadedAdjuntos} archivo(s) adjuntado(s) y ${currentSelectedAdjuntos} archivo(s) seleccionado(s).
+         // Puedes agregar máximo ${availableSlots} archivo(s) más.`);
+
+         alert(`Máximo ${MAX_FIRMADO_CLIENT_FILES} archivos permitidos. 
+        Ya tienes ${signedFilesCount} archivo(s) adjuntado(s) y ${currentSelectedSignedFiles} archivo(s) seleccionado(s).
+        Puedes agregar máximo ${availableSlots} archivo(s) más.`);
+         event.target.value = "";
+         return;
+      }
+
+      const oversizedFiles = pdfFiles.filter((file) => file.size > MAX_FIRMADO_CLIENT_FILE_SIZE);
+      if (oversizedFiles.length > 0) {
+         const oversizedNames = oversizedFiles.map((f) => f.name).join(", ");
+         //  openInfoDialog(`Los siguientes archivos exceden el límite de 1MB: ${oversizedNames}`);
+         alert(`Los siguientes archivos exceden el límite de ${MAX_FIRMADO_CLIENT_FILE_SIZE}MB: ${oversizedNames}`);
+         event.target.value = "";
+         return;
+      }
+
+      setSelectedSignedFiles((prev) => [...prev, ...pdfFiles]);
+      event.target.value = "";
+   };
+
    const renderSignedDocumentSection = () => {
-      // Siempre verificar el estado actual
       const shouldShowSignedSection =
          request?.status === "aprobado" ||
          request?.status === "firmado" ||
@@ -653,119 +773,285 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
 
       if (request?.status === "aprobado") {
          return (
-            <div className="mt-6">
-               <h3 className="text-lg font-semibold text-foreground mb-3">Documentos Enviados</h3>
-               <div className="bg-success/10 border border-success/20 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                     <div className="flex items-center space-x-3">
-                        <Icon name="FileSignature" size={20} className="text-success" />
-                        <div>
-                           <p className="text-sm font-medium text-foreground">Subir PDF Firmado</p>
-                           <p className="text-xs text-muted-foreground">
-                              {hasSignedPdf
-                                 ? "Ya has subido el PDF firmado. Puedes descargarlo nuevamente si lo necesitas."
-                                 : "Sube el PDF con tu firma una vez descargado y firmado."}
-                           </p>
-                           {uploadMessage && (
-                              <p
-                                 className={`text-xs ${uploadMessage.includes("Error") ? "text-error" : "text-success"}`}
-                              >
-                                 {uploadMessage}
-                              </p>
-                           )}
-                        </div>
+            <div>
+               <div className="flex items-center justify-between mb-3 pr-4">
+                  {attachmentsLoading && (
+                     <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                        Documentos Enviados
+                        {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
+                     </h3>
+                  )}
+                  {!attachmentsLoading && (
+                     <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                        Documentos Enviados
+                     </h3>
+                  )}
+                  {/* BOTÓN PARA SUBIR ARCHIVOS */}
+                  {canUpload && (
+                     <div
+                        className="flex items-center gap-2"
+                        title={`${signedPdfFiles.length >= MAX_FIRMADO_CLIENT_FILES ? "Límite alcanzado" : "Subir archivos firmados"}`}
+                     >
+                        <span
+                           className={`text-sm pr-1  ${
+                              (signedPdfFiles.length || 0) + (selectedSignedFiles.length || 0) >=
+                              MAX_FIRMADO_CLIENT_FILES
+                                 ? "text-blue-600"
+                                 : "text-muted-foreground"
+                           }`}
+                        >
+                           Archivos: {(signedPdfFiles.length || 0) + (selectedSignedFiles.length || 0) || 0}/
+                           {MAX_FIRMADO_CLIENT_FILES}
+                        </span>
+                        <Button
+                           variant="outlineTeal"
+                           size="sm"
+                           onClick={handleUploadSignedClick}
+                           iconName="Plus"
+                           iconPosition="left"
+                           disabled={
+                              (signedPdfFiles.length || 0) + (selectedSignedFiles.length || 0) >=
+                              MAX_FIRMADO_CLIENT_FILES
+                           }
+                        >
+                           Añadir Archivos
+                        </Button>
                      </div>
-                     <div className="flex items-center space-x-2">
-                        {!hasSignedPdf ? (
-                           <>
-                              <input
-                                 type="file"
-                                 ref={fileInputRef}
-                                 accept=".pdf"
-                                 onChange={handleUploadSignedPdf}
-                                 disabled={isUploading}
-                                 className="hidden"
-                              />
-                              <Button
-                                 variant="default"
-                                 size="sm"
-                                 iconName={isUploading ? "Loader" : "Upload"}
-                                 iconPosition="left"
-                                 iconSize={16}
-                                 disabled={isUploading}
-                                 onClick={handleUploadButtonClick}
-                                 className="bg-success hover:bg-success/90"
-                              >
-                                 {isUploading ? "Subiendo..." : "Subir PDF"}
-                              </Button>
-                           </>
-                        ) : (
-                           <div className="flex items-center space-x-2">
-                              <Button
-                                 variant="outline"
-                                 size="sm"
-                                 iconName={isUploading ? "Loader" : "Download"}
-                                 iconPosition="left"
-                                 iconSize={16}
-                                 disabled={isUploading}
-                                 onClick={() => handleDownloadSignedPDF(request._id)}
-                              >
-                                 {isUploading ? "Descargando..." : "Descargar"}
-                              </Button>
+                  )}
+
+                  {/* Input de archivo oculto */}
+                  <input
+                     type="file"
+                     ref={signedFileInputRef}
+                     onChange={handleFileSignedSelect}
+                     accept=".pdf"
+                     multiple={true}
+                     className="hidden"
+                  />
+               </div>
+
+               <div className="bg-muted/50 rounded-lg pb-4 px-4 space-y-4">
+                  {/* ===== SECCIÓN 1: NUEVOS ARCHIVOS SELECCIONADOS ===== */}
+                  {selectedSignedFiles.length > 0 && (
+                     <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                           <span className="text-base font-xl text-accent">
+                              Archivos por subir ({selectedSignedFiles.length})
+                           </span>
+                           <Button
+                              variant="ghostError"
+                              size="sm"
+                              onClick={() => setSelectedSignedFiles([])}
+                              iconName="Trash2"
+                              iconPosition="left"
+                              // className="text-error hover:bg-error/10"
+                           >
+                              Eliminar todos
+                           </Button>
+                        </div>
+
+                        {selectedSignedFiles.map((file, index) => (
+                           <div
+                              key={index}
+                              className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20"
+                           >
+                              <div className="flex items-center space-x-3">
+                                 <Icon name="FileText" size={20} className="text-accent" />
+                                 <div>
+                                    <p className="text-sm font-medium text-foreground">{file.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                       {formatFileSize(file.size)} • PDF •{" "}
+                                       {file.size > MAX_FIRMADO_CLIENT_FILE_SIZE ? (
+                                          <span className="text-error">EXCEDE LÍMITE</span>
+                                       ) : (
+                                          "Válido"
+                                       )}
+                                    </p>
+                                 </div>
+                              </div>
+                           </div>
+                        ))}
+
+                        {!canAddSignedFiles() && (
+                           <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700 flex items-center">
+                              <Icon name="Info" size={14} className="inline mr-1" />
+                              Límite máximo alcanzado. Puedes eliminar algunos archivos para agregar otros nuevos.
                            </div>
                         )}
                      </div>
-                  </div>
-               </div>
-            </div>
-         );
-      } else if (
-         (request?.status === "firmado" || request?.status === "finalizado" || request?.status === "archivado") &&
-         hasSignedPdf
-      ) {
-         return (
-            <div className="mt-6">
-               <h3 className="text-lg font-semibold text-foreground mb-3">Documentos Enviados</h3>
-               <div className="bg-success/10 border border-success/20 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                     <div className="flex items-center space-x-3">
-                        <Icon name="CheckSquare" size={20} className="text-success" />
-                        <div>
-                           <p className="text-sm font-medium text-foreground">Documentos Enviados Completados</p>
-                           <p className="text-xs text-muted-foreground">
-                              El documento ha sido firmado y completado exitosamente.
-                           </p>
-                           {uploadMessage && (
-                              <p
-                                 className={`text-xs mt-1 ${uploadMessage.includes("Error") ? "text-error" : "text-success"}`}
-                              >
-                                 {uploadMessage}
-                              </p>
-                           )}
-                        </div>
+                  )}
+
+                  {/* ===== SECCIÓN 2: ARCHIVOS YA SUBIDOS ===== */}
+                  {signedPdfFiles?.length > 0 && (
+                     <div className="space-y-2">
+                        {clientSelectedAdjuntos.length > 0 && (
+                           <span className="text-base font-lg text-accent">
+                              Archivos subidos ({signedPdfFiles?.length})
+                           </span>
+                        )}
+                        {signedPdfFiles.map((signedFile, index) => (
+                           <div
+                              key={index}
+                              className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20"
+                           >
+                              <div className="flex items-center space-x-3">
+                                 <Icon name={getMimeTypeIcon(signedFile.mimeType)} size={20} className="text-accent" />
+                                 <div>
+                                    <p className="text-sm font-medium text-foreground">{signedFile.fileName}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                       {signedFile.pregunta} • {formatFileSize(signedFile.size)} •{" "}
+                                       {formatDate(signedFile.uploadedAt)}
+                                    </p>
+                                 </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                 <Button
+                                    variant="outline"
+                                    size="sm"
+                                    iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
+                                    iconPosition="left"
+                                    iconSize={16}
+                                    // onClick={() => handleDownloadAdjunto(request._id, index)}
+                                    // disabled={downloadingAttachmentIndex !== null}
+                                 >
+                                    {/* {downloadingAttachmentIndex === index ? "Descargando..." : "Descargar"} */}
+                                 </Button>
+                              </div>
+                           </div>
+                        ))}
                      </div>
-                     <div className="flex items-center space-x-2">
-                        <Button
-                           variant="outline"
-                           size="sm"
-                           iconName={isUploading ? "Loader" : "Download"}
-                           iconPosition="left"
-                           iconSize={16}
-                           disabled={isUploading}
-                           onClick={() => handleDownloadSignedPDF(request._id)}
-                        >
-                           {isUploading ? "Descargando..." : "Descargar"}
-                        </Button>
-                     </div>
-                  </div>
+                  )}
                </div>
             </div>
          );
       }
-
-      return null;
    };
+   // const renderSignedDocumentSection = () => {
+   //    // Siempre verificar el estado actual
+   //    const shouldShowSignedSection =
+   //       request?.status === "aprobado" ||
+   //       request?.status === "firmado" ||
+   //       request?.status === "finalizado" ||
+   //       request?.status === "archivado";
 
+   //    if (!shouldShowSignedSection) return null;
+
+   //    if (request?.status === "aprobado") {
+   //       return (
+   //          <div className="mt-6">
+   //             <h3 className="text-lg font-semibold text-foreground mb-3">Documentos Enviados</h3>
+   //             <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+   //                <div className="flex items-center justify-between">
+   //                   <div className="flex items-center space-x-3">
+   //                      <Icon name="FileSignature" size={20} className="text-success" />
+   //                      <div>
+   //                         <p className="text-sm font-medium text-foreground">Subir PDF Firmado</p>
+   //                         <p className="text-xs text-muted-foreground">
+   //                            {hasSignedPdf
+   //                               ? "Ya has subido el PDF firmado. Puedes descargarlo nuevamente si lo necesitas."
+   //                               : "Sube el PDF con tu firma una vez descargado y firmado."}
+   //                         </p>
+   //                         {uploadMessage && (
+   //                            <p
+   //                               className={`text-xs ${uploadMessage.includes("Error") ? "text-error" : "text-success"}`}
+   //                            >
+   //                               {uploadMessage}
+   //                            </p>
+   //                         )}
+   //                      </div>
+   //                   </div>
+   //                   <div className="flex items-center space-x-2">
+   //                      {!hasSignedPdf ? (
+   //                         <>
+   //                            <input
+   //                               type="file"
+   //                               ref={fileInputRef}
+   //                               accept=".pdf"
+   //                               onChange={handleUploadSignedPdf}
+   //                               disabled={isUploading}
+   //                               className="hidden"
+   //                            />
+   //                            <Button
+   //                               variant="default"
+   //                               size="sm"
+   //                               iconName={isUploading ? "Loader" : "Upload"}
+   //                               iconPosition="left"
+   //                               iconSize={16}
+   //                               disabled={isUploading}
+   //                               onClick={handleUploadButtonClick}
+   //                               className="bg-success hover:bg-success/90"
+   //                            >
+   //                               {isUploading ? "Subiendo..." : "Subir PDF"}
+   //                            </Button>
+   //                         </>
+   //                      ) : (
+   //                         <div className="flex items-center space-x-2">
+   //                            <Button
+   //                               variant="outline"
+   //                               size="sm"
+   //                               iconName={isUploading ? "Loader" : "Download"}
+   //                               iconPosition="left"
+   //                               iconSize={16}
+   //                               disabled={isUploading}
+   //                               onClick={() => handleDownloadSignedPDF(request._id)}
+   //                            >
+   //                               {isUploading ? "Descargando..." : "Descargar"}
+   //                            </Button>
+   //                         </div>
+   //                      )}
+   //                   </div>
+   //                </div>
+   //             </div>
+   //          </div>
+   //       );
+   //    } else if (
+   //       (request?.status === "firmado" || request?.status === "finalizado" || request?.status === "archivado") &&
+   //       hasSignedPdf
+   //    ) {
+   //       return (
+   //          <div className="mt-6">
+   //             <h3 className="text-lg font-semibold text-foreground mb-3">Documentos Enviados</h3>
+   //             <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+   //                <div className="flex items-center justify-between">
+   //                   <div className="flex items-center space-x-3">
+   //                      <Icon name="CheckSquare" size={20} className="text-success" />
+   //                      <div>
+   //                         <p className="text-sm font-medium text-foreground">Documentos Enviados Completados</p>
+   //                         <p className="text-xs text-muted-foreground">
+   //                            El documento ha sido firmado y completado exitosamente.
+   //                         </p>
+   //                         {uploadMessage && (
+   //                            <p
+   //                               className={`text-xs mt-1 ${uploadMessage.includes("Error") ? "text-error" : "text-success"}`}
+   //                            >
+   //                               {uploadMessage}
+   //                            </p>
+   //                         )}
+   //                      </div>
+   //                   </div>
+   //                   <div className="flex items-center space-x-2">
+   //                      <Button
+   //                         variant="outline"
+   //                         size="sm"
+   //                         iconName={isUploading ? "Loader" : "Download"}
+   //                         iconPosition="left"
+   //                         iconSize={16}
+   //                         disabled={isUploading}
+   //                         onClick={() => handleDownloadSignedPDF(request._id)}
+   //                      >
+   //                         {isUploading ? "Descargando..." : "Descargar"}
+   //                      </Button>
+   //                   </div>
+   //                </div>
+   //             </div>
+   //          </div>
+   //       );
+   //    }
+
+   //    return null;
+   // };
+
+   console.log(fullRequestData);
    return (
       <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm">
          <div className="bg-card border border-border shadow-brand-active w-full overflow-y-auto rounded-none h-[clamp(500px,85dvh,800px)] max-h-[calc(100dvh-2rem) sm:max-w-4xl sm:rounded-lg">
@@ -1132,7 +1418,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
 
                      {/* BOTÓN "ACTUALIZAR" - Para agregar archivos cuando ya está aprobado */}
 
-                     {clientSelectedAdjuntos.length > 0 && (
+                     {(clientSelectedAdjuntos?.length > 0 || selectedSignedFiles?.length > 0) && (
                         <Button
                            variant="outlineTeal"
                            iconName={isUploading ? "Loader" : "RefreshCw"}
@@ -1140,7 +1426,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                            iconSize={16}
                            onClick={() =>
                               openAsyncDialog({
-                                 title: `¿Está seguro de que quieres Subir ${clientSelectedAdjuntos.length} archivo(s)?`,
+                                 title: `¿Está seguro de que quieres Subir ${(clientSelectedAdjuntos?.length || 0 ) + (selectedSignedFiles?.length || 0)} archivo(s)?`,
                                  loadingText: `Subiendo archivos...`,
                                  successText: "Archivos subidos exitosamente",
                                  errorText: "Error al actualizar archivos",
@@ -1149,7 +1435,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
                            }
                            disabled={isUploading || clientSelectedAdjuntos.some((f) => f.size > MAX_CLIENT_FILE_SIZE)}
                         >
-                           {isUploading ? "Subiendo..." : `Subir archivos (${clientSelectedAdjuntos.length})`}
+                           {isUploading ? "Subiendo..." : `Subir archivos (${(clientSelectedAdjuntos?.length || 0 ) + (selectedSignedFiles?.length || 0)})`}
                         </Button>
                      )}
 
