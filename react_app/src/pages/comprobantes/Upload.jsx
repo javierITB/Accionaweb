@@ -30,15 +30,20 @@ const UploadComprobante = () => {
             formData.append('date', date);
             formData.append('concept', concept);
 
-            await apiFetch('/pagos/upload', {
+            const response = await apiFetch('/pagos/upload', {
                 method: 'POST',
                 body: formData
             });
 
-            navigate('/comprobantes');
+            if (response.ok) {
+                navigate('/comprobantes');
+            } else {
+                console.error("Error uploading comprobante:", response.statusText);
+                alert("Error al subir el comprobante. Por favor intente nuevamente.");
+            }
         } catch (error) {
             console.error("Error uploading comprobante:", error);
-            alert("Error al subir el comprobante");
+            alert("Error de conexión al subir el comprobante");
         } finally {
             setLoading(false);
         }

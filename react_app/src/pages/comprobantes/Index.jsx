@@ -48,9 +48,14 @@ const ComprobantesIndex = () => {
 
     const fetchTransactions = async () => {
         try {
-            const data = await apiFetch('/pagos/history', { method: 'GET' });
-            if (Array.isArray(data)) {
-                setTransactions(data);
+            const response = await apiFetch('/pagos/history', { method: 'GET' });
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    setTransactions(data);
+                }
+            } else {
+                console.error("Error fetching transactions:", response.statusText);
             }
         } catch (error) {
             console.error("Error fetching transactions:", error);

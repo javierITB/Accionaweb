@@ -23,10 +23,15 @@ const Dashboard = () => {
 
     const fetchTransactions = async () => {
         try {
-            const data = await apiFetch('/pagos/admin/all', { method: 'GET' });
-            if (Array.isArray(data)) {
-                setTransactions(data);
-                calculateMetrics(data);
+            const response = await apiFetch('/pagos/admin/all', { method: 'GET' });
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    setTransactions(data);
+                    calculateMetrics(data);
+                }
+            } else {
+                console.error("Error fetching admin transactions:", response.statusText);
             }
         } catch (error) {
             console.error("Error fetching admin transactions:", error);
