@@ -48,7 +48,7 @@ export const MENU_STRUCTURE = [
          { name: "Gestor de Empresas", path: "/gestor-empresas", icon: "Building2", permission: "view_gestor_empresas" },
          { name: "Pagos", path: "/pagos", icon: "CreditCard", permission: "view_pagos" },
          { name: "Comprobantes de Pago", path: "/comprobantes", icon: "Receipt", permission: "view_comprobantes" },
-         { name: "Registro de Empresas", path: "/registro-empresas", icon: "Building2", permission: "view_registro_empresas" },
+         { name: "Registro de Empresas", path: "/registro-empresas", icon: "Building2", permission: "view_acceso_registro_empresas" },
       ]
    },
 ];
