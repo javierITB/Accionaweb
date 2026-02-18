@@ -91,6 +91,8 @@ const RequestDetails = ({
    const [showPreview, setShowPreview] = useState(false);
    const [previewDocument, setPreviewDocument] = useState(null);
    const [isScrollToBottom, setScrollToBottom] = useState(false);
+   const [signaturesLoading, setSignaturesLoading] = useState(false);
+   const [signedPdfFiles, setSignedPdfFiles] = useState([]);
 
    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
    const statusDropdownRef = useRef(null);
@@ -154,6 +156,7 @@ const RequestDetails = ({
             setCorrectedFiles([]);
             return { ...request };
          });
+         fetchClientSignatures(request._id);
       }
    }, [request]);
 
@@ -190,6 +193,33 @@ const RequestDetails = ({
          setApprovedData(null);
       } finally {
          setIsLoadingApprovedData(false);
+      }
+   };
+   const fetchClientSignatures = async (responseId) => {
+      setSignaturesLoading(true);
+
+      try {
+         const endpoint = "respuestas";
+         const response = await apiFetch(`${API_BASE_URL}/${endpoint}/${responseId}/client-signatures`);
+
+         if (response.ok) {
+            const data = await response.json();
+
+            let extractedSignatures = [];
+
+            if (Array.isArray(data)) {
+               extractedSignatures = data;
+            } else if (data) {
+               extractedSignatures = [data];
+            }
+
+            setSignedPdfFiles(extractedSignatures);
+         }
+      } catch (error) {
+         console.error("Error cargando firmas:", error);
+      } finally {
+         console.log(fullRequestData);
+         setSignaturesLoading(false);
       }
    };
 
@@ -1781,66 +1811,72 @@ Máximo permitido: ${MAX_FILES} archivos.`;
          {fullRequestData?.status !== "pendiente" &&
             fullRequestData?.status !== "en_revision" &&
             userPermissions?.viewSigned && (
-               <div className="space-y-4 ">
-                  {(isCheckingSignature || clientSignature) && (
+               <div className="flex flex-col gap-3">
+                  {signedPdfFiles?.length > 0 && (
                      <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                         Documento Firmado por Cliente
                         {isCheckingSignature && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
                      </h3>
                   )}
 
-                  {clientSignature && (
-                     <div
-                        className={`bg-success/10 rounded-lg p-4 border transition-all group items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all ${userPermissions?.previewSigned ? "cursor-pointer hover:bg-success/20" : "cursor-default"}`}
-                        onClick={() => userPermissions?.previewSigned && handlePreviewClientSignature()}
-                     >
-                        <div className="flex items-center justify-between ">
-                           <div className="flex items-center space-x-3 ">
-                              <Icon
-                                 name="FileSignature"
-                                 size={20}
-                                 className="text-success group-hover:scale-110 transition-transform"
-                              />
-                              <div>
-                                 <div className="flex items-center gap-2">
-                                    <p className="text-sm font-medium text-foreground">{clientSignature.fileName}</p>
-                                    {isLoadingPreviewSignature && (
-                                       <Icon name="Loader" size={14} className="animate-spin text-accent" />
-                                    )}
+                  {signedPdfFiles?.length > 0 &&
+                     signedPdfFiles.map((signedFile, index) => (
+                        <div
+                           className={`bg-success/10 rounded-lg p-4 border transition-all group items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all ${userPermissions?.previewSigned ? "cursor-pointer hover:bg-success/20" : "cursor-default"}`}
+                           onClick={() => userPermissions?.previewSigned && handlePreviewClientSignature()}
+                        >
+                           <div
+                              className="flex items-center justify-between "
+                              key={`${index}-${signedFile?.clientSignedPdf?.fileName}`}
+                           >
+                              <div className="flex items-center space-x-3 ">
+                                 <Icon
+                                    name="FileSignature"
+                                    size={20}
+                                    className="text-success group-hover:scale-110 transition-transform"
+                                 />
+                                 <div>
+                                    <div className="flex items-center gap-2">
+                                       <p className="text-sm font-medium text-foreground">
+                                          {signedFile?.clientSignedPdf?.fileName}
+                                       </p>
+                                       {isLoadingPreviewSignature && (
+                                          <Icon name="Loader" size={14} className="animate-spin text-accent" />
+                                       )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                       Subido el {formatDate(signedFile?.clientSignedPdf?.uploadedAt)} •{" "}
+                                       {formatFileSize(signedFile?.clientSignedPdf?.fileSize)}
+                                    </p>
                                  </div>
-                                 <p className="text-xs text-muted-foreground">
-                                    Subido el {formatDate(clientSignature.uploadedAt)} •{" "}
-                                    {formatFileSize(clientSignature.fileSize)}
-                                 </p>
+                              </div>
+                              <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                                 {userPermissions?.downloadSigned && (
+                                    <Button
+                                       variant="outline"
+                                       size="sm"
+                                       iconName={isDownloadingSignature ? "Loader" : "Download"}
+                                       iconPosition="left"
+                                       iconSize={16}
+                                       onClick={() => handleDownloadClientSignature(fullRequestData._id)}
+                                       disabled={isDownloadingSignature}
+                                    >
+                                       {isDownloadingSignature ? "Descargando..." : "Descargar"}
+                                    </Button>
+                                 )}
+                                 {fullRequestData?.status !== "archivado" && userPermissions?.deleteSignature && (
+                                    <Button
+                                       variant="ghostError"
+                                       size="icon"
+                                       onClick={() => handleDeleteClientSignature(fullRequestData._id)}
+                                    >
+                                       <Icon name="Trash2" size={16} />
+                                    </Button>
+                                 )}
                               </div>
                            </div>
-                           <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
-                              {userPermissions?.downloadSigned && (
-                                 <Button
-                                    variant="outline"
-                                    size="sm"
-                                    iconName={isDownloadingSignature ? "Loader" : "Download"}
-                                    iconPosition="left"
-                                    iconSize={16}
-                                    onClick={() => handleDownloadClientSignature(fullRequestData._id)}
-                                    disabled={isDownloadingSignature}
-                                 >
-                                    {isDownloadingSignature ? "Descargando..." : "Descargar"}
-                                 </Button>
-                              )}
-                              {fullRequestData?.status !== "archivado" && userPermissions?.deleteSignature && (
-                                 <Button
-                                    variant="ghostError"
-                                    size="icon"
-                                    onClick={() => handleDeleteClientSignature(fullRequestData._id)}
-                                 >
-                                    <Icon name="Trash2" size={16} />
-                                 </Button>
-                              )}
-                           </div>
                         </div>
-                     </div>
-                  )}
+                     ))}
                </div>
             )}
       </div>

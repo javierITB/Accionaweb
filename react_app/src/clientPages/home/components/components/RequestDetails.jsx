@@ -76,7 +76,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
             fetchClientSignatures(request?._id);
          }
       }
-   }, [request?._id, request?.status, isVisible]);
+   }, [request, isVisible]);
 
    const checkForUpdates = useCallback(async () => {
       if (!request?._id) return;
@@ -415,9 +415,10 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
          // 1. AGREGAR ARCHIVOS
          if (clientSelectedAdjuntos.length > 0) {
             const uploadSuccess = await uploadFilesOneByOne();
-            if (uploadSuccess) {
+            if (!uploadSuccess) throw new Error("Error subiendo adjuntos");
+
                results.adjuntos = clientSelectedAdjuntos.length;
-            }
+            
          }
 
          // 2. AGREGAR ARCHIVOS FIRMADOS
@@ -446,7 +447,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
          throw new Error(error.message || "Ocurrió un error al aplicar los cambios");
       } finally {
          setIsUploading(false);
-         checkForUpdates();
+         await checkForUpdates();
       }
    };
    const handleDownloadAdjunto = async (responseId, index) => {
