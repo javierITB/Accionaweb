@@ -105,13 +105,22 @@ export default function ProtectedRoute({ children, permission }) {
    // --- NUEVA VALIDACIÓN DE PERMISOS ESPECÍFICOS Y CONTEXTO ---
 
    // 1. Validar Contexto (Tenant) para rutas sensibles
-   if (permission === 'view_comprobantes' && isAdminContext) {
-      console.warn("Acceso denegado: Contexto Admin no puede ver Comprobantes");
+   // Lista de permisos que SOLO pueden verse en 'formsdb' (o 'api' en dev)
+   const formsDbOnlyPermissions = [
+      'view_pagos',
+      'view_gestor_empresas',
+      'view_acceso_registro_empresas'
+   ];
+
+   const isFormsDbContext = CURRENT_TENANT === 'formsdb' || CURRENT_TENANT === 'api';
+
+   if (formsDbOnlyPermissions.includes(permission) && !isFormsDbContext) {
+      console.warn(`Acceso denegado: El permiso ${permission} solo está disponible en el contexto formsdb.`);
       return <Navigate to="/" replace />;
    }
 
-   if (permission === 'view_pagos' && !isAdminContext) {
-      console.warn("Acceso denegado: Contexto Cliente no puede ver Pagos");
+   if (permission === 'view_comprobantes' && isAdminContext) {
+      console.warn("Acceso denegado: Contexto Admin no puede ver Comprobantes");
       return <Navigate to="/" replace />;
    }
 

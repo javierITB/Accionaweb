@@ -80,10 +80,10 @@ const Routes = () => {
             <Route path="/registro-ingresos" element={<ProtectedRoute><Ingresos /></ProtectedRoute>} />
             <Route path="/registro-cambios" element={<ProtectedRoute><Registro /></ProtectedRoute>} />
             <Route path="/gestor-roles" element={<ProtectedRoute> <Roles /> </ProtectedRoute>} />
-            <Route path="/gestor-empresas" element={<ProtectedRoute> <EmpresasDashboard /> </ProtectedRoute>} />
+            <Route path="/gestor-empresas" element={<ProtectedRoute permission="view_gestor_empresas"> <EmpresasDashboard /> </ProtectedRoute>} />
             <Route path="/config-notificaciones" element={<ProtectedRoute> <AdminNotificationManager /> </ProtectedRoute>} />
-            <Route path="/config-planes" element={<ProtectedRoute> <EmpresasDashboard /> </ProtectedRoute>} />
-            <Route path="/registro-empresas" element={<ProtectedRoute> <RegistroEmpresas /> </ProtectedRoute>} />
+            <Route path="/config-planes" element={<ProtectedRoute permission="view_gestor_empresas"> <EmpresasDashboard /> </ProtectedRoute>} />
+            <Route path="/registro-empresas" element={<ProtectedRoute permission="view_acceso_registro_empresas"> <RegistroEmpresas /> </ProtectedRoute>} />
 
 
 
