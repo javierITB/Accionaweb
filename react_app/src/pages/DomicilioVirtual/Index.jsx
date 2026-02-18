@@ -230,7 +230,13 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
         }
     };
 
-    const currentRequests = useMemo(() => resp, [resp]);
+    const currentRequests = useMemo(() => {
+    if (filters.status === 'dado_de_baja') {
+        return resp.filter(r => r.status === 'dado_de_baja');
+    }
+    // Si no estamos filtrando por "baja", las ocultamos de la lista general
+    return resp.filter(r => r.status !== 'dado_de_baja');
+}, [resp, filters.status]);
 
     const mockStats = serverStats || {
         total: totalItems,
