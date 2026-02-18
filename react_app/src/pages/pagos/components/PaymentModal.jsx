@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import { apiFetch } from '../../../utils/api';
 
-const PaymentModal = ({ isOpen, onClose, payment, onStatusChange }) => {
+const PaymentModal = ({ isOpen, onClose, payment, onStatusChange, readOnly = false }) => {
     const [loading, setLoading] = useState(false);
 
     if (!isOpen || !payment) return null;
@@ -150,26 +150,29 @@ const PaymentModal = ({ isOpen, onClose, payment, onStatusChange }) => {
                         onClick={onClose}
                         className="w-full sm:w-auto px-6 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium transition-colors"
                     >
-                        Cancelar
+                        {readOnly ? "Cerrar" : "Cancelar"}
                     </button>
-                    <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3">
-                        <button
-                            onClick={() => updateStatus('Rechazado')}
-                            disabled={loading || payment.status === 'Rechazado'}
-                            className="w-full sm:w-auto px-8 py-2.5 rounded-lg border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                            <Icon name="Ban" size={20} />
-                            Rechazar Pago
-                        </button>
-                        <button
-                            onClick={() => updateStatus('Aprobado')}
-                            disabled={loading || payment.status === 'Aprobado'}
-                            className="w-full sm:w-auto px-8 py-2.5 rounded-lg bg-primary text-white hover:bg-blue-600 font-semibold shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                            <Icon name="CheckCircle" size={20} />
-                            Aprobar Pago
-                        </button>
-                    </div>
+
+                    {!readOnly && (
+                        <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3">
+                            <button
+                                onClick={() => updateStatus('Rechazado')}
+                                disabled={loading || payment.status === 'Rechazado'}
+                                className="w-full sm:w-auto px-8 py-2.5 rounded-lg border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                <Icon name="Ban" size={20} />
+                                Rechazar Pago
+                            </button>
+                            <button
+                                onClick={() => updateStatus('Aprobado')}
+                                disabled={loading || payment.status === 'Aprobado'}
+                                className="w-full sm:w-auto px-8 py-2.5 rounded-lg bg-primary text-white hover:bg-blue-600 font-semibold shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                <Icon name="CheckCircle" size={20} />
+                                Aprobar Pago
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
