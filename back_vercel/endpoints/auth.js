@@ -1011,33 +1011,62 @@ router.get("/logins/registroempresas", async (req, res) => {
       const token = authHeader.split(" ")[1];
       const { validarToken } = require("../utils/validarToken");
 
-      /**
-       * LA SOLUCIÓN QUIRÚRGICA:
-       * Forzamos la validación en 'formsdb' porque es ahí donde vive tu token de admin.
-       * Usamos 'req.mongoClient' que ya definiste en tu app.js (línea 82).
-       */
+      // 1. Validar Token en formsdb (Base Maestra)
       const dbMaestra = req.mongoClient.db("formsdb"); 
       const validation = await validarToken(dbMaestra, token);
 
       if (!validation.ok) {
-         return res.status(401).json({ 
-            message: "Acceso denegado: Token no encontrado en la base maestra",
-            reason: validation.reason 
-         });
+         return res.status(401).json({ message: "Token inválido en base maestra" });
       }
 
-      /**
-       * LA CONSULTA DE DATOS:
-       * Una vez validado por 'formsdb', usamos 'req.db' (la del vecino) 
-       * para obtener los ingresos que solicitaste desde el front.
-       */
+      // 2. BUSCAR USUARIO POR EMAIL
+      const { createBlindIndex } = require("../utils/seguridad.helper");
+      const mailBusqueda = createBlindIndex(validation.data.email);
+
+      const usuarioDB = await dbMaestra.collection("usuarios").findOne({ 
+         mail_index: mailBusqueda 
+      });
+
+      if (!usuarioDB || usuarioDB.estado !== "activo") {
+         return res.status(403).json({ message: "Acceso denegado: Usuario no reconocido" });
+      }
+
+      // 3. VALIDAR EMPRESA Y CARGO (Exactos)
+      try {
+         const empresaDescifrada = decrypt(usuarioDB.empresa);
+         const cargoDescifrado = decrypt(usuarioDB.cargo);
+
+         const empresaRequerida = "Acciona Centro de Negocios Spa.";
+         
+         // Usamos trim() para limpiar espacios invisibles, pero respetamos Mayúsculas
+         const cargoLimpio = cargoDescifrado.trim();
+         
+         // Lista con los nombres EXACTOS que me pasaste
+         const cargosAutorizados = ["Administrador", "Super User Do"];
+         
+         if (empresaDescifrada !== empresaRequerida) {
+            return res.status(403).json({ message: "Acceso denegado: Empresa no autorizada" });
+         }
+
+         if (!cargosAutorizados.includes(cargoLimpio)) {
+            return res.status(403).json({ 
+               message: "Acceso denegado: Cargo insuficiente",
+               cargo_en_db: cargoLimpio 
+            });
+         }
+
+      } catch (error) {
+         console.error("Error descifrando seguridad:", error);
+         return res.status(500).json({ error: "Error en verificación de identidad" });
+      }
+
+      // 4. CONSULTA DE DATOS
       const tkn = await req.db.collection("ingresos").find().toArray();
-      
       res.json(tkn);
 
    } catch (err) {
-      console.error("Error en ruta registroempresas:", err.message);
-      res.status(500).json({ error: "Error interno en el servidor" });
+      console.error("Error en ruta:", err.message);
+      res.status(500).json({ error: "Error interno del servidor" });
    }
 });
 

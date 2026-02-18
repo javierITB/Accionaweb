@@ -31,6 +31,8 @@ import Solicitudes from './pages/solicitudes/Index.jsx';
 import DomicilioVirtualIndex from './pages/DomicilioVirtual/Index.jsx';
 import AdminNotificationManager from './pages/config-notificaciones/Index.jsx';
 import Anuncios from './pages/anuncios/Index.jsx';
+import PagosIndex from './pages/pagos/Index.jsx';
+import RegistroEmpresas from "pages/registroEmpresas/registroEmpresas.jsx";
 
 
 import Home from './clientPages/home/Index.jsx';
@@ -40,6 +42,9 @@ import Profile from './clientPages/profile/Index.jsx';
 import PublicPreview from './pages/public/PublicPreview.jsx';
 
 import { PermissionsProvider } from "./context/PermissionsContext.jsx";
+
+import ComprobantesIndex from "./pages/comprobantes/Index";
+import UploadComprobante from "./pages/comprobantes/Upload";
 
 const Routes = () => {
   return (
@@ -78,14 +83,32 @@ const Routes = () => {
             <Route path="/gestor-empresas" element={<ProtectedRoute> <EmpresasDashboard /> </ProtectedRoute>} />
             <Route path="/config-notificaciones" element={<ProtectedRoute> <AdminNotificationManager /> </ProtectedRoute>} />
             <Route path="/config-planes" element={<ProtectedRoute> <EmpresasDashboard /> </ProtectedRoute>} />
+            <Route path="/registro-empresas" element={<ProtectedRoute> <RegistroEmpresas /> </ProtectedRoute>} />
+
 
 
             <Route path="/users" element={<ProtectedRoute> <Users /> </ProtectedRoute>} />
-            <Route path="/empresas" element={<ProtectedRoute> <Empresas /> </ProtectedRoute>} />
+            <Route
+              path="/comprobantes"
+              element={
+                <ProtectedRoute permission="view_comprobantes">
+                  <ComprobantesIndex />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/comprobantes/subir"
+              element={
+                <ProtectedRoute permission="view_comprobantes">
+                  <UploadComprobante />
+                </ProtectedRoute>
+              }
+            /><Route path="/empresas" element={<ProtectedRoute> <Empresas /> </ProtectedRoute>} />
             <Route path="/dashboard-home" element={<ProtectedRoute> <DashboardHome /> </ProtectedRoute>} />
             <Route path="/request-tracking" element={<ProtectedRoute> <RequestTracking /> </ProtectedRoute>} />
             <Route path="/solicitudes" element={<ProtectedRoute> <Solicitudes /> </ProtectedRoute>} />
             <Route path="/anuncios" element={<ProtectedRoute> <Anuncios /> </ProtectedRoute>} />
+            <Route path="/pagos" element={<ProtectedRoute permission="view_pagos"> <PagosIndex /> </ProtectedRoute>} />
             <Route path="/ticket-builder" element={<ProtectedRoute><TicketBuilder /></ProtectedRoute>} />
             <Route path="/config-tickets" element={<ProtectedRoute><TicketConfig /></ProtectedRoute>} />
 

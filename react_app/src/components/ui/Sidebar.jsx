@@ -72,6 +72,15 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
 
 
    const hasPermission = (itemPermission) => {
+      const adminTenants = ["api", "formsdb", "infodesa", "acciona", "solunex"];
+      const isAdminContext = adminTenants.includes(CURRENT_TENANT);
+
+      // Regla 1: FormsDB (Admin)
+      if (isAdminContext && itemPermission === 'view_comprobantes') return false;
+
+      // Regla 2: Clientes NO deben ver la zona de Pagos
+      if (!isAdminContext && itemPermission === 'view_pagos') return false;
+
       // 1. Si es admin root (nombre 'Admin'), tiene acceso a todo.
       if (isAdminRole) return true;
 
@@ -187,7 +196,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                   {isTextVisible && (
                      <div className="flex flex-col min-w-0 flex-1">
                         <h1 className="text-md font-semibold text-foreground leading-snug capitalize break-words whitespace-normal">
-                        { `Solunex ${LOGO_TENANT.toUpperCase()}` }
+                           {`Solunex ${LOGO_TENANT.toUpperCase()}`}
                         </h1>
                         <span className="text-[10px] text-muted-foreground font-mono truncate">Panel de administración</span>
                      </div>

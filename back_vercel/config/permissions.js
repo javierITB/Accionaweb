@@ -243,6 +243,14 @@ const PERMISSION_GROUPS = {
         ]
     },
 
+    pagos: {
+        label: 'Vista: Planes y Servicios (Pagos)',
+        tagg: 'admin',
+        permissions: [
+            { id: 'view_pagos', label: 'Acceso a la vista' },
+        ]
+    },
+
     anuncios: {
         label: 'Vista: Anuncios',
         tagg: 'admin',
@@ -257,6 +265,15 @@ const PERMISSION_GROUPS = {
         ]
     },
     //check
+    comprobantes: {
+        label: 'Vista: Comprobantes de Pago',
+        tagg: 'admin',
+        permissions: [
+            { id: 'view_comprobantes', label: 'Acceso a la vista' },
+            { id: 'create_comprobantes', label: 'Subir comprobantes', dependency: 'view_comprobantes' },
+        ]
+    },
+
     usuarios: {
         label: 'Vista: Usuarios',
         tagg: 'admin',
@@ -378,7 +395,32 @@ const PERMISSION_GROUPS = {
         permissions: [
             { id: 'view_formulario', label: 'Acceso a la vista' }
         ]
-    }
+    },
+    registro_empresas: {
+      label: 'Vista: Registro de Empresas',
+      tagg: 'admin',
+      permissions: [
+         { 
+            id: 'view_acceso_registro_empresas', 
+            label: 'Acceso a la vista' 
+         },
+         { 
+            id: 'view_registro_ingresos_empresas', 
+            label: 'Ver pestaña: Registro de Ingresos', 
+            dependency: 'view_acceso_registro_empresas' // Sincronizado con tu ID
+         },
+         { 
+            id: 'view_registro_cambios_empresas', 
+            label: 'Ver pestaña: Registro de Cambios', 
+            dependency: 'view_acceso_registro_empresas' // Sincronizado con tu ID
+         },
+         { 
+            id: 'view_registro_cambios_details', 
+            label: 'Acceso a detalles de cambios (Modal)', 
+            dependency: 'view_registro_cambios_empresas' 
+         },
+      ]
+   },
 };
 
 module.exports = { PERMISSION_GROUPS };

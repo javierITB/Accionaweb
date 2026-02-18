@@ -8,6 +8,7 @@ import Button from "../../components/ui/Button";
 import "./anuncios.css";
 import { Navigate } from "react-router-dom";
 
+
 const AnunciosPage = ({ userPermissions = {} }) => {
    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);

@@ -19,6 +19,11 @@ const dashboardRoutes = require("./endpoints/dashboard");
 const registroRoutes = require("./endpoints/registro");
 const roles = require("./endpoints/roles");
 
+// Nuevas rutas (SAS, Plans, Pagos)
+const pagosRoutes = require("./endpoints/pagos");
+const plansRouter = require("./endpoints/plans");
+const sasRoutes = require("./endpoints/SAS");
+
 const app = express();
 
 // Configuración CORS
@@ -60,6 +65,12 @@ async function getTenantDB(tenantName) {
   return dbInstance;
 }
 
+// Middleware para adjuntar mongoClient (Necesario para operaciones centralizadas como SAS/Pagos)
+app.use((req, res, next) => {
+  req.mongoClient = client;
+  next();
+});
+
 // --- ESTRUCTURA DE RUTAS DINÁMICAS ---
 
 // Creamos un Router con mergeParams para que los hijos vean el parámetro :company
@@ -95,17 +106,10 @@ tenantRouter.use(async (req, res, next) => {
   }
 });
 
-// Montaje final: todas las rutas ahora requieren un prefijo (ej: /acciona/auth)
-app.use((req, res, next) => {
-  req.mongoClient = client;
-  next();
-});
-
-const plansRouter = require("./endpoints/plans");
+// Rutas Globales (SAS / Plans)
 app.use(["/sas/plans", "/api/sas/plans", "/:company/sas/plans"], plansRouter);
-
-const sasRoutes = require("./endpoints/SAS");
 app.use(["/sas", "/api/sas", "/:company/sas"], sasRoutes);
+
 
 // Definición de todos los endpoints bajo el control del tenantRouter
 tenantRouter.use("/auth", authRoutes);
@@ -123,8 +127,7 @@ tenantRouter.use("/config-tickets", configTicketsRoutes);
 tenantRouter.use("/dashboard", dashboardRoutes);
 tenantRouter.use("/registro", registroRoutes);
 tenantRouter.use("/roles", roles);
-
-
+tenantRouter.use("/pagos", pagosRoutes);
 
 app.use("/:company", tenantRouter);
 
