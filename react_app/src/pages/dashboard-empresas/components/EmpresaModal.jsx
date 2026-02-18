@@ -344,8 +344,13 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                               (activeTab === "cliente" && isClientPanelEnabled) ? (
                               Object.entries(PERMISSION_GROUPS)
                                  .filter(([_, g]) => g.tagg === activeTab)
-                                 // Filtramos gestor_empresas y configuracion_planes para que no aparezca en empresas hijas o nuevas
-                                 .filter(([key, _]) => key !== 'gestor_empresas' && key !== 'configuracion_planes')
+                                 // Filtramos gestor_empresas, configuracion_planes y registro_empresas
+                                 .filter(([key, _]) => {
+                                    if (key === 'gestor_empresas' || key === 'configuracion_planes') return false;
+                                    // FILTRO: registro_empresas solo para 'formsdb'
+                                    if (key === 'registro_empresas' && formData.name !== 'formsdb') return false;
+                                    return true;
+                                 })
                                  .map(([groupId, group]) => {
                                     const ids = group.permissions.map((p) => p.id);
                                     const isAllSelected = ids.every((id) => formData.permissions.includes(id));
