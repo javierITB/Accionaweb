@@ -17,6 +17,7 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
    const [uploadMessage, setUploadMessage] = useState("");
    const fileInputRef = useRef(null);
    const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+   const [signaturesLoading, setSignaturesLoading] = useState(false);
    const [fullRequestData, setFullRequestData] = useState({ ...request });
    const [downloadingAttachmentIndex, setDownloadingAttachmentIndex] = useState(null);
    const [approvedFilesData, setApprovedFilesData] = useState(null);
@@ -26,7 +27,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
    const [signedPdfFiles, setSignedPdfFiles] = useState([]); // Array de archivos seleccionados
    const [selectedSignedFiles, setSelectedSignedFiles] = useState([]);
    const [isUploadingSignedPdf, setIsUploadingSignedPdf] = useState(false);
-   const [signedPdfUploadMessage, setSignedPdfUploadMessage] = useState("");
    const signedFileInputRef = useRef(null);
 
    const { dialogProps, openAsyncDialog } = useAsyncDialog();
@@ -106,10 +106,15 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
 
          // Cargar archivos aprobados si el estado no es pendiente/en_revision
          if (request?.status !== "pendiente" && request?.status !== "en_revision") {
-            fetchApprovedFiles(request._id);
+            fetchApprovedFiles(request?._id);  
          }
+         if(request?.status !== "pendiente" && request?.status !== "en_revision" && request?.status !== "aprobado") {
+            console.log(request?.status)
+            fetchClientSignatures(request?._id);
+         }
+         
       }
-   }, [request, isVisible]);
+   }, [request?._id, request?.status, isVisible]);
 
    const getMimeTypeIcon = (mimeType) => {
       if (mimeType?.includes("pdf")) return "FileText";
@@ -154,6 +159,40 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
          setAttachmentsLoading(false);
       }
    };
+
+   const fetchClientSignatures = async (responseId) => {
+   setSignaturesLoading(true);
+
+   try {
+      const endpoint = "respuestas";
+      const response = await apiFetch(
+         `${API_BASE_URL}/${endpoint}/${responseId}/client-signatures`
+      );
+
+      if (response.ok) {
+         const data = await response.json();
+
+         let extractedSignatures = [];
+
+         if (Array.isArray(data)) {
+            extractedSignatures = data;
+         } else if (data) {
+            extractedSignatures = [data];
+         }
+
+         setFullRequestData((prev) => ({
+            ...prev,
+            firmas: extractedSignatures,
+         }));
+      }
+   } catch (error) {
+      console.error("Error cargando firmas:", error);
+   } finally {
+      console.log(fullRequestData)
+      setSignaturesLoading(false);
+   }
+};
+
 
    const fetchApprovedFiles = async (responseId) => {
       setLoadingApprovedFiles(true);
@@ -384,6 +423,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
          }
 
          await fetchAttachments(request._id);
+         
 
          setClientSelectedAdjuntos([]);
          // setFilesToDelete([]);
