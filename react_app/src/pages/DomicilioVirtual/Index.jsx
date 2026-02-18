@@ -12,6 +12,17 @@ import FilterPanel from './components/FilterPanel';
 import RequestDetails from './components/RequestDetails';
 import StatsOverview from './components/StatsOverview';
 
+// --- PRIORIDAD DE ESTADOS PARA EL ORDENAMIENTO VISUAL ---
+const STATUS_PRIORITY = {
+    'pendiente': 1,
+    'documento_generado': 2,
+    'enviado': 3,
+    'solicitud_firmada': 4,
+    'informado_sii': 5,
+    'dicom': 6,
+    'dado_de_baja': 7
+};
+
 const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
     const urlParams = new URLSearchParams(window.location.search);
     const formId = urlParams?.get('id');
@@ -21,8 +32,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
     const [viewMode, setViewMode] = useState('grid');
-    // Cambiado a true para que el panel se vea si hay un filtro activo por defecto
-    const [showFilters, setShowFilters] = useState(true);
+    const [showFilters, setShowFilters] = useState(true); // Cambiado a true por defecto
 
     // --- ESTADOS DE DATOS ---
     const [resp, setResp] = useState([]);
@@ -40,7 +50,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
 
     const loadedPages = useRef(new Set());
 
-    // CORRECCIÓN: Inicializamos el estado 'search' con 'contratacion'
+    // CAMBIO: Inicializamos con 'contratacion'
     const [filters, setFilters] = useState({
         search: 'contratacion',
         status: '',
@@ -117,6 +127,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
                     ? normalized
                     : [...prev, ...normalized];
                 const unique = Array.from(new Map(combined.map(item => [item._id, item])).values());
+                // Mantenemos el orden por fecha aquí para la base de datos
                 return unique.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             });
 
@@ -132,8 +143,8 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
     };
 
     // --- EFECTOS DE CONTROL ---
-    // CORRECCIÓN: Aseguramos que la primera carga use los filtros iniciales (que ya incluyen 'contratacion')
     useEffect(() => { 
+        // CAMBIO: Aseguramos que la primera carga use los filtros por defecto
         fetchData(1, false, filters); 
     }, []);
 
@@ -230,7 +241,29 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
         }
     };
 
-    const currentRequests = useMemo(() => resp, [resp]);
+    // --- LÓGICA DE FILTRADO Y ORDENAMIENTO (SOLO FRONT) ---
+    const currentRequests = useMemo(() => {
+        let filtered = [];
+        
+        // 1. Filtrar por estado 'dado_de_baja'
+        if (filters.status === 'dado_de_baja') {
+            filtered = resp.filter(r => r.status === 'dado_de_baja');
+        } else {
+            filtered = resp.filter(r => r.status !== 'dado_de_baja');
+        }
+
+        // 2. Ordenar por prioridad de estados (de izquierda a derecha / arriba hacia abajo)
+        return [...filtered].sort((a, b) => {
+            const priorityA = STATUS_PRIORITY[a.status] || 99;
+            const priorityB = STATUS_PRIORITY[b.status] || 99;
+
+            if (priorityA !== priorityB) {
+                return priorityA - priorityB; // Menor valor (prioridad más alta) arriba
+            }
+            // Si el estado es el mismo, ordenar por fecha de creación (más reciente arriba)
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+    }, [resp, filters.status]);
 
     const mockStats = serverStats || {
         total: totalItems,
@@ -279,7 +312,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <span className="flex items-center justify-center min-w-8 h-8 px-2 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
-                                {totalItems}
+                                {currentRequests.length} {/* Cambiado para mostrar el total de la lista visible */}
                             </span>
                             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
                                 Domicilio Virtual

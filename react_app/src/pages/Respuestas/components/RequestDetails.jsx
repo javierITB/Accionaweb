@@ -93,6 +93,7 @@ const RequestDetails = ({
 
    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
    const statusDropdownRef = useRef(null);
+   const containerRef = useRef(null);
 
    useEffect(() => {
       const handleClickOutside = (event) => {
@@ -160,6 +161,17 @@ const RequestDetails = ({
          setActiveTab("details");
       }
    }, [isVisible, request?._id]);
+
+   useEffect(() => {
+      scrollToBottom();
+   }, [correctedFiles]);
+
+   const scrollToBottom = () => {
+      containerRef.current?.scrollTo({
+         top: containerRef.current.scrollHeight,
+         behavior: "smooth",
+      });
+   };
 
    const fetchApprovedData = async (responseId) => {
       setIsLoadingApprovedData(true);
@@ -1632,123 +1644,122 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   </div>
                </div>
 
-               <div className="bg-muted/30 rounded-xl p-4 border border-border/50 flex flex-col gap-3">
-                  {correctedFiles?.length > 0 &&
-                     correctedFiles.map((file, index) => (
-                        <div
-                           key={`new-${index}`}
-                           className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all group"
-                           onClick={() => handlePreviewCorrectedFile(index, "new")}
-                        >
-                           <div className="flex items-center space-x-3">
-                              <Icon
-                                 name="FileText"
-                                 size={20}
-                                 className="text-accent group-hover:scale-110 transition-transform"
-                              />
-                              <div>
-                                 <div className="flex items-center gap-2">
-                                    <p className="text-sm font-medium text-foreground truncate max-w-[200px]">
-                                       {file.name}
-                                    </p>
-                                    {isLoadingPreviewCorrected && previewIndex === index && (
-                                       <Icon name="Loader" size={14} className="animate-spin text-accent" />
-                                    )}
+               {!(approvedData?.correctedFiles?.length > 0 || correctedFiles?.length > 0) && !isLoadingApprovedData ? (
+                  <div className="flex flex-col items-center justify-center py-3 rounded-lg bg-muted/30">
+                     <Icon name="FolderOpen" size={36} className="text-muted-foreground mb-3" />
+
+                     <p className="text-sm font-medium text-muted-foreground">No hay archivos corregidos</p>
+
+                     <p className="text-xs text-muted-foreground mt-1">
+                        Los archivos corregidos aparecerán aquí cuando sean subidos.
+                     </p>
+                  </div>
+               ) : (
+                  <div className="bg-muted/30 rounded-xl p-4 border border-border/50 flex flex-col gap-3">
+                     {correctedFiles?.length > 0 &&
+                        correctedFiles.map((file, index) => (
+                           <div
+                              key={`new-${index}`}
+                              className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all group"
+                              onClick={() => handlePreviewCorrectedFile(index, "new")}
+                           >
+                              <div className="flex items-center space-x-3">
+                                 <Icon
+                                    name="FileText"
+                                    size={20}
+                                    className="text-accent group-hover:scale-110 transition-transform"
+                                 />
+                                 <div>
+                                    <div className="flex items-center gap-2">
+                                       <p className="text-sm font-medium text-foreground truncate max-w-[200px]">
+                                          {file.name}
+                                       </p>
+                                       {isLoadingPreviewCorrected && previewIndex === index && (
+                                          <Icon name="Loader" size={14} className="animate-spin text-accent" />
+                                       )}
+                                    </div>
+                                    <p className="text-[10px] text-accent font-bold uppercase">Pendiente de subir</p>
                                  </div>
-                                 <p className="text-[10px] text-accent font-bold uppercase">Pendiente de subir</p>
+                              </div>
+                              <div onClick={(e) => e.stopPropagation()}>
+                                 <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
+                                    <Icon name="Trash2" size={16} />
+                                 </Button>
                               </div>
                            </div>
-                           <div onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
-                                 <Icon name="Trash2" size={16} />
-                              </Button>
-                           </div>
-                        </div>
-                     ))}
+                        ))}
 
-                  {/* {correctedFiles.length > 0 &&
-                     (fullRequestData?.status === "en_revision" || fullRequestData?.status === "pendiente") && (
-                        <div className="flex justify-end pt-2 border-t border-accent/20">
-                           <Button
-                              variant="default"
-                              size="sm"
-                              iconName="CheckCircle"
-                              onClick={handleApprove}
-                              disabled={isApproving}
-                           >
-                              {isApproving ? "Procesando..." : `Aprobar y Subir (${correctedFiles.length})`}
-                           </Button>
-                        </div>
-                     )} */}
+                     {approvedData?.correctedFiles?.length > 0 && (
+                        <div className="flex flex-col gap-3">
+                           {approvedData?.correctedFiles?.map((file, index) => {
+                              const isMarked = filesToDelete.some((f) => f.fileName === file.fileName);
 
-                  {approvedData?.correctedFiles?.length > 0 && (
-                     <div className="flex flex-col gap-3">
-                        {approvedData?.correctedFiles?.map((file, index) => {
-                           const isMarked = filesToDelete.some((f) => f.fileName === file.fileName);
-                           return (
-                              <div
-                                 key={`srv-${index}`}
-                                 className={`flex items-center justify-between p-3 rounded-lg border transition-all ${isMarked ? "bg-error/5 border-error/20 opacity-50" : "bg-card border-border cursor-pointer hover:border-accent/50 group"}`}
-                                 onClick={() => !isMarked && handlePreviewCorrectedFile(index, "approved")}
-                              >
-                                 <div className="flex items-center space-x-3">
-                                    <Icon
-                                       name="FileText"
-                                       size={20}
-                                       className={
-                                          isMarked
-                                             ? "text-error"
-                                             : "text-success group-hover:scale-110 transition-transform"
-                                       }
-                                    />
-                                    <div className="overflow-hidden">
-                                       <div className="flex items-center gap-2">
-                                          <p
-                                             className={`text-sm font-medium truncate ${isMarked ? "line-through text-muted-foreground" : "text-foreground"}`}
-                                          >
-                                             {file.fileName}
+                              return (
+                                 <div
+                                    key={`srv-${index}`}
+                                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${isMarked ? "bg-error/5 border-error/20 opacity-50" : "bg-card border-border cursor-pointer hover:border-accent/50 group"}`}
+                                    onClick={() => !isMarked && handlePreviewCorrectedFile(index, "approved")}
+                                 >
+                                    <div className="flex items-center space-x-3">
+                                       <Icon
+                                          name="FileText"
+                                          size={20}
+                                          className={
+                                             isMarked
+                                                ? "text-error"
+                                                : "text-success group-hover:scale-110 transition-transform"
+                                          }
+                                       />
+                                       <div className="overflow-hidden">
+                                          <div className="flex items-center gap-2">
+                                             <p
+                                                className={`text-sm font-medium truncate ${isMarked ? "line-through text-muted-foreground" : "text-foreground"}`}
+                                             >
+                                                {file.fileName}
+                                             </p>
+                                             {isLoadingPreviewCorrected && previewIndex === index && (
+                                                <Icon name="Loader" size={14} className="animate-spin text-accent" />
+                                             )}
+                                          </div>
+                                          <p className="text-xs text-muted-foreground">
+                                             {formatFileSize(file.fileSize)}
                                           </p>
-                                          {isLoadingPreviewCorrected && previewIndex === index && (
-                                             <Icon name="Loader" size={14} className="animate-spin text-accent" />
-                                          )}
                                        </div>
-                                       <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>
+                                    </div>
+                                    <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
+                                       <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => handleDownloadCorrected(index, "approved")}
+                                          iconName="Download"
+                                          disabled={isMarked}
+                                       />
+                                       {!["archivado", "finalizado"].includes(fullRequestData?.status) &&
+                                          (isMarked ? (
+                                             <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleUndoDelete(file.fileName)}
+                                                iconName="RotateCcw"
+                                             />
+                                          ) : (
+                                             <Button
+                                                variant="ghostError"
+                                                size="icon"
+                                                onClick={() => handleDeleteUploadedFile(file.fileName, index)}
+                                                iconName="Trash2"
+                                             />
+                                          ))}
                                     </div>
                                  </div>
-                                 <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
-                                    <Button
-                                       variant="ghost"
-                                       size="icon"
-                                       onClick={() => handleDownloadCorrected(index, "approved")}
-                                       iconName="Download"
-                                       disabled={isMarked}
-                                    />
-                                    {!["archivado", "finalizado"].includes(fullRequestData?.status) &&
-                                       (isMarked ? (
-                                          <Button
-                                             variant="ghost"
-                                             size="icon"
-                                             onClick={() => handleUndoDelete(file.fileName)}
-                                             iconName="RotateCcw"
-                                          />
-                                       ) : (
-                                          <Button
-                                             variant="ghostError"
-                                             size="icon"
-                                             onClick={() => handleDeleteUploadedFile(file.fileName, index)}
-                                             iconName="Trash2"
-                                          />
-                                       ))}
-                                 </div>
-                              </div>
-                           );
-                        })}
-                     </div>
-                  )}
+                              );
+                           })}
+                        </div>
+                     )}
 
-                  {isLoadingApprovedData && <LoadingCard text="Cargando archivos..." />}
+                     {isLoadingApprovedData && <LoadingCard text="Cargando archivos..." />}
 
-                  {!(approvedData?.correctedFiles?.length > 0 || correctedFiles?.length > 0) && !isLoadingApprovedData && (
+                     {/* {!(approvedData?.correctedFiles?.length > 0 || correctedFiles?.length > 0) && !isLoadingApprovedData && (
                      <div className="flex flex-col items-center justify-center py-3 rounded-lg bg-muted/30">
                         <Icon name="FolderOpen" size={36} className="text-muted-foreground mb-3" />
 
@@ -1758,23 +1769,9 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            Los archivos corregidos aparecerán aquí cuando sean subidos.
                         </p>
                      </div>
-                  )}
-
-                  {/* {(fullRequestData?.status === "aprobado" || fullRequestData?.status === "firmado") &&
-                     (correctedFiles.length > 0 || filesToDelete.length > 0) && (
-                        <div className="flex justify-end pt-2 border-t border-border">
-                           <Button
-                              variant="outlineTeal"
-                              size="sm"
-                              iconName="RefreshCw"
-                              onClick={handleUpdateCorrectedFiles}
-                              disabled={isUploading}
-                           >
-                              {isUploading ? "Actualizando..." : "Aplicar Cambios"}
-                           </Button>
-                        </div>
-                     )} */}
-               </div>
+                  )} */}
+                  </div>
+               )}
             </div>
          )}
 
@@ -2330,7 +2327,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6" ref={containerRef}>
                {activeTab === "details" ? (
                   renderDetailsTab()
                ) : activeTab === "chronology" ? (

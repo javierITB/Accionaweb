@@ -14,7 +14,6 @@ const FilterPanel = ({
 }) => {
   const statusOptions = [
     { value: '', label: 'Todos los Estados' },
-    { value: 'pendiente', label: 'Pendiente' },
     { value: 'documento_generado', label: 'Documento Generado' },
     // CORRECCIÓN PERTINENTE: Cambiado 'documento_enviado' por 'enviado' para coincidir con BD
     { value: 'enviado', label: 'Documento Enviado' },
