@@ -8,11 +8,20 @@ import LoadingCard from "clientPages/components/LoadingCard";
 import { Navigate } from "react-router-dom";
 
 const RegistroEmpresas = ({ userPermissions = [] }) => {
-   // --- PERMISO ÚNICO DE VISTA GENERAL ---
-   const canAccess = useMemo(() => userPermissions.includes("view_registro_empresas"), [userPermissions]);
+   // --- PERMISOS ACTUALIZADOS ---
+   const permisos = useMemo(() => ({
+      // Acceso raíz para entrar a la vista (ID personalizado)
+      canAccess: userPermissions.includes("view_acceso_registro_empresas"),
+      // Control de visibilidad de pestañas
+      verIngresos: userPermissions.includes("view_registro_ingresos_empresas"),
+      verCambios: userPermissions.includes("view_registro_cambios_empresas"),
+      // Control de acceso al modal de detalles
+      verDetalles: userPermissions.includes("view_registro_cambios_details"),
+   }), [userPermissions]);
 
    // --- ESTADOS DE PESTAÑAS Y SELECCIÓN ---
-   const [activeTab, setActiveTab] = useState("registro"); 
+   // Inicializa en la primera pestaña que el usuario tenga permitida
+   const [activeTab, setActiveTab] = useState(permisos.verCambios ? "registro" : "ingresos"); 
    const [selectedCompany, setSelectedCompany] = useState("");
    const [empresasOptions, setEmpresasOptions] = useState([]);
 
@@ -136,6 +145,10 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
    };
 
    const getTabContent = () => {
+      // Validación de seguridad por pestaña activa
+      if (activeTab === "registro" && !permisos.verCambios) return <p className="p-8 text-center text-muted-foreground italic">No tienes permisos para ver el Registro de Cambios.</p>;
+      if (activeTab === "ingresos" && !permisos.verIngresos) return <p className="p-8 text-center text-muted-foreground italic">No tienes permisos para ver el Registro de Ingresos.</p>;
+
       return (
          <div className="space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -185,7 +198,10 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
                                     <td className="px-4 py-2 text-sm text-center">{reg.target?.type}</td>
                                     <td className="px-4 py-2 text-sm">{formatDateSplit(reg.createdAt)}</td>
                                     <td className="px-4 py-2 text-center">
-                                       <Button variant="outlineTeal" size="sm" onClick={() => { setSelectedRegistro(reg); setModalOpen(true); }}>Ver más</Button>
+                                       {/* Solo mostramos el botón si tiene permiso de detalles */}
+                                       {permisos.verDetalles && (
+                                          <Button variant="outlineTeal" size="sm" onClick={() => { setSelectedRegistro(reg); setModalOpen(true); }}>Ver más</Button>
+                                       )}
                                     </td>
                                  </tr>
                               ))}
@@ -226,7 +242,8 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
       );
    };
 
-   if (!loading && !canAccess) return <Navigate to="/panel" replace />;
+   // Protección de ruta raíz (Usando tu ID personalizado)
+   if (!loading && !permisos.canAccess) return <Navigate to="/panel" replace />;
 
    const mainMarginClass = isMobileScreen ? "ml-0" : isDesktopOpen ? "ml-64" : "ml-16";
 
@@ -259,20 +276,24 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
                   </div>
                </div>
 
-               {/* PESTAÑAS DISPONIBLES SIEMPRE QUE TENGA ACCESO A LA VISTA */}
+               {/* PESTAÑAS DINÁMICAS SEGÚN PERMISOS */}
                <div className="flex space-x-1 rounded-lg bg-muted/50 p-1 w-fit">
-                  <button 
-                     onClick={() => { setActiveTab("registro"); setPage(1); }} 
-                     className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === "registro" ? "bg-indigo-600 text-white shadow-md" : "text-muted-foreground hover:bg-muted"}`}
-                  >
-                     Registro de Cambios
-                  </button>
-                  <button 
-                     onClick={() => { setActiveTab("ingresos"); setPage(1); }} 
-                     className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === "ingresos" ? "bg-indigo-600 text-white shadow-md" : "text-muted-foreground hover:bg-muted"}`}
-                  >
-                     Registro de Ingresos
-                  </button>
+                  {permisos.verCambios && (
+                     <button 
+                        onClick={() => { setActiveTab("registro"); setPage(1); }} 
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === "registro" ? "bg-indigo-600 text-white shadow-md" : "text-muted-foreground hover:bg-muted"}`}
+                     >
+                        Registro de Cambios
+                     </button>
+                  )}
+                  {permisos.verIngresos && (
+                     <button 
+                        onClick={() => { setActiveTab("ingresos"); setPage(1); }} 
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === "ingresos" ? "bg-indigo-600 text-white shadow-md" : "text-muted-foreground hover:bg-muted"}`}
+                     >
+                        Registro de Ingresos
+                     </button>
+                  )}
                </div>
 
                <div className="bg-card border border-border rounded-lg shadow-sm p-6">
