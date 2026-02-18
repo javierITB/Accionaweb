@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Icon from "../../../components/AppIcon";
 import Button from "../../../components/ui/Button";
 import { apiFetch, API_BASE_URL } from "../../../../utils/api";
@@ -42,44 +42,6 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
    // --------------------------
 
    // Polling para verificar cambios de estado cada 5 segundos
-   useEffect(() => {
-      if (!isVisible || !request?._id) return;
-
-      const interval = setInterval(async () => {
-         try {
-            const endpoint = "respuestas";
-            const response = await apiFetch(`${API_BASE_URL}/${endpoint}/${request._id}`);
-            if (response.ok) {
-               const updatedRequest = await response.json();
-
-               // Solo actualizar si el status cambió
-               if (updatedRequest.status !== request.status) {
-                  if (onUpdate) {
-                     const normalizedRequest = {
-                        ...updatedRequest,
-                        submittedBy:
-                           updatedRequest.user?.nombre ||
-                           updatedRequest.submittedBy ||
-                           request.submittedBy ||
-                           "Usuario Desconocido",
-                        company:
-                           updatedRequest.user?.empresa ||
-                           updatedRequest.company ||
-                           request.company ||
-                           "Empresa Desconocida",
-                        submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt || request.submittedAt,
-                     };
-                     onUpdate(normalizedRequest);
-                  }
-               }
-            }
-         } catch (error) {
-            console.error("Error verificando actualización del request:", error);
-         }
-      }, 30000); // Verificar cada 30 segundos
-
-      return () => clearInterval(interval);
-   }, [isVisible, request?._id, request?.status, onUpdate]);
 
    // Verificar si hay PDF firmado cada vez que se abre el modal
    useEffect(() => {
@@ -116,17 +78,60 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
       }
    }, [request?._id, request?.status, isVisible]);
 
+   const checkForUpdates = useCallback(async () => {
+      if (!request?._id) return;
 
-      useEffect(() => {
-         scrollToBottom();
-      }, [selectedSignedFiles]);
-   
-      const scrollToBottom = () => {
-         containerRef.current?.scrollTo({
-            top: containerRef.current.scrollHeight,
-            behavior: "smooth",
-         });
-      };
+      try {
+         const endpoint = "respuestas";
+         const response = await apiFetch(`${API_BASE_URL}/${endpoint}/${request._id}`);
+
+         if (!response.ok) return;
+
+         const updatedRequest = await response.json();
+
+         // Solo actualizar si el status cambió
+         if (updatedRequest.status !== request.status) {
+            if (onUpdate) {
+               const normalizedRequest = {
+                  ...updatedRequest,
+                  submittedBy:
+                     updatedRequest.user?.nombre ||
+                     updatedRequest.submittedBy ||
+                     request.submittedBy ||
+                     "Usuario Desconocido",
+                  company:
+                     updatedRequest.user?.empresa || updatedRequest.company || request.company || "Empresa Desconocida",
+                  submittedAt: updatedRequest.submittedAt || updatedRequest.createdAt || request.submittedAt,
+               };
+
+               onUpdate(normalizedRequest);
+            }
+         }
+      } catch (error) {
+         console.error("Error verificando actualización del request:", error);
+      }
+   }, [request, onUpdate]);
+
+   useEffect(() => {
+      if (!isVisible) return;
+
+      const interval = setInterval(() => {
+         checkForUpdates();
+      }, 30000);
+
+      return () => clearInterval(interval);
+   }, [isVisible, checkForUpdates]);
+
+   useEffect(() => {
+      scrollToBottom();
+   }, [selectedSignedFiles]);
+
+   const scrollToBottom = () => {
+      containerRef.current?.scrollTo({
+         top: containerRef.current.scrollHeight,
+         behavior: "smooth",
+      });
+   };
    const getMimeTypeIcon = (mimeType) => {
       if (mimeType?.includes("pdf")) return "FileText";
       if (mimeType?.includes("word") || mimeType?.includes("document")) return "FileText";
@@ -441,6 +446,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
          throw new Error(error.message || "Ocurrió un error al aplicar los cambios");
       } finally {
          setIsUploading(false);
+         checkForUpdates();
       }
    };
    const handleDownloadAdjunto = async (responseId, index) => {
@@ -841,7 +847,11 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                            </div>
 
                            <div onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghostError" size="icon" onClick={() => handleRemoveFileSignedSelected(index)}>
+                              <Button
+                                 variant="ghostError"
+                                 size="icon"
+                                 onClick={() => handleRemoveFileSignedSelected(index)}
+                              >
                                  <Icon name="Trash2" size={16} />
                               </Button>
                            </div>
@@ -903,10 +913,12 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
       );
    };
 
-   console.log(fullRequestData);
    return (
       <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-         <div className="bg-card border border-border shadow-brand-active w-full overflow-y-auto rounded-none h-[clamp(500px,85dvh,800px)] max-h-[calc(100dvh-2rem) sm:max-w-4xl sm:rounded-lg" ref={containerRef}>
+         <div
+            className="bg-card border border-border shadow-brand-active w-full overflow-y-auto rounded-none h-[clamp(500px,85dvh,800px)] max-h-[calc(100dvh-2rem) sm:max-w-4xl sm:rounded-lg"
+            ref={containerRef}
+         >
             <div className="sticky top-0 bg-card border-b border-border p-4 sm:p-6 z-10">
                <div className="flex items-start justify-between">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 max-w-[85%] sm:max-w-none">
@@ -1072,21 +1084,21 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                        </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
-                              <Button
-                                 variant="ghost"
-                                 size="sm"
-                                 onClick={() => (index, "new")}
-                                 // iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
-                                 iconPosition="left"
-                                 iconSize={16}
-                                 // disabled={isLoadingPreviewCorrected}
-                              >
-                                 Vista Previa
-                              </Button>
-                              <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
-                                 <Icon name="Trash2" size={16} />
-                              </Button>
-                           </div>
+                                       <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => (index, "new")}
+                                          // iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
+                                          iconPosition="left"
+                                          iconSize={16}
+                                          // disabled={isLoadingPreviewCorrected}
+                                       >
+                                          Vista Previa
+                                       </Button>
+                                       <Button variant="ghostError" size="icon" onClick={() => handleRemoveFile(index)}>
+                                          <Icon name="Trash2" size={16} />
+                                       </Button>
+                                    </div>
                                  </div>
                               ))}
 

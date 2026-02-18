@@ -90,6 +90,7 @@ const RequestDetails = ({
    const [downloadingCorrectedIndex, setDownloadingCorrectedIndex] = useState(null);
    const [showPreview, setShowPreview] = useState(false);
    const [previewDocument, setPreviewDocument] = useState(null);
+   const [isScrollToBottom, setScrollToBottom] = useState(false);
 
    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
    const statusDropdownRef = useRef(null);
@@ -164,7 +165,8 @@ const RequestDetails = ({
 
    useEffect(() => {
       scrollToBottom();
-   }, [correctedFiles]);
+      setScrollToBottom(false);
+   }, [isScrollToBottom]);
 
    const scrollToBottom = () => {
       containerRef.current?.scrollTo({
@@ -872,6 +874,7 @@ Puedes agregar máximo ${remainingSlots} archivo(s) más.`,
          await handleUpdate();
 
          setCorrectedFiles([]);
+         setScrollToBottom(true);
          setFilesToDelete([]);
          if (fileInputRef.current) fileInputRef.current.value = "";
 
