@@ -84,7 +84,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
 
       // Si el permiso es exclusivo de formsdb y el tenant actual NO es formsdb (ni api), ocultar
       if (formsDbOnlyPermissions.includes(itemPermission)) {
-         const isFormsDbContext = CURRENT_TENANT === 'formsdb' || CURRENT_TENANT === 'api';
+         const isFormsDbContext = CURRENT_TENANT === 'formsdb' || CURRENT_TENANT === 'api' || CURRENT_TENANT === 'infodesa';
          if (!isFormsDbContext) return false;
       }
 
