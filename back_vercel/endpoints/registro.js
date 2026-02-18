@@ -62,6 +62,21 @@ router.get("/todos", async (req, res) => {
 
 router.get("/todos/registroempresa", async (req, res) => {
    try {
+      // 0. VALIDAR CONTEXTO (Tenant)
+      // Asegurar que existe una DB conectada para validar contexto
+      let dbToUse = req.db;
+      if (!dbToUse && req.mongoClient) {
+         dbToUse = req.mongoClient.db("formsdb");
+      }
+
+      if (!dbToUse) {
+         console.error("[Registro] Error: No database connection available for context validation");
+         return res.status(500).json({ error: "Configuration Error: No DB connection" });
+      }
+
+      // NOTA: No bloqueamos por nombre de DB aquí porque el Admin necesita leer "cambios" de otras empresas.
+      // La seguridad se garantiza validando que el TOKEN pertenezca a un Admin de FormsDB (ver abajo).
+
       // 1. VALIDACIÓN MANUAL (Lógica de Sesión Centralizada)
       const authHeader = req.headers.authorization;
       if (!authHeader) return res.status(401).json({ message: "No autorizado" });
@@ -94,11 +109,26 @@ router.get("/todos/registroempresa", async (req, res) => {
          const cargoDescifrado = decrypt(usuarioDB.cargo).trim();
 
          const empresaRequerida = "Acciona Centro de Negocios Spa.";
-         // Cargos exactos según tus requerimientos
-         const cargosAutorizados = ["Administrador", "Super User Do"];
 
-         if (empresaDescifrada !== empresaRequerida || !cargosAutorizados.includes(cargoDescifrado)) {
-            return res.status(403).json({ message: "Acceso denegado: Privilegios insuficientes" });
+
+         // BUSCAR ROL EN LA DB PARA VER SUS PERMISOS REALES
+         const roleDef = await dbMaestra.collection("roles").findOne({ name: cargoDescifrado });
+
+         if (!roleDef) {
+            return res.status(403).json({ message: `Acceso denegado: Rol '${cargoDescifrado}' no encontrado en configuración` });
+         }
+
+         const permissions = roleDef.permissions || [];
+         // Permisos que autorizan esta vista
+         const acceptedPermissions = ["all", "view_acceso_registro_empresas", "view_registro_cambios_empresas"];
+
+         const hasPermission = acceptedPermissions.some(p => permissions.includes(p));
+
+         // Validación de empresa: Mantenemos la seguridad de que sea Acciona
+         const isAcciona = empresaDescifrada === empresaRequerida;
+
+         if (!isAcciona || !hasPermission) {
+            return res.status(403).json({ message: "Acceso denegado: No tienes permisos para esta vista" });
          }
       } catch (error) {
          return res.status(500).json({ error: "Error en la verificación de identidad cifrada" });

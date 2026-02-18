@@ -33,6 +33,11 @@ export const PlanesTab = ({ plans, isLoading, permisos, onRefresh }) => {
                                             <p className="text-xs text-muted-foreground truncate font-mono uppercase tracking-widest opacity-60">
                                                 {plan.usageCount || 0} Empresas Asignadas
                                             </p>
+                                            {plan.price !== undefined && (
+                                                <p className="text-sm font-bold text-indigo-500 mt-1">
+                                                    ${Math.floor(plan.price).toLocaleString('es-CL')} <span className="text-[10px] text-muted-foreground font-normal"> + IVA / mes</span>
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 

@@ -1005,14 +1005,28 @@ router.get("/logins/todos", async (req, res) => {
 
 router.get("/logins/registroempresas", async (req, res) => {
    try {
+      // 0. VALIDAR CONTEXTO (Tenant)
+      let dbToUse = req.db;
+      if (!dbToUse && req.mongoClient) {
+         dbToUse = req.mongoClient.db("formsdb");
+      }
+
+      if (!dbToUse) {
+         console.error("[Auth] Error: No database connection available for context validation");
+         return res.status(500).json({ error: "Configuration Error: No DB connection" });
+      }
+
+      // NOTA: Permitimos ejecución en cualquier DB para que el Admin pueda ver logins de clientes.
+      // La seguridad recae en validar el token contra FormsDB.
+
       const authHeader = req.headers.authorization;
       if (!authHeader) return res.status(401).json({ message: "No autorizado" });
-      
+
       const token = authHeader.split(" ")[1];
       const { validarToken } = require("../utils/validarToken");
 
       // 1. Validar Token en formsdb (Base Maestra)
-      const dbMaestra = req.mongoClient.db("formsdb"); 
+      const dbMaestra = req.mongoClient.db("formsdb");
       const validation = await validarToken(dbMaestra, token);
 
       if (!validation.ok) {
@@ -1023,8 +1037,8 @@ router.get("/logins/registroempresas", async (req, res) => {
       const { createBlindIndex } = require("../utils/seguridad.helper");
       const mailBusqueda = createBlindIndex(validation.data.email);
 
-      const usuarioDB = await dbMaestra.collection("usuarios").findOne({ 
-         mail_index: mailBusqueda 
+      const usuarioDB = await dbMaestra.collection("usuarios").findOne({
+         mail_index: mailBusqueda
       });
 
       if (!usuarioDB || usuarioDB.estado !== "activo") {
@@ -1037,22 +1051,40 @@ router.get("/logins/registroempresas", async (req, res) => {
          const cargoDescifrado = decrypt(usuarioDB.cargo);
 
          const empresaRequerida = "Acciona Centro de Negocios Spa.";
-         
+
          // Usamos trim() para limpiar espacios invisibles, pero respetamos Mayúsculas
          const cargoLimpio = cargoDescifrado.trim();
-         
+
          // Lista con los nombres EXACTOS que me pasaste
          const cargosAutorizados = ["Administrador", "Super User Do"];
-         
+
+
+
+         // 1. Validar Empresa
+         // Se mantiene validación de empresa por seguridad base, pero se permite 'formsdb' (superadmin/dev)
          if (empresaDescifrada !== empresaRequerida) {
-            return res.status(403).json({ message: "Acceso denegado: Empresa no autorizada" });
+            return res.status(403).json({
+               message: "Acceso denegado: Empresa no autorizada",
+               detail: `Empresa DB: ${empresaDescifrada}, req: ${empresaRequerida}`
+            });
          }
 
-         if (!cargosAutorizados.includes(cargoLimpio)) {
-            return res.status(403).json({ 
-               message: "Acceso denegado: Cargo insuficiente",
-               cargo_en_db: cargoLimpio 
-            });
+         // 2. Validar Permisos del Rol (RBAC)
+         const roleDef = await dbMaestra.collection("roles").findOne({ name: cargoLimpio });
+
+         if (!roleDef) {
+            console.warn(`[Auth] Rol no encontrado: ${cargoLimpio}`);
+            return res.status(403).json({ message: "Acceso denegado: Rol no definido en sistema" });
+         }
+
+         const permissions = roleDef.permissions || [];
+         // Permisos que autorizan esta vista
+         const acceptedPermissions = ["all", "view_acceso_registro_empresas", "view_registro_ingresos_empresas"];
+
+         const hasPermission = acceptedPermissions.some(p => permissions.includes(p));
+
+         if (!hasPermission) {
+            return res.status(403).json({ message: "Acceso denegado: Falta el permiso requerido" });
          }
 
       } catch (error) {

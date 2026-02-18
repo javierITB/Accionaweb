@@ -11,6 +11,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
 
     // State for Basic Info
     const [name, setName] = useState("");
+    const [price, setPrice] = useState("");
 
     // State for Permissions
     const [permissions, setPermissions] = useState([]);
@@ -30,6 +31,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
             setActiveTab("permissions");
             if (plan) {
                 setName(plan.name);
+                setPrice(plan.price || "");
                 setPermissions(plan.permissions || []);
 
                 // Cargar limites
@@ -62,6 +64,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                 });
             } else {
                 setName("");
+                setPrice("");
                 setPermissions([
                     "view_panel_cliente",
                     "view_home",
@@ -146,13 +149,6 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                 // Agregar hijo puede requerir padre? 
                 // En RoleModal no fuerzan al padre al seleccionar hijo (el hijo queda deshabilitado/oculto en UI si no hay padre).
                 // Pero aquí, si el usuario selecciona algo via código (si fuera posible), deberíamos consistencia.
-                // Sin embargo, replicando RoleModal:
-                // SOLO se forza 'uncheck' de hijos al quitar padre.
-                // Al poner un hijo, la UI se encarga de mostrarlo solo si el padre está.
-                // Pero en este código togglePermission, si el usuario clickea un hijo directamente...
-                // RoleModal UI changes "onClick" so you can't click child if parent not there?
-                // Actually RoleModal renders child `if (perm.dependency && !formData.permissions.includes(perm.dependency)) return null;`
-                // So you CANNOT click it.
             }
             return newPerms;
         });
@@ -210,6 +206,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
 
             const payload = {
                 name,
+                price: parseFloat(price) || 0,
                 permissions,
                 planLimits: {
                     requests: {
@@ -282,31 +279,59 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
 
     const isAdminPanelEnabled = permissions.includes("view_panel_admin");
     const isClientPanelEnabled = permissions.includes("view_panel_cliente");
-
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
             <div className="bg-card rounded-2xl shadow-2xl w-full max-w-4xl h-[700px] max-h-[90vh] flex flex-col border border-border overflow-hidden animate-in fade-in zoom-in duration-200">
                 {/* HEADER */}
-                <div className="relative h-24 bg-gradient-to-r from-blue-600 to-indigo-700 flex items-center justify-between px-8 shrink-0">
-                    <div className="flex items-center gap-6 flex-1">
-                        <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner shrink-0">
-                            <FolderOpen size={24} className="text-white" />
-                        </div>
-                        <div className="flex-1 max-w-md">
-                            <label className="text-[10px] font-bold text-blue-100 uppercase tracking-wider mb-1 block opacity-80">
+                {/* HEADER */}
+                <div className="relative h-28 bg-gradient-to-r from-blue-600 to-indigo-700 flex items-center justify-between px-8 shrink-0">
+                    <div className="flex items-center gap-6 flex-1 pr-6">
+
+                        {/* Name Input */}
+                        <div className="flex-1 space-y-1.5 group">
+                            <label className="text-[10px] font-bold text-blue-100 uppercase tracking-wider opacity-60 pl-1 group-hover:opacity-100 transition-opacity">
                                 Nombre del Plan Global
                             </label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="Ej: Plan Básico, Plan Gold..."
-                                className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white placeholder:text-white/40 font-bold focus:outline-none focus:ring-2 focus:ring-white/30 transition-all text-lg"
+                                placeholder="Ej: Plan Corp"
+                                className="w-full h-12 bg-white/10 border border-white/10 rounded-xl px-4 text-white placeholder:text-white/30 font-bold focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/20 transition-all text-base"
                                 autoFocus={!plan}
                             />
                         </div>
+
+                        {/* Price Input with CLP prefix */}
+                        <div className="w-56 space-y-1.5 group">
+                            <label className="text-[10px] font-bold text-blue-100 uppercase tracking-wider opacity-60 pl-1 group-hover:opacity-100 transition-opacity">
+                                Precio Neto
+                            </label>
+                            <div className="relative h-12 w-full">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <span className="text-white font-bold text-xs opacity-50 tracking-wide">CLP</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={price ? Number(price).toLocaleString('es-CL') : ""}
+                                    onChange={(e) => {
+                                        // Remove any dots or non-numeric chars to keep raw number
+                                        const rawValue = e.target.value.replace(/\D/g, "");
+                                        setPrice(rawValue);
+                                    }}
+                                    placeholder="0"
+                                    className="w-full h-full bg-white/10 border border-white/10 rounded-xl pl-12 pr-14 text-white placeholder:text-white/30 font-bold focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/20 transition-all text-base text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                                    <span className="text-white font-black text-xs opacity-90 tracking-tighter -translate-y-[1px]">
+                                        + IVA
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
-                    <button onClick={onClose} className="text-white/50 hover:text-white p-2 hover:bg-white/10 rounded-full transition-all">
+                    <button onClick={onClose} className="text-white/50 hover:text-white p-2 hover:bg-white/10 rounded-full transition-all self-start mt-6">
                         <X size={24} />
                     </button>
                 </div>

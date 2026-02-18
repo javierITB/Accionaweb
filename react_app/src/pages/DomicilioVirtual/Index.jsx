@@ -21,7 +21,8 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
     const [viewMode, setViewMode] = useState('grid');
-    const [showFilters, setShowFilters] = useState(false);
+    // Cambiado a true para que el panel se vea si hay un filtro activo por defecto
+    const [showFilters, setShowFilters] = useState(true);
 
     // --- ESTADOS DE DATOS ---
     const [resp, setResp] = useState([]);
@@ -39,11 +40,12 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
 
     const loadedPages = useRef(new Set());
 
+    // CORRECCIÓN: Inicializamos el estado 'search' con 'contratacion'
     const [filters, setFilters] = useState({
-        search: '',
+        search: 'contratacion',
         status: '',
         category: '',
-        dateRange: '', // Coincide con Select en FilterPanel
+        dateRange: '', 
         startDate: '',
         endDate: '',
         company: '',
@@ -130,7 +132,11 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
     };
 
     // --- EFECTOS DE CONTROL ---
-    useEffect(() => { fetchData(1); }, []);
+    // CORRECCIÓN: Aseguramos que la primera carga use los filtros iniciales (que ya incluyen 'contratacion')
+    useEffect(() => { 
+        fetchData(1, false, filters); 
+    }, []);
+
     useEffect(() => { if (currentPage > 1) fetchData(currentPage); }, [currentPage]);
 
     useEffect(() => {
@@ -200,7 +206,6 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
         window.history.replaceState({}, document.title, url.pathname + url.search);
     };
 
-    // --- LÓGICA DE ELIMINACIÓN AGREGADA ---
     const handleRemove = async (request) => {
         if (!window.confirm(`¿Seguro que deseas eliminar la solicitud de ${request.nombreEmpresa || 'este cliente'}?`)) return;
 

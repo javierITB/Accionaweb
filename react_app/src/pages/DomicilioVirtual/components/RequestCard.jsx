@@ -27,10 +27,6 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
     setCurrentRequest(request);
   }, [request]);
 
-
-
-
-
   const formatDate = (dateString) => {
     return new Date(dateString)?.toLocaleDateString('es-CL', {
       day: '2-digit',
@@ -75,16 +71,17 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
     }
   };
 
-
-
   const getCombinedTitle = () => {
-    const formTitle = currentRequest?.formTitle || 'Formulario';
+    // CAMBIO PERTINENTE: Limpiamos el texto "Domicilio Virtual" para evitar redundancia
+    const rawTitle = currentRequest?.formTitle || 'Formulario';
+    const cleanTitle = rawTitle.replace(/Domicilio Virtual/gi, '').replace(/^- /g, '').trim();
+    
     const company = currentRequest?.nombreEmpresa || currentRequest?.rutEmpresa;
 
     if (company && company !== "No especificado") {
-      return `${formTitle} - ${company}`;
+      return `${cleanTitle || 'Solicitud'} - ${company}`;
     }
-    return formTitle;
+    return cleanTitle || 'Solicitud';
   };
 
   return (
@@ -102,14 +99,10 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
             </span>
           </div>
 
-          {/* Description */}
-          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-            {currentRequest?.description}
-          </p>
+          {/* CAMBIO PERTINENTE: Se eliminó el párrafo de descripción (description) por ser redundante */}
 
           {/* Meta Info - RESPONSIVE */}
           <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-3 sm:space-x-4 text-xs text-muted-foreground">
-
             <div className="flex items-center space-x-1">
               <Icon name="Building" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
               <span className="truncate">
@@ -163,14 +156,12 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
             </Button>
           )}
 
-          {/* Message Buttons Removed */}
-
           {/* Details Button - ICON ONLY ON MOBILE */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onViewDetails(currentRequest)}
-            className="h-7 w-7 sm:h-8 sm:w-8 sm:!hidden" // Hidden on desktop, icon only on mobile
+            className="h-7 w-7 sm:h-8 sm:w-8 sm:!hidden"
           >
             <Icon name="Info" size={12} className="sm:w-3.5 sm:h-3.5" />
           </Button>
@@ -184,7 +175,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
             iconName="Info"
             iconPosition="left"
             iconSize={14}
-            className="hidden sm:flex" // Hidden on mobile, shown on desktop
+            className="hidden sm:flex"
           >
             Detalles
           </Button>

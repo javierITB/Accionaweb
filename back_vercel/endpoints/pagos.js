@@ -42,7 +42,18 @@ const verifyAuth = async (req, res, next) => {
         }
 
         // Use req.db (Tenant DB) to validate token because users log in to their specific company DB
-        const validation = await validarToken(req.db, token);
+        // Fallback to formsdb if req.db is missing (admin context)
+        let dbToUse = req.db;
+        if (!dbToUse && req.mongoClient) {
+            dbToUse = req.mongoClient.db("formsdb");
+        }
+
+        if (!dbToUse) {
+            console.error("[Pagos] Error: No database connection available for token validation");
+            return res.status(500).json({ error: "Configuration Error: No DB connection" });
+        }
+
+        const validation = await validarToken(dbToUse, token);
 
         if (!validation.ok) {
             return res.status(401).json({ error: validation.reason });
@@ -123,8 +134,14 @@ router.get("/admin/all", verifyAuth, async (req, res) => {
     try {
         const db = getCentralDB(req);
 
-        // Ensure only authorized users can see this (simplified check)
-        // In a real app, check permissions against 'view_pagos'
+        // Validar que el contexto sea formsdb
+        // Validar que el contexto sea formsdb
+        let dbToUse = req.db;
+        if (!dbToUse && req.mongoClient) dbToUse = req.mongoClient.db("formsdb");
+
+        if (!dbToUse || (dbToUse.databaseName !== 'formsdb' && dbToUse.databaseName !== 'api')) {
+            return res.status(403).json({ error: "Acceso denegado: Contexto inválido" });
+        }
 
         const comprobantes = await db.collection("comprobantes")
             .find({})
@@ -143,6 +160,16 @@ router.get("/admin/all", verifyAuth, async (req, res) => {
 router.put("/:id/status", verifyAuth, async (req, res) => {
     try {
         const db = getCentralDB(req);
+
+        // Validar que el contexto sea formsdb
+        // Validar que el contexto sea formsdb
+        let dbToUse = req.db;
+        if (!dbToUse && req.mongoClient) dbToUse = req.mongoClient.db("formsdb");
+
+        if (!dbToUse || (dbToUse.databaseName !== 'formsdb' && dbToUse.databaseName !== 'api')) {
+            return res.status(403).json({ error: "Acceso denegado: Contexto inválido" });
+        }
+
         const { id } = req.params;
         const { status } = req.body; // 'Aprobado', 'Rechazado', 'Pendiente'
 
@@ -175,6 +202,16 @@ router.put("/:id/status", verifyAuth, async (req, res) => {
 router.get("/file/:id", verifyAuth, async (req, res) => {
     try {
         const db = getCentralDB(req);
+
+        // Validar que el contexto sea formsdb (ya que esto descarga cualquier archivo por ID)
+        // Validar que el contexto sea formsdb (ya que esto descarga cualquier archivo por ID)
+        let dbToUse = req.db;
+        if (!dbToUse && req.mongoClient) dbToUse = req.mongoClient.db("formsdb");
+
+        if (!dbToUse || (dbToUse.databaseName !== 'formsdb' && dbToUse.databaseName !== 'api')) {
+            return res.status(403).json({ error: "Acceso denegado: Contexto inválido" });
+        }
+
         const { id } = req.params;
 
         if (!ObjectId.isValid(id)) {

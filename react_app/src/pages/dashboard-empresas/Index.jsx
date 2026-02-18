@@ -130,6 +130,11 @@ const EmpresasView = ({ userPermissions = [] }) => {
          company.name?.toLowerCase().includes(searchQuery.toLowerCase())
    );
 
+   const filteredPlans = plans.filter(
+      (plan) =>
+         plan.name?.toLowerCase().includes(searchQuery.toLowerCase())
+   );
+
    const mainMarginClass = isMobileScreen ? "ml-0" : isDesktopOpen ? "lg:ml-64" : "lg:ml-16";
 
    // Permisos para cada tab
@@ -243,7 +248,7 @@ const EmpresasView = ({ userPermissions = [] }) => {
                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                      <input
                         type="text"
-                        placeholder="Buscar empresas..."
+                        placeholder={activeTab === "empresas" ? "Buscar empresas..." : "Buscar planes..."}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
@@ -276,7 +281,7 @@ const EmpresasView = ({ userPermissions = [] }) => {
                      {activeTab === "funcionalidades" && canViewPlanes && (
                         <div className="mt-6">
                            <PlanesTab
-                              plans={plans}
+                              plans={filteredPlans}
                               isLoading={isLoading}
                               permisos={permisosPlanes}
                               onRefresh={fetchPlans}

@@ -75,11 +75,23 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
       const adminTenants = ["api", "formsdb", "infodesa", "acciona", "solunex"];
       const isAdminContext = adminTenants.includes(CURRENT_TENANT);
 
-      // Regla 1: FormsDB (Admin)
+      // Regla 1: FormsDB (Admin) - Solo formsdb puede ver ciertos items
+      const formsDbOnlyPermissions = [
+         'view_pagos',
+         'view_gestor_empresas',
+         'view_acceso_registro_empresas'
+      ];
+
+      // Si el permiso es exclusivo de formsdb y el tenant actual NO es formsdb (ni api), ocultar
+      if (formsDbOnlyPermissions.includes(itemPermission)) {
+         const isFormsDbContext = CURRENT_TENANT === 'formsdb' || CURRENT_TENANT === 'api';
+         if (!isFormsDbContext) return false;
+      }
+
       if (isAdminContext && itemPermission === 'view_comprobantes') return false;
 
-      // Regla 2: Clientes NO deben ver la zona de Pagos
-      if (!isAdminContext && itemPermission === 'view_pagos') return false;
+      // Regla 2: Clientes NO deben ver la zona de Pagos (cubierto arriba, pero mantenemos por seguridad)
+      // if (!isAdminContext && itemPermission === 'view_pagos') return false;
 
       // 1. Si es admin root (nombre 'Admin'), tiene acceso a todo.
       if (isAdminRole) return true;
