@@ -26,9 +26,10 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
    const [clientSelectedAdjuntos, setClientSelectedAdjuntos] = useState([]);
    const [signedPdfFiles, setSignedPdfFiles] = useState([]); // Array de archivos seleccionados
    const [selectedSignedFiles, setSelectedSignedFiles] = useState([]);
-   const [isUploadingSignedPdf, setIsUploadingSignedPdf] = useState(false);
+   // const [isUploadingSignedPdf, setIsUploadingSignedPdf] = useState(false);
    const [isDownloadingSignedPdf, setIsDownloadingSignedPdf] = useState(null);
    const signedFileInputRef = useRef(null);
+   const containerRef = useRef(null);
 
    const { dialogProps, openAsyncDialog } = useAsyncDialog();
 
@@ -115,6 +116,17 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
       }
    }, [request?._id, request?.status, isVisible]);
 
+
+      useEffect(() => {
+         scrollToBottom();
+      }, [selectedSignedFiles]);
+   
+      const scrollToBottom = () => {
+         containerRef.current?.scrollTo({
+            top: containerRef.current.scrollHeight,
+            behavior: "smooth",
+         });
+      };
    const getMimeTypeIcon = (mimeType) => {
       if (mimeType?.includes("pdf")) return "FileText";
       if (mimeType?.includes("word") || mimeType?.includes("document")) return "FileText";
@@ -894,7 +906,7 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
    console.log(fullRequestData);
    return (
       <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-         <div className="bg-card border border-border shadow-brand-active w-full overflow-y-auto rounded-none h-[clamp(500px,85dvh,800px)] max-h-[calc(100dvh-2rem) sm:max-w-4xl sm:rounded-lg">
+         <div className="bg-card border border-border shadow-brand-active w-full overflow-y-auto rounded-none h-[clamp(500px,85dvh,800px)] max-h-[calc(100dvh-2rem) sm:max-w-4xl sm:rounded-lg" ref={containerRef}>
             <div className="sticky top-0 bg-card border-b border-border p-4 sm:p-6 z-10">
                <div className="flex items-start justify-between">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 max-w-[85%] sm:max-w-none">
