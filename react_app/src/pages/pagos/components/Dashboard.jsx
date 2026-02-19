@@ -16,8 +16,8 @@ const Dashboard = () => {
         global: {
             totalCollected: 0,
             monthCollected: 0,
-            monthPendingAmount: 0,
-            monthPendingCount: 0
+            totalPending: 0,
+            countPending: 0
         },
         byCompany: {}
     });
@@ -133,7 +133,7 @@ const Dashboard = () => {
                     <div>
                         <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Monto Pendiente</p>
                         <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
-                            {formatCurrency(stats.global.monthPendingAmount)}
+                            {formatCurrency(stats.global.totalPending)}
                         </h3>
                     </div>
                 </div>
@@ -149,7 +149,7 @@ const Dashboard = () => {
                     <div>
                         <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Cobros Pendientes</p>
                         <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
-                            {stats.global.monthPendingCount} <span className="text-sm font-normal text-slate-500">transacciones</span>
+                            {stats.global.countPending || 0} <span className="text-sm font-normal text-slate-500">transacciones</span>
                         </h3>
                     </div>
                 </div>
