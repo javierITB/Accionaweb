@@ -725,7 +725,6 @@ const RequestDetails = ({
                });
 
                if (response.ok) {
-                  setClientSignature(null); // Limpiar estado local
                   // Refrescar datos para ver el cambio de estado (de 'firmado' a 'aprobado')
                   const updatedRes = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}`);
                   if (updatedRes.ok) {
@@ -1884,7 +1883,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                     <Button
                                        variant="ghostError"
                                        size="icon"
-                                       onClick={() => handleDeleteClientSignature(fullRequestData._id)}
+                                       onClick={() => handleDeleteClientSignature(fullRequestData._id, signedFile)}
                                     >
                                        <Icon name="Trash2" size={16} />
                                     </Button>
