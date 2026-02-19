@@ -74,6 +74,19 @@ const UploadReceiptModal = ({ isOpen, onClose, charge, onSuccess }) => {
 
                 {/* Body */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    {/* Requirements Info Box */}
+                    <div className="bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex gap-3">
+                        <div className="text-blue-600 dark:text-blue-400 mt-0.5">
+                            <Icon name="Info" size={20} />
+                        </div>
+                        <div className="text-sm text-blue-900 dark:text-blue-100">
+                            <h4 className="font-bold mb-1">Requisitos de subida</h4>
+                            <p className="opacity-90 leading-relaxed">
+                                Para asegurar la validación de su pago, los archivos deben ser originales en formato <strong>PDF, JPG o PNG</strong>. El tiempo estimado de validación es de <strong>24 horas hábiles</strong>.
+                            </p>
+                        </div>
+                    </div>
+
                     {/* Charge Info Summary */}
                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl space-y-2 border border-slate-100 dark:border-slate-700">
                         <div className="flex justify-between">
