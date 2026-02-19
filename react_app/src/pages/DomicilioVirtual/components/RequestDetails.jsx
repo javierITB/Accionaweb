@@ -1792,7 +1792,9 @@ const RequestDetails = ({
                       <span className="text-sm font-bold text-foreground">
                         {showCustomDatePicker && customStartDate 
                           ? new Date(customStartDate + "T12:00:00").toLocaleDateString('es-CL')
-                          : fullRequestData?.fechaInicioContrato || "Sin cambios"}
+                          : (!fullRequestData?.fechaInicioContrato || fullRequestData?.fechaInicioContrato.includes(':') 
+                              ? new Date().toLocaleDateString('es-CL') 
+                              : fullRequestData.fechaInicioContrato)}
                       </span>
                     </div>
                     <div className="flex flex-col border-l border-border pl-4">
@@ -1802,12 +1804,24 @@ const RequestDetails = ({
                           if (showCustomDatePicker) {
                             return customEndDate ? new Date(customEndDate + "T12:00:00").toLocaleDateString('es-CL') : "Sin cambios";
                           }
+                          
                           const baseStr = fullRequestData?.fechaTerminoContrato;
-                          if (!baseStr || !previewType) return "---";
-                          const parts = baseStr.split('/');
-                          const date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), 12, 0, 0);
+                          let date;
+
+                          if (baseStr && typeof baseStr === 'string' && !baseStr.includes(':') && (baseStr.includes('/') || baseStr.includes('-'))) {
+                            const separator = baseStr.includes('-') ? '-' : '/';
+                            const parts = baseStr.split(separator);
+                            date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), 12, 0, 0);
+                          } else {
+                            date = new Date();
+                            date.setHours(12, 0, 0, 0);
+                          }
+
+                          if (isNaN(date.getTime())) return "Fecha por definir";
+
                           if (previewType === 'semestral') date.setMonth(date.getMonth() + 6);
                           if (previewType === 'anual') date.setFullYear(date.getFullYear() + 1);
+                          
                           return date.toLocaleDateString('es-CL');
                         })()}
                       </span>
