@@ -221,21 +221,11 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                     </div>
 
                     {/* Main Content: Charge Details */}
-                    <div className="w-2/3 bg-white dark:bg-slate-900 overflow-y-auto p-6 custom-scrollbar">
+                    <div className="w-2/3 bg-white dark:bg-slate-900 flex flex-col h-full relative">
                         {selectedCharge ? (
-                            <div className="space-y-8 animate-in fade-in duration-300">
-                                {/* Charge Info Header - Enhanced */}
-                                <div className="space-y-6">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Monto del Pago</p>
-                                        <div className="flex items-baseline gap-2">
-                                            <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-                                                {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(selectedCharge.amount)}
-                                            </h2>
-                                            <span className="text-sm font-bold text-slate-400">CLP</span>
-                                        </div>
-                                    </div>
-
+                            <>
+                                {/* Scrollable Top Section: Details & File Info */}
+                                <div className="p-6 pb-2 shrink-0 overflow-y-auto max-h-[40vh] custom-scrollbar space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         {/* Date Info */}
                                         <div className="flex items-start gap-3">
@@ -281,81 +271,56 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Verification Section */}
-                                <div>
-                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4">Comprobante de Pago</h3>
-
-                                    {selectedCharge.receipt ? (
-                                        <div className="space-y-4">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4">Comprobante de Pago</h3>
+                                        {selectedCharge.receipt && (
                                             <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
                                                 <div className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
                                                     <Icon name="FileText" size={24} className="text-primary" />
                                                 </div>
                                                 <div className="flex-1">
                                                     <p className="font-medium text-slate-900 dark:text-white">{selectedCharge.receipt.file?.name}</p>
-                                                    <p className="text-xs text-slate-500">
-                                                        Subido por {selectedCharge.receipt.uploadedBy} el {new Date(selectedCharge.receipt.uploadedAt).toLocaleDateString()}
-                                                    </p>
                                                 </div>
                                                 <Button size="sm" variant="outline" onClick={handleDownload} iconName="Download">
                                                     Descargar
                                                 </Button>
                                             </div>
+                                        )}
+                                    </div>
+                                </div>
 
-                                            {/* Preview Area (Simplified) */}
-                                            {(selectedCharge.receipt.file?.mimetype?.startsWith('image/') || selectedCharge.receipt.file?.mimetype === 'application/pdf') && (
-                                                <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm max-h-[600px] flex items-center justify-center bg-slate-100 dark:bg-slate-950 relative min-h-[200px]">
-                                                    {previewUrl ? (
-                                                        selectedCharge.receipt.file?.mimetype === 'application/pdf' ? (
-                                                            <iframe
-                                                                src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                                className="w-full h-[500px]"
-                                                                title="Vista previa PDF"
-                                                            />
-                                                        ) : (
+                                {/* Flexible Preview Section */}
+                                <div className="flex-1 p-6 pt-2 min-h-0 flex flex-col">
+                                    {selectedCharge.receipt ? (
+                                        (selectedCharge.receipt.file?.mimetype?.startsWith('image/') || selectedCharge.receipt.file?.mimetype === 'application/pdf') && (
+                                            <div className="flex-1 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm bg-slate-100 dark:bg-slate-950 relative">
+                                                {previewUrl ? (
+                                                    selectedCharge.receipt.file?.mimetype === 'application/pdf' ? (
+                                                        <iframe
+                                                            src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
+                                                            className="w-full h-full"
+                                                            title="Vista previa PDF"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center p-4">
                                                             <img
                                                                 src={previewUrl}
                                                                 alt="Comprobante"
-                                                                className="max-w-full max-h-[500px] object-contain"
+                                                                className="max-w-full max-h-full object-contain"
                                                             />
-                                                        )
-                                                    ) : (
-                                                        <div className="flex flex-col items-center text-slate-400 animate-pulse">
-                                                            <Icon name="FileText" size={32} className="mb-2 opacity-50" />
-                                                            <span className="text-xs">Cargando vista previa...</span>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {/* Approval Actions */}
-                                            {selectedCharge.status !== 'Aprobado' && (
-                                                <div className="flex gap-3 pt-4">
-                                                    <Button
-                                                        variant="success"
-                                                        onClick={() => updateStatus('Aprobado')}
-                                                        loading={updating}
-                                                        iconName="Check"
-                                                        className="flex-1"
-                                                    >
-                                                        Aprobar Pago
-                                                    </Button>
-                                                    <Button
-                                                        variant="destructive"
-                                                        onClick={() => updateStatus('Rechazado')}
-                                                        loading={updating}
-                                                        iconName="X"
-                                                        className="flex-1"
-                                                    >
-                                                        Rechazar Pago
-                                                    </Button>
-                                                </div>
-                                            )}
-                                        </div>
+                                                    )
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center h-full text-slate-400 animate-pulse">
+                                                        <Icon name="FileText" size={32} className="mb-2 opacity-50" />
+                                                        <span className="text-xs">Cargando vista previa...</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center p-12 bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-center">
+                                        <div className="flex flex-col items-center justify-center p-12 bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-center h-full">
                                             <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400">
                                                 <Icon name="Clock" size={32} />
                                             </div>
@@ -366,7 +331,33 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                                         </div>
                                     )}
                                 </div>
-                            </div>
+
+                                {/* Sticky Footer for Actions */}
+                                {selectedCharge.status !== 'Aprobado' && selectedCharge.receipt && (
+                                    <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 z-10 sticky bottom-0 shrink-0">
+                                        <div className="flex gap-3">
+                                            <Button
+                                                variant="success"
+                                                onClick={() => updateStatus('Aprobado')}
+                                                loading={updating}
+                                                iconName="Check"
+                                                className="flex-1"
+                                            >
+                                                Aprobar Pago
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                onClick={() => updateStatus('Rechazado')}
+                                                loading={updating}
+                                                iconName="X"
+                                                className="flex-1"
+                                            >
+                                                Rechazar Pago
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-slate-400">
                                 <Icon name="ArrowLeft" size={48} className="mb-4 opacity-50" />
