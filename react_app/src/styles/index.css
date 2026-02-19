@@ -12,6 +12,34 @@ body {
 }
 
 /* =========================================================
+   Global Scrollbar Styles
+   ========================================================= */
+
+::-webkit-scrollbar {
+   width: 10px;
+   height: 10px;
+}
+
+::-webkit-scrollbar-track {
+   background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+   background-color: var(--color-border);
+   border-radius: 9999px;
+   border: 2px solid var(--color-background);
+   /* Creates padding effect */
+}
+
+::-webkit-scrollbar-thumb:hover {
+   background-color: var(--color-muted-foreground);
+}
+
+::-webkit-scrollbar-corner {
+   background: transparent;
+}
+
+/* =========================================================
    Scrollbar fino SOLO para Chromium
    Firefox usa scrollbar nativo
    ========================================================= */
