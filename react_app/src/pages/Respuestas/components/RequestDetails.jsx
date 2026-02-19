@@ -138,7 +138,7 @@ const RequestDetails = ({
    const [isCheckingSignature, setIsCheckingSignature] = useState(false);
 
    const [downloadingAttachmentIndex, setDownloadingAttachmentIndex] = useState(null);
-   const [isDownloadingSignature, setIsDownloadingSignature] = useState(false);
+   const [isDownloadingSignature, setIsDownloadingSignature] = useState(null);
 
    const [previewIndex, setPreviewIndex] = useState(0);
    const [isDeletingFile, setIsDeletingFile] = useState(null); // Para trackear qué archivo se está eliminando
@@ -326,7 +326,7 @@ const RequestDetails = ({
 
       if (request?._id) {
          getDocumentInfo(request._id);
-         fetchClientSignatures(request._id)
+         fetchClientSignatures(request._id);
       }
    }, [request]);
 
@@ -661,23 +661,28 @@ const RequestDetails = ({
          a.download = adjunto.fileName;
          document.body.appendChild(a);
          a.click();
-         window.URL.revokeObjectURL(url);
-         document.body.removeChild(a);
+         setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+         }, 100);
+
+         if (fullRequestData?.status !== "pendiente") return;
+
+         await handleStatusChange("en_revision");
+         
       } catch (error) {
          console.error("Error:", error);
          openErrorDialog("Error al descargar");
       } finally {
-         await handleStatusChange("en_revision");
          setDownloadingAttachmentIndex(null);
       }
    };
 
-   const handleDownloadClientSignature = async (signedFile) => {
+   const handleDownloadClientSignature = async (signedFile, index) => {
+      const signedFileId = signedFile?._id;
+      const signedFileName = signedFile?.clientSignedPdf?.fileName;
 
-      const signedFileId = signedFile?._id
-      const signedFileName = signedFile?.clientSignedPdf?.fileName
-
-      setIsDownloadingSignature(true);
+      setIsDownloadingSignature(index);
       try {
          const token = sessionStorage.getItem("token");
          const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -691,6 +696,7 @@ const RequestDetails = ({
          const blob = await response.blob();
          const url = window.URL.createObjectURL(blob);
          const a = document.createElement("a");
+         a.style.display = "none";
          a.href = url;
          a.download = signedFileName;
          document.body.appendChild(a);
@@ -701,7 +707,7 @@ const RequestDetails = ({
          console.error("Error:", error);
          openErrorDialog("Error al descargar");
       } finally {
-         setIsDownloadingSignature(false);
+         setIsDownloadingSignature(null);
       }
    };
 
@@ -1859,13 +1865,13 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                     <Button
                                        variant="outline"
                                        size="sm"
-                                       iconName={isDownloadingSignature ? "Loader" : "Download"}
+                                       iconName={isDownloadingSignature === index ? "Loader" : "Download"}
                                        iconPosition="left"
                                        iconSize={16}
-                                       onClick={() => handleDownloadClientSignature(signedFile)}
-                                       disabled={isDownloadingSignature}
+                                       onClick={() => handleDownloadClientSignature(signedFile, index)}
+                                       disabled={isDownloadingSignature === index}
                                     >
-                                       {isDownloadingSignature ? "Descargando..." : "Descargar"}
+                                       {isDownloadingSignature === index ? "Descargando..." : "Descargar"}
                                     </Button>
                                  )}
                                  {fullRequestData?.status !== "archivado" && userPermissions?.deleteSignature && (
@@ -1885,7 +1891,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
             )}
       </div>
    );
-
 
    const handleDownloadCorrected = async (index = 0, source = "auto") => {
       try {
