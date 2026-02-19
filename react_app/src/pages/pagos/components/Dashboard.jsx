@@ -203,8 +203,7 @@ const Dashboard = () => {
                                     return (
                                         <tr
                                             key={company._id}
-                                            className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors group cursor-pointer"
-                                            onClick={() => handleViewCompany(company)}
+                                            className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors group"
                                         >
                                             <td className="px-6 py-5">
                                                 <div className="flex items-center gap-3">
@@ -236,16 +235,16 @@ const Dashboard = () => {
                                                 )}
                                             </td>
                                             <td className="px-6 py-5 text-right">
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
+                                                <button
+                                                    type="button"
+                                                    className="relative z-10 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleViewCompany(company);
                                                     }}
                                                 >
                                                     Ver Historial
-                                                </Button>
+                                                </button>
                                             </td>
                                         </tr>
                                     );

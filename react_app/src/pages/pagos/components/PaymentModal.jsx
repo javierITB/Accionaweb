@@ -151,16 +151,16 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                                         key={charge._id}
                                         onClick={() => setSelectedCharge(charge)}
                                         className={`p-3 rounded-lg cursor-pointer transition-all border ${selectedCharge?._id === charge._id
-                                                ? 'bg-white dark:bg-slate-800 border-primary shadow-md ring-1 ring-primary/20'
-                                                : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-600'
+                                            ? 'bg-white dark:bg-slate-800 border-primary shadow-md ring-1 ring-primary/20'
+                                            : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-600'
                                             }`}
                                     >
                                         <div className="flex justify-between items-start mb-1">
                                             <span className="font-bold text-slate-900 dark:text-white">{charge.period || 'Sin periodo'}</span>
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${charge.status === 'Aprobado' ? 'bg-green-100 text-green-700' :
-                                                    charge.status === 'Pendiente' ? 'bg-amber-100 text-amber-700' :
-                                                        charge.status === 'En Revisión' ? 'bg-blue-100 text-blue-700' :
-                                                            'bg-red-100 text-red-700'
+                                                charge.status === 'Pendiente' ? 'bg-amber-100 text-amber-700' :
+                                                    charge.status === 'En Revisión' ? 'bg-blue-100 text-blue-700' :
+                                                        'bg-red-100 text-red-700'
                                                 }`}>
                                                 {charge.status}
                                             </span>
@@ -179,17 +179,62 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                     <div className="w-2/3 bg-white dark:bg-slate-900 overflow-y-auto p-6 custom-scrollbar">
                         {selectedCharge ? (
                             <div className="space-y-8 animate-in fade-in duration-300">
-                                {/* Charge Info Header */}
-                                <div className="flex justify-between items-start">
+                                {/* Charge Info Header - Enhanced */}
+                                <div className="space-y-6">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{selectedCharge.concept}</h2>
-                                        <p className="text-slate-500">Periodo: {selectedCharge.period}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                                            {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(selectedCharge.amount)}
+                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Monto del Pago</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                                                {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(selectedCharge.amount)}
+                                            </h2>
+                                            <span className="text-sm font-bold text-slate-400">CLP</span>
                                         </div>
-                                        <span className="text-xs text-slate-400">CLP</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                        {/* Date Info */}
+                                        <div className="flex items-start gap-3">
+                                            <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-slate-400 border border-slate-200 dark:border-slate-700">
+                                                <Icon name="Calendar" size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">Fecha y Hora de Subida</p>
+                                                {selectedCharge.receipt ? (
+                                                    <div>
+                                                        <p className="font-bold text-slate-900 dark:text-white">
+                                                            {new Date(selectedCharge.receipt.uploadedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                        </p>
+                                                        <p className="text-xs text-slate-500 font-medium">
+                                                            {new Date(selectedCharge.receipt.uploadedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} hrs
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm font-medium text-slate-400 italic">Pendiente de subida</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Uploader Info */}
+                                        <div className="flex items-start gap-3">
+                                            <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-slate-400 border border-slate-200 dark:border-slate-700">
+                                                <Icon name="User" size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">Subido Por</p>
+                                                {selectedCharge.receipt ? (
+                                                    <div>
+                                                        <p className="font-bold text-slate-900 dark:text-white">
+                                                            {selectedCharge.receipt.uploadedBy || 'Usuario Desconocido'}
+                                                        </p>
+                                                        <p className="text-xs text-slate-500 font-medium">
+                                                            {company?.name}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm font-medium text-slate-400 italic">--</p>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
