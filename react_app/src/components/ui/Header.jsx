@@ -10,7 +10,7 @@ const Header = ({ className = '' }) => {
   const [isHeaderHidden, setIsHeaderHidden] = useState(() => {
     return localStorage.getItem('isHeaderHidden') === 'true';
   });
-  
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotiOpen, setIsNotiOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -18,7 +18,7 @@ const Header = ({ className = '' }) => {
 
   const user = sessionStorage.getItem("user");
   const userMail = sessionStorage.getItem("email");
-  const { userRole } = usePermissions();
+  const { userRole, userPermissions } = usePermissions();
   const [unreadCount, setUnreadCount] = useState(0);
   const [shouldShake, setShouldShake] = useState(false);
 
@@ -118,14 +118,16 @@ const Header = ({ className = '' }) => {
           {!isHeaderHidden && (
             <>
               {/* Botón Chat - Modo Abierto */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsChatOpen(!isChatOpen)}
-                iconName="MessageSquare"
-                className={`rounded-xl w-10 h-10 md:w-11 md:h-11 transition-all ${isChatOpen ? 'bg-primary text-white shadow-lg scale-105' : 'text-muted-foreground'}`}
-                iconSize={18}
-              />
+              {userPermissions.includes('view_chatbot') && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsChatOpen(!isChatOpen)}
+                  iconName="MessageSquare"
+                  className={`rounded-xl w-10 h-10 md:w-11 md:h-11 transition-all ${isChatOpen ? 'bg-primary text-white shadow-lg scale-105' : 'text-muted-foreground'}`}
+                  iconSize={18}
+                />
+              )}
 
               <Button
                 variant="ghost"
@@ -192,13 +194,13 @@ const Header = ({ className = '' }) => {
       </header>
 
       {/* Botón Chat - Modo Cerrado (Debajo del ojo) */}
-      {isHeaderHidden && (
+      {isHeaderHidden && userPermissions.includes('view_chatbot') && (
         <div className="mt-3 pointer-events-auto animate-in fade-in slide-in-from-top-2 duration-500">
-           <Button
+          <Button
             variant="default"
             size="icon"
             onClick={() => setIsChatOpen(!isChatOpen)}
-            iconName="Scale" 
+            iconName="Scale"
             className={`w-14 h-14 rounded-2xl shadow-brand transition-all duration-300 ${isChatOpen ? 'bg-accent text-white rotate-12 scale-110' : 'bg-card text-primary border border-border hover:bg-primary hover:text-white'}`}
             iconSize={24}
           />
@@ -206,9 +208,9 @@ const Header = ({ className = '' }) => {
       )}
 
       {/* Isla del Chat Legal */}
-      <ChatLegalSidebar 
-        isOpen={isChatOpen} 
-        onClose={() => setIsChatOpen(false)} 
+      <ChatLegalSidebar
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
       />
     </div>
   );
