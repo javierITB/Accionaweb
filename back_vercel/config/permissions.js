@@ -426,7 +426,7 @@ const PERMISSION_GROUPS = {
         tagg: 'admin',
         permissions: [
             { id: 'view_chatbot', label: 'Acceso a la vista' },
-            { id: 'view_chatbot_previo', label: 'Envio de mensajes al chatbot', dependency: 'view_chatbot' },
+            { id: 'view_chatbot_envio', label: 'Envio de mensajes al chatbot', dependency: 'view_chatbot' },
             
         ]
     },
