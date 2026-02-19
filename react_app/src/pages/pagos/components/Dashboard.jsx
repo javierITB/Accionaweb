@@ -1,264 +1,255 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import PaymentModal from './PaymentModal';
+import CreateChargeModal from './CreateChargeModal';
 import { apiFetch } from '../../../utils/api';
+import Button from '../../../components/ui/Button';
 
 const Dashboard = () => {
-    const [transactions, setTransactions] = useState([]);
+    const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedPayment, setSelectedPayment] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [filter, setFilter] = useState('Todos');
+    const [selectedCompany, setSelectedCompany] = useState(null);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [metrics, setMetrics] = useState({
-        income: 0,
-        pendingAmount: 0,
-        todayCount: 0,
-        pendingCount: 0
+    const [stats, setStats] = useState({
+        global: {
+            totalCollected: 0,
+            monthCollected: 0,
+            monthPendingAmount: 0,
+            monthPendingCount: 0
+        },
+        byCompany: {}
     });
 
-    const filteredTransactions = transactions.filter(tx => {
-        const matchesStatus = filter === 'Todos' ? true : tx.status === filter;
-        const matchesSearch = searchTerm === '' ||
-            tx.concept?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            tx.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            tx.amount?.toString().includes(searchTerm);
-
-        return matchesStatus && matchesSearch;
-    });
-
-    const fetchTransactions = async () => {
+    const fetchData = async () => {
+        setLoading(true);
         try {
-            const response = await apiFetch('/pagos/admin/all', { method: 'GET' });
-            if (response.ok) {
-                const data = await response.json();
-                if (Array.isArray(data)) {
-                    setTransactions(data);
-                    calculateMetrics(data);
+            const [companiesRes, statsRes] = await Promise.all([
+                apiFetch('/sas/companies', { method: 'GET' }),
+                apiFetch('/pagos/admin/dashboard-stats', { method: 'GET' })
+            ]);
+
+            if (companiesRes.ok && statsRes.ok) {
+                const companiesData = await companiesRes.json();
+                const statsData = await statsRes.json();
+
+                if (Array.isArray(companiesData)) {
+                    const clientCompanies = companiesData.filter(c => !c.isSystem && c.dbName !== 'formsdb');
+                    setCompanies(clientCompanies);
                 }
+                setStats(statsData);
             } else {
-                console.error("Error fetching admin transactions:", response.statusText);
+                console.error("Error fetching dashboard data");
             }
         } catch (error) {
-            console.error("Error fetching admin transactions:", error);
+            console.error("Error fetching dashboard data:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    const calculateMetrics = (data) => {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
-        const income = data
-            .filter(t => t.status === 'Aprobado')
-            .reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
-
-        const pendingAmount = data
-            .filter(t => t.status === 'Pendiente')
-            .reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
-
-        const todayCount = data.filter(t => {
-            const tDate = new Date(t.createdAt).getTime();
-            return tDate >= today;
-        }).length;
-
-        const pendingCount = data.filter(t => t.status === 'Pendiente').length;
-
-        setMetrics({ income, pendingAmount, todayCount, pendingCount });
-    };
-
     useEffect(() => {
-        fetchTransactions();
+        fetchData();
     }, []);
 
-    const handleStatusChange = (id, newStatus) => {
-        setTransactions(prev => {
-            const updated = prev.map(t => t._id === id ? { ...t, status: newStatus } : t);
-            calculateMetrics(updated);
-            return updated;
-        });
-        setIsModalOpen(false);
+    const filteredCompanies = companies.filter(company =>
+        company.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const handleViewCompany = (company) => {
+        setSelectedCompany(company);
+        setIsPaymentModalOpen(true);
     };
 
-    const handleViewDetails = (payment) => {
-        setSelectedPayment(payment);
-        setIsModalOpen(true);
-    };
-
+    // Helper to format currency
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(amount);
+        return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(amount || 0);
     };
 
     return (
         <div className="font-sans text-slate-900 dark:text-slate-100 transition-colors duration-200">
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        Gestor de Pagos
+                        Gestión de Cobros
                     </h1>
                     <p className="mt-2 text-slate-600 dark:text-slate-400 font-medium">
-                        Gestión de pagos y administración de comprobantes empresariales.
+                        Administra cobros, revisa estados y gestiona comprobantes.
                     </p>
+                </div>
+                <div>
+                    <Button
+                        onClick={() => setIsCreateModalOpen(true)}
+                        iconName="Plus"
+                    >
+                        Generar Cobro
+                    </Button>
                 </div>
             </header>
 
             {/* Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-                {/* Ingresos del Mes */}
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg text-primary">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {/* 1. Ingresos Totales */}
+                <div className="bg-slate-900 dark:bg-slate-800 p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-slate-800 hover:border-slate-700 transition-all">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
                             <Icon name="DollarSign" size={24} />
                         </div>
+                        <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">Histórico</span>
                     </div>
-                    <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Ingresos Totales</h3>
-                    <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-xl font-bold text-slate-900 dark:text-white">{formatCurrency(metrics.income)}</span>
-                    </div>
-                </div>
-
-                {/* Total Pendiente */}
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2 bg-amber-50 dark:bg-amber-500/10 rounded-lg text-amber-600 dark:text-amber-400">
-                            <Icon name="Wallet" size={24} />
-                        </div>
-                    </div>
-                    <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Monto Pendiente</h3>
-                    <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-xl font-bold text-slate-900 dark:text-white">{formatCurrency(metrics.pendingAmount)}</span>
+                    <div>
+                        <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Ingresos Totales</p>
+                        <h3 className="text-2xl font-bold text-white">
+                            {formatCurrency(stats.global.totalCollected)}
+                        </h3>
                     </div>
                 </div>
 
-                {/* Comprobantes Hoy */}
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2 bg-sky-50 dark:bg-sky-500/10 rounded-lg text-sky-600 dark:text-sky-400">
-                            <Icon name="Upload" size={24} />
+                {/* 2. Ingresos del Mes */}
+                <div className="bg-slate-900 dark:bg-slate-800 p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-slate-800 hover:border-slate-700 transition-all">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
+                            <Icon name="TrendingUp" size={24} />
                         </div>
+                        <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Este Mes</span>
                     </div>
-                    <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Comprobantes Hoy</h3>
-                    <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-xl font-bold text-slate-900 dark:text-white">{metrics.todayCount}</span>
+                    <div>
+                        <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Ingresos del Mes</p>
+                        <h3 className="text-2xl font-bold text-white">
+                            {formatCurrency(stats.global.monthCollected)}
+                        </h3>
                     </div>
                 </div>
 
-                {/* Pagos Pendientes */}
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2 bg-violet-50 dark:bg-violet-500/10 rounded-lg text-violet-600 dark:text-violet-400">
-                            <Icon name="Clock" size={24} />
+                {/* 3. Total Pendiente (Mes) */}
+                <div className="bg-slate-900 dark:bg-slate-800 p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-slate-800 hover:border-slate-700 transition-all">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500">
+                            <Icon name="Briefcase" size={24} />
                         </div>
+                        <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">Por Cobrar</span>
                     </div>
-                    <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Por Revisar</h3>
-                    <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-xl font-bold text-slate-900 dark:text-white">{metrics.pendingCount}</span>
-                        <span className="text-[10px] text-slate-400 font-normal">Transacciones</span>
+                    <div>
+                        <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Monto Pendiente</p>
+                        <h3 className="text-2xl font-bold text-white">
+                            {formatCurrency(stats.global.monthPendingAmount)}
+                        </h3>
+                    </div>
+                </div>
+
+                {/* 4. Pagos Pendientes (Count) */}
+                <div className="bg-slate-900 dark:bg-slate-800 p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-slate-800 hover:border-slate-700 transition-all">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-500">
+                            <Icon name="FileText" size={24} />
+                        </div>
+                        <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Gestión</span>
+                    </div>
+                    <div>
+                        <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Cobros Pendientes</p>
+                        <h3 className="text-2xl font-bold text-white">
+                            {stats.global.monthPendingCount} <span className="text-sm font-normal text-slate-500">transacciones</span>
+                        </h3>
                     </div>
                 </div>
             </div>
 
             {/* Filters Bar */}
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setFilter('Todos')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Todos' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
-                    >Todos</button>
-                    <button
-                        onClick={() => setFilter('Pendiente')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Pendiente' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
-                    >Pendientes</button>
-                    <button
-                        onClick={() => setFilter('Aprobado')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Aprobado' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
-                    >Aprobados</button>
-                    <button
-                        onClick={() => setFilter('Rechazado')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Rechazado' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
-                    >Rechazados</button>
-                </div>
-
-                {/* Search Bar */}
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input
-                            className="pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-500 w-full md:w-64 text-slate-900 dark:text-white"
-                            placeholder="Buscar..."
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+                <div className="relative w-full md:w-80">
+                    <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                        className="pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-500 w-full text-slate-900 dark:text-white shadow-sm"
+                        placeholder="Buscar empresa por nombre..."
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
             </div>
 
+            {/* Companies Table */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto custom-scrollbar">
+                <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-200 dark:border-slate-700">
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-40">Estado</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Detalles</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center w-40">Monto</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Empresa</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Último Cobro</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pendientes</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right w-40">Acción</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-8 text-center text-slate-500">Cargando datos...</td>
+                                    <td colSpan="4" className="px-6 py-12 text-center text-slate-500">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                            <span>Cargando información...</span>
+                                        </div>
+                                    </td>
                                 </tr>
-                            ) : filteredTransactions.length === 0 ? (
+                            ) : filteredCompanies.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-8 text-center text-slate-500">No hay pagos registrados.</td>
+                                    <td colSpan="4" className="px-6 py-8 text-center text-slate-500">
+                                        No se encontraron empresas coincidentes.
+                                    </td>
                                 </tr>
                             ) : (
-                                filteredTransactions.map((tx) => (
-                                    <tr key={tx._id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors">
-                                        <td className="px-6 py-5">
-                                            {tx.status === 'Aprobado' && (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></span>
-                                                    Aprobado
+                                filteredCompanies.map((company) => {
+                                    const cStats = stats.byCompany[company.dbName] || { lastChargeDate: null, pendingCount: 0, pendingAmount: 0 };
+                                    return (
+                                        <tr
+                                            key={company._id}
+                                            className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors group cursor-pointer"
+                                            onClick={() => handleViewCompany(company)}
+                                        >
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30">
+                                                        <Icon name="Building" size={20} />
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-slate-900 dark:text-white">{company.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className="text-sm text-slate-600 dark:text-slate-300">
+                                                    {cStats.lastChargeDate ? new Date(cStats.lastChargeDate).toLocaleDateString() : '-'}
                                                 </span>
-                                            )}
-                                            {tx.status === 'Pendiente' && (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2"></span>
-                                                    Pendiente
-                                                </span>
-                                            )}
-                                            {tx.status === 'Rechazado' && (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2"></span>
-                                                    Rechazado
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-semibold text-slate-900 dark:text-white">{tx.concept}</span>
-                                                <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                                    {tx.company} • {new Date(tx.date).toLocaleDateString()}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5 text-center font-bold text-slate-700 dark:text-slate-300">
-                                            {formatCurrency(tx.amount)}
-                                        </td>
-                                        <td className="px-6 py-5 text-right">
-                                            <button
-                                                className="text-sm font-semibold text-primary hover:text-blue-600 transition-colors"
-                                                onClick={() => handleViewDetails(tx)}
-                                            >
-                                                Ver Detalles
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                {cStats.pendingCount > 0 ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                                                            {cStats.pendingCount} Cobro(s)
+                                                        </span>
+                                                        <span className="text-xs text-slate-400">
+                                                            {formatCurrency(cStats.pendingAmount)}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+                                                        Al día
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-5 text-right">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleViewCompany(company);
+                                                    }}
+                                                >
+                                                    Ver Historial
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
@@ -266,10 +257,19 @@ const Dashboard = () => {
             </div>
 
             <PaymentModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                payment={selectedPayment}
-                onStatusChange={handleStatusChange}
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                company={selectedCompany}
+            />
+
+            <CreateChargeModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                companies={companies}
+                onSuccess={() => {
+                    setIsCreateModalOpen(false);
+                    // Optionally refresh simple stats if we added them
+                }}
             />
         </div>
     );
