@@ -33,14 +33,29 @@ const CreateChargeModal = ({ isOpen, onClose, companies, onSuccess }) => {
         setLoading(true);
 
         try {
+            const payload = {
+                companies: selectedCompanies.map(c => ({
+                    dbName: c.dbName,
+                    name: c.name,
+                    // Si hay un monto global, úsalo. Si no, usa el del plan. Si no hay plan, 0.
+                    amount: amount ? parseFloat(amount) : (c.plan?.price || 0)
+                })),
+                concept,
+                period
+            };
+
+            // Validación Client-Side: Asegurar que todos tengan monto
+            const zeroAmountCompanies = payload.companies.filter(c => !c.amount || c.amount <= 0);
+            if (zeroAmountCompanies.length > 0) {
+                if (!window.confirm(`Hay ${zeroAmountCompanies.length} empresas sin monto asignado (o con monto 0). ¿Deseas continuar?`)) {
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const response = await apiFetch('/pagos/admin/generate-charges', {
                 method: 'POST',
-                body: JSON.stringify({
-                    companies: selectedCompanies.map(c => ({ dbName: c.dbName, name: c.name })),
-                    amount,
-                    concept,
-                    period
-                })
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
@@ -112,10 +127,9 @@ const CreateChargeModal = ({ isOpen, onClose, companies, onSuccess }) => {
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
                                 <input
                                     type="number"
-                                    required
                                     min="0"
                                     className="w-full pl-8 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                    placeholder="0"
+                                    placeholder="Opcional: Sobrescribe el precio del plan"
                                     value={amount}
                                     onChange={e => setAmount(e.target.value)}
                                 />
@@ -146,7 +160,14 @@ const CreateChargeModal = ({ isOpen, onClose, companies, onSuccess }) => {
                                             <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedCompanies.find(c => c._id === company._id) ? 'bg-primary border-primary text-white' : 'border-slate-300 dark:border-slate-600'}`}>
                                                 {selectedCompanies.find(c => c._id === company._id) && <Icon name="Check" size={12} />}
                                             </div>
-                                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{company.name}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{company.name}</span>
+                                                {company.plan && (
+                                                    <span className="text-[10px] text-slate-500 font-medium">
+                                                        {company.plan.name} - ${company.plan.price?.toLocaleString('es-CL') || 0}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
