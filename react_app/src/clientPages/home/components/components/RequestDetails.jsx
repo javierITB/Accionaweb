@@ -482,29 +482,21 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
       }
    };
 
-   const handleDownloadSignedPDF = async (responseId, index) => {
+   const handleDownloadClientSignature = async (signedFile, index) => {
       setIsDownloadingSignedPdf(index);
+
+      const signedFileId = signedFile?._id;
+      const signedFileName = signedFile?.clientSignedPdf?.fileName;
       try {
          setIsUploading(true);
          setUploadMessage("Descargando documento firmado...");
 
-         // Primero obtener metadatos para saber el nombre real
-         const metaResponse = await apiFetch(`${API_BASE_URL}/respuestas/${responseId}/has-client-signature`);
-
-         let fileName = "documento_firmado.pdf";
-
-         if (metaResponse.ok) {
-            const metaData = await metaResponse.json();
-            if (metaData.exists && metaData.signature?.fileName) {
-               fileName = metaData.signature.fileName;
-            }
-         }
 
          // Descargar el archivo
          const token = sessionStorage.getItem("token");
          const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-         const response = await fetch(`${API_BASE_URL}/respuestas/${responseId}/client-signature`, {
+         const response = await fetch(`${API_BASE_URL}/respuestas/${signedFileId}/client-signature`, {
             headers,
          });
 
@@ -528,7 +520,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
          const a = document.createElement("a");
          a.style.display = "none";
          a.href = url;
-         a.download = fileName;
+         a.download = signedFileName;
          document.body.appendChild(a);
          a.click();
 
@@ -899,7 +891,7 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                  iconName={isDownloadingSignedPdf === index ? "Loader" : "Download"}
                                  iconPosition="left"
                                  iconSize={16}
-                                 onClick={() => handleDownloadSignedPDF(request._id, index)}
+                                 onClick={() => handleDownloadClientSignature(signedFile, index)}
                                  disabled={isDownloadingSignedPdf !== null}
                               >
                                  {isDownloadingSignedPdf === index ? "Descargando..." : "Descargar"}
