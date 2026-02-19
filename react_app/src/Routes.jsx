@@ -106,11 +106,9 @@ const Routes = () => {
                   <Route
                      path="/"
                      element={
-                        <ProtectedClient>
                            <LazyPage text="Cargando inicio">
                               <Home />
                            </LazyPage>
-                        </ProtectedClient>
                      }
                   />
 
