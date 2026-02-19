@@ -54,7 +54,7 @@ const Routes = () => {
         <PermissionsProvider>
           <RouterRoutes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<ProtectedClient><Home /></ProtectedClient>} />
+            <Route path="/" element={<Home />} />
             <Route path="/preview" element={<PublicPreview />} />
 
             <Route path="/Remuneraciones" element={<ProtectedClient><FormList section={"Remuneraciones"} /></ProtectedClient>} />
