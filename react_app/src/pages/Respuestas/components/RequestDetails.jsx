@@ -673,13 +673,14 @@ const RequestDetails = ({
       }
    };
 
-   const handleDownloadClientSignature = async (responseId) => {
+   const handleDownloadClientSignature = async (signedFileId) => {
+
       setIsDownloadingSignature(true);
       try {
          const token = sessionStorage.getItem("token");
          const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-         const response = await fetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/client-signature`, {
+         const response = await fetch(`${API_BASE_URL}/${endpointPrefix}/${signedFileId}/client-signature`, {
             headers,
          });
 
@@ -1859,7 +1860,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                        iconName={isDownloadingSignature ? "Loader" : "Download"}
                                        iconPosition="left"
                                        iconSize={16}
-                                       onClick={() => handleDownloadClientSignature(fullRequestData._id)}
+                                       onClick={() => handleDownloadClientSignature(signedFile?._id)}
                                        disabled={isDownloadingSignature}
                                     >
                                        {isDownloadingSignature ? "Descargando..." : "Descargar"}
