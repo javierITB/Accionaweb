@@ -360,7 +360,6 @@ const RequestDetails = ({
 
       fetchFullDetailsAndDocs();
       fetchAttachments(responseId);
-      checkClientSignature(responseId);
       fetchApprovedData(responseId);
    }, [isVisible, request?._id]);
 
