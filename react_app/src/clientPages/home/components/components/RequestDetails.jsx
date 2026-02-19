@@ -4,13 +4,14 @@ import Button from "../../../components/ui/Button";
 import { apiFetch, API_BASE_URL } from "../../../../utils/api";
 import useAsyncDialog from "hooks/useAsyncDialog";
 import AsyncActionDialog from "@/components/AsyncActionDialog";
+import CleanDocumentPreview from "pages/DomicilioVirtual/components/CleanDocumentPreview";
 
 const MAX_CLIENT_FILES = 5;
 const MAX_CLIENT_FILE_SIZE = 5 * 1024 * 1024; // 5MB en bytes
 const MAX_FIRMADO_CLIENT_FILES = 5;
 const MAX_FIRMADO_CLIENT_FILE_SIZE = 5 * 1024 * 1024; // 5MB en bytes
 
-const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, endpointPrefix }) => {
+const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, endpointPrefix = "respuestas" }) => {
    // Inicializar con el estado actual del request
    const [hasSignedPdf, setHasSignedPdf] = useState(false);
    const [isUploading, setIsUploading] = useState(false);
@@ -18,20 +19,26 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
    const fileInputRef = useRef(null);
    const [attachmentsLoading, setAttachmentsLoading] = useState(false);
    const [signaturesLoading, setSignaturesLoading] = useState(false);
+   const [previewDocument, setPreviewDocument] = useState(null);
+   const [showPreview, setShowPreview] = useState(false);
    const [fullRequestData, setFullRequestData] = useState({ ...request });
    const [downloadingAttachmentIndex, setDownloadingAttachmentIndex] = useState(null);
    const [approvedFilesData, setApprovedFilesData] = useState(null);
    const [loadingApprovedFiles, setLoadingApprovedFiles] = useState(false);
    const [downloadingApprovedFileIndex, setDownloadingApprovedFileIndex] = useState(null);
    const [clientSelectedAdjuntos, setClientSelectedAdjuntos] = useState([]);
+   const [isLoadingPreviewSignature, setIsLoadingPreviewSignature] = useState(null);
+   const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(null);
+   const [isLoadingCorrectedFile, setIsLoadingCorrectedFile] = useState(null);
    const [signedPdfFiles, setSignedPdfFiles] = useState([]); // Array de archivos seleccionados
    const [selectedSignedFiles, setSelectedSignedFiles] = useState([]);
+
    // const [isUploadingSignedPdf, setIsUploadingSignedPdf] = useState(false);
    const [isDownloadingSignedPdf, setIsDownloadingSignedPdf] = useState(null);
    const signedFileInputRef = useRef(null);
    const containerRef = useRef(null);
 
-   const { dialogProps, openAsyncDialog } = useAsyncDialog();
+   const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsyncDialog();
 
    // --- Lógica de Permisos ---
    const status = request?.status?.toLowerCase() || "";
@@ -125,6 +132,20 @@ const RequestDetails = ({ request, isVisible, onClose, onSendMessage, onUpdate, 
    useEffect(() => {
       scrollToBottom();
    }, [selectedSignedFiles]);
+
+   useEffect(() => {
+      return () => {
+         if (previewDocument?.url && previewDocument?.type === "pdf") {
+            cleanupPreviewUrl(previewDocument.url);
+         }
+      };
+   }, [previewDocument]);
+
+   const cleanupPreviewUrl = (url) => {
+      if (url && url.startsWith("blob:")) {
+         URL.revokeObjectURL(url);
+      }
+   };
 
    const scrollToBottom = () => {
       containerRef.current?.scrollTo({
@@ -417,8 +438,7 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
             const uploadSuccess = await uploadFilesOneByOne();
             if (!uploadSuccess) throw new Error("Error subiendo adjuntos");
 
-               results.adjuntos = clientSelectedAdjuntos.length;
-            
+            results.adjuntos = clientSelectedAdjuntos.length;
          }
 
          // 2. AGREGAR ARCHIVOS FIRMADOS
@@ -490,7 +510,6 @@ Máximo permitido: ${MAX_CLIENT_FILES} archivos.`;
       try {
          setIsUploading(true);
          setUploadMessage("Descargando documento firmado...");
-
 
          // Descargar el archivo
          const token = sessionStorage.getItem("token");
@@ -754,6 +773,157 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
       event.target.value = "";
    };
 
+   const downloadPdfForPreview = async (url) => {
+      try {
+         const token = sessionStorage.getItem("token");
+         const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+         const response = await fetch(url, { headers });
+         if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
+         const blob = await response.blob();
+         if (blob.type !== "application/pdf") throw new Error("El archivo no es un PDF válido");
+         return URL.createObjectURL(blob);
+      } catch (error) {
+         console.error("Error descargando PDF para vista previa:", error);
+         throw error;
+      }
+   };
+   const handlePreviewDocument = (documentUrl, documentType) => {
+      if (!documentUrl) {
+         openInfoDialog("No hay documento disponible para vista previa");
+         return;
+      }
+      setPreviewDocument({ url: documentUrl, type: documentType });
+      setShowPreview(true);
+   };
+   const handlePreviewClientSignature = async (signedFileId, index) => {
+      if (!signedFileId) {
+         openInfoDialog("No hay documento firmado para vista previa");
+         return;
+      }
+      try {
+         setIsLoadingPreviewSignature(index);
+
+         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${signedFileId}/client-signature`;
+         const documentUrl = await downloadPdfForPreview(pdfUrl);
+         handlePreviewDocument(documentUrl, "pdf");
+      } catch (error) {
+         console.error("Error:", error);
+         openErrorDialog("Error al abrir documento");
+      } finally {
+         setIsLoadingPreviewSignature(null);
+      }
+   };
+
+   const handlePreviewAdjunto = async (responseId, index) => {
+      try {
+         setIsLoadingPreviewAdjunto(index);
+         const adjunto = fullRequestData.adjuntos[index];
+         if (adjunto.mimeType !== "application/pdf") {
+            openInfoDialog("Solo disponible para PDF");
+            return;
+         }
+         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`;
+         const documentUrl = await downloadPdfForPreview(pdfUrl);
+         handlePreviewDocument(documentUrl, "pdf");
+      } catch (error) {
+         console.error("Error:", error);
+         openErrorDialog("Error al abrir documento");
+      } finally {
+         setIsLoadingPreviewAdjunto(null);
+      }
+   };
+
+      const handlePreviewCorrectedFile = async (index) => {
+      try {
+         setIsLoadingCorrectedFile(index);
+         const adjunto = fullRequestData.adjuntos[index];
+         if (adjunto.mimeType !== "application/pdf") {
+            openInfoDialog("Solo disponible para PDF");
+            return;
+         }
+         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
+         const documentUrl = await downloadPdfForPreview(pdfUrl);
+         handlePreviewDocument(documentUrl, "pdf");
+      } catch (error) {
+         console.error("Error:", error);
+         openErrorDialog("Error al abrir documento");
+      } finally {
+         setIsLoadingCorrectedFile(null);
+      }
+   };
+
+      // const handlePreviewCorrectedFile = async (index = 0, source = "auto") => {
+      //    // source: 'approved' (archivos aprobados), 'new' (archivos nuevos), 'auto' (detecta automáticamente)
+   
+      //    try {
+      //       setIsLoadingPreviewCorrected(true);
+      //       setPreviewIndex(index);
+   
+      //       let documentUrl;
+      //       let useApprovedFiles = false;
+   
+      //       // Determinar qué archivos usar
+      //       if (source === "approved") {
+      //          useApprovedFiles = true;
+      //       } else if (source === "new") {
+      //          useApprovedFiles = false;
+      //       } else {
+      //          // 'auto' - intentar determinar basado en contexto
+      //          // Si estamos en la sección de archivos aprobados, probablemente es archivo aprobado
+      //          // Pero esto no es confiable, mejor pasar el source explícitamente
+      //          useApprovedFiles = correctedFiles.length === 0;
+      //       }
+   
+      //       // Archivos aprobados
+      //       if (useApprovedFiles) {
+      //          const hasApprovedFiles = approvedData?.correctedFiles || fullRequestData?.correctedFile;
+   
+      //          if (!hasApprovedFiles) {
+      //             openInfoDialog("No hay archivos aprobados disponibles");
+      //             return;
+      //          }
+   
+      //          // Si hay múltiples archivos aprobados
+      //          if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
+      //             if (index < 0 || index >= approvedData.correctedFiles.length) {
+      //                openInfoDialog("Índice de archivo aprobado inválido");
+      //                return;
+      //             }
+      //             const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
+      //             documentUrl = await downloadPdfForPreview(pdfUrl);
+      //          }
+      //          // Formato antiguo (un solo archivo)
+      //          else if (fullRequestData?.correctedFile) {
+      //             const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/corrected-file`;
+      //             documentUrl = await downloadPdfForPreview(pdfUrl);
+      //          }
+      //       }
+      //       // Archivos nuevos/seleccionados
+      //       else {
+      //          if (correctedFiles.length === 0) {
+      //             openInfoDialog("No hay archivos seleccionados para previsualizar");
+      //             return;
+      //          }
+   
+      //          if (index < 0 || index >= correctedFiles.length) {
+      //             openInfoDialog("Índice de archivo nuevo inválido");
+      //             return;
+      //          }
+   
+      //          const file = correctedFiles[index];
+      //          documentUrl = URL.createObjectURL(file);
+      //       }
+   
+      //       handlePreviewDocument(documentUrl, "pdf");
+      //    } catch (error) {
+      //       console.error("Error:", error);
+      //       openErrorDialog("Error al abrir documento");
+      //    } finally {
+      //       setIsLoadingPreviewCorrected(false);
+      //    }
+      // };
+
    const renderSignedDocumentSection = () => {
       const notShowSignedSection = !request?.status === "pendiente" && !request?.status === "en_revision";
 
@@ -764,13 +934,13 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
             <div className="flex items-center justify-between mb-3 pr-4">
                {attachmentsLoading && (
                   <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                     Documentos Enviados
+                     Envío de documentos
                      {attachmentsLoading && <Icon name="Loader" size={16} className="animate-spin text-accent" />}
                   </h3>
                )}
                {!attachmentsLoading && (
                   <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                     Documentos Enviados
+                     Envío de documentos
                   </h3>
                )}
                {/* BOTÓN PARA SUBIR ARCHIVOS */}
@@ -866,7 +1036,8 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                      {signedPdfFiles.map((signedFile, index) => (
                         <div
                            key={`${signedFile?.clientSignedPdf?.fileName}-${index}`}
-                           className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20 sm:min-h-[66px]"
+                           className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20 sm:min-h-[66px] cursor-pointer hover:opacity-75"
+                           onClick={() => handlePreviewClientSignature(signedFile?._id, index)}
                         >
                            <div className="flex items-center space-x-3">
                               <Icon
@@ -875,8 +1046,11 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                  className="text-accent"
                               />
                               <div>
-                                 <p className="text-sm font-medium text-foreground">
+                                 <p className="text-sm font-medium text-foreground flex gap-2 items-center">
                                     {signedFile?.clientSignedPdf?.fileName}
+                                    {isLoadingPreviewSignature === index && (
+                                       <Icon name="Loader" size={14} className="animate-spin text-accent" />
+                                    )}
                                  </p>
                                  <p className="text-xs text-muted-foreground">
                                     {formatFileSize(signedFile?.clientSignedPdf?.fileSize)} •{" "}
@@ -891,7 +1065,10 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                  iconName={isDownloadingSignedPdf === index ? "Loader" : "Download"}
                                  iconPosition="left"
                                  iconSize={16}
-                                 onClick={() => handleDownloadClientSignature(signedFile, index)}
+                                 onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownloadClientSignature(signedFile, index);
+                                 }}
                                  disabled={isDownloadingSignedPdf !== null}
                               >
                                  {isDownloadingSignedPdf === index ? "Descargando..." : "Descargar"}
@@ -996,10 +1173,10 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
 
                {/* Sección de Archivos Adjuntos */}
                {shouldShowAttachmentsSection && (
-                  <div>
-                     <div className="flex items-center justify-between  pr-4">
+                  <div className="pt-3">
+                     <div className="flex items-center justify-between pr-4">
                         {attachmentsLoading && (
-                           <h3 className="text-lg font-semibold text-foreground  flex items-center gap-2">
+                           <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                               Archivos Adjuntos
                               {attachmentsLoading && (
                                  <Icon name="Loader" size={16} className="animate-spin text-accent" />
@@ -1007,7 +1184,7 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                            </h3>
                         )}
                         {!attachmentsLoading && (
-                           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                           <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                               Archivos Adjuntos
                            </h3>
                         )}
@@ -1061,6 +1238,7 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                  <div
                                     key={index}
                                     className="flex items-center justify-between mt-4 p-3 bg-accent/5 rounded border border-accent/20 sm:min-h-[66px]"
+                                    
                                  >
                                     <div className="flex items-center space-x-3">
                                        <Icon name="FileText" size={20} className="text-accent" />
@@ -1110,7 +1288,9 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                               {fullRequestData?.adjuntos.map((adjunto, index) => (
                                  <div
                                     key={index}
-                                    className="flex items-center justify-between mt-4 p-3 bg-accent/5 rounded border border-accent/20 sm:min-h-[66px]"
+                                    className="flex items-center justify-between mt-4 p-3 bg-accent/5 rounded border border-accent/20 sm:min-h-[66px] cursor-pointer hover:opacity-75"
+                                    onClick={() =>  handlePreviewAdjunto(request?._id, index)
+                           }
                                  >
                                     <div className="flex items-center space-x-3">
                                        <Icon
@@ -1119,7 +1299,11 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                           className="text-accent"
                                        />
                                        <div>
-                                          <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
+                                          <p className="text-sm font-medium text-foreground flex items-center gap-2">{adjunto.fileName}
+                                             {isLoadingPreviewAdjunto === index && (
+                                                <Icon name="Loader" size={14} className="animate-spin text-accent" />
+                                             )}
+                                          </p>
                                           <p className="text-xs text-muted-foreground">
                                              {adjunto.pregunta} • {formatFileSize(adjunto.size)} •{" "}
                                              {formatDate(adjunto.uploadedAt)}
@@ -1133,7 +1317,10 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                           iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
                                           iconPosition="left"
                                           iconSize={16}
-                                          onClick={() => handleDownloadAdjunto(request._id, index)}
+                                          onClick={(e) => {
+                                             e.stopPropagation();
+                                             handleDownloadAdjunto(request._id, index);
+                                          }}
                                           disabled={downloadingAttachmentIndex !== null}
                                        >
                                           {downloadingAttachmentIndex === index ? "Descargando..." : "Descargar"}
@@ -1166,17 +1353,21 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                            ) : (
                               <>
                                  {approvedFilesData?.correctedFiles?.length > 0 ? (
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 px-4 bg-muted/50 rounded-lg">
                                        {approvedFilesData.correctedFiles.map((file, index) => (
                                           <div
                                              key={index}
-                                             className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                                             className="flex items-center justify-between mt-4 p-3 bg-accent/5 rounded border border-accent/20 sm:min-h-[66px] cursor-pointer hover:opacity-75"
+                                             onClick={() => handlePreviewCorrectedFile(index)}
                                           >
                                              <div className="flex items-center space-x-3">
                                                 <Icon name="FileText" size={20} className="text-success" />
                                                 <div>
-                                                   <p className="text-sm font-medium text-foreground">
+                                                   <p className="text-sm font-medium text-foreground flex gap-2 items-center">
                                                       {file.fileName || `Documento corregido ${index + 1}`}
+                                                      {isLoadingCorrectedFile === index && (
+                                                <Icon name="Loader" size={14} className="animate-spin text-accent" />
+                                             )}
                                                    </p>
                                                    <p className="text-xs text-muted-foreground">
                                                       PDF • {formatFileSize(file.fileSize)} •{" "}
@@ -1193,8 +1384,10 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                                    }
                                                    iconPosition="left"
                                                    iconSize={16}
-                                                   onClick={() =>
+                                                   onClick={(e) =>{
+                                                      e.stopPropagation();
                                                       handleDownloadSingleApprovedFile(request._id, index, file.fileName)
+                                                   }
                                                    }
                                                    disabled={downloadingApprovedFileIndex !== null}
                                                 >
@@ -1223,7 +1416,7 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                   </div>
                )}
 
-               {renderSignedDocumentSection()}
+               {!["pendiente", "en_revision"].includes(status) && renderSignedDocumentSection()}
 
                {request?.form?.description && (
                   <div>
@@ -1284,6 +1477,18 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                </div>
             </div>
          </div>
+         <CleanDocumentPreview
+            isVisible={showPreview}
+            onClose={() => {
+               if (previewDocument?.url && previewDocument?.type === "pdf") {
+                  cleanupPreviewUrl(previewDocument.url);
+               }
+               setShowPreview(false);
+            }}
+            resposes={request}
+            documentUrl={previewDocument?.url}
+            documentType={previewDocument?.type}
+         />
          <AsyncActionDialog {...dialogProps} />
       </div>
    );

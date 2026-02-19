@@ -119,8 +119,8 @@ const RequestDetails = ({
    // Estados de carga para vistas previas
    const [isLoadingPreviewGenerated, setIsLoadingPreviewGenerated] = useState(false);
    const [isLoadingPreviewCorrected, setIsLoadingPreviewCorrected] = useState(false);
-   const [isLoadingPreviewSignature, setIsLoadingPreviewSignature] = useState(false);
-   const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(false);
+   const [isLoadingPreviewSignature, setIsLoadingPreviewSignature] = useState(null);
+   const [isLoadingPreviewAdjunto, setIsLoadingPreviewAdjunto] = useState(null);
 
    const [documentInfo, setDocumentInfo] = useState(null);
 
@@ -561,27 +561,27 @@ const RequestDetails = ({
       }
    };
 
-   const handlePreviewClientSignature = async () => {
-      if (!clientSignature) {
+   const handlePreviewClientSignature = async (signedFileId, index) => {
+      if (!signedFileId) {
          openInfoDialog("No hay documento firmado para vista previa");
          return;
       }
       try {
-         setIsLoadingPreviewSignature(true);
-         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/client-signature`;
+         setIsLoadingPreviewSignature(index);
+         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${signedFileId}/client-signature`;
          const documentUrl = await downloadPdfForPreview(pdfUrl);
          handlePreviewDocument(documentUrl, "pdf");
       } catch (error) {
          console.error("Error:", error);
          openErrorDialog("Error al abrir documento");
       } finally {
-         setIsLoadingPreviewSignature(false);
+         setIsLoadingPreviewSignature(null);
       }
    };
 
    const handlePreviewAdjunto = async (responseId, index) => {
       try {
-         setIsLoadingPreviewAdjunto(true);
+         setIsLoadingPreviewAdjunto(index);
          const adjunto = fullRequestData.adjuntos[index];
          if (adjunto.mimeType !== "application/pdf") {
             openInfoDialog("Solo disponible para PDF");
@@ -594,7 +594,7 @@ const RequestDetails = ({
          console.error("Error:", error);
          openErrorDialog("Error al abrir documento");
       } finally {
-         setIsLoadingPreviewAdjunto(false);
+         setIsLoadingPreviewAdjunto(null);
       }
    };
 
@@ -669,7 +669,6 @@ const RequestDetails = ({
          if (fullRequestData?.status !== "pendiente") return;
 
          await handleStatusChange("en_revision");
-         
       } catch (error) {
          console.error("Error:", error);
          openErrorDialog("Error al descargar");
@@ -711,7 +710,9 @@ const RequestDetails = ({
       }
    };
 
-   const handleDeleteClientSignature = async (responseId) => {
+   const handleDeleteClientSignature = async (responseId, signedFile) => {
+      const signatureId = signedFile?._id;
+
       openAsyncDialog({
          title: "¿Estás seguro de eliminar la firma del cliente? El estado de la solicitud volverá a 'Aprobado'.",
          loadingText: "Eliminando firma...",
@@ -719,7 +720,7 @@ const RequestDetails = ({
          errorText: "Error al eliminar la firma",
          onConfirm: async () => {
             try {
-               const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/client-signature`, {
+               const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/client-signature/${signatureId}`, {
                   method: "DELETE",
                });
 
@@ -1500,7 +1501,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      {fullRequestData.adjuntos.map((adjunto, index) => (
                         <div
                            key={index}
-                           className={`flex items-center justify-between p-3 bg-muted/50 rounded-lg transition-all group ${userPermissions?.previewAttachment ? "cursor-pointer hover:bg-muted/70" : "cursor-default"}`}
+                           className={`flex items-center justify-between p-3 bg-muted/50 rounded-lg transition-all group ${userPermissions?.previewAttachment ? "cursor-pointer hover:bg-muted/70 hover:opacity-75" : "cursor-default"}`}
                            onClick={() =>
                               userPermissions?.previewAttachment && handlePreviewAdjunto(fullRequestData._id, index)
                            }
@@ -1514,7 +1515,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               <div>
                                  <div className="flex items-center gap-2">
                                     <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
-                                    {isLoadingPreviewAdjunto && (
+                                    {isLoadingPreviewAdjunto === index && (
                                        <Icon name="Loader" size={14} className="animate-spin text-accent" />
                                     )}
                                  </div>
@@ -1831,8 +1832,10 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   {signedPdfFiles?.length > 0 &&
                      signedPdfFiles.map((signedFile, index) => (
                         <div
-                           className={`bg-success/10 rounded-lg p-4 border transition-all group items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all ${userPermissions?.previewSigned ? "cursor-pointer hover:bg-success/20" : "cursor-default"}`}
-                           onClick={() => userPermissions?.previewSigned && handlePreviewClientSignature()}
+                           className={`bg-success/10 rounded-lg p-4 border transition-all group items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all ${userPermissions?.previewSigned ? "cursor-pointer hover:bg-success/20" : "cursor-default"} hover:opacity-75`}
+                           onClick={() =>
+                              userPermissions?.previewSigned && handlePreviewClientSignature(signedFile?._id, index)
+                           }
                            key={`${signedFile?.clientSignedPdf?.fileName}-${index}`}
                         >
                            <div
@@ -1850,7 +1853,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                        <p className="text-sm font-medium text-foreground">
                                           {signedFile?.clientSignedPdf?.fileName}
                                        </p>
-                                       {isLoadingPreviewSignature && (
+                                       {isLoadingPreviewSignature === index && (
                                           <Icon name="Loader" size={14} className="animate-spin text-accent" />
                                        )}
                                     </div>
@@ -1868,7 +1871,10 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                        iconName={isDownloadingSignature === index ? "Loader" : "Download"}
                                        iconPosition="left"
                                        iconSize={16}
-                                       onClick={() => handleDownloadClientSignature(signedFile, index)}
+                                       onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDownloadClientSignature(signedFile, index);
+                                       }}
                                        disabled={isDownloadingSignature === index}
                                     >
                                        {isDownloadingSignature === index ? "Descargando..." : "Descargar"}
@@ -2470,21 +2476,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                }
                setShowPreview(false);
             }}
-            resposes={request}
             documentUrl={previewDocument?.url}
             documentType={previewDocument?.type}
-            currentIndex={previewIndex}
-            totalFiles={totalFiles}
-            onNext={() => {
-               const nextIndex = (previewIndex + 1) % totalFiles;
-               setPreviewIndex(nextIndex);
-               handlePreviewCorrectedFile(nextIndex);
-            }}
-            onPrevious={() => {
-               const prevIndex = (previewIndex - 1 + totalFiles) % totalFiles;
-               setPreviewIndex(prevIndex);
-               handlePreviewCorrectedFile(prevIndex);
-            }}
          />
          <AsyncActionDialog {...dialogProps} />
       </div>
