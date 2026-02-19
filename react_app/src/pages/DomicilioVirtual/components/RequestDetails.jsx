@@ -40,6 +40,7 @@ const RequestDetails = ({
 }) => {
   // --- ESTADOS DE UI ---
   const [activeTab, setActiveTab] = useState("details");
+  const [isExtendMenuOpen, setIsExtendMenuOpen] = useState(false); // Control del menú desplegable
 
   // --- PERMISOS ---
   const canViewAttachments = userPermissions.includes('view_domicilio_virtual_attach');
@@ -134,6 +135,31 @@ const RequestDetails = ({
       setApprovedData(null);
     } finally {
       setIsLoadingApprovedData(false);
+    }
+  };
+
+  const handleExtendContract = async (type) => {
+    try {
+      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/extend`, {
+        method: "POST",
+        body: JSON.stringify({ type }), // 'semestral' o 'anual'
+      });
+
+      if (!response.ok) throw new Error("No se pudo extender el contrato");
+
+      const result = await response.json();
+
+      if (onUpdate && result.updatedRequest) {
+        // Importante: Pasamos el objeto entero para refrescar la vista
+        onUpdate(result.updatedRequest);
+        setFullRequestData(result.updatedRequest);
+      }
+
+      setIsExtendMenuOpen(false);
+      return true;
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
   };
 
@@ -246,15 +272,21 @@ const RequestDetails = ({
 
     const fetchFullDetailsAndDocs = async () => {
       setIsDetailLoading(true);
+      // Ocultamos respuestas previas pero mantenemos metadatos básicos
+      setFullRequestData(prev => ({ ...prev, responses: null })); 
+
       try {
         const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}`);
         if (response.ok) {
           const data = await response.json();
-          setFullRequestData((prev) => ({
-            ...prev,
+          
+          // MVP: Aseguramos que submittedAt siempre tenga el valor de la fecha de creación
+          const cleanData = {
             ...data,
-          }));
-          // Buscar info de generador para todos los tipos
+            submittedAt: data.submittedAt || data.createdAt
+          };
+          
+          setFullRequestData(cleanData);
           await getDocumentInfo(responseId);
         }
       } catch (error) {
@@ -1091,8 +1123,15 @@ const RequestDetails = ({
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "Fecha no disponible";
-    return new Date(dateString)?.toLocaleDateString("es-CL", {
+    // Si no llega string, intentamos buscar en el estado global del componente
+    const finalDate = dateString || fullRequestData?.submittedAt || fullRequestData?.createdAt;
+    
+    if (!finalDate) return "Fecha no disponible";
+
+    const date = new Date(finalDate);
+    if (isNaN(date.getTime())) return "Fecha no disponible";
+
+    return date.toLocaleDateString("es-CL", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -1189,6 +1228,12 @@ const RequestDetails = ({
           <span className="text-sm text-muted-foreground">Fecha de envío:</span>
           <span className="text-sm font-medium text-foreground">{formatDate(fullRequestData?.submittedAt)}</span>
         </div>
+        {fullRequestData?.responses?.["FECHA_TERMINO_CONTRATO"] && (
+          <div className="flex justify-between border-t border-border/20 pt-2">
+            <span className="text-sm text-muted-foreground">Vencimiento del contrato:</span>
+            <span className="text-sm font-bold text-accent">{fullRequestData.responses["FECHA_TERMINO_CONTRATO"]}</span>
+          </div>
+        )}
       </div>
 
       <div>
@@ -1616,16 +1661,48 @@ const RequestDetails = ({
             <div className="flex items-center space-x-3 w-full justify-end">
               {!isStandalone && (
                 <>
-                  {/* Botón Mensajes eliminado para Domicilio Virtual */}
+                  <div className="relative">
+                    <Button 
+                      variant="outline" 
+                      iconName="Calendar" 
+                      iconPosition="left"
+                      onClick={() => setIsExtendMenuOpen(!isExtendMenuOpen)}
+                    >
+                      Extender
+                    </Button>
+                    
+                    {isExtendMenuOpen && (
+                      <div className="absolute bottom-full mb-2 right-0 w-52 bg-popover border border-border rounded-lg shadow-xl p-1 z-50 animate-in slide-in-from-bottom-2">
+                        <button 
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-accent/10 rounded-md flex items-center gap-2"
+                          onClick={() => openAsyncDialog({
+                            title: "¿Extender contrato por 6 meses?",
+                            loadingText: "Actualizando fecha...",
+                            successText: "Extensión aplicada con éxito",
+                            onConfirm: () => handleExtendContract('semestral')
+                          })}
+                        >
+                          <Icon name="Timer" size={14} className="text-accent" /> +6 Meses (Semestral)
+                        </button>
+                        <button 
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-accent/10 rounded-md flex items-center gap-2"
+                          onClick={() => openAsyncDialog({
+                            title: "¿Extender contrato por 1 año?",
+                            loadingText: "Actualizando fecha...",
+                            successText: "Extensión aplicada con éxito",
+                            onConfirm: () => handleExtendContract('anual')
+                          })}
+                        >
+                          <Icon name="CalendarCheck" size={14} className="text-accent" /> +1 Año (Anual)
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
-                  {/* Bottom drop down removed */}
-
+                  <Button variant="default" onClick={onClose}>
+                    Cerrar
+                  </Button>
                 </>
-              )}
-              {!isStandalone && (
-                <Button variant="default" onClick={onClose}>
-                  Cerrar
-                </Button>
               )}
             </div>
           </div >
