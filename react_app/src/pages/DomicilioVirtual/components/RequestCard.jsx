@@ -28,6 +28,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
   }, [request]);
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'No especificada';
     return new Date(dateString)?.toLocaleDateString('es-CL', {
       day: '2-digit',
       month: '2-digit',
@@ -72,14 +73,10 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
   };
 
   const getCombinedTitle = () => {
-    // 1. Limpiamos el texto "Domicilio Virtual" para que no se repita
     const rawTitle = currentRequest?.formTitle || 'Formulario';
     const cleanTitle = rawTitle.replace(/Domicilio Virtual/gi, '').replace(/^- /g, '').trim();
-    
-    // 2. Obtenemos el nombre de la empresa
     const company = currentRequest?.nombreEmpresa;
 
-    // 3. Concatenamos como estaba antes del error
     if (company && company !== "No especificado" && company !== "Empresa") {
       return `${cleanTitle || 'Solicitud'} - ${company}`;
     }
@@ -89,10 +86,8 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
 
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 hover:shadow-brand-hover transition-brand">
-      {/* Header - RESPONSIVE */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
         <div className="flex-1 min-w-0">
-          {/* Title and Time - RESPONSIVE */}
           <div className="flex flex-col xs:flex-row xs:items-center xs:space-x-3 space-y-1 xs:space-y-0 mb-2">
             <h3 className="text-base sm:text-lg font-semibold text-foreground break-words">
               {getCombinedTitle()}
@@ -102,9 +97,7 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
             </span>
           </div>
 
-          {/* Meta Info - RESPONSIVE */}
           <div className="flex flex-col space-y-1.5 text-xs text-muted-foreground">
-            {/* Empresa */}
             <div className="flex items-center space-x-1">
               <Icon name="Building" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
               <span className="truncate">
@@ -112,7 +105,6 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
               </span>
             </div>
 
-            {/* RUT - Línea aparte (Cambio solicitado) */}
             {currentRequest?.rutEmpresa && (
               <div className="flex items-center space-x-1">
                 <Icon name="CreditCard" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
@@ -120,17 +112,27 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
               </div>
             )}
             
-            {/* Fecha de Término */}
-            {currentRequest?.responses?.["FECHA_TERMINO_CONTRATO"] && (
-              <div className="flex items-center space-x-1 text-accent font-medium">
-                <Icon name="Calendar" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
-                <span>Vence: {currentRequest.responses["FECHA_TERMINO_CONTRATO"]}</span>
-              </div>
-            )}
+            {/* Fechas del Contrato - LEYENDO DESDE LA RAÍZ */}
+            <div className="flex flex-col space-y-1 mt-1 pt-1 border-t border-border/50">
+              {/* Fecha de Inicio - COLOR ACTUALIZADO A ACCENT */}
+              {currentRequest?.fechaInicioContrato && (
+                <div className="flex items-center space-x-1 text-accent font-medium">
+                  <Icon name="Calendar" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
+                  <span>Inicio: {currentRequest.fechaInicioContrato}</span>
+                </div>
+              )}
+              
+              {/* Fecha de Término */}
+              {currentRequest?.fechaTerminoContrato && (
+                <div className="flex items-center space-x-1 text-accent font-medium">
+                  <Icon name="Calendar" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
+                  <span>Término: {currentRequest.fechaTerminoContrato}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Status Badge - RESPONSIVE */}
         <div className="flex items-center space-x-2 self-start sm:self-auto sm:ml-4">
           {(() => {
             const currentStatus = currentRequest?.status;
@@ -153,10 +155,8 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
         </div>
       </div>
 
-      {/* Actions - RESPONSIVE */}
       <div className="flex items-center justify-between mt-4 sm:mt-3">
-        <div className="flex-1">
-        </div>
+        <div className="flex-1"></div>
 
         <div className="flex items-center space-x-1 sm:space-x-2">
           {canDelete && (

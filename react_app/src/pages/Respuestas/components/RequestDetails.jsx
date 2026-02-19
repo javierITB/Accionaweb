@@ -1770,12 +1770,15 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                     </div>
                                     <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
                                        <Button
+                                       iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
                                           variant="ghost"
-                                          size="icon"
+                                          size="sm"
                                           onClick={() => handleDownloadCorrected(index, "approved")}
-                                          iconName="Download"
-                                          disabled={isMarked}
-                                       />
+                                          disabled={isMarked ||downloadingCorrectedIndex === index}
+                                          
+                                       >
+                                          {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
+                                       </Button>
                                        {!["archivado", "finalizado"].includes(fullRequestData?.status) &&
                                           (isMarked ? (
                                              <Button
