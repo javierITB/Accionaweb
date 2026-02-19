@@ -4,9 +4,9 @@ import Icon from '../AppIcon';
 import Button from './Button';
 import NotificationsCard from './NotificationsCard';
 import { usePermissions } from '../../context/PermissionsContext';
+import ChatLegalSidebar from './ChatSidebar'; // Asegúrate de que la ruta sea correcta
 
 const Header = ({ className = '' }) => {
-  // Estado corregido para persistir en localStorage
   const [isHeaderHidden, setIsHeaderHidden] = useState(() => {
     return localStorage.getItem('isHeaderHidden') === 'true';
   });
@@ -14,6 +14,7 @@ const Header = ({ className = '' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotiOpen, setIsNotiOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false); // Estado para el Asesor Legal
 
   const user = sessionStorage.getItem("user");
   const userMail = sessionStorage.getItem("email");
@@ -21,8 +22,7 @@ const Header = ({ className = '' }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [shouldShake, setShouldShake] = useState(false);
 
-  // REF para el audio y para seguir el rastro del conteo anterior sin disparar re-renders
-  const audioRef = useRef(new Audio('/bell.mp3')); // Ruta a tu archivo en public
+  const audioRef = useRef(new Audio('/bell.mp3'));
   const prevUnreadCountRef = useRef(0);
   const menuRef = useRef(null);
   const notiRef = useRef(null);
@@ -37,18 +37,14 @@ const Header = ({ className = '' }) => {
     audioRef.current.volume = 1.0;
   }, []);
 
-  // Guardar estado del notch cuando cambie
   useEffect(() => {
     localStorage.setItem('isHeaderHidden', isHeaderHidden);
   }, [isHeaderHidden]);
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    if (theme === 'dark') root.classList.add('dark');
+    else root.classList.remove('dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
@@ -71,84 +67,49 @@ const Header = ({ className = '' }) => {
         const data = await response.json();
         const newUnreadCount = data.unreadCount || 0;
 
-        // LÓGICA DE SONIDO Y AGITACIÓN
-        // Si el nuevo conteo es mayor al que teníamos guardado en la referencia
         if (!isInitialLoad && newUnreadCount > prevUnreadCountRef.current) {
-          // 1. Reproducir sonido
-          audioRef.current.play().catch(error => {
-            console.log("El navegador bloqueó el audio hasta que el usuario interactúe con la página.", error);
-          });
-
-          // 2. Activar agitación visual
+          audioRef.current.play().catch(error => console.log("Audio bloqueado", error));
           setShouldShake(true);
           setTimeout(() => setShouldShake(false), 1500);
         }
-        else if (isInitialLoad && newUnreadCount > 0) {
-          // Agitación inicial sin sonido (opcional)
-          setShouldShake(true);
-          setTimeout(() => setShouldShake(false), 1500);
-        }
-
-        // Actualizar estados y referencias
         setUnreadCount(newUnreadCount);
         prevUnreadCountRef.current = newUnreadCount;
-
       } catch (error) {
-        console.error("Error en polling de no leídas:", error);
+        console.error("Error en polling:", error);
       }
     };
 
     fetchUnreadCount(true);
     intervalId = setInterval(() => fetchUnreadCount(false), 10000);
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
+    return () => clearInterval(intervalId);
   }, [userMail]);
 
-  const toggleTheme = () => setTheme(currentTheme => (currentTheme === 'light' ? 'dark' : 'light'));
+  const toggleTheme = () => setTheme(curr => (curr === 'light' ? 'dark' : 'light'));
   const toggleNoti = () => setIsNotiOpen(!isNotiOpen);
-  const handleNavigation = (path) => { window.location.href = path; };
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-  const handleLogout = () => {
-    sessionStorage.clear();
-    window.location.href = '/';
-  };
+  const handleLogout = () => { sessionStorage.clear(); window.location.href = '/'; };
 
   return (
     <div
       className={`
         fixed top-4 z-50 flex flex-col pointer-events-none transition-all duration-500
-        /* Lógica Responsiva: */
         ${isHeaderHidden
           ? 'right-1 sm:right-1 lg:right-2 items-end'
           : 'left-1/2 -translate-x-1/2 w-full max-w-[95%] items-center md:left-auto md:translate-x-0 md:right-1 lg:right-2 md:w-auto md:items-end'}
       `}
     >
       <header
-        ref={(el) => {
-          menuRef.current = el;
-          notiRef.current = el;
-        }}
+        ref={(el) => { menuRef.current = el; notiRef.current = el; }}
         className={`
-          relative pointer-events-auto
-          bg-card border border-border 
-          rounded-2xl shadow-brand 
-          transition-all duration-500 ease-in-out
-          flex items-center px-2
+          relative pointer-events-auto bg-card border border-border rounded-2xl shadow-brand transition-all duration-500 ease-in-out flex items-center px-2
           ${isHeaderHidden ? 'w-14 h-14 justify-center' : 'h-16 md:h-20 w-auto justify-center gap-2 md:gap-3'}
           ${className}
         `}
       >
         <div className="flex items-center gap-2 md:gap-3">
-
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => {
-              setIsHeaderHidden(!isHeaderHidden);
-              setIsNotiOpen(false);
-            }}
+            onClick={() => { setIsHeaderHidden(!isHeaderHidden); setIsNotiOpen(false); }}
             iconName={isHeaderHidden ? "Eye" : "EyeOff"}
             className="rounded-xl w-10 h-10 md:w-11 md:h-11 text-muted-foreground"
             iconSize={20}
@@ -156,6 +117,16 @@ const Header = ({ className = '' }) => {
 
           {!isHeaderHidden && (
             <>
+              {/* Botón Chat - Modo Abierto */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                iconName="MessageSquare"
+                className={`rounded-xl w-10 h-10 md:w-11 md:h-11 transition-all ${isChatOpen ? 'bg-primary text-white shadow-lg scale-105' : 'text-muted-foreground'}`}
+                iconSize={18}
+              />
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -170,14 +141,11 @@ const Header = ({ className = '' }) => {
                   variant="ghost"
                   size="icon"
                   onClick={toggleNoti}
-                  /* RECUPERADO: hover:bg-primary y transition-brand */
                   className={`relative hover:bg-primary transition-brand rounded-xl w-10 h-10 md:w-11 md:h-11 ${shouldShake ? 'animate-bell-shake' : ''} ${isNotiOpen ? 'bg-primary text-white' : ''}`}
                   iconName="Bell"
-                  /* RECUPERADO: iconSize={18} */
                   iconSize={18}
                 >
                   {unreadCount > 0 && (
-                    /* RECUPERADO: Sin borde (border-2 border-card eliminado) */
                     <span className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 min-w-[1.25rem] h-5 px-1.5 text-xs font-bold text-white bg-error rounded-full flex items-center justify-center">
                       {unreadCount}
                     </span>
@@ -192,11 +160,9 @@ const Header = ({ className = '' }) => {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-tight">{userRole}</p>
                   </div>
                 )}
-
                 {user && (
                   <div className="relative" ref={userMenuRef}>
                     <button
-                      /* RECUPERADO: window.location.href directo */
                       onClick={() => { window.location.href = "/perfil" }}
                       className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white font-bold text-base shadow-sm hover:scale-105 active:scale-95 transition-all"
                     >
@@ -204,14 +170,11 @@ const Header = ({ className = '' }) => {
                     </button>
                   </div>
                 )}
-
                 <button
-                  onClick={() => { user ? handleLogout() : handleNavigation('/login') }}
+                  onClick={() => { user ? handleLogout() : (window.location.href = '/login') }}
                   className="w-10 h-10 md:w-12 md:h-12 bg-muted/50 hover:bg-error/10 hover:text-error rounded-xl flex items-center justify-center text-muted-foreground transition-colors"
-                  /* RECUPERADO: Atributo title */
                   title={user ? "Cerrar Sesión" : "Iniciar Sesión"}
                 >
-                  {/* RECUPERADO: size={16} para el Logout */}
                   <Icon name={user ? "LogOut" : "LogIn"} size={16} />
                 </button>
               </div>
@@ -227,6 +190,26 @@ const Header = ({ className = '' }) => {
           </div>
         )}
       </header>
+
+      {/* Botón Chat - Modo Cerrado (Debajo del ojo) */}
+      {isHeaderHidden && (
+        <div className="mt-3 pointer-events-auto animate-in fade-in slide-in-from-top-2 duration-500">
+           <Button
+            variant="default"
+            size="icon"
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            iconName="Scale" 
+            className={`w-14 h-14 rounded-2xl shadow-brand transition-all duration-300 ${isChatOpen ? 'bg-accent text-white rotate-12 scale-110' : 'bg-card text-primary border border-border hover:bg-primary hover:text-white'}`}
+            iconSize={24}
+          />
+        </div>
+      )}
+
+      {/* Isla del Chat Legal */}
+      <ChatLegalSidebar 
+        isOpen={isChatOpen} 
+        onClose={() => setIsChatOpen(false)} 
+      />
     </div>
   );
 };
