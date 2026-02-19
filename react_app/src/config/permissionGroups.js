@@ -410,6 +410,13 @@ export const PERMISSION_GROUPS = {
          },
       ]
    },
-
+   chatbot: {
+      label: 'Vista: Chatbot',
+      tagg: 'admin',
+      permissions: [
+         { id: 'view_chatbot', label: 'Acceso a la vista' },
+         { id: 'view_chatbot_envio', label: 'Envio de mensajes al chatbot', dependency: 'view_chatbot' },
+      ]
+   },
 
 };

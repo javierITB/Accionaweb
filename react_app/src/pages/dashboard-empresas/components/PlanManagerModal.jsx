@@ -22,7 +22,8 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
         requests: { maxTotal: "", maxMonthly: "", maxYearly: "", maxArchived: "", deleteArchivedFiles: false },
         tickets: { maxQuantity: "", maxCategories: "" },
         resources: { users: "", forms: "", templates: "", roles: "" },
-        companies: { maxQuantity: "" }
+        companies: { maxQuantity: "" },
+        chatbot: { maxQuantity: "" }
     });
 
     useEffect(() => {
@@ -60,6 +61,9 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                     },
                     companies: {
                         maxQuantity: getVal(l.companies?.maxQuantity)
+                    },
+                    chatbot: {
+                        maxQuantity: getVal(l.chatbot?.maxQuantity)
                     }
                 });
             } else {
@@ -98,7 +102,8 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                     requests: { maxTotal: "", maxMonthly: "", maxYearly: "", maxArchived: "", deleteArchivedFiles: false },
                     tickets: { maxQuantity: "", maxCategories: "" },
                     resources: { users: "", forms: "", templates: "", roles: "" },
-                    companies: { maxQuantity: "" }
+                    companies: { maxQuantity: "" },
+                    chatbot: { maxQuantity: "" }
                 });
             }
         }
@@ -222,7 +227,8 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                     forms: { maxQuantity: parseIntOrNull(limits.resources.forms) },
                     templates: { maxQuantity: parseIntOrNull(limits.resources.templates) },
                     roles: { maxRoles: parseIntOrNull(limits.resources.roles) },
-                    companies: { maxQuantity: parseIntOrNull(limits.companies.maxQuantity) }
+                    companies: { maxQuantity: parseIntOrNull(limits.companies.maxQuantity) },
+                    chatbot: { maxQuantity: parseIntOrNull(limits.chatbot.maxQuantity) }
                 }
             };
 
@@ -542,6 +548,23 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                                         <div className="md:col-span-2">
                                             <InputGroup label="Sub-Empresas Permitidas" value={limits.companies.maxQuantity} onChange={(v) => handleLimitChange("companies", "maxQuantity", v)} icon={<Building size={14} />} />
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* Section: Chatbot / IA */}
+                                <div className="rounded-xl border border-border bg-card shadow-sm p-6">
+                                    <div className="flex items-center gap-3 mb-6 border-b border-border pb-4">
+                                        <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 shadow-sm">
+                                            <Monitor size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black text-foreground uppercase tracking-wide">Chatbot</h3>
+                                            <p className="text-[10px] text-muted-foreground font-medium">Límites para Chatbot</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                        <InputGroup label="Mensajes Chatbot (Total)" value={limits.chatbot.maxQuantity} onChange={(v) => handleLimitChange("chatbot", "maxQuantity", v)} icon={<Monitor size={14} />} />
                                     </div>
                                 </div>
 

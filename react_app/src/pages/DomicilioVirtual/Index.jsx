@@ -6,7 +6,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import { Navigate } from 'react-router-dom';
 
-// Usar componentes locales de Domicilio Virtual
+// Componentes locales
 import RequestCard from './components/RequestCard';
 import FilterPanel from './components/FilterPanel';
 import RequestDetails from './components/RequestDetails';
@@ -32,7 +32,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
     const [viewMode, setViewMode] = useState('grid');
-    const [showFilters, setShowFilters] = useState(true); // Cambiado a true por defecto
+    const [showFilters, setShowFilters] = useState(true);
 
     // --- ESTADOS DE DATOS ---
     const [resp, setResp] = useState([]);
@@ -44,13 +44,12 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [archivedCountServer, setArchivedCountServer] = useState(0);
     const [serverStats, setServerStats] = useState(null);
     const requestsPerPage = 30;
 
     const loadedPages = useRef(new Set());
 
-    // CAMBIO: Inicializamos con 'contratacion'
+    // Filtros iniciales
     const [filters, setFilters] = useState({
         search: 'contratacion',
         status: '',
@@ -82,9 +81,8 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
             if (!isBackground) setIsLoading(true);
 
             const endpoint = 'domicilio-virtual/mini';
-
             const params = new URLSearchParams({
-                page    : pageNumber,
+                page: pageNumber,
                 limit: requestsPerPage,
                 search: overrideFilters.search || '',
                 status: overrideFilters.status || '',
@@ -101,10 +99,10 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
             if (!res.ok) throw new Error('Error al obtener datos');
             const result = await res.json();
 
-            if (result.archivedTotal !== undefined) setArchivedCountServer(result.archivedTotal);
             if (result.stats) setServerStats(result.stats);
 
             const normalized = result.data.map(r => ({
+                ...r,
                 _id: r._id,
                 formId: r.formId,
                 title: r.formTitle || "Formulario",
@@ -120,7 +118,10 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
                 submittedBy: r.tuNombre || 'Sin nombre',
                 company: r.rutEmpresa || 'Sin RUT',
                 hasMessages: r.adjuntosCount > 0,
-                updatedAt: r.updatedAt
+                updatedAt: r.updatedAt,
+                // Soporte para fechas en raíz del objeto
+                fechaInicioContrato: r.fechaInicioContrato,
+                fechaTerminoContrato: r.fechaTerminoContrato
             }));
 
             setResp(prev => {
@@ -128,7 +129,6 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
                     ? normalized
                     : [...prev, ...normalized];
                 const unique = Array.from(new Map(combined.map(item => [item._id, item])).values());
-                // Mantenemos el orden por fecha aquí para la base de datos
                 return unique.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             });
 
@@ -145,11 +145,12 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
 
     // --- EFECTOS DE CONTROL ---
     useEffect(() => { 
-        // CAMBIO: Aseguramos que la primera carga use los filtros por defecto
         fetchData(1, false, filters); 
     }, []);
 
-    useEffect(() => { if (currentPage > 1) fetchData(currentPage); }, [currentPage]);
+    useEffect(() => { 
+        if (currentPage > 1) fetchData(currentPage); 
+    }, [currentPage]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -167,14 +168,12 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
         }
     }, [formId, resp]);
 
-    const canAccess = userPermissions.includes('view_domicilio_virtual');
-    if (!canAccess) return <Navigate to="/panel" replace />;
-
+    // --- MANEJADORES DE FILTROS ---
     const handleApplyFilters = () => {
         setResp([]);
         loadedPages.current.clear();
         setCurrentPage(1);
-        fetchData(1);
+        fetchData(1, false, filters); 
     };
 
     const handleStatusFilter = (status) => {
@@ -220,52 +219,45 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
 
     const handleRemove = async (request) => {
         if (!window.confirm(`¿Seguro que deseas eliminar la solicitud de ${request.nombreEmpresa || 'este cliente'}?`)) return;
-
         try {
             const res = await apiFetch(`${API_BASE_URL}/domicilio-virtual/${request._id}`, {
                 method: 'DELETE'
             });
-
             if (res.ok) {
                 setResp(prev => prev.filter(r => r._id !== request._id));
                 setTotalItems(prev => Math.max(0, prev - 1));
-                if (selectedRequest?._id === request._id) {
-                    handleCloseRequestDetails();
-                }
-            } else {
-                const errorData = await res.json();
-                alert(errorData.error || "No se pudo eliminar la solicitud.");
+                if (selectedRequest?._id === request._id) handleCloseRequestDetails();
             }
         } catch (err) {
             console.error("Error al eliminar:", err);
-            alert("Error de conexión al intentar eliminar.");
         }
     };
 
-    // --- LÓGICA DE FILTRADO Y ORDENAMIENTO (SOLO FRONT) ---
+    // --- LÓGICA DE FILTRADO Y ORDENAMIENTO (CORREGIDA E INTEGRADA) ---
     const currentRequests = useMemo(() => {
         let filtered = [];
         
-        // 1. Filtrar por estado 'dado_de_baja'
-        if (filters.status === 'dado_de_baja') {
-            filtered = resp.filter(r => r.status === 'dado_de_baja');
+        // 1. Si hay filtro de estado (ej: DICOM), mostramos solo ese.
+        if (filters.status && filters.status !== "") {
+            filtered = resp.filter(r => r.status === filters.status);
         } else {
+            // 2. VISTA GENERAL: Incluimos DICOM y todos los demás estados excepto el de baja.
             filtered = resp.filter(r => r.status !== 'dado_de_baja');
         }
 
-        // 2. Ordenar por prioridad de estados (de izquierda a derecha / arriba hacia abajo)
+        // 3. Ordenar por prioridad de estados y luego por fecha
         return [...filtered].sort((a, b) => {
             const priorityA = STATUS_PRIORITY[a.status] || 99;
             const priorityB = STATUS_PRIORITY[b.status] || 99;
 
             if (priorityA !== priorityB) {
-                return priorityA - priorityB; // Menor valor (prioridad más alta) arriba
+                return priorityA - priorityB;
             }
-            // Si el estado es el mismo, ordenar por fecha de creación (más reciente arriba)
             return new Date(b.createdAt) - new Date(a.createdAt);
         });
     }, [resp, filters.status]);
 
+    // Estadísticas persistentes del servidor
     const mockStats = serverStats || {
         total: totalItems,
         documento_generado: 0,
@@ -276,6 +268,9 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
         dado_de_baja: 0,
         pendiente: 0
     };
+
+    const canAccess = userPermissions.includes('view_domicilio_virtual');
+    if (!canAccess) return <Navigate to="/panel" replace />;
 
     const mainMarginClass = isMobileScreen ? 'ml-0' : isDesktopOpen ? 'lg:ml-64' : 'lg:ml-16';
 
@@ -313,7 +308,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <span className="flex items-center justify-center min-w-8 h-8 px-2 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
-                                {currentRequests.length} {/* Cambiado para mostrar el total de la lista visible */}
+                                {filters.search ? currentRequests.length : totalItems}
                             </span>
                             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
                                 Domicilio Virtual
@@ -321,7 +316,12 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
                         </div>
                     </div>
 
-                    <StatsOverview stats={mockStats} allForms={resp} filters={filters} onFilterChange={handleStatusFilter} />
+                    <StatsOverview 
+                        stats={mockStats} 
+                        allForms={resp} 
+                        filters={filters} 
+                        onFilterChange={handleStatusFilter} 
+                    />
 
                     <FilterPanel
                         filters={filters}

@@ -40,7 +40,12 @@ const RequestDetails = ({
 }) => {
   // --- ESTADOS DE UI ---
   const [activeTab, setActiveTab] = useState("details");
-  const [isExtendMenuOpen, setIsExtendMenuOpen] = useState(false); // Control del menú desplegable
+  // --- NUEVOS ESTADOS PARA MODAL DE EXTENSIÓN ---
+  const [showExtendModal, setShowExtendModal] = useState(false);
+  // --- NUEVOS ESTADOS PARA FECHAS PERSONALIZADAS ---
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
 
   // --- PERMISOS ---
   const canViewAttachments = userPermissions.includes('view_domicilio_virtual_attach');
@@ -99,6 +104,8 @@ const RequestDetails = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogConfig, setDialogConfig] = useState(null);
 
+  const [previewType, setPreviewType] = useState(null);
+
 
   const { dialogProps, openAsyncDialog, openInfoDialog, openErrorDialog } = useAsyncDialog();
 
@@ -155,7 +162,45 @@ const RequestDetails = ({
         setFullRequestData(result.updatedRequest);
       }
 
-      setIsExtendMenuOpen(false);
+      setShowExtendModal(false);
+      return true;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };
+
+    const handleCustomExtendContract = async () => {
+    // CAMBIO: Validamos que al menos una de las dos tenga valor
+    if (!customStartDate && !customEndDate) {
+      openInfoDialog("Debes seleccionar al menos una fecha para modificar");
+      return;
+    }
+
+    try {
+      const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/extend`, {
+        method: "POST",
+        body: JSON.stringify({ 
+          type: 'custom',
+          // CAMBIO: Si no hay fecha, enviamos null para que el backend no la sobreescriba
+          startDate: customStartDate || null,
+          endDate: customEndDate || null 
+        }),
+      });
+
+      if (!response.ok) throw new Error("No se pudo extender el contrato");
+
+      const result = await response.json();
+
+      if (onUpdate && result.updatedRequest) {
+        onUpdate(result.updatedRequest);
+        setFullRequestData(result.updatedRequest);
+      }
+
+      setShowExtendModal(false);
+      setShowCustomDatePicker(false);
+      setCustomStartDate('');
+      setCustomEndDate('');
       return true;
     } catch (error) {
       console.error(error);
@@ -1228,10 +1273,26 @@ const RequestDetails = ({
           <span className="text-sm text-muted-foreground">Fecha de envío:</span>
           <span className="text-sm font-medium text-foreground">{formatDate(fullRequestData?.submittedAt)}</span>
         </div>
-        {fullRequestData?.responses?.["FECHA_TERMINO_CONTRATO"] && (
+
+        {/* Fecha de Inicio (Agregado) */}
+        {fullRequestData?.fechaInicioContrato && (
           <div className="flex justify-between border-t border-border/20 pt-2">
-            <span className="text-sm text-muted-foreground">Vencimiento del contrato:</span>
-            <span className="text-sm font-bold text-accent">{fullRequestData.responses["FECHA_TERMINO_CONTRATO"]}</span>
+            <span className="text-sm text-muted-foreground">Inicio del contrato:</span>
+            <div className="flex items-center gap-1.5 text-accent font-bold">
+              <Icon name="Calendar" size={14} />
+              <span className="text-sm">{fullRequestData.fechaInicioContrato}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Fecha de Término (Agregado) */}
+        {fullRequestData?.fechaTerminoContrato && (
+          <div className="flex justify-between border-t border-border/20 pt-2">
+            <span className="text-sm text-muted-foreground">Término del contrato:</span>
+            <div className="flex items-center gap-1.5 text-accent font-bold">
+              <Icon name="Calendar" size={14} />
+              <span className="text-sm">{fullRequestData.fechaTerminoContrato}</span>
+            </div>
           </div>
         )}
       </div>
@@ -1450,7 +1511,7 @@ const RequestDetails = ({
         </div>
       )}
     </div>
-  );
+);
 
   // const handleUploadFiles = async () => {
   //   if (correctedFiles.length === 0) {
@@ -1661,43 +1722,15 @@ const RequestDetails = ({
             <div className="flex items-center space-x-3 w-full justify-end">
               {!isStandalone && (
                 <>
-                  <div className="relative">
-                    <Button 
-                      variant="outline" 
-                      iconName="Calendar" 
-                      iconPosition="left"
-                      onClick={() => setIsExtendMenuOpen(!isExtendMenuOpen)}
-                    >
-                      Extender
-                    </Button>
-                    
-                    {isExtendMenuOpen && (
-                      <div className="absolute bottom-full mb-2 right-0 w-52 bg-popover border border-border rounded-lg shadow-xl p-1 z-50 animate-in slide-in-from-bottom-2">
-                        <button 
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-accent/10 rounded-md flex items-center gap-2"
-                          onClick={() => openAsyncDialog({
-                            title: "¿Extender contrato por 6 meses?",
-                            loadingText: "Actualizando fecha...",
-                            successText: "Extensión aplicada con éxito",
-                            onConfirm: () => handleExtendContract('semestral')
-                          })}
-                        >
-                          <Icon name="Timer" size={14} className="text-accent" /> +6 Meses (Semestral)
-                        </button>
-                        <button 
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-accent/10 rounded-md flex items-center gap-2"
-                          onClick={() => openAsyncDialog({
-                            title: "¿Extender contrato por 1 año?",
-                            loadingText: "Actualizando fecha...",
-                            successText: "Extensión aplicada con éxito",
-                            onConfirm: () => handleExtendContract('anual')
-                          })}
-                        >
-                          <Icon name="CalendarCheck" size={14} className="text-accent" /> +1 Año (Anual)
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <Button 
+                  variant="outline" 
+                  className="border-accent text-accent" // Eliminado el hover:bg-accent/10
+                  iconName="Calendar" 
+                  iconPosition="left"
+                  onClick={() => setShowExtendModal(true)}
+                >
+                  Extender Contrato
+                </Button>
 
                   <Button variant="default" onClick={onClose}>
                     Cerrar
@@ -1709,7 +1742,201 @@ const RequestDetails = ({
         </div >
       </div >
 
-      <CleanDocumentPreview
+{/* MODAL DE EXTENSIÓN DE CONTRATO */}
+      {showExtendModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-border flex justify-between items-center bg-muted/30">
+              <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Icon name="Calendar" className="text-accent" size={22} />
+                Extender Contrato
+              </h3>
+              <Button variant="ghost" size="icon" onClick={() => {
+                setShowExtendModal(false);
+                setShowCustomDatePicker(false);
+                setPreviewType(null);
+                setCustomStartDate('');
+                setCustomEndDate('');
+              }} iconName="X" />
+            </div>
+
+            <div className="p-6">
+              {/* SECCIÓN DE VIGENCIA ACTUAL */}
+              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-accent/5 rounded-xl border border-accent/10">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Fecha de Inicio actual</span>
+                  <span className="text-sm font-bold text-accent">
+                    {fullRequestData?.fechaInicioContrato || "---"}
+                  </span>
+                </div>
+                <div className="flex flex-col border-l border-border pl-4">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Fecha de Término actual</span>
+                  <span className="text-sm font-bold text-accent">
+                    {fullRequestData?.fechaTerminoContrato || "---"}
+                  </span>
+                </div>
+              </div>
+
+              {/* VISTA PREVIA DINÁMICA (ESTABLE POR CLIC) */}
+              {(previewType || (showCustomDatePicker && (customStartDate || customEndDate))) && (
+                <div className="mb-6 p-4 bg-accent/10 rounded-xl border border-accent/20 animate-in slide-in-from-top-2 duration-300">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] uppercase tracking-wider text-accent font-bold">Vista previa del cambio</span>
+                    <span className="text-[10px] bg-accent text-accent-foreground px-2 py-0.5 rounded-full uppercase font-bold">
+                      {previewType === 'semestral' ? '+ 6 Meses' : previewType === 'anual' ? '+ 1 Año' : 'Manual'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted-foreground uppercase font-medium">Nuevo Inicio</span>
+                      <span className="text-sm font-bold text-foreground">
+                        {showCustomDatePicker && customStartDate 
+                          ? new Date(customStartDate + "T12:00:00").toLocaleDateString('es-CL')
+                          : (!fullRequestData?.fechaInicioContrato || fullRequestData?.fechaInicioContrato.includes(':') 
+                              ? new Date().toLocaleDateString('es-CL') 
+                              : fullRequestData.fechaInicioContrato)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col border-l border-border pl-4">
+                      <span className="text-[10px] text-muted-foreground uppercase font-medium">Nuevo Término</span>
+                      <span className="text-sm font-bold text-foreground">
+                        {(() => {
+                          if (showCustomDatePicker) {
+                            return customEndDate ? new Date(customEndDate + "T12:00:00").toLocaleDateString('es-CL') : "Sin cambios";
+                          }
+                          
+                          const baseStr = fullRequestData?.fechaTerminoContrato;
+                          let date;
+
+                          if (baseStr && typeof baseStr === 'string' && !baseStr.includes(':') && (baseStr.includes('/') || baseStr.includes('-'))) {
+                            const separator = baseStr.includes('-') ? '-' : '/';
+                            const parts = baseStr.split(separator);
+                            date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), 12, 0, 0);
+                          } else {
+                            date = new Date();
+                            date.setHours(12, 0, 0, 0);
+                          }
+
+                          if (isNaN(date.getTime())) return "Fecha por definir";
+
+                          if (previewType === 'semestral') date.setMonth(date.getMonth() + 6);
+                          if (previewType === 'anual') date.setFullYear(date.getFullYear() + 1);
+                          
+                          return date.toLocaleDateString('es-CL');
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-muted-foreground mb-6 text-sm">
+                Selecciona el nuevo periodo para <strong>{fullRequestData?.nombreEmpresa || fullRequestData?.responses?.["NOMBRE O RAZÓN SOCIAL:"] || "el cliente"}</strong>.
+              </p>
+
+              {!showCustomDatePicker ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <button
+                      onClick={() => setPreviewType(previewType === 'semestral' ? null : 'semestral')}
+                      className={`group flex flex-col items-center p-5 rounded-xl border-2 transition-all text-center ${
+                        previewType === 'semestral' ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/30'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-3">
+                        <Icon name="Timer" className="text-accent" size={24} />
+                      </div>
+                      <span className="font-bold text-foreground">Semestral</span>
+                      <span className="text-xs text-muted-foreground mt-1">+6 Meses</span>
+                    </button>
+
+                    <button
+                      onClick={() => setPreviewType(previewType === 'anual' ? null : 'anual')}
+                      className={`group flex flex-col items-center p-5 rounded-xl border-2 transition-all text-center ${
+                        previewType === 'anual' ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/30'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-3">
+                        <Icon name="CalendarCheck" className="text-accent" size={24} />
+                      </div>
+                      <span className="font-bold text-foreground">Anual</span>
+                      <span className="text-xs text-muted-foreground mt-1">+1 Año</span>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => { setShowCustomDatePicker(true); setPreviewType(null); }}
+                    className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-border hover:border-accent hover:bg-accent/5 transition-all text-center"
+                  >
+                    <Icon name="CalendarRange" className="text-accent" size={18} />
+                    <span className="font-medium text-foreground">Seleccionar fechas personalizadas</span>
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Fecha Inicio</label>
+                      <input
+                        type="date"
+                        value={customStartDate}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        className="w-full p-2 rounded-lg bg-background border border-border text-foreground focus:border-accent focus:ring-1 focus:ring-accent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Fecha Término</label>
+                      <input
+                        type="date"
+                        value={customEndDate}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        className="w-full p-2 rounded-lg bg-background border border-border text-foreground focus:border-accent focus:ring-1 focus:ring-accent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-muted/30 border-t border-border flex justify-end gap-3">
+              <Button variant="ghost" onClick={() => {
+                if (previewType || showCustomDatePicker) {
+                  setPreviewType(null);
+                  setShowCustomDatePicker(false);
+                } else {
+                  setShowExtendModal(false);
+                }
+              }}>
+                {previewType || showCustomDatePicker ? "Volver" : "Cancelar"}
+              </Button>
+              
+              {(previewType || showCustomDatePicker) && (
+                <Button
+                  className="bg-accent text-accent-foreground px-8 animate-in fade-in zoom-in-95"
+                  disabled={showCustomDatePicker && !customStartDate && !customEndDate}
+                  onClick={() => {
+                    const config = showCustomDatePicker 
+                      ? { title: "¿Aplicar cambios manuales?", onConfirm: handleCustomExtendContract }
+                      : { title: `¿Confirmar extensión ${previewType}?`, onConfirm: () => handleExtendContract(previewType) };
+                    
+                    setShowExtendModal(false);
+                    openAsyncDialog({
+                      ...config,
+                      loadingText: "Actualizando periodo...",
+                      successText: "Contrato actualizado con éxito",
+                    });
+                    setPreviewType(null);
+                  }}
+                >
+                  Confirmar Extensión
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+            <CleanDocumentPreview
         isVisible={showPreview}
         onClose={() => {
           if (previewDocument?.url && previewDocument?.type === "pdf") {
@@ -1734,7 +1961,10 @@ const RequestDetails = ({
         }}
       />
 
-      <AsyncActionDialog {...dialogProps} />
+      {/* CAMBIO AQUÍ: Envolvemos el diálogo en un z-index superior al del modal (60) */}
+      <div className="relative z-[70]">
+        <AsyncActionDialog {...dialogProps} />
+      </div>
     </div>
   );
 };

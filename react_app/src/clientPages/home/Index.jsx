@@ -6,7 +6,7 @@ import Icon from '../components/AppIcon';
 import Button from '../components/ui/Button';
 import Footer from 'clientPages/components/ui/Footer';
 
-const DashboardHome = ({ userPermissions = [] }) => {
+const DashboardHome = () => {
   // const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   // const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -36,19 +36,6 @@ const DashboardHome = ({ userPermissions = [] }) => {
   const handleLoginRedirect = () => {
     window.location.href = '/login';
   };
-
-  if (!userPermissions.includes('view_home')) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center p-6 bg-card rounded-xl shadow-lg border border-border">
-          <h2 className="text-xl font-bold text-red-500 mb-2">Acceso Restringido</h2>
-          <p className="text-muted-foreground">No tienes permisos para ver el inicio.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const canViewRequests = userPermissions.includes('view_mis_solicitudes');
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,7 +81,7 @@ const DashboardHome = ({ userPermissions = [] }) => {
               )}
 
               {/* Mis Solicitudes (RecentActivityCard) (Se mueve y se alinea a la derecha) */}
-              {user && canViewRequests && (
+              {user && (
                 <div className="w-full">
                   <RecentActivityCard />
                 </div>
