@@ -1824,6 +1824,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                         <div
                            className={`bg-success/10 rounded-lg p-4 border transition-all group items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all ${userPermissions?.previewSigned ? "cursor-pointer hover:bg-success/20" : "cursor-default"}`}
                            onClick={() => userPermissions?.previewSigned && handlePreviewClientSignature()}
+                           key={`${signedFile?.clientSignedPdf?.fileName}-${index}`}
                         >
                            <div
                               className="flex items-center justify-between "
