@@ -28,7 +28,6 @@ body {
    background-color: var(--color-border);
    border-radius: 9999px;
    border: 2px solid var(--color-background);
-   /* Creates padding effect */
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -59,6 +58,7 @@ body {
 .sidebar-collapsed:hover {
    scrollbar-gutter: stable;
 }
+
 /* Sidebar expandido (Chromium) */
 .scrollbar-thin::-webkit-scrollbar {
    width: 6px;
