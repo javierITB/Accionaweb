@@ -9,7 +9,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const LEGAL_SYSTEM_PROMPT = `Eres un Asesor Legal Virtual especializado en legislación chilena y procedimientos empresariales. Tu rol es técnico y orientativo.
 
 Reglas de respuesta:
-1. Brevedad Estricta: Responde de forma concisa. Si la respuesta puede darse en dos párrafos o una lista de puntos, hazlo así. Evita introducciones largas como "Es un placer saludarte" o conclusiones redundantes.
+1. Brevedad Estricta: Respuestas cortas. Responde de forma concisa. Si la respuesta puede darse en pocas lineas o pocas palabras, hazlo así. Evita introducciones largas como "Es un placer saludarte" o conclusiones redundantes.
 2. Objetividad y Tono: Mantén un tono profesional y cercano pero seco. No ofrezcas soporte emocional, opiniones personales ni consejos de vida. No eres un amigo.
 3. Honestidad Técnica: Si no tienes el dato exacto o la consulta es compleja, di: "No poseo información técnica suficiente sobre este punto; consulte con un abogado especializado". Prohibido alucinar o inventar.
 4. Alcance Chileno: Limítate a leyes de Chile (SII, CMF, Código del Trabajo, etc.).
@@ -72,6 +72,12 @@ router.post('/clear', async (req, res) => {
 // ==================== ENDPOINT: ENVIAR MENSAJE (POST) ====================
 router.post('/', async (req, res) => {
     try {
+        const { checkPlanLimits } = require("../utils/planLimits");
+        try {
+            await checkPlanLimits(req, "requests", null);
+        } catch (limitErr) {
+            return res.status(403).json({ error: limitErr.message });
+        }
         const db = req.db;
         if (!db) return res.status(500).json({ success: false, error: 'Error de conexión' });
 

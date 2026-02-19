@@ -46,10 +46,22 @@ const ChatLegalSidebar = ({ isOpen, onClose }) => {
     finally { setLoading(false); }
   };
 
+  // NUEVA FUNCIÓN: Limpiar chat
+  const clearChat = async () => {
+    if (!window.confirm("¿Deseas reiniciar la consulta? El historial actual se archivará.")) return;
+    try {
+      const res = await apiFetch('/chat/clear', { method: 'POST' });
+      if (res.ok || res.success) {
+        setMessages([]);
+      }
+    } catch (err) {
+      console.error("Error al limpiar chat:", err);
+    }
+  };
+
   return (
     <div className={`
       fixed z-[100] transition-all duration-500 ease-in-out
-      /* SOLUCIÓN AL CLIC: Condicionamos los pointer-events según el estado */
       ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}
       
       left-1/2 -translate-x-1/2 w-full max-w-[95%] md:left-auto md:translate-x-0 md:right-1 lg:right-2 md:w-[450px] lg:w-[500px]
@@ -67,9 +79,21 @@ const ChatLegalSidebar = ({ isOpen, onClose }) => {
           </div>
           <span className="font-bold uppercase tracking-[0.2em] text-[10px] sm:text-xs">Asesor Legal AI</span>
         </div>
-        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded-full transition-colors text-muted-foreground">
-          <Icon name="X" size={20} />
-        </button>
+        
+        <div className="flex items-center gap-2">
+          {/* BOTÓN DE LIMPIAR AGREGADO */}
+          <button 
+            onClick={clearChat}
+            title="Reiniciar conversación"
+            className="w-8 h-8 flex items-center justify-center hover:bg-error/10 hover:text-error rounded-full transition-colors text-muted-foreground/60"
+          >
+            <Icon name="RefreshCw" size={16} />
+          </button>
+          
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded-full transition-colors text-muted-foreground">
+            <Icon name="X" size={20} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar bg-transparent">
