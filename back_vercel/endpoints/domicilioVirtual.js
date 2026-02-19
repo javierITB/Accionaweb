@@ -111,7 +111,8 @@ router.get("/mini", async (req, res) => {
 
         const answers = await collection.find(dbQuery).sort({ createdAt: -1 }).toArray();
 
-        let answersProcessed = answers.map(answer => {
+        // --- CAMBIO: Procesar cada answer con la fecha descifrada ---
+        const answersProcessed = answers.map(answer => {
             const getVal = (keys, ignore = []) => {
                 const responseKeys = Object.keys(answer.responses || {});
                 for (let searchTerm of keys) {
@@ -128,10 +129,23 @@ router.get("/mini", async (req, res) => {
                 return "";
             };
 
+            // --- CAMBIO: Crear copia de responses con la fecha descifrada ---
+            const responsesWithDecryptedDate = { ...(answer.responses || {}) };
+            const fechaKey = "FECHA_TERMINO_CONTRATO";
+            
+            if (responsesWithDecryptedDate[fechaKey] && typeof responsesWithDecryptedDate[fechaKey] === 'string' && responsesWithDecryptedDate[fechaKey].includes(':')) {
+                try {
+                    responsesWithDecryptedDate[fechaKey] = decrypt(responsesWithDecryptedDate[fechaKey]);
+                } catch (e) {
+                    console.error("Error descifrando fecha en mini:", e);
+                }
+            }
+
             return {
                 _id: answer._id,
                 formId: answer.formId,
                 formTitle: answer.formTitle,
+                responses: responsesWithDecryptedDate, // AHORA SÍ incluye la fecha legible
                 tuNombre: getVal(["tu nombre", "nombre solicitante", "nombre"], ["empresa", "razón", "razon", "social"]),
                 nombreEmpresa: getVal(["razón social", "razon social", "nombre que llevará la empresa", "empresa", "cliente"], ["rut", "teléfono", "telefono", "celular", "mail", "correo", "dirección", "direccion", "calle"]),
                 rutEmpresa: getVal(["rut de la empresa", "rut representante legal"]),
@@ -142,7 +156,6 @@ router.get("/mini", async (req, res) => {
             };
         });
 
-        // --- CAMBIO MÍNIMO VIABLE: Lógica de Normalización de Tildes ---
         const clean = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
         if (company && company.trim() !== "") {
@@ -156,21 +169,19 @@ router.get("/mini", async (req, res) => {
         }
 
         if (search && search.trim() !== "") {
-            const term = clean(search); // "contratacion"
+            const term = clean(search);
             answersProcessed = answersProcessed.filter(a =>
                 clean(a.tuNombre).includes(term) ||
                 clean(a.rutEmpresa).includes(term) ||
                 clean(a.nombreEmpresa).includes(term) ||
-                clean(a.formTitle).includes(term) // Hará match con "Contratación"
+                clean(a.formTitle).includes(term)
             );
         }
-        // --------------------------------------------------------------
 
         const totalCount = answersProcessed.length;
         const skip = (page - 1) * limit;
         const paginatedData = answersProcessed.slice(skip, skip + limit);
 
-        // Recalcular stats basadas en el filtro actual para que el front sea coherente
         const stats = {
             total: totalCount,
             documento_generado: 0, enviado: 0, solicitud_firmada: 0, informado_sii: 0, dicom: 0, dado_de_baja: 0, pendiente: 0
@@ -189,6 +200,7 @@ router.get("/mini", async (req, res) => {
         res.status(500).json({ error: "Error interno" });
     }
 });
+
 // 2. Obtener detalle (GET /:id)
 router.get("/:id", async (req, res) => {
     try {
@@ -253,12 +265,30 @@ router.post("/", async (req, res) => {
     try {
         const { formId, responses, formTitle, adjuntos = [], user, expirationDate: bodyExpirationDate } = req.body;
 
-
-        // Verificar formulario
+        // 1. Verificar formulario (Original)
         const form = await req.db.collection("forms").findOne({ _id: new ObjectId(formId) });
         if (!form) return res.status(404).json({ error: "Formulario no encontrado" });
 
-        // Función cifrado recursivo
+        // --- NUEVA INTEGRACIÓN: CÁLCULO PARA RESPONSES (Sin quitar nada) ---
+        const keysForCalc = Object.keys(responses || {});
+        const planKey = keysForCalc.find(k => k.toLowerCase().trim().includes('plan de servicio seleccionado'));
+        
+        if (planKey && responses[planKey]) {
+            const planValue = String(responses[planKey]).toLowerCase();
+            let dateCalc = new Date();
+            if (planValue.includes('anual')) {
+                dateCalc.setFullYear(dateCalc.getFullYear() + 1);
+                dateCalc.setDate(dateCalc.getDate() + 1); // + 1 día
+                responses["FECHA_TERMINO_CONTRATO"] = dateCalc.toLocaleDateString('es-CL');
+            } else if (planValue.includes('semestral')) {
+                dateCalc.setMonth(dateCalc.getMonth() + 6);
+                dateCalc.setDate(dateCalc.getDate() + 1); // + 1 día
+                responses["FECHA_TERMINO_CONTRATO"] = dateCalc.toLocaleDateString('es-CL');
+            }
+        }
+        // -------------------------------------------------------------------
+
+        // 2. Función cifrado recursivo (Original)
         const cifrarObjeto = (obj) => {
             if (!obj || typeof obj !== 'object') return obj;
             const resultado = {};
@@ -285,7 +315,7 @@ router.post("/", async (req, res) => {
 
         const responsesCifrado = cifrarObjeto(responses);
 
-        // Guardar
+        // 3. Guardar Domicilio Virtual (Original)
         const result = await req.db.collection("domicilio_virtual").insertOne({
             formId,
             responses: responsesCifrado,
@@ -303,31 +333,18 @@ router.post("/", async (req, res) => {
             });
         }
 
-        // CREAR TICKET AUTOMATICO
+        // 4. CREAR TICKET AUTOMATICO (Original Integro)
         try {
-            // Extraer nombre del cliente/empresa (priorizando Empresa)
             let nombreCliente = "Sin Empresa";
             const keys = Object.keys(responses || {});
-
             const normalizeKey = (k) => k.toLowerCase().trim().replace(':', '');
 
             const companyNameKey = keys.find(k => {
                 const normalized = normalizeKey(k);
-                // Excluir 'rut' y datos de contacto para no confundir con "Teléfono Empresa", "Dirección Empresa", etc.
-                if (normalized.includes('rut') ||
-                    normalized.includes('teléfono') || normalized.includes('telefono') ||
-                    normalized.includes('celular') ||
-                    normalized.includes('mail') || normalized.includes('correo') ||
+                if (normalized.includes('rut') || normalized.includes('teléfono') || normalized.includes('telefono') ||
+                    normalized.includes('celular') || normalized.includes('mail') || normalized.includes('correo') ||
                     normalized.includes('dirección') || normalized.includes('direccion') || normalized.includes('calle')) return false;
-
-                return [
-                    'nombre o razón social',
-                    'nombre que llevará la empresa',
-                    'razón social',
-                    'razon social',
-                    'empresa',
-                    'cliente'
-                ].some(target => normalized.includes(target));
+                return ['nombre o razón social','nombre que llevará la empresa','razón social','razon social','empresa','cliente'].some(target => normalized.includes(target));
             });
 
             const tuNombreKey = keys.find(k => normalizeKey(k).includes('tu nombre') || normalizeKey(k).includes('nombre solicitante'));
@@ -342,63 +359,53 @@ router.post("/", async (req, res) => {
                 nombreCliente = user.nombre;
             }
 
-            // Construir asunto
             const ticketTitle = `${formTitle} - ${nombreCliente}`;
-
-            // Preparar usuario con nombre de empresa correcto
             const userToSave = { ...user };
-            if (companyNameKey && responses[companyNameKey]) {
-                userToSave.empresa = responses[companyNameKey];
-            }
+            if (companyNameKey && responses[companyNameKey]) userToSave.empresa = responses[companyNameKey];
 
-            // Insertar ticket en tickets
-            let statusInicial = "documento_generado"; // Por defecto
+            let statusInicial = "documento_generado"; 
             try {
                 const config = await req.db.collection("config_tickets").findOne({ key: "domicilio_virtual" });
-                if (config && config.statuses && config.statuses.length > 0) {
-                    statusInicial = config.statuses[0].value;
-                }
+                if (config && config.statuses && config.statuses.length > 0) statusInicial = config.statuses[0].value;
             } catch (ignore) { }
 
-            // Fecha experación Ticket de Domicilio Virtual
+            // Lógica original de expirationDate para Ticket con el ajuste de +1 día
             let expirationDate = bodyExpirationDate ? new Date(bodyExpirationDate) : null;
             if (!expirationDate) {
-                // Fallback: Calcular si no viene en el body
-                const planKey = keys.find(k => normalizeKey(k).includes('plan de servicio seleccionado'));
-
-                if (planKey && responses[planKey]) {
-                    const planValue = String(responses[planKey]).toLowerCase();
+                const planKeyTicket = keys.find(k => normalizeKey(k).includes('plan de servicio seleccionado'));
+                if (planKeyTicket && responses[planKeyTicket]) {
+                    const planValue = String(responses[planKeyTicket]).toLowerCase();
                     const now = new Date();
-
                     if (planValue.includes('anual')) {
                         expirationDate = new Date(now.setFullYear(now.getFullYear() + 1));
+                        expirationDate.setDate(expirationDate.getDate() + 1); // + 1 día
                     } else if (planValue.includes('semestral')) {
                         expirationDate = new Date(now.setMonth(now.getMonth() + 6));
+                        expirationDate.setDate(expirationDate.getDate() + 1); // + 1 día
                     }
                 }
             }
 
             await req.db.collection("tickets").insertOne({
-                formId: formId, // Usar ID real del formulario para que aparezca en panel admin
-                user: userToSave, // Se guarda el usuario con la empresa corregida
-                responses: responses, // Se guardan las respuestas en texto plano para el ticket
+                formId: formId, 
+                user: userToSave, 
+                responses: responses, 
                 formTitle: ticketTitle,
                 mail: "",
                 status: statusInicial,
                 priority: "alta",
                 category: "domicilio_virtual",
-                relatedRequestId: result.insertedId, // Vinculación interna
+                relatedRequestId: result.insertedId, 
                 origin: "domicilio_virtual",
-                expirationDate: expirationDate, // Fecha de vencimiento calculada
+                expirationDate: expirationDate, 
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
-
         } catch (ticketError) {
             console.error("Error al crear ticket automático:", ticketError);
         }
 
-        // Notificaciones
+        // 5. Notificaciones (Original)
         const notifData = {
             titulo: `Alguien ha respondido en Domicilio Virtual: ${formTitle}`,
             descripcion: adjuntos.length > 0 ? `Incluye ${adjuntos.length} archivo(s)` : "Revisar en panel.",
@@ -409,7 +416,7 @@ router.post("/", async (req, res) => {
         };
         await addNotification(req.db, { filtro: { cargo: "admin" }, ...notifData });
 
-        // Anexo
+        // 6. Anexo (Original)
         try {
             await generarAnexoDesdeRespuesta(responses, result.insertedId.toString(), req.db, form.section, {
                 nombre: null, empresa: "Acciona Centro de Negocios Spa.", uid: null,
@@ -440,6 +447,152 @@ router.get("/:id/adjuntos", async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Error al obtener adjuntos" });
+    }
+});
+
+router.post("/:id/extend", async (req, res) => {
+    try {
+        const auth = await verifyRequest(req);
+        if (!auth.ok) return res.status(401).json({ error: auth.error });
+
+        const { type } = req.body; // 'semestral' o 'anual'
+        const collection = req.db.collection("domicilio_virtual");
+        const docId = new ObjectId(req.params.id);
+
+        const doc = await collection.findOne({ _id: docId });
+        if (!doc) return res.status(404).json({ error: "Solicitud no encontrada" });
+
+        // 1. Obtener y DESCIFRAR la fecha base actual si existe
+        let fechaBase = new Date();
+        let currentFechaStr = doc.responses?.["FECHA_TERMINO_CONTRATO"];
+
+        console.log("Fecha actual (cifrada):", currentFechaStr);
+
+        if (currentFechaStr) {
+            // Si viene cifrada (tiene ":"), la desciframos para operar con ella
+            if (currentFechaStr.includes(':')) {
+                try { 
+                    currentFechaStr = decrypt(currentFechaStr); 
+                    console.log("Fecha descifrada:", currentFechaStr);
+                } catch (e) { 
+                    console.error("Error descifrando al extender:", e);
+                    // Si falla el descifrado, usamos fecha actual
+                    currentFechaStr = null;
+                }
+            }
+            
+            if (currentFechaStr) {
+                const [day, month, year] = currentFechaStr.split('/');
+                // Validar que sea una fecha válida
+                if (day && month && year) {
+                    const parsedDate = new Date(year, month - 1, day);
+                    if (!isNaN(parsedDate)) {
+                        fechaBase = parsedDate;
+                        console.log("Fecha base establecida:", fechaBase.toLocaleDateString('es-CL'));
+                    }
+                }
+            }
+        }
+
+        // 2. Calcular la nueva fecha (con el ajuste de -1 día)
+        console.log("Tipo de extensión:", type);
+        console.log("Fecha antes de extender:", fechaBase.toLocaleDateString('es-CL'));
+        
+        if (type === 'anual') {
+            fechaBase.setFullYear(fechaBase.getFullYear() + 1);
+            fechaBase.setDate(fechaBase.getDate() - 1); // -1 día
+        } else if (type === 'semestral') {
+            fechaBase.setMonth(fechaBase.getMonth() + 6);
+            fechaBase.setDate(fechaBase.getDate() - 1); // -1 día
+        }
+
+        const nuevaFechaStr = fechaBase.toLocaleDateString('es-CL');
+        console.log("Nueva fecha (sin cifrar):", nuevaFechaStr);
+        
+        // CIFRAR la nueva fecha para guardar
+        const nuevaFechaCifrada = encrypt(nuevaFechaStr);
+        console.log("Nueva fecha (cifrada):", nuevaFechaCifrada);
+
+        // 3. Actualizar en Domicilio Virtual - USANDO $set CON RUTA COMPLETA
+        const updateResult = await collection.updateOne(
+            { _id: docId },
+            { 
+                $set: { 
+                    "responses.FECHA_TERMINO_CONTRATO": nuevaFechaCifrada,
+                    "updatedAt": new Date() 
+                } 
+            }
+        );
+
+        console.log("Resultado actualización DB:", updateResult);
+
+        // 4. Sincronizar con el Ticket - CON VERIFICACIÓN
+        try {
+            const ticketResult = await req.db.collection("tickets").updateOne(
+                { relatedRequestId: docId },
+                { $set: { expirationDate: fechaBase, updatedAt: new Date() } }
+            );
+            console.log("Resultado actualización ticket:", ticketResult);
+        } catch (e) { 
+            console.error("Error actualizando ticket:", e); 
+        }
+
+        // Devolvemos el documento actualizado PERO descifrando la fecha para el frontend
+        const updatedRequest = await collection.findOne({ _id: docId });
+
+        // --- DESCIFRAR COMPLETAMENTE para el frontend ---
+        if (updatedRequest.responses) {
+            // Descifrar todas las respuestas (como en GET /:id)
+            const descifrarValor = (valor) => {
+                if (typeof valor === 'string' && valor.includes(':')) {
+                    try { return decrypt(valor); } catch (e) { return valor; }
+                }
+                if (Array.isArray(valor)) {
+                    return valor.map(item => descifrarValor(item));
+                }
+                if (typeof valor === 'object' && valor !== null) {
+                    const res = {};
+                    for (const k in valor) res[k] = descifrarValor(valor[k]);
+                    return res;
+                }
+                return valor;
+            };
+
+            const decryptedResponses = {};
+            for (const [key, value] of Object.entries(updatedRequest.responses)) {
+                decryptedResponses[key] = descifrarValor(value);
+            }
+            updatedRequest.responses = decryptedResponses;
+        }
+
+        // También descifrar user si existe
+        if (updatedRequest.user) {
+            if (updatedRequest.user.nombre && updatedRequest.user.nombre.includes(':')) {
+                try { updatedRequest.user.nombre = decrypt(updatedRequest.user.nombre); } catch (e) {}
+            }
+            if (updatedRequest.user.rut && updatedRequest.user.rut.includes(':')) {
+                try { updatedRequest.user.rut = decrypt(updatedRequest.user.rut); } catch (e) {}
+            }
+            if (updatedRequest.user.empresa && updatedRequest.user.empresa.includes(':')) {
+                try { updatedRequest.user.empresa = decrypt(updatedRequest.user.empresa); } catch (e) {}
+            }
+            if (updatedRequest.user.mail && updatedRequest.user.mail.includes(':')) {
+                try { updatedRequest.user.mail = decrypt(updatedRequest.user.mail); } catch (e) {}
+            }
+            if (updatedRequest.user.telefono && updatedRequest.user.telefono.includes(':')) {
+                try { updatedRequest.user.telefono = decrypt(updatedRequest.user.telefono); } catch (e) {}
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Contrato extendido hasta el ${nuevaFechaStr}`,
+            updatedRequest: updatedRequest
+        });
+
+    } catch (err) {
+        console.error("Error extendiendo contrato:", err);
+        res.status(500).json({ error: "Error interno al extender: " + err.message });
     }
 });
 

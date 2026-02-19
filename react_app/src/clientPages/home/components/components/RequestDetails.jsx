@@ -873,7 +873,7 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                   <div className="space-y-3 ">
                      {signedPdfFiles.map((signedFile, index) => (
                         <div
-                           key={index}
+                           key={`${signedFile?.clientSignedPdf?.fileName}-${index}`}
                            className="flex items-center justify-between p-3 bg-accent/5 rounded border border-accent/20 sm:min-h-[66px]"
                         >
                            <div className="flex items-center space-x-3">

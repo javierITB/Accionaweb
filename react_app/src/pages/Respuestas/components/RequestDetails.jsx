@@ -673,13 +673,14 @@ const RequestDetails = ({
       }
    };
 
-   const handleDownloadClientSignature = async (responseId) => {
+   const handleDownloadClientSignature = async (signedFileId) => {
+
       setIsDownloadingSignature(true);
       try {
          const token = sessionStorage.getItem("token");
          const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-         const response = await fetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}/client-signature`, {
+         const response = await fetch(`${API_BASE_URL}/${endpointPrefix}/${signedFileId}/client-signature`, {
             headers,
          });
 
@@ -1824,6 +1825,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                         <div
                            className={`bg-success/10 rounded-lg p-4 border transition-all group items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg cursor-pointer hover:bg-accent/10 transition-all ${userPermissions?.previewSigned ? "cursor-pointer hover:bg-success/20" : "cursor-default"}`}
                            onClick={() => userPermissions?.previewSigned && handlePreviewClientSignature()}
+                           key={`${signedFile?.clientSignedPdf?.fileName}-${index}`}
                         >
                            <div
                               className="flex items-center justify-between "
@@ -1858,7 +1860,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                        iconName={isDownloadingSignature ? "Loader" : "Download"}
                                        iconPosition="left"
                                        iconSize={16}
-                                       onClick={() => handleDownloadClientSignature(fullRequestData._id)}
+                                       onClick={() => handleDownloadClientSignature(signedFile?._id)}
                                        disabled={isDownloadingSignature}
                                     >
                                        {isDownloadingSignature ? "Descargando..." : "Descargar"}
@@ -1882,85 +1884,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
       </div>
    );
 
-   const mockTimeline = [
-      {
-         id: 1,
-         title: "Solicitud Enviada",
-         description: "La solicitud ha sido enviada y está pendiente de revisión inicial.",
-         status: "completed",
-         completedAt: "2025-01-18T09:30:00Z",
-         assignedTo: "Sistema Automático",
-         notes: "Solicitud recibida correctamente.",
-      },
-      {
-         id: 2,
-         title: "Revisión Inicial",
-         description: "El equipo de RR.HH. está realizando la revisión inicial.",
-         status: "completed",
-         completedAt: "2025-01-22T17:00:00Z",
-         assignedTo: "María González",
-         estimatedCompletion: "2025-01-22T17:00:00Z",
-      },
-      {
-         id: 3,
-         title: "Aprobación Final",
-         description: "La solicitud ha sido aprobada por el responsable.",
-         status: "completed",
-         completedAt: "2025-01-23T10:00:00Z",
-         assignedTo: "María González",
-         estimatedCompletion: "2025-01-22T17:00:00Z",
-      },
-      {
-         id: 4,
-         title: "cierre de la solicitud",
-         description: "La solicitud ha sido cerrada por el responsable.",
-         status: "current",
-         completedAt: null,
-         assignedTo: "María González",
-         estimatedCompletion: "2025-01-22T17:00:00Z",
-      },
-   ];
-
-   // const handleUploadFiles = async () => {
-   //    if (correctedFiles.length === 0) {
-   //       alert("No hay archivos para subir");
-   //       return;
-   //    }
-
-   //    try {
-   //       const formData = new FormData();
-
-   //       // Agregar cada archivo
-   //       correctedFiles.forEach((file) => {
-   //          formData.append("files", file);
-   //       });
-
-   //       // Agregar responseId
-   //       formData.append("responseId", request._id);
-
-   //       // Obtener token si es necesario (ajusta según tu auth)
-   //       // Usar apiFetch para upload (automáticamente maneja headers y formData)
-   //       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/upload-corrected-files`, {
-   //          method: "POST",
-   //          body: formData,
-   //       });
-
-   //       if (response.ok) {
-   //          const result = await response.json();
-   //          console.log("Archivos subidos exitosamente:", result);
-   //          alert(`${correctedFiles.length} archivo(s) subido(s) exitosamente`);
-   //          return true;
-   //       } else {
-   //          const error = await response.json();
-   //          alert(`Error subiendo archivos: ${error.error}`);
-   //          return false;
-   //       }
-   //    } catch (error) {
-   //       console.error("Error subiendo archivos:", error);
-   //       alert("Error subiendo archivos: " + error.message);
-   //       return false;
-   //    }
-   // };
 
    const handleDownloadCorrected = async (index = 0, source = "auto") => {
       try {
