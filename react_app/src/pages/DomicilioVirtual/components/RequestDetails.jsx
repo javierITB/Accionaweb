@@ -1740,167 +1740,182 @@ const RequestDetails = ({
         </div >
       </div >
 
-      {/* MODAL DE EXTENSIÓN DE CONTRATO (ESTILO CARDS) */}
+      {/* MODAL DE EXTENSIÓN DE CONTRATO */}
       {showExtendModal && (
-  <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-    <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-      <div className="p-6 border-b border-border flex justify-between items-center bg-muted/30">
-        <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <Icon name="Calendar" className="text-accent" size={22} />
-          Extender Contrato
-        </h3>
-        <Button variant="ghost" size="icon" onClick={() => {
-          setShowExtendModal(false);
-          setShowCustomDatePicker(false);
-          setCustomStartDate('');
-          setCustomEndDate('');
-        }} iconName="X" />
-      </div>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-border flex justify-between items-center bg-muted/30">
+              <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Icon name="Calendar" className="text-accent" size={22} />
+                Extender Contrato
+              </h3>
+              <Button variant="ghost" size="icon" onClick={() => {
+                setShowExtendModal(false);
+                setShowCustomDatePicker(false);
+                setCustomStartDate('');
+                setCustomEndDate('');
+              }} iconName="X" />
+            </div>
 
-      <div className="p-6">
-        {/* SECCIÓN DE VIGENCIA ACTUAL CON COLORES UNIFICADOS */}
-        <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-accent/5 rounded-xl border border-accent/10">
-          <div className="flex flex-col">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Fecha de Inicio actual</span>
-            <span className="text-sm font-bold text-accent">
-              {fullRequestData?.fechaInicioContrato || "No especificada"}
-            </span>
-          </div>
-          <div className="flex flex-col border-l border-border pl-4">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Fecha de Término actual</span>
-            <span className="text-sm font-bold text-accent">
-              {fullRequestData?.fechaTerminoContrato || "No especificada"}
-            </span>
-          </div>
-        </div>
-
-        <p className="text-muted-foreground mb-6 text-sm">
-        Selecciona el nuevo periodo de vigencia para el contrato de{" "}
-        <strong className="text-foreground">
-          {fullRequestData?.nombreEmpresa || 
-          fullRequestData?.responses?.["NOMBRE O RAZÓN SOCIAL:"] || 
-          fullRequestData?.responses?.["Nombre Empresa"] || 
-          "el cliente"}
-        </strong>.
-      </p>
-
-        {!showCustomDatePicker ? (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              {/* Opción Semestral */}
-              <button
-                onClick={() => {
-                  setShowExtendModal(false);
-                  openAsyncDialog({
-                    title: "¿Confirmar extensión semestral?",
-                    loadingText: "Calculando periodo...",
-                    successText: "Contrato extendido por 6 meses",
-                    onConfirm: () => handleExtendContract('semestral')
-                  });
-                }}
-                className="group flex flex-col items-center p-5 rounded-xl border-2 border-border hover:border-accent hover:bg-accent/5 transition-all text-center"
-              >
-                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <Icon name="Timer" className="text-accent" size={24} />
+            <div className="p-6">
+              {/* SECCIÓN DE VIGENCIA ACTUAL */}
+              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-accent/5 rounded-xl border border-accent/10">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Fecha de Inicio actual</span>
+                  <span className="text-sm font-bold text-accent">
+                    {fullRequestData?.fechaInicioContrato || "No especificada"}
+                  </span>
                 </div>
-                <span className="font-bold text-foreground">Semestral</span>
-                <span className="text-xs text-muted-foreground mt-1">+6 Meses</span>
-              </button>
-
-              {/* Opción Anual */}
-              <button
-                onClick={() => {
-                  setShowExtendModal(false);
-                  openAsyncDialog({
-                    title: "¿Confirmar extensión anual?",
-                    loadingText: "Calculando periodo...",
-                    successText: "Contrato extendido por 1 año",
-                    onConfirm: () => handleExtendContract('anual')
-                  });
-                }}
-                className="group flex flex-col items-center p-5 rounded-xl border-2 border-border hover:border-accent hover:bg-accent/5 transition-all text-center"
-              >
-                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <Icon name="CalendarCheck" className="text-accent" size={24} />
+                <div className="flex flex-col border-l border-border pl-4">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Fecha de Término actual</span>
+                  <span className="text-sm font-bold text-accent">
+                    {fullRequestData?.fechaTerminoContrato || "No especificada"}
+                  </span>
                 </div>
-                <span className="font-bold text-foreground">Anual</span>
-                <span className="text-xs text-muted-foreground mt-1">+1 Año</span>
-              </button>
+              </div>
+
+              {/* VISTA PREVIA DE CAMBIOS (Solo se ve si hay algo escrito) */}
+              {(customStartDate || customEndDate) && showCustomDatePicker && (
+                <div className="mb-6 p-4 bg-success/5 rounded-xl border border-success/20 animate-in slide-in-from-top-2 duration-300">
+                  <span className="text-[10px] uppercase tracking-wider text-success font-bold block mb-2">Vista previa de cambios</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted-foreground uppercase">Nuevo Inicio</span>
+                      <span className="text-sm font-bold text-foreground">
+                        {customStartDate ? new Date(customStartDate + "T12:00:00").toLocaleDateString('es-CL') : "Sin cambio"}
+                      </span>
+                    </div>
+                    <div className="flex flex-col border-l border-border pl-4">
+                      <span className="text-[10px] text-muted-foreground uppercase">Nuevo Término</span>
+                      <span className="text-sm font-bold text-foreground">
+                        {customEndDate ? new Date(customEndDate + "T12:00:00").toLocaleDateString('es-CL') : "Sin cambio"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-muted-foreground mb-6 text-sm">
+                Selecciona el nuevo periodo de vigencia para el contrato de{" "}
+                <strong className="text-foreground">
+                  {fullRequestData?.nombreEmpresa || 
+                   fullRequestData?.responses?.["NOMBRE O RAZÓN SOCIAL:"] || 
+                   "el cliente"}
+                </strong>.
+              </p>
+
+              {!showCustomDatePicker ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <button
+                      onClick={() => {
+                        setShowExtendModal(false);
+                        openAsyncDialog({
+                          title: "¿Confirmar extensión semestral?",
+                          loadingText: "Calculando periodo...",
+                          successText: "Contrato extendido por 6 meses",
+                          onConfirm: () => handleExtendContract('semestral')
+                        });
+                      }}
+                      className="group flex flex-col items-center p-5 rounded-xl border-2 border-border hover:border-accent hover:bg-accent/5 transition-all text-center"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <Icon name="Timer" className="text-accent" size={24} />
+                      </div>
+                      <span className="font-bold text-foreground">Semestral</span>
+                      <span className="text-xs text-muted-foreground mt-1">+6 Meses</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowExtendModal(false);
+                        openAsyncDialog({
+                          title: "¿Confirmar extensión anual?",
+                          loadingText: "Calculando periodo...",
+                          successText: "Contrato extendido por 1 año",
+                          onConfirm: () => handleExtendContract('anual')
+                        });
+                      }}
+                      className="group flex flex-col items-center p-5 rounded-xl border-2 border-border hover:border-accent hover:bg-accent/5 transition-all text-center"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <Icon name="CalendarCheck" className="text-accent" size={24} />
+                      </div>
+                      <span className="font-bold text-foreground">Anual</span>
+                      <span className="text-xs text-muted-foreground mt-1">+1 Año</span>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setShowCustomDatePicker(true)}
+                    className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-border hover:border-accent hover:bg-accent/5 transition-all text-center"
+                  >
+                    <Icon name="CalendarRange" className="text-accent" size={18} />
+                    <span className="font-medium text-foreground">Seleccionar fechas personalizadas</span>
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Fecha de Inicio</label>
+                    <input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="w-full p-2 rounded-lg bg-background border border-border text-foreground focus:border-accent focus:ring-1 focus:ring-accent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Fecha de Término</label>
+                    <input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="w-full p-2 rounded-lg bg-background border border-border text-foreground focus:border-accent focus:ring-1 focus:ring-accent"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      variant="default"
+                      className="flex-1 bg-accent text-accent-foreground"
+                      onClick={() => {
+                        openAsyncDialog({
+                          title: "¿Confirmar cambios en las fechas?",
+                          loadingText: "Aplicando cambios...",
+                          successText: "Fechas actualizadas correctamente",
+                          onConfirm: handleCustomExtendContract
+                        });
+                      }}
+                      disabled={!customStartDate && !customEndDate}
+                    >
+                      Aplicar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setShowCustomDatePicker(false);
+                        setCustomStartDate('');
+                        setCustomEndDate('');
+                      }}
+                    >
+                      Volver
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <button
-              onClick={() => setShowCustomDatePicker(true)}
-              className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-border hover:border-accent hover:bg-accent/5 transition-all text-center"
-            >
-              <Icon name="CalendarRange" className="text-accent" size={18} />
-              <span className="font-medium text-foreground">Seleccionar fechas personalizadas</span>
-            </button>
-          </>
-        ) : (
-          /* Selector de fechas personalizadas */
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Fecha de Inicio</label>
-              <input
-                type="date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="w-full p-2 rounded-lg bg-background border border-border text-foreground focus:border-accent focus:ring-1 focus:ring-accent"
-                min={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Fecha de Término</label>
-              <input
-                type="date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="w-full p-2 rounded-lg bg-background border border-border text-foreground focus:border-accent focus:ring-1 focus:ring-accent"
-                min={customStartDate || new Date().toISOString().split('T')[0]}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button
-                variant="default"
-                className="flex-1 bg-accent text-accent-foreground"
-                onClick={() => {
-                  openAsyncDialog({
-                    title: "¿Confirmar cambios en las fechas?",
-                    loadingText: "Aplicando cambios...",
-                    successText: "Fechas actualizadas correctamente",
-                    onConfirm: handleCustomExtendContract
-                  });
-                }}
-                disabled={!customStartDate && !customEndDate}
-              >
-                Aplicar
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setShowCustomDatePicker(false);
-                  setCustomStartDate('');
-                  setCustomEndDate('');
-                }}
-              >
-                Volver
-              </Button>
-            </div>
+            {!showCustomDatePicker && (
+              <div className="p-4 bg-muted/30 border-t border-border flex justify-end">
+                <Button variant="ghost" onClick={() => setShowExtendModal(false)}>Cancelar</Button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-
-      {!showCustomDatePicker && (
-        <div className="p-4 bg-muted/30 border-t border-border flex justify-end">
-          <Button variant="ghost" onClick={() => setShowExtendModal(false)}>Cancelar</Button>
         </div>
       )}
-    </div>
-  </div>
-)}
 
             <CleanDocumentPreview
         isVisible={showPreview}
