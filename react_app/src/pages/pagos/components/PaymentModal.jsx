@@ -36,6 +36,37 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
         }
     };
 
+    const [previewUrl, setPreviewUrl] = useState(null);
+
+    useEffect(() => {
+        let activeUrl = null;
+
+        const fetchPreview = async () => {
+            const mimeType = selectedCharge?.receipt?.file?.mimetype;
+            if (mimeType?.startsWith('image/') || mimeType === 'application/pdf') {
+                try {
+                    const response = await apiFetch(`/pagos/file/${selectedCharge._id}`, { method: 'GET' });
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        activeUrl = window.URL.createObjectURL(blob);
+                        setPreviewUrl(activeUrl);
+                    }
+                } catch (error) {
+                    console.error("Error fetching preview:", error);
+                }
+            } else {
+                setPreviewUrl(null);
+            }
+        };
+
+        fetchPreview();
+
+        return () => {
+            if (activeUrl) window.URL.revokeObjectURL(activeUrl);
+        };
+    }, [selectedCharge]);
+
+
     const updateStatus = async (status) => {
         if (!selectedCharge) return;
         try {
@@ -69,10 +100,21 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                 a.href = url;
                 a.download = selectedCharge.receipt?.file?.name || 'comprobante';
                 a.click();
+                window.URL.revokeObjectURL(url);
             }
         } catch (error) {
             console.error("Error downloading file:", error);
         }
+    };
+
+    const formatPeriod = (periodStr) => {
+        if (!periodStr) return 'Sin periodo';
+        const [year, month] = periodStr.split('-');
+        const months = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+        return `${months[parseInt(month) - 1]} de ${year}`;
     };
 
     if (!isOpen) return null;
@@ -82,53 +124,56 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
             <div className="bg-white dark:bg-slate-900 w-full max-w-6xl h-[85vh] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
 
                 {/* Header */}
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex-shrink-0">
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-                                <span className="text-primary">
-                                    <Icon name="Building" size={24} />
-                                </span>
-                                {company?.name}
-                            </h2>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Historial de Cobros y Pagos</p>
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex-shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                            <span className="text-primary">
+                                <Icon name="Building" size={24} />
+                            </span>
+                            {company?.name}
+                        </h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Historial de Cobros y Pagos</p>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        {/* Mini Metrics Bar */}
+                        <div className="flex gap-4">
+                            <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                                <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-md text-green-600 dark:text-green-400">
+                                    <Icon name="DollarSign" size={16} />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Pagado</p>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                        {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(
+                                            charges.filter(c => c.status === 'Aprobado').reduce((acc, curr) => acc + (curr.amount || 0), 0)
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                                <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-md text-amber-600 dark:text-amber-400">
+                                    <Icon name="Clock" size={16} />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Pendiente</p>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                        {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(
+                                            charges.filter(c => ['Pendiente', 'En Revisión'].includes(c.status)).reduce((acc, curr) => acc + (curr.amount || 0), 0)
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
+
+                        <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2 hidden md:block"></div>
+
                         <button
                             onClick={onClose}
                             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
                         >
                             <Icon name="X" size={24} />
                         </button>
-                    </div>
-
-                    {/* Mini Metrics Bar */}
-                    <div className="flex gap-4">
-                        <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3">
-                            <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-md text-green-600 dark:text-green-400">
-                                <Icon name="DollarSign" size={16} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Pagado</p>
-                                <p className="text-sm font-bold text-slate-900 dark:text-white">
-                                    {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(
-                                        charges.filter(c => c.status === 'Aprobado').reduce((acc, curr) => acc + (curr.amount || 0), 0)
-                                    )}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3">
-                            <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-md text-amber-600 dark:text-amber-400">
-                                <Icon name="Clock" size={16} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Pendiente</p>
-                                <p className="text-sm font-bold text-slate-900 dark:text-white">
-                                    {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(
-                                        charges.filter(c => ['Pendiente', 'En Revisión'].includes(c.status)).reduce((acc, curr) => acc + (curr.amount || 0), 0)
-                                    )}
-                                </p>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -151,16 +196,16 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                                         key={charge._id}
                                         onClick={() => setSelectedCharge(charge)}
                                         className={`p-3 rounded-lg cursor-pointer transition-all border ${selectedCharge?._id === charge._id
-                                                ? 'bg-white dark:bg-slate-800 border-primary shadow-md ring-1 ring-primary/20'
-                                                : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-600'
+                                            ? 'bg-white dark:bg-slate-800 border-primary shadow-md ring-1 ring-primary/20'
+                                            : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-600'
                                             }`}
                                     >
                                         <div className="flex justify-between items-start mb-1">
-                                            <span className="font-bold text-slate-900 dark:text-white">{charge.period || 'Sin periodo'}</span>
+                                            <span className="font-bold text-slate-900 dark:text-white">{formatPeriod(charge.period)}</span>
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${charge.status === 'Aprobado' ? 'bg-green-100 text-green-700' :
-                                                    charge.status === 'Pendiente' ? 'bg-amber-100 text-amber-700' :
-                                                        charge.status === 'En Revisión' ? 'bg-blue-100 text-blue-700' :
-                                                            'bg-red-100 text-red-700'
+                                                charge.status === 'Pendiente' ? 'bg-amber-100 text-amber-700' :
+                                                    charge.status === 'En Revisión' ? 'bg-blue-100 text-blue-700' :
+                                                        'bg-red-100 text-red-700'
                                                 }`}>
                                                 {charge.status}
                                             </span>
@@ -179,22 +224,64 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                     <div className="w-2/3 bg-white dark:bg-slate-900 overflow-y-auto p-6 custom-scrollbar">
                         {selectedCharge ? (
                             <div className="space-y-8 animate-in fade-in duration-300">
-                                {/* Charge Info Header */}
-                                <div className="flex justify-between items-start">
+                                {/* Charge Info Header - Enhanced */}
+                                <div className="space-y-6">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{selectedCharge.concept}</h2>
-                                        <p className="text-slate-500">Periodo: {selectedCharge.period}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                                            {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(selectedCharge.amount)}
+                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Monto del Pago</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                                                {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(selectedCharge.amount)}
+                                            </h2>
+                                            <span className="text-sm font-bold text-slate-400">CLP</span>
                                         </div>
-                                        <span className="text-xs text-slate-400">CLP</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                        {/* Date Info */}
+                                        <div className="flex items-start gap-3">
+                                            <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-slate-400 border border-slate-200 dark:border-slate-700">
+                                                <Icon name="Calendar" size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">Fecha y Hora de Subida</p>
+                                                {selectedCharge.receipt ? (
+                                                    <div>
+                                                        <p className="font-bold text-slate-900 dark:text-white">
+                                                            {new Date(selectedCharge.receipt.uploadedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                        </p>
+                                                        <p className="text-xs text-slate-500 font-medium">
+                                                            {new Date(selectedCharge.receipt.uploadedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} hrs
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm font-medium text-slate-400 italic">Pendiente de subida</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Uploader Info */}
+                                        <div className="flex items-start gap-3">
+                                            <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-slate-400 border border-slate-200 dark:border-slate-700">
+                                                <Icon name="User" size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">Subido Por</p>
+                                                {selectedCharge.receipt ? (
+                                                    <div>
+                                                        <p className="font-bold text-slate-900 dark:text-white">
+                                                            {selectedCharge.receipt.uploadedBy || 'Usuario Desconocido'}
+                                                        </p>
+                                                        <p className="text-xs text-slate-500 font-medium">
+                                                            {company?.name}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm font-medium text-slate-400 italic">--</p>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-
-                                {/* Divider */}
-                                <div className="h-px bg-slate-100 dark:bg-slate-800 w-full" />
 
                                 {/* Verification Section */}
                                 <div>
@@ -218,13 +305,28 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                                             </div>
 
                                             {/* Preview Area (Simplified) */}
-                                            {selectedCharge.receipt.file?.mimetype?.startsWith('image/') && (
-                                                <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm max-h-[400px] flex items-center justify-center bg-slate-100 dark:bg-slate-950">
-                                                    {/* We can fetch the image blob again or rely on a separate specific endpoint for preview if needed. reusing download logic for simplicity or just showing icon if secure preview not ready */}
-                                                    <div className="text-center p-10 text-slate-400">
-                                                        <Icon name="Image" size={48} className="mx-auto mb-2 opacity-50" />
-                                                        <p>Vista previa requiere descarga</p>
-                                                    </div>
+                                            {(selectedCharge.receipt.file?.mimetype?.startsWith('image/') || selectedCharge.receipt.file?.mimetype === 'application/pdf') && (
+                                                <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm max-h-[600px] flex items-center justify-center bg-slate-100 dark:bg-slate-950 relative min-h-[200px]">
+                                                    {previewUrl ? (
+                                                        selectedCharge.receipt.file?.mimetype === 'application/pdf' ? (
+                                                            <iframe
+                                                                src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                className="w-full h-[500px]"
+                                                                title="Vista previa PDF"
+                                                            />
+                                                        ) : (
+                                                            <img
+                                                                src={previewUrl}
+                                                                alt="Comprobante"
+                                                                className="max-w-full max-h-[500px] object-contain"
+                                                            />
+                                                        )
+                                                    ) : (
+                                                        <div className="flex flex-col items-center text-slate-400 animate-pulse">
+                                                            <Icon name="FileText" size={32} className="mb-2 opacity-50" />
+                                                            <span className="text-xs">Cargando vista previa...</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
 

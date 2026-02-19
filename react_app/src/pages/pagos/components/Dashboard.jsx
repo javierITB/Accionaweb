@@ -16,8 +16,8 @@ const Dashboard = () => {
         global: {
             totalCollected: 0,
             monthCollected: 0,
-            monthPendingAmount: 0,
-            monthPendingCount: 0
+            totalPending: 0,
+            countPending: 0
         },
         byCompany: {}
     });
@@ -91,65 +91,65 @@ const Dashboard = () => {
             {/* Metrics Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {/* 1. Ingresos Totales */}
-                <div className="bg-slate-900 dark:bg-slate-800 p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-slate-800 hover:border-slate-700 transition-all">
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all group">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
+                        <div className="p-3 bg-blue-50 dark:bg-blue-500/10 rounded-xl text-blue-600 dark:text-blue-500">
                             <Icon name="DollarSign" size={24} />
                         </div>
-                        <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">Histórico</span>
+                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Histórico</span>
                     </div>
                     <div>
-                        <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Ingresos Totales</p>
-                        <h3 className="text-2xl font-bold text-white">
+                        <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Ingresos Totales</p>
+                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
                             {formatCurrency(stats.global.totalCollected)}
                         </h3>
                     </div>
                 </div>
 
                 {/* 2. Ingresos del Mes */}
-                <div className="bg-slate-900 dark:bg-slate-800 p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-slate-800 hover:border-slate-700 transition-all">
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all group">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
+                        <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl text-emerald-600 dark:text-emerald-500">
                             <Icon name="TrendingUp" size={24} />
                         </div>
-                        <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Este Mes</span>
+                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Este Mes</span>
                     </div>
                     <div>
-                        <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Ingresos del Mes</p>
-                        <h3 className="text-2xl font-bold text-white">
+                        <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Ingresos del Mes</p>
+                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
                             {formatCurrency(stats.global.monthCollected)}
                         </h3>
                     </div>
                 </div>
 
                 {/* 3. Total Pendiente (Mes) */}
-                <div className="bg-slate-900 dark:bg-slate-800 p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-slate-800 hover:border-slate-700 transition-all">
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all group">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500">
+                        <div className="p-3 bg-amber-50 dark:bg-amber-500/10 rounded-xl text-amber-600 dark:text-amber-500">
                             <Icon name="Briefcase" size={24} />
                         </div>
-                        <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">Por Cobrar</span>
+                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Por Cobrar</span>
                     </div>
                     <div>
-                        <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Monto Pendiente</p>
-                        <h3 className="text-2xl font-bold text-white">
-                            {formatCurrency(stats.global.monthPendingAmount)}
+                        <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Monto Pendiente</p>
+                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                            {formatCurrency(stats.global.totalPending)}
                         </h3>
                     </div>
                 </div>
 
                 {/* 4. Pagos Pendientes (Count) */}
-                <div className="bg-slate-900 dark:bg-slate-800 p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-slate-800 hover:border-slate-700 transition-all">
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all group">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-500">
+                        <div className="p-3 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl text-indigo-600 dark:text-indigo-500">
                             <Icon name="FileText" size={24} />
                         </div>
-                        <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Gestión</span>
+                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Gestión</span>
                     </div>
                     <div>
-                        <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Cobros Pendientes</p>
-                        <h3 className="text-2xl font-bold text-white">
-                            {stats.global.monthPendingCount} <span className="text-sm font-normal text-slate-500">transacciones</span>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Cobros Pendientes</p>
+                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                            {stats.global.countPending || 0} <span className="text-sm font-normal text-slate-500">transacciones</span>
                         </h3>
                     </div>
                 </div>
@@ -203,8 +203,7 @@ const Dashboard = () => {
                                     return (
                                         <tr
                                             key={company._id}
-                                            className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors group cursor-pointer"
-                                            onClick={() => handleViewCompany(company)}
+                                            className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors group"
                                         >
                                             <td className="px-6 py-5">
                                                 <div className="flex items-center gap-3">
@@ -236,16 +235,16 @@ const Dashboard = () => {
                                                 )}
                                             </td>
                                             <td className="px-6 py-5 text-right">
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
+                                                <button
+                                                    type="button"
+                                                    className="relative z-10 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleViewCompany(company);
                                                     }}
                                                 >
                                                     Ver Historial
-                                                </Button>
+                                                </button>
                                             </td>
                                         </tr>
                                     );

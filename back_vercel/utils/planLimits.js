@@ -157,6 +157,13 @@ async function checkPlanLimits(req, type, overrideUser = null) {
                 }
                 break;
 
+            case 'bot_messages':
+                limitValue = limits.forms?.maxQuantity;
+                if (limitValue !== undefined) {
+                    currentCount = await currentDb.collection("forms").countDocuments();
+                }
+                break;
+
             default:
                 return true;
         }
