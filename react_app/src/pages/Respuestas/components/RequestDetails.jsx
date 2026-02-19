@@ -223,28 +223,28 @@ const RequestDetails = ({
       }
    };
 
-   const checkClientSignature = async () => {
-      setIsCheckingSignature(true);
-      setIsCheckingSignature(true);
-      try {
-         const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/has-client-signature`);
-         if (response.ok) {
-            const data = await response.json();
-            if (data.exists) {
-               setClientSignature(data.signature);
-            } else {
-               setClientSignature(null);
-            }
-         } else {
-            setClientSignature(null);
-         }
-      } catch (error) {
-         console.error("Error verificando firma del cliente:", error);
-         setClientSignature(null);
-      } finally {
-         setIsCheckingSignature(false);
-      }
-   };
+   // const checkClientSignature = async () => {
+   //    setIsCheckingSignature(true);
+   //    setIsCheckingSignature(true);
+   //    try {
+   //       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/has-client-signature`);
+   //       if (response.ok) {
+   //          const data = await response.json();
+   //          if (data.exists) {
+   //             setClientSignature(data.signature);
+   //          } else {
+   //             setClientSignature(null);
+   //          }
+   //       } else {
+   //          setClientSignature(null);
+   //       }
+   //    } catch (error) {
+   //       console.error("Error verificando firma del cliente:", error);
+   //       setClientSignature(null);
+   //    } finally {
+   //       setIsCheckingSignature(false);
+   //    }
+   // };
 
    const getDocumentInfo = async (responseId) => {
       try {
@@ -261,9 +261,9 @@ const RequestDetails = ({
       }
    };
 
-   const refreshClientSignature = async () => {
-      await checkClientSignature();
-   };
+   // const refreshClientSignature = async () => {
+   //    await checkClientSignature();
+   // };
 
    useEffect(() => {
       const fetchFreshData = async () => {
@@ -325,8 +325,8 @@ const RequestDetails = ({
       }
 
       if (request?._id) {
-         checkClientSignature();
          getDocumentInfo(request._id);
+         fetchClientSignatures(request._id)
       }
    }, [request]);
 
@@ -360,7 +360,6 @@ const RequestDetails = ({
 
       fetchFullDetailsAndDocs();
       fetchAttachments(responseId);
-      checkClientSignature(responseId);
       fetchApprovedData(responseId);
    }, [isVisible, request?._id]);
 
@@ -673,7 +672,10 @@ const RequestDetails = ({
       }
    };
 
-   const handleDownloadClientSignature = async (signedFileId) => {
+   const handleDownloadClientSignature = async (signedFile) => {
+
+      const signedFileId = signedFile?._id
+      const signedFileName = signedFile?.clientSignedPdf?.fileName
 
       setIsDownloadingSignature(true);
       try {
@@ -690,7 +692,7 @@ const RequestDetails = ({
          const url = window.URL.createObjectURL(blob);
          const a = document.createElement("a");
          a.href = url;
-         a.download = clientSignature.fileName;
+         a.download = signedFileName;
          document.body.appendChild(a);
          a.click();
          window.URL.revokeObjectURL(url);
@@ -1860,7 +1862,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                        iconName={isDownloadingSignature ? "Loader" : "Download"}
                                        iconPosition="left"
                                        iconSize={16}
-                                       onClick={() => handleDownloadClientSignature(signedFile?._id)}
+                                       onClick={() => handleDownloadClientSignature(signedFile)}
                                        disabled={isDownloadingSignature}
                                     >
                                        {isDownloadingSignature ? "Descargando..." : "Descargar"}

@@ -222,11 +222,11 @@ const Dashboard = () => {
                                             <td className="px-6 py-5">
                                                 {cStats.pendingCount > 0 ? (
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
-                                                            {cStats.pendingCount} Cobro(s)
+                                                        <span className="text-sm font-bold text-yellow-500">
+                                                            {formatCurrency(cStats.pendingAmount)}
                                                         </span>
                                                         <span className="text-xs text-slate-400">
-                                                            {formatCurrency(cStats.pendingAmount)}
+                                                            {cStats.pendingCount} Cobro(s)
                                                         </span>
                                                     </div>
                                                 ) : (
