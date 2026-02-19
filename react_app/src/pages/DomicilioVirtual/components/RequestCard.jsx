@@ -72,15 +72,18 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
   };
 
   const getCombinedTitle = () => {
-    // CAMBIO PERTINENTE: Limpiamos el texto "Domicilio Virtual" para evitar redundancia
+    // 1. Limpiamos el texto "Domicilio Virtual" para que no se repita
     const rawTitle = currentRequest?.formTitle || 'Formulario';
     const cleanTitle = rawTitle.replace(/Domicilio Virtual/gi, '').replace(/^- /g, '').trim();
     
-    const company = currentRequest?.nombreEmpresa || currentRequest?.rutEmpresa;
+    // 2. Obtenemos el nombre de la empresa
+    const company = currentRequest?.nombreEmpresa;
 
-    if (company && company !== "No especificado") {
+    // 3. Concatenamos como estaba antes del error
+    if (company && company !== "No especificado" && company !== "Empresa") {
       return `${cleanTitle || 'Solicitud'} - ${company}`;
     }
+    
     return cleanTitle || 'Solicitud';
   };
 
@@ -99,17 +102,31 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
             </span>
           </div>
 
-          {/* CAMBIO PERTINENTE: Se eliminó el párrafo de descripción (description) por ser redundante */}
-
           {/* Meta Info - RESPONSIVE */}
-          <div className="flex flex-col xs:flex-row xs:items-center space-y-2 xs:space-y-0 xs:space-x-3 sm:space-x-4 text-xs text-muted-foreground">
+          <div className="flex flex-col space-y-1.5 text-xs text-muted-foreground">
+            {/* Empresa */}
             <div className="flex items-center space-x-1">
               <Icon name="Building" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
               <span className="truncate">
                 {currentRequest?.nombreEmpresa || 'Empresa'}
-                {currentRequest?.rutEmpresa ? ` (${currentRequest.rutEmpresa})` : ''}
               </span>
             </div>
+
+            {/* RUT - Línea aparte (Cambio solicitado) */}
+            {currentRequest?.rutEmpresa && (
+              <div className="flex items-center space-x-1">
+                <Icon name="CreditCard" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
+                <span>{currentRequest.rutEmpresa}</span>
+              </div>
+            )}
+            
+            {/* Fecha de Término */}
+            {currentRequest?.responses?.["FECHA_TERMINO_CONTRATO"] && (
+              <div className="flex items-center space-x-1 text-accent font-medium">
+                <Icon name="Calendar" size={12} className="flex-shrink-0 sm:w-3.5 sm:h-3.5" />
+                <span>Vence: {currentRequest.responses["FECHA_TERMINO_CONTRATO"]}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -139,11 +156,9 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
       {/* Actions - RESPONSIVE */}
       <div className="flex items-center justify-between mt-4 sm:mt-3">
         <div className="flex-1">
-          {/* Empty space for alignment */}
         </div>
 
         <div className="flex items-center space-x-1 sm:space-x-2">
-          {/* Delete Button */}
           {canDelete && (
             <Button
               variant="ghost"
@@ -156,7 +171,6 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
             </Button>
           )}
 
-          {/* Details Button - ICON ONLY ON MOBILE */}
           <Button
             variant="ghost"
             size="icon"
@@ -166,7 +180,6 @@ const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] })
             <Icon name="Info" size={12} className="sm:w-3.5 sm:h-3.5" />
           </Button>
 
-          {/* Details Button - WITH TEXT ON DESKTOP */}
           <Button
             variant="ghost"
             size="sm"

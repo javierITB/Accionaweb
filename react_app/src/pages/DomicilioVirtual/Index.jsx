@@ -84,7 +84,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
             const endpoint = 'domicilio-virtual/mini';
 
             const params = new URLSearchParams({
-                page: pageNumber,
+                page    : pageNumber,
                 limit: requestsPerPage,
                 search: overrideFilters.search || '',
                 status: overrideFilters.status || '',
@@ -113,6 +113,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
                 submittedAt: r.submittedAt || r.createdAt || null,
                 createdAt: r.createdAt,
                 status: r.status,
+                responses: r.responses, 
                 tuNombre: r.tuNombre || "",
                 nombreEmpresa: r.nombreEmpresa,
                 rutEmpresa: r.rutEmpresa || "",

@@ -89,17 +89,20 @@ router.post("/admin/generate-charges", verifyAuth, async (req, res) => {
             return res.status(400).json({ error: "El concepto es requerido." });
         }
 
-        const batch = companies.map(company => ({
-            companyDb: company.dbName,
-            companyName: company.name,
-            amount: parseFloat(company.amount || amount),
-            concept: concept,
-            period: period || new Date().toISOString().slice(0, 7), // YYYY-MM per default
-            status: "Pendiente",
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            receipt: null // Will hold file info later
-        }));
+        const batch = companies.map(company => {
+            const rawAmount = parseFloat(company.amount || amount);
+            return {
+                companyDb: company.dbName,
+                companyName: company.name,
+                amount: isNaN(rawAmount) ? 0 : rawAmount,
+                concept: concept,
+                period: period || new Date().toISOString().slice(0, 7), // YYYY-MM per default
+                status: "Pendiente",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                receipt: null // Will hold file info later
+            };
+        });
 
         const result = await db.collection("cobros").insertMany(batch);
 
@@ -130,21 +133,63 @@ router.get("/admin/dashboard-stats", verifyAuth, async (req, res) => {
         }
 
         // 1. Global Stats
+        const now = new Date();
+        // Since we store period as 'YYYY-MM', let's use that for current month
+        const currentPeriod = now.toISOString().slice(0, 7);
+
         const globalStats = await db.collection("cobros").aggregate([
             {
                 $group: {
                     _id: null,
                     totalCollected: {
-                        $sum: { $cond: [{ $eq: ["$status", "Aprobado"] }, "$amount", 0] }
+                        $sum: {
+                            $cond: [
+                                { $eq: ["$status", "Aprobado"] },
+                                { $convert: { input: "$amount", to: "double", onError: 0, onNull: 0 } },
+                                0
+                            ]
+                        }
+                    },
+                    monthCollected: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $eq: ["$status", "Aprobado"] },
+                                        { $eq: ["$period", currentPeriod] }
+                                    ]
+                                },
+                                { $convert: { input: "$amount", to: "double", onError: 0, onNull: 0 } },
+                                0
+                            ]
+                        }
                     },
                     totalPending: {
                         $sum: {
-                            $cond: [{ $in: ["$status", ["Pendiente", "En Revisión"]] }, "$amount", 0]
+                            $cond: [
+                                {
+                                    $or: [
+                                        { $eq: ["$status", "Pendiente"] },
+                                        { $eq: ["$status", "En Revisión"] }
+                                    ]
+                                },
+                                { $convert: { input: "$amount", to: "double", onError: 0, onNull: 0 } },
+                                0
+                            ]
                         }
                     },
                     countPending: {
                         $sum: {
-                            $cond: [{ $in: ["$status", ["Pendiente", "En Revisión"]] }, 1, 0]
+                            $cond: [
+                                {
+                                    $or: [
+                                        { $eq: ["$status", "Pendiente"] },
+                                        { $eq: ["$status", "En Revisión"] }
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
                         }
                     }
                 }
@@ -159,12 +204,30 @@ router.get("/admin/dashboard-stats", verifyAuth, async (req, res) => {
                     lastChargeDate: { $max: "$createdAt" },
                     pendingCount: {
                         $sum: {
-                            $cond: [{ $in: ["$status", ["Pendiente", "En Revisión"]] }, 1, 0]
+                            $cond: [
+                                {
+                                    $or: [
+                                        { $eq: ["$status", "Pendiente"] },
+                                        { $eq: ["$status", "En Revisión"] }
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
                         }
                     },
                     pendingAmount: {
                         $sum: {
-                            $cond: [{ $in: ["$status", ["Pendiente", "En Revisión"]] }, "$amount", 0]
+                            $cond: [
+                                {
+                                    $or: [
+                                        { $eq: ["$status", "Pendiente"] },
+                                        { $eq: ["$status", "En Revisión"] }
+                                    ]
+                                },
+                                { $convert: { input: "$amount", to: "double", onError: 0, onNull: 0 } },
+                                0
+                            ]
                         }
                     }
                 }
@@ -178,7 +241,7 @@ router.get("/admin/dashboard-stats", verifyAuth, async (req, res) => {
         });
 
         res.json({
-            global: globalStats[0] || { totalCollected: 0, totalPending: 0, countPending: 0 },
+            global: globalStats[0] || { totalCollected: 0, monthCollected: 0, totalPending: 0, countPending: 0 },
             byCompany: statsByCompany
         });
 
