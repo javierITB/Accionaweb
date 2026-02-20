@@ -115,7 +115,7 @@ const FilterPanel = ({
   return (
     <div className="bg-card border border-border rounded-lg">
       {/* Filter Header */}
-      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
+      <div className={`flex items-center justify-between p-3 sm:p-4 ${isVisible ? 'border-b border-border' : ''}`}>
         <div className="flex items-center space-x-2">
           <Icon name="Filter" size={18} className="text-accent sm:w-5 sm:h-5" />
           <h3 className="text-base sm:text-lg font-semibold text-foreground">Filtros</h3>

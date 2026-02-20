@@ -42,7 +42,7 @@ const FilterPanel = ({
 
   return (
     <div className="bg-card border border-border rounded-lg shadow-sm">
-      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
+      <div className={`flex items-center justify-between p-3 sm:p-4 ${isVisible ? 'border-b border-border' : ''}`}>
         <div className="flex items-center space-x-2">
           <Icon name="Filter" size={18} className="text-accent sm:w-5 sm:h-5" />
           <h3 className="text-base sm:text-lg font-semibold text-foreground">Filtros</h3>
@@ -88,19 +88,19 @@ const FilterPanel = ({
 
           <div className="pt-3 sm:pt-4 border-t border-border">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <Input 
-                label="Rut Empresa" 
-                type="text" 
-                placeholder="Ej: 77.123.456-k" 
-                value={filters?.company || ''} 
-                onChange={(e) => handleInputChange('company', e?.target?.value)} 
+              <Input
+                label="Rut Empresa"
+                type="text"
+                placeholder="Ej: 77.123.456-k"
+                value={filters?.company || ''}
+                onChange={(e) => handleInputChange('company', e?.target?.value)}
               />
-              <Input 
-                label="Enviado Por" 
-                type="text" 
-                placeholder="Nombre del solicitante..." 
-                value={filters?.submittedBy || ''} 
-                onChange={(e) => handleInputChange('submittedBy', e?.target?.value)} 
+              <Input
+                label="Enviado Por"
+                type="text"
+                placeholder="Nombre del solicitante..."
+                value={filters?.submittedBy || ''}
+                onChange={(e) => handleInputChange('submittedBy', e?.target?.value)}
               />
             </div>
           </div>
