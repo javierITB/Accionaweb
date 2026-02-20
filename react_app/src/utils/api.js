@@ -12,12 +12,16 @@ const getSubdomain = () => {
     const parts = hostname.split('.');
 
     // Si tiene más de 2 partes (subdominio.dominio.ext), tomamos la primera
-    // Si es localhost o una IP, devolvemos "api" por defecto para desarrollo
     if (parts.length > 2) {
         return parts[0];
     }
 
-    return "api"; // Fallback para solunex.cl o localhost
+    // Si el hostname es el dominio raíz solunex.cl (sin subdominio), usamos "solunex"
+    if (hostname === 'solunex.cl' || hostname === 'www.solunex.cl') {
+        return "solunex";
+    }
+
+    return "api"; // Fallback solo para localhost o IPs en desarrollo
 };
 
 const getAuthHeaders = () => {
@@ -73,7 +77,7 @@ export const apiFetch = async (endpoint, options = {}) => {
     try {
         const response = await fetch(fullUrl, config);
 
-        
+
         if (response.status === 403 && !options.skipRedirect) {
             console.warn("Acceso denegado - Volviendo a la ruta anterior");
             if (typeof window !== 'undefined') {

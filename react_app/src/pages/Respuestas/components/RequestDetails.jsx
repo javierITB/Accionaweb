@@ -1770,12 +1770,12 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                     </div>
                                     <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
                                        <Button
-                                       iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
+                                          iconName={downloadingCorrectedIndex === index ? "Loader" : "Download"}
                                           variant="ghost"
                                           size="sm"
                                           onClick={() => handleDownloadCorrected(index, "approved")}
-                                          disabled={isMarked ||downloadingCorrectedIndex === index}
-                                          
+                                          disabled={isMarked || downloadingCorrectedIndex === index}
+
                                        >
                                           {downloadingCorrectedIndex === index ? "Descargando..." : "Descargar"}
                                        </Button>
@@ -1801,8 +1801,6 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                            })}
                         </div>
                      )}
-
-                     {isLoadingApprovedData && <LoadingCard text="Cargando archivos..." />}
 
                      {/* {!(approvedData?.correctedFiles?.length > 0 || correctedFiles?.length > 0) && !isLoadingApprovedData && (
                      <div className="flex flex-col items-center justify-center py-3 rounded-lg bg-muted/30">
@@ -2178,7 +2176,7 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                                             // el título principal será el mensaje de advertencia.
                                                             title:
                                                                st.value === "archivado" &&
-                                                               fullRequestData?.deleteArchivedFiles
+                                                                  fullRequestData?.deleteArchivedFiles
                                                                   ? "Se eliminarán todos los archivos asociados."
                                                                   : `¿Está seguro de que quiere cambiar el estado a "${st.label}"?`,
 
@@ -2192,11 +2190,10 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                                          });
                                                          setIsStatusDropdownOpen(false);
                                                       }}
-                                                      className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${
-                                                         currentStatus === st.value
+                                                      className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${currentStatus === st.value
                                                             ? "bg-accent/10 text-accent font-medium"
                                                             : "hover:bg-accent/5 text-foreground"
-                                                      }`}
+                                                         }`}
                                                    >
                                                       <Icon
                                                          name={st.icon || "Circle"}
@@ -2255,22 +2252,20 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                <div className="px-6 flex space-x-6 ">
                   <button
                      onClick={() => setActiveTab("details")}
-                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === "details"
+                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "details"
                            ? "border-accent text-accent"
                            : "border-transparent text-muted-foreground hover:text-foreground"
-                     }`}
+                        }`}
                      title="Ver detalles de la solicitud"
                   >
                      Detalles
                   </button>
                   <button
                      onClick={() => setActiveTab("chronology")}
-                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === "chronology"
+                     className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "chronology"
                            ? "border-accent text-accent"
                            : "border-transparent text-muted-foreground hover:text-foreground"
-                     }`}
+                        }`}
                      title="Ver detalles de la solicitud"
                   >
                      Cronología
@@ -2278,11 +2273,10 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   {userPermissions?.viewAnswers && (
                      <button
                         onClick={() => setActiveTab("responses")}
-                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                           activeTab === "responses"
+                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "responses"
                               ? "border-accent text-accent"
                               : "border-transparent text-muted-foreground hover:text-foreground"
-                        }`}
+                           }`}
                         title="Ver respuestas del formulario"
                      >
                         Respuestas
@@ -2291,11 +2285,10 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   {userPermissions?.viewShared && (
                      <button
                         onClick={() => setActiveTab("shared")}
-                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${
-                           activeTab === "shared"
+                        className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "shared"
                               ? "border-accent text-accent"
                               : "border-transparent text-muted-foreground hover:text-foreground"
-                        }`}
+                           }`}
                         title="Ver usuarios con acceso"
                      >
                         Compartidos
