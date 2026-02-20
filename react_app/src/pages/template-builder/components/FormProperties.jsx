@@ -173,9 +173,9 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
             documentContent: templateData.documentContent, //
             paragraphs: templateData.paragraphs
                ? templateData.paragraphs.map((p) => ({
-                    ...p,
-                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                 }))
+                  ...p,
+                  id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+               }))
                : [],
             signature1Text: templateData.signature1Text,
             signature2Text: templateData.signature2Text,
@@ -321,9 +321,7 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
             </div>
          )}
 
-         {isLoading ? (
-            <LoadingCard text="Cargando formularios existentes..." />
-         ) : allForms.length === 0 ? (
+         {!isLoading && allForms.length === 0 ? (
             <div className="text-center py-10 border border-dashed border-border rounded-lg">
                <Icon name="Frown" size={32} className="text-muted-foreground" />
                <p className="text-muted-foreground mt-2">No se encontraron formularios disponibles.</p>

@@ -416,9 +416,7 @@ const FormCenter = ({ userPermissions = {} }) => {
                </div>
 
                <div className="space-y-4 lg:space-y-6">
-                  {isLoading ? (
-                     <LoadingCard text="Cargando formularios..." />
-                  ) : (
+                  {!isLoading && (
                      <div className="space-y-3 lg:space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                            <h3 className="text-base lg:text-lg font-semibold text-foreground">

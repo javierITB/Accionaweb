@@ -79,10 +79,7 @@ const QuickActionsCard = ({ section }) => {
 
       {/* Forms Grid - RESPONSIVE */}
       <div className="p-4 sm:p-6">
-        {isLoading ? (
-           <LoadingCard text="Cargando formularios..." />
-
-        ) : (
+        {!isLoading && (
           <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {allForms?.map((action) => (
               <button
