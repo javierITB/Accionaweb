@@ -112,7 +112,7 @@ export default function ProtectedRoute({ children, permission }) {
       'view_acceso_registro_empresas'
    ];
 
-   const isFormsDbContext = CURRENT_TENANT === 'formsdb' || CURRENT_TENANT === 'api';
+   const isFormsDbContext = CURRENT_TENANT === 'formsdb' || CURRENT_TENANT === 'api' || CURRENT_TENANT === 'infodesa';
 
    if (formsDbOnlyPermissions.includes(permission) && !isFormsDbContext) {
       console.warn(`Acceso denegado: El permiso ${permission} solo está disponible en el contexto formsdb.`);
