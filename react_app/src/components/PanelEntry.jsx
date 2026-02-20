@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MENU_STRUCTURE } from "../config/menuStructure.js";
 import { getFirstAdminRoute } from "../utils/getFirstAdminRoute.js";
 
-export default function PanelEntry({ userPermissions }) {
+export default function PanelEntry({ userPermissions = [] }) {
   const navigate = useNavigate();
 
   const hasPermission = (perm) => {
