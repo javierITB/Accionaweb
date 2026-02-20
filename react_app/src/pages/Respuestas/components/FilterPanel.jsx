@@ -5,13 +5,13 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import { apiFetch, API_BASE_URL } from '../../../utils/api';
 
-const FilterPanel = ({ 
-  filters, 
-  onFilterChange, 
-  onClearFilters, 
-  onApplyFilters, 
-  isVisible, 
-  onToggle 
+const FilterPanel = ({
+  filters,
+  onFilterChange,
+  onClearFilters,
+  onApplyFilters,
+  isVisible,
+  onToggle
 }) => {
   const [empresas, setEmpresas] = useState([]);
   const [filteredEmpresas, setFilteredEmpresas] = useState([]);
@@ -64,7 +64,7 @@ const FilterPanel = ({
       const ahora = new Date();
       let start = new Date();
       let end = new Date();
-      
+
       // El límite superior siempre es el final del día de hoy
       end.setHours(23, 59, 59, 999);
 
@@ -99,9 +99,9 @@ const FilterPanel = ({
     }
 
     onFilterChange(newFilters);
-    
+
     if (field === 'company') {
-      const filtered = empresas.filter(emp => 
+      const filtered = empresas.filter(emp =>
         emp.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredEmpresas(filtered);
@@ -120,7 +120,7 @@ const FilterPanel = ({
 
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm overflow-visible">
-      <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30 rounded-t-xl">
+      <div className={`flex items-center justify-between p-4 bg-muted/30 rounded-t-xl ${isVisible ? 'border-b border-border' : 'rounded-b-xl'}`}>
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-accent/10 rounded-lg">
             <Icon name="Filter" size={20} className="text-accent" />
@@ -132,7 +132,7 @@ const FilterPanel = ({
             </span>
           )}
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {getActiveFilterCount() > 0 && (
             <Button variant="ghost" size="sm" onClick={onClearFilters} className="text-muted-foreground hover:text-destructive transition-colors">
@@ -154,8 +154,8 @@ const FilterPanel = ({
           />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Select 
-              label="Período" 
+            <Select
+              label="Período"
               options={[
                 { value: '', label: 'Cualquier Fecha' },
                 { value: 'today', label: 'Hoy' },
@@ -163,18 +163,18 @@ const FilterPanel = ({
                 { value: 'month', label: 'Este Mes' },
                 { value: 'quarter', label: 'Este Trimestre' },
                 { value: 'year', label: 'Este Año' },
-              ]} 
-              value={filters?.dateRange || ''} 
-              onChange={(value) => handleInputChange('dateRange', value)} 
+              ]}
+              value={filters?.dateRange || ''}
+              onChange={(value) => handleInputChange('dateRange', value)}
             />
-            <Input 
+            <Input
               label="Fecha Desde"
               type="date"
               value={filters?.startDate || ''}
               onChange={(e) => handleInputChange('startDate', e.target.value)}
               className="bg-background"
             />
-            <Input 
+            <Input
               label="Fecha Hasta"
               type="date"
               value={filters?.endDate || ''}
@@ -185,7 +185,7 @@ const FilterPanel = ({
 
           <div className="pt-4 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative" ref={dropdownRef}>
-              <Input 
+              <Input
                 label="Empresa"
                 placeholder={isLoadingEmpresas ? "Cargando..." : "Escribe para buscar..."}
                 value={filters?.company || ''}
@@ -194,7 +194,7 @@ const FilterPanel = ({
                 disabled={isLoadingEmpresas}
                 className="w-full bg-background"
               />
-              
+
               {showDropdown && filteredEmpresas.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-52 overflow-y-auto">
                   {filteredEmpresas.map((nombre, index) => (
@@ -210,12 +210,12 @@ const FilterPanel = ({
                 </div>
               )}
             </div>
-            
-            <Input 
-              label="Enviado por" 
-              placeholder="Nombre del usuario..." 
-              value={filters?.submittedBy || ''} 
-              onChange={(e) => handleInputChange('submittedBy', e.target.value)} 
+
+            <Input
+              label="Enviado por"
+              placeholder="Nombre del usuario..."
+              value={filters?.submittedBy || ''}
+              onChange={(e) => handleInputChange('submittedBy', e.target.value)}
               className="bg-background"
             />
           </div>
