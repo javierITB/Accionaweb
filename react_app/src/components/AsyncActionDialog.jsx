@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import LoadingCard from "../clientPages/components/LoadingCard.jsx";
+import LoadingCard from "./LoadingCard.jsx";
 import Icon from "./AppIcon.jsx";
 
 export default function AsyncActionDialog({

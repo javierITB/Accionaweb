@@ -3,7 +3,7 @@ import Header from '../components/ui/Header';
 import QuickActionsCard from './components/QuickActionsCard';
 import { API_BASE_URL, apiFetch } from '../../utils/api';
 import Footer from '../components/ui/Footer';
-import LoadingCard from 'clientPages/components/LoadingCard';
+import LoadingCard from 'components/LoadingCard';
 import AsyncActionDialog from "@/components/AsyncActionDialog";
 import useAsyncDialog from "hooks/useAsyncDialog";
 

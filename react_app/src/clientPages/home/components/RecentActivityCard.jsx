@@ -7,7 +7,7 @@ import MessageModal from "./components/MessageModal";
 import ShareModal from "./components/ShareModal";
 import RequestDetails from "./components/RequestDetails";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
-import LoadingCard from "clientPages/components/LoadingCard";
+import LoadingCard from "components/LoadingCard";
 
 const RequestTracking = () => {
    const urlParams = new URLSearchParams(window.location.search);

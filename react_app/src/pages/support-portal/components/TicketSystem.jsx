@@ -5,7 +5,7 @@ import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Select from "../../../components/ui/Select";
 import BackButton from "@/clientPages/components/BackButton.jsx";
-import LoadingCard from "clientPages/components/LoadingCard";
+import LoadingCard from "components/LoadingCard";
 
 const TicketSystem = () => {
    const [activeTab, setActiveTab] = useState("create");

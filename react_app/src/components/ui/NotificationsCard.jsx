@@ -3,7 +3,7 @@ import Icon from "../../components/AppIcon.jsx";
 import Button from "../../components/ui/Button";
 import { API_BASE_URL } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
-import LoadingCard from "clientPages/components/LoadingCard.jsx";
+import LoadingCard from "components/LoadingCard.jsx";
 
 const NotificationsCard = ({ user, onUnreadChange }) => {
    const [notifications, setNotifications] = useState([]);

@@ -2,7 +2,7 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import { API_BASE_URL, apiFetch } from '../../../utils/api';
 import { useState, useEffect } from 'react';
-import LoadingCard from 'clientPages/components/LoadingCard';
+import LoadingCard from 'components/LoadingCard';
 import { useNavigate } from 'react-router-dom';
 const QuickActionsCard = ({ section }) => {
   const [allForms, setAllForms] = useState([]);

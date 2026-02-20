@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { API_BASE_URL, CURRENT_TENANT } from "../utils/api";
-import LoadingCard from "../clientPages/components/LoadingCard";
+import LoadingCard from "./LoadingCard";
 
 export default function ProtectedRoute({ children, permission }) {
    const [loading, setLoading] = useState(true);

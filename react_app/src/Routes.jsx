@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import { BrowserRouter, Routes as RouterRoutes, Route } from "react-router-dom";
 import ScrollToTop from "./components/ScrollToTop.jsx";
-import LoadingCard from "./clientPages/components/LoadingCard.jsx";
+import LoadingCard from "./components/LoadingCard.jsx";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";

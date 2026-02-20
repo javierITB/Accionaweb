@@ -4,7 +4,7 @@ import Header from "../../components/ui/Header";
 import Sidebar from "../../components/ui/Sidebar";
 import Icon from "../../components/AppIcon";
 import Button from "../../components/ui/Button";
-import LoadingCard from "clientPages/components/LoadingCard";
+import LoadingCard from "components/LoadingCard";
 import { Navigate } from "react-router-dom";
 
 const CompanyReg = ({ userPermissions = [] }) => {

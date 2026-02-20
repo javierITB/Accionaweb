@@ -6,7 +6,7 @@ import RegisterForm from "./components/RegisterForm";
 import Icon from "../../components/AppIcon";
 import Button from "../../components/ui/Button";
 import { Navigate } from "react-router-dom";
-import LoadingCard from "clientPages/components/LoadingCard";
+import LoadingCard from "components/LoadingCard";
 
 const FormReg = ({ userPermissions = [] }) => {
    // --- LÓGICA DE PERMISOS BASADA EN PROPS ---

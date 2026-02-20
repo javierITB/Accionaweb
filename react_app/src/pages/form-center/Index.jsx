@@ -9,7 +9,7 @@ import SearchBar from "./components/SearchBar";
 import { API_BASE_URL, apiFetch } from "../../utils/api";
 import { useMemo } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import LoadingCard from "clientPages/components/LoadingCard";
+import LoadingCard from "components/LoadingCard";
 
 const FormCenter = ({ userPermissions = {} }) => {
    const [searchQuery, setSearchQuery] = useState("");

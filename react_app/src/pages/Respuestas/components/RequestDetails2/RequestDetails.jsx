@@ -13,7 +13,7 @@ import {
 } from "../../../utils/ticketStatusStyles";
 
 import TimelineView from "../components/TimelineView";
-import LoadingCard from "clientPages/components/LoadingCard";
+import LoadingCard from "components/LoadingCard";
 
 // Límites configurados
 const MAX_FILES = 5; // Máximo de archivos

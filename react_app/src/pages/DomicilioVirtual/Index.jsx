@@ -32,7 +32,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isMobileScreen, setIsMobileScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
     const [viewMode, setViewMode] = useState('grid');
-    const [showFilters, setShowFilters] = useState(true);
+    const [showFilters, setShowFilters] = useState(false);
 
     // --- ESTADOS DE DATOS ---
     const [resp, setResp] = useState([]);

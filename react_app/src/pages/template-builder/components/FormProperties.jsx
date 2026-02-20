@@ -3,7 +3,7 @@ import Icon from "../../../components/AppIcon";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import { API_BASE_URL, apiFetch } from "../../../utils/api";
-import LoadingCard from "clientPages/components/LoadingCard";
+import LoadingCard from "components/LoadingCard";
 
 const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
    const [allForms, setAllForms] = useState([]);
