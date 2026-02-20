@@ -54,14 +54,14 @@ export default function ProtectedRoute({ children }) {
             } else {
                // --- INTEGRACIÓN: Volver a Vista A sin cerrar sesión ---
                alert("No tienes permisos para acceder a esta sección.");
-               
+
                if (window.history.length > 1) {
                   navigate(-1);
 
                } else {
-                 navigate("/")
+                  navigate("/")
                }
-               
+
                // No ejecutamos sessionStorage.clear() ni setIsAuth(false) 
                // para que el usuario mantenga su sesión activa en la vista anterior.
             }
@@ -81,19 +81,10 @@ export default function ProtectedRoute({ children }) {
       validarToken();
    }, []); // Se mantiene el array de dependencias original
 
- useEffect(() => {
-      const theme = localStorage.getItem("theme");
-      if (theme === "dark") {
-         document.documentElement.classList.remove("dark");
-      }
-
-      return () => {
-         if (theme === "dark") {
-            document.documentElement.classList.add("dark");
-         }
-      };
+   useEffect(() => {
+      document.documentElement.classList.remove("dark");
    }, []);
-   
+
    if (loading) {
       return (
          <div className="flex items-center justify-center h-screen">
