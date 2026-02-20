@@ -1,48 +1,12 @@
 import React, { Suspense } from "react";
 import { BrowserRouter, Routes as RouterRoutes, Route } from "react-router-dom";
 import ScrollToTop from "./components/ScrollToTop.jsx";
-import LoadingCard from "clientPages/components/LoadingCard.jsx";
+import LoadingCard from "./clientPages/components/LoadingCard.jsx";
 import ErrorBoundary from "./components/ErrorBoundary";
+
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ProtectedClient from "./clientPages/components/ProtectedClient.jsx";
 import { PermissionsProvider } from "./context/PermissionsContext.jsx";
-
-// import NotFound from "./pages/NotFound";
-// import FormCenter from './pages/form-center/Index.jsx';
-// import TicketConfig from './pages/ticket-config/Index.jsx';
-// import TicketBuilder from './pages/ticket-builder/Index.jsx';
-// import FormBuilder from './pages/form-builder/Index.jsx';
-// import TemplateBuilder from './pages/template-builder/Index.jsx';
-// import Login from './pages/login/Index.jsx';
-// import PanelEntry from './components/PanelEntry.jsx';
-// import Recuperacion from './pages/login/Recuperacion.jsx';
-// import SupportPortal from './pages/support-portal/Index.jsx';
-// import DashboardHome from './pages/dashboard-home/Index.jsx';
-// import RequestTracking from './pages/request-tracking/Index.jsx';
-// import RespuestasForms from './pages/Respuestas/Index.jsx';
-// import AdminTickets from './pages/Tickets/Index.jsx';
-// import Users from './pages/users/Index.jsx';
-// import Empresas from './pages/empresas/Index.jsx';
-// import Ingresos from './pages/Ingresos/Index.jsx';
-// import Roles from './pages/dashboard-roles/Index.jsx';
-// import EmpresasDashboard from './pages/dashboard-empresas/Index.jsx';
-// import Registro from './pages/registro/Index.jsx';
-// import SetPassword from './pages/users/components/SetPassword.jsx';
-// import Solicitudes from './pages/solicitudes/Index.jsx';
-// import DomicilioVirtualIndex from './pages/DomicilioVirtual/Index.jsx';
-// import AdminNotificationManager from './pages/config-notificaciones/Index.jsx';
-// import Anuncios from './pages/anuncios/Index.jsx';
-// import PagosIndex from './pages/pagos/Index.jsx';
-// import RegistroEmpresas from "pages/registroEmpresas/registroEmpresas.jsx";
-
-// import Home from './clientPages/home/Index.jsx';
-// import FormList from './clientPages/FormList/Index.jsx';
-// import Form from './clientPages/formulario/Index.jsx';
-// import Profile from './clientPages/profile/Index.jsx';
-// import PublicPreview from './pages/public/PublicPreview.jsx';
-
-// import ComprobantesIndex from "./pages/comprobantes/Index";
-// import UploadComprobante from "./pages/comprobantes/Upload";
 
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 const FormCenter = React.lazy(() => import("./pages/form-center/Index.jsx"));
@@ -72,7 +36,7 @@ const Anuncios = React.lazy(() => import("./pages/anuncios/Index.jsx"));
 const PagosIndex = React.lazy(() => import("./pages/pagos/Index.jsx"));
 const RegistroEmpresas = React.lazy(() => import("pages/registroEmpresas/registroEmpresas.jsx"));
 
-// Client pages
+// Client
 const Home = React.lazy(() => import("./clientPages/home/Index.jsx"));
 const FormList = React.lazy(() => import("./clientPages/FormList/Index.jsx"));
 const Form = React.lazy(() => import("./clientPages/formulario/Index.jsx"));
@@ -82,7 +46,7 @@ const PublicPreview = React.lazy(() => import("./pages/public/PublicPreview.jsx"
 const ComprobantesIndex = React.lazy(() => import("./pages/comprobantes/Index"));
 const UploadComprobante = React.lazy(() => import("./pages/comprobantes/Upload"));
 
-// 👇 helper reutilizable
+// helper reutilizable
 const LazyPage = ({ children, text }) => (
    <Suspense fallback={<LoadingCard text={text || "Cargando"} />}>{children}</Suspense>
 );
@@ -106,9 +70,9 @@ const Routes = () => {
                   <Route
                      path="/"
                      element={
-                           <LazyPage text="Cargando inicio">
-                              <Home />
-                           </LazyPage>
+                        <LazyPage text="Cargando inicio">
+                           <Home />
+                        </LazyPage>
                      }
                   />
 
@@ -121,55 +85,57 @@ const Routes = () => {
                      }
                   />
 
+                  {/* Rutas Clientes - ProtectedClient */}
+
                   <Route
                      path="/Remuneraciones"
                      element={
-                        <ProtectedClient>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedClient>
                               <FormList section="Remuneraciones" />
-                           </LazyPage>
-                        </ProtectedClient>
+                           </ProtectedClient>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/Finiquitos"
                      element={
-                        <ProtectedClient>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedClient>
                               <FormList section="Finiquitos" />
-                           </LazyPage>
-                        </ProtectedClient>
+                           </ProtectedClient>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/Anexos"
                      element={
-                        <ProtectedClient>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedClient>
                               <FormList section="Anexos" />
-                           </LazyPage>
-                        </ProtectedClient>
+                           </ProtectedClient>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/Otras"
                      element={
-                        <ProtectedClient>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedClient>
                               <FormList section="Otras" />
-                           </LazyPage>
-                        </ProtectedClient>
+                           </ProtectedClient>
+                        </LazyPage>
                      }
                   />
 
                   <Route
                      path="/forms"
                      element={
-                        <ProtectedClient>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedClient>
                               <Form />
-                           </LazyPage>
-                        </ProtectedClient>
+                           </ProtectedClient>
+                        </LazyPage>
                      }
                   />
                   <Route
@@ -183,21 +149,21 @@ const Routes = () => {
                   <Route
                      path="/perfil"
                      element={
-                        <ProtectedClient>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedClient>
                               <Profile />
-                           </LazyPage>
-                        </ProtectedClient>
+                           </ProtectedClient>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/soporte"
                      element={
-                        <ProtectedClient>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedClient>
                               <SupportPortal />
-                           </LazyPage>
-                        </ProtectedClient>
+                           </ProtectedClient>
+                        </LazyPage>
                      }
                   />
                   <Route
@@ -214,255 +180,255 @@ const Routes = () => {
                   <Route
                      path="/panel"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <PanelEntry />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/form-builder"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <FormBuilder />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/template-builder"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <TemplateBuilder />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/form-center"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <FormCenter />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/DomicilioVirtual"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <DomicilioVirtualIndex />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/RespuestasForms"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <RespuestasForms />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/Tickets"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <AdminTickets />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/registro-ingresos"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <Ingresos />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/registro-cambios"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <Registro />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/gestor-roles"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <Roles />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/gestor-empresas"
                      element={
-                        <ProtectedRoute permission="view_gestor_empresas">
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute permission="view_gestor_empresas">
                               <EmpresasDashboard />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/config-notificaciones"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <AdminNotificationManager />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/config-planes"
                      element={
-                        <ProtectedRoute permission="view_gestor_empresas">
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute permission="view_gestor_empresas">
                               <EmpresasDashboard />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/registro-empresas"
                      element={
-                        <ProtectedRoute permission="view_acceso_registro_empresas">
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute permission="view_acceso_registro_empresas">
                               <RegistroEmpresas />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
 
                   <Route
                      path="/users"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <Users />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
 
                   <Route
                      path="/comprobantes"
                      element={
-                        <ProtectedRoute permission="view_comprobantes">
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute permission="view_comprobantes">
                               <ComprobantesIndex />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
 
                   <Route
                      path="/comprobantes/subir"
                      element={
-                        <ProtectedRoute permission="view_comprobantes">
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute permission="view_comprobantes">
                               <UploadComprobante />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
 
                   <Route
                      path="/empresas"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <Empresas />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/dashboard-home"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <DashboardHome />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/request-tracking"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <RequestTracking />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/solicitudes"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <Solicitudes />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/anuncios"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <Anuncios />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/pagos"
                      element={
-                        <ProtectedRoute permission="view_pagos">
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute permission="view_pagos">
                               <PagosIndex />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/ticket-builder"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <TicketBuilder />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
                   <Route
                      path="/config-tickets"
                      element={
-                        <ProtectedRoute>
-                           <LazyPage>
+                        <LazyPage>
+                           <ProtectedRoute>
                               <TicketConfig />
-                           </LazyPage>
-                        </ProtectedRoute>
+                           </ProtectedRoute>
+                        </LazyPage>
                      }
                   />
 
