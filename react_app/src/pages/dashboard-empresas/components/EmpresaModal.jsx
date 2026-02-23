@@ -222,8 +222,14 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
    const isAdminPanelEnabled = formData.permissions.includes("view_panel_admin");
 
    return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-         <div className="bg-card rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-border animate-in fade-in zoom-in duration-200">
+      <div
+         className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+         onClick={onClose}
+      >
+         <div
+            className="bg-card rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-border animate-in fade-in zoom-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+         >
             {/* HEADER */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
@@ -241,22 +247,7 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
                <div className="grid grid-cols-1 gap-4">
                   <div>
-                     <label className="text-sm font-medium text-muted-foreground mb-1 block">Plan Global</label>
-                     <select
-                        value={formData.planId}
-                        onChange={(e) => handlePlanChange(e.target.value)}
-                        className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none appearance-none"
-                     >
-                        <option value="">{customSourceLabel || "-- Personalizado / Sin Plan --"}</option>
-                        {plans.map(p => (
-                           <option key={p._id} value={p._id}>{p.name}</option>
-                        ))}
-                     </select>
-                     {formData.planId && <p className="text-xs text-indigo-400 mt-1">Los permisos y límites son gestionados por el plan seleccionado.</p>}
-                  </div>
-
-                  <div>
-                     <label className="text-sm font-medium text-muted-foreground mb-1 block">Nombre de la Empresa (Base de Datos)</label>
+                     <label className="text-sm font-medium text-muted-foreground mb-1 block">Nombre de la Empresa</label>
                      <input
                         type="text"
                         placeholder="Ej: Constructora Del Sur"
@@ -268,20 +259,34 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                         disabled={!!company}
                         className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none disabled:opacity-50"
                      />
-                     <p className="text-xs text-muted-foreground mt-1">
-                        {company
-                           ? `Base de datos: ${company.dbName || "..."}`
-                           : <>Esto creará una base de datos física llamada <strong>{formData.name.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase() || "..."}</strong></>
-                        }
-                     </p>
                      {!company && (
-                        <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-start gap-3">
-                           <Server size={18} className="text-blue-500 shrink-0 mt-0.5" />
-                           <p className="text-xs text-blue-700 leading-relaxed">
-                              <strong>Plantilla activa:</strong> Esta nueva empresa se creará clonando los formularios, plantillas, roles y usuarios base desde la base de datos <strong>desarrollo</strong>.
+                        <>
+                           <p className="text-xs text-muted-foreground mt-1">
+                              Asigne el nombre comercial para identificar esta empresa.
                            </p>
-                        </div>
+                           <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-start gap-3">
+                              <Server size={18} className="text-blue-500 shrink-0 mt-0.5" />
+                              <p className="text-xs text-blue-700 leading-relaxed">
+                                 <strong>Plantilla activa:</strong> Esta nueva empresa se creará clonando los formularios, plantillas, roles y usuarios base desde la base de datos <strong>desarrollo</strong>.
+                              </p>
+                           </div>
+                        </>
                      )}
+                  </div>
+
+                  <div>
+                     <label className="text-sm font-medium text-muted-foreground mb-1 block">Plan Asignado</label>
+                     <select
+                        value={formData.planId}
+                        onChange={(e) => handlePlanChange(e.target.value)}
+                        className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none appearance-none"
+                     >
+                        <option value="">{customSourceLabel || "-- Personalizado / Sin Plan --"}</option>
+                        {plans.map(p => (
+                           <option key={p._id} value={p._id}>{p.name}</option>
+                        ))}
+                     </select>
+                     {formData.planId && <p className="text-xs text-indigo-400 mt-1">Los permisos y límites son gestionados por el plan seleccionado.</p>}
                   </div>
                </div>
 
@@ -452,36 +457,40 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                )}
             </div>
 
-            <div className="px-6 py-4 border-t border-border flex justify-end gap-3 bg-muted/10 shrink-0">
-               <Button
-                  onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-muted-foreground"
-                  variant="outlineTeal"
-               >
-                  Cerrar
-               </Button>
-
-               <button
-                  onClick={handleSubmit}
-                  disabled={isSaving || !formData.name || isSuccess}
-                  className="px-8 py-2 bg-accent text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20 min-w-[200px] transition-all duration-200"
-               >
-                  {isSaving ? (
-                     <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Guardando...
-                     </>
-                  ) : isSuccess ? (
-                     <>
-                        <Check size={16} />
-                        Guardado Exitosamente
-                     </>
-                  ) : company ? (
-                     "Actualizar Empresa"
-                  ) : (
-                     "Crear Empresa"
+            <div className="px-6 py-4 border-t border-border flex justify-between items-center bg-muted/10 shrink-0">
+               <div>
+                  {company && (
+                     <button
+                        onClick={() => alert("Función de suspensión (Front-only por ahora)")}
+                        className="px-6 py-2 text-xs font-black uppercase bg-red-600 text-white hover:bg-red-700 rounded-xl transition-all shadow-lg shadow-red-600/20 active:scale-95"
+                     >
+                        Suspender servicio
+                     </button>
                   )}
-               </button>
+               </div>
+               <div className="flex gap-3">
+                  <button
+                     onClick={handleSubmit}
+                     disabled={isSaving || !formData.name || isSuccess}
+                     className="px-8 py-2 bg-accent text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20 min-w-[200px] transition-all duration-200"
+                  >
+                     {isSaving ? (
+                        <>
+                           <Loader2 size={16} className="animate-spin" />
+                           Guardando...
+                        </>
+                     ) : isSuccess ? (
+                        <>
+                           <Check size={16} />
+                           Guardado Exitosamente
+                        </>
+                     ) : company ? (
+                        "Actualizar Empresa"
+                     ) : (
+                        "Crear Empresa"
+                     )}
+                  </button>
+               </div>
             </div>
          </div>
       </div>

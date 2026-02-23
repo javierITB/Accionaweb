@@ -286,8 +286,14 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
     const isAdminPanelEnabled = permissions.includes("view_panel_admin");
     const isClientPanelEnabled = permissions.includes("view_panel_cliente");
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-            <div className="bg-card rounded-2xl shadow-2xl w-full max-w-4xl h-[700px] max-h-[90vh] flex flex-col border border-border overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <div
+                className="bg-card rounded-2xl shadow-2xl w-full max-w-4xl h-[700px] max-h-[90vh] flex flex-col border border-border overflow-hidden animate-in fade-in zoom-in duration-200"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* HEADER */}
                 {/* HEADER */}
                 <div className="relative h-28 bg-gradient-to-r from-blue-600 to-indigo-700 flex items-center justify-between px-8 shrink-0">
@@ -296,7 +302,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                         {/* Name Input */}
                         <div className="flex-1 space-y-1.5 group">
                             <label className="text-[10px] font-bold text-blue-100 uppercase tracking-wider opacity-60 pl-1 group-hover:opacity-100 transition-opacity">
-                                Nombre del Plan Global
+                                Nombre del Plan
                             </label>
                             <input
                                 type="text"
@@ -583,7 +589,6 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                         )}
                     </div>
                     <div className="flex gap-3">
-                        <button onClick={onClose} className="px-5 py-2.5 text-xs font-bold uppercase text-muted-foreground hover:text-foreground tracking-widest transition-colors">Cancelar</button>
                         <button onClick={handleSubmit} disabled={isSaving || isSuccess || !name} className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl disabled:opacity-50 transition-all active:scale-95 shadow-lg shadow-indigo-600/20 flex items-center gap-2">
                             {isSaving ? <Loader2 size={14} className="animate-spin" /> : isSuccess ? <Check size={14} /> : <Save size={14} />}
                             {isSuccess ? "Guardado" : "Guardar Plan"}
