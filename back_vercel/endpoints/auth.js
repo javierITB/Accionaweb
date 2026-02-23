@@ -38,7 +38,7 @@ const verifyRequest = async (req) => {
    return validation;
 };
 
-const TOKEN_EXPIRATION = 12 * 1000 * 60 * 60;
+const TOKEN_EXPIRATION = 4 * 1000 * 60 * 60;
 const RECOVERY_CODE_EXPIRATION = 15 * 60 * 1000;
 
 const upload = multer({
