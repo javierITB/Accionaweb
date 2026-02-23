@@ -1664,7 +1664,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                               type="file"
                               ref={fileInputRef}
                               onChange={handleFileSelect}
-                              accept=".pdf"
+                              /* Se agregan extensiones y tipos MIME para Excel y JPG */
+                              accept=".pdf, .jpg, .jpeg, .xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, image/jpeg"
                               multiple
                               className="hidden"
                            />
@@ -2191,8 +2192,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                                                          setIsStatusDropdownOpen(false);
                                                       }}
                                                       className={`w-full text-left px-3 py-2 text-sm rounded-md flex items-center space-x-3 transition-colors ${currentStatus === st.value
-                                                            ? "bg-accent/10 text-accent font-medium"
-                                                            : "hover:bg-accent/5 text-foreground"
+                                                         ? "bg-accent/10 text-accent font-medium"
+                                                         : "hover:bg-accent/5 text-foreground"
                                                          }`}
                                                    >
                                                       <Icon
@@ -2253,8 +2254,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   <button
                      onClick={() => setActiveTab("details")}
                      className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "details"
-                           ? "border-accent text-accent"
-                           : "border-transparent text-muted-foreground hover:text-foreground"
+                        ? "border-accent text-accent"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
                         }`}
                      title="Ver detalles de la solicitud"
                   >
@@ -2263,8 +2264,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                   <button
                      onClick={() => setActiveTab("chronology")}
                      className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "chronology"
-                           ? "border-accent text-accent"
-                           : "border-transparent text-muted-foreground hover:text-foreground"
+                        ? "border-accent text-accent"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
                         }`}
                      title="Ver detalles de la solicitud"
                   >
@@ -2274,8 +2275,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      <button
                         onClick={() => setActiveTab("responses")}
                         className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "responses"
-                              ? "border-accent text-accent"
-                              : "border-transparent text-muted-foreground hover:text-foreground"
+                           ? "border-accent text-accent"
+                           : "border-transparent text-muted-foreground hover:text-foreground"
                            }`}
                         title="Ver respuestas del formulario"
                      >
@@ -2286,8 +2287,8 @@ Máximo permitido: ${MAX_FILES} archivos.`;
                      <button
                         onClick={() => setActiveTab("shared")}
                         className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === "shared"
-                              ? "border-accent text-accent"
-                              : "border-transparent text-muted-foreground hover:text-foreground"
+                           ? "border-accent text-accent"
+                           : "border-transparent text-muted-foreground hover:text-foreground"
                            }`}
                         title="Ver usuarios con acceso"
                      >
