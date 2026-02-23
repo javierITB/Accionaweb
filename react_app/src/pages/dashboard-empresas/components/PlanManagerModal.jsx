@@ -291,7 +291,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
             onClick={onClose}
         >
             <div
-                className="bg-card rounded-2xl shadow-2xl w-full max-w-4xl h-[700px] max-h-[90vh] flex flex-col border border-border overflow-hidden animate-in fade-in zoom-in duration-200"
+                className="bg-card rounded-2xl shadow-2xl w-[90vw] max-w-5xl h-[90vh] flex flex-col border border-border overflow-hidden animate-in fade-in zoom-in duration-200"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* HEADER */}
@@ -309,7 +309,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Ej: Plan Corp"
-                                className="w-full h-12 bg-white/10 border border-white/10 rounded-xl px-4 text-white placeholder:text-white/30 font-bold focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/20 transition-all text-base"
+                                className="w-full h-12 bg-white/10 border border-white/20 rounded-lg px-4 text-white placeholder:text-white/30 font-bold focus:outline-none focus:border-white/40 focus:bg-white/20 transition-all text-base"
                                 autoFocus={!plan}
                             />
                         </div>
@@ -332,7 +332,7 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                                         setPrice(rawValue);
                                     }}
                                     placeholder="0"
-                                    className="w-full h-full bg-white/10 border border-white/10 rounded-xl pl-12 pr-14 text-white placeholder:text-white/30 font-bold focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/20 transition-all text-base text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    className="w-full h-full bg-white/10 border border-white/20 rounded-lg pl-12 pr-14 text-white placeholder:text-white/30 font-bold focus:outline-none focus:border-white/40 focus:bg-white/20 transition-all text-base text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                                 <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
                                     <span className="text-white font-black text-xs opacity-90 tracking-tighter -translate-y-[1px]">
@@ -608,7 +608,7 @@ function InputGroup({ label, value, onChange, icon }) {
                 {icon && <span className="opacity-70 text-indigo-500">{icon}</span>}
                 {label}
             </label>
-            <div className="flex items-center bg-background border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all h-11 shadow-sm">
+            <div className="flex items-center bg-transparent border border-border rounded-lg focus-within:border-indigo-500 transition-all h-11">
                 <input
                     type="number"
                     value={value}
