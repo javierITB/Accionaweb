@@ -110,16 +110,16 @@ router.post("/admin/generate-charges", verifyAuth, async (req, res) => {
         // Enviar Notificaciones
         for (const company of companies) {
             const chargeAmount = parseFloat(company.amount || amount) || 0;
-            await addNotification(db, {
+            const clientDb = req.mongoClient.db(company.dbName);
+            await addNotification(clientDb, {
                 filtro: {
-                    empresa: company.name,
                     cargo: "Administrador" // Solo Administradores
                 },
                 titulo: "Nuevo cobro generado",
                 descripcion: `Se ha generado un nuevo cobro por $${chargeAmount} (${concept}).`,
                 color: "#ef4444",
                 icono: "paper",
-                actionUrl: "/pagos"
+                actionUrl: "/comprobantes"
             }).catch(err => console.error(`Error sending notification to ${company.name}:`, err));
         }
 
@@ -376,6 +376,28 @@ router.post("/client/upload/:chargeId", verifyAuth, upload.single("file"), async
 
         if (updateResult.modifiedCount === 0) {
             return res.status(500).json({ error: "No se pudo actualizar el cobro." });
+        }
+
+        // --- NOTIFICACIÓN AL ADMINISTRADOR DE ACCIONA ---
+        try {
+            const formsDb = req.mongoClient.db("formsdb");
+
+            // Buscar el nombre real de la empresa
+            const company = await formsDb.collection("config_empresas").findOne({ dbName: charge.companyDb });
+            const companyName = company ? company.name : (charge.companyDb || "Una empresa");
+
+            await addNotification(formsDb, {
+                filtro: {
+                    cargo: "Administrador" // Informamos a los administradores principales
+                },
+                titulo: "Comprobante de pago subido",
+                descripcion: `La empresa ${companyName} ha subido un comprobante para el cobro de $${charge.amount} (${charge.concept}).`,
+                color: "#3b82f6",
+                icono: "paper",
+                actionUrl: "/pagos"
+            });
+        } catch (notifErr) {
+            console.error("Error notifying formsdb admin of uploaded receipt:", notifErr);
         }
 
         res.json({ message: "Comprobante subido exitosamente.", status: "En Revisión" });

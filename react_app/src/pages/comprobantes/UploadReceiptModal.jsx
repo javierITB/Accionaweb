@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import { apiFetch } from '../../utils/api';
@@ -7,6 +7,15 @@ const UploadReceiptModal = ({ isOpen, onClose, charge, onSuccess }) => {
     const [file, setFile] = useState(null);
     const [loading, setLoading] = useState(false);
     const [dragging, setDragging] = useState(false);
+
+    // Reset state when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setFile(null);
+            setLoading(false);
+            setDragging(false);
+        }
+    }, [isOpen, charge]);
 
     if (!isOpen || !charge) return null;
 
