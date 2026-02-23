@@ -320,12 +320,25 @@ const RolesView = ({ userPermissions = {} }) => {
                                  )}
 
                                  {!isAdmin && !isMaestro && permisos.delete_gestor_roles && (
-                                    <button
-                                       onClick={() => handleDelete(role._id)}
-                                       className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                                    >
-                                       <Trash2 size={16} />
-                                    </button>
+                                    <div className="relative group/delete">
+                                       <button
+                                          onClick={() => {
+                                             if (role.count === 0) handleDelete(role._id);
+                                          }}
+                                          disabled={role.count > 0}
+                                          className={`p-1.5 rounded-lg transition-colors ${role.count > 0
+                                             ? "text-muted-foreground/30 cursor-not-allowed"
+                                             : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                             }`}
+                                       >
+                                          <Trash2 size={16} />
+                                       </button>
+                                       {role.count > 0 && (
+                                          <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg opacity-0 invisible group-hover/delete:opacity-100 group-hover/delete:visible transition-all z-10 pointer-events-none text-center border border-border">
+                                             No se puede eliminar porque hay {role.count} usuario(s) con este rol.
+                                          </div>
+                                       )}
+                                    </div>
                                  )}
                               </div>
 

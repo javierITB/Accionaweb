@@ -205,10 +205,27 @@ router.delete("/:id", async (req, res) => {
       }
 
       // 2. Verificar si hay usuarios con este rol antes de borrar
-      // Nota: Aquí buscamos en tu colección de 'usuarios'
-      const usersCount = await req.db.collection("usuarios").countDocuments({
-         roleId: roleId,
-      });
+      // Buscar en 'usuarios' y desencriptar el 'cargo'
+      const users = await req.db
+         .collection("usuarios")
+         .find(
+            {},
+            {
+               projection: {
+                  cargo: 1,
+               },
+            },
+         )
+         .toArray();
+
+      const usersCount = users.filter((u) => {
+         try {
+            const decCargo = decrypt(u.cargo);
+            return decCargo === roleToDelete.name;
+         } catch {
+            return u.cargo === roleToDelete.name;
+         }
+      }).length;
 
       if (usersCount > 0) {
          return res.status(400).json({
