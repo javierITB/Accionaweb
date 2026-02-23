@@ -25,7 +25,8 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
    const [formData, setFormData] = useState({
       name: "",
       permissions: [], // Array de strings con los IDs de permisos individuales
-      planId: ""
+      planId: "",
+      isSuspended: false
    });
 
    useEffect(() => {
@@ -41,14 +42,16 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
             id: company.name, // Usamos el nombre como ID
             name: company.name,
             permissions: company.permissions || [],
-            planId: company.planId || ""
+            planId: company.planId || "",
+            isSuspended: company.isSuspended || false
          });
          setCustomSourceLabel(null);
       } else {
          setFormData({
             name: "",
             permissions: DEFAULT_LOCKED_PERMISSIONS, // Preseleccionar permisos bloqueados
-            planId: ""
+            planId: "",
+            isSuspended: false
          });
          setCustomSourceLabel(null);
       }
@@ -191,7 +194,8 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
          const payload = {
             name: formData.name,
             permissions: formData.permissions,
-            planId: formData.planId || null
+            planId: formData.planId || null,
+            isSuspended: formData.isSuspended
          };
 
          // Si existe company, es edición (PUT), si no, creación (POST)
@@ -461,10 +465,13 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                <div>
                   {company && (
                      <button
-                        onClick={() => alert("Función de suspensión (Front-only por ahora)")}
-                        className="px-6 py-2 text-xs font-black uppercase bg-red-600 text-white hover:bg-red-700 rounded-xl transition-all shadow-lg shadow-red-600/20 active:scale-95"
+                        onClick={() => setFormData({ ...formData, isSuspended: !formData.isSuspended })}
+                        className={`px-6 py-2 text-xs font-black uppercase text-white rounded-xl transition-all shadow-lg active:scale-95 flex items-center gap-2 ${formData.isSuspended
+                           ? "bg-green-600 hover:bg-green-700 shadow-green-600/20"
+                           : "bg-red-600 hover:bg-red-700 shadow-red-600/20"
+                           }`}
                      >
-                        Suspender servicio
+                        {formData.isSuspended ? "Reactivar servicio" : "Suspender servicio"}
                      </button>
                   )}
                </div>

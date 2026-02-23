@@ -106,6 +106,7 @@ router.get("/companies", verifyRequest, async (req, res) => {
                     active: 1,
                     isSystem: 1,
                     logo: 1, // Si existe
+                    isSuspended: 1,
                     plan: {
                         _id: 1,
                         name: 1,
@@ -257,7 +258,7 @@ router.put("/companies/:id", verifyRequest, async (req, res) => {
     try {
         // (Validado por verifyRequest)
         const { id } = req.params;
-        const { permissions, planId, name } = req.body;
+        const { permissions, planId, name, isSuspended } = req.body;
         const { ObjectId } = require("mongodb");
 
         const dbForms = getFormsDB(req);
@@ -278,6 +279,8 @@ router.put("/companies/:id", verifyRequest, async (req, res) => {
         let newPermissions = permissions;
         let newPlanLimits = req.body.planLimits;
         let newPlanId = planId;
+        // Si no se envía isSuspended, se mantiene el valor actual
+        let newIsSuspended = isSuspended !== undefined ? isSuspended : company.isSuspended;
 
         // Si se asigna un Plan, sobrescribimos valores
         if (planId && planId !== company.planId) {
@@ -295,13 +298,16 @@ router.put("/companies/:id", verifyRequest, async (req, res) => {
         if (newPlanLimits !== undefined) updateData.planLimits = newPlanLimits;
         if (newPlanId !== undefined) updateData.planId = newPlanId;
         if (name) updateData.name = name;
+        if (newIsSuspended !== undefined) updateData.isSuspended = newIsSuspended;
 
         await dbForms.collection("config_empresas").updateOne(query, {
             $set: updateData
         });
 
-        // 2. Sincronizar DB del cliente
+        // Agregamos el estado actualizado al objeto de la empresa para la sincronización
+        company.isSuspended = newIsSuspended;
 
+        // 2. Sincronizar DB del cliente
         await syncCompanyConfiguration(req, company, newPermissions, newPlanLimits);
 
         res.json({ message: "Empresa actualizada exitosamente" });

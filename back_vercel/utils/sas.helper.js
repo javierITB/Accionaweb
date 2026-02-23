@@ -14,12 +14,25 @@ async function syncCompanyConfiguration(req, company, permissions, planLimits) {
         return; // No sincronizamos configuraciones internas en formsdb o si no tiene DB
     }
 
-    console.log(`[SAS-Sync] Syncing configuration for DB: ${company.dbName}`);
     const targetDb = req.mongoClient.db(company.dbName);
 
+    // --- IMPLEMENTACIÓN DE SUSPENSIÓN ---
+    // Si la empresa está suspendida, forzamos los permisos a SOLO los de comprobantes y acceso admin.
+    // Guardamos original para no afectar por referencia
+    let activePermissions = permissions;
+
+    if (company.isSuspended) {
+        console.log(`[SAS-Sync] ATENCIÓN: La empresa ${company.name} está SUSPENDIDA. Restringiendo permisos.`);
+        activePermissions = [
+            'view_panel_admin',
+            'view_comprobantes',
+            'create_comprobantes'
+        ];
+    }
+
     // 1. Sincronizar ROLES y PERMISOS
-    if (permissions) {
-        console.log(`[SAS-Sync] Updating roles with ${permissions.length} active permissions`);
+    if (activePermissions) {
+        console.log(`[SAS-Sync] Updating roles with ${activePermissions.length} active permissions`);
 
         // A. Regenerar config_roles (Definición de qué permisos están disponibles en el sistema)
         // Limpiar config_roles actual
@@ -32,7 +45,7 @@ async function syncCompanyConfiguration(req, company, permissions, planLimits) {
         Object.entries(PERMISSION_GROUPS).forEach(([key, group]) => {
             if (SYSTEM_ONLY_GROUPS.includes(key)) return;
 
-            const groupPermissionsIncluded = group.permissions.filter(p => permissions.includes(p.id));
+            const groupPermissionsIncluded = group.permissions.filter(p => activePermissions.includes(p.id));
             if (groupPermissionsIncluded.length > 0) {
                 rolesConfig.push({
                     key: key,
@@ -63,21 +76,22 @@ async function syncCompanyConfiguration(req, company, permissions, planLimits) {
                     }
                 });
 
-                // Actualizar Maestro con todos los permisos disponibles (excepto admin SaaS)
+                // FIX: Filter Maestro's permissions to match only those allowed by activePermissions (accounting for suspension)
+                const finalMaestroPermissions = allPermissions.filter(p => activePermissions.includes(p));
+
+                // Actualizar Maestro con los permisos permitidos
                 await targetDb.collection("roles").updateOne(
                     { _id: role._id },
-                    { $set: { permissions: allPermissions } }
+                    { $set: { permissions: finalMaestroPermissions } }
                 );
-                console.log(`[SAS-Sync] Enforced full permissions for Maestro role.`);
                 continue;
             }
 
             if (role.permissions && Array.isArray(role.permissions)) {
                 // Intersección: Solo mantenemos los permisos que el usuario tenía Y que están en el nuevo plan
-                const updatedPermissions = role.permissions.filter(p => permissions.includes(p));
+                const updatedPermissions = role.permissions.filter(p => activePermissions.includes(p));
 
                 if (updatedPermissions.length !== role.permissions.length) {
-                    console.log(`[SAS-Sync] Correcting role ${role.name}: ${role.permissions.length} -> ${updatedPermissions.length} perms`);
                     await targetDb.collection("roles").updateOne(
                         { _id: role._id },
                         { $set: { permissions: updatedPermissions } }
@@ -89,7 +103,6 @@ async function syncCompanyConfiguration(req, company, permissions, planLimits) {
 
     // 2. Sincronizar LÍMITES DEL PLAN
     if (planLimits) {
-        console.log(`[SAS-Sync] Updating plan limits`);
         await targetDb.collection("config_plan").updateOne(
             {},
             {
