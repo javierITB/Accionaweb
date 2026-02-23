@@ -1986,31 +1986,32 @@ router.delete("/:id", async (req, res) => {
       const responseId = req.params.id;
       const responseObjectId = new ObjectId(responseId);
 
+      // Eliminamos la respuesta principal
       const deletedRespuesta = await req.db.collection("respuestas").findOneAndDelete({ _id: responseObjectId });
 
       if (!deletedRespuesta) return res.status(404).json({ error: "Respuesta no encontrada" });
 
-      // Eliminar de todas las colecciones relacionadas
+      // Eliminamos TODAS las coincidencias en las colecciones relacionadas usando deleteMany
       const [resultDocxs, resultAprobados, resultFirmados, resultAdjuntos] = await Promise.all([
-         // Eliminar de docxs (si existe)
-         req.db.collection("docxs").deleteOne({ responseId: responseId }),
+         // Eliminar todos los docxs generados
+         req.db.collection("docxs").deleteMany({ responseId: responseId }),
 
-         // Eliminar de aprobados (si existe)
-         req.db.collection("aprobados").deleteOne({ responseId: responseId }),
+         // Eliminar todos los registros de aprobación
+         req.db.collection("aprobados").deleteMany({ responseId: responseId }),
 
-         // Eliminar de firmados (si existe)
-         req.db.collection("firmados").deleteOne({ responseId: responseId }),
+         // Eliminar todos los registros de firmas
+         req.db.collection("firmados").deleteMany({ responseId: responseId }),
 
-         // Eliminar adjuntos (si existen)
-         req.db.collection("adjuntos").deleteOne({ responseId: new ObjectId(responseId) }),
+         // Eliminar todos los adjuntos (asegurando el uso de ObjectId si es necesario)
+         req.db.collection("adjuntos").deleteMany({ responseId: responseObjectId }),
       ]);
 
       registerSolicitudRemovedEvent(req, auth, deletedRespuesta);
 
       res.status(200).json({
-         message: "Formulario y todos los datos relacionados eliminados",
-         deleted: {
-            respuestas: resultRespuestas.deletedCount,
+         success: true,
+         message: "Respuesta y todos los datos relacionados eliminados permanentemente",
+         deletedCounts: {
             docxs: resultDocxs.deletedCount,
             aprobados: resultAprobados.deletedCount,
             firmados: resultFirmados.deletedCount,
@@ -2019,7 +2020,7 @@ router.delete("/:id", async (req, res) => {
       });
    } catch (err) {
       console.error("Error eliminando respuesta y datos relacionados:", err);
-      res.status(500).json({ error: "Error al eliminar formulario" });
+      res.status(500).json({ success: false, error: "Error al eliminar respuesta" });
    }
 });
 
