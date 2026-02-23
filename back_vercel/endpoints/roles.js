@@ -3,7 +3,33 @@ const router = express.Router();
 const { ObjectId } = require("mongodb");
 const { validarToken } = require("../utils/validarToken.js");
 const { registerCargoCreationEvent, registerCargoUpdateEvent } = require("../utils/registerEvent");
-const { decrypt } = require("../utils/seguridad.helper");
+const { decrypt, encrypt, encryptArray } = require("../utils/seguridad.helper");
+
+/**
+ * Filtra los permisos de los roles si la empresa asociada está suspendida.
+ * - Solo mantiene permisos de facturación/comprobantes.
+ * - Solo afecta a los roles que ya los tenían.
+ */
+async function filterSuspendedPermissions(req, roles) {
+   if (req.db.databaseName !== "formsdb" && req.mongoClient) {
+      try {
+         const centralDb = req.mongoClient.db("formsdb");
+         const company = await centralDb.collection("config_empresas").findOne({ dbName: req.db.databaseName });
+
+         if (company && company.isSuspended) {
+            const allowed = ["view_panel_admin", "view_comprobantes", "create_comprobantes"];
+            roles.forEach(r => {
+               if (r.permissions && Array.isArray(r.permissions)) {
+                  // Solo conserva aquellos que ESTABAN en el rol Y están en la lista permitida
+                  r.permissions = r.permissions.filter(p => allowed.includes(p));
+               }
+            });
+         }
+      } catch (err) {
+         console.error("[FilterSuspendedPermissions] Error verificando suspensión:", err);
+      }
+   }
+}
 
 // Helper para verificar token (Consistente con tu estructura)
 const verifyRequest = async (req) => {
@@ -127,6 +153,9 @@ router.get("/", async (req, res) => {
       // Filtrar Maestro si el usuario no es Maestro
       const filteredRoles = isUserMaestro ? roles : roles.filter((r) => r.name?.toLowerCase() !== "maestro");
 
+      // Filtrar permisos si la empresa está suspendida
+      await filterSuspendedPermissions(req, filteredRoles);
+
       res.json(filteredRoles);
    } catch (err) {
       console.error("Error en GET /roles:", err);
@@ -149,6 +178,10 @@ router.get("/name/:name", async (req, res) => {
       });
 
       if (!role) return res.status(404).json({ error: "Rol no encontrado" });
+
+      // Filtrar permisos si la empresa está suspendida
+      await filterSuspendedPermissions(req, [role]);
+
       res.json(role);
    } catch (err) {
       console.error("Error en GET /roles/name/:name:", err);
@@ -170,6 +203,10 @@ router.get("/:id", async (req, res) => {
       });
 
       if (!role) return res.status(404).json({ error: "Rol no encontrado" });
+
+      // Filtrar permisos si la empresa está suspendida
+      await filterSuspendedPermissions(req, [role]);
+
       res.json(role);
    } catch (err) {
       res.status(500).json({ error: "Internal server error" });
