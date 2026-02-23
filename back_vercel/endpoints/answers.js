@@ -79,14 +79,23 @@ const normalizeFilename = (filename) => {
 const upload = multer({
    storage: multer.memoryStorage(),
    fileFilter: function (req, file, cb) {
-      if (file.mimetype === "application/pdf") {
+      // Definimos la lista de tipos MIME permitidos
+      const allowedMimetypes = [
+         "application/pdf",
+         "image/jpeg",
+         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+         "application/vnd.ms-excel" // .xls
+      ];
+
+      if (allowedMimetypes.includes(file.mimetype)) {
          cb(null, true);
       } else {
-         cb(new Error("Solo se permiten archivos PDF"), false);
+         // Mensaje de error actualizado para reflejar los nuevos formatos
+         cb(new Error("Solo se permiten archivos PDF, JPG o Excel"), false);
       }
    },
    limits: {
-      fileSize: 10 * 1024 * 1024, // 10MB límite por archivo
+      fileSize: 10 * 1024 * 1024, // Mantiene el límite de 10MB por archivo
    },
 });
 

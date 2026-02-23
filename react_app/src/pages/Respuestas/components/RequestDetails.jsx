@@ -807,17 +807,28 @@ const RequestDetails = ({
    };
    const handleFileSelect = (event) => {
       const files = Array.from(event.target.files);
-      const pdfFiles = files.filter((file) => file.type === "application/pdf");
 
-      if (pdfFiles.length === 0) {
-         openInfoDialog("Por favor, sube solo archivos PDF");
+      // Definimos los tipos permitidos: PDF, JPG/JPEG y Excel (XLS/XLSX)
+      const allowedTypes = [
+         "application/pdf",
+         "image/jpeg",
+         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+         "application/vnd.ms-excel"
+      ];
+
+      // Filtramos los archivos que coincidan con los tipos permitidos
+      const validFiles = files.filter((file) => allowedTypes.includes(file.type));
+
+      // Validar si hay archivos que no coinciden con los permitidos
+      if (validFiles.length === 0 && files.length > 0) {
+         openInfoDialog("Por favor, sube solo archivos PDF, JPG o Excel.");
          event.target.value = "";
          return;
       }
 
       const totalApprovedFiles = approvedData?.correctedFiles?.length || 0;
       const currentlySelectedFiles = correctedFiles.length;
-      const newFilesCount = pdfFiles.length;
+      const newFilesCount = validFiles.length;
 
       const remainingSlots = MAX_FILES - totalApprovedFiles - currentlySelectedFiles;
 
@@ -832,8 +843,8 @@ Puedes agregar máximo ${remainingSlots} archivo(s) más.`,
          return;
       }
 
-      // 2. Validar tamaño por archivo
-      const oversizedFiles = pdfFiles.filter((file) => file.size > MAX_FILE_SIZE);
+      // 2. Validar tamaño por archivo (MAX_FILE_SIZE)
+      const oversizedFiles = validFiles.filter((file) => file.size > MAX_FILE_SIZE);
 
       if (oversizedFiles.length > 0) {
          const names = oversizedFiles.map((f) => f.name).join(", ");
@@ -842,7 +853,8 @@ Puedes agregar máximo ${remainingSlots} archivo(s) más.`,
          return;
       }
 
-      setCorrectedFiles((prev) => [...prev, ...pdfFiles]);
+      // Agregamos los archivos válidos al estado
+      setCorrectedFiles((prev) => [...prev, ...validFiles]);
       event.target.value = "";
    };
 
