@@ -103,15 +103,24 @@ const upload = multer({
 const uploadMultiple = multer({
    storage: multer.memoryStorage(),
    fileFilter: function (req, file, cb) {
-      if (file.mimetype === "application/pdf") {
+      // Lista unificada de tipos MIME permitidos
+      const allowedMimetypes = [
+         "application/pdf",
+         "image/jpeg",
+         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+         "application/vnd.ms-excel" // .xls
+      ];
+
+      if (allowedMimetypes.includes(file.mimetype)) {
          cb(null, true);
       } else {
-         cb(new Error("Solo se permiten archivos PDF"), false);
+         // Error descriptivo para el usuario
+         cb(new Error("Solo se permiten archivos PDF, JPG o Excel"), false);
       }
    },
    limits: {
-      fileSize: 10 * 1024 * 1024, // 10MB límite por archivo
-      files: 10, // Máximo 10 archivos
+      fileSize: 10 * 1024 * 1024, // 10MB por archivo
+      files: 10, // Máximo 10 archivos por petición
    },
 });
 
