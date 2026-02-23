@@ -3,6 +3,7 @@ const router = express.Router({ mergeParams: true });
 const { ObjectId } = require("mongodb");
 const multer = require("multer");
 const { validarToken } = require("../utils/validarToken");
+const { addNotification } = require("../utils/notificaciones.helper");
 
 // --- UTILS ---
 
@@ -105,6 +106,22 @@ router.post("/admin/generate-charges", verifyAuth, async (req, res) => {
         });
 
         const result = await db.collection("cobros").insertMany(batch);
+
+        // Enviar Notificaciones
+        for (const company of companies) {
+            const chargeAmount = parseFloat(company.amount || amount) || 0;
+            await addNotification(db, {
+                filtro: {
+                    empresa: company.name,
+                    cargo: "Administrador" // Solo Administradores
+                },
+                titulo: "Nuevo cobro generado",
+                descripcion: `Se ha generado un nuevo cobro por $${chargeAmount} (${concept}).`,
+                color: "#ef4444",
+                icono: "paper",
+                actionUrl: "/pagos"
+            }).catch(err => console.error(`Error sending notification to ${company.name}:`, err));
+        }
 
         res.status(201).json({
             message: `Se generaron ${result.insertedCount} cobros exitosamente.`,
