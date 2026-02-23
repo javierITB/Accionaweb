@@ -196,11 +196,21 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                         value={formData.level}
                         onChange={(e) => {
                            if (isSuccess) setIsSuccess(false);
-                           let val = parseInt(e.target.value, 10);
-                           if (isNaN(val)) val = 1;
-                           if (val > myLevel) val = myLevel;
-                           if (val < 1) val = 1;
-                           setFormData({ ...formData, level: val });
+                           const rawValue = e.target.value;
+                           if (rawValue === "") {
+                              setFormData({ ...formData, level: "" });
+                              return;
+                           }
+                           let val = parseInt(rawValue, 10);
+                           if (!isNaN(val)) {
+                              if (val > myLevel) val = myLevel;
+                              setFormData({ ...formData, level: val });
+                           }
+                        }}
+                        onBlur={() => {
+                           if (formData.level === "" || formData.level < 1) {
+                              setFormData({ ...formData, level: 1 });
+                           }
                         }}
                         className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none"
                      />
