@@ -129,6 +129,19 @@ const RolesView = ({ userPermissions = {} }) => {
    }
 
    // --- LÓGICA DE NEGOCIO ---
+   const myRoleName = sessionStorage.getItem("cargo")?.toLowerCase() || "";
+   const myRole = roles.find((r) => r.name?.toLowerCase() === myRoleName);
+   const myLevel = myRoleName === "maestro"
+      ? 100
+      : (myRoleName === "administrador" ? 90 : (myRole?.level || 10));
+
+   const getRoleLevel = (r) => {
+      const rn = (r.name || "").toLowerCase();
+      if (rn === "maestro") return 100;
+      if (rn === "administrador") return 90;
+      return r.level || 10;
+   };
+
    const filteredRoles = roles
       .filter(
          (role) =>
@@ -136,13 +149,10 @@ const RolesView = ({ userPermissions = {} }) => {
             role.description?.toLowerCase().includes(searchQuery.toLowerCase()),
       )
       .sort((a, b) => {
-         const nameA = a.name?.toLowerCase();
-         const nameB = b.name?.toLowerCase();
-         if (nameA === "maestro") return -1;
-         if (nameB === "maestro") return 1;
-         if (nameA === "administrador") return -1;
-         if (nameB === "administrador") return 1;
-         return nameA.localeCompare(nameB);
+         const lvlA = getRoleLevel(a);
+         const lvlB = getRoleLevel(b);
+         if (lvlA !== lvlB) return lvlB - lvlA;
+         return (a.name || "").localeCompare(b.name || "");
       });
 
    const getUserCount = (roleId) => {
@@ -159,6 +169,7 @@ const RolesView = ({ userPermissions = {} }) => {
             description: role.description,
             permissions: role.permissions || [],
             color: role.color || "#4f46e5",
+            level: Math.min(getRoleLevel(role), myLevel),
          };
 
          const res = await apiFetch(`${API_BASE_URL}/roles`, {
@@ -285,6 +296,9 @@ const RolesView = ({ userPermissions = {} }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                      {filteredRoles.map((role) => {
                         // const userCount = getUserCount(role._id);
+                        const roleLevel = getRoleLevel(role);
+                        const canModifyThisRole = myLevel >= roleLevel;
+
                         const isAdmin = role.id === "admin" || role.name?.toLowerCase() === "administrador";
                         const canViewDetailsAdmin = isAdmin && permisos.view_gestor_roles_details_admin;
                         const canViewDetailsOther = !isAdmin && permisos.view_gestor_roles_details;
@@ -298,7 +312,7 @@ const RolesView = ({ userPermissions = {} }) => {
                               className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md transition-all group relative flex flex-col"
                            >
                               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                                 {permisos.copy_gestor_roles && !isMaestro && (
+                                 {permisos.copy_gestor_roles && !isMaestro && canModifyThisRole && (
                                     <button
                                        onClick={() => handleDuplicate(role)}
                                        title="Duplicar cargo"
@@ -307,7 +321,7 @@ const RolesView = ({ userPermissions = {} }) => {
                                        <Copy size={16} />
                                     </button>
                                  )}
-                                 {canViewDetails && (
+                                 {canViewDetails && canModifyThisRole && (
                                     <button
                                        onClick={() => {
                                           setEditingRole(role);
@@ -319,7 +333,7 @@ const RolesView = ({ userPermissions = {} }) => {
                                     </button>
                                  )}
 
-                                 {!isAdmin && !isMaestro && permisos.delete_gestor_roles && (
+                                 {!isAdmin && !isMaestro && permisos.delete_gestor_roles && canModifyThisRole && (
                                     <div className="relative group/delete">
                                        <button
                                           onClick={() => {
@@ -397,6 +411,7 @@ const RolesView = ({ userPermissions = {} }) => {
                role={editingRole}
                permisos={permisos}
                availablePermissions={configRoles}
+               myLevel={myLevel}
             />
          )}
       </div>

@@ -4,6 +4,7 @@ const { ObjectId } = require("mongodb");
 const { validarToken } = require("../utils/validarToken.js");
 const { registerCargoCreationEvent, registerCargoUpdateEvent } = require("../utils/registerEvent");
 const { decrypt, encrypt, encryptArray } = require("../utils/seguridad.helper");
+const { getRoleLevel } = require("../utils/role.helper");
 
 /**
  * Filtra los permisos de los roles si la empresa asociada está suspendida.
@@ -56,13 +57,25 @@ router.post("/", async (req, res) => {
       const tokenCheck = await verifyRequest(req);
       if (!tokenCheck.ok) return res.status(401).json({ error: "Unauthorized" });
 
-      const { id, name, description, permissions, color } = req.body;
+      const { id, name, description, permissions, color, level } = req.body;
+
+      const userRoleLevel = await getRoleLevel(req.db, tokenCheck.data.rol);
+      const targetRoleLevel = Number(level) || 10;
+
+      if (targetRoleLevel > userRoleLevel) {
+         return res.status(403).json({ error: `No puedes asignar un nivel (${targetRoleLevel}) mayor a tu propia jerarquía (${userRoleLevel}).` });
+      }
+
+      if (name && name.toLowerCase() === "maestro" && userRoleLevel < 100) {
+         return res.status(403).json({ error: "No puedes crear ni editar un rol con el nombre Maestro." });
+      }
 
       const roleData = {
          name: name || "Nuevo Rol",
          description: description || "",
          permissions: permissions || [], // Array de strings: ["view_reports", "edit_users", etc]
          color: color || "#4f46e5",
+         level: targetRoleLevel,
          updatedAt: new Date(),
       };
 
@@ -88,19 +101,12 @@ router.post("/", async (req, res) => {
             return res.status(403).json({ error: "No se puede modificar el rol raíz de administrador" });
          }
 
-         const isUserMaestro = tokenCheck.data.rol?.toLowerCase() === "maestro";
-
          const currentCargoState = await req.db.collection("roles").findOne({ _id: new ObjectId(id) });
          if (!currentCargoState) return res.status(404).json({ error: "Rol no encontrado" });
 
-         // Proteccion Maestro: Solo un Maestro puede editar un Maestro
-         if (currentCargoState.name?.toLowerCase() === "maestro" && !isUserMaestro) {
-            return res.status(403).json({ error: "No tienes permisos para modificar el rol Maestro" });
-         }
-
-         // Evitar que alguien asigne el nombre "Maestro" si no lo es
-         if (roleData.name.toLowerCase() === "maestro" && !isUserMaestro) {
-            return res.status(403).json({ error: "No puedes asignar el nombre Maestro a un rol" });
+         const currentCargoLevel = await getRoleLevel(req.db, currentCargoState.name);
+         if (currentCargoLevel > userRoleLevel) {
+            return res.status(403).json({ error: "No tienes suficiente jerarquía para modificar este rol." });
          }
 
          const newCargoState = await req.db
