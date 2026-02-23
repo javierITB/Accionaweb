@@ -103,7 +103,12 @@ export const EmpresasTab = ({ companies, isLoading, permisos, onRefresh, onEdit 
 
                                 <div className="mt-auto space-y-4">
                                     <div className="flex items-center gap-2 text-sm text-foreground bg-muted/50 px-3 py-2 rounded-lg">
-                                        {company.empty ? (
+                                        {company.isSuspended ? (
+                                            <>
+                                                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                                <span className="text-red-500 font-bold">Suspendida</span>
+                                            </>
+                                        ) : company.empty ? (
                                             <>
                                                 <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
                                                 <span>Vacía</span>
