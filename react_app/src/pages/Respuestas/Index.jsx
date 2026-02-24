@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Header from "../../components/ui/Header";
-
 import Sidebar from "../../components/ui/Sidebar";
 import { apiFetch, API_BASE_URL } from "../../utils/api";
 import Icon from "../../components/AppIcon";
@@ -16,6 +15,9 @@ import { usePermissions } from "../../context/PermissionsContext";
 const RequestTracking = () => {
    const urlParams = new URLSearchParams(window.location.search);
    const formId = urlParams?.get("id");
+
+   // --- CACHE PERSISTENTE ---
+   const cache = useRef({});
 
    // --- ESTADOS DE UI ---
    const [isDesktopOpen, setIsDesktopOpen] = useState(true);
@@ -38,11 +40,8 @@ const RequestTracking = () => {
    const [totalItems, setTotalItems] = useState(0);
    const [itemsPerPage, setItemsPerPage] = useState(30);
    const [isLimitOpen, setIsLimitOpen] = useState(false);
-   const [archivedCountServer, setArchivedCountServer] = useState(0);
    const [serverStats, setServerStats] = useState(null);
-   const requestsPerPage = 30;
 
-   // NUEVO: Estado para el valor del input de página
    const [pageInputValue, setPageInputValue] = useState("1");
 
    const [filters, setFilters] = useState({
@@ -53,6 +52,7 @@ const RequestTracking = () => {
       startDate: "",
       endDate: "",
       company: "",
+      submittedBy: "",
    });
 
    // --- PERMISOS DE USUARIO ---
@@ -63,45 +63,32 @@ const RequestTracking = () => {
       const hasAll = perms.includes("all");
 
       return {
-         // Vistas Base
          view: hasAll || perms.includes("view_solicitudes_clientes"),
          delete: hasAll || perms.includes("delete_solicitudes_clientes"),
          viewDetails: hasAll || perms.includes("view_solicitudes_clientes_details"),
          viewAnswers: hasAll || perms.includes("view_solicitudes_clientes_answers"),
          viewShared: hasAll || perms.includes("view_solicitudes_clientes_shared"),
          viewMessages: hasAll || perms.includes("view_solicitudes_clientes_messages"),
-
-         // Estados
          editState: hasAll || perms.includes("edit_solicitudes_clientes_state"),
          finalize: hasAll || perms.includes("edit_solicitudes_clientes_finalize"),
          archive: hasAll || perms.includes("edit_solicitudes_clientes_archive"),
-
-         // Adjuntos
          viewAttachments: hasAll || perms.includes("view_solicitudes_clientes_attach"),
          downloadAttachment: hasAll || perms.includes("download_solicitudes_clientes_attach"),
          previewAttachment: hasAll || perms.includes("preview_solicitudes_clientes_attach"),
          deleteAttachment: hasAll || perms.includes("delete_solicitudes_clientes_attach"),
-
-         // Documentos Generado
          viewGenerated: hasAll || perms.includes("view_solicitudes_clientes_generated"),
          downloadGenerated: hasAll || perms.includes("download_solicitudes_clientes_generated"),
          previewGenerated: hasAll || perms.includes("preview_solicitudes_clientes_generated"),
          regenerate: hasAll || perms.includes("regenerate_solicitudes_clientes_generated"),
-
-         // Enviado/Corregido
          viewSent: hasAll || perms.includes("view_solicitudes_clientes_send"),
          downloadSent: hasAll || perms.includes("download_solicitudes_clientes_send"),
          previewSent: hasAll || perms.includes("preview_solicitudes_clientes_send"),
          deleteSent: hasAll || perms.includes("delete_solicitudes_clientes_send"),
          create_solicitudes_clientes_send: hasAll || perms.includes("create_solicitudes_clientes_send"),
-
-         // Firmado
          viewSigned: hasAll || perms.includes("view_solicitudes_clientes_signed"),
          downloadSigned: hasAll || perms.includes("download_solicitudes_clientes_signed"),
          previewSigned: hasAll || perms.includes("preview_solicitudes_clientes_signed"),
          deleteSignature: hasAll || perms.includes("delete_solicitudes_clientes_signed"),
-
-         // Mensajes
          createMessages: hasAll || perms.includes("create_solicitudes_clientes_messages"),
          createMessagesMail: hasAll || perms.includes("create_solicitudes_clientes_messages_mail"),
          viewMessagesAdmin: hasAll || perms.includes("view_solicitudes_clientes_messages_admin"),
@@ -121,12 +108,10 @@ const RequestTracking = () => {
       return () => document.removeEventListener("mousedown", handleClickOutside);
    }, []);
 
-   // NUEVO: Sincronizar el input cuando cambia la página (por botones o carga)
    useEffect(() => {
       setPageInputValue(currentPage.toString());
    }, [currentPage]);
 
-   // --- EFECTOS DE REDIMENSIONAMIENTO ---
    useEffect(() => {
       const handleResize = () => {
          const isMobile = window.innerWidth < 768;
@@ -138,7 +123,6 @@ const RequestTracking = () => {
       return () => window.removeEventListener("resize", handleResize);
    }, []);
 
-   // --- LOGICA DE SIDEBAR ---
    const toggleSidebar = () => {
       if (isMobileScreen) {
          setIsMobileOpen(!isMobileOpen);
@@ -151,7 +135,6 @@ const RequestTracking = () => {
       if (isMobileScreen) setIsMobileOpen(false);
    };
 
-   // --- FUNCIÓN DE NORMALIZACIÓN ---
    const normalizeData = (data) => {
       return data.map((r) => ({
          _id: r._id,
@@ -171,47 +154,102 @@ const RequestTracking = () => {
       }));
    };
 
-   // --- LÓGICA DE CARGA DE DATOS ---
-   const fetchData = async (pageNumber, isBackground = false, overrideFilters = filters) => {
+   // --- FUNCIÓN MAESTRA FETCH CON CACHE Y PRE-CARGA ---
+   const fetchData = useCallback(async (pageNumber, isPrefetch = false, overrideFilters = filters) => {
+      const params = new URLSearchParams({
+         page: pageNumber,
+         limit: itemsPerPage,
+         search: overrideFilters.search || "",
+         status: overrideFilters.status || "",
+         company: overrideFilters.company || "",
+         submittedBy: overrideFilters.submittedBy || "",
+         startDate: overrideFilters.startDate || "",
+         endDate: overrideFilters.endDate || "",
+      });
+
+      const queryString = params.toString();
+
+      // Evitar prefetch si ya está en cache
+      if (isPrefetch && cache.current[queryString]) return null;
+
       try {
-         if (!isBackground) setIsLoading(true);
-
-         const params = new URLSearchParams({
-            page: pageNumber,
-            limit: itemsPerPage,
-            search: overrideFilters.search || "",
-            status: overrideFilters.status || "",
-            company: overrideFilters.company || "",
-            submittedBy: overrideFilters.submittedBy || "",
-            startDate: overrideFilters.startDate || "",
-            endDate: overrideFilters.endDate || "",
-         });
-
-         const url = `${API_BASE_URL}/respuestas/filtros?${params.toString()}`;
+         const url = `${API_BASE_URL}/respuestas/filtros?${queryString}`;
          const res = await apiFetch(url);
-
          if (!res.ok) throw new Error("Error al obtener datos");
          const result = await res.json();
 
-         setResp(normalizeData(result.data));
-         setTotalPages(result.pagination.totalPages || 1);
-         setTotalItems(result.pagination.total || 0);
+         const pageData = {
+            data: normalizeData(result.data),
+            totalPages: result.pagination.totalPages || 1,
+            totalItems: result.pagination.total || 0,
+            stats: result.stats || null
+         };
 
-         if (result.stats) {
-            setServerStats((prevStats) => {
-               const isFilteringByStatus = overrideFilters.status && overrideFilters.status !== "";
-               if (isFilteringByStatus && prevStats) return prevStats;
-               return result.stats;
-            });
-         }
-
-         if (!isBackground) window.scrollTo({ top: 0, behavior: "smooth" });
+         // Guardar en cache
+         cache.current[queryString] = pageData;
+         return pageData;
       } catch (err) {
          console.error(`Error en fetch:`, err);
-      } finally {
-         if (!isBackground) setIsLoading(false);
+         return null;
       }
-   };
+   }, [itemsPerPage, filters]);
+
+   // EFECTO PRINCIPAL: Carga de página actual (Instantánea con Cache)
+   useEffect(() => {
+      const loadPage = async () => {
+         const params = new URLSearchParams({
+            page: currentPage,
+            limit: itemsPerPage,
+            search: filters.search || "",
+            status: filters.status || "",
+            company: filters.company || "",
+            submittedBy: filters.submittedBy || "",
+            startDate: filters.startDate || "",
+            endDate: filters.endDate || "",
+         });
+         const currentKey = params.toString();
+
+         // 1. Si existe en cache, inyectar inmediatamente
+         if (cache.current[currentKey]) {
+            const cached = cache.current[currentKey];
+            setResp(cached.data);
+            setTotalPages(cached.totalPages);
+            setTotalItems(cached.totalItems);
+            if (cached.stats) setServerStats(cached.stats);
+            setIsLoading(false);
+
+            // Revalidación silenciosa
+            fetchData(currentPage).then(fresh => {
+               if (fresh) {
+                  setResp(fresh.data);
+                  setTotalPages(fresh.totalPages);
+                  if (fresh.stats) setServerStats(fresh.stats);
+               }
+            });
+         } else {
+            // 2. Si no hay cache, mostrar loading
+            setIsLoading(true);
+            const data = await fetchData(currentPage);
+            if (data) {
+               setResp(data.data);
+               setTotalPages(data.totalPages);
+               setTotalItems(data.totalItems);
+               if (data.stats) setServerStats(data.stats);
+            }
+            setIsLoading(false);
+         }
+         window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+
+      loadPage();
+   }, [currentPage, itemsPerPage, fetchData]);
+
+   // EFECTO DE PRE-CARGA: Siguiente página
+   useEffect(() => {
+      if (!isLoading && currentPage < totalPages) {
+         fetchData(currentPage + 1, true);
+      }
+   }, [currentPage, totalPages, isLoading, fetchData]);
 
    // --- BÚSQUEDA GLOBAL ---
    const findRequestGlobally = async (idToFind) => {
@@ -230,6 +268,15 @@ const RequestTracking = () => {
                const normalizedTarget = normalizedPage.find(
                   (r) => String(r._id) === idToFind || String(r.formId) === idToFind,
                );
+               
+               // Inyectar en cache para que no se pierda
+               cache.current[params.toString()] = {
+                  data: normalizedPage,
+                  totalPages: result.pagination.totalPages,
+                  totalItems: result.pagination.total,
+                  stats: result.stats
+               };
+
                setResp(normalizedPage);
                setSelectedRequest(normalizedTarget);
                setShowRequestDetails(true);
@@ -249,10 +296,6 @@ const RequestTracking = () => {
    };
 
    useEffect(() => {
-      fetchData(currentPage);
-   }, [currentPage, itemsPerPage]);
-
-   useEffect(() => {
       if (!formId) return;
       const foundInState = resp.find((r) => String(r._id) === formId || String(r.formId) === formId);
       if (foundInState) {
@@ -263,16 +306,12 @@ const RequestTracking = () => {
       }
    }, [formId]);
 
-   const canAccess = permissions.view;
-
-   // Si los permisos todavía están cargando (desde el contexto), podemos retornar un loading state o nada temporalmente
    if (isPermissionsLoading) {
       return <div className="min-h-screen flex items-center justify-center bg-background"><Icon name="Loader2" className="animate-spin text-primary" size={40} /></div>;
    }
 
-   if (!canAccess && userPermissions.length > 0) return <Navigate to="/panel" replace />;
+   if (!permissions.view && userPermissions.length > 0) return <Navigate to="/panel" replace />;
 
-   // NUEVO: Handlers para cambio de página manual
    const handlePageInputChange = (e) => {
       const value = e.target.value;
       if (value === "" || /^[0-9]+$/.test(value)) {
@@ -297,27 +336,27 @@ const RequestTracking = () => {
       }
    };
 
-   // --- HANDLERS ---
    const handleApplyFilters = () => {
+      cache.current = {}; // Limpiar cache al aplicar nuevos filtros
       setCurrentPage(1);
-      fetchData(1);
    };
 
    const handleLimitChange = (limit) => {
+      cache.current = {}; // Limpiar cache al cambiar límite
       setItemsPerPage(limit);
       setCurrentPage(1);
       setIsLimitOpen(false);
    };
 
    const handleStatusFilter = (status) => {
+      cache.current = {}; 
       const newStatus = filters.status === status ? "" : status;
-      const newFilters = { ...filters, status: newStatus };
-      setFilters(newFilters);
+      setFilters(prev => ({ ...prev, status: newStatus }));
       setCurrentPage(1);
-      fetchData(1, false, newFilters);
    };
 
    const handleClearFilters = () => {
+      cache.current = {};
       const cleared = {
          search: "",
          status: "",
@@ -330,7 +369,6 @@ const RequestTracking = () => {
       };
       setFilters(cleared);
       setCurrentPage(1);
-      fetchData(1, false, cleared);
    };
 
    const updateRequest = (updatedRequest) => {
@@ -351,7 +389,10 @@ const RequestTracking = () => {
       if (!window.confirm("¿Seguro que deseas eliminar esta solicitud?")) return;
       try {
          const res = await apiFetch(`${API_BASE_URL}/respuestas/${request._id}`, { method: "DELETE" });
-         if (res.ok) setResp((prev) => prev.filter((r) => r._id !== request._id));
+         if (res.ok) {
+            setResp((prev) => prev.filter((r) => r._id !== request._id));
+            cache.current = {}; // Limpiar cache para forzar refresco de datos tras borrar
+         }
       } catch (err) {
          alert("Error al eliminar.");
       }
@@ -456,7 +497,6 @@ const RequestTracking = () => {
                            iconName="ChevronLeft"
                         />
 
-                        {/* NUEVO: Diseño x/y Compacto Superior */}
                         <div className="flex items-center gap-0 text-muted-foreground">
                            <input
                               type="text"
@@ -511,7 +551,7 @@ const RequestTracking = () => {
                <div
                   className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6" : "space-y-4"}
                >
-                  {isLoading ? (
+                  {isLoading && currentRequests.length === 0 ? (
                      <div className="col-span-full py-12 text-center">
                         <Icon name="Loader2" size={32} className="mx-auto text-accent animate-spin mb-4" />
                         <p className="text-muted-foreground">Buscando solicitud...</p>
@@ -555,7 +595,6 @@ const RequestTracking = () => {
                            Anterior
                         </Button>
 
-                        {/* NUEVO: Diseño x/y Compacto Inferior */}
                         <div className="flex items-center gap-0 bg-muted px-4 py-1.5 rounded-full text-muted-foreground">
                            <input
                               type="text"
