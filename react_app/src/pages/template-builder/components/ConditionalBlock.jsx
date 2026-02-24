@@ -275,17 +275,6 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
                   <span>Es distinto de...</span>
                 </button>
 
-                <button
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => updateAttributes({ condition: (rawCondition + ' < ').trimStart() })}
-                  style={{ textAlign: 'left', padding: '6px 8px', fontSize: '11px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  <span style={{ color: color, fontWeight: 'bold', width: '16px', fontSize: '14px', lineHeight: '10px' }}>&lt;</span>
-                  <span>Contiene (Variable contiene texto)...</span>
-                </button>
-
                 <div style={{ margin: '4px 0', borderTop: '1px dashed #e2e8f0' }}></div>
 
                 <button
