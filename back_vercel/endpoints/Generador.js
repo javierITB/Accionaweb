@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
 const { addNotification } = require("../utils/notificaciones.helper");
+const { validarToken } = require("../utils/validarToken.js");
 
 const verifyRequest = async (req) => {
     let token = req.headers.authorization?.split(" ")[1];
