@@ -2,6 +2,18 @@ const express = require("express");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
 
+const verifyRequest = async (req) => {
+  let token = req.headers.authorization?.split(" ")[1];
+  if (!token && req.body?.user?.token) token = req.body.user.token;
+  if (!token && req.query?.token) token = req.query.token;
+
+  if (!token) return { ok: false, error: "Token no proporcionado" };
+
+  const valid = await validarToken(req.db, token);
+  if (!valid.ok) return { ok: false, error: valid.reason, status: 401 };
+
+  return { ok: true, data: valid.data };
+};
 
 
 // 1. Crear / Actualizar una Plantilla (Asociación crítica al Formulario)
@@ -10,6 +22,9 @@ router.post("/", async (req, res) => {
     const data = req.body;
     const { formId } = data; // ID del formulario asociado (REQUIRED)
     let result;
+
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     if (!formId) {
       return res.status(400).json({ error: "El campo 'formId' es obligatorio para asociar la plantilla." });
@@ -69,6 +84,9 @@ router.get("/:id", async (req, res) => {
     const id = req.params.id;
     const possibleIds = [id];
 
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     try {
       if (typeof id === 'string' && id.length === 24) {
         possibleIds.push(new ObjectId(id));
@@ -89,6 +107,11 @@ router.get("/:id", async (req, res) => {
 
 // 3. Listar todas las Plantillas
 router.get("/", async (req, res) => {
+
+  const auth = await verifyRequest(req);
+  if (!auth.ok) return res.status(401).json({ error: auth.error });
+
+
   try {
     const plantillas = await req.db.collection("plantillas").find().toArray();
     res.json(plantillas);
@@ -101,6 +124,9 @@ router.get("/", async (req, res) => {
 // 4. Eliminar una Plantilla y DESVINCULAR del Formulario
 router.delete("/:id", async (req, res) => {
   try {
+    const auth = await verifyRequest(req);
+    if (!auth.ok) return res.status(401).json({ error: auth.error });
+
     const plantillaId = req.params.id;
 
     // 1. Buscar la plantilla para obtener el formId asociado

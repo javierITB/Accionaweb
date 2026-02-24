@@ -20,10 +20,30 @@ const limiter = rateLimit({
 });
 router.use(limiter);
 
+const verifyRequest = async (req) => {
+   let token = req.headers.authorization?.split(" ")[1];
+
+   // Fallback: buscar en body.user.token
+   if (!token && req.body?.user?.token) token = req.body.user.token;
+
+   // Fallback: buscar en query param
+   if (!token && req.query?.token) token = req.query.token;
+
+   if (!token) return { ok: false, error: "Token no proporcionado" };
+
+   const valid = await validarToken(req.db, token);
+   if (!valid.ok) return { ok: false, error: valid.reason };
+
+   return { ok: true, data: valid.data };
+};
+
 // --- ENDPOINT ---
 router.post("/send", async (req, res) => {
   try {
     const { accessKey, ...emailData } = req.body || {};
+
+    const auth = await verifyRequest(req);
+      if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     // 1. Validación de seguridad (API Key)
     if (accessKey !== ACCESS_KEY) {
