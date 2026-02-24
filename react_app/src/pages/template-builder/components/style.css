@@ -1,0 +1,95 @@
+/* El bloque contenedor */
+.conditional-block {
+    position: relative;
+    border-left: 4px solid #3b82f6;
+    background-color: rgba(59, 130, 246, 0.03);
+    margin: 1.5rem 0;
+    padding: 1rem 1.5rem;
+    border-radius: 0 12px 12px 0;
+    transition: all 0.3s ease;
+}
+
+/* La etiqueta flotante (estilo Word/Google Docs) */
+.conditional-block::before {
+    content: "IF: " attr(data-var);
+    position: absolute;
+    right: -130px; /* Fuera de la hoja */
+    top: 0;
+    width: 110px;
+    background: #ffffff;
+    border: 1px solid #3b82f6;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #3b82f6;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+}
+
+/* Línea conectora entre la hoja y la etiqueta */
+.conditional-block::after {
+    content: "";
+    position: absolute;
+    right: -20px;
+    top: 15px;
+    width: 20px;
+    height: 1px;
+    background: #3b82f6;
+    opacity: 0.3;
+}
+
+/* Esconder tags técnicos [[ ]] en el editor visual */
+.conditional-block > .technical-tag {
+    display: none !important;
+}
+
+/* Limpieza en Vista Previa */
+.preview-page .conditional-block {
+    border-left: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+}
+.preview-page .conditional-block::before,
+.preview-page .conditional-block::after {
+    display: none !important;
+}
+
+.condition-input {
+  transition: filter 0.2s;
+}
+.condition-input:hover {
+  filter: brightness(1.1);
+}
+.condition-input:focus {
+  filter: brightness(1.2);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.2);
+}
+/* Placeholder para el input de la etiqueta */
+.condition-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Placeholder para el contenido del condicional cuando está vacío */
+div[data-conditional] .content:empty::before,
+div[data-conditional] p:first-child:empty::before {
+  content: "Escribe el contenido condicional aquí...";
+  color: #aaa;
+  pointer-events: none;
+  height: 0;
+  float: left;
+}
+.conditional-section-wrapper {
+  overflow: visible !important;
+}
+
+/* Evita que el área de la etiqueta bloquee clics en el texto */
+.conditional-section-wrapper > div[contenteditable="false"] {
+  z-index: 10;
+}

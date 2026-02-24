@@ -313,12 +313,49 @@ const FormBuilder = ({ userPermissions = [] }) => {
   };
 
   const handleSaveTemplate = async (newStatus = 'publicado') => {
-    // --- LÍNEA RECUPERADA Y CRÍTICA ---
     const isUpdating = !!formData.id;
 
     // VALIDACIÓN DE PERMISOS
     if (isUpdating && !permisos.editar) return;
     if (!isUpdating && !permisos.crear) return;
+
+    // --- LOGICA DE PROCESAMIENTO PARA EL EDITOR ---
+    let finalDocumentContent = formData.documentContent;
+
+    if (finalDocumentContent) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(finalDocumentContent, 'text/html');
+      
+      // Buscamos todos los bloques visuales de condicionales
+      const conditionalBlocks = doc.querySelectorAll('div[data-conditional]');
+      
+      conditionalBlocks.forEach(el => {
+        const condition = el.getAttribute('data-conditional');
+        
+        // Creamos los nodos de texto para los marcadores
+        const openingTag = doc.createTextNode(`[[IF:${condition}]]`);
+        const closingTag = doc.createTextNode(`[[ENDIF]]`);
+        
+        // Insertamos el marcador de apertura antes del bloque
+        el.parentNode.insertBefore(openingTag, el);
+        
+        // Insertamos el marcador de cierre después del bloque
+        el.parentNode.insertBefore(closingTag, el.nextSibling);
+        
+        // Movemos los hijos del div (el contenido real) fuera del div, 
+        // justo antes del tag de cierre para mantener el orden.
+        const children = Array.from(el.childNodes);
+        children.forEach(child => {
+          el.parentNode.insertBefore(child, closingTag);
+        });
+        
+        // Eliminamos el contenedor div visual
+        el.remove();
+      });
+
+      finalDocumentContent = doc.body.innerHTML;
+    }
+    // ----------------------------------------------
 
     const dataToSend = {
       id: formData.id,
@@ -327,7 +364,7 @@ const FormBuilder = ({ userPermissions = [] }) => {
 
       documentTitle: formData.documentTitle,
       paragraphs: formData.paragraphs,
-      documentContent: formData.documentContent, // Agregar soporte para editor Tiptap HTML
+      documentContent: finalDocumentContent, // <--- Usamos el contenido procesado
       signature1Text: formData.signature1Text || "zona firma 1",
       signature2Text: formData.signature2Text || "zona firma 1",
       signatures: formData.signatures,
@@ -362,7 +399,7 @@ const FormBuilder = ({ userPermissions = [] }) => {
         method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
-        skipRedirect: true, // No redirigir para poder mostrar el error de límite
+        skipRedirect: true,
       });
 
       if (!response.ok) {
@@ -371,14 +408,15 @@ const FormBuilder = ({ userPermissions = [] }) => {
       }
 
       const savedData = await response.json().catch(() => ({}));
-
-      // FORZAR la corrección
       const finalId = savedData.id || savedData._id?.toString() || savedData._id;
 
       setFormData(prev => ({
         ...prev,
         id: finalId,
         status: savedData.status || newStatus,
+        // Opcional: Actualizamos el documentContent local con el procesado
+        // para que sea consistente con lo que se guardó.
+        documentContent: finalDocumentContent 
       }));
 
       alert(`El registro de la plantilla se ha completado exitosamente.`);

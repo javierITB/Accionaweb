@@ -13,6 +13,9 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { apiFetch, API_BASE_URL } from '../../../utils/api';
+import { Node, mergeAttributes } from '@tiptap/core';
+import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
+import "./style.css"
 
 // Extension personalizada para tamaño de fuente
 const FontSize = TextStyle.extend({
@@ -39,7 +42,83 @@ const FontSize = TextStyle.extend({
   },
 });
 
+const ConditionalSectionComponent = ({ node, updateAttributes }) => {
+  const color = node.attrs.color || '#3b82f6';
 
+  return (
+    <NodeViewWrapper className="conditional-section-wrapper" style={{ margin: '2rem 0', position: 'relative' }}>
+      <div
+        contentEditable={false}
+        // EVITA LA PÉRDIDA DE FOCO AL INTERACTUAR CON LA ETIQUETA
+        onMouseDown={(e) => e.stopPropagation()}
+        style={{ position: 'absolute', left: '-160px', top: '0', width: '140px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', zIndex: 50 }}
+      >
+        <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#888', marginBottom: '2px' }}>SI:</span>
+        <input
+          value={node.attrs.condition === 'VARIABLE' ? '' : node.attrs.condition}
+          placeholder="VARIABLE"
+          onFocus={(e) => {
+            e.stopPropagation();
+            window.activeConditionUpdater = updateAttributes;
+          }}
+          onBlur={() => {
+            setTimeout(() => { window.activeConditionUpdater = null }, 200);
+          }}
+          onChange={(e) => updateAttributes({ condition: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
+          style={{
+            backgroundColor: color, color: 'white', border: 'none', borderRadius: '4px',
+            padding: '2px 8px', fontSize: '11px', fontWeight: 'bold', width: '100%',
+            textAlign: 'right', outline: 'none', cursor: 'text'
+          }}
+        />
+      </div>
+      <div style={{
+        backgroundColor: `${color}08`,
+        borderLeft: `4px solid ${color}`,
+        padding: '15px',
+        borderRadius: '0 8px 8px 0',
+        minHeight: '40px'
+      }}>
+        <NodeViewContent />
+      </div>
+    </NodeViewWrapper>
+  );
+};
+
+export const ConditionalSection = Node.create({
+  name: 'conditionalSection',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  // Atributos actualizados
+  addAttributes() {
+    return {
+      condition: { default: 'VARIABLE' },
+      color: { default: '#3b82f6' },
+      id: { default: null }, // ID para evitar pérdida de foco intercalada
+    };
+  },
+  parseHTML() {
+    return [{
+      tag: 'div[data-conditional]',
+      getAttrs: dom => ({
+        condition: dom.getAttribute('data-conditional'),
+        color: dom.getAttribute('data-color'),
+        id: dom.getAttribute('data-id'),
+      }),
+    }];
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes, {
+      'data-conditional': node.attrs.condition,
+      'data-color': node.attrs.color,
+      'data-id': node.attrs.id || Math.random().toString(36).substr(2, 9),
+    }), 0];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(ConditionalSectionComponent);
+  },
+});
 
 const generateVarTag = (str) => {
   if (!str) return "";
@@ -329,6 +408,7 @@ const DocumentTemplateEditor = ({
       TableRow,
       TableCell,
       TableHeader,
+      ConditionalSection
     ],
     onFocus: () => setFocusedField({ type: 'editor' }),
     content: templateData.documentContent || (templateData.paragraphs && templateData.paragraphs.length > 0
@@ -385,17 +465,50 @@ const DocumentTemplateEditor = ({
     return '';
   };
 
+  const [activeConditionUpdater, setActiveConditionUpdater] = useState(null);
+
+  useEffect(() => {
+    const handleFocusedInput = (e) => {
+      setFocusedField({ type: 'condition' });
+      setActiveConditionUpdater(() => e.detail.updateAttributes);
+    };
+
+    const handleClearInput = () => {
+      // Solo reseteamos si no estamos saltando a otro campo controlado
+      setFocusedField(prev => prev.type === 'condition' ? { type: 'editor' } : prev);
+      setActiveConditionUpdater(null);
+    };
+
+    window.addEventListener('set-focused-input', handleFocusedInput);
+    window.addEventListener('clear-focused-input', handleClearInput);
+
+    return () => {
+      window.removeEventListener('set-focused-input', handleFocusedInput);
+      window.removeEventListener('clear-focused-input', handleClearInput);
+    };
+  }, []);
+
   const addVariable = (tag) => {
+    const cleanTag = tag.replace(/[{}]/g, '');
+
+    // 1. Si hay un input de condición activo, actualizamos su atributo
+    if (window.activeConditionUpdater) {
+      window.activeConditionUpdater({ condition: cleanTag });
+      return;
+    }
+
+    // 2. Si estamos en firmas
     if (focusedField.type === 'signature') {
       const { index, field } = focusedField;
       const currentText = signatures[index][field] || "";
-      // Append variable with a space if not empty
       const spacer = currentText.length > 0 && !currentText.endsWith(' ') ? " " : "";
       updateSignature(index, field, currentText + spacer + tag);
-    } else {
-      if (editor) {
-        editor.chain().focus().insertContent(tag).run();
-      }
+      return;
+    }
+
+    // 3. Editor principal (dentro o fuera del condicional)
+    if (editor) {
+      editor.chain().focus().insertContent(tag).run();
     }
   };
 
@@ -755,23 +868,42 @@ const DocumentTemplateEditor = ({
             }} disabled={isPreview}>
               + NUMERAL
             </Button>
-            <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-blue-200 text-blue-600" onClick={() => {
-              const cond = prompt("Variable para condicionar (IF):");
-              if (cond) {
-                const tagStart = `[[IF:${cond.toUpperCase()}]]`;
-                const tagEnd = `[[ENDIF]]`;
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-[10px] font-bold border-blue-200 text-blue-600"
+              onClick={() => {
+                if (!editor) return;
+                const { from, to, empty } = editor.state.selection;
 
-                if (editor.state.selection.empty) {
-                  editor.chain().focus().insertContent(`<p>${tagStart}</p><p>Contenido...</p><p>${tagEnd}</p>`).run();
-                } else {
-                  const { from, to } = editor.state.selection;
-                  editor.chain().focus()
-                    .insertContentAt(to, `<p>${tagEnd}</p>`)
-                    .insertContentAt(from, `<p>${tagStart}</p>`)
-                    .run();
+                if (empty) {
+                  alert("Selecciona el texto que deseas condicionar.");
+                  return;
                 }
-              }
-            }}>
+
+                const randomHue = Math.floor(Math.random() * 360);
+                const randomColor = `hsl(${randomHue}, 75%, 45%)`;
+                const uniqueId = Math.random().toString(36).substr(2, 9); // ID único
+                const selectedContent = editor.state.doc.slice(from, to).content;
+
+                editor.chain()
+                  .focus()
+                  .command(({ tr, dispatch }) => {
+                    const node = editor.schema.nodes.conditionalSection.create(
+                      {
+                        condition: 'VARIABLE',
+                        color: randomColor,
+                        id: uniqueId
+                      },
+                      selectedContent
+                    );
+                    if (dispatch) tr.replaceSelectionWith(node);
+                    return true;
+                  })
+                  // Forzamos el foco dentro del nuevo contenido
+                  .run();
+              }}
+            >
               + CONDICIONAL
             </Button>
             <Button
