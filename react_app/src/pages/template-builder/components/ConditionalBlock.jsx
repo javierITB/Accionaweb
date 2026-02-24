@@ -180,7 +180,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
           // VISTA CONTRAIDA (PASTILLA LEÍBLE)
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '14px' }}>👁️</span>
-            <span style={{ fontSize: '11px', color: '#334155', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '350px' }}>
+            <span style={{ fontSize: '11px', color: '#334155', fontWeight: '500', maxWidth: '450px', lineHeight: '1.4' }}>
               {rawCondition.trim() === '' || rawCondition === 'VARIABLE' ?
                 <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Configurar visibilidad...</span> :
                 <span style={{ fontFamily: 'sans-serif' }}>
@@ -240,7 +240,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
                 }}
               />
 
-              {/* DROPDOWN DE SUGERENCIAS ESTILO GOOGLE */}
+              {/* DROPDOWN DE SUGERENCIAS*/}
               <div style={{
                 marginTop: '4px',
                 borderTop: '1px solid #e2e8f0',
@@ -254,6 +254,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
                 </span>
 
                 <button
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => updateAttributes({ condition: (rawCondition + ' == ').trimStart() })}
                   style={{ textAlign: 'left', padding: '6px 8px', fontSize: '11px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
@@ -264,6 +265,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
                 </button>
 
                 <button
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => updateAttributes({ condition: (rawCondition + ' != ').trimStart() })}
                   style={{ textAlign: 'left', padding: '6px 8px', fontSize: '11px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
@@ -274,6 +276,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
                 </button>
 
                 <button
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => updateAttributes({ condition: (rawCondition + ' < ').trimStart() })}
                   style={{ textAlign: 'left', padding: '6px 8px', fontSize: '11px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
@@ -286,6 +289,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
                 <div style={{ margin: '4px 0', borderTop: '1px dashed #e2e8f0' }}></div>
 
                 <button
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => updateAttributes({ condition: (rawCondition + ' && ').trimStart() })}
                   style={{ textAlign: 'left', padding: '6px 8px', fontSize: '11px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
@@ -296,6 +300,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
                 </button>
 
                 <button
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => updateAttributes({ condition: (rawCondition + ' || ').trimStart() })}
                   style={{ textAlign: 'left', padding: '6px 8px', fontSize: '11px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
@@ -313,6 +318,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
                 Tip: Haz clic en una variable del menú izquierdo para insertarla.
               </span>
               <button
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => { e.stopPropagation(); setActiveField(null); }}
                 style={{ backgroundColor: color, color: 'white', border: 'none', borderRadius: '4px', padding: '4px 12px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
               >

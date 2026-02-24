@@ -60,6 +60,7 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
     return (
       <button
         key={tag}
+        onMouseDown={(e) => e.preventDefault()}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -920,7 +921,7 @@ const DocumentTemplateEditor = ({
       <div className="flex flex-1 overflow-hidden">
         {/* PANEL LATERAL DE VARIABLES */}
         <div
-          className={`border-r bg-muted/5 p-4 overflow-y-auto shrink-0 transition-all duration-75 ${readOnly ? 'w-0 p-0 border-none' : ''}`}
+          className={`panel-izquierdo border-r bg-muted/5 p-4 overflow-y-auto shrink-0 transition-all duration-75 ${readOnly ? 'w-0 p-0 border-none' : ''}`}
           style={{ width: readOnly ? 0 : leftPanelWidth }}
         >
           <div className="space-y-6">
@@ -968,6 +969,7 @@ const DocumentTemplateEditor = ({
                     return (
                       <button
                         key={v.title}
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
