@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as mammoth from 'mammoth';
+import { apiFetch } from 'utils/api';
 
 const CleanDocumentPreview = ({
     isVisible,
@@ -24,12 +25,12 @@ const CleanDocumentPreview = ({
         const loadDocument = async () => {
             try {
                 if (documentType === 'txt') {
-                    const response = await fetch(documentUrl);
+                    const response = await apiFetch(documentUrl);
                     const text = await response.text();
                     setContent(text);
                 }
                 else if (documentType === 'docx' || documentType === 'doc') {
-                    const response = await fetch(documentUrl);
+                    const response = await apiFetch(documentUrl);
                     const arrayBuffer = await response.arrayBuffer();
 
                     const result = await mammoth.convertToHtml({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
 import { Underline } from '@tiptap/extension-underline';
@@ -10,12 +10,10 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
+import { ConditionalBlock } from './ConditionalBlock';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { apiFetch, API_BASE_URL } from '../../../utils/api';
-import { Node, mergeAttributes } from '@tiptap/core';
-import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
-import "./style.css"
 
 // Extension personalizada para tamaño de fuente
 const FontSize = TextStyle.extend({
@@ -42,83 +40,7 @@ const FontSize = TextStyle.extend({
   },
 });
 
-const ConditionalSectionComponent = ({ node, updateAttributes }) => {
-  const color = node.attrs.color || '#3b82f6';
 
-  return (
-    <NodeViewWrapper className="conditional-section-wrapper" style={{ margin: '2rem 0', position: 'relative' }}>
-      <div
-        contentEditable={false}
-        // EVITA LA PÉRDIDA DE FOCO AL INTERACTUAR CON LA ETIQUETA
-        onMouseDown={(e) => e.stopPropagation()}
-        style={{ position: 'absolute', left: '-160px', top: '0', width: '140px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', zIndex: 50 }}
-      >
-        <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#888', marginBottom: '2px' }}>SI:</span>
-        <input
-          value={node.attrs.condition === 'VARIABLE' ? '' : node.attrs.condition}
-          placeholder="VARIABLE"
-          onFocus={(e) => {
-            e.stopPropagation();
-            window.activeConditionUpdater = updateAttributes;
-          }}
-          onBlur={() => {
-            setTimeout(() => { window.activeConditionUpdater = null }, 200);
-          }}
-          onChange={(e) => updateAttributes({ condition: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
-          style={{
-            backgroundColor: color, color: 'white', border: 'none', borderRadius: '4px',
-            padding: '2px 8px', fontSize: '11px', fontWeight: 'bold', width: '100%',
-            textAlign: 'right', outline: 'none', cursor: 'text'
-          }}
-        />
-      </div>
-      <div style={{
-        backgroundColor: `${color}08`,
-        borderLeft: `4px solid ${color}`,
-        padding: '15px',
-        borderRadius: '0 8px 8px 0',
-        minHeight: '40px'
-      }}>
-        <NodeViewContent />
-      </div>
-    </NodeViewWrapper>
-  );
-};
-
-export const ConditionalSection = Node.create({
-  name: 'conditionalSection',
-  group: 'block',
-  content: 'block+',
-  defining: true,
-  // Atributos actualizados
-  addAttributes() {
-    return {
-      condition: { default: 'VARIABLE' },
-      color: { default: '#3b82f6' },
-      id: { default: null }, // ID para evitar pérdida de foco intercalada
-    };
-  },
-  parseHTML() {
-    return [{
-      tag: 'div[data-conditional]',
-      getAttrs: dom => ({
-        condition: dom.getAttribute('data-conditional'),
-        color: dom.getAttribute('data-color'),
-        id: dom.getAttribute('data-id'),
-      }),
-    }];
-  },
-  renderHTML({ node, HTMLAttributes }) {
-    return ['div', mergeAttributes(HTMLAttributes, {
-      'data-conditional': node.attrs.condition,
-      'data-color': node.attrs.color,
-      'data-id': node.attrs.id || Math.random().toString(36).substr(2, 9),
-    }), 0];
-  },
-  addNodeView() {
-    return ReactNodeViewRenderer(ConditionalSectionComponent);
-  },
-});
 
 const generateVarTag = (str) => {
   if (!str) return "";
@@ -138,7 +60,11 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
     return (
       <button
         key={tag}
-        onClick={() => copyVariable(tag)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          copyVariable(tag);
+        }}
         className={`w-full group text-left px-3 py-2 border rounded-md transition-all truncate
           ${isChild
             ? 'bg-muted/10 border-border/50 hover:bg-muted/20 text-[10px] ml-2 w-[calc(100%-8px)]'
@@ -166,7 +92,11 @@ const VariableItem = React.memo(({ variable, copyVariable, isChild = false }) =>
   return (
     <div className={`w-full rounded-lg overflow-hidden transition-all mb-1 ${isOpen ? 'bg-accent/50 dark:bg-slate-900/50' : ''}`}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
         className={`w-full flex items-center justify-between px-3 py-2 cursor-pointer text-left transition-colors group border rounded-md
             ${isOpen ? 'bg-accent dark:bg-slate-800 border-transparent shadow-inner' : 'bg-card dark:bg-[#1e293b] border-border dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'}
         `}
@@ -408,20 +338,81 @@ const DocumentTemplateEditor = ({
       TableRow,
       TableCell,
       TableHeader,
-      ConditionalSection
+      ConditionalBlock,
     ],
-    onFocus: () => setFocusedField({ type: 'editor' }),
-    content: templateData.documentContent || (templateData.paragraphs && templateData.paragraphs.length > 0
-      ? templateData.paragraphs.map(p => {
-        let text = p.content;
-        if (p.conditionalVar) {
-          return `<p>[[IF:${p.conditionalVar}]]${text}[[ENDIF]]</p>`;
-        }
-        return `<p>${text}</p>`;
-      }).join('')
-      : '<p>Comienza a escribir el documento...</p>'),
+    onFocus: () => {
+      setFocusedField({ type: 'editor' });
+      window.activeConditionCallback = null;
+    },
+    content: (() => {
+      const initialHtml = templateData.documentContent || (templateData.paragraphs && templateData.paragraphs.length > 0
+        ? templateData.paragraphs.map(p => {
+          let text = p.content;
+          if (p.conditionalVar) {
+            return `<p>[[IF:${p.conditionalVar}]]${text}[[ENDIF]]</p>`;
+          }
+          return `<p>${text}</p>`;
+        }).join('')
+        : '<p>Comienza a escribir el documento...</p>');
+
+      // Función auxiliar para decodificar y limpiar la condición que viene de BBDD
+      const cleanCond = (c) => {
+        let res = c.replace(/<[^>]*>/g, '').replace(/[{}]/g, '').trim();
+        // Las plantillas antiguas podían guardar < como &lt; debido a tags HTML
+        res = res.replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&amp;/gi, '&').replace(/&quot;/gi, '"').replace(/&#39;/g, "'").replace(/&nbsp;/gi, ' ');
+        // Asegurarse de que el atributo data-condition no se rompa por tener comillas dobles
+        return res.replace(/"/g, '&quot;');
+      };
+
+      let parsedHtml = initialHtml;
+      const color = '#3b82f6';
+
+      // Este regex busca contenido entre IF y ENDIF, saltándose posibles tags HTML intrusos
+      parsedHtml = parsedHtml.replace(/<p(?:[^>]*)>\s*(?:<[^>]*>\s*)*\[\[IF:([^\]]+)\]\](?:\s*<\/[^>]*>)*\s*<\/p>([\s\S]*?)<p(?:[^>]*)>\s*(?:<[^>]*>\s*)*\[\[ENDIF\]\](?:\s*<\/[^>]*>)*\s*<\/p>/gi, (match, condition, content) => {
+        return `<div class="conditional-block" data-condition="${cleanCond(condition)}" data-color="${color}">${content}</div>`;
+      });
+
+      // Segunda pasada por si el IF y ENDIF no estuvieran envueltos individualmente en <p> (fallback)
+      parsedHtml = parsedHtml.replace(/(?:<[^>]*>\s*)*\[\[IF:([^\]]+)\]\](?:\s*<\/[^>]*>)*([\s\S]*?)(?:<[^>]*>\s*)*\[\[ENDIF\]\](?:\s*<\/[^>]*>)*/gi, (match, condition, content) => {
+        // Ignorar si accidentalmente capturó parte del div.conditional-block ya procesado
+        if (content.includes('conditional-block')) return match;
+        return `<div class="conditional-block" data-condition="${cleanCond(condition)}" data-color="${color}">${content}</div>`;
+      });
+
+      return parsedHtml;
+    })(),
     onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
+      // Obtenemos el HTML del editor que incluye los div.conditional-block
+      let html = editor.getHTML();
+
+      // Transformación segura usando el DOM en lugar de Regex para evitar
+      // cortes prematuros en </div> si hay tablas o divs anidados (evita mezcla de condicionales).
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const blocks = tempDiv.querySelectorAll('.conditional-block');
+
+        blocks.forEach(block => {
+          const condition = block.getAttribute('data-condition') || '';
+          const rawCond = condition.replace(/&quot;/g, '"');
+
+          // CRITICO: Escapar < y > para que el navegador no los interprete como etiquetas HTML
+          // al inyectarlo en innerHTML. El backend hará 'decodeEntities' luego.
+          const safeCond = rawCond.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+          // Envolver el interior en etiquetas IF y reemplazar el nodo
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = `<p>[[IF:${safeCond}]]</p>${block.innerHTML}<p>[[ENDIF]]</p>`;
+
+          // Tiptap / JS soporta reemplazar con múltiples nodos
+          block.replaceWith(...Array.from(wrapper.childNodes));
+        });
+
+        html = tempDiv.innerHTML;
+      } catch (e) {
+        console.error("Error guardando el arbol HTML condicional:", e);
+      }
+
       onUpdateTemplateData('documentContent', html);
 
       // Extraer primera línea como título
@@ -465,50 +456,40 @@ const DocumentTemplateEditor = ({
     return '';
   };
 
-  const [activeConditionUpdater, setActiveConditionUpdater] = useState(null);
-
-  useEffect(() => {
-    const handleFocusedInput = (e) => {
-      setFocusedField({ type: 'condition' });
-      setActiveConditionUpdater(() => e.detail.updateAttributes);
-    };
-
-    const handleClearInput = () => {
-      // Solo reseteamos si no estamos saltando a otro campo controlado
-      setFocusedField(prev => prev.type === 'condition' ? { type: 'editor' } : prev);
-      setActiveConditionUpdater(null);
-    };
-
-    window.addEventListener('set-focused-input', handleFocusedInput);
-    window.addEventListener('clear-focused-input', handleClearInput);
-
-    return () => {
-      window.removeEventListener('set-focused-input', handleFocusedInput);
-      window.removeEventListener('clear-focused-input', handleClearInput);
-    };
-  }, []);
+  // Prevenir duplicaciones por ghost clicks o eventos duplicados del sidebar
+  const lastVariableClickTime = useRef(0);
 
   const addVariable = (tag) => {
-    const cleanTag = tag.replace(/[{}]/g, '');
+    const now = Date.now();
+    // Si la última inserción fue hace menos de 200ms, ignoramos (evita duplicados de eventos hijos/padres)
+    if (now - lastVariableClickTime.current < 200) return;
+    lastVariableClickTime.current = now;
 
-    // 1. Si hay un input de condición activo, actualizamos su atributo
-    if (window.activeConditionUpdater) {
-      window.activeConditionUpdater({ condition: cleanTag });
+    // 1. Si estamos editando una condición en el panel flotante
+    if (window.activeConditionCallback) {
+      // Limpieza agresiva: quitar {{ }}, tags HTML y espacios laterales
+      const cleanTag = tag
+        .replace(/<[^>]*>/g, '') // Quitar tags HTML
+        .replace(/[{}]/g, '')    // Quitar llaves
+        .trim();
+
+      window.activeConditionCallback(cleanTag);
       return;
     }
 
-    // 2. Si estamos en firmas
     if (focusedField.type === 'signature') {
       const { index, field } = focusedField;
       const currentText = signatures[index][field] || "";
+      // Append variable with a space if not empty
       const spacer = currentText.length > 0 && !currentText.endsWith(' ') ? " " : "";
       updateSignature(index, field, currentText + spacer + tag);
-      return;
-    }
-
-    // 3. Editor principal (dentro o fuera del condicional)
-    if (editor) {
-      editor.chain().focus().insertContent(tag).run();
+    } else {
+      if (editor) {
+        // Ejecutamos insertContent ANTES de hacer focus para no perder la posición
+        // exacta del cursor si estábamos dentro de un ConditionalBlock (ReactNodeView)
+        editor.commands.insertContent(tag);
+        editor.commands.focus();
+      }
     }
   };
 
@@ -868,42 +849,34 @@ const DocumentTemplateEditor = ({
             }} disabled={isPreview}>
               + NUMERAL
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-[10px] font-bold border-blue-200 text-blue-600"
-              onClick={() => {
-                if (!editor) return;
-                const { from, to, empty } = editor.state.selection;
+            <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-blue-200 text-blue-600" onClick={() => {
+              if (!editor) return;
+              const { from, to, empty } = editor.state.selection;
 
-                if (empty) {
-                  alert("Selecciona el texto que deseas condicionar.");
-                  return;
-                }
+              if (empty) {
+                alert("Selecciona el texto que deseas condicionar.");
+                return;
+              }
 
-                const randomHue = Math.floor(Math.random() * 360);
-                const randomColor = `hsl(${randomHue}, 75%, 45%)`;
-                const uniqueId = Math.random().toString(36).substr(2, 9); // ID único
-                const selectedContent = editor.state.doc.slice(from, to).content;
+              const randomHue = Math.floor(Math.random() * 360);
+              const randomColor = `hsl(${randomHue}, 75%, 45%)`;
+              const selectedContent = editor.state.doc.slice(from, to).content;
 
-                editor.chain()
-                  .focus()
-                  .command(({ tr, dispatch }) => {
-                    const node = editor.schema.nodes.conditionalSection.create(
-                      {
-                        condition: 'VARIABLE',
-                        color: randomColor,
-                        id: uniqueId
-                      },
-                      selectedContent
-                    );
-                    if (dispatch) tr.replaceSelectionWith(node);
-                    return true;
-                  })
-                  // Forzamos el foco dentro del nuevo contenido
-                  .run();
-              }}
-            >
+              editor.chain()
+                .focus()
+                .command(({ tr, dispatch }) => {
+                  const node = editor.schema.nodes.conditionalBlock.create(
+                    {
+                      condition: 'VARIABLE',
+                      color: randomColor,
+                    },
+                    selectedContent
+                  );
+                  if (dispatch) tr.replaceSelectionWith(node);
+                  return true;
+                })
+                .run();
+            }}>
               + CONDICIONAL
             </Button>
             <Button
@@ -995,7 +968,11 @@ const DocumentTemplateEditor = ({
                     return (
                       <button
                         key={v.title}
-                        onClick={() => addVariable(tag)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          addVariable(tag);
+                        }}
                         className="text-left px-3 py-2 text-[11px] bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded shadow-sm hover:bg-orange-500 hover:text-white dark:hover:bg-orange-600 transition-all truncate"
                         title={tag}
                       >

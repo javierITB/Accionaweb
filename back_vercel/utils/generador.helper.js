@@ -276,11 +276,22 @@ async function extraerVariablesDeRespuestas(responses, userData, db) {
 
         // 1. Arrays: Mapear y descifrar cada elemento antes de unir
         if (Array.isArray(valor)) {
-            valor = valor.map(v => tryDecrypt(v)).join(', ');
+            const arrDescifrado = valor.map(v => tryDecrypt(v));
+            // Inyectar opciones individuales como variables booleanas si son cortas (para condicionales simples)
+            arrDescifrado.forEach(opt => {
+                if (typeof opt === 'string' && opt.length > 0 && opt.length < 100) {
+                    variables[normalizarNombreVariable(opt)] = 'true';
+                }
+            });
+            valor = arrDescifrado.join(', ');
         }
         // 2. Strings: Descifrar si coincide con el patrón
         else if (typeof valor === 'string') {
             valor = tryDecrypt(valor);
+            // Inyectar opción individual como variable booleana si es corta (para condicionales simples)
+            if (valor && typeof valor === 'string' && valor.length < 100) {
+                variables[normalizarNombreVariable(valor)] = 'true';
+            }
         }
         // 3. Objetos: Convertir a string (JSON)
         else if (valor && typeof valor === 'object') {

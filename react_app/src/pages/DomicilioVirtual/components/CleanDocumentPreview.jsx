@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as mammoth from 'mammoth';
+import { apiFetch } from 'utils/api';
 
 const CleanDocumentPreview = ({
     isVisible,
@@ -10,7 +11,7 @@ const CleanDocumentPreview = ({
     const [content, setContent] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    
+
     // 1. Nuevo estado para controlar la pestaña activa ('preview' o 'respuestas')
     const [activeTab, setActiveTab] = useState('preview');
 
@@ -24,12 +25,12 @@ const CleanDocumentPreview = ({
         const loadDocument = async () => {
             try {
                 if (documentType === 'txt') {
-                    const response = await fetch(documentUrl);
+                    const response = await apiFetch(documentUrl);
                     const text = await response.text();
                     setContent(text);
                 }
                 else if (documentType === 'docx' || documentType === 'doc') {
-                    const response = await fetch(documentUrl);
+                    const response = await apiFetch(documentUrl);
                     const arrayBuffer = await response.arrayBuffer();
 
                     const result = await mammoth.convertToHtml({
@@ -221,19 +222,18 @@ const CleanDocumentPreview = ({
 
             {isVisible && (
                 <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white dark:bg-black rounded-lg sm:rounded-xl shadow-xl flex flex-col w-[98vw] h-[95vh] sm:w-[95vw] sm:h-[90vh] max-w-6xl mx-2 sm:mx-4 overflow-hidden">
-                    
+
                     {/* Header */}
                     <div className="flex justify-between items-center px-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-black shrink-0">
-                        
+
                         <div className="flex items-center space-x-6 min-w-0 flex-1 h-12">
                             <button
                                 onClick={() => setActiveTab('preview')}
-                                className={`h-full flex items-center space-x-2 border-b-2 px-1 transition-colors ${
-                                    activeTab === 'preview'
-                                        ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                                title = "Vista Previa del Documento"
+                                className={`h-full flex items-center space-x-2 border-b-2 px-1 transition-colors ${activeTab === 'preview'
+                                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                    }`}
+                                title="Vista Previa del Documento"
                             >
                                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
