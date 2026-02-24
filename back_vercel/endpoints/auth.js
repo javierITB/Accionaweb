@@ -16,6 +16,7 @@ const {
    registerEmpresaRemovedEvent,
    registerUserPasswordChange,
 } = require("../utils/registerEvent");
+const { getRoleLevel } = require("../utils/role.helper");
 
 const getAhoraChile = () => {
    const d = new Date();
@@ -1265,6 +1266,13 @@ router.post("/register", async (req, res) => {
       const m = mail.toLowerCase().trim();
 
       const isRequesterMaestro = auth.data.rol?.toLowerCase() === "maestro";
+      const userLevel = await getRoleLevel(req.db, auth.data.rol);
+      const targetLevel = await getRoleLevel(req.db, cargo);
+
+      if (targetLevel > userLevel) {
+         return res.status(403).json({ error: `No tienes jerarquía suficiente para asignar un nivel de rol ${targetLevel}. Tu máximo es ${userLevel}.` });
+      }
+
       if ((cargo?.toLowerCase() === "maestro" || rol?.toLowerCase() === "maestro") && !isRequesterMaestro) {
          return res.status(403).json({ error: "No tienes permisos para crear usuarios Maestro." });
       }
@@ -1458,6 +1466,12 @@ router.put("/users/:id", async (req, res) => {
       const userId = req.params.id;
 
       const isRequesterMaestro = auth.data.rol?.toLowerCase() === "maestro";
+      const userLevel = await getRoleLevel(req.db, auth.data.rol);
+      const targetLevel = await getRoleLevel(req.db, cargo);
+
+      if (targetLevel > userLevel) {
+         return res.status(403).json({ error: `No tienes jerarquía suficiente para asignar un nivel de rol ${targetLevel}. Tu máximo es ${userLevel}.` });
+      }
 
       // 1. Check Maestro Role
       if ((cargo?.toLowerCase() === "maestro" || rol?.toLowerCase() === "maestro") && !isRequesterMaestro) {
@@ -1495,6 +1509,11 @@ router.put("/users/:id", async (req, res) => {
 
       if (currentCargo?.toLowerCase() === "maestro" && !isRequesterMaestro) {
          return res.status(403).json({ error: "No tienes permisos para editar usuarios Maestro." });
+      }
+
+      const currentLevel = await getRoleLevel(req.db, currentCargo);
+      if (currentLevel > userLevel) {
+         return res.status(403).json({ error: "No tienes jerarquía para editar a un usuario con un nivel de rol superior al tuyo." });
       }
 
       const updateData = {

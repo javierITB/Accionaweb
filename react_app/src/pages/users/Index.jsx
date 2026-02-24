@@ -89,7 +89,7 @@ const FormReg = ({ userPermissions = [] }) => {
             const response = await apiFetch(`${API_BASE_URL}/roles`);
             if (!response.ok) throw new Error("Error al cargar roles");
             const rolesData = await response.json();
-            setFetchedRoles(rolesData.map((r) => ({ value: r.name, label: r.name })));
+            setFetchedRoles(rolesData.map((r) => ({ value: r.name, label: r.name, level: r.level || 10 })));
          } catch (error) {
             console.error("Error cargando roles:", error);
          }
@@ -227,8 +227,31 @@ const FormReg = ({ userPermissions = [] }) => {
       );
    };
 
+   const myRoleName = sessionStorage.getItem("cargo")?.toLowerCase() || "";
+   const myLevel = useMemo(() => {
+      if (myRoleName === "maestro") return 100;
+      if (myRoleName === "administrador") return 90;
+      const r = fetchedRoles.find((ro) => ro.value.toLowerCase() === myRoleName);
+      return r ? r.level : 10;
+   }, [myRoleName, fetchedRoles]);
+
+   const getUserLevel = (u) => {
+      const rn = (u.rol || u.cargo || "").toLowerCase();
+      if (rn === "maestro") return 100;
+      if (rn === "administrador") return 90;
+      const r = fetchedRoles.find((role) => role.value.toLowerCase() === rn);
+      return r ? r.level : 10;
+   };
+
    const sortedUsers = useMemo(() => {
       let processData = [...users];
+
+      if (myRoleName !== "maestro") {
+         processData = processData.filter(
+            (u) => u.rol?.toLowerCase() !== "maestro" && u.cargo?.toLowerCase() !== "maestro"
+         );
+      }
+
       if (filters.field && filters.value) {
          processData = processData.filter(
             (u) => String(u[filters.field]).toLowerCase() === String(filters.value).toLowerCase(),
@@ -312,7 +335,7 @@ const FormReg = ({ userPermissions = [] }) => {
             <RegisterForm
                formData={formData}
                empresas={empresas}
-               cargos={fetchedRoles}
+               cargos={fetchedRoles.filter((r) => r.level <= myLevel || myRoleName === "maestro")}
                onUpdateFormData={(f, v) => setFormData((p) => ({ ...p, [f]: v }))}
                onRegister={handleSave}
                isLoading={isLoading}
@@ -433,7 +456,7 @@ const FormReg = ({ userPermissions = [] }) => {
                            {(permisos.editar || permisos.eliminar) && (
                               <td className="px-4 py-3">
                                  <div className={"flex gap-2 md:gap-3 text-xs md:text-sm" + (isMobileScreen && " flex-col")}>
-                                    {permisos.editar && (
+                                    {permisos.editar && myLevel >= getUserLevel(u) && (
                                        <button
                                           onClick={() => {
                                              handleEditUser(u);
@@ -444,7 +467,7 @@ const FormReg = ({ userPermissions = [] }) => {
                                           Editar
                                        </button>
                                     )}
-                                    {permisos.eliminar && (
+                                    {permisos.eliminar && myLevel >= getUserLevel(u) && (
                                        <button
                                           onClick={() => handleRemoveUser(u._id)}
                                           className="text-destructive hover:underline"

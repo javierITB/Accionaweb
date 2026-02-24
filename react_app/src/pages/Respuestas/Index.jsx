@@ -11,8 +11,9 @@ import MessageModal from "./components/MessageModal";
 import RequestDetails from "./components/RequestDetails";
 import StatsOverview from "./components/StatsOverview";
 import { Navigate } from "react-router-dom";
+import { usePermissions } from "../../context/PermissionsContext";
 
-const RequestTracking = ({ userPermissions = {} }) => {
+const RequestTracking = () => {
    const urlParams = new URLSearchParams(window.location.search);
    const formId = urlParams?.get("id");
 
@@ -55,82 +56,58 @@ const RequestTracking = ({ userPermissions = {} }) => {
    });
 
    // --- PERMISOS DE USUARIO ---
-   const [permissions, setPermissions] = useState({
-      view: false,
-      delete: false,
-      viewDetails: false,
-      editState: false,
-      edit: false, // General edit (files, etc)
-      regenerate: false,
-   });
+   const { userPermissions, isLoading: isPermissionsLoading } = usePermissions();
 
-   const checkPermissions = async () => {
-      try {
-         const role = sessionStorage.getItem("cargo")?.toLowerCase();
-         let perms = [];
-         let hasAll = false;
-   
-         const res = await apiFetch(`${API_BASE_URL}/roles/name/${role}`);
-         if (res.ok) {
-            const roleData = await res.json();
-            perms = roleData.permissions || [];
-            hasAll = perms.includes("all");
-   
-            setPermissions({
-               // Vistas Base
-               view: hasAll || perms.includes("view_solicitudes_clientes"),
-               delete: hasAll || perms.includes("delete_solicitudes_clientes"),
-               viewDetails: hasAll || perms.includes("view_solicitudes_clientes_details"),
-               viewAnswers: hasAll || perms.includes("view_solicitudes_clientes_answers"),
-               viewShared: hasAll || perms.includes("view_solicitudes_clientes_shared"),
-               viewMessages: hasAll || perms.includes("view_solicitudes_clientes_messages"),
-   
-               // Estados
-               editState: hasAll || perms.includes("edit_solicitudes_clientes_state"),
-               finalize: hasAll || perms.includes("edit_solicitudes_clientes_finalize"),
-               archive: hasAll || perms.includes("edit_solicitudes_clientes_archive"),
-               
-   
-               // Adjuntos
-               viewAttachments: hasAll || perms.includes("view_solicitudes_clientes_attach"),
-               downloadAttachment: hasAll || perms.includes("download_solicitudes_clientes_attach"),
-               previewAttachment: hasAll || perms.includes("preview_solicitudes_clientes_attach"),
-               deleteAttachment: hasAll || perms.includes("delete_solicitudes_clientes_attach"),
-   
-               // Documentos Generado
-               viewGenerated: hasAll || perms.includes("view_solicitudes_clientes_generated"),
-               downloadGenerated: hasAll || perms.includes("download_solicitudes_clientes_generated"),
-               previewGenerated: hasAll || perms.includes("preview_solicitudes_clientes_generated"),
-               regenerate: hasAll || perms.includes("regenerate_solicitudes_clientes_generated"),
-   
-               // Enviado/Corregido
-               viewSent: hasAll || perms.includes("view_solicitudes_clientes_send"),
-               downloadSent: hasAll || perms.includes("download_solicitudes_clientes_send"),
-               previewSent: hasAll || perms.includes("preview_solicitudes_clientes_send"),
-               deleteSent: hasAll || perms.includes("delete_solicitudes_clientes_send"),
-               create_solicitudes_clientes_send: hasAll || perms.includes("create_solicitudes_clientes_send"),
-   
-               // Firmado
-               viewSigned: hasAll || perms.includes("view_solicitudes_clientes_signed"),
-               downloadSigned: hasAll || perms.includes("download_solicitudes_clientes_signed"),
-               previewSigned: hasAll || perms.includes("preview_solicitudes_clientes_signed"),
-               deleteSignature: hasAll || perms.includes("delete_solicitudes_clientes_signed"),
-   
-               // Mensajes
-               createMessages: hasAll || perms.includes("create_solicitudes_clientes_messages"),
-               createMessagesMail: hasAll || perms.includes("create_solicitudes_clientes_messages_mail"),
-               viewMessagesAdmin: hasAll || perms.includes("view_solicitudes_clientes_messages_admin"),
-               createMessagesAdmin: hasAll || perms.includes("create_solicitudes_clientes_messages_admin"),
-            });
-         }
-      } catch (error) {
-         console.error("Error checking permissions:", error);
-      }
-   };
+   const permissions = useMemo(() => {
+      const perms = userPermissions || [];
+      const hasAll = perms.includes("all");
 
-   useEffect(() => {
-      checkPermissions();
-   }, []);
+      return {
+         // Vistas Base
+         view: hasAll || perms.includes("view_solicitudes_clientes"),
+         delete: hasAll || perms.includes("delete_solicitudes_clientes"),
+         viewDetails: hasAll || perms.includes("view_solicitudes_clientes_details"),
+         viewAnswers: hasAll || perms.includes("view_solicitudes_clientes_answers"),
+         viewShared: hasAll || perms.includes("view_solicitudes_clientes_shared"),
+         viewMessages: hasAll || perms.includes("view_solicitudes_clientes_messages"),
+
+         // Estados
+         editState: hasAll || perms.includes("edit_solicitudes_clientes_state"),
+         finalize: hasAll || perms.includes("edit_solicitudes_clientes_finalize"),
+         archive: hasAll || perms.includes("edit_solicitudes_clientes_archive"),
+
+         // Adjuntos
+         viewAttachments: hasAll || perms.includes("view_solicitudes_clientes_attach"),
+         downloadAttachment: hasAll || perms.includes("download_solicitudes_clientes_attach"),
+         previewAttachment: hasAll || perms.includes("preview_solicitudes_clientes_attach"),
+         deleteAttachment: hasAll || perms.includes("delete_solicitudes_clientes_attach"),
+
+         // Documentos Generado
+         viewGenerated: hasAll || perms.includes("view_solicitudes_clientes_generated"),
+         downloadGenerated: hasAll || perms.includes("download_solicitudes_clientes_generated"),
+         previewGenerated: hasAll || perms.includes("preview_solicitudes_clientes_generated"),
+         regenerate: hasAll || perms.includes("regenerate_solicitudes_clientes_generated"),
+
+         // Enviado/Corregido
+         viewSent: hasAll || perms.includes("view_solicitudes_clientes_send"),
+         downloadSent: hasAll || perms.includes("download_solicitudes_clientes_send"),
+         previewSent: hasAll || perms.includes("preview_solicitudes_clientes_send"),
+         deleteSent: hasAll || perms.includes("delete_solicitudes_clientes_send"),
+         create_solicitudes_clientes_send: hasAll || perms.includes("create_solicitudes_clientes_send"),
+
+         // Firmado
+         viewSigned: hasAll || perms.includes("view_solicitudes_clientes_signed"),
+         downloadSigned: hasAll || perms.includes("download_solicitudes_clientes_signed"),
+         previewSigned: hasAll || perms.includes("preview_solicitudes_clientes_signed"),
+         deleteSignature: hasAll || perms.includes("delete_solicitudes_clientes_signed"),
+
+         // Mensajes
+         createMessages: hasAll || perms.includes("create_solicitudes_clientes_messages"),
+         createMessagesMail: hasAll || perms.includes("create_solicitudes_clientes_messages_mail"),
+         viewMessagesAdmin: hasAll || perms.includes("view_solicitudes_clientes_messages_admin"),
+         createMessagesAdmin: hasAll || perms.includes("create_solicitudes_clientes_messages_admin"),
+      };
+   }, [userPermissions]);
 
    const limitRef = useRef(null);
 
@@ -286,8 +263,14 @@ const RequestTracking = ({ userPermissions = {} }) => {
       }
    }, [formId]);
 
-   const canAccess = userPermissions.includes("view_solicitudes_clientes");
-   if (!canAccess) return <Navigate to="/panel" replace />;
+   const canAccess = permissions.view;
+
+   // Si los permisos todavía están cargando (desde el contexto), podemos retornar un loading state o nada temporalmente
+   if (isPermissionsLoading) {
+      return <div className="min-h-screen flex items-center justify-center bg-background"><Icon name="Loader2" className="animate-spin text-primary" size={40} /></div>;
+   }
+
+   if (!canAccess && userPermissions.length > 0) return <Navigate to="/panel" replace />;
 
    // NUEVO: Handlers para cambio de página manual
    const handlePageInputChange = (e) => {

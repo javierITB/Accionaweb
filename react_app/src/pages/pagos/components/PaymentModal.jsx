@@ -42,6 +42,8 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
         let activeUrl = null;
 
         const fetchPreview = async () => {
+            setPreviewUrl(null);
+
             const mimeType = selectedCharge?.receipt?.file?.mimetype;
             if (mimeType?.startsWith('image/') || mimeType === 'application/pdf') {
                 try {

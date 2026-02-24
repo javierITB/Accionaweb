@@ -3,7 +3,7 @@ import { X, Shield, Check, Loader2, Lock, UserCircle, LayoutGrid, ChevronRight }
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
 import Button from "components/ui/Button";
 
-export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, availablePermissions = [] }) {
+export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, availablePermissions = [], myLevel = 10 }) {
    const [isSaving, setIsSaving] = useState(false);
    const [isSuccess, setIsSuccess] = useState(false);
    const [activeTab, setActiveTab] = useState("admin");
@@ -12,6 +12,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
       description: "",
       permissions: [],
       color: "#4f46e5",
+      level: 10,
    });
 
    useEffect(() => {
@@ -23,12 +24,18 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
 
    useEffect(() => {
       if (role) {
+         let defaultLevel = 10;
+         const rn = (role.name || "").toLowerCase();
+         if (rn === "maestro") defaultLevel = 100;
+         else if (rn === "administrador") defaultLevel = 90;
+
          setFormData({
             id: role._id,
             name: role.name,
             description: role.description,
             permissions: role.permissions || [],
             color: role.color || "#4f46e5",
+            level: role.level || defaultLevel,
          });
       } else {
          setFormData({
@@ -36,6 +43,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
             description: "",
             permissions: [],
             color: "#4f46e5",
+            level: 10,
          });
       }
    }, [role, isOpen]);
@@ -168,7 +176,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
                {/* INFO BÁSICA */}
-               <div className="grid grid-cols-1 gap-4">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input
                      type="text"
                      placeholder="Nombre del Cargo"
@@ -179,6 +187,34 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                      }}
                      className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none"
                   />
+                  <div className="flex items-center gap-3">
+                     <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Jerarquía (1-{myLevel}):</span>
+                     <input
+                        type="number"
+                        min="1"
+                        max={myLevel}
+                        value={formData.level}
+                        onChange={(e) => {
+                           if (isSuccess) setIsSuccess(false);
+                           const rawValue = e.target.value;
+                           if (rawValue === "") {
+                              setFormData({ ...formData, level: "" });
+                              return;
+                           }
+                           let val = parseInt(rawValue, 10);
+                           if (!isNaN(val)) {
+                              if (val > myLevel) val = myLevel;
+                              setFormData({ ...formData, level: val });
+                           }
+                        }}
+                        onBlur={() => {
+                           if (formData.level === "" || formData.level < 1) {
+                              setFormData({ ...formData, level: 1 });
+                           }
+                        }}
+                        className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none"
+                     />
+                  </div>
                   <textarea
                      placeholder="Descripción de funciones"
                      value={formData.description}
@@ -187,7 +223,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                         setFormData({ ...formData, description: e.target.value });
                      }}
                      rows={2}
-                     className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground resize-none focus:ring-2 focus:ring-accent outline-none"
+                     className="w-full md:col-span-2 px-4 py-2 bg-background border border-border rounded-lg text-foreground resize-none focus:ring-2 focus:ring-accent outline-none"
                   />
                </div>
 
