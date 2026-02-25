@@ -3,7 +3,7 @@ import Header from "../../components/ui/Header";
 import Sidebar from "../../components/ui/Sidebar";
 import Icon from "../../components/AppIcon";
 import Button from "../../components/ui/Button";
-import CleanDocumentPreview from "./CleanDocumentPreview"; // Ajusta la ruta según tu estructura
+import CleanDocumentPreview from "../../components/ui/CleanDocumentPreview";
 import { Navigate } from "react-router-dom";
 
 import { apiFetch, API_BASE_URL } from "../../utils/api";
@@ -162,39 +162,23 @@ const MessageForm = ({ userPermissions = [] }) => {
    }, [previewDocument]);
 
    const handlePreviewFile = (file, index) => {
-   // 1. Mapeo de tipos MIME a las extensiones que soporta tu CleanDocumentPreview
-   const supportedTypes = {
-      "application/pdf": "pdf",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
-      "application/msword": "doc",
-      "text/plain": "txt"
-   };
+      // Extraemos la extensión y limpiamos caracteres no alfanuméricos al final (ej: "xlsx#" -> "xlsx")
+      let rawExtension = file.name.split('.').pop().toLowerCase();
+      let docType = rawExtension.replace(/[^a-z0-9]+$/g, '');
 
-   // 2. Intentar obtener el tipo por MIME, si no, intentar por extensión de nombre de archivo
-   let docType = supportedTypes[file.type];
-   
-   if (!docType) {
-      const extension = file.name.split('.').pop().toLowerCase();
-      if (['pdf', 'docx', 'doc', 'txt'].includes(extension)) {
-         docType = extension;
+      if (file.type && file.type.startsWith('image/')) {
+         docType = 'image';
       }
-   }
 
-   // 3. Si no es un formato soportado, avisar al usuario
-   if (!docType) {
-      alert("La vista previa no está disponible para este tipo de archivo. Puedes descargarlo para verlo.");
-      return;
-   }
+      setLoadingPreviewIndex(index);
 
-   setLoadingPreviewIndex(index);
-   
-   // 4. Crear la URL temporal y abrir el modal con el tipo detectado
-   const url = URL.createObjectURL(file);
-   setPreviewDocument({ url, type: docType });
-   setShowPreview(true);
-   
-   setLoadingPreviewIndex(null);
-};
+      // 4. Crear la URL temporal y abrir el modal con el tipo detectado
+      const url = URL.createObjectURL(file);
+      setPreviewDocument({ url, type: docType });
+      setShowPreview(true);
+
+      setLoadingPreviewIndex(null);
+   };
 
    const canAccess = userPermissions.includes("view_solicitudes_a_cliente");
    if (!canAccess) return <Navigate to="/panel" replace />;
@@ -356,7 +340,7 @@ const MessageForm = ({ userPermissions = [] }) => {
 
                      <div className="space-y-2">
                         <label className="text-sm font-medium text-foreground">Adjuntar Archivos</label>
-                        <div 
+                        <div
                            className={`border-2 border-dashed border-border rounded-lg p-6 transition-colors text-center ${!isLoading && canCreate ? "hover:bg-muted/50 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
                            onClick={() => !isLoading && canCreate && fileInputRef.current?.click()}
                         >
@@ -405,14 +389,14 @@ const MessageForm = ({ userPermissions = [] }) => {
          </main>
 
          {/* COMPONENTE DE VISTA PREVIA INTEGRADO */}
-         <CleanDocumentPreview 
-            isVisible={showPreview} 
+         <CleanDocumentPreview
+            isVisible={showPreview}
             onClose={() => {
                cleanupPreviewUrl(previewDocument?.url);
                setShowPreview(false);
-            }} 
-            documentUrl={previewDocument?.url} 
-            documentType={previewDocument?.type} 
+            }}
+            documentUrl={previewDocument?.url}
+            documentType={previewDocument?.type}
          />
       </div>
    );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Icon from "../../../components/AppIcon";
 import Button from "../../../components/ui/Button";
-import CleanDocumentPreview from "./CleanDocumentPreview";
+import CleanDocumentPreview from "../../../components/ui/CleanDocumentPreview";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
 import AsyncActionDialog from "components/AsyncActionDialog";
 import useAsyncDialog from "hooks/useAsyncDialog";
@@ -352,7 +352,7 @@ const RequestDetails = ({
     }
   }, [isVisible, request?._id]);
 
-  const downloadPdfForPreview = async (url) => {
+  const downloadFileForPreview = async (url) => {
     try {
       const token = sessionStorage.getItem("token");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -360,10 +360,9 @@ const RequestDetails = ({
       const response = await fetch(url, { headers });
       if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
       const blob = await response.blob();
-      if (blob.type !== "application/pdf") throw new Error("El archivo no es un PDF válido");
       return URL.createObjectURL(blob);
     } catch (error) {
-      console.error("Error descargando PDF para vista previa:", error);
+      console.error("Error descargando archivo para vista previa:", error);
       throw error;
     }
   };
@@ -523,6 +522,7 @@ const RequestDetails = ({
       setPreviewIndex(index);
 
       let documentUrl;
+      let ext = "pdf";
 
       if (correctedFiles.length > 0) {
         if (index < 0 || index >= correctedFiles.length) {
@@ -531,10 +531,14 @@ const RequestDetails = ({
           return;
         }
         const file = correctedFiles[index];
+        const originalName = file.name || "";
+        ext = originalName ? originalName.split('.').pop().toLowerCase() : "pdf";
         documentUrl = URL.createObjectURL(file);
       } else if (approvedData || request?.status === "aprobado" || request?.status === "firmado") {
-        const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
-        documentUrl = await downloadPdfForPreview(pdfUrl);
+        const fileUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
+        // En DomicilioVirtual si es aprobado
+        ext = "pdf"; // Por defecto (simplificado aquí, si tienes acceso al nombre puedes usarlo)
+        documentUrl = await downloadFileForPreview(fileUrl);
       } else if (request?.correctedFile) {
         openInfoDialog("El documento corregido está en proceso de revisión.");
         return;
@@ -543,7 +547,7 @@ const RequestDetails = ({
         return;
       }
 
-      handlePreviewDocument(documentUrl, "pdf");
+      handlePreviewDocument(documentUrl, ext);
     } catch (error) {
       console.error("Error:", error);
       openErrorDialog("Error: " + error.message);
@@ -559,8 +563,8 @@ const RequestDetails = ({
     }
     try {
       setIsLoadingPreviewSignature(true);
-      const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/client-signature`;
-      const documentUrl = await downloadPdfForPreview(pdfUrl);
+      const fileUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/client-signature`;
+      const documentUrl = await downloadFileForPreview(fileUrl);
       handlePreviewDocument(documentUrl, "pdf");
     } catch (error) {
       // console.error("Error:", error);
@@ -574,14 +578,12 @@ const RequestDetails = ({
     try {
       setIsLoadingPreviewAdjunto(true);
       const adjunto = fullRequestData.adjuntos[index];
-      if (adjunto.mimeType !== "application/pdf") {
-        // alert("Solo disponible para PDF");
-        openInfoDialog("Solo disponible para PDF");
-        return;
-      }
-      const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`;
-      const documentUrl = await downloadPdfForPreview(pdfUrl);
-      handlePreviewDocument(documentUrl, "pdf");
+      const originalName = adjunto.fileName || adjunto.name || "";
+      const ext = originalName ? originalName.split('.').pop().toLowerCase() : "pdf";
+
+      const fileUrl = `${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`;
+      const documentUrl = await downloadFileForPreview(fileUrl);
+      handlePreviewDocument(documentUrl, ext);
     } catch (error) {
       console.error("Error:", error);
       // alert("Error: " + error.message);

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { apiFetch, API_BASE_URL } from '../../../utils/api';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import CleanDocumentPreview from './CleanDocumentPreview';
+import CleanDocumentPreview from '../../../components/ui/CleanDocumentPreview';
 import {
   getStatusColorClass,
   findConfigForCategory,
@@ -215,15 +215,14 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
 
   }, [isVisible, request?._id]);
 
-  const downloadPdfForPreview = async (url) => {
+  const downloadFileForPreview = async (url) => {
     try {
       const response = await apiFetch(url);
       if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
       const blob = await response.blob();
-      if (blob.type !== 'application/pdf') throw new Error('El archivo no es un PDF válido');
       return URL.createObjectURL(blob);
     } catch (error) {
-      console.error('Error descargando PDF para vista previa:', error);
+      console.error('Error descargando archivo para vista previa:', error);
       throw error;
     }
   };
@@ -321,7 +320,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
   // ... (existing effects)
 
   const handleStatusChange = async (newStatus) => {
-    if(!permisos.cambiarEstado) return; 
+    if (!permisos.cambiarEstado) return;
     const response = await apiFetch(
       `${API_BASE_URL}/soporte/${request._id}/status`,
       {
@@ -331,7 +330,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
     );
 
     const currentStatus = fullRequestData?.status;
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error || `No se pudo cambiar del estado "${currentStatus}" a "${newStatus}"`);
@@ -434,7 +433,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
 
 
   const handlePreviewAdjunto = async (responseId, index) => {
-    if(!permisos.previsualizarAdjuntos) return;
+    if (!permisos.previsualizarAdjuntos) return;
     try {
       setIsLoadingPreviewAdjunto(true);
       const adjunto = fullRequestData.adjuntos[index];
@@ -457,7 +456,11 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
           const blob = new Blob([byteArray], { type: adjunto.mimeType || 'application/pdf' });
           const url = URL.createObjectURL(blob);
 
-          handlePreviewDocument(url, adjunto.mimeType?.includes('image') ? 'image' : 'pdf');
+          const originalName = adjunto.fileName || adjunto.name || "";
+          let ext = originalName ? originalName.split('.').pop().toLowerCase() : "pdf";
+          if (adjunto.mimeType?.includes('image')) ext = "image";
+
+          handlePreviewDocument(url, ext);
         } catch (e) {
           console.error("Error creating blob:", e);
           // alert("Error procesando el archivo para vista previa.");
@@ -493,7 +496,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
 
 
   const handleDownloadAdjunto = async (responseId, index) => {
-    if(!permisos.descargarAdjuntos) return;
+    if (!permisos.descargarAdjuntos) return;
     setDownloadingAttachmentIndex(index);
     try {
       const adjunto = fullRequestData.adjuntos[index];
@@ -545,7 +548,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
 
 
   const handleTakeTicket = async () => {
-    if(!permisos.aceptarRespuestas) return;
+    if (!permisos.aceptarRespuestas) return;
     if (!currentUser) {
       throw new Error(
         "No se pudo identificar al usuario actual. Por favor, recarga la página o inicia sesión nuevamente."
@@ -653,7 +656,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
 
 
   const handleApprovewithoutFile = async () => {
-    if(!permisos.cambiarEstado) return;
+    if (!permisos.cambiarEstado) return;
     // guard lógico (no UI)
     if (request?.status === "finalizado") return { type: "info", message: "Formulario ya finalizado" };
 
@@ -682,7 +685,7 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
 
 
   const handleArchieve = async () => {
-    if(!permisos.cambiarEstado) return;
+    if (!permisos.cambiarEstado) return;
     const response = await apiFetch(
       `${API_BASE_URL}/soporte/${request._id}/status`,
       {
@@ -921,82 +924,82 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
 
       {/* Attachments Section */}
       <div>
-  {permisos.verAdjuntos && (
-    <>
-      {attachmentsLoading && (
-        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-          Archivos Adjuntos
-          <Icon name="Loader" size={16} className="animate-spin text-accent" />
-        </h3>
-      )}
+        {permisos.verAdjuntos && (
+          <>
+            {attachmentsLoading && (
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                Archivos Adjuntos
+                <Icon name="Loader" size={16} className="animate-spin text-accent" />
+              </h3>
+            )}
 
-      {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
-        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Icon name="Paperclip" size={18} />
-          Archivos Adjuntos
-        </h3>
-      )}
+            {!attachmentsLoading && fullRequestData?.adjuntos?.length > 0 && (
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Icon name="Paperclip" size={18} />
+                Archivos Adjuntos
+              </h3>
+            )}
 
-      {fullRequestData?.adjuntos?.length > 0 && (
-        <div className="space-y-2">
-          {fullRequestData.adjuntos.map((adjunto, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group hover:bg-muted transition-colors">
-              <div className="flex items-center space-x-3">
-                <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent group-hover:scale-110 transition-transform" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
-                  </p>
-                </div>
+            {fullRequestData?.adjuntos?.length > 0 && (
+              <div className="space-y-2">
+                {fullRequestData.adjuntos.map((adjunto, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group hover:bg-muted transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <Icon name={getMimeTypeIcon(adjunto.mimeType)} size={20} className="text-accent group-hover:scale-110 transition-transform" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{adjunto.fileName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {adjunto.pregunta} • {formatFileSize(adjunto.size)} • {formatDate(adjunto.uploadedAt)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+
+                      {permisos.descargarAdjuntos && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
+                          iconPosition="left"
+                          iconSize={16}
+                          onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
+                          disabled={downloadingAttachmentIndex !== null}
+                          className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:h-9"
+                        >
+                          <span className="hidden sm:inline">
+                            {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
+                          </span>
+                        </Button>
+                      )}
+
+                      {/* 3. LIMITAR LA PREVISUALIZACIÓN */}
+                      {permisos.previsualizarAdjuntos && canPreviewAdjunto(adjunto.mimeType) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName={isLoadingPreviewAdjunto ? "Loader" : "Eye"}
+                          iconPosition="left"
+                          iconSize={16}
+                          onClick={() => handlePreviewAdjunto(fullRequestData._id, index)}
+                          disabled={isLoadingPreviewAdjunto}
+                          className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:h-9"
+                        >
+                          <span className="hidden sm:inline">
+                            {isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}
+                          </span>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              <div className="flex items-center space-x-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                
-                {permisos.descargarAdjuntos && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    iconName={downloadingAttachmentIndex === index ? "Loader" : "Download"}
-                    iconPosition="left"
-                    iconSize={16}
-                    onClick={() => handleDownloadAdjunto(fullRequestData._id, index)}
-                    disabled={downloadingAttachmentIndex !== null}
-                    className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:h-9"
-                  >
-                    <span className="hidden sm:inline">
-                      {downloadingAttachmentIndex === index ? 'Descargando...' : 'Descargar'}
-                    </span>
-                  </Button>
-                )}
-
-                {/* 3. LIMITAR LA PREVISUALIZACIÓN */}
-                {permisos.previsualizarAdjuntos && canPreviewAdjunto(adjunto.mimeType) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    iconName={isLoadingPreviewAdjunto ? "Loader" : "Eye"}
-                    iconPosition="left"
-                    iconSize={16}
-                    onClick={() => handlePreviewAdjunto(fullRequestData._id, index)}
-                    disabled={isLoadingPreviewAdjunto}
-                    className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:h-9"
-                  >
-                    <span className="hidden sm:inline">
-                      {isLoadingPreviewAdjunto ? 'Cargando...' : 'Vista Previa'}
-                    </span>
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </>
-  )}
-  </div>
-</div>
-);
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
 
   const renderResponsesTab = () => {
     const responses = fullRequestData?.responses || {};
@@ -1174,16 +1177,16 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
 
           <div className="px-6 flex space-x-6 ">
             {permisos.verDetalles && (
-            <button
-              onClick={() => setActiveTab('details')}
-              className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'details'
-                ? 'border-accent text-accent'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              title="Ver detalles de la solicitud"
-            >
-              Detalles
-            </button>
+              <button
+                onClick={() => setActiveTab('details')}
+                className={`pb-3 pt-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'details'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                title="Ver detalles de la solicitud"
+              >
+                Detalles
+              </button>
             )}
             {permisos.verRespuestas && fullRequestData?.origin !== 'domicilio_virtual' && (
               <button
@@ -1212,8 +1215,8 @@ const RequestDetails = ({ request, isVisible, onClose, onUpdate, ticketConfigs, 
             </div>
             <div className="flex items-center space-x-3">
 
-            {permisos.aceptarRespuestas && (isInitialStatus() || (fullRequestData?.status === 'en_revision' && !isUserAssigned())) && (
-                
+              {permisos.aceptarRespuestas && (isInitialStatus() || (fullRequestData?.status === 'en_revision' && !isUserAssigned())) && (
+
                 <Button
                   variant="default"
                   iconName={isApproving ? "Loader" : "UserCheck"}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Icon from "../../../components/AppIcon";
 import Button from "../../../components/ui/Button";
-import CleanDocumentPreview from "./CleanDocumentPreview";
+import CleanDocumentPreview from "../../../components/ui/CleanDocumentPreview";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
 import useAsyncDialog from "hooks/useAsyncDialog";
 import AsyncActionDialog from "@/components/AsyncActionDialog";
@@ -363,7 +363,7 @@ const RequestDetails = ({
       fetchApprovedData(responseId);
    }, [isVisible, request?._id]);
 
-   const downloadPdfForPreview = async (url) => {
+   const downloadFileForPreview = async (url) => {
       try {
          const token = sessionStorage.getItem("token");
          const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -371,10 +371,9 @@ const RequestDetails = ({
          const response = await fetch(url, { headers });
          if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
          const blob = await response.blob();
-         if (blob.type !== "application/pdf") throw new Error("El archivo no es un PDF válido");
          return URL.createObjectURL(blob);
       } catch (error) {
-         console.error("Error descargando PDF para vista previa:", error);
+         console.error("Error descargando archivo para vista previa:", error);
          throw error;
       }
    };
@@ -527,13 +526,21 @@ const RequestDetails = ({
                   openInfoDialog("Índice de archivo aprobado inválido");
                   return;
                }
-               const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
-               documentUrl = await downloadPdfForPreview(pdfUrl);
+               const fileObj = approvedData.correctedFiles[index];
+               const originalName = fileObj.originalName || fileObj.name || "";
+               const ext = originalName ? originalName.split('.').pop().toLowerCase() : "pdf";
+
+               const fileUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
+               documentUrl = await downloadFileForPreview(fileUrl);
+               handlePreviewDocument(documentUrl, ext);
             }
             // Formato antiguo (un solo archivo)
             else if (fullRequestData?.correctedFile) {
-               const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/corrected-file`;
-               documentUrl = await downloadPdfForPreview(pdfUrl);
+               const originalName = fullRequestData.correctedFile;
+               const ext = originalName ? originalName.split('.').pop().toLowerCase() : "pdf";
+               const fileUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/corrected-file`;
+               documentUrl = await downloadFileForPreview(fileUrl);
+               handlePreviewDocument(documentUrl, ext);
             }
          }
          // Archivos nuevos/seleccionados
@@ -549,10 +556,11 @@ const RequestDetails = ({
             }
 
             const file = correctedFiles[index];
+            const originalName = file.name || "";
+            const ext = originalName ? originalName.split('.').pop().toLowerCase() : "pdf";
             documentUrl = URL.createObjectURL(file);
+            handlePreviewDocument(documentUrl, ext);
          }
-
-         handlePreviewDocument(documentUrl, "pdf");
       } catch (error) {
          console.error("Error:", error);
          openErrorDialog("Error al abrir documento");
@@ -568,8 +576,9 @@ const RequestDetails = ({
       }
       try {
          setIsLoadingPreviewSignature(index);
-         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${signedFileId}/client-signature`;
-         const documentUrl = await downloadPdfForPreview(pdfUrl);
+         const fileUrl = `${API_BASE_URL}/${endpointPrefix}/${signedFileId}/client-signature`;
+         const documentUrl = await downloadFileForPreview(fileUrl);
+         // Por lo general client-signatures son PDF, pero por si acaso hardcodeamos "pdf" 
          handlePreviewDocument(documentUrl, "pdf");
       } catch (error) {
          console.error("Error:", error);
@@ -583,13 +592,12 @@ const RequestDetails = ({
       try {
          setIsLoadingPreviewAdjunto(index);
          const adjunto = fullRequestData.adjuntos[index];
-         if (adjunto.mimeType !== "application/pdf") {
-            openInfoDialog("Solo disponible para PDF");
-            return;
-         }
-         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`;
-         const documentUrl = await downloadPdfForPreview(pdfUrl);
-         handlePreviewDocument(documentUrl, "pdf");
+         const originalName = adjunto.fileName || adjunto.name || "";
+         const ext = originalName ? originalName.split('.').pop().toLowerCase() : "pdf";
+
+         const fileUrl = `${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`;
+         const documentUrl = await downloadFileForPreview(fileUrl);
+         handlePreviewDocument(documentUrl, ext);
       } catch (error) {
          console.error("Error:", error);
          openErrorDialog("Error al abrir documento");

@@ -4,7 +4,7 @@ import Button from "../../../components/ui/Button";
 import { apiFetch, API_BASE_URL } from "../../../../utils/api";
 import useAsyncDialog from "hooks/useAsyncDialog";
 import AsyncActionDialog from "@/components/AsyncActionDialog";
-import CleanDocumentPreview from "pages/DomicilioVirtual/components/CleanDocumentPreview";
+import CleanDocumentPreview from "../../../../components/ui/CleanDocumentPreview";
 
 const MAX_CLIENT_FILES = 5;
 const MAX_CLIENT_FILE_SIZE = 5 * 1024 * 1024; // 5MB en bytes
@@ -773,7 +773,7 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
       event.target.value = "";
    };
 
-   const downloadPdfForPreview = async (url) => {
+   const downloadFileForPreview = async (url) => {
       try {
          const token = sessionStorage.getItem("token");
          const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -781,10 +781,9 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
          const response = await fetch(url, { headers });
          if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
          const blob = await response.blob();
-         if (blob.type !== "application/pdf") throw new Error("El archivo no es un PDF válido");
          return URL.createObjectURL(blob);
       } catch (error) {
-         console.error("Error descargando PDF para vista previa:", error);
+         console.error("Error descargando archivo para vista previa:", error);
          throw error;
       }
    };
@@ -804,9 +803,9 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
       try {
          setIsLoadingPreviewSignature(index);
 
-         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${signedFileId}/client-signature`;
-         const documentUrl = await downloadPdfForPreview(pdfUrl);
-         handlePreviewDocument(documentUrl, "pdf");
+         const fileUrl = `${API_BASE_URL}/${endpointPrefix}/${signedFileId}/client-signature`;
+         const documentUrl = await downloadFileForPreview(fileUrl);
+         handlePreviewDocument(documentUrl, "pdf"); // Usualmente PDF
       } catch (error) {
          console.error("Error:", error);
          openErrorDialog("Error al abrir documento");
@@ -819,13 +818,12 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
       try {
          setIsLoadingPreviewAdjunto(index);
          const adjunto = fullRequestData.adjuntos[index];
-         if (adjunto.mimeType !== "application/pdf") {
-            openInfoDialog("Solo disponible para PDF");
-            return;
-         }
-         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`;
-         const documentUrl = await downloadPdfForPreview(pdfUrl);
-         handlePreviewDocument(documentUrl, "pdf");
+         const originalName = adjunto.fileName || adjunto.name || "";
+         const ext = originalName ? originalName.split('.').pop().toLowerCase() : "pdf";
+
+         const fileUrl = `${API_BASE_URL}/${endpointPrefix}/${responseId}/adjuntos/${index}`;
+         const documentUrl = await downloadFileForPreview(fileUrl);
+         handlePreviewDocument(documentUrl, ext);
       } catch (error) {
          console.error("Error:", error);
          openErrorDialog("Error al abrir documento");
@@ -834,17 +832,16 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
       }
    };
 
-      const handlePreviewCorrectedFile = async (index) => {
+   const handlePreviewCorrectedFile = async (index) => {
       try {
          setIsLoadingCorrectedFile(index);
          const adjunto = fullRequestData.adjuntos[index];
-         if (adjunto.mimeType !== "application/pdf") {
-            openInfoDialog("Solo disponible para PDF");
-            return;
-         }
-         const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
-         const documentUrl = await downloadPdfForPreview(pdfUrl);
-         handlePreviewDocument(documentUrl, "pdf");
+         const originalName = adjunto.fileName || adjunto.name || "";
+         const ext = originalName ? originalName.split('.').pop().toLowerCase() : "pdf";
+
+         const fileUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
+         const documentUrl = await downloadFileForPreview(fileUrl);
+         handlePreviewDocument(documentUrl, ext);
       } catch (error) {
          console.error("Error:", error);
          openErrorDialog("Error al abrir documento");
@@ -853,76 +850,76 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
       }
    };
 
-      // const handlePreviewCorrectedFile = async (index = 0, source = "auto") => {
-      //    // source: 'approved' (archivos aprobados), 'new' (archivos nuevos), 'auto' (detecta automáticamente)
-   
-      //    try {
-      //       setIsLoadingPreviewCorrected(true);
-      //       setPreviewIndex(index);
-   
-      //       let documentUrl;
-      //       let useApprovedFiles = false;
-   
-      //       // Determinar qué archivos usar
-      //       if (source === "approved") {
-      //          useApprovedFiles = true;
-      //       } else if (source === "new") {
-      //          useApprovedFiles = false;
-      //       } else {
-      //          // 'auto' - intentar determinar basado en contexto
-      //          // Si estamos en la sección de archivos aprobados, probablemente es archivo aprobado
-      //          // Pero esto no es confiable, mejor pasar el source explícitamente
-      //          useApprovedFiles = correctedFiles.length === 0;
-      //       }
-   
-      //       // Archivos aprobados
-      //       if (useApprovedFiles) {
-      //          const hasApprovedFiles = approvedData?.correctedFiles || fullRequestData?.correctedFile;
-   
-      //          if (!hasApprovedFiles) {
-      //             openInfoDialog("No hay archivos aprobados disponibles");
-      //             return;
-      //          }
-   
-      //          // Si hay múltiples archivos aprobados
-      //          if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
-      //             if (index < 0 || index >= approvedData.correctedFiles.length) {
-      //                openInfoDialog("Índice de archivo aprobado inválido");
-      //                return;
-      //             }
-      //             const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
-      //             documentUrl = await downloadPdfForPreview(pdfUrl);
-      //          }
-      //          // Formato antiguo (un solo archivo)
-      //          else if (fullRequestData?.correctedFile) {
-      //             const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/corrected-file`;
-      //             documentUrl = await downloadPdfForPreview(pdfUrl);
-      //          }
-      //       }
-      //       // Archivos nuevos/seleccionados
-      //       else {
-      //          if (correctedFiles.length === 0) {
-      //             openInfoDialog("No hay archivos seleccionados para previsualizar");
-      //             return;
-      //          }
-   
-      //          if (index < 0 || index >= correctedFiles.length) {
-      //             openInfoDialog("Índice de archivo nuevo inválido");
-      //             return;
-      //          }
-   
-      //          const file = correctedFiles[index];
-      //          documentUrl = URL.createObjectURL(file);
-      //       }
-   
-      //       handlePreviewDocument(documentUrl, "pdf");
-      //    } catch (error) {
-      //       console.error("Error:", error);
-      //       openErrorDialog("Error al abrir documento");
-      //    } finally {
-      //       setIsLoadingPreviewCorrected(false);
-      //    }
-      // };
+   // const handlePreviewCorrectedFile = async (index = 0, source = "auto") => {
+   //    // source: 'approved' (archivos aprobados), 'new' (archivos nuevos), 'auto' (detecta automáticamente)
+
+   //    try {
+   //       setIsLoadingPreviewCorrected(true);
+   //       setPreviewIndex(index);
+
+   //       let documentUrl;
+   //       let useApprovedFiles = false;
+
+   //       // Determinar qué archivos usar
+   //       if (source === "approved") {
+   //          useApprovedFiles = true;
+   //       } else if (source === "new") {
+   //          useApprovedFiles = false;
+   //       } else {
+   //          // 'auto' - intentar determinar basado en contexto
+   //          // Si estamos en la sección de archivos aprobados, probablemente es archivo aprobado
+   //          // Pero esto no es confiable, mejor pasar el source explícitamente
+   //          useApprovedFiles = correctedFiles.length === 0;
+   //       }
+
+   //       // Archivos aprobados
+   //       if (useApprovedFiles) {
+   //          const hasApprovedFiles = approvedData?.correctedFiles || fullRequestData?.correctedFile;
+
+   //          if (!hasApprovedFiles) {
+   //             openInfoDialog("No hay archivos aprobados disponibles");
+   //             return;
+   //          }
+
+   //          // Si hay múltiples archivos aprobados
+   //          if (approvedData?.correctedFiles && approvedData.correctedFiles.length > 0) {
+   //             if (index < 0 || index >= approvedData.correctedFiles.length) {
+   //                openInfoDialog("Índice de archivo aprobado inválido");
+   //                return;
+   //             }
+   //             const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/download-approved-pdf/${request._id}?index=${index}`;
+   //             documentUrl = await downloadPdfForPreview(pdfUrl);
+   //          }
+   //          // Formato antiguo (un solo archivo)
+   //          else if (fullRequestData?.correctedFile) {
+   //             const pdfUrl = `${API_BASE_URL}/${endpointPrefix}/${request._id}/corrected-file`;
+   //             documentUrl = await downloadPdfForPreview(pdfUrl);
+   //          }
+   //       }
+   //       // Archivos nuevos/seleccionados
+   //       else {
+   //          if (correctedFiles.length === 0) {
+   //             openInfoDialog("No hay archivos seleccionados para previsualizar");
+   //             return;
+   //          }
+
+   //          if (index < 0 || index >= correctedFiles.length) {
+   //             openInfoDialog("Índice de archivo nuevo inválido");
+   //             return;
+   //          }
+
+   //          const file = correctedFiles[index];
+   //          documentUrl = URL.createObjectURL(file);
+   //       }
+
+   //       handlePreviewDocument(documentUrl, "pdf");
+   //    } catch (error) {
+   //       console.error("Error:", error);
+   //       openErrorDialog("Error al abrir documento");
+   //    } finally {
+   //       setIsLoadingPreviewCorrected(false);
+   //    }
+   // };
 
    const renderSignedDocumentSection = () => {
       const notShowSignedSection = !request?.status === "pendiente" && !request?.status === "en_revision";
@@ -950,11 +947,10 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                      title={`${signedPdfFiles.length >= MAX_FIRMADO_CLIENT_FILES ? "Límite alcanzado" : "Subir archivos firmados"}`}
                   >
                      <span
-                        className={`text-sm pr-1  ${
-                           (signedPdfFiles.length || 0) + (selectedSignedFiles.length || 0) >= MAX_FIRMADO_CLIENT_FILES
-                              ? "text-blue-600"
-                              : "text-muted-foreground"
-                        }`}
+                        className={`text-sm pr-1  ${(signedPdfFiles.length || 0) + (selectedSignedFiles.length || 0) >= MAX_FIRMADO_CLIENT_FILES
+                           ? "text-blue-600"
+                           : "text-muted-foreground"
+                           }`}
                      >
                         Archivos: {(signedPdfFiles.length || 0) + (selectedSignedFiles.length || 0) || 0}/
                         {MAX_FIRMADO_CLIENT_FILES}
@@ -1195,12 +1191,11 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                               title={`${(fullRequestData?.adjuntos?.length || 0) >= MAX_CLIENT_FILES ? "Límite alcanzado" : "Subir archivos adicionales"}`}
                            >
                               <span
-                                 className={`text-sm pr-1  ${
-                                    (fullRequestData?.adjuntos?.length || 0) + (clientSelectedAdjuntos.length || 0) >=
+                                 className={`text-sm pr-1  ${(fullRequestData?.adjuntos?.length || 0) + (clientSelectedAdjuntos.length || 0) >=
                                     MAX_CLIENT_FILES
-                                       ? "text-blue-600"
-                                       : "text-muted-foreground"
-                                 }`}
+                                    ? "text-blue-600"
+                                    : "text-muted-foreground"
+                                    }`}
                               >
                                  Archivos:{" "}
                                  {(fullRequestData?.adjuntos?.length || 0) + (clientSelectedAdjuntos.length || 0) || 0}/
@@ -1238,7 +1233,7 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                  <div
                                     key={index}
                                     className="flex items-center justify-between mt-4 p-3 bg-accent/5 rounded border border-accent/20 sm:min-h-[66px]"
-                                    
+
                                  >
                                     <div className="flex items-center space-x-3">
                                        <Icon name="FileText" size={20} className="text-accent" />
@@ -1262,7 +1257,7 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                           // iconName={isLoadingPreviewCorrected && previewIndex === index ? "Loader" : "Eye"}
                                           iconPosition="left"
                                           iconSize={16}
-                                          // disabled={isLoadingPreviewCorrected}
+                                       // disabled={isLoadingPreviewCorrected}
                                        >
                                           Vista Previa
                                        </Button>
@@ -1289,8 +1284,8 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                  <div
                                     key={index}
                                     className="flex items-center justify-between mt-4 p-3 bg-accent/5 rounded border border-accent/20 sm:min-h-[66px] cursor-pointer hover:opacity-75"
-                                    onClick={() =>  handlePreviewAdjunto(request?._id, index)
-                           }
+                                    onClick={() => handlePreviewAdjunto(request?._id, index)
+                                    }
                                  >
                                     <div className="flex items-center space-x-3">
                                        <Icon
@@ -1366,8 +1361,8 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                                    <p className="text-sm font-medium text-foreground flex gap-2 items-center">
                                                       {file.fileName || `Documento corregido ${index + 1}`}
                                                       {isLoadingCorrectedFile === index && (
-                                                <Icon name="Loader" size={14} className="animate-spin text-accent" />
-                                             )}
+                                                         <Icon name="Loader" size={14} className="animate-spin text-accent" />
+                                                      )}
                                                    </p>
                                                    <p className="text-xs text-muted-foreground">
                                                       PDF • {formatFileSize(file.fileSize)} •{" "}
@@ -1384,7 +1379,7 @@ Máximo permitido: ${MAX_FIRMADO_CLIENT_FILES} archivos.`;
                                                    }
                                                    iconPosition="left"
                                                    iconSize={16}
-                                                   onClick={(e) =>{
+                                                   onClick={(e) => {
                                                       e.stopPropagation();
                                                       handleDownloadSingleApprovedFile(request._id, index, file.fileName)
                                                    }
