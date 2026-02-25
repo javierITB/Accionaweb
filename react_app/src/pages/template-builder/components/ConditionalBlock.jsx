@@ -133,6 +133,32 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
     return formattedParts.join('');
   };
 
+  const insertTextAtCursor = (text) => {
+    if (textAreaRef.current) {
+      const start = textAreaRef.current.selectionStart;
+      const textBefore = rawCondition.substring(0, start);
+      const textAfter = rawCondition.substring(start, rawCondition.length);
+
+      const cleanText = text.trim();
+      const spaceBefore = textBefore.length > 0 && !textBefore.endsWith(' ') ? ' ' : '';
+      const spaceAfter = textAfter.length > 0 && !textAfter.startsWith(' ') ? ' ' : '';
+      const textToInsert = spaceBefore + cleanText + spaceAfter;
+
+      const newCond = textBefore + textToInsert + textAfter;
+      updateAttributes({ condition: newCond });
+
+      setTimeout(() => {
+        if (textAreaRef.current) {
+          const newCursorPos = start + spaceBefore.length + cleanText.length + spaceAfter.length;
+          textAreaRef.current.focus();
+          textAreaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      }, 0);
+    } else {
+      updateAttributes({ condition: (rawCondition + text).trimStart() });
+    }
+  };
+
   return (
     <NodeViewWrapper
       className={`conditional-section-wrapper ${selected ? 'ProseMirror-selectednode' : ''}`}
@@ -256,7 +282,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
 
                 <button
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => updateAttributes({ condition: (rawCondition + ' == ').trimStart() })}
+                  onClick={() => insertTextAtCursor(' == ')}
                   style={{ textAlign: 'left', padding: '6px 8px', fontSize: '11px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
                   onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -267,7 +293,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
 
                 <button
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => updateAttributes({ condition: (rawCondition + ' != ').trimStart() })}
+                  onClick={() => insertTextAtCursor(' != ')}
                   style={{ textAlign: 'left', padding: '6px 8px', fontSize: '11px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
                   onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -280,7 +306,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
 
                 <button
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => updateAttributes({ condition: (rawCondition + ' && ').trimStart() })}
+                  onClick={() => insertTextAtCursor(' && ')}
                   style={{ textAlign: 'left', padding: '6px 8px', fontSize: '11px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
                   onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -291,7 +317,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
 
                 <button
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => updateAttributes({ condition: (rawCondition + ' || ').trimStart() })}
+                  onClick={() => insertTextAtCursor(' || ')}
                   style={{ textAlign: 'left', padding: '6px 8px', fontSize: '11px', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
                   onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
