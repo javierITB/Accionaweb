@@ -861,22 +861,35 @@ const DocumentTemplateEditor = ({
 
               const randomHue = Math.floor(Math.random() * 360);
               const randomColor = `hsl(${randomHue}, 75%, 45%)`;
-              const selectedContent = editor.state.doc.slice(from, to).content;
-
-              editor.chain()
+              // Intentar envolver los bloques seleccionados directamente respetando el esquema (wrapIn)
+              const success = editor.chain()
                 .focus()
-                .command(({ tr, dispatch }) => {
-                  const node = editor.schema.nodes.conditionalBlock.create(
-                    {
-                      condition: 'VARIABLE',
-                      color: randomColor,
-                    },
-                    selectedContent
-                  );
-                  if (dispatch) tr.replaceSelectionWith(node);
-                  return true;
+                .wrapIn('conditionalBlock', {
+                  condition: 'VARIABLE',
+                  color: randomColor,
                 })
                 .run();
+
+              if (!success) {
+                // Si la selección es puramente inline o inválida para envolver un bloque,
+                // forzamos la inserción con un párrafo anidado (schema válido para 'block+')
+                const selectedText = editor.state.doc.slice(from, to).textContent;
+
+                editor.chain()
+                  .focus()
+                  .deleteSelection()
+                  .insertContent({
+                    type: 'conditionalBlock',
+                    attrs: { condition: 'VARIABLE', color: randomColor },
+                    content: [
+                      {
+                        type: 'paragraph',
+                        content: selectedText ? [{ type: 'text', text: selectedText }] : undefined
+                      }
+                    ]
+                  })
+                  .run();
+              }
             }}>
               + CONDICIONAL
             </Button>

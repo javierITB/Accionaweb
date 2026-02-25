@@ -214,6 +214,7 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
                   const clean = stripHtml(e.target.value);
                   updateAttributes({ condition: clean });
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
                 onFocus={() => handleFocus('manual')}
                 className="nodrag nopan"
                 rows={2}
@@ -319,19 +320,20 @@ const ConditionalBlockComponent = ({ node, updateAttributes, selected }) => {
       </div>
 
       {/* Contenedor visual del contenido condicionado */}
-      <div style={{
-        backgroundColor: `${color}0A`, // Opacidad baja
-        borderLeft: `3px solid ${color}`,
-        borderTop: `1px solid ${color}40`,
-        borderRight: `1px solid ${color}40`,
-        borderBottom: `1px solid ${color}40`,
-        padding: '16px 20px',
-        borderRadius: '0 8px 8px 0',
-        minHeight: '50px',
-        position: 'relative',
-        zIndex: selected ? 20 : 1, // Fix: Selected items go above siblings to prevent UI clipping
-        outline: selected ? `2px solid ${color}` : 'none'
-      }}>
+      <div
+        style={{
+          backgroundColor: `${color}0A`, // Opacidad baja
+          borderLeft: `3px solid ${color}`,
+          borderTop: `1px solid ${color}40`,
+          borderRight: `1px solid ${color}40`,
+          borderBottom: `1px solid ${color}40`,
+          padding: '16px 20px',
+          borderRadius: '0 8px 8px 0',
+          minHeight: '50px',
+          position: 'relative',
+          zIndex: selected ? 20 : 1, // Fix: Selected items go above siblings to prevent UI clipping
+          outline: selected ? `2px solid ${color}` : 'none'
+        }}>
         <NodeViewContent />
       </div>
     </NodeViewWrapper>
