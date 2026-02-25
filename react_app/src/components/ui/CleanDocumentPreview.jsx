@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as mammoth from 'mammoth';
-import { read, utils } from 'xlsx';
+import readXlsxFile from 'read-excel-file/browser';
 import { apiFetch } from '../../utils/api';
 
 const CleanDocumentPreview = ({
@@ -108,29 +108,35 @@ const CleanDocumentPreview = ({
 
                     setContent(processedContent);
                 }
-                else if (cleanDocType === 'pdf') {
-                    setContent('pdf');
-                }
-                else if (['xls', 'xlsx', 'csv'].includes(cleanDocType)) {
+                else if (['xls', 'xlsx'].includes(cleanDocType)) {
                     const response = await safeFetch(documentUrl);
-                    const arrayBuffer = await response.arrayBuffer();
-                    const workbook = read(arrayBuffer, { type: 'array' });
+                    const blob = await response.blob();
 
-                    // Toma la primera hoja
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const htmlContent = utils.sheet_to_html(worksheet, {
-                        id: "excel-preview-table",
-                        editable: false
-                    });
+                    try {
+                        const rows = await readXlsxFile(blob);
 
-                    // Estilizar la tabla HTML generada por xlsx
-                    let styledExcelHtml = htmlContent
-                        .replace(/<table/gi, '<table style="border-collapse: collapse; margin: 0 auto; font-family: sans-serif; font-size: 10pt; color: #000; background-color: #fff;"')
-                        .replace(/<th/gi, '<th style="border: 1px solid #d1d1d1; padding: 8px 12px; background-color: #f3f4f6; text-align: center; font-weight: bold; color: #000;"')
-                        .replace(/<td/gi, '<td style="border: 1px solid #d1d1d1; padding: 8px 12px; color: #000; min-width: 100px; max-width: 500px; white-space: pre-wrap; word-wrap: break-word; vertical-align: top;"');
+                        // Estilizar la tabla HTML generada manualmente
+                        let tableHtml = '<table style="border-collapse: collapse; margin: 0 auto; font-family: sans-serif; font-size: 10pt; color: #000; background-color: #fff; width: 100%;">';
 
-                    setContent(styledExcelHtml);
+                        rows.forEach((row, index) => {
+                            tableHtml += '<tr>';
+                            row.forEach(cell => {
+                                const cellValue = cell !== null && cell !== undefined ? String(cell).replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+                                if (index === 0) {
+                                    tableHtml += `<th style="border: 1px solid #d1d1d1; padding: 8px 12px; background-color: #f3f4f6; text-align: center; font-weight: bold; color: #000;">${cellValue}</th>`;
+                                } else {
+                                    tableHtml += `<td style="border: 1px solid #d1d1d1; padding: 8px 12px; color: #000; min-width: 100px; max-width: 500px; white-space: pre-wrap; word-wrap: break-word; vertical-align: top;">${cellValue}</td>`;
+                                }
+                            });
+                            tableHtml += '</tr>';
+                        });
+
+                        tableHtml += '</table>';
+                        setContent(tableHtml);
+                    } catch (parseError) {
+                        console.error('Error parsing Excel file:', parseError);
+                        setError('El archivo Excel no pudo ser procesado o está corrupto.');
+                    }
                 }
 
             } catch (err) {
