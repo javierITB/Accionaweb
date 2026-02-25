@@ -414,7 +414,7 @@ const FormBuilder = ({ userPermissions = {} }) => {
             skipRedirect: true, // No redirigir para ver errores de límite
          });
 
-         if (!response.ok) {
+         if (!response) {
             const errorBody = await response.json().catch(() => ({}));
             throw new Error(errorBody.error || "Error al publicar el formulario");
          }
@@ -544,8 +544,8 @@ const FormBuilder = ({ userPermissions = {} }) => {
                   <div className="flex items-center">
                      <div
                         className={`px-3 py-1 rounded-full text-sm font-medium ${formData?.status === "publicado"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-yellow-100 text-yellow-700"
+                           ? "bg-green-100 text-green-700"
+                           : "bg-yellow-100 text-yellow-700"
                            }`}
                      >
                         {formData?.status === "publicado" ? "Publicado" : "Borrador"}
@@ -618,8 +618,8 @@ const FormBuilder = ({ userPermissions = {} }) => {
                                  key={tab?.id}
                                  onClick={() => setActiveTab(tab?.id)}
                                  className={`flex items-center space-x-2 py-4 px-1 border-r border-b-2  font-medium text-sm transition-colors ${activeTab === tab?.id
-                                       ? "border-b-primary text-primary"
-                                       : "border-b-transparent  text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                                    ? "border-b-primary text-primary"
+                                    : "border-b-transparent  text-muted-foreground hover:text-foreground hover:border-muted-foreground"
                                     }`}
                                  title={`Ir a la sección de ${tab?.label}`}
                               >
@@ -628,8 +628,8 @@ const FormBuilder = ({ userPermissions = {} }) => {
                                  {tab?.count !== undefined && (
                                     <span
                                        className={`px-2 py-1 text-xs rounded-full ${activeTab === tab?.id
-                                             ? "bg-primary text-primary-foreground"
-                                             : "bg-muted text-muted-foreground"
+                                          ? "bg-primary text-primary-foreground"
+                                          : "bg-muted text-muted-foreground"
                                           }`}
                                     >
                                        {tab?.count}
@@ -641,8 +641,8 @@ const FormBuilder = ({ userPermissions = {} }) => {
                                  key={tab?.id}
                                  onClick={() => setActiveTab(tab?.id)}
                                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab?.id
-                                       ? "border-primary text-primary"
-                                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                                    ? "border-primary text-primary"
+                                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground"
                                     }`}
                                  title={`Ir a la sección de ${tab?.label}`}
                               >
@@ -651,8 +651,8 @@ const FormBuilder = ({ userPermissions = {} }) => {
                                  {tab?.count !== undefined && (
                                     <span
                                        className={`px-2 py-1 text-xs rounded-full ${activeTab === tab?.id
-                                             ? "bg-primary text-primary-foreground"
-                                             : "bg-muted text-muted-foreground"
+                                          ? "bg-primary text-primary-foreground"
+                                          : "bg-muted text-muted-foreground"
                                           }`}
                                     >
                                        {tab?.count}
