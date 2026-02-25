@@ -152,3 +152,12 @@ app.use((req, res) => {
 });
 
 module.exports = app;
+
+// Iniciar servidor solo si se ejecuta directamente (localmente)
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`[Local Development] API Multi-tenant Server running on http://localhost:${PORT}`);
+    console.log(`[Local Development] Swagger Docs available at http://localhost:${PORT}/api-docs`);
+  });
+}

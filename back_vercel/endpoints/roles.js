@@ -51,30 +51,30 @@ router.use(express.json({ limit: "4mb" }));
 /**
  * @openapi
  * /roles:
- * post:
- * summary: Crear o actualizar un rol de la organización
- * description: Define un nuevo cargo o actualiza uno existente. Valida la jerarquía del solicitante; no se puede asignar un 'level' superior al propio. El rol 'Maestro' está restringido a usuarios con nivel 100.
- * tags: [Gestión de Roles]
- * security:
- * - bearerAuth: []
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * properties:
- * id: { type: string, description: "Opcional. ID del rol para actualización" }
- * name: { type: string, example: "Supervisor de Operaciones" }
- * description: { type: string }
- * level: { type: integer, example: 50, description: "Nivel jerárquico del rol" }
- * permissions: { type: array, items: { type: string }, example: ["view_reports", "edit_forms"] }
- * color: { type: string, example: "#4f46e5" }
- * responses:
- * 201:
- * description: Rol creado exitosamente.
- * 403:
- * description: Nivel jerárquico insuficiente o intento de modificar rol 'Maestro/Admin'.
+ *   post:
+ *     summary: Crear o actualizar un rol de la organización
+ *     description: Define un nuevo cargo o actualiza uno existente. Valida la jerarquía del solicitante; no se puede asignar un 'level' superior al propio. El rol 'Maestro' está restringido a usuarios con nivel 100.
+ *     tags: [Gestión de Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id: { type: string, description: "Opcional. ID del rol para actualización" }
+ *               name: { type: string, example: "Supervisor de Operaciones" }
+ *               description: { type: string }
+ *               level: { type: integer, example: 50, description: "Nivel jerárquico del rol" }
+ *               permissions: { type: array, items: { type: string }, example: ["view_reports", "edit_forms"] }
+ *               color: { type: string, example: "#4f46e5" }
+ *     responses:
+ *       201:
+ *         description: Rol creado exitosamente.
+ *       403:
+ *         description: Nivel jerárquico insuficiente o intento de modificar rol 'Maestro/Admin'.
  */
 router.post("/", async (req, res) => {
    try {
@@ -151,15 +151,15 @@ router.post("/", async (req, res) => {
 /**
  * @openapi
  * /roles/config:
- * get:
- * summary: Obtener matriz de permisos disponibles
- * description: Retorna la configuración global de permisos que pueden ser asignados a los roles en esta empresa.
- * tags: [Gestión de Roles]
- * security:
- * - bearerAuth: []
- * responses:
- * 200:
- * description: Lista de permisos configurables.
+ *   get:
+ *     summary: Obtener matriz de permisos disponibles
+ *     description: Retorna la configuración global de permisos que pueden ser asignados a los roles en esta empresa.
+ *     tags: [Gestión de Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de permisos configurables.
  */
 router.get("/config", async (req, res) => {
    try {
@@ -179,15 +179,15 @@ router.get("/config", async (req, res) => {
 /**
  * @openapi
  * /roles:
- * get:
- * summary: Listar todos los roles de la empresa
- * description: Retorna la lista de roles disponibles. Si la empresa está suspendida, los permisos de los roles se filtran automáticamente dejando solo 'facturación' y 'panel básico'. El rol 'Maestro' se oculta a menos que el solicitante sea Maestro.
- * tags: [Gestión de Roles]
- * security:
- * - bearerAuth: []
- * responses:
- * 200:
- * description: Lista de roles filtrada por estado de suscripción y jerarquía.
+ *   get:
+ *     summary: Listar todos los roles de la empresa
+ *     description: Retorna la lista de roles disponibles. Si la empresa está suspendida, los permisos de los roles se filtran automáticamente dejando solo 'facturación' y 'panel básico'. El rol 'Maestro' se oculta a menos que el solicitante sea Maestro.
+ *     tags: [Gestión de Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de roles filtrada por estado de suscripción y jerarquía.
  */
 router.get("/", async (req, res) => {
    try {
@@ -264,22 +264,22 @@ router.get("/:id", async (req, res) => {
 /**
  * @openapi
  * /roles/{id}:
- * delete:
- * summary: Eliminar un rol existente
- * description: Borra un rol de la base de datos siempre que no tenga usuarios asociados (validación mediante descifrado de cargos). Los roles 'admin' y 'maestro' están protegidos contra eliminación.
- * tags: [Gestión de Roles]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: id
- * required: true
- * schema: { type: string }
- * responses:
- * 200:
- * description: Rol eliminado con éxito.
- * 400:
- * description: No se puede eliminar el rol porque tiene usuarios asignados.
+ *   delete:
+ *     summary: Eliminar un rol existente
+ *     description: Borra un rol de la base de datos siempre que no tenga usuarios asociados (validación mediante descifrado de cargos). Los roles 'admin' y 'maestro' están protegidos contra eliminación.
+ *     tags: [Gestión de Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Rol eliminado con éxito.
+ *       400:
+ *         description: No se puede eliminar el rol porque tiene usuarios asignados.
  */
 router.delete("/:id", async (req, res) => {
    try {
@@ -350,20 +350,20 @@ router.delete("/:id", async (req, res) => {
 /**
  * @openapi
  * /roles/check-permission/{permission}:
- * get:
- * summary: Verificar si el usuario tiene un permiso específico
- * description: Utilidad para que el frontend valide si el usuario actual posee un permiso concreto o el permiso maestro 'all'.
- * tags: [Utilidades de Seguridad]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: permission
- * required: true
- * schema: { type: string }
- * responses:
- * 200:
- * description: Objeto booleano con el resultado de la validación.
+ *   get:
+ *     summary: Verificar si el usuario tiene un permiso específico
+ *     description: Utilidad para que el frontend valide si el usuario actual posee un permiso concreto o el permiso maestro 'all'.
+ *     tags: [Utilidades de Seguridad]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: permission
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Objeto booleano con el resultado de la validación.
  */
 router.get("/check-permission/:permission", async (req, res) => {
    try {
@@ -388,15 +388,15 @@ router.get("/check-permission/:permission", async (req, res) => {
 /**
  * @openapi
  * /roles/user-count/all:
- * get:
- * summary: Obtener distribución de cargos en la empresa
- * description: Escanea la colección de usuarios, descifra sus cargos y retorna una lista plana para conteo y analítica en el dashboard.
- * tags: [Consultas de Administración]
- * security:
- * - bearerAuth: []
- * responses:
- * 200:
- * description: Array de nombres de cargos asignados actualmente.
+ *   get:
+ *     summary: Obtener distribución de cargos en la empresa
+ *     description: Escanea la colección de usuarios, descifra sus cargos y retorna una lista plana para conteo y analítica en el dashboard.
+ *     tags: [Consultas de Administración]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array de nombres de cargos asignados actualmente.
  */
 router.get("/user-count/all", async (req, res) => {
    try {

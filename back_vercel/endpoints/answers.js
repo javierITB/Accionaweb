@@ -147,28 +147,28 @@ router.use(express.json({ limit: "4mb" }));
 /**
  * @openapi
  * /answers:
- * post:
- * summary: Enviar respuesta de formulario (Cifrado PQC)
- * tags: [Respuestas]
- * security:
- * - bearerAuth: []
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * properties:
- * formId: { type: string }
- * user: { type: object }
- * responses: { type: object }
- * formTitle: { type: string }
- * mail: { type: string, description: "Correo de respaldo" }
- * responses:
- * 200:
- * description: Respuesta guardada y notificaciones enviadas
- * 403:
- * description: Límite de plan alcanzado o empresa no autorizada
+ *   post:
+ *     summary: Enviar respuesta de formulario (Cifrado PQC)
+ *     tags: [Respuestas]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               formId: { type: string }
+ *               user: { type: object }
+ *               responses: { type: object }
+ *               formTitle: { type: string }
+ *               mail: { type: string, description: "Correo de respaldo" }
+ *     responses:
+ *       200:
+ *         description: Respuesta guardada y notificaciones enviadas
+ *       403:
+ *         description: Límite de plan alcanzado o empresa no autorizada
  */
 // En el endpoint POST principal (/)
 router.post("/", async (req, res) => {
@@ -353,14 +353,14 @@ router.post("/", async (req, res) => {
 /**
  * @openapi
  * /answers/admin:
- * post:
- * summary: Crear solicitud administrativa para un cliente
- * tags: [Respuestas Admin]
- * security:
- * - bearerAuth: []
- * responses:
- * 200:
- * description: Solicitud creada exitosamente para el destinatario
+ *   post:
+ *     summary: Crear solicitud administrativa para un cliente
+ *     tags: [Respuestas Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Solicitud creada exitosamente para el destinatario
  */
 router.post("/admin", async (req, res) => {
    try {
@@ -527,26 +527,26 @@ router.post("/admin", async (req, res) => {
 /**
  * @openapi
  * /answers/{id}/adjuntos:
- * post:
- * summary: Subir adjunto individual a una respuesta
- * tags: [Adjuntos]
- * parameters:
- * - in: path
- * name: id
- * required: true
- * schema: { type: string }
- * requestBody:
- * content:
- * application/json:
- * schema:
- * type: object
- * properties:
- * adjunto: { type: object, properties: { fileName: { type: string }, fileData: { type: string, format: base64 } } }
- * index: { type: integer }
- * total: { type: integer }
- * responses:
- * 200:
- * description: Archivo subido y timestamp actualizado
+ *   post:
+ *     summary: Subir adjunto individual a una respuesta
+ *     tags: [Adjuntos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               adjunto: { type: object, properties: { fileName: { type: string }, fileData: { type: string, format: base64 } } }
+ *               index: { type: integer }
+ *               total: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Archivo subido y timestamp actualizado
  */
 // Obtener adjuntos de una respuesta específica
 router.get("/:id/adjuntos", async (req, res) => {
@@ -647,26 +647,26 @@ router.post("/:id/adjuntos", async (req, res) => {
 /**
  * @openapi
  * /answers/{id}/adjuntos/{index}:
- * get:
- * summary: Descargar un archivo adjunto enviado por el cliente
- * tags: [Adjuntos]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: id
- * required: true
- * schema: { type: string }
- * - in: path
- * name: index
- * required: true
- * schema: { type: integer }
- * responses:
- * 200:
- * description: Retorna el archivo binario (PDF, JPG o Excel).
- * content:
- * application/octet-stream:
- * schema: { type: string, format: binary }
+ *   get:
+ *     summary: Descargar un archivo adjunto enviado por el cliente
+ *     tags: [Adjuntos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *       - in: path
+ *         name: index
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Retorna el archivo binario (PDF, JPG o Excel).
+ *         content:
+ *           application/octet-stream:
+ *             schema: { type: string, format: binary }
  */
 // Obtiener y descargar un adjunto específico
 router.get("/:id/adjuntos/:index", async (req, res) => {
@@ -1211,9 +1211,9 @@ router.get("/mini", async (req, res) => {
             submittedAt: answer.submittedAt,
             user: answer.user
                ? {
-                    nombre: decrypt(answer.user.nombre),
-                    empresa: decrypt(answer.user.empresa),
-                 }
+                  nombre: decrypt(answer.user.nombre),
+                  empresa: decrypt(answer.user.empresa),
+               }
                : answer.user,
             status: answer.status,
             createdAt: answer.createdAt,
@@ -1251,24 +1251,24 @@ router.get("/mini", async (req, res) => {
 /**
  * @openapi
  * /answers/filtros:
- * get:
- * summary: Obtener respuestas con filtros avanzados y paginación
- * tags: [Consultas]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: query
- * name: status
- * schema: { type: string, enum: [pendiente, en_revision, aprobado, firmado, finalizado, archivado] }
- * - in: query
- * name: search
- * schema: { type: string, description: "Búsqueda por nombre, RUT o empresa" }
- * - in: query
- * name: page
- * schema: { type: integer, default: 1 }
- * responses:
- * 200:
- * description: Lista filtrada con estadísticas de estados
+ *   get:
+ *     summary: Obtener respuestas con filtros avanzados y paginación
+ *     tags: [Consultas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema: { type: string, enum: [pendiente, en_revision, aprobado, firmado, finalizado, archivado] }
+ *       - in: query
+ *         name: search
+ *         schema: { type: string, description: "Búsqueda por nombre, RUT o empresa" }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *     responses:
+ *       200:
+ *         description: Lista filtrada con estadísticas de estados
  */
 // ruta mini mejorada con capacidad de filtros
 router.get("/filtros", async (req, res) => {
@@ -1377,10 +1377,10 @@ router.get("/filtros", async (req, res) => {
       const normalizeText = (str) =>
          str
             ? str
-                 .toString()
-                 .normalize("NFD")
-                 .replace(/[\u0300-\u036f]/g, "")
-                 .toLowerCase()
+               .toString()
+               .normalize("NFD")
+               .replace(/[\u0300-\u036f]/g, "")
+               .toLowerCase()
             : "";
 
       // 5.1 Filtrado en Memoria (Búsqueda por texto claro)
@@ -1466,23 +1466,23 @@ router.get("/filtros", async (req, res) => {
  * @openapi
  * /answers/compartir:
  *   post:
- *   summary: Compartir solicitud con otros usuarios de la misma empresa
- *   tags: [Colaboración]
- *   security:
- *   - bearerAuth: []
- *   requestBody:
- *   content:
- *   application/json:
- *   schema:
- *   type: object
- *   properties:
- *   usuarios: { type: array, items: { type: string }, description: "IDs de usuarios destino" }
- *   id: { type: string, description: "ID de la respuesta" }
- *   responses:
- *   200:
- *   description: Acceso concedido
- *   403:
- *   description: Intento de compartir con usuarios de otra empresa (bloqueado)
+ *     summary: Compartir solicitud con otros usuarios de la misma empresa
+ *     tags: [Colaboración]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               usuarios: { type: array, items: { type: string }, description: "IDs de usuarios destino" }
+ *               id: { type: string, description: "ID de la respuesta" }
+ *     responses:
+ *       200:
+ *         description: Acceso concedido
+ *       403:
+ *         description: Intento de compartir con usuarios de otra empresa (bloqueado)
  */
 // ruta para compartir solicitudes con usuarios
 router.post("/compartir/", async (req, res) => {
@@ -1715,7 +1715,7 @@ router.get("/public/:id", async (req, res) => {
             const plantilla = await buscarPlantillaPorFormId(respuestaProcesada.formId, req.db);
             respuestaProcesada.hasTemplate = !!plantilla;
          }
-      } catch (e) {}
+      } catch (e) { }
 
       res.json(respuestaProcesada);
    } catch (err) {
@@ -1839,7 +1839,7 @@ router.get("/:id", async (req, res) => {
                      if (u.nombre && u.nombre.includes(":")) {
                         try {
                            nombre = decrypt(u.nombre);
-                        } catch (e) {}
+                        } catch (e) { }
                      } else if (u.nombre) {
                         nombre = u.nombre;
                      }
@@ -1847,7 +1847,7 @@ router.get("/:id", async (req, res) => {
                      if (u.mail && u.mail.includes(":")) {
                         try {
                            email = decrypt(u.mail);
-                        } catch (e) {}
+                        } catch (e) { }
                      } else if (u.mail) {
                         email = u.mail;
                      }
@@ -2254,25 +2254,25 @@ router.get("/:formId/chat/", async (req, res) => {
 /**
  * @openapi
  * /answers/chat:
- * post:
- * summary: Enviar mensaje al chat de la solicitud
- * tags: [Colaboración]
- * security:
- * - bearerAuth: []
- * requestBody:
- * content:
- * application/json:
- * schema:
- * type: object
- * properties:
- * formId: { type: string }
- * autor: { type: string }
- * mensaje: { type: string }
- * internal: { type: boolean, description: "Si es true, solo visible para Staff" }
- * sendToEmail: { type: boolean }
- * responses:
- * 200:
- * description: Mensaje enviado y notificaciones disparadas
+ *   post:
+ *     summary: Enviar mensaje al chat de la solicitud
+ *     tags: [Colaboración]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               formId: { type: string }
+ *               autor: { type: string }
+ *               mensaje: { type: string }
+ *               internal: { type: boolean, description: "Si es true, solo visible para Staff" }
+ *               sendToEmail: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Mensaje enviado y notificaciones disparadas
  */
 router.post("/chat", async (req, res) => {
    try {
@@ -2473,8 +2473,8 @@ router.post("/chat", async (req, res) => {
          titulo: internal
             ? "Nueva nota interna"
             : isSenderStaff
-              ? "Nuevo mensaje recibido"
-              : "Nuevo mensaje en formulario",
+               ? "Nuevo mensaje recibido"
+               : "Nuevo mensaje en formulario",
          descripcion: `En: ${formTitleNoti} (${trabajadorNombre}) - ${autor}: ${mensaje.substring(0, 40)}${mensaje.length > 40 ? "..." : ""}`,
          icono: "MessageCircle",
          color: internal ? "#f59e0b" : "#45577eff",
@@ -2751,22 +2751,22 @@ router.get("/:id/archived", async (req, res) => {
 /**
  * @openapi
  * /answers/upload-corrected-files:
- * post:
- * summary: Subir múltiples archivos PDF corregidos (Staff)
- * tags: [Respuestas Admin]
- * security:
- * - bearerAuth: []
- * requestBody:
- * content:
- * multipart/form-data:
- * schema:
- * type: object
- * properties:
- * files: { type: array, items: { type: string, format: binary } }
- * responseId: { type: string }
- * responses:
- * 200:
- * description: Archivos cargados y usuario notificado por email
+ *   post:
+ *     summary: Subir múltiples archivos PDF corregidos (Staff)
+ *     tags: [Respuestas Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               files: { type: array, items: { type: string, format: binary } }
+ *               responseId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Archivos cargados y usuario notificado por email
  */
 // Subir múltiples archivos corregidos
 router.post("/upload-corrected-files", async (req, res) => {
@@ -3726,27 +3726,27 @@ router.delete("/:id/remove-correction", async (req, res) => {
 /**
  * @openapi
  * /answers/{responseId}/upload-client-signature:
- * post:
- * summary: Subir documento firmado por el cliente
- * description: Sube el PDF final con la firma del cliente, cambia el estado a 'firmado' y notifica al staff de la empresa. Máximo 5 firmas por solicitud.
- * tags: [Firmas]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: responseId
- * required: true
- * schema: { type: string }
- * requestBody:
- * content:
- * multipart/form-data:
- * schema:
- * type: object
- * properties:
- * signedPdf: { type: string, format: binary }
- * responses:
- * 200:
- * description: Documento firmado guardado exitosamente.
+ *   post:
+ *     summary: Subir documento firmado por el cliente
+ *     description: Sube el PDF final con la firma del cliente, cambia el estado a 'firmado' y notifica al staff de la empresa. Máximo 5 firmas por solicitud.
+ *     tags: [Firmas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: responseId
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               signedPdf: { type: string, format: binary }
+ *     responses:
+ *       200:
+ *         description: Documento firmado guardado exitosamente.
  */
 // Subir PDF firmado por cliente a colección firmados y cambiar estado de respuesta a 'firmado'
 router.post("/:responseId/upload-client-signature", upload.single("signedPdf"), async (req, res) => {
@@ -4188,27 +4188,27 @@ router.post("/:id/regenerate-document", async (req, res) => {
 /**
  * @openapi
  * /answers/{id}/status:
- * put:
- * summary: Cambiar el estado de una solicitud (Workflow)
- * description: Permite avanzar o retroceder una solicitud entre estados (pendiente, en_revision, aprobado, firmado, finalizado, archivado). Dispara notificaciones automáticas al autor y colaboradores.
- * tags: [Workflow]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: id
- * required: true
- * schema: { type: string }
- * requestBody:
- * content:
- * application/json:
- * schema:
- * type: object
- * properties:
- * status: { type: string, enum: [pendiente, en_revision, aprobado, firmado, finalizado, archivado] }
- * responses:
- * 200:
- * description: Estado actualizado y evento registrado en el historial.
+ *   put:
+ *     summary: Cambiar el estado de una solicitud (Workflow)
+ *     description: Permite avanzar o retroceder una solicitud entre estados (pendiente, en_revision, aprobado, firmado, finalizado, archivado). Dispara notificaciones automáticas al autor y colaboradores.
+ *     tags: [Workflow]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status: { type: string, enum: [pendiente, en_revision, aprobado, firmado, finalizado, archivado] }
+ *     responses:
+ *       200:
+ *         description: Estado actualizado y evento registrado en el historial.
  */
 // Cambiar estado de respuesta (avanzar o retroceder)
 router.put("/:id/status", async (req, res) => {
@@ -4355,7 +4355,7 @@ router.put("/:id/status", async (req, res) => {
          if (updatedResponse.mail && typeof updatedResponse.mail === "string" && updatedResponse.mail.includes(":")) {
             try {
                updatedResponse.mail = decrypt(updatedResponse.mail);
-            } catch (e) {}
+            } catch (e) { }
          }
       }
 

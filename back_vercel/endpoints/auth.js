@@ -339,21 +339,21 @@ router.get("/empresas/anuncios", async (req, res) => {
 /**
  * @openapi
  * /auth/{mail}:
- * get:
- * summary: Obtener vinculación de usuario por email
- * description: Retorna el ID, la empresa y el cargo descifrado asociado a un correo electrónico.
- * tags: [Usuarios]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: mail
- * required: true
- * schema:
- * type: string
- * responses:
- * 200:
- * description: Datos básicos del usuario encontrados.
+ *   get:
+ *     summary: Obtener vinculación de usuario por email
+ *     description: Retorna el ID, la empresa y el cargo descifrado asociado a un correo electrónico.
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: mail
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Datos básicos del usuario encontrados.
  */
 router.get("/:mail", async (req, res) => {
    try {
@@ -380,21 +380,21 @@ router.get("/:mail", async (req, res) => {
 /**
  * @openapi
  * /auth/full/{mail}:
- * get:
- * summary: Obtener perfil completo descifrado
- * description: Retorna todos los datos del usuario (nombre, notificaciones, estado 2FA) completamente descifrados para su edición o visualización en perfil.
- * tags: [Usuarios]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: mail
- * required: true
- * schema:
- * type: string
- * responses:
- * 200:
- * description: Perfil completo del usuario.
+ *   get:
+ *     summary: Obtener perfil completo descifrado
+ *     description: Retorna todos los datos del usuario (nombre, notificaciones, estado 2FA) completamente descifrados para su edición o visualización en perfil.
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: mail
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Perfil completo del usuario.
  */
 router.get("/full/:mail", async (req, res) => {
    try {
@@ -451,26 +451,26 @@ router.get("/full/:mail", async (req, res) => {
 /**
  * @openapi
  * /auth/login:
- * post:
- * summary: Iniciar sesión de usuario
- * tags: [Autenticación]
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * required: [email, password]
- * properties:
- * email:
- * type: string
- * password:
- * type: string
- * responses:
- * 200:
- * description: Login exitoso o requerimiento de 2FA
- * 401:
- * description: Credenciales inválidas o usuario inactivo
+ *   post:
+ *     summary: Iniciar sesión de usuario
+ *     tags: [Autenticación]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login exitoso o requerimiento de 2FA
+ *       401:
+ *         description: Credenciales inválidas o usuario inactivo
  */
 router.post("/login", async (req, res) => {
    const { email, password } = req.body;
@@ -602,26 +602,26 @@ router.post("/login", async (req, res) => {
 /**
  * @openapi
  * /auth/verify-login-2fa:
- * post:
- * summary: Verificar código 2FA para inicio de sesión
- * tags: [Autenticación]
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * required: [email, verificationCode]
- * properties:
- * email:
- * type: string
- * verificationCode:
- * type: string
- * minLength: 6
- * maxLength: 6
- * responses:
- * 200:
- * description: Verificación exitosa, entrega token de acceso
+ *   post:
+ *     summary: Verificar código 2FA para inicio de sesión
+ *     tags: [Autenticación]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, verificationCode]
+ *             properties:
+ *               email:
+ *                 type: string
+ *               verificationCode:
+ *                 type: string
+ *                 minLength: 6
+ *                 maxLength: 6
+ *     responses:
+ *       200:
+ *         description: Verificación exitosa, entrega token de acceso
  */
 router.post("/verify-login-2fa", async (req, res) => {
    const { email, verificationCode } = req.body;
@@ -751,17 +751,17 @@ router.post("/verify-login-2fa", async (req, res) => {
 /**
  * @openapi
  * /auth/recuperacion:
- * post:
- * summary: Solicitar código de recuperación de contraseña
- * tags: [Autenticación]
- * requestBody:
- * content:
- * application/json:
- * schema:
- * type: object
- * properties:
- * email:
- * type: string
+ *   post:
+ *     summary: Solicitar código de recuperación de contraseña
+ *     tags: [Autenticación]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
  */
 router.post("/recuperacion", async (req, res) => {
    const { email } = req.body;
@@ -1095,14 +1095,14 @@ router.post("/disable-2fa", async (req, res) => {
 /**
  * @openapi
  * /auth/logins/todos:
- * get:
- * summary: Historial global de ingresos
- * tags: [Auditoría]
- * security:
- * - bearerAuth: []
- * responses:
- * 200:
- * description: Lista de logs de acceso (IP, Navegador, OS).
+ *   get:
+ *     summary: Historial global de ingresos
+ *     tags: [Auditoría]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de logs de acceso (IP, Navegador, OS).
  */
 router.get("/logins/todos", async (req, res) => {
    try {
@@ -1371,36 +1371,36 @@ router.post("/logout", async (req, res) => {
 /**
  * @openapi
  * /auth/register:
- * post:
- * summary: Registrar un nuevo usuario (Requiere Token)
- * tags: [Usuarios]
- * security:
- * - bearerAuth: []
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * required: [nombre, mail, cargo, rol]
- * properties:
- * nombre:
- * type: string
- * apellido:
- * type: string
- * mail:
- * type: string
- * empresa:
- * type: string
- * cargo:
- * type: string
- * rol:
- * type: string
- * responses:
- * 201:
- * description: Usuario creado y correo de activación enviado
- * 403:
- * description: Permisos insuficientes (Jerarquía de roles)
+ *   post:
+ *     summary: Registrar un nuevo usuario (Requiere Token)
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [nombre, mail, cargo, rol]
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *               apellido:
+ *                 type: string
+ *               mail:
+ *                 type: string
+ *               empresa:
+ *                 type: string
+ *               cargo:
+ *                 type: string
+ *               rol:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Usuario creado y correo de activación enviado
+ *       403:
+ *         description: Permisos insuficientes (Jerarquía de roles)
  */
 router.post("/register", async (req, res) => {
    try {
@@ -1502,20 +1502,20 @@ router.post("/register", async (req, res) => {
 /**
  * @openapi
  * /auth/users/{id}:
- * put:
- * summary: Actualizar datos de un usuario
- * tags: [Usuarios]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: id
- * required: true
- * schema:
- * type: string
- * responses:
- * 200:
- * description: Usuario actualizado exitosamente
+ *   put:
+ *     summary: Actualizar datos de un usuario
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Usuario actualizado exitosamente
  */
 router.put("/users/:id", async (req, res) => {
    try {
@@ -1668,23 +1668,23 @@ router.post("/set-initial-password", async (req, res) => {
 /**
  * @openapi
  * /auth/change-password:
- * post:
- * summary: Cambiar contraseña (Usuario Autenticado)
- * tags: [Autenticación]
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * required: [email, currentPassword, newPassword]
- * properties:
- * email: { type: string }
- * currentPassword: { type: string }
- * newPassword: { type: string, minLength: 8 }
- * responses:
- * 200:
- * description: Contraseña actualizada y notificación de seguridad enviada.
+ *   post:
+ *     summary: Cambiar contraseña (Usuario Autenticado)
+ *     tags: [Autenticación]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, currentPassword, newPassword]
+ *             properties:
+ *               email: { type: string }
+ *               currentPassword: { type: string }
+ *               newPassword: { type: string, minLength: 8 }
+ *     responses:
+ *       200:
+ *         description: Contraseña actualizada y notificación de seguridad enviada.
  */
 router.post("/change-password", async (req, res) => {
    const { email, currentPassword, newPassword } = req.body;
@@ -1788,23 +1788,23 @@ router.delete("/users/:id", async (req, res) => {
 /**
  * @openapi
  * /auth/set-password:
- * post:
- * summary: Establecer contraseña inicial (Link de invitación)
- * description: Permite a un usuario nuevo configurar su contraseña por primera vez. Solo funciona si el estado es 'pendiente'.
- * tags: [Autenticación]
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * required: [userId, password]
- * properties:
- * userId: { type: string }
- * password: { type: string }
- * responses:
- * 200:
- * description: Contraseña creada y cuenta activada.
+ *   post:
+ *     summary: Establecer contraseña inicial (Link de invitación)
+ *     description: Permite a un usuario nuevo configurar su contraseña por primera vez. Solo funciona si el estado es 'pendiente'.
+ *     tags: [Autenticación]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId, password]
+ *             properties:
+ *               userId: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       200:
+ *         description: Contraseña creada y cuenta activada.
  */
 router.post("/set-password", async (req, res) => {
    try {
@@ -1889,15 +1889,15 @@ router.post("/set-password", async (req, res) => {
 /**
  * @openapi
  * /auth/empresas/todas:
- * get:
- * summary: Listar todas las empresas registradas
- * description: Retorna una lista de empresas con sus datos (RUT, dirección, encargado) y logos descifrados en Base64.
- * tags: [Empresas]
- * security:
- * - bearerAuth: []
- * responses:
- * 200:
- * description: Lista de empresas ordenada alfabéticamente.
+ *   get:
+ *     summary: Listar todas las empresas registradas
+ *     description: Retorna una lista de empresas con sus datos (RUT, dirección, encargado) y logos descifrados en Base64.
+ *     tags: [Empresas]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de empresas ordenada alfabéticamente.
  */
 router.get("/empresas/todas", async (req, res) => {
    try {
@@ -1971,15 +1971,15 @@ router.get("/empresas/todas", async (req, res) => {
 /**
  * @openapi
  * /auth/empresas/logo:
- * get:
- * summary: Obtener logo de la empresa del usuario actual
- * description: Identifica la empresa del usuario autenticado y retorna su logo descifrado para la interfaz.
- * tags: [Empresas]
- * security:
- * - bearerAuth: []
- * responses:
- * 200:
- * description: Imagen en formato Base64.
+ *   get:
+ *     summary: Obtener logo de la empresa del usuario actual
+ *     description: Identifica la empresa del usuario autenticado y retorna su logo descifrado para la interfaz.
+ *     tags: [Empresas]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Imagen en formato Base64.
  */
 router.get("/empresas/logo", async (req, res) => {
    try {
@@ -2060,26 +2060,27 @@ router.get("/empresas/:id", async (req, res) => {
 /**
  * @openapi
  * /auth/empresas/register:
- * post:
- * summary: Registrar una nueva empresa con logo
- * tags: [Empresas]
- * security:
- * - bearerAuth: []
- * content:
- * multipart/form-data:
- * schema:
- * type: object
- * properties:
- * nombre:
- * type: string
- * rut:
- * type: string
- * logo:
- * type: string
- * format: binary
- * responses:
- * 201:
- * description: Empresa registrada
+ *   post:
+ *     summary: Registrar una nueva empresa con logo
+ *     tags: [Empresas]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *               rut:
+ *                 type: string
+ *               logo:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Empresa registrada
  */
 router.post("/empresas/register", upload.single("logo"), async (req, res) => {
    try {
@@ -2208,21 +2209,21 @@ router.delete("/empresas/:id", async (req, res) => {
 /**
  * @openapi
  * /auth/empresas/usuarios/{email}:
- * get:
- * summary: Listar compañeros de empresa
- * description: Busca a todos los usuarios que pertenecen a la misma empresa que el email proporcionado. Útil para funciones de "compartir".
- * tags: [Empresas]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: email
- * required: true
- * schema:
- * type: string
- * responses:
- * 200:
- * description: Lista de usuarios de la misma organización.
+ *   get:
+ *     summary: Listar compañeros de empresa
+ *     description: Busca a todos los usuarios que pertenecen a la misma empresa que el email proporcionado. Útil para funciones de "compartir".
+ *     tags: [Empresas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de usuarios de la misma organización.
  */
 // ruta para recopilar todos los usuarios de la empresa asociados a un email
 router.get("/empresas/usuarios/:email", async (req, res) => {

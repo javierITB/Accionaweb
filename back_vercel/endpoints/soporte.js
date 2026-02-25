@@ -283,31 +283,31 @@ router.use(express.json({ limit: '4mb' }));
 /**
  * @openapi
  * /soporte:
- * post:
- * summary: Levantar un nuevo ticket de soporte
- * description: Crea un ticket de incidencia. Soporta múltiples adjuntos (PDF, Imágenes, WebP) y asignación inmediata de responsables. Envía correos de respaldo automáticos y genera notificaciones para el equipo de administración.
- * tags: [SaaS - Soporte & Tickets]
- * security:
- * - bearerAuth: []
- * requestBody:
- * required: true
- * content:
- * multipart/form-data:
- * schema:
- * type: object
- * properties:
- * formId: { type: string, description: "ID del formulario de soporte usado" }
- * responses: { type: string, description: "JSON string con las respuestas del ticket" }
- * user: { type: string, description: "JSON string con los datos del solicitante" }
- * category: { type: string, example: "soporte_tecnico" }
- * adjuntos: { type: array, items: { type: string, format: binary }, description: "Máximo 10 archivos" }
- * assignedTo: { type: string, description: "ID del usuario asignado (opcional)" }
- * estimatedCompletionAt: { type: string, format: date-time }
- * responses:
- * 201:
- * description: Ticket creado exitosamente. ID de solicitud generado.
- * 403:
- * description: Límite de tickets del plan alcanzado.
+ *   post:
+ *     summary: Levantar un nuevo ticket de soporte
+ *     description: Crea un ticket de incidencia. Soporta múltiples adjuntos (PDF, Imágenes, WebP) y asignación inmediata de responsables. Envía correos de respaldo automáticos y genera notificaciones para el equipo de administración.
+ *     tags: [SaaS - Soporte & Tickets]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               formId: { type: string, description: "ID del formulario de soporte usado" }
+ *               responses: { type: string, description: "JSON string con las respuestas del ticket" }
+ *               user: { type: string, description: "JSON string con los datos del solicitante" }
+ *               category: { type: string, example: "soporte_tecnico" }
+ *               adjuntos: { type: array, items: { type: string, format: binary }, description: "Máximo 10 archivos" }
+ *               assignedTo: { type: string, description: "ID del usuario asignado (opcional)" }
+ *               estimatedCompletionAt: { type: string, format: date-time }
+ *     responses:
+ *       201:
+ *         description: Ticket creado exitosamente. ID de solicitud generado.
+ *       403:
+ *         description: Límite de tickets del plan alcanzado.
  */
 router.post("/", uploadMultiple.array('adjuntos'), async (req, res) => {
   try {
@@ -836,22 +836,22 @@ router.get("/mail/:mail", async (req, res) => {
 /**
  * @openapi
  * /soporte/mini:
- * get:
- * summary: Obtener vista rápida de tickets activos
- * description: Retorna una lista paginada de tickets excluyendo los archivados. Incluye estadísticas de estados y un resumen de cambios (`changes`) ocurridos en las últimas 24 horas (creados, revisados, aprobados, finalizados).
- * tags: [SaaS - Soporte & Tickets]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: query
- * name: page
- * schema: { type: integer, default: 1 }
- * - in: query
- * name: limit
- * schema: { type: integer, default: 30 }
- * responses:
- * 200:
- * description: Listado de tickets descifrados con metadata de prioridad y origen.
+ *   get:
+ *     summary: Obtener vista rápida de tickets activos
+ *     description: Retorna una lista paginada de tickets excluyendo los archivados. Incluye estadísticas de estados y un resumen de cambios (`changes`) ocurridos en las últimas 24 horas (creados, revisados, aprobados, finalizados).
+ *     tags: [SaaS - Soporte & Tickets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 30 }
+ *     responses:
+ *       200:
+ *         description: Listado de tickets descifrados con metadata de prioridad y origen.
  */
 router.get("/mini", async (req, res) => {
   try {
@@ -984,25 +984,25 @@ router.get("/mini", async (req, res) => {
 /**
  * @openapi
  * /soporte/filtros:
- * get:
- * summary: Búsqueda avanzada de tickets (Server-side)
- * description: Filtra tickets por estado, empresa, categoría o búsqueda de texto profundo (incluyendo contenido dentro de las respuestas). Realiza desencriptación en memoria para permitir búsquedas por nombre de trabajador o RUT.
- * tags: [SaaS - Soporte & Tickets]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: query
- * name: search
- * schema: { type: string, description: "Término de búsqueda global" }
- * - in: query
- * name: category
- * schema: { type: string, description: "Filtrar por categoría o subcategoría" }
- * - in: query
- * name: startDate
- * schema: { type: string, format: date }
- * responses:
- * 200:
- * description: Resultados filtrados y estadísticas actualizadas.
+ *   get:
+ *     summary: Búsqueda avanzada de tickets (Server-side)
+ *     description: Filtra tickets por estado, empresa, categoría o búsqueda de texto profundo (incluyendo contenido dentro de las respuestas). Realiza desencriptación en memoria para permitir búsquedas por nombre de trabajador o RUT.
+ *     tags: [SaaS - Soporte & Tickets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema: { type: string, description: "Término de búsqueda global" }
+ *       - in: query
+ *         name: category
+ *         schema: { type: string, description: "Filtrar por categoría o subcategoría" }
+ *       - in: query
+ *         name: startDate
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: Resultados filtrados y estadísticas actualizadas.
  */
 router.get("/filtros", async (req, res) => {
   try {
@@ -1344,28 +1344,28 @@ router.delete("/:id", async (req, res) => {
 /**
  * @openapi
  * /soporte/{id}/status:
- * put:
- * summary: Actualizar estado y asignación del ticket
- * description: Cambia el estado del ticket. Si el estado es 'en_revision', permite (re)asignar a un técnico específico. Valida los estados permitidos contra la colección `config_tickets`.
- * tags: [SaaS - Soporte & Tickets]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: id
- * required: true
- * schema: { type: string }
- * requestBody:
- * content:
- * application/json:
- * schema:
- * type: object
- * properties:
- * status: { type: string }
- * assignedTo: { type: string, description: "ID del técnico asignado" }
- * responses:
- * 200:
- * description: Estado actualizado y notificación enviada al solicitante.
+ *   put:
+ *     summary: Actualizar estado y asignación del ticket
+ *     description: Cambia el estado del ticket. Si el estado es 'en_revision', permite (re)asignar a un técnico específico. Valida los estados permitidos contra la colección `config_tickets`.
+ *     tags: [SaaS - Soporte & Tickets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status: { type: string }
+ *               assignedTo: { type: string, description: "ID del técnico asignado" }
+ *     responses:
+ *       200:
+ *         description: Estado actualizado y notificación enviada al solicitante.
  */
 router.put("/:id/status", async (req, res) => {
   try {

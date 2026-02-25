@@ -68,34 +68,34 @@ const verifyAuth = async (req, res, next) => {
 /**
  * @openapi
  * /pagos/admin/generate-charges:
- * post:
- * summary: Generar cobros masivos o individuales
- * description: Crea registros de cobro para las empresas seleccionadas. Al generarse, el sistema dispara automáticamente notificaciones a los administradores de cada empresa cliente.
- * tags: [SaaS - Cobros]
- * security:
- * - bearerAuth: []
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * required: [companies, amount, concept]
- * properties:
- * companies: 
- * type: array
- * items:
- * type: object
- * properties:
- * dbName: { type: string }
- * name: { type: string }
- * amount: { type: number, description: "Opcional. Sobrescribe el monto general." }
- * amount: { type: number, example: 50000 }
- * concept: { type: string, example: "Suscripción Mensual Marzo" }
- * period: { type: string, example: "2026-03" }
- * responses:
- * 201:
- * description: Cobros generados y notificaciones enviadas.
+ *   post:
+ *     summary: Generar cobros masivos o individuales
+ *     description: Crea registros de cobro para las empresas seleccionadas. Al generarse, el sistema dispara automáticamente notificaciones a los administradores de cada empresa cliente.
+ *     tags: [SaaS - Cobros]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [companies, amount, concept]
+ *             properties:
+ *               companies: 
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     dbName: { type: string }
+ *                     name: { type: string }
+ *                     amount: { type: number, description: "Opcional. Sobrescribe el monto general." }
+ *               amount: { type: number, example: 50000 }
+ *               concept: { type: string, example: "Suscripción Mensual Marzo" }
+ *               period: { type: string, example: "2026-03" }
+ *     responses:
+ *       201:
+ *         description: Cobros generados y notificaciones enviadas.
  */
 router.post("/admin/generate-charges", verifyAuth, async (req, res) => {
     try {
@@ -164,15 +164,15 @@ router.post("/admin/generate-charges", verifyAuth, async (req, res) => {
 /**
  * @openapi
  * /pagos/admin/dashboard-stats:
- * get:
- * summary: Obtener estadísticas globales de recaudación
- * description: Retorna métricas consolidadas (Total recaudado, recaudación del mes actual, montos pendientes) y un desglose por empresa.
- * tags: [SaaS - Cobros]
- * security:
- * - bearerAuth: []
- * responses:
- * 200:
- * description: Objeto con estadísticas globales y por tenant.
+ *   get:
+ *     summary: Obtener estadísticas globales de recaudación
+ *     description: Retorna métricas consolidadas (Total recaudado, recaudación del mes actual, montos pendientes) y un desglose por empresa.
+ *     tags: [SaaS - Cobros]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Objeto con estadísticas globales y por tenant.
  */
 router.get("/admin/dashboard-stats", verifyAuth, async (req, res) => {
     try {
@@ -336,15 +336,15 @@ router.get("/admin/charges/:companyDb", verifyAuth, async (req, res) => {
 /**
  * @openapi
  * /pagos/client/my-charges:
- * get:
- * summary: Listar cobros de mi empresa
- * description: Retorna el historial de cobros (pendientes, aprobados y en revisión) asociados al contexto de la empresa actual.
- * tags: [SaaS - Pagos Clientes]
- * security:
- * - bearerAuth: []
- * responses:
- * 200:
- * description: Lista de cobros de la empresa.
+ *   get:
+ *     summary: Listar cobros de mi empresa
+ *     description: Retorna el historial de cobros (pendientes, aprobados y en revisión) asociados al contexto de la empresa actual.
+ *     tags: [SaaS - Pagos Clientes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de cobros de la empresa.
  */
 router.get("/client/my-charges", verifyAuth, async (req, res) => {
     try {
@@ -375,27 +375,27 @@ router.get("/client/my-charges", verifyAuth, async (req, res) => {
 /**
  * @openapi
  * /pagos/client/upload/{chargeId}:
- * post:
- * summary: Subir comprobante de pago
- * description: Permite al cliente subir un archivo (PDF, JPG, PNG) como respaldo de un cobro. Cambia el estado del cobro a 'En Revisión' y notifica al administrador del SaaS.
- * tags: [SaaS - Pagos Clientes]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: chargeId
- * required: true
- * schema: { type: string }
- * requestBody:
- * content:
- * multipart/form-data:
- * schema:
- * type: object
- * properties:
- * file: { type: string, format: binary }
- * responses:
- * 200:
- * description: Comprobante subido correctamente. El cobro queda en revisión.
+ *   post:
+ *     summary: Subir comprobante de pago
+ *     description: Permite al cliente subir un archivo (PDF, JPG, PNG) como respaldo de un cobro. Cambia el estado del cobro a 'En Revisión' y notifica al administrador del SaaS.
+ *     tags: [SaaS - Pagos Clientes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chargeId
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file: { type: string, format: binary }
+ *     responses:
+ *       200:
+ *         description: Comprobante subido correctamente. El cobro queda en revisión.
  */
 router.post("/client/upload/:chargeId", verifyAuth, upload.single("file"), async (req, res) => {
     try {
@@ -473,28 +473,28 @@ router.post("/client/upload/:chargeId", verifyAuth, upload.single("file"), async
 /**
  * @openapi
  * /pagos/admin/status/{chargeId}:
- * put:
- * summary: Aprobar o rechazar un pago
- * description: Permite al administrador de la plataforma validar un comprobante subido por un cliente. Se puede incluir feedback en caso de rechazo.
- * tags: [SaaS - Cobros]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: chargeId
- * required: true
- * schema: { type: string }
- * requestBody:
- * content:
- * application/json:
- * schema:
- * type: object
- * properties:
- * status: { type: string, enum: [Aprobado, Rechazado, Pendiente] }
- * feedback: { type: string, description: "Motivo en caso de rechazo" }
- * responses:
- * 200:
- * description: Estado del pago actualizado.
+ *   put:
+ *     summary: Aprobar o rechazar un pago
+ *     description: Permite al administrador de la plataforma validar un comprobante subido por un cliente. Se puede incluir feedback en caso de rechazo.
+ *     tags: [SaaS - Cobros]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chargeId
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status: { type: string, enum: [Aprobado, Rechazado, Pendiente] }
+ *               feedback: { type: string, description: "Motivo en caso de rechazo" }
+ *     responses:
+ *       200:
+ *         description: Estado del pago actualizado.
  */
 router.put("/admin/status/:chargeId", verifyAuth, async (req, res) => {
     try {
@@ -535,23 +535,23 @@ router.put("/admin/status/:chargeId", verifyAuth, async (req, res) => {
 /**
  * @openapi
  * /pagos/file/{chargeId}:
- * get:
- * summary: Descargar/Ver comprobante
- * description: Retorna el archivo binario del comprobante de pago asociado a un registro de cobro.
- * tags: [SaaS - Cobros]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: chargeId
- * required: true
- * schema: { type: string }
- * responses:
- * 200:
- * description: Archivo PDF o Imagen.
- * content:
- * application/pdf: { schema: { type: string, format: binary } }
- * image/jpeg: { schema: { type: string, format: binary } }
+ *   get:
+ *     summary: Descargar/Ver comprobante
+ *     description: Retorna el archivo binario del comprobante de pago asociado a un registro de cobro.
+ *     tags: [SaaS - Cobros]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chargeId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Archivo PDF o Imagen.
+ *         content:
+ *           application/pdf: { schema: { type: string, format: binary } }
+ *           image/jpeg: { schema: { type: string, format: binary } }
  */
 router.get("/file/:chargeId", verifyAuth, async (req, res) => {
     try {
