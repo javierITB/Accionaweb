@@ -164,10 +164,10 @@ const Header = ({ className = "" }) => {
    //    setIsUserMenuOpen(false);
    // };
 
-const handleLogout = () => {
-   sessionStorage.clear();
-   window.location.href = "/";
-};
+   const handleLogout = () => {
+      sessionStorage.clear();
+      window.location.href = "/";
+   };
 
 
    useEffect(() => {

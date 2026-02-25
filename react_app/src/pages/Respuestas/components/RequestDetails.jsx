@@ -631,7 +631,29 @@ const RequestDetails = ({
             openInfoDialog("No hay documento disponible");
             return;
          }
-         window.open(`${API_BASE_URL}/generador/download/${info.IDdoc}`, "_blank");
+
+         const token = sessionStorage.getItem("token");
+         const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+         const response = await fetch(`${API_BASE_URL}/generador/download/${info.IDdoc}`, {
+            headers
+         });
+
+         if (!response.ok) throw new Error("Error descargando el documento");
+
+         const blob = await response.blob();
+         const url = window.URL.createObjectURL(blob);
+         const extension = info.tipo || "docx";
+         const fileName = documentInfo?.fileName ? `${documentInfo.fileName}.${extension}` : `documento.${extension}`;
+
+         const a = document.createElement("a");
+         a.href = url;
+         a.download = fileName;
+         document.body.appendChild(a);
+         a.click();
+         window.URL.revokeObjectURL(url);
+         document.body.removeChild(a);
+
       } catch (error) {
          console.error("Error:", error);
          openErrorDialog("Error al descargar");

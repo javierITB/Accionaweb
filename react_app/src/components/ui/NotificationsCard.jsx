@@ -3,8 +3,6 @@ import Icon from "../../components/AppIcon.jsx";
 import Button from "../../components/ui/Button";
 import { API_BASE_URL } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
-import LoadingCard from "components/LoadingCard.jsx";
-
 const NotificationsCard = ({ user, onUnreadChange }) => {
    const [notifications, setNotifications] = useState([]);
    const [isLoading, setIsLoading] = useState(true);
@@ -352,7 +350,10 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
          {/* LISTA DE NOTIFICACIONES FILTRADAS */}
          <div className="space-y-2 max-h-[60vh] overflow-y-auto overflow-x-hidden">
             {isLoading ? (
-               <LoadingCard text="Cargando notificaciones..." />
+               <div className="flex flex-col items-center justify-center p-8 text-muted-foreground">
+                  <Icon name="Loader" size={24} className="animate-spin mb-2" />
+                  <span className="text-sm">Cargando notificaciones...</span>
+               </div>
             ) : filteredNotifications && filteredNotifications.length > 0 ? (
                filteredNotifications.map((notification) => (
                   <div

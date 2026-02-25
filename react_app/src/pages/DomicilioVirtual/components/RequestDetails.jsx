@@ -170,7 +170,7 @@ const RequestDetails = ({
     }
   };
 
-    const handleCustomExtendContract = async () => {
+  const handleCustomExtendContract = async () => {
     // CAMBIO: Validamos que al menos una de las dos tenga valor
     if (!customStartDate && !customEndDate) {
       openInfoDialog("Debes seleccionar al menos una fecha para modificar");
@@ -180,11 +180,11 @@ const RequestDetails = ({
     try {
       const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${request._id}/extend`, {
         method: "POST",
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           type: 'custom',
           // CAMBIO: Si no hay fecha, enviamos null para que el backend no la sobreescriba
           startDate: customStartDate || null,
-          endDate: customEndDate || null 
+          endDate: customEndDate || null
         }),
       });
 
@@ -318,19 +318,19 @@ const RequestDetails = ({
     const fetchFullDetailsAndDocs = async () => {
       setIsDetailLoading(true);
       // Ocultamos respuestas previas pero mantenemos metadatos básicos
-      setFullRequestData(prev => ({ ...prev, responses: null })); 
+      setFullRequestData(prev => ({ ...prev, responses: null }));
 
       try {
         const response = await apiFetch(`${API_BASE_URL}/${endpointPrefix}/${responseId}`);
         if (response.ok) {
           const data = await response.json();
-          
+
           // MVP: Aseguramos que submittedAt siempre tenga el valor de la fecha de creación
           const cleanData = {
             ...data,
             submittedAt: data.submittedAt || data.createdAt
           };
-          
+
           setFullRequestData(cleanData);
           await getDocumentInfo(responseId);
         }
@@ -626,7 +626,29 @@ const RequestDetails = ({
         openInfoDialog("No hay documento disponible");
         return;
       }
-      window.open(`${API_BASE_URL}/generador/download/${info.IDdoc}`, "_blank");
+
+      const token = sessionStorage.getItem("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await fetch(`${API_BASE_URL}/generador/download/${info.IDdoc}`, {
+        headers
+      });
+
+      if (!response.ok) throw new Error("Error descargando el documento");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const extension = info.tipo || "docx";
+      const fileName = documentInfo?.fileName ? `${documentInfo.fileName}.${extension}` : `documento.${extension}`;
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
     } catch (error) {
       console.error("Error:", error);
       // alert("Error al descargar");
@@ -1170,7 +1192,7 @@ const RequestDetails = ({
   const formatDate = (dateString) => {
     // Si no llega string, intentamos buscar en el estado global del componente
     const finalDate = dateString || fullRequestData?.submittedAt || fullRequestData?.createdAt;
-    
+
     if (!finalDate) return "Fecha no disponible";
 
     const date = new Date(finalDate);
@@ -1511,7 +1533,7 @@ const RequestDetails = ({
         </div>
       )}
     </div>
-);
+  );
 
   // const handleUploadFiles = async () => {
   //   if (correctedFiles.length === 0) {
@@ -1722,15 +1744,15 @@ const RequestDetails = ({
             <div className="flex items-center space-x-3 w-full justify-end">
               {!isStandalone && (
                 <>
-                  <Button 
-                  variant="outline" 
-                  className="border-accent text-accent" // Eliminado el hover:bg-accent/10
-                  iconName="Calendar" 
-                  iconPosition="left"
-                  onClick={() => setShowExtendModal(true)}
-                >
-                  Extender Contrato
-                </Button>
+                  <Button
+                    variant="outline"
+                    className="border-accent text-accent" // Eliminado el hover:bg-accent/10
+                    iconName="Calendar"
+                    iconPosition="left"
+                    onClick={() => setShowExtendModal(true)}
+                  >
+                    Extender Contrato
+                  </Button>
 
                   <Button variant="default" onClick={onClose}>
                     Cerrar
@@ -1742,7 +1764,7 @@ const RequestDetails = ({
         </div >
       </div >
 
-{/* MODAL DE EXTENSIÓN DE CONTRATO */}
+      {/* MODAL DE EXTENSIÓN DE CONTRATO */}
       {showExtendModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
@@ -1790,11 +1812,11 @@ const RequestDetails = ({
                     <div className="flex flex-col">
                       <span className="text-[10px] text-muted-foreground uppercase font-medium">Nuevo Inicio</span>
                       <span className="text-sm font-bold text-foreground">
-                        {showCustomDatePicker && customStartDate 
+                        {showCustomDatePicker && customStartDate
                           ? new Date(customStartDate + "T12:00:00").toLocaleDateString('es-CL')
-                          : (!fullRequestData?.fechaInicioContrato || fullRequestData?.fechaInicioContrato.includes(':') 
-                              ? new Date().toLocaleDateString('es-CL') 
-                              : fullRequestData.fechaInicioContrato)}
+                          : (!fullRequestData?.fechaInicioContrato || fullRequestData?.fechaInicioContrato.includes(':')
+                            ? new Date().toLocaleDateString('es-CL')
+                            : fullRequestData.fechaInicioContrato)}
                       </span>
                     </div>
                     <div className="flex flex-col border-l border-border pl-4">
@@ -1804,7 +1826,7 @@ const RequestDetails = ({
                           if (showCustomDatePicker) {
                             return customEndDate ? new Date(customEndDate + "T12:00:00").toLocaleDateString('es-CL') : "Sin cambios";
                           }
-                          
+
                           const baseStr = fullRequestData?.fechaTerminoContrato;
                           let date;
 
@@ -1821,7 +1843,7 @@ const RequestDetails = ({
 
                           if (previewType === 'semestral') date.setMonth(date.getMonth() + 6);
                           if (previewType === 'anual') date.setFullYear(date.getFullYear() + 1);
-                          
+
                           return date.toLocaleDateString('es-CL');
                         })()}
                       </span>
@@ -1839,9 +1861,8 @@ const RequestDetails = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <button
                       onClick={() => setPreviewType(previewType === 'semestral' ? null : 'semestral')}
-                      className={`group flex flex-col items-center p-5 rounded-xl border-2 transition-all text-center ${
-                        previewType === 'semestral' ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/30'
-                      }`}
+                      className={`group flex flex-col items-center p-5 rounded-xl border-2 transition-all text-center ${previewType === 'semestral' ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/30'
+                        }`}
                     >
                       <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-3">
                         <Icon name="Timer" className="text-accent" size={24} />
@@ -1852,9 +1873,8 @@ const RequestDetails = ({
 
                     <button
                       onClick={() => setPreviewType(previewType === 'anual' ? null : 'anual')}
-                      className={`group flex flex-col items-center p-5 rounded-xl border-2 transition-all text-center ${
-                        previewType === 'anual' ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/30'
-                      }`}
+                      className={`group flex flex-col items-center p-5 rounded-xl border-2 transition-all text-center ${previewType === 'anual' ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/30'
+                        }`}
                     >
                       <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-3">
                         <Icon name="CalendarCheck" className="text-accent" size={24} />
@@ -1909,16 +1929,16 @@ const RequestDetails = ({
               }}>
                 {previewType || showCustomDatePicker ? "Volver" : "Cancelar"}
               </Button>
-              
+
               {(previewType || showCustomDatePicker) && (
                 <Button
                   className="bg-accent text-accent-foreground px-8 animate-in fade-in zoom-in-95"
                   disabled={showCustomDatePicker && !customStartDate && !customEndDate}
                   onClick={() => {
-                    const config = showCustomDatePicker 
+                    const config = showCustomDatePicker
                       ? { title: "¿Aplicar cambios manuales?", onConfirm: handleCustomExtendContract }
                       : { title: `¿Confirmar extensión ${previewType}?`, onConfirm: () => handleExtendContract(previewType) };
-                    
+
                     setShowExtendModal(false);
                     openAsyncDialog({
                       ...config,
@@ -1936,7 +1956,7 @@ const RequestDetails = ({
         </div>
       )}
 
-            <CleanDocumentPreview
+      <CleanDocumentPreview
         isVisible={showPreview}
         onClose={() => {
           if (previewDocument?.url && previewDocument?.type === "pdf") {

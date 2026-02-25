@@ -11,6 +11,45 @@ const CleanDocumentPreview = ({
     const [content, setContent] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isDownloadingItem, setIsDownloadingItem] = useState(false);
+
+    const handleSecureDownload = async (e) => {
+        e.preventDefault();
+        try {
+            setIsDownloadingItem(true);
+            const response = await apiFetch(documentUrl);
+            if (!response.ok) throw new Error("Error en la descarga");
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+
+            let filename = "documento";
+            const disposition = response.headers.get("Content-Disposition");
+            if (disposition && disposition.indexOf('attachment') !== -1) {
+                const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                const matches = filenameRegex.exec(disposition);
+                if (matches != null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            } else {
+                if (documentType) filename += `.${documentType}`;
+            }
+
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error("Error al descargar:", error);
+            alert("Error al descargar el documento");
+        } finally {
+            setIsDownloadingItem(false);
+        }
+    };
 
     // 1. Nuevo estado para controlar la pestaña activa ('preview' o 'respuestas')
     const [activeTab, setActiveTab] = useState('preview');
@@ -142,16 +181,16 @@ const CleanDocumentPreview = ({
                     </svg>
                     <p className="text-base sm:text-lg font-medium mb-1 sm:mb-2 text-center">Error al cargar</p>
                     <p className="text-xs sm:text-sm text-center mb-3 sm:mb-4 max-w-md">{error}</p>
-                    <a
-                        href={documentUrl}
-                        download
-                        className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                    <button
+                        onClick={handleSecureDownload}
+                        disabled={isDownloadingItem}
+                        className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm sm:text-base disabled:opacity-50"
                     >
                         <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        Descargar archivo
-                    </a>
+                        {isDownloadingItem ? "Descargando..." : "Descargar archivo"}
+                    </button>
                 </div>
             );
         }
@@ -167,7 +206,9 @@ const CleanDocumentPreview = ({
                         >
                             <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4 text-center">
                                 <p className="text-sm sm:text-base mb-2">No se puede mostrar la vista previa del PDF</p>
-                                <a href={documentUrl} download className="text-blue-600 hover:underline">Descargar PDF</a>
+                                <button onClick={handleSecureDownload} disabled={isDownloadingItem} className="text-blue-600 hover:underline disabled:opacity-50">
+                                    {isDownloadingItem ? "Descargando..." : "Descargar PDF"}
+                                </button>
                             </div>
                         </object>
                     </div>
@@ -205,7 +246,9 @@ const CleanDocumentPreview = ({
                 return (
                     <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-gray-500 p-4 sm:p-8 text-center">
                         <p className="text-base font-medium">Formato no soportado</p>
-                        <a href={documentUrl} download className="text-blue-600 hover:underline">Descargar archivo</a>
+                        <button onClick={handleSecureDownload} disabled={isDownloadingItem} className="text-blue-600 hover:underline disabled:opacity-50">
+                            {isDownloadingItem ? "Descargando..." : "Descargar archivo"}
+                        </button>
                     </div>
                 );
         }
@@ -266,16 +309,16 @@ const CleanDocumentPreview = ({
                                 <span className="text-xs text-gray-500">
                                     {documentType?.toUpperCase()}
                                 </span>
-                                <a
-                                    href={documentUrl}
-                                    download
-                                    className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
+                                <button
+                                    onClick={handleSecureDownload}
+                                    disabled={isDownloadingItem}
+                                    className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs disabled:opacity-50"
                                 >
                                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
-                                    Descargar
-                                </a>
+                                    {isDownloadingItem ? "Descargando..." : "Descargar"}
+                                </button>
                             </div>
                         </div>
                     )}
