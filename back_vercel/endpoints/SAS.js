@@ -54,6 +54,21 @@ const verifyRequest = async (req, res, next) => {
     }
 };
 
+/**
+ * @openapi
+ * /sas/companies:
+ * get:
+ * summary: Listar todas las empresas del ecosistema
+ * description: Retorna la configuración de todos los tenants, uniendo los datos con sus respectivos planes. Incluye métricas de infraestructura como `sizeOnDisk` (espacio real en base de datos) para cada empresa.
+ * tags: [SaaS - Infraestructura]
+ * security:
+ * - bearerAuth: []
+ * responses:
+ * 200:
+ * description: Lista de empresas con estadísticas de uso y almacenamiento.
+ * 403:
+ * description: Acceso denegado. Solo accesible desde el contexto 'formsdb'.
+ */
 // GET /companies: Listar todas las empresas
 router.get("/companies", verifyRequest, async (req, res) => {
     console.log(`[SAS] GET /companies request received`);
@@ -161,6 +176,32 @@ router.get("/companies", verifyRequest, async (req, res) => {
     }
 });
 
+/**
+ * @openapi
+ * /sas/companies:
+ * post:
+ * summary: Crear nueva empresa y desplegar Base de Datos
+ * description: Proceso de aprovisionamiento que crea un registro en `config_empresas`, genera un nombre de base de datos único y **clona las colecciones base** (usuarios, roles, forms) desde la DB de 'desarrollo'. Finalmente, sincroniza permisos y límites.
+ * tags: [SaaS - Infraestructura]
+ * security:
+ * - bearerAuth: []
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * required: [name]
+ * properties:
+ * name: { type: string, example: "Empresa Ejemplo SpA" }
+ * planId: { type: string, description: "ID del plan a asignar" }
+ * permissions: { type: array, items: { type: string }, description: "Permisos manuales si no se usa plan" }
+ * responses:
+ * 201:
+ * description: Empresa creada e infraestructura desplegada.
+ * 400:
+ * description: El nombre de la empresa ya existe.
+ */
 // POST /companies: Crear nueva empresa y su base de datos
 router.post("/companies", verifyRequest, async (req, res) => {
     console.log(`[SAS] POST /companies request received`, req.body);
@@ -252,6 +293,34 @@ router.post("/companies", verifyRequest, async (req, res) => {
     }
 });
 
+/**
+ * @openapi
+ * /sas/companies/{id}:
+ * put:
+ * summary: Actualizar configuración o estado de suspensión
+ * description: Permite modificar el plan, permisos o suspender el servicio de una empresa. **Nota:** Si `isSuspended` es true, el sistema de roles restringirá automáticamente el acceso de los usuarios de ese tenant.
+ * tags: [SaaS - Infraestructura]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: id
+ * required: true
+ * schema: { type: string }
+ * requestBody:
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * name: { type: string }
+ * planId: { type: string }
+ * isSuspended: { type: boolean }
+ * planLimits: { type: object }
+ * responses:
+ * 200:
+ * description: Configuración actualizada y base de datos del cliente sincronizada.
+ */
 // PUT /companies/:id: Actualizar permisos de una empresa
 router.put("/companies/:id", verifyRequest, async (req, res) => {
     console.log(`[SAS] PUT /companies/${req.params.id} request received`, req.body);
@@ -318,6 +387,26 @@ router.put("/companies/:id", verifyRequest, async (req, res) => {
     }
 });
 
+/**
+ * @openapi
+ * /sas/companies/{id}:
+ * delete:
+ * summary: Eliminar empresa y destruir Base de Datos
+ * description: **Operación Irreversible.** Elimina el registro de configuración y ejecuta un `dropDatabase()` sobre la base de datos física del cliente. Está protegido contra la eliminación de 'formsdb'.
+ * tags: [SaaS - Infraestructura]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: id
+ * required: true
+ * schema: { type: string }
+ * responses:
+ * 200:
+ * description: Empresa y datos eliminados permanentemente.
+ * 403:
+ * description: Intento de eliminar base de datos del sistema.
+ */
 // DELETE /companies/:id: Eliminar empresa y su DB
 router.delete("/companies/:id", verifyRequest, async (req, res) => {
     try {

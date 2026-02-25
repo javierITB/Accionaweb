@@ -336,7 +336,25 @@ router.get("/empresas/anuncios", async (req, res) => {
    }
 });
 
-
+/**
+ * @openapi
+ * /auth/{mail}:
+ * get:
+ * summary: Obtener vinculación de usuario por email
+ * description: Retorna el ID, la empresa y el cargo descifrado asociado a un correo electrónico.
+ * tags: [Usuarios]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: mail
+ * required: true
+ * schema:
+ * type: string
+ * responses:
+ * 200:
+ * description: Datos básicos del usuario encontrados.
+ */
 router.get("/:mail", async (req, res) => {
    try {
       await verifyRequest(req);
@@ -359,6 +377,25 @@ router.get("/:mail", async (req, res) => {
    }
 });
 
+/**
+ * @openapi
+ * /auth/full/{mail}:
+ * get:
+ * summary: Obtener perfil completo descifrado
+ * description: Retorna todos los datos del usuario (nombre, notificaciones, estado 2FA) completamente descifrados para su edición o visualización en perfil.
+ * tags: [Usuarios]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: mail
+ * required: true
+ * schema:
+ * type: string
+ * responses:
+ * 200:
+ * description: Perfil completo del usuario.
+ */
 router.get("/full/:mail", async (req, res) => {
    try {
       await verifyRequest(req);
@@ -411,6 +448,30 @@ router.get("/full/:mail", async (req, res) => {
    }
 });
 
+/**
+ * @openapi
+ * /auth/login:
+ * post:
+ * summary: Iniciar sesión de usuario
+ * tags: [Autenticación]
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * required: [email, password]
+ * properties:
+ * email:
+ * type: string
+ * password:
+ * type: string
+ * responses:
+ * 200:
+ * description: Login exitoso o requerimiento de 2FA
+ * 401:
+ * description: Credenciales inválidas o usuario inactivo
+ */
 router.post("/login", async (req, res) => {
    const { email, password } = req.body;
 
@@ -538,6 +599,30 @@ router.post("/login", async (req, res) => {
    }
 });
 
+/**
+ * @openapi
+ * /auth/verify-login-2fa:
+ * post:
+ * summary: Verificar código 2FA para inicio de sesión
+ * tags: [Autenticación]
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * required: [email, verificationCode]
+ * properties:
+ * email:
+ * type: string
+ * verificationCode:
+ * type: string
+ * minLength: 6
+ * maxLength: 6
+ * responses:
+ * 200:
+ * description: Verificación exitosa, entrega token de acceso
+ */
 router.post("/verify-login-2fa", async (req, res) => {
    const { email, verificationCode } = req.body;
 
@@ -663,6 +748,21 @@ router.post("/verify-login-2fa", async (req, res) => {
    }
 });
 
+/**
+ * @openapi
+ * /auth/recuperacion:
+ * post:
+ * summary: Solicitar código de recuperación de contraseña
+ * tags: [Autenticación]
+ * requestBody:
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * email:
+ * type: string
+ */
 router.post("/recuperacion", async (req, res) => {
    const { email } = req.body;
    try {
@@ -992,6 +1092,18 @@ router.post("/disable-2fa", async (req, res) => {
    }
 });
 
+/**
+ * @openapi
+ * /auth/logins/todos:
+ * get:
+ * summary: Historial global de ingresos
+ * tags: [Auditoría]
+ * security:
+ * - bearerAuth: []
+ * responses:
+ * 200:
+ * description: Lista de logs de acceso (IP, Navegador, OS).
+ */
 router.get("/logins/todos", async (req, res) => {
    try {
       await verifyRequest(req);
@@ -1256,6 +1368,40 @@ router.post("/logout", async (req, res) => {
    }
 });
 
+/**
+ * @openapi
+ * /auth/register:
+ * post:
+ * summary: Registrar un nuevo usuario (Requiere Token)
+ * tags: [Usuarios]
+ * security:
+ * - bearerAuth: []
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * required: [nombre, mail, cargo, rol]
+ * properties:
+ * nombre:
+ * type: string
+ * apellido:
+ * type: string
+ * mail:
+ * type: string
+ * empresa:
+ * type: string
+ * cargo:
+ * type: string
+ * rol:
+ * type: string
+ * responses:
+ * 201:
+ * description: Usuario creado y correo de activación enviado
+ * 403:
+ * description: Permisos insuficientes (Jerarquía de roles)
+ */
 router.post("/register", async (req, res) => {
    try {
       const auth = await verifyRequest(req);
@@ -1353,109 +1499,24 @@ router.post("/register", async (req, res) => {
    }
 });
 
-router.post("/set-initial-password", async (req, res) => {
-   try {
-      const { userId, password } = req.body;
-
-      if (!userId || !password) {
-         return res.status(400).json({ error: "Datos incompletos" });
-      }
-
-      // Usamos createFromHexString para evitar el error de "deprecado"
-      const user = await req.db.collection("usuarios").findOne({
-         _id: ObjectId.createFromHexString(String(userId)),
-      });
-
-      if (!user || user.estado !== "pendiente" || user.pass !== "") {
-         return res.status(403).json({ error: "El enlace ha expirado o ya es inválido" });
-      }
-
-      // Usamos tus helpers de seguridad
-      const { hashPassword } = require("../utils/seguridad.helper");
-      const hashedPassword = await hashPassword(password);
-
-      await req.db.collection("usuarios").updateOne(
-         { _id: ObjectId.createFromHexString(String(userId)) },
-         {
-            $set: {
-               pass: hashedPassword,
-               estado: "activo",
-               updatedAt: new Date().toISOString(),
-            },
-         },
-      );
-
-      res.json({ success: true, message: "Contraseña creada exitosamente" });
-   } catch (err) {
-      res.status(500).json({ error: "Error al procesar la solicitud" });
-   }
-});
-
-router.post("/change-password", async (req, res) => {
-   const { email, currentPassword, newPassword } = req.body;
-
-   if (!email || !currentPassword || !newPassword) {
-      return res.status(400).json({ success: false, message: "Faltan datos requeridos" });
-   }
-
-   try {
-      const user = await req.db.collection("usuarios").findOne({
-         mail_index: createBlindIndex(email.toLowerCase().trim()),
-      });
-
-      if (!user) {
-         return res.status(404).json({ success: false, message: "Usuario no encontrado" });
-      }
-
-      if (!(await verifyPassword(user.pass, currentPassword))) {
-         return res.status(401).json({ success: false, message: "La contraseña actual es incorrecta" });
-      }
-
-      if (newPassword.length < 8) {
-         return res
-            .status(400)
-            .json({ success: false, message: "La nueva contraseña debe tener al menos 8 caracteres" });
-      }
-
-      const hashPassword = require("../utils/seguridad.helper").hashPassword;
-      const hashedNewPassword = await hashPassword(newPassword);
-
-      if (await verifyPassword(user.pass, newPassword)) {
-         return res.status(400).json({ success: false, message: "La nueva contraseña no puede ser igual a la actual" });
-      }
-
-      const result = await req.db.collection("usuarios").updateOne(
-         { _id: user._id },
-         {
-            $set: {
-               pass: hashedNewPassword,
-               updatedAt: new Date().toISOString(),
-            },
-         },
-      );
-
-      if (result.modifiedCount === 0) {
-         return res.status(500).json({ success: false, message: "No se pudo actualizar la contraseña" });
-      }
-
-      const ipAddress = req.ip || req.connection.remoteAddress;
-      await addNotification(req.db, {
-         userId: user._id.toString(),
-         titulo: `Cambio de Contraseña`,
-         descripcion: `La contraseña fue actualizada exitosamente el ${new Date().toLocaleString()}. IP: ${ipAddress}`,
-         prioridad: 2,
-         color: "#ffae00",
-         icono: "Shield",
-      });
-
-      registerUserPasswordChange(req, user);
-      res.json({ success: true, message: "Contraseña actualizada exitosamente" });
-   } catch (err) {
-      console.error("Error cambiando contraseña:", err);
-      res.status(500).json({ success: false, message: "Error interno del servidor" });
-   }
-});
-
+/**
+ * @openapi
+ * /auth/users/{id}:
+ * put:
+ * summary: Actualizar datos de un usuario
+ * tags: [Usuarios]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: id
+ * required: true
+ * schema:
+ * type: string
+ * responses:
+ * 200:
+ * description: Usuario actualizado exitosamente
+ */
 router.put("/users/:id", async (req, res) => {
    try {
       const auth = await verifyRequest(req);
@@ -1566,6 +1627,132 @@ router.put("/users/:id", async (req, res) => {
    }
 });
 
+router.post("/set-initial-password", async (req, res) => {
+   try {
+      const { userId, password } = req.body;
+
+      if (!userId || !password) {
+         return res.status(400).json({ error: "Datos incompletos" });
+      }
+
+      // Usamos createFromHexString para evitar el error de "deprecado"
+      const user = await req.db.collection("usuarios").findOne({
+         _id: ObjectId.createFromHexString(String(userId)),
+      });
+
+      if (!user || user.estado !== "pendiente" || user.pass !== "") {
+         return res.status(403).json({ error: "El enlace ha expirado o ya es inválido" });
+      }
+
+      // Usamos tus helpers de seguridad
+      const { hashPassword } = require("../utils/seguridad.helper");
+      const hashedPassword = await hashPassword(password);
+
+      await req.db.collection("usuarios").updateOne(
+         { _id: ObjectId.createFromHexString(String(userId)) },
+         {
+            $set: {
+               pass: hashedPassword,
+               estado: "activo",
+               updatedAt: new Date().toISOString(),
+            },
+         },
+      );
+
+      res.json({ success: true, message: "Contraseña creada exitosamente" });
+   } catch (err) {
+      res.status(500).json({ error: "Error al procesar la solicitud" });
+   }
+});
+
+/**
+ * @openapi
+ * /auth/change-password:
+ * post:
+ * summary: Cambiar contraseña (Usuario Autenticado)
+ * tags: [Autenticación]
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * required: [email, currentPassword, newPassword]
+ * properties:
+ * email: { type: string }
+ * currentPassword: { type: string }
+ * newPassword: { type: string, minLength: 8 }
+ * responses:
+ * 200:
+ * description: Contraseña actualizada y notificación de seguridad enviada.
+ */
+router.post("/change-password", async (req, res) => {
+   const { email, currentPassword, newPassword } = req.body;
+
+   if (!email || !currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: "Faltan datos requeridos" });
+   }
+
+   try {
+      const user = await req.db.collection("usuarios").findOne({
+         mail_index: createBlindIndex(email.toLowerCase().trim()),
+      });
+
+      if (!user) {
+         return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+      }
+
+      if (!(await verifyPassword(user.pass, currentPassword))) {
+         return res.status(401).json({ success: false, message: "La contraseña actual es incorrecta" });
+      }
+
+      if (newPassword.length < 8) {
+         return res
+            .status(400)
+            .json({ success: false, message: "La nueva contraseña debe tener al menos 8 caracteres" });
+      }
+
+      const hashPassword = require("../utils/seguridad.helper").hashPassword;
+      const hashedNewPassword = await hashPassword(newPassword);
+
+      if (await verifyPassword(user.pass, newPassword)) {
+         return res.status(400).json({ success: false, message: "La nueva contraseña no puede ser igual a la actual" });
+      }
+
+      const result = await req.db.collection("usuarios").updateOne(
+         { _id: user._id },
+         {
+            $set: {
+               pass: hashedNewPassword,
+               updatedAt: new Date().toISOString(),
+            },
+         },
+      );
+
+      if (result.modifiedCount === 0) {
+         return res.status(500).json({ success: false, message: "No se pudo actualizar la contraseña" });
+      }
+
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      await addNotification(req.db, {
+         userId: user._id.toString(),
+         titulo: `Cambio de Contraseña`,
+         descripcion: `La contraseña fue actualizada exitosamente el ${new Date().toLocaleString()}. IP: ${ipAddress}`,
+         prioridad: 2,
+         color: "#ffae00",
+         icono: "Shield",
+      });
+
+      registerUserPasswordChange(req, user);
+      res.json({ success: true, message: "Contraseña actualizada exitosamente" });
+   } catch (err) {
+      console.error("Error cambiando contraseña:", err);
+      res.status(500).json({ success: false, message: "Error interno del servidor" });
+   }
+});
+
+
+
 router.delete("/users/:id", async (req, res) => {
    try {
       const auth = await verifyRequest(req);
@@ -1598,6 +1785,27 @@ router.delete("/users/:id", async (req, res) => {
    }
 });
 
+/**
+ * @openapi
+ * /auth/set-password:
+ * post:
+ * summary: Establecer contraseña inicial (Link de invitación)
+ * description: Permite a un usuario nuevo configurar su contraseña por primera vez. Solo funciona si el estado es 'pendiente'.
+ * tags: [Autenticación]
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * required: [userId, password]
+ * properties:
+ * userId: { type: string }
+ * password: { type: string }
+ * responses:
+ * 200:
+ * description: Contraseña creada y cuenta activada.
+ */
 router.post("/set-password", async (req, res) => {
    try {
       const { userId, password } = req.body;
@@ -1678,6 +1886,19 @@ router.post("/set-password", async (req, res) => {
    }
 });
 
+/**
+ * @openapi
+ * /auth/empresas/todas:
+ * get:
+ * summary: Listar todas las empresas registradas
+ * description: Retorna una lista de empresas con sus datos (RUT, dirección, encargado) y logos descifrados en Base64.
+ * tags: [Empresas]
+ * security:
+ * - bearerAuth: []
+ * responses:
+ * 200:
+ * description: Lista de empresas ordenada alfabéticamente.
+ */
 router.get("/empresas/todas", async (req, res) => {
    try {
       await verifyRequest(req);
@@ -1747,6 +1968,19 @@ router.get("/empresas/todas", async (req, res) => {
    }
 });
 
+/**
+ * @openapi
+ * /auth/empresas/logo:
+ * get:
+ * summary: Obtener logo de la empresa del usuario actual
+ * description: Identifica la empresa del usuario autenticado y retorna su logo descifrado para la interfaz.
+ * tags: [Empresas]
+ * security:
+ * - bearerAuth: []
+ * responses:
+ * 200:
+ * description: Imagen en formato Base64.
+ */
 router.get("/empresas/logo", async (req, res) => {
    try {
       const auth = await verifyRequest(req);
@@ -1823,6 +2057,30 @@ router.get("/empresas/:id", async (req, res) => {
    }
 });
 
+/**
+ * @openapi
+ * /auth/empresas/register:
+ * post:
+ * summary: Registrar una nueva empresa con logo
+ * tags: [Empresas]
+ * security:
+ * - bearerAuth: []
+ * content:
+ * multipart/form-data:
+ * schema:
+ * type: object
+ * properties:
+ * nombre:
+ * type: string
+ * rut:
+ * type: string
+ * logo:
+ * type: string
+ * format: binary
+ * responses:
+ * 201:
+ * description: Empresa registrada
+ */
 router.post("/empresas/register", upload.single("logo"), async (req, res) => {
    try {
       const auth = await verifyRequest(req);
@@ -1946,8 +2204,27 @@ router.delete("/empresas/:id", async (req, res) => {
       res.status(500).json({ error: "Error al eliminar" });
    }
 });
-// ruta para recopilar todos los usuarios de la empresa asociados a un email
 
+/**
+ * @openapi
+ * /auth/empresas/usuarios/{email}:
+ * get:
+ * summary: Listar compañeros de empresa
+ * description: Busca a todos los usuarios que pertenecen a la misma empresa que el email proporcionado. Útil para funciones de "compartir".
+ * tags: [Empresas]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: email
+ * required: true
+ * schema:
+ * type: string
+ * responses:
+ * 200:
+ * description: Lista de usuarios de la misma organización.
+ */
+// ruta para recopilar todos los usuarios de la empresa asociados a un email
 router.get("/empresas/usuarios/:email", async (req, res) => {
    try {
       await verifyRequest(req);

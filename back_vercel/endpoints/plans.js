@@ -49,6 +49,21 @@ const verifyRequest = async (req, res, next) => {
     }
 };
 
+/**
+ * @openapi
+ * /sas/plans:
+ * get:
+ * summary: Listar todos los planes disponibles en el SaaS
+ * description: Retorna la lista de planes definidos en la base maestra. Incluye un contador (`usageCount`) que indica cuántas empresas tienen contratado cada plan actualmente.
+ * tags: [SaaS - Planes]
+ * security:
+ * - bearerAuth: []
+ * responses:
+ * 200:
+ * description: Lista de planes con métricas de uso.
+ * 403:
+ * description: Acceso denegado. Este endpoint solo es accesible desde el contexto maestro.
+ */
 // GET /: Listar todos los planes
 router.get("/", verifyRequest, async (req, res) => {
     try {
@@ -73,6 +88,35 @@ router.get("/", verifyRequest, async (req, res) => {
     }
 });
 
+/**
+ * @openapi
+ * /sas/plans:
+ * post:
+ * summary: Crear un nuevo plan de suscripción
+ * description: Define un nuevo paquete con sus permisos de sistema, límites de uso (cuotas) y precio base.
+ * tags: [SaaS - Planes]
+ * security:
+ * - bearerAuth: []
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * required: [name]
+ * properties:
+ * name: { type: string, example: "Plan Pro" }
+ * price: { type: number, example: 99.90 }
+ * permissions: { type: array, items: { type: string }, description: "Permisos habilitados para este plan" }
+ * planLimits: 
+ * type: object
+ * properties:
+ * users: { type: integer, example: 50 }
+ * requests: { type: integer, example: 1000 }
+ * responses:
+ * 201:
+ * description: Plan creado exitosamente.
+ */
 // POST /: Crear un nuevo plan
 router.post("/", verifyRequest, async (req, res) => {
     try {
@@ -101,6 +145,26 @@ router.post("/", verifyRequest, async (req, res) => {
     }
 });
 
+/**
+ * @openapi
+ * /sas/plans/{id}:
+ * put:
+ * summary: Actualizar plan y propagar cambios a suscriptores
+ * description: Modifica las condiciones de un plan. **Acción Crítica:** Al guardar, la API identifica automáticamente a todas las empresas suscritas a este plan y sincroniza sus bases de datos individuales con los nuevos permisos y límites.
+ * tags: [SaaS - Planes]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: id
+ * required: true
+ * schema: { type: string }
+ * responses:
+ * 200:
+ * description: Plan actualizado y sincronización multi-tenant completada.
+ * 404:
+ * description: Plan no encontrado.
+ */
 // PUT /:id: Actualizar plan y propagar cambios
 router.put("/:id", verifyRequest, async (req, res) => {
     try {
@@ -175,6 +239,26 @@ router.put("/:id", verifyRequest, async (req, res) => {
     }
 });
 
+/**
+ * @openapi
+ * /sas/plans/{id}:
+ * delete:
+ * summary: Eliminar un plan del sistema
+ * description: Borra la definición de un plan. Solo se permite si el plan no tiene ninguna empresa asociada actualmente (validación de integridad).
+ * tags: [SaaS - Planes]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: id
+ * required: true
+ * schema: { type: string }
+ * responses:
+ * 200:
+ * description: Plan eliminado correctamente.
+ * 400:
+ * description: No se puede eliminar; existen empresas usando este plan.
+ */
 // DELETE /:id: Eliminar plan
 router.delete("/:id", verifyRequest, async (req, res) => {
     try {

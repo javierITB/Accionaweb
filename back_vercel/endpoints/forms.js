@@ -26,6 +26,40 @@ const verifyRequest = async (req) => {
 
 router.use(express.json({ limit: '4mb' }));
 
+/**
+ * @openapi
+ * /forms:
+ * post:
+ * summary: Crear o actualizar un formulario dinámico
+ * description: Permite definir la estructura del formulario. Si se omite el `id` en el body, crea uno nuevo validando los límites del plan. Si se incluye `id`, actualiza el existente. Configura automáticamente metadatos para campos de tipo archivo.
+ * tags: [Diseño de Formularios]
+ * security:
+ * - bearerAuth: []
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * id: { type: string, description: "Opcional. ID para actualización" }
+ * title: { type: string }
+ * description: { type: string }
+ * section: { type: string, description: "Categoría del formulario" }
+ * questions: 
+ * type: array
+ * items:
+ * type: object
+ * properties:
+ * type: { type: string, enum: [text, number, date, file, select] }
+ * label: { type: string }
+ * required: { type: boolean }
+ * responses:
+ * 201:
+ * description: Formulario creado exitosamente.
+ * 403:
+ * description: Límite de formularios del plan alcanzado.
+ */
 // Crear o actualizar un formulario - SOLO CAMBIO DE MENSAJES DE ERROR
 router.post("/", async (req, res) => {
   try {
@@ -100,6 +134,29 @@ router.post("/", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /forms/mini:
+ * get:
+ * summary: Obtener catálogo optimizado con estadísticas
+ * description: Retorna una lista paginada de formularios con conteo de campos y estadísticas globales por estado y sección. Ideal para el dashboard administrativo.
+ * tags: [Consultas de Formularios]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: query
+ * name: page
+ * schema: { type: integer, default: 1 }
+ * - in: query
+ * name: search
+ * schema: { type: string, description: "Búsqueda por título o descripción" }
+ * - in: query
+ * name: category
+ * schema: { type: string, description: "Filtrar por sección" }
+ * responses:
+ * 200:
+ * description: Lista de formularios y objeto de estadísticas.
+ */
 // Listar todos los formularios con PAGINACIÓN 
 router.get("/mini", async (req, res) => {
   try {
@@ -298,6 +355,28 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /forms/section/{section}/{mail}:
+ * get:
+ * summary: Filtrar formularios disponibles para un usuario
+ * description: Busca formularios publicados que pertenezcan a una sección específica y que estén autorizados para la empresa del usuario (vía blind index del mail) o marcados como "Todas".
+ * tags: [Consultas de Formularios]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: section
+ * required: true
+ * schema: { type: string }
+ * - in: path
+ * name: mail
+ * required: true
+ * schema: { type: string }
+ * responses:
+ * 200:
+ * description: Lista de formularios accesibles para el usuario.
+ */
 //Filtrado de forms por seccion y empresa - SOLO CAMBIO DE MENSAJES DE ERROR
 router.get("/section/:section/:mail", async (req, res) => {
   try {
@@ -347,6 +426,23 @@ router.get("/section/:section/:mail", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /forms/{id}:
+ * put:
+ * summary: Actualizar un formulario existente
+ * tags: [Diseño de Formularios]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: id
+ * required: true
+ * schema: { type: string }
+ * responses:
+ * 200:
+ * description: Formulario actualizado.
+ */
 // Actualizar un formulario 
 router.put("/:id", async (req, res) => {
   try {
@@ -389,6 +485,19 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /forms/public/{id}:
+ * put:
+ * summary: Cambiar estado a "publicado"
+ * description: Activa un formulario para que empiece a recibir respuestas.
+ * tags: [Diseño de Formularios]
+ * security:
+ * - bearerAuth: []
+ * responses:
+ * 200:
+ * description: Estado actualizado a publicado.
+ */
 // Publicar un formulario
 router.put("/public/:id", async (req, res) => {
   try {
@@ -461,7 +570,22 @@ router.post("/respuestas", async (req, res) => {
   }
 });
 
-
+/**
+ * @openapi
+ * /forms/public-view/{id}:
+ * get:
+ * summary: Obtener estructura de formulario para vista pública
+ * description: Permite obtener la configuración de preguntas de un formulario sin necesidad de token. Usado para usuarios externos que deben completar un formulario mediante un link compartido.
+ * tags: [Acceso Público]
+ * parameters:
+ * - in: path
+ * name: id
+ * required: true
+ * schema: { type: string }
+ * responses:
+ * 200:
+ * description: Estructura del formulario (preguntas, tipos, etc.).
+ */
 // Endpoint para obtener un formulario sin token
 router.get("/public-view/:id", async (req, res) => {
   try {

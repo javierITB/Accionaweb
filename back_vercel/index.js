@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient } = require("mongodb");
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
 
 // Importar rutas
 const authRoutes = require("./endpoints/auth");
@@ -35,6 +37,8 @@ app.use(express.json({ limit: '4mb' }));
 app.use(express.urlencoded({ limit: '4mb', extended: true }));
 
 app.set('trust proxy', true);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // --- CONFIGURACIÓN DE CONEXIÓN DINÁMICA A MONGODB ---
 
@@ -133,11 +137,12 @@ tenantRouter.use("/chat", chatbotRoutes); // Nueva ruta para el chatbot
 
 app.use("/:company", tenantRouter);
 
-// Ruta raíz para verificación simple
+
 app.get("/", (req, res) => {
   res.json({
     message: "API Multi-tenant de Solunex funcionando",
-    status: "online"
+    status: "online",
+    docs: "/api-docs" // Añadimos esto para acceso rápido
   });
 });
 
