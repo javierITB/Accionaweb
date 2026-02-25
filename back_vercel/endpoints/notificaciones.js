@@ -26,9 +26,6 @@ router.post("/", async (req, res) => {
     const data = req.body;
     const { filtro, formTitle, prioridad, color, icono, actionUrl } = data;
 
-    const auth = await verifyRequest(req);
-      if (!auth.ok) return res.status(401).json({ error: auth.error });
-
     if (!formTitle) {
       return res.status(400).json({ error: "Faltan campos requeridos: formTitle" });
     }
@@ -63,7 +60,7 @@ router.post("/", async (req, res) => {
 router.get("/gestion/agrupadas", async (req, res) => {
   try {
     const auth = await verifyRequest(req);
-      if (!auth.ok) return res.status(401).json({ error: auth.error });
+    if (!auth.ok) return res.status(403).json({ error: "Acceso denegado" });
 
     const userRoleName = auth.data.rol || '';
     let hasPermission = false;
@@ -146,9 +143,6 @@ router.get("/:nombre", async (req, res) => {
   try {
     const mailIndex = createBlindIndex(req.params.nombre);
 
-    const auth = await verifyRequest(req);
-      if (!auth.ok) return res.status(401).json({ error: auth.error });
-
     const usuario = await req.db
       .collection("usuarios")
       .findOne({ mail_index: mailIndex }, {
@@ -170,9 +164,6 @@ router.get("/:nombre", async (req, res) => {
 router.put("/:userId/:notiId/leido", async (req, res) => {
   try {
     let query;
-
-    const auth = await verifyRequest(req);
-      if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     try {
       // Intentar como ObjectId
@@ -210,9 +201,6 @@ router.delete("/:mail/:notiId", async (req, res) => {
   try {
     const mailIndex = createBlindIndex(req.params.mail);
 
-    const auth = await verifyRequest(req);
-      if (!auth.ok) return res.status(401).json({ error: auth.error });
-      
     const result = await req.db.collection("usuarios").findOneAndUpdate(
       { mail_index: mailIndex },
       { $pull: { notificaciones: { id: req.params.notiId } } },
@@ -240,9 +228,6 @@ router.delete("/:mail", async (req, res) => {
   try {
     const mailIndex = createBlindIndex(req.params.mail);
 
-    const auth = await verifyRequest(req);
-      if (!auth.ok) return res.status(401).json({ error: auth.error });
-
     const result = await req.db.collection("usuarios").findOneAndUpdate(
       { mail_index: mailIndex },
       { $set: { notificaciones: [] } },
@@ -269,9 +254,6 @@ router.put("/:mail/leido-todas", async (req, res) => {
     const { mail } = req.params;
     const mailIndex = createBlindIndex(mail);
 
-    const auth = await verifyRequest(req);
-      if (!auth.ok) return res.status(401).json({ error: auth.error });
-
     const result = await req.db.collection("usuarios").updateOne(
       { mail_index: mailIndex },
       { $set: { "notificaciones.$[].leido": true } }
@@ -295,9 +277,6 @@ router.put("/:mail/leido-todas", async (req, res) => {
 router.get("/:mail/unread-count", async (req, res) => {
   try {
     const { mail } = req.params;
-
-    const auth = await verifyRequest(req);
-      if (!auth.ok) return res.status(401).json({ error: auth.error });
 
     // Usar mail_index (hash del email) para buscar
     const mailIndex = createBlindIndex(mail);
@@ -342,7 +321,7 @@ router.get("/:mail/unread-count", async (req, res) => {
 router.post("/gestion/delete-batch", async (req, res) => {
   try {
     const auth = await verifyRequest(req);
-      if (!auth.ok) return res.status(401).json({ error: auth.error });
+    if (!auth.ok) return res.status(403).json({ error: "Acceso denegado" });
 
     const userRoleName = auth.data.rol || '';
     let hasPermission = false;
