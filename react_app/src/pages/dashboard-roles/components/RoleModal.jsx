@@ -181,11 +181,12 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                      type="text"
                      placeholder="Nombre del Cargo"
                      value={formData.name}
+                     readOnly={!canEdit}
                      onChange={(e) => {
                         if (isSuccess) setIsSuccess(false);
                         setFormData({ ...formData, name: e.target.value });
                      }}
-                     className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none"
+                     className={`w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none ${!canEdit ? "opacity-70 cursor-not-allowed" : ""}`}
                   />
                   <div className="flex items-center gap-3">
                      <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Jerarquía (1-{myLevel}):</span>
@@ -194,6 +195,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                         min="1"
                         max={myLevel}
                         value={formData.level}
+                        readOnly={!canEdit}
                         onChange={(e) => {
                            if (isSuccess) setIsSuccess(false);
                            const rawValue = e.target.value;
@@ -212,18 +214,19 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                               setFormData({ ...formData, level: 1 });
                            }
                         }}
-                        className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none"
+                        className={`w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-accent outline-none ${!canEdit ? "opacity-70 cursor-not-allowed" : ""}`}
                      />
                   </div>
                   <textarea
                      placeholder="Descripción de funciones"
                      value={formData.description}
+                     readOnly={!canEdit}
                      onChange={(e) => {
                         if (isSuccess) setIsSuccess(false);
                         setFormData({ ...formData, description: e.target.value });
                      }}
                      rows={2}
-                     className="w-full md:col-span-2 px-4 py-2 bg-background border border-border rounded-lg text-foreground resize-none focus:ring-2 focus:ring-accent outline-none"
+                     className={`w-full md:col-span-2 px-4 py-2 bg-background border border-border rounded-lg text-foreground resize-none focus:ring-2 focus:ring-accent outline-none ${!canEdit ? "opacity-70 cursor-not-allowed" : ""}`}
                   />
                </div>
 
@@ -246,14 +249,16 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                      </button>
                   </div>
 
-                  <button
-                     type="button"
-                     onClick={toggleAllInTab}
-                     className="flex items-center justify-center gap-2 py-2 px-4 border border-dashed border-accent/50 text-accent bg-accent/5 hover:bg-accent/10 rounded-xl text-xs font-bold transition-all"
-                  >
-                     <LayoutGrid size={14} />
-                     Seleccionar / Desmarcar disponibles en esta pestaña
-                  </button>
+                  {canEdit && (
+                     <button
+                        type="button"
+                        onClick={toggleAllInTab}
+                        className="flex items-center justify-center gap-2 py-2 px-4 border border-dashed border-accent/50 text-accent bg-accent/5 hover:bg-accent/10 rounded-xl text-xs font-bold transition-all"
+                     >
+                        <LayoutGrid size={14} />
+                        Seleccionar / Desmarcar disponibles en esta pestaña
+                     </button>
+                  )}
                </div>
 
                <div className="space-y-4">
@@ -270,12 +275,12 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                         return (
                            <div
                               key={group.key || group.label} // Usar key si existe, sino label
-                              onClick={() => togglePermission(permId)}
-                              className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${isEnabled ? "border-accent bg-accent/5 ring-1 ring-accent" : "border-border bg-muted/20 opacity-60"}`}
+                              onClick={() => canEdit && togglePermission(permId)}
+                              className={`p-4 rounded-xl border transition-all flex items-center justify-between ${canEdit ? "cursor-pointer" : "cursor-default"} ${isEnabled ? "border-accent bg-accent/5 ring-1 ring-accent" : "border-border bg-muted/20 opacity-60"}`}
                            >
                               <span className="text-sm font-bold text-foreground">{group.label}</span>
                               <div
-                                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isEnabled ? "bg-accent border-accent" : "border-muted-foreground"}`}
+                                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isEnabled ? "bg-accent border-accent" : "border-muted-foreground"} ${!canEdit ? "opacity-50" : ""}`}
                               >
                                  {isEnabled && <Check size={12} strokeWidth={4} className="text-white" />}
                               </div>
@@ -310,8 +315,9 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                                     className="rounded-xl border border-border bg-muted/10 overflow-hidden"
                                  >
                                     <div
-                                       className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between cursor-pointer hover:bg-muted/50"
+                                       className={`px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between ${canEdit ? "cursor-pointer hover:bg-muted/50" : "cursor-default"}`}
                                        onClick={() => {
+                                          if (!canEdit) return;
                                           if (isSuccess) setIsSuccess(false);
                                           // Al seleccionar todo el grupo, solo seleccionamos los que no tienen dependencia o ya tienen el padre marcado
                                           const availableIds = group.permissions
@@ -345,11 +351,11 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                                           return (
                                              <label
                                                 key={perm.id}
-                                                className={`flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${isChild ? "ml-6 border-l border-border pl-4" : ""}`}
+                                                className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${canEdit ? "hover:bg-muted/50 cursor-pointer" : "cursor-default"} ${isChild ? "ml-6 border-l border-border pl-4" : ""}`}
                                              >
                                                 {isChild && <ChevronRight size={12} className="text-muted-foreground" />}
                                                 <div
-                                                   className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-accent border-accent text-white" : "bg-background border-border"}`}
+                                                   className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-accent border-accent text-white" : "bg-background border-border"} ${!canEdit ? "opacity-50" : ""}`}
                                                 >
                                                    {isSelected && <Check size={10} strokeWidth={3} />}
                                                 </div>
@@ -358,6 +364,7 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                                                    type="checkbox"
                                                    className="hidden"
                                                    checked={isSelected}
+                                                   disabled={!canEdit}
                                                    onChange={() => togglePermission(perm.id)}
                                                 />
                                              </label>
