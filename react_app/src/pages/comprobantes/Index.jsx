@@ -138,7 +138,7 @@ const ComprobantesIndex = () => {
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setIsMobileOpen(false)}></div>
             )}
 
-            <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
+            <main className={`transition-all duration-300 ${mainMarginClass} pt-8 lg:pt-4`}>
                 <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
                     {/* Header Content */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

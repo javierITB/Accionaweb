@@ -401,7 +401,7 @@ const CompanyReg = ({ userPermissions = [] }) => {
             </>
          )}
 
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-20`}>
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-8 lg:pt-4`}>
             <div className="p-6 space-y-6 container-main">
                <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
                   <div>
@@ -409,16 +409,6 @@ const CompanyReg = ({ userPermissions = [] }) => {
                      <p className="text-muted-foreground mt-1 text-sm">
                         Administra la información de las empresas registradas.
                      </p>
-                  </div>
-                  <div className="flex items-center space-x-3 mt-4 md:mt-0">
-                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hidden md:flex">
-                        <Icon name={isDesktopOpen ? "PanelLeftClose" : "PanelLeftOpen"} />
-                     </Button>
-                     {editingEmpresa && permisos.crear && (
-                        <Button variant="ghost" onClick={clearForm} iconName="Plus">
-                           Nueva Empresa
-                        </Button>
-                     )}
                   </div>
                </div>
 

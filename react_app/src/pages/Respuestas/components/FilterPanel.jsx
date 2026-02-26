@@ -11,13 +11,24 @@ const FilterPanel = ({
   onClearFilters,
   onApplyFilters,
   isVisible,
-  onToggle
+  onToggle,
+  paginationProps,
+  viewModeProps
 }) => {
   const [empresas, setEmpresas] = useState([]);
   const [filteredEmpresas, setFilteredEmpresas] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoadingEmpresas, setIsLoadingEmpresas] = useState(true);
   const dropdownRef = useRef(null);
+
+  const {
+    currentPage, totalPages, itemsPerPage, isLoading, 
+    pageInputValue, isLimitOpen, setIsLimitOpen, setCurrentPage,
+    handlePageInputChange, handlePageInputBlurOrSubmit, 
+    handlePageInputKeyDown, handleLimitChange, limitRef
+  } = paginationProps;
+
+  const { viewMode, setViewMode } = viewModeProps;
 
   useEffect(() => {
     const fetchEmpresas = async () => {
@@ -120,8 +131,10 @@ const FilterPanel = ({
 
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm overflow-visible">
-      <div className={`flex items-center justify-between p-4 bg-muted/30 rounded-t-xl ${isVisible ? 'border-b border-border' : 'rounded-b-xl'}`}>
-        <div className="flex items-center space-x-3">
+      {/* CABECERA ACTUALIZADA */}
+      <div className={`flex flex-col md:flex-row items-center justify-between p-4 bg-muted/30 rounded-t-xl gap-4 ${isVisible ? 'border-b border-border' : 'rounded-b-xl'}`}>
+        
+        <div className="flex items-center space-x-3 w-full md:w-auto">
           <div className="p-2 bg-accent/10 rounded-lg">
             <Icon name="Filter" size={20} className="text-accent" />
           </div>
@@ -133,13 +146,98 @@ const FilterPanel = ({
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
-          {getActiveFilterCount() > 0 && (
-            <Button variant="ghost" size="sm" onClick={onClearFilters} className="text-muted-foreground hover:text-destructive transition-colors">
-              Limpiar filtros
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" onClick={onToggle} iconName={isVisible ? "ChevronUp" : "ChevronDown"} className="rounded-full" />
+        {/* CONTROLES INTEGRADOS */}
+        <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
+          
+          
+
+          {/* Botones de acción de filtros */}
+          <div className="flex items-center space-x-2">
+            {getActiveFilterCount() > 0 && (
+              <Button variant="ghost" size="sm" onClick={onClearFilters} className="text-muted-foreground hover:text-destructive text-xs">
+                Limpiar
+              </Button>
+            )}
+            <Button variant="accent" size="icon" onClick={onToggle} iconName={isVisible ? "ChevronUp" : "Filter"} className="rounded-lg h-9 w-9" />
+          </div>
+
+          <div className="w-px h-6 bg-border mx-1 hidden md:block" />
+          
+          {/* Selector de Límite */}
+          <div ref={limitRef} className="relative">
+            <button
+               onClick={() => setIsLimitOpen(!isLimitOpen)}
+               className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors outline-none border border-border rounded-lg px-3 py-1 bg-background h-9"
+            >
+               <span>{itemsPerPage}</span>
+               <Icon name={isLimitOpen ? "ChevronDown" : "ChevronUp"} size={14} />
+            </button>
+            {isLimitOpen && (
+               <div className="absolute right-0 top-full mt-2 w-16 bg-card border border-border shadow-md rounded-md z-50 overflow-hidden">
+                  {[15, 30, 45, 60].map((limit) => (
+                     <button
+                        key={limit}
+                        onClick={() => handleLimitChange(limit)}
+                        className={`w-full text-center py-2 text-sm hover:bg-muted ${itemsPerPage === limit ? "font-bold text-primary" : "text-muted-foreground"}`}
+                     >
+                        {limit}
+                     </button>
+                  ))}
+               </div>
+            )}
+          </div>
+
+          {/* Navegación de Páginas */}
+          <div className="flex items-center space-x-1 text-sm text-muted-foreground border border-border rounded-lg p-1 bg-background h-9">
+            <Button
+               variant="ghost"
+               size="sm"
+               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+               disabled={currentPage === 1 || isLoading}
+               iconName="ChevronLeft"
+               className="h-7 w-7"
+            />
+            <div className="flex items-center px-1">
+               <input
+                  type="text"
+                  value={pageInputValue}
+                  onChange={handlePageInputChange}
+                  onBlur={handlePageInputBlurOrSubmit}
+                  onKeyDown={handlePageInputKeyDown}
+                  className="w-6 h-7 text-center bg-transparent border-none text-muted-foreground font-bold focus:ring-0 outline-none p-0"
+               />
+               <span className="mx-1 opacity-50">/</span>
+               <span className="font-bold">{totalPages}</span>
+            </div>
+            <Button
+               variant="ghost"
+               size="sm"
+               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+               disabled={currentPage === totalPages || isLoading}
+               iconName="ChevronRight"
+               className="h-7 w-7"
+            />
+          </div>
+
+          {/* Modos de Vista */}
+          <div className="flex items-center border border-border rounded-lg bg-background h-9 overflow-hidden">
+            <Button
+               variant={viewMode === "grid" ? "default" : "ghost"}
+               size="sm"
+               onClick={() => setViewMode("grid")}
+               iconName="Grid3X3"
+               className="rounded-none h-full border-none px-3"
+            />
+            <Button
+               variant={viewMode === "list" ? "default" : "ghost"}
+               size="sm"
+               onClick={() => setViewMode("list")}
+               iconName="List"
+               className="rounded-none h-full border-l border-border px-3"
+            />
+          </div>
+
+          
         </div>
       </div>
 

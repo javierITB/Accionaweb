@@ -176,7 +176,7 @@ const EmpresasView = ({ userPermissions = [] }) => {
             </div>
          )}
 
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-10 lg:pt-20`}>
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-8 lg:pt-4`}>
             <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
 
                {/* Tabs Selector ABOVE Title */}

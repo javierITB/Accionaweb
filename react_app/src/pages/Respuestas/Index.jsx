@@ -268,7 +268,7 @@ const RequestTracking = () => {
                const normalizedTarget = normalizedPage.find(
                   (r) => String(r._id) === idToFind || String(r.formId) === idToFind,
                );
-               
+
                // Inyectar en cache para que no se pierda
                cache.current[params.toString()] = {
                   data: normalizedPage,
@@ -349,7 +349,7 @@ const RequestTracking = () => {
    };
 
    const handleStatusFilter = (status) => {
-      cache.current = {}; 
+      cache.current = {};
       const newStatus = filters.status === status ? "" : status;
       setFilters(prev => ({ ...prev, status: newStatus }));
       setCurrentPage(1);
@@ -444,7 +444,7 @@ const RequestTracking = () => {
             </div>
          )}
 
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-8 lg:pt-4`}>
             <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <div>
@@ -462,79 +462,6 @@ const RequestTracking = () => {
                            : "Monitorea el estado de tus solicitudes activas"}
                      </p>
                   </div>
-
-                  <div className="flex items-center justify-center md:justify-end w-full md:w-auto space-x-4">
-                     <div ref={limitRef} className="relative">
-                        <button
-                           onClick={() => setIsLimitOpen(!isLimitOpen)}
-                           className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors outline-none border border-border rounded-lg px-3 py-1 bg-card h-8"
-                        >
-                           <span>{itemsPerPage}</span>
-                           <Icon name={isLimitOpen ? "ChevronDown" : "ChevronUp"} size={14} />
-                        </button>
-
-                        {isLimitOpen && (
-                           <div className="absolute right-0 top-full mt-2 w-16 bg-card border border-border shadow-md rounded-md z-50 overflow-hidden">
-                              {[15, 30, 45, 60].map((limit) => (
-                                 <button
-                                    key={limit}
-                                    onClick={() => handleLimitChange(limit)}
-                                    className={`w-full text-center py-1 text-sm hover:bg-muted ${itemsPerPage === limit ? "font-bold text-primary" : "text-muted-foreground"}`}
-                                 >
-                                    {limit}
-                                 </button>
-                              ))}
-                           </div>
-                        )}
-                     </div>
-
-                     <div className="flex items-center space-x-2 text-sm text-muted-foreground border border-border rounded-lg p-1 bg-card">
-                        <Button
-                           variant="ghost"
-                           size="sm"
-                           onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                           disabled={currentPage === 1 || isLoading}
-                           iconName="ChevronLeft"
-                        />
-
-                        <div className="flex items-center gap-0 text-muted-foreground">
-                           <input
-                              type="text"
-                              value={pageInputValue}
-                              onChange={handlePageInputChange}
-                              onBlur={handlePageInputBlurOrSubmit}
-                              onKeyDown={handlePageInputKeyDown}
-                              className="w-6 h-7 text-right bg-transparent border-none text-muted-foreground font-medium focus:ring-0 outline-none p-0"
-                           />
-                           <span className="font-medium mx-0.5">/</span>
-                           <span className="font-medium text-left min-w-[1.5rem]">{totalPages}</span>
-                        </div>
-
-                        <Button
-                           variant="ghost"
-                           size="sm"
-                           onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                           disabled={currentPage === totalPages || isLoading}
-                           iconName="ChevronRight"
-                        />
-                     </div>
-                     <div className="flex items-center border border-border rounded-lg bg-card">
-                        <Button
-                           variant={viewMode === "grid" ? "default" : "ghost"}
-                           size="sm"
-                           onClick={() => setViewMode("grid")}
-                           iconName="Grid3X3"
-                           className="rounded-r-none"
-                        />
-                        <Button
-                           variant={viewMode === "list" ? "default" : "ghost"}
-                           size="sm"
-                           onClick={() => setViewMode("list")}
-                           iconName="List"
-                           className="rounded-l-none border-l"
-                        />
-                     </div>
-                  </div>
                </div>
 
                <StatsOverview stats={mockStats} allForms={resp} filters={filters} onFilterChange={handleStatusFilter} />
@@ -546,6 +473,25 @@ const RequestTracking = () => {
                   onApplyFilters={handleApplyFilters}
                   isVisible={showFilters}
                   onToggle={() => setShowFilters(!showFilters)}
+                  paginationProps={{
+                     currentPage,
+                     totalPages,
+                     itemsPerPage,
+                     isLoading,
+                     pageInputValue,
+                     isLimitOpen,
+                     setIsLimitOpen,
+                     setCurrentPage,
+                     handlePageInputChange,
+                     handlePageInputBlurOrSubmit,
+                     handlePageInputKeyDown,
+                     handleLimitChange,
+                     limitRef
+                  }}
+                  viewModeProps={{
+                     viewMode,
+                     setViewMode
+                  }}
                />
 
                <div

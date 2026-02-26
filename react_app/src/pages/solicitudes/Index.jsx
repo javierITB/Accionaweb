@@ -304,7 +304,7 @@ const MessageForm = ({ userPermissions = [] }) => {
             </div>
          )}
 
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-4 lg:pt-0`}>
             <div className="p-6 space-y-6 container-main max-w-4xl mx-auto">
                <div className="mb-4">
                   <h1 className="text-2xl md:text-3xl font-bold text-foreground mt-4">Inyección de Solicitud (Administrativo)</h1>
