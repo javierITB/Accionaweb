@@ -140,6 +140,7 @@ const DocumentTemplateEditor = ({
   templateData,
   onUpdateTemplateData,
   onSave,
+  isSaving = false,
   readOnly = false
 }) => {
   const [staticVarsExpanded, setStaticVarsExpanded] = useState(true);
@@ -706,153 +707,157 @@ const DocumentTemplateEditor = ({
 
       {/* BARRA DE HERRAMIENTAS - CONDICIONAL: SI es ReadOnly, solo mostrar FullScreen */}
       {!readOnly ? (
-        <div className="flex flex-wrap items-center gap-2 p-2 border-b bg-muted/20">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-2 border-b bg-muted/20 sticky top-0 z-30 shadow-sm">
+          {/* GRUPO IZQUIERDO: CONTROLES DE EDICIÓN */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Botones de Control Global */}
+            <div className="flex items-center gap-1 border-r pr-2 mr-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsFullScreen(!isFullScreen)}
+                title={isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
+              >
+                <Icon name={isFullScreen ? "Minimize" : "Maximize"} size={16} />
+              </Button>
+            </div>
 
-          {/* Botones de Control Global */}
-          <div className="flex items-center gap-1 border-r pr-2 mr-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsFullScreen(!isFullScreen)}
-              title={isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
-            >
-              <Icon name={isFullScreen ? "Minimize" : "Maximize"} size={16} />
-            </Button>
-          </div>
 
 
-
-          <select
-            className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-28"
-            value={getActiveFontFamily()}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (focusedField.type === 'signature') {
-                const { index, field } = focusedField;
-                if (field) {
-                  setFocusedField({ type: 'signature', index, field });
-                  updateSignature(index, `${field}FontFamily`, val);
-                  setTimeout(() => {
-                    const el = document.getElementById(`sig-${field}-${index}`);
-                    if (el) el.focus();
-                  }, 50);
-                }
-              } else {
-                editor.chain().focus().setFontFamily(val).run();
-              }
-            }}
-          >
-            <option value="">Fuente</option>
-            {fontFamilies.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-          </select>
-
-          <select
-            className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-20"
-            value={getActiveFontSize()}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (focusedField.type === 'signature') {
-                const { index, field } = focusedField;
-                if (field) {
-                  setFocusedField({ type: 'signature', index, field });
-                  updateSignature(index, `${field}FontSize`, val);
-                  setTimeout(() => {
-                    const el = document.getElementById(`sig-${field}-${index}`);
-                    if (el) el.focus();
-                  }, 50);
-                }
-              } else {
-                if (!val) {
-                  editor.chain().focus().setMark('textStyle', { fontSize: null }).run();
+            <select
+              className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-28"
+              value={getActiveFontFamily()}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (focusedField.type === 'signature') {
+                  const { index, field } = focusedField;
+                  if (field) {
+                    setFocusedField({ type: 'signature', index, field });
+                    updateSignature(index, `${field}FontFamily`, val);
+                    setTimeout(() => {
+                      const el = document.getElementById(`sig-${field}-${index}`);
+                      if (el) el.focus();
+                    }, 50);
+                  }
                 } else {
-                  editor.chain().focus().setFontSize(`${val}pt`).run();
+                  editor.chain().focus().setFontFamily(val).run();
                 }
-              }
-            }}
-          >
-            <option value="">Tam.</option>
-            {fontSizes.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-
-          <div className="w-px h-6 bg-border mx-1" />
-
-          {/* Mayúsculas / Minúsculas / Default */}
-          <div className="flex bg-card border rounded-md p-0.5 gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('upper')}`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => changeCase('upper')}
-              title="Mayúsculas"
+              }}
             >
-              M ↑
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('lower')}`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => changeCase('lower')}
-              title="Minúsculas"
+              <option value="">Fuente</option>
+              {fontFamilies.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+            </select>
+
+            <select
+              className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-20"
+              value={getActiveFontSize()}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (focusedField.type === 'signature') {
+                  const { index, field } = focusedField;
+                  if (field) {
+                    setFocusedField({ type: 'signature', index, field });
+                    updateSignature(index, `${field}FontSize`, val);
+                    setTimeout(() => {
+                      const el = document.getElementById(`sig-${field}-${index}`);
+                      if (el) el.focus();
+                    }, 50);
+                  }
+                } else {
+                  if (!val) {
+                    editor.chain().focus().setMark('textStyle', { fontSize: null }).run();
+                  } else {
+                    editor.chain().focus().setFontSize(`${val}pt`).run();
+                  }
+                }
+              }}
             >
-              m ↓
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('default')}`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => changeCase('default')}
-              title="Default (Como se ingresó)"
-            >
-              d
-            </Button>
+              <option value="">Tam.</option>
+              {fontSizes.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+
+            <div className="w-px h-6 bg-border mx-1" />
+
+            {/* Mayúsculas / Minúsculas / Default */}
+            <div className="flex bg-card border rounded-md p-0.5 gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('upper')}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => changeCase('upper')}
+                title="Mayúsculas"
+              >
+                M ↑
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('lower')}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => changeCase('lower')}
+                title="Minúsculas"
+              >
+                m ↓
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-7 w-8 text-[10px] font-bold ${getCasingClass('default')}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => changeCase('default')}
+                title="Default (Como se ingresó)"
+              >
+                d
+              </Button>
+            </div>
+
+            {/* Estilos basicos */}
+            <div className="flex bg-card border rounded-md p-0.5">
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('bold') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('bold')}>
+                <Icon name="Bold" size={14} />
+              </Button>
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('italic') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('italic')}>
+                <Icon name="Italic" size={14} />
+              </Button>
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('underline') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('underline')}>
+                <Icon name="Underline" size={14} />
+              </Button>
+            </div>
+
+            {/* Alineacion */}
+            <div className="flex bg-card border rounded-md p-0.5">
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'left' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
+                <Icon name="AlignLeft" size={14} />
+              </Button>
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'center' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
+                <Icon name="AlignCenter" size={14} />
+              </Button>
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
+                <Icon name="AlignJustify" size={14} />
+              </Button>
+            </div>
+
+            <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
+
+            {/* Botones de Zoom Manual */}
+            <div className="hidden sm:flex bg-card border rounded-md p-0.5">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomOut} title="Alejar (Zoom Out)">
+                <Icon name="ZoomOut" size={14} />
+              </Button>
+              <span className="text-[10px] font-bold min-w-[36px] text-center place-content-center" title="Restablecer Zoom" onClick={handleZoomReset} style={{ cursor: 'pointer' }}>
+                {Math.round(zoomLevel * 100)}%
+              </span>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomIn} title="Acercar (Zoom In)">
+                <Icon name="ZoomIn" size={14} />
+              </Button>
+            </div>
+
+
           </div>
 
-          {/* Estilos basicos */}
-          <div className="flex bg-card border rounded-md p-0.5">
-            <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('bold') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('bold')}>
-              <Icon name="Bold" size={14} />
-            </Button>
-            <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('italic') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('italic')}>
-              <Icon name="Italic" size={14} />
-            </Button>
-            <Button variant="ghost" size="icon" className={`h-7 w-7 ${isStyleActive('underline') ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => toggleStyle('underline')}>
-              <Icon name="Underline" size={14} />
-            </Button>
-          </div>
-
-          {/* Alineacion */}
-          <div className="flex bg-card border rounded-md p-0.5">
-            <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'left' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
-              <Icon name="AlignLeft" size={14} />
-            </Button>
-            <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'center' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
-              <Icon name="AlignCenter" size={14} />
-            </Button>
-            <Button variant="ghost" size="icon" className={`h-7 w-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
-              <Icon name="AlignJustify" size={14} />
-            </Button>
-          </div>
-
-          <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
-
-          {/* Botones de Zoom Manual */}
-          <div className="flex bg-card border rounded-md p-0.5">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomOut} title="Alejar (Zoom Out)">
-              <Icon name="ZoomOut" size={14} />
-            </Button>
-            <span className="text-[10px] font-bold min-w-[36px] text-center place-content-center" title="Restablecer Zoom" onClick={handleZoomReset} style={{ cursor: 'pointer' }}>
-              {Math.round(zoomLevel * 100)}%
-            </span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomIn} title="Acercar (Zoom In)">
-              <Icon name="ZoomIn" size={14} />
-            </Button>
-          </div>
-
-
-          <div className="flex gap-1 ml-auto items-center">
+          {/* GRUPO DERECHO: VISTA PREVIA Y ACCIONES */}
+          <div className="flex gap-2 items-center flex-wrap ml-auto">
             <div className="flex items-center gap-2 mr-3 border-r pr-3">
               <span className={`text-[10px] font-bold ${!isPreview ? 'text-primary' : 'text-muted-foreground'}`}>EDICIÓN</span>
               <button
@@ -917,63 +922,19 @@ const DocumentTemplateEditor = ({
             }}>
               + CONDICIONAL
             </Button>
-            {/* Toggle Left Panel */}
-            <Button
-              variant={showLeftPanel ? "default" : "outline"}
-              size="sm"
-              className={`h-8 text-[10px] font-bold hidden md:flex ${showLeftPanel ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
-              onClick={() => setShowLeftPanel(!showLeftPanel)}
-              title={showLeftPanel ? "Ocultar Panel de Variables" : "Mostrar Panel de Variables"}
-            >
-              <Icon name="Database" size={12} className="mr-1" /> {showLeftPanel ? "VARIABLES" : "VARIABLES"}
-            </Button>
-
-            <Button
-              variant={showRightPanel ? "default" : "outline"}
-              size="sm"
-              className={`h-8 text-[10px] font-bold hidden md:flex ${showRightPanel ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
-              onClick={() => setShowRightPanel(!showRightPanel)}
-              disabled={isPreview}
-              title={showRightPanel ? "Ocultar Configuración de Firmas" : "Configurar Firmas"}
-            >
-              <Icon name="PenTool" size={12} className="mr-1" /> FIRMAS
-            </Button>
-
-            {/* Mobile Toggle Menu */}
-            <div className="md:hidden flex items-center gap-1">
-              <Button
-                variant={showLeftPanel ? "default" : "outline"}
-                size="icon"
-                className={`h-8 w-8 ${showLeftPanel ? 'bg-blue-600 text-white' : 'text-blue-600'}`}
-                onClick={() => {
-                  setShowLeftPanel(!showLeftPanel);
-                  if (!showLeftPanel) setShowRightPanel(false);
-                }}
-              >
-                <Icon name="Database" size={14} />
-              </Button>
-              <Button
-                variant={showRightPanel ? "default" : "outline"}
-                size="icon"
-                className={`h-8 w-8 ${showRightPanel ? 'bg-blue-600 text-white' : 'text-blue-600'}`}
-                onClick={() => {
-                  setShowRightPanel(!showRightPanel);
-                  if (!showRightPanel) setShowLeftPanel(false);
-                }}
-              >
-                <Icon name="PenTool" size={14} />
-              </Button>
-            </div>
 
             {onSave && (
               <Button
                 variant="default"
                 size="sm"
-                className="h-8 text-[10px] px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white ml-2 shadow-sm"
+                className="h-8 text-[10px] px-3 bg-blue-600 hover:bg-blue-700 text-white ml-2 shadow-sm"
                 onClick={onSave}
+                loading={isSaving}
+                disabled={isSaving}
                 title="Guardar Plantilla"
               >
-                <Icon name="Save" size={12} /> GUARDAR
+                {!isSaving && <Icon name="Save" size={12} className="mr-1" />}
+                {isSaving ? "GUARDANDO..." : "GUARDAR"}
               </Button>
             )}
           </div>
@@ -1008,15 +969,42 @@ const DocumentTemplateEditor = ({
       )}
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* PANEL LATERAL DE VARIABLES */}
+
+        {/* BOTONES FLOTANTES DE APERTURA DE PANELES */}
+        {!showLeftPanel && !readOnly && (
+          <Button
+            variant="default"
+            onClick={() => setShowLeftPanel(true)}
+            className="absolute top-6 left-0 z-20 shadow-xl bg-blue-600 hover:bg-blue-700 text-white flex gap-2 items-center py-2 px-3 h-auto text-[10px] font-bold transition-all rounded-r-full rounded-l-none border-y border-r border-white/20"
+            title="Abrir Variables"
+          >
+            <Icon name="Database" size={14} /> <span>VARIABLES</span>
+          </Button>
+        )}
+
+        {!showRightPanel && !isPreview && (
+          <Button
+            variant="default"
+            onClick={() => setShowRightPanel(true)}
+            className="absolute top-6 right-0 z-20 shadow-xl bg-blue-600 hover:bg-blue-700 text-white flex gap-2 items-center py-2 px-3 h-auto text-[10px] font-bold transition-all rounded-l-full rounded-r-none border-y border-l border-white/20 mr-2"
+            title="Abrir Firmas"
+          >
+            <span>FIRMAS</span> <Icon name="PenTool" size={14} />
+          </Button>
+        )}
+
+        {/* PANEL LATERAL DE VARIABLES ALTA PRIORIDAD */}
         <div
-          className={`panel-izquierdo border-r bg-muted/5 overflow-y-auto shrink-0 transition-all duration-300 relative z-20 h-full ${!showLeftPanel || readOnly ? 'w-0 p-0 border-none opacity-0 overflow-hidden' : 'p-4 opacity-100'}`}
-          style={{ width: !showLeftPanel || readOnly ? 0 : leftPanelWidth }}
+          className={`panel-izquierdo border-r bg-card shadow-2xl overflow-y-auto transition-transform duration-300 absolute top-0 left-0 z-30 h-full flex ${!showLeftPanel || readOnly ? '-translate-x-full' : 'translate-x-0'}`}
+          style={{ width: leftPanelWidth }}
         >
           {showLeftPanel && !readOnly && (
-            <div className="space-y-6 min-w-[180px]">
-              {/* Controles móviles para cerrar panel */}
-              <div className="md:hidden flex justify-end mb-2">
+            <div className="space-y-6 min-w-[180px] p-4 flex-1">
+              {/* Controles para cerrar panel */}
+              <div className="flex justify-between items-center mb-2 pb-2 border-b">
+                <span className="font-bold text-xs uppercase text-muted-foreground tracking-wider flex items-center gap-2">
+                  <Icon name="Database" size={14} /> Variables
+                </span>
                 <Button variant="ghost" size="icon" onClick={() => setShowLeftPanel(false)}>
                   <Icon name="X" size={16} />
                 </Button>
@@ -1085,14 +1073,14 @@ const DocumentTemplateEditor = ({
           )}
         </div>
 
-        {/* DRAG HANDLE IZQUIERDO */}
-        {/* DRAG HANDLE IZQUIERDO - Solo si no es read only */}
+        {/* DRAG HANDLE IZQUIERDO - Integrado en el panel absoluto */}
         {!readOnly && showLeftPanel && (
           <div
-            className="w-1 cursor-col-resize bg-border hover:bg-blue-500 transition-colors z-10 hidden md:flex flex-col justify-center items-center group"
+            className="w-1.5 cursor-col-resize absolute left-0 top-0 h-full hover:bg-blue-500/50 transition-colors z-40 hidden md:flex flex-col justify-center items-center group"
+            style={{ transform: `translateX(${leftPanelWidth}px)` }}
             onMouseDown={() => startResizing('left')}
           >
-            <div className="h-8 w-1 bg-border group-hover:bg-blue-300 rounded-full" />
+            <div className="h-12 w-1 bg-border group-hover:bg-blue-500 rounded-full" />
           </div>
         )}
 
@@ -1341,28 +1329,29 @@ const DocumentTemplateEditor = ({
           </div>
         </div>
 
-        {/* DRAG HANDLE DERECHO (Solo visible si el panel derecho está abierto y no es preview) */}
+        {/* DRAG HANDLE DERECHO - Integrado en el panel absoluto */}
         {!isPreview && showRightPanel && (
           <div
-            className="w-1 cursor-col-resize bg-border hover:bg-blue-500 transition-colors z-10 hidden md:flex flex-col justify-center items-center group"
+            className="w-1.5 cursor-col-resize absolute right-0 top-0 h-full hover:bg-blue-500/50 transition-colors z-40 hidden md:flex flex-col justify-center items-center group"
+            style={{ transform: `translateX(-${rightPanelWidth}px)` }}
             onMouseDown={() => startResizing('right')}
           >
-            <div className="h-8 w-1 bg-border group-hover:bg-blue-300 rounded-full" />
+            <div className="h-12 w-1 bg-border group-hover:bg-blue-500 rounded-full" />
           </div>
         )}
 
         {/* ZONA DE CONFIGURACIÓN DE FIRMAS */}
         <div
-          className={`border-l bg-muted/5 overflow-y-auto transition-all duration-300 shrink-0 relative z-20 h-full ${!showRightPanel || isPreview ? 'w-0 p-0 border-none opacity-0 overflow-hidden' : 'p-4 opacity-100'}`}
-          style={{ width: (!showRightPanel || isPreview) ? 0 : rightPanelWidth }}
+          className={`border-l bg-card shadow-2xl overflow-y-auto transition-transform duration-300 absolute top-0 right-2 z-30 h-[calc(100%-8px)] flex rounded-l-md ${!showRightPanel || isPreview ? 'translate-x-[110%]' : 'translate-x-0'}`}
+          style={{ width: rightPanelWidth }}
         >
           {showRightPanel && !isPreview && (
-            <div className="min-w-[180px]">
-              <div className="flex items-center justify-between mb-3">
+            <div className="min-w-[180px] p-4 flex-1">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b">
                 <h3 className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2">
-                  <Icon name="PenTool" size={12} /> Configuración de Firmas
+                  <Icon name="PenTool" size={14} /> Firmas
                 </h3>
-                <Button variant="ghost" size="icon" className="md:hidden h-6 w-6" onClick={() => setShowRightPanel(false)}>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowRightPanel(false)}>
                   <Icon name="X" size={14} />
                 </Button>
               </div>

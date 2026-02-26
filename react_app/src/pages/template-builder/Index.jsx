@@ -458,6 +458,7 @@ const FormBuilder = ({ userPermissions = [] }) => {
             onDeleteParagraph={handleDeleteParagraph}
             onMoveParagraph={handleMoveParagraph}
             onSave={() => handleSaveTemplate('publicado')}
+            isSaving={isSaving}
             readOnly={isReadOnly}
           />
         );
@@ -523,20 +524,7 @@ const FormBuilder = ({ userPermissions = [] }) => {
             <div className="flex items-center justify-between md:justify-end space-x-3">
 
               {/* LÓGICA DE FELIPE: BOTÓN O MENSAJE SEGÚN PERMISOS */}
-              {!isReadOnly ? (
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={() => handleSaveTemplate('publicado')}
-                  loading={isSaving}
-                  iconName="Send"
-                  iconPosition="left"
-                  className="w-full md:w-auto"
-                  disabled={!formData.formId || isSaving || !formData.documentTitle || (formData.paragraphs.length === 0 && !formData.documentContent)}
-                >
-                  {isSaving ? 'Guardando...' : 'Guardar Plantilla'}
-                </Button>
-              ) : (
+              {isReadOnly && (
                 <div className="px-4 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-medium border border-border flex items-center gap-2">
                   <Icon name="Eye" size={16} /> Modo Vista Previa
                 </div>
