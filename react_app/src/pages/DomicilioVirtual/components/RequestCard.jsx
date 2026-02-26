@@ -21,7 +21,7 @@ const domicilioConfig = {
 
 const RequestCard = ({ request, onRemove, onViewDetails, userPermissions = [] }) => {
   const [currentRequest, setCurrentRequest] = useState(request);
-  const canDelete = userPermissions.includes('delete_solicitudes_clientes');
+  const canDelete = userPermissions.includes('delete_domicilio_virtual');
 
   useEffect(() => {
     setCurrentRequest(request);
