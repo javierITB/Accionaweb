@@ -269,7 +269,7 @@ const DashboardHome = ({ userPermissions = {} }) => {
             <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileOpen(false)}></div>
          )}
 
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-20 lg:pt-24 p-6`}>
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-8 lg:pt-12 p-6`}>
             <div className="mb-4">
                <h1 className="text-3xl font-bold mb-1">Panel de Métricas</h1>
                <p className="text-gray-500 dark:text-gray-400">

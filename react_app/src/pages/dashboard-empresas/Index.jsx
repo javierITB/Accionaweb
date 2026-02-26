@@ -43,6 +43,8 @@ const EmpresasView = ({ userPermissions = [] }) => {
       return "";
    });
 
+   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
    // Actualizar activeTab si cambian los permisos (por si acaso)
    useEffect(() => {
       if (activeTab === "empresas" && !canViewEmpresas) {
@@ -211,50 +213,88 @@ const EmpresasView = ({ userPermissions = [] }) => {
                   </div>
                )}
 
-               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                     <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight">
-                        {activeTab === "empresas" ? "Empresas y Funcionalidades" : "Gestión de Planes Globales"}
-                     </h1>
-                     <p className="text-muted-foreground mt-1 text-sm lg:text-base">
-                        {activeTab === "empresas"
-                           ? "Gestión de bases de datos y empresas del sistema"
-                           : "Configuración centralizada de planes y límites"}
-                     </p>
-                  </div>
 
-                  {activeTab === "empresas" && canViewEmpresas && permisosEmpresas.create_empresas && (
-                     <Button
-                        variant="default"
-                        iconName="Plus"
-                        onClick={() => {
-                           setEditingCompany(null);
-                           setIsModalOpen(true);
-                        }}
-                     >
-                        Nueva Empresa
-                     </Button>
-                  )}
-                  {activeTab === "funcionalidades" && canViewPlanes && permisosPlanes.edit_empresas && (
-                     <Button variant="default" iconName="Plus" onClick={() => { setIsPlanModalOpen(true); }}>
-                        Nuevo Plan
-                     </Button>
-                  )}
+
+               {/* Contenedor principal para alinear búsqueda y botones */}
+               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                     <div className="min-w-0 flex-1">
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight">
+                           {activeTab === "empresas" ? "Empresas y Funcionalidades" : "Gestión de Planes Globales"}
+                        </h1>
+                        <p className="text-muted-foreground mt-1 text-sm lg:text-base">
+                           {activeTab === "empresas"
+                              ? "Gestión de bases de datos y empresas del sistema"
+                              : "Configuración centralizada de planes y límites"}
+                        </p>
+                     </div>
+                  </div>
+                  {/* Lógica de Barra de Búsqueda (Izquierda) */}
+                  {/* Contenedor principal para alinear búsqueda y botones */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-6">
+                     
+                     {/* Grupo de búsqueda y botones (Derecha) */}
+                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+
+                        {/* Buscador Expandible */}
+                        {(canViewEmpresas || canViewPlanes) && (
+                           <div className={`relative flex items-center transition-all duration-300 ease-in-out ${isSearchExpanded ? 'w-full sm:w-64 md:w-80' : 'w-10'}`}>
+                              <button
+                                 onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+                                 className={`z-10 flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${isSearchExpanded ? 'absolute left-0 text-muted-foreground' : 'bg-card border border-border text-foreground hover:bg-muted'}`}
+                                 title="Buscar"
+                              >
+                                 <Search size={18} />
+                              </button>
+
+                              <input
+                                 type="text"
+                                 placeholder={activeTab === "empresas" ? "Buscar empresas..." : "Buscar planes..."}
+                                 value={searchQuery}
+                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                 className={`
+                  bg-card border border-border rounded-lg text-sm transition-all duration-300 outline-none
+                  ${isSearchExpanded
+                                       ? 'w-full pl-10 pr-4 py-2 opacity-100 focus:ring-2 focus:ring-accent'
+                                       : 'w-0 p-0 opacity-0 pointer-events-none'
+                                    }
+               `}
+                                 onBlur={() => !searchQuery && setIsSearchExpanded(false)}
+                                 autoFocus={isSearchExpanded}
+                              />
+                           </div>
+                        )}
+
+                        {/* Lógica de Botones Dinámicos */}
+                        <div className="flex-shrink-0">
+                           {activeTab === "empresas" && canViewEmpresas && permisosEmpresas.create_empresas && (
+                              <Button
+                                 variant="default"
+                                 iconName="Plus"
+                                 className="shadow-sm whitespace-nowrap h-10"
+                                 onClick={() => {
+                                    setEditingCompany(null);
+                                    setIsModalOpen(true);
+                                 }}
+                              >
+                                 Nueva Empresa
+                              </Button>
+                           )}
+
+                           {activeTab === "funcionalidades" && canViewPlanes && permisosPlanes.edit_empresas && (
+                              <Button
+                                 variant="default"
+                                 iconName="Plus"
+                                 className="shadow-sm whitespace-nowrap h-10"
+                                 onClick={() => { setIsPlanModalOpen(true); }}
+                              >
+                                 Nuevo Plan
+                              </Button>
+                           )}
+                        </div>
+                     </div>
+                  </div>
                </div>
-
-               {/* Common Search Bar */}
-               {(canViewEmpresas || canViewPlanes) && (
-                  <div className="relative max-w-md w-full mt-6">
-                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                     <input
-                        type="text"
-                        placeholder={activeTab === "empresas" ? "Buscar empresas..." : "Buscar planes..."}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                     />
-                  </div>
-               )}
 
 
                {/* Tab Content */}

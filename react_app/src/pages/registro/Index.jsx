@@ -426,7 +426,7 @@ const CompanyReg = ({ userPermissions = [] }) => {
 
          {/* CONTENIDO PRINCIPAL - AJUSTADO PARA EVITAR DESBORDAMIENTO */}
          <main
-            className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16 flex-1 flex flex-col overflow-x-hidden`}
+            className={`transition-all duration-300 ${mainMarginClass} pt-4 lg:pt-8 md:pt-16 flex-1 flex flex-col overflow-x-hidden`}
          >
             <div className="pb-6 space-y-6 container-main w-full max-w-full overflow-x-hidden">
                {/* HEADER CON BOTÓN DE TOGGLE - AGREGADO */}

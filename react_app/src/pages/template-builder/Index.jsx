@@ -491,7 +491,7 @@ const FormBuilder = ({ userPermissions = [] }) => {
       )}
 
       {/* CONTENIDO PRINCIPAL - ACTUALIZADO */}
-      <main className={`transition-all duration-300 ${mainMarginClass} pt-16`}>
+      <main className={`transition-all duration-300 ${mainMarginClass}  `}>
         <div className="p-6 space-y-6">
           {/* HEADER CON BOTÓN DE TOGGLE - MODIFICADO ÚNICAMENTE AQUÍ PARA RESPONSIVIDAD */}
           <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">

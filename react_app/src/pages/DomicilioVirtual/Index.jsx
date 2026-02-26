@@ -327,7 +327,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
                                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                 }`}
                         >
-                            Contratación
+                            Domicilio Virtual
                         </button>
                         <button
                             onClick={() => handleTabChange('constitucion')}
@@ -346,7 +346,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
                                 {filters.search ? currentRequests.length : totalItems}
                             </span>
                             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
-                                {activeTab === 'contratacion' ? 'Contratación' : 'Constitución de Empresa'}
+                                {activeTab === 'contratacion' ? 'Contratación Domicilio Virtual' : 'Constitución de Empresa'}
                             </h1>
                         </div>
                     </div>

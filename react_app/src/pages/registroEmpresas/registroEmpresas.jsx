@@ -327,30 +327,15 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
             </div>
          )}
 
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16 flex-1 flex flex-col`}>
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-8 lg:pt-4 md:pt-16 flex-1 flex flex-col`}>
             <div className="p-6 space-y-6 container-main">
                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <h1 className="text-2xl md:text-3xl font-bold text-foreground">Registro de Empresas</h1>
 
-                  {/* SELECTOR CONDICIONAL: Solo si tiene permiso de ingresos O de cambios */}
-                  {(permisos.verIngresos || permisos.verCambios) && (
-                     <div className="relative min-w-[260px] w-full md:w-auto">
-                        <select
-                           value={selectedCompany}
-                           onChange={(e) => { setSelectedCompany(e.target.value); setPage(1); }}
-                           className="w-full pl-10 pr-10 py-2.5 bg-background border border-border rounded-lg text-sm outline-none appearance-none hover:border-indigo-400 cursor-pointer transition-all"
-                        >
-                           <option value="">Seleccionar Empresa...</option>
-                           {empresasOptions.map((emp) => (
-                              <option key={emp._id} value={emp.dbName}>{emp.nombre || emp.name}</option>
-                           ))}
-                        </select>
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"><Icon name="Building2" size={16} /></div>
-                     </div>
-                  )}
+
                </div>
 
-               <div className="flex space-x-1 rounded-lg bg-muted/50 p-1 w-fit">
+               <div className="flex space-x-1 rounded-lg bg-muted/50 p-1 w-full">
                   {permisos.verCambios && (
                      <button onClick={() => { setActiveTab("registro"); setPage(1); }} className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === "registro" ? "bg-indigo-600 text-white shadow-md" : "text-muted-foreground hover:bg-muted"}`}>
                         Registro de Cambios
@@ -361,6 +346,35 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
                         Registro de Ingresos
                      </button>
                   )}
+                  {/* SELECTOR CONDICIONAL: Solo si tiene permiso de ingresos O de cambios */}
+                  <div className="flex justify-end w-full mt-4">
+                     {(permisos.verIngresos || permisos.verCambios) && (
+                        <div className="relative min-w-[260px] w-full md:w-auto">
+                           <select
+                              value={selectedCompany}
+                              onChange={(e) => {
+                                 setSelectedCompany(e.target.value);
+                                 setPage(1);
+                              }}
+                              className="w-full pl-10 pr-10 py-2.5 bg-background border border-border rounded-lg text-sm outline-none appearance-none hover:border-indigo-400 cursor-pointer transition-all shadow-sm"
+                           >
+                              <option value="">Seleccionar Empresa...</option>
+                              {empresasOptions.map((emp) => (
+                                 <option key={emp._id} value={emp.dbName}>
+                                    {emp.nombre || emp.name}
+                                 </option>
+                              ))}
+                           </select>
+                           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                              <Icon name="Building2" size={16} />
+                           </div>
+                           {/* Icono de flecha para el select (opcional para mejorar el look) */}
+                           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                              <Icon name="ChevronDown" size={16} />
+                           </div>
+                        </div>
+                     )}
+                  </div>
                </div>
 
                <div className="bg-card border border-border rounded-lg shadow-sm p-6">

@@ -97,7 +97,7 @@ const AnunciosPage = ({ userPermissions = {} }) => {
          )}
 
          <div className={`flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "md:ml-16" : "md:ml-64"}`}>
-            <main className="flex-1 overflow-y-auto p-4 md:p-6 ">
+            <main className="flex-1 overflow-y-auto pt-4 lg:pt-10 md:p-6 ">
                <div className="max-w-4xl mx-auto">
                   <div className="mb-8">
                      <h1 className="text-2xl font-bold text-foreground">Nuevo Anuncio</h1>

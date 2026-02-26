@@ -177,7 +177,7 @@ const CompanyReg = ({ userPermissions = [] }) => {
         onToggleCollapse={() => isMobileScreen ? setIsMobileOpen(!isMobileOpen) : setIsDesktopOpen(!isDesktopOpen)} 
         isMobileOpen={isMobileOpen} 
       />
-      <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16`}>
+      <main className={`transition-all duration-300 ${mainMarginClass} pt-4 lg:pt-8`}>
         <div className="p-4 md:p-6 space-y-6 max-w-[1600px] mx-auto">
           <div>
             <h1 className="text-2xl font-bold">Registro de Logins</h1>

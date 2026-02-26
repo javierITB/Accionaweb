@@ -510,7 +510,7 @@ const FormReg = ({ userPermissions = [] }) => {
             </>
          )}
 
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-20`}>
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-10 lg:pt-8`}>
             <div className="py-6 space-y-6 container-main">
                <div className="flex items-center justify-between">
                   <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>

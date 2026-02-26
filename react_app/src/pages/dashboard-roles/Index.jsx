@@ -250,7 +250,7 @@ const RolesView = ({ userPermissions = {} }) => {
             </div>
          )}
 
-         <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
+         <main className={`transition-all duration-300 ${mainMarginClass} pt-4 lg:pt-2`}>
             <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <div className="min-w-0 flex-1">
@@ -261,11 +261,30 @@ const RolesView = ({ userPermissions = {} }) => {
                         Configuración de acceso para las vistas y módulos del sistema.
                      </p>
                   </div>
+               </div>
 
+               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
+                  {/* Buscador (Izquierda) */}
+                  <div className="relative w-full sm:max-w-md">
+                     <Search
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                        size={18}
+                     />
+                     <input
+                        type="text"
+                        placeholder="Buscar roles..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent transition-all"
+                     />
+                  </div>
+
+                  {/* Botón (Derecha) */}
                   {permisos.create_gestor_roles && (
                      <Button
                         variant="default"
                         iconName="Plus"
+                        className="w-full sm:w-auto shadow-sm whitespace-nowrap"
                         onClick={() => {
                            setEditingRole(null);
                            setIsRoleModalOpen(true);
@@ -274,17 +293,6 @@ const RolesView = ({ userPermissions = {} }) => {
                         Crear Nuevo Rol
                      </Button>
                   )}
-               </div>
-
-               <div className="relative max-w-md w-full">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                  <input
-                     type="text"
-                     placeholder="Buscar roles..."
-                     value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                     className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                  />
                </div>
 
                {isLoading ? (
