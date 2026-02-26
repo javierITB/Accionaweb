@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Shield, Check, Loader2, Lock, UserCircle, LayoutGrid, ChevronRight } from "lucide-react";
-import { apiFetch, API_BASE_URL } from "../../../utils/api";
+import { apiFetch, API_BASE_URL, CURRENT_TENANT } from "../../../utils/api";
 import Button from "components/ui/Button";
 
 export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, availablePermissions = [], myLevel = 10 }) {
@@ -289,7 +289,15 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                         (activeTab === "cliente" && isClientPanelEnabled) ? (
                         availablePermissions
                            .filter((g) => g.tagg === activeTab)
-                           // Se elimina el filtro de maestro para permitir asignación en formsdb.
+                           // Ocultar sección de comprobantes para formsdb
+                           .filter((g) => {
+                              if (CURRENT_TENANT === 'api') {
+                                 const isComprobantes = g.label === 'Vista: Comprobantes de Pago' ||
+                                    g.permissions.some(p => p.id === 'view_comprobantes');
+                                 return !isComprobantes;
+                              }
+                              return true;
+                           })
                            // En clientes, estos grupos no vienen en availablePermissions, así que no se muestran.
                            .map((group) => {
                               const ids = group.permissions.map((p) => p.id);

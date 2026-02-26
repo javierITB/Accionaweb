@@ -266,20 +266,24 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                                         </div>
                                         <div className="px-2 space-y-0.5">
                                             {item.children ? (
-                                                item.children.map(child => {
-                                                    const isChildActive = location.pathname === child.path || child.activeOn?.includes(location.pathname);
-                                                    return (
-                                                        <button key={child.path} onClick={() => handleNavigation(child.path)} className={`w-full flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${isChildActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
-                                                            <Icon name={child.icon} size={16} className={`mr-3 ${isChildActive ? "text-primary" : "opacity-70"}`} />
-                                                            <span className="truncate">{child.name}</span>
-                                                        </button>
-                                                    );
-                                                })
+                                                item.children
+                                                    .filter(child => hasPermission(child.permission))
+                                                    .map(child => {
+                                                        const isChildActive = location.pathname === child.path || child.activeOn?.includes(location.pathname);
+                                                        return (
+                                                            <button key={child.path} onClick={() => handleNavigation(child.path)} className={`w-full flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${isChildActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+                                                                <Icon name={child.icon} size={16} className={`mr-3 ${isChildActive ? "text-primary" : "opacity-70"}`} />
+                                                                <span className="truncate">{child.name}</span>
+                                                            </button>
+                                                        );
+                                                    })
                                             ) : (
-                                                <button onClick={() => handleNavigation(item.path)} className={`w-full flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${location.pathname === item.path || item.activeOn?.includes(location.pathname) ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
-                                                    <Icon name={item.icon} size={16} className={`mr-3 ${location.pathname === item.path || item.activeOn?.includes(location.pathname) ? "text-primary" : "opacity-70"}`} />
-                                                    <span className="truncate">{item.name}</span>
-                                                </button>
+                                                hasPermission(item.permission) && (
+                                                    <button onClick={() => handleNavigation(item.path)} className={`w-full flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${location.pathname === item.path || item.activeOn?.includes(location.pathname) ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+                                                        <Icon name={item.icon} size={16} className={`mr-3 ${location.pathname === item.path || item.activeOn?.includes(location.pathname) ? "text-primary" : "opacity-70"}`} />
+                                                        <span className="truncate">{item.name}</span>
+                                                    </button>
+                                                )
                                             )}
                                         </div>
                                     </div>
