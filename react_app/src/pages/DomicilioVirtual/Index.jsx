@@ -49,12 +49,14 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
 
     const loadedPages = useRef(new Set());
 
+    const [activeTab, setActiveTab] = useState('contratacion');
+
     // Filtros iniciales
     const [filters, setFilters] = useState({
         search: 'contratacion',
         status: '',
         category: '',
-        dateRange: '', 
+        dateRange: '',
         startDate: '',
         endDate: '',
         company: '',
@@ -111,7 +113,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
                 submittedAt: r.submittedAt || r.createdAt || null,
                 createdAt: r.createdAt,
                 status: r.status,
-                responses: r.responses, 
+                responses: r.responses,
                 tuNombre: r.tuNombre || "",
                 nombreEmpresa: r.nombreEmpresa,
                 rutEmpresa: r.rutEmpresa || "",
@@ -144,12 +146,12 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
     };
 
     // --- EFECTOS DE CONTROL ---
-    useEffect(() => { 
-        fetchData(1, false, filters); 
+    useEffect(() => {
+        fetchData(1, false, filters);
     }, []);
 
-    useEffect(() => { 
-        if (currentPage > 1) fetchData(currentPage); 
+    useEffect(() => {
+        if (currentPage > 1) fetchData(currentPage);
     }, [currentPage]);
 
     useEffect(() => {
@@ -173,7 +175,17 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
         setResp([]);
         loadedPages.current.clear();
         setCurrentPage(1);
-        fetchData(1, false, filters); 
+        fetchData(1, false, filters);
+    };
+
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+        const newFilters = { ...filters, search: tab };
+        setFilters(newFilters);
+        setResp([]);
+        loadedPages.current.clear();
+        setCurrentPage(1);
+        fetchData(1, false, newFilters);
     };
 
     const handleStatusFilter = (status) => {
@@ -188,7 +200,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
 
     const handleClearFilters = () => {
         const cleared = {
-            search: '',
+            search: activeTab,
             status: '',
             category: '',
             dateRange: '',
@@ -236,7 +248,7 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
     // --- LÓGICA DE FILTRADO Y ORDENAMIENTO (CORREGIDA E INTEGRADA) ---
     const currentRequests = useMemo(() => {
         let filtered = [];
-        
+
         // 1. Si hay filtro de estado (ej: DICOM), mostramos solo ese.
         if (filters.status && filters.status !== "") {
             filtered = resp.filter(r => r.status === filters.status);
@@ -305,22 +317,45 @@ const DomicilioVirtualIndex = ({ userPermissions = [] }) => {
 
             <main className={`transition-all duration-300 ${mainMarginClass} pt-24 lg:pt-20`}>
                 <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
+
+                    {/* Tabs Selector ABOVE Title */}
+                    <div className="flex space-x-1 rounded-xl bg-card p-1 shadow-sm border border-border w-fit mb-2">
+                        <button
+                            onClick={() => handleTabChange('contratacion')}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'contratacion'
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                }`}
+                        >
+                            Contratación
+                        </button>
+                        <button
+                            onClick={() => handleTabChange('constitucion')}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'constitucion'
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                }`}
+                        >
+                            Constitución
+                        </button>
+                    </div>
+
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <span className="flex items-center justify-center min-w-8 h-8 px-2 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
                                 {filters.search ? currentRequests.length : totalItems}
                             </span>
                             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
-                                Domicilio Virtual
+                                {activeTab === 'contratacion' ? 'Contratación' : 'Constitución de Empresa'}
                             </h1>
                         </div>
                     </div>
 
-                    <StatsOverview 
-                        stats={mockStats} 
-                        allForms={resp} 
-                        filters={filters} 
-                        onFilterChange={handleStatusFilter} 
+                    <StatsOverview
+                        stats={mockStats}
+                        allForms={resp}
+                        filters={filters}
+                        onFilterChange={handleStatusFilter}
                     />
 
                     <FilterPanel

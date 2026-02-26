@@ -30,12 +30,42 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefres
   const last24hApprovedCount = calculate24hChange('approvedAt');
   const last24hFinalizedCount = calculate24hChange('finalizedAt');
 
+  // Calcular stats dinámicamente desde allForms para respetar el filtro de pestaña (search)
+  const computedStats = React.useMemo(() => {
+    if (!allForms || allForms.length === 0) return stats || {};
+
+    const counts = {
+      total: allForms.length,
+      documento_generado: 0,
+      enviado: 0,
+      solicitud_firmada: 0,
+      informado_sii: 0,
+      dicom: 0,
+      dado_de_baja: 0,
+      pendiente: 0 // equivalente a documento_generado en forms antiguos
+    };
+
+    allForms.forEach(form => {
+      const status = form.status || 'pendiente';
+      if (counts[status] !== undefined) {
+        counts[status]++;
+      } else {
+        counts[status] = 1; // Para estados no previstos
+      }
+    });
+
+    // Fallback: si hay stats del backend que no están en allForms por temas de paginación
+    // Solo usamos los dinámicos si la pestaña (filtro search) está activa o si allForms está filtrado.
+    // Como siempre descargamos por "contratacion" o "constitucion", los dinámicos son más precisos.
+    return counts;
+  }, [allForms, stats]);
+
   // Configuración de tarjetas con sus claves de filtro y estilos
   // Configuración de tarjetas con sus claves de filtro y estilos (DOMICILIO VIRTUAL)
   const statCards = [
     {
       title: 'Doc. Generado',
-      value: stats?.documento_generado || stats?.pending, // Fallback a pending si es el estado inicial
+      value: computedStats?.documento_generado || computedStats?.pendiente || 0, // Fallback a pending si es el estado inicial
       icon: 'FileText',
       color: 'text-error',
       bgColor: 'bg-error/10',
@@ -46,7 +76,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefres
     },
     {
       title: 'Enviado',
-      value: stats?.enviado,
+      value: computedStats?.enviado || 0,
       icon: 'Send',
       color: 'text-blue-600',
       bgColor: '',
@@ -57,7 +87,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefres
     },
     {
       title: 'Firmada',
-      value: stats?.solicitud_firmada,
+      value: computedStats?.solicitud_firmada || 0,
       icon: 'PenTool', // O FileSignature si existe
       color: 'text-warning',
       bgColor: 'bg-warning/10',
@@ -68,7 +98,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefres
     },
     {
       title: 'Info. SII',
-      value: stats?.informado_sii,
+      value: computedStats?.informado_sii || 0,
       icon: 'Building',
       color: 'text-info',
       bgColor: 'bg-info/10',
@@ -79,7 +109,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefres
     },
     {
       title: 'DICOM',
-      value: stats?.dicom,
+      value: computedStats?.dicom || 0,
       icon: 'AlertTriangle',
       color: 'text-secondary',
       bgColor: 'bg-secondary/10',
@@ -90,7 +120,7 @@ const StatsOverview = ({ stats, allForms, filters = {}, onFilterChange, onRefres
     },
     {
       title: 'De Baja',
-      value: stats?.dado_de_baja,
+      value: computedStats?.dado_de_baja || 0,
       icon: 'XCircle',
       color: 'text-muted-foreground',
       bgColor: 'bg-muted/10',

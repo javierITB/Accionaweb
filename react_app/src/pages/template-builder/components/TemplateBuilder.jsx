@@ -149,20 +149,30 @@ const DocumentTemplateEditor = ({
   const [, setTick] = useState(0);
   const [focusedField, setFocusedField] = useState({ type: 'editor' });
 
-  // Estado para controlar la visibilidad del panel de configuración de firmas
-  const [showSignatureConfig, setShowSignatureConfig] = useState(false);
+  // Estado para controlar paneles laterales
+  const [showLeftPanel, setShowLeftPanel] = useState(true);
+  const [showRightPanel, setShowRightPanel] = useState(false); // Same as showSignatureConfig but renamed logically
+
+  // ESTADO DE ZOOM MANUAL
+  const [zoomLevel, setZoomLevel] = useState(1); // 1 = 100%
+
+  // Manejadores de zoom
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.1, 2)); // Max 200%
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.1, 0.5)); // Min 50%
+  const handleZoomReset = () => setZoomLevel(1);
 
   // EFECTO FORZAR PREVIEW SI ES READ ONLY
   useEffect(() => {
     if (readOnly) {
       setIsPreview(true);
-      setShowSignatureConfig(false);
+      setShowRightPanel(false);
+      setShowLeftPanel(false);
     }
   }, [readOnly]);
 
   // -- ESTADOS DE REDIMENSIONAMIENTO --
-  const [leftPanelWidth, setLeftPanelWidth] = useState(320);
-  const [rightPanelWidth, setRightPanelWidth] = useState(300);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(260);
+  const [rightPanelWidth, setRightPanelWidth] = useState(260);
   const [isResizing, setIsResizing] = useState(null); // 'left' | 'right' | null
 
   // Manejadores de redimensionamiento
@@ -177,14 +187,14 @@ const DocumentTemplateEditor = ({
   const resize = React.useCallback((e) => {
     if (isResizing === 'left') {
       const newWidth = e.clientX - 64; // Aproximadamente 64px del sidebar principal si existe, ajustar según layout
-      // Limitamos min 200, max 600
-      if (newWidth > 200 && newWidth < 600) {
+      // Limitamos min 150, max 600
+      if (newWidth > 150 && newWidth < 600) {
         setLeftPanelWidth(newWidth);
       }
     } else if (isResizing === 'right') {
       // Para el panel derecho, calculamos desde el borde derecho
       const newWidth = window.innerWidth - e.clientX - 40; // Margen de seguridad
-      if (newWidth > 200 && newWidth < 600) {
+      if (newWidth > 150 && newWidth < 600) {
         setRightPanelWidth(newWidth);
       }
     }
@@ -708,8 +718,10 @@ const DocumentTemplateEditor = ({
             >
               <Icon name={isFullScreen ? "Minimize" : "Maximize"} size={16} />
             </Button>
-
           </div>
+
+
+
           <select
             className="h-8 text-xs border rounded bg-card px-2 outline-none focus:ring-1 focus:ring-primary w-28"
             value={getActiveFontFamily()}
@@ -824,8 +836,20 @@ const DocumentTemplateEditor = ({
             </Button>
           </div>
 
+          <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
 
-
+          {/* Botones de Zoom Manual */}
+          <div className="flex bg-card border rounded-md p-0.5">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomOut} title="Alejar (Zoom Out)">
+              <Icon name="ZoomOut" size={14} />
+            </Button>
+            <span className="text-[10px] font-bold min-w-[36px] text-center place-content-center" title="Restablecer Zoom" onClick={handleZoomReset} style={{ cursor: 'pointer' }}>
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomIn} title="Acercar (Zoom In)">
+              <Icon name="ZoomIn" size={14} />
+            </Button>
+          </div>
 
 
           <div className="flex gap-1 ml-auto items-center">
@@ -893,16 +917,53 @@ const DocumentTemplateEditor = ({
             }}>
               + CONDICIONAL
             </Button>
+            {/* Toggle Left Panel */}
             <Button
-              variant={showSignatureConfig ? "default" : "outline"}
+              variant={showLeftPanel ? "default" : "outline"}
               size="sm"
-              className={`h-8 text-[10px] font-bold ${showSignatureConfig ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
-              onClick={() => setShowSignatureConfig(!showSignatureConfig)}
-              disabled={isPreview}
-              title={showSignatureConfig ? "Ocultar Configuración de Firmas" : "Configurar Firmas"}
+              className={`h-8 text-[10px] font-bold hidden md:flex ${showLeftPanel ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
+              onClick={() => setShowLeftPanel(!showLeftPanel)}
+              title={showLeftPanel ? "Ocultar Panel de Variables" : "Mostrar Panel de Variables"}
             >
-              <Icon name="PenTool" size={12} className="mr-1" /> {showSignatureConfig ? "FIRMA" : "+ FIRMA"}
+              <Icon name="Database" size={12} className="mr-1" /> {showLeftPanel ? "VARIABLES" : "VARIABLES"}
             </Button>
+
+            <Button
+              variant={showRightPanel ? "default" : "outline"}
+              size="sm"
+              className={`h-8 text-[10px] font-bold hidden md:flex ${showRightPanel ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
+              onClick={() => setShowRightPanel(!showRightPanel)}
+              disabled={isPreview}
+              title={showRightPanel ? "Ocultar Configuración de Firmas" : "Configurar Firmas"}
+            >
+              <Icon name="PenTool" size={12} className="mr-1" /> FIRMAS
+            </Button>
+
+            {/* Mobile Toggle Menu */}
+            <div className="md:hidden flex items-center gap-1">
+              <Button
+                variant={showLeftPanel ? "default" : "outline"}
+                size="icon"
+                className={`h-8 w-8 ${showLeftPanel ? 'bg-blue-600 text-white' : 'text-blue-600'}`}
+                onClick={() => {
+                  setShowLeftPanel(!showLeftPanel);
+                  if (!showLeftPanel) setShowRightPanel(false);
+                }}
+              >
+                <Icon name="Database" size={14} />
+              </Button>
+              <Button
+                variant={showRightPanel ? "default" : "outline"}
+                size="icon"
+                className={`h-8 w-8 ${showRightPanel ? 'bg-blue-600 text-white' : 'text-blue-600'}`}
+                onClick={() => {
+                  setShowRightPanel(!showRightPanel);
+                  if (!showRightPanel) setShowLeftPanel(false);
+                }}
+              >
+                <Icon name="PenTool" size={14} />
+              </Button>
+            </div>
 
             {onSave && (
               <Button
@@ -928,84 +989,107 @@ const DocumentTemplateEditor = ({
           >
             <Icon name={isFullScreen ? "Minimize" : "Maximize"} size={16} />
           </Button>
+
+          <div className="w-px h-6 bg-border mx-2" />
+
+          {/* Botones de Zoom Manual (Read Only) */}
+          <div className="flex items-center gap-1 bg-card rounded-md border p-0.5">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomOut} title="Alejar (Zoom Out)">
+              <Icon name="ZoomOut" size={14} />
+            </Button>
+            <span className="text-[10px] font-bold min-w-[36px] text-center" title="Restablecer Zoom" onClick={handleZoomReset} style={{ cursor: 'pointer' }}>
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomIn} title="Acercar (Zoom In)">
+              <Icon name="ZoomIn" size={14} />
+            </Button>
+          </div>
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* PANEL LATERAL DE VARIABLES */}
         <div
-          className={`panel-izquierdo border-r bg-muted/5 p-4 overflow-y-auto shrink-0 transition-all duration-75 ${readOnly ? 'w-0 p-0 border-none' : ''}`}
-          style={{ width: readOnly ? 0 : leftPanelWidth }}
+          className={`panel-izquierdo border-r bg-muted/5 overflow-y-auto shrink-0 transition-all duration-300 relative z-20 h-full ${!showLeftPanel || readOnly ? 'w-0 p-0 border-none opacity-0 overflow-hidden' : 'p-4 opacity-100'}`}
+          style={{ width: !showLeftPanel || readOnly ? 0 : leftPanelWidth }}
         >
-          <div className="space-y-6">
-            {/* Variables del Formulario */}
-            <div>
-              <button
-                onClick={() => setDynamicVarsExpanded(!dynamicVarsExpanded)}
-                className="w-full flex items-center justify-between text-[10px] font-bold uppercase text-primary mb-3 tracking-widest hover:bg-primary/10 p-1 rounded transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <Icon name="Database" size={12} /> Variables Formulario
-                </span>
-                <Icon name={dynamicVarsExpanded ? "ChevronUp" : "ChevronDown"} size={12} />
-              </button>
+          {showLeftPanel && !readOnly && (
+            <div className="space-y-6 min-w-[180px]">
+              {/* Controles móviles para cerrar panel */}
+              <div className="md:hidden flex justify-end mb-2">
+                <Button variant="ghost" size="icon" onClick={() => setShowLeftPanel(false)}>
+                  <Icon name="X" size={16} />
+                </Button>
+              </div>
+              {/* Variables del Formulario */}
+              <div>
+                <button
+                  onClick={() => setDynamicVarsExpanded(!dynamicVarsExpanded)}
+                  className="w-full flex items-center justify-between text-[10px] font-bold uppercase text-primary mb-3 tracking-widest hover:bg-primary/10 p-1 rounded transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <Icon name="Database" size={12} /> Variables Formulario
+                  </span>
+                  <Icon name={dynamicVarsExpanded ? "ChevronUp" : "ChevronDown"} size={12} />
+                </button>
 
-              {dynamicVarsExpanded && (
-                <div className="grid grid-cols-1 gap-1.5 animate-in slide-in-from-top-1 fade-in duration-200">
-                  {dynamicVariables.map((v) => (
-                    <VariableItem
-                      key={v.id || v.title}
-                      variable={v}
-                      copyVariable={addVariable}
-                    />
-                  ))}
-                </div>
-              )}
+                {dynamicVarsExpanded && (
+                  <div className="grid grid-cols-1 gap-1.5 animate-in slide-in-from-top-1 fade-in duration-200">
+                    {dynamicVariables.map((v) => (
+                      <VariableItem
+                        key={v.id || v.title}
+                        variable={v}
+                        copyVariable={addVariable}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Variables Generales Reintegradas */}
+              <div>
+                <button
+                  onClick={() => setStaticVarsExpanded(!staticVarsExpanded)}
+                  className="w-full flex items-center justify-between text-[10px] font-bold uppercase text-orange-600 mb-3 tracking-widest hover:bg-orange-50 p-1 rounded transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <Icon name="Globe" size={12} /> Variables Generales
+                  </span>
+                  <Icon name={staticVarsExpanded ? "ChevronUp" : "ChevronDown"} size={12} />
+                </button>
+
+                {staticVarsExpanded && (
+                  <div className="grid grid-cols-1 gap-1.5 animate-in fade-in slide-in-from-top-1">
+                    {staticVariables.map(v => {
+                      const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
+                      return (
+                        <button
+                          key={v.title}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            addVariable(tag);
+                          }}
+                          className="text-left px-3 py-2 text-[11px] bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded shadow-sm hover:bg-orange-500 hover:text-white dark:hover:bg-orange-600 transition-all truncate"
+                          title={tag}
+                        >
+                          <span className="font-mono text-orange-700 dark:text-orange-300">{tag}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-
-            {/* Variables Generales Reintegradas */}
-            <div>
-              <button
-                onClick={() => setStaticVarsExpanded(!staticVarsExpanded)}
-                className="w-full flex items-center justify-between text-[10px] font-bold uppercase text-orange-600 mb-3 tracking-widest hover:bg-orange-50 p-1 rounded transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <Icon name="Globe" size={12} /> Variables Generales
-                </span>
-                <Icon name={staticVarsExpanded ? "ChevronUp" : "ChevronDown"} size={12} />
-              </button>
-
-              {staticVarsExpanded && (
-                <div className="grid grid-cols-1 gap-1.5 animate-in fade-in slide-in-from-top-1">
-                  {staticVariables.map(v => {
-                    const tag = `{{${v.title.toUpperCase().replace(/\s+/g, '_')}}}`;
-                    return (
-                      <button
-                        key={v.title}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          addVariable(tag);
-                        }}
-                        className="text-left px-3 py-2 text-[11px] bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded shadow-sm hover:bg-orange-500 hover:text-white dark:hover:bg-orange-600 transition-all truncate"
-                        title={tag}
-                      >
-                        <span className="font-mono text-orange-700 dark:text-orange-300">{tag}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* DRAG HANDLE IZQUIERDO */}
         {/* DRAG HANDLE IZQUIERDO - Solo si no es read only */}
-        {!readOnly && (
+        {!readOnly && showLeftPanel && (
           <div
-            className="w-1 cursor-col-resize bg-border hover:bg-blue-500 transition-colors z-10 flex flex-col justify-center items-center group"
+            className="w-1 cursor-col-resize bg-border hover:bg-blue-500 transition-colors z-10 hidden md:flex flex-col justify-center items-center group"
             onMouseDown={() => startResizing('left')}
           >
             <div className="h-8 w-1 bg-border group-hover:bg-blue-300 rounded-full" />
@@ -1013,29 +1097,30 @@ const DocumentTemplateEditor = ({
         )}
 
         {/* AREA DE EDICION (HOJA) */}
-        <div className="editor-paper-container flex-1 bg-muted/30 overflow-y-auto">
-          <div className={`w-full max-w-[216mm] transition-all ${isPreview ? 'scale-[1.02]' : ''}`}>
+        <div className="editor-paper-container flex-1 bg-muted/30 overflow-auto">
+          <div className={`w-full max-w-[216mm] mx-auto transition-transform origin-top`} style={{ transform: `scale(${zoomLevel})` }}>
             <style>{`
               /* Contenedor del área de edición */
               .editor-paper-container {
                 background-color: #f0f2f5; 
-                padding: 10px 0;
-                display: flex;
-                justify-content: center;
+                padding: 2rem 1rem;
+                display: block; /* Removed flex center to prevent left crop */
+                overflow: auto;
               }
 
               /* La "Hoja" Visual (Contenedor Padre) */
               .visual-page {
                 background: white;
-                width: 216mm; /* Ancho Carta */
+                width: 100%; /* Cambiado a 100% en lugar de fijo */
                 min-height: 279mm; /* Alto Carta Mínimo */
-                padding: 2.5cm; /* Márgenes físicos del documento */
+                padding: clamp(2rem, 5vw, 4rem) clamp(2rem, 8vw, 6rem); /* Padding responsivo en lugar de 2.5cm fijo */
                 margin: 0 auto;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                 position: relative;
                 font-family: 'Arial', sans-serif;
                 display: flex;
                 flex-direction: column;
+                transition: transform 0.2s ease;
               }
 
               /* El Editor Tiptap (Contenido) */
@@ -1257,9 +1342,9 @@ const DocumentTemplateEditor = ({
         </div>
 
         {/* DRAG HANDLE DERECHO (Solo visible si el panel derecho está abierto y no es preview) */}
-        {!isPreview && showSignatureConfig && (
+        {!isPreview && showRightPanel && (
           <div
-            className="w-1 cursor-col-resize bg-border hover:bg-blue-500 transition-colors z-10 flex flex-col justify-center items-center group"
+            className="w-1 cursor-col-resize bg-border hover:bg-blue-500 transition-colors z-10 hidden md:flex flex-col justify-center items-center group"
             onMouseDown={() => startResizing('right')}
           >
             <div className="h-8 w-1 bg-border group-hover:bg-blue-300 rounded-full" />
@@ -1267,78 +1352,85 @@ const DocumentTemplateEditor = ({
         )}
 
         {/* ZONA DE CONFIGURACIÓN DE FIRMAS */}
-        {!isPreview && showSignatureConfig && (
-          <div
-            className="border-l bg-muted/5 p-4 overflow-y-auto animate-in slide-in-from-right-2 duration-300 shrink-0"
-            style={{ width: rightPanelWidth }}
-          >
-            <h3 className="text-[10px] font-bold uppercase text-primary mb-3 tracking-widest flex items-center gap-2">
-              <Icon name="PenTool" size={12} /> Configuración de Firmas
-            </h3>
-            <div className="space-y-4">
-              {signatures.map((sig, i) => (
-                <div key={i} className="relative p-3 border rounded-md bg-card shadow-sm group hover:border-primary/50 transition-colors">
-                  <button
-                    onClick={() => removeSignature(i)}
-                    className="absolute top-2 right-2 text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                    title="Eliminar esta firma"
-                  >
-                    <Icon name="Trash" size={12} />
-                  </button>
+        <div
+          className={`border-l bg-muted/5 overflow-y-auto transition-all duration-300 shrink-0 relative z-20 h-full ${!showRightPanel || isPreview ? 'w-0 p-0 border-none opacity-0 overflow-hidden' : 'p-4 opacity-100'}`}
+          style={{ width: (!showRightPanel || isPreview) ? 0 : rightPanelWidth }}
+        >
+          {showRightPanel && !isPreview && (
+            <div className="min-w-[180px]">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2">
+                  <Icon name="PenTool" size={12} /> Configuración de Firmas
+                </h3>
+                <Button variant="ghost" size="icon" className="md:hidden h-6 w-6" onClick={() => setShowRightPanel(false)}>
+                  <Icon name="X" size={14} />
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {signatures.map((sig, i) => (
+                  <div key={i} className="relative p-3 border rounded-md bg-card shadow-sm group hover:border-primary/50 transition-colors">
+                    <button
+                      onClick={() => removeSignature(i)}
+                      className="absolute top-2 right-2 text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                      title="Eliminar esta firma"
+                    >
+                      <Icon name="Trash" size={12} />
+                    </button>
 
-                  <div className="mb-3">
-                    <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Título</label>
-                    <input
-                      id={`sig-title-${i}`}
-                      className={`w-full border rounded px-2 py-1 outline-none bg-background text-foreground placeholder:text-muted-foreground/50 transition-all ${focusedField.type === 'signature' && focusedField.index === i && focusedField.field === 'title'
-                        ? 'ring-1 ring-primary border-primary'
-                        : 'focus:ring-1 focus:ring-primary'
-                        }`}
-                      style={{
-                        fontFamily: sig.titleFontFamily || 'inherit',
-                        fontSize: sig.titleFontSize ? `${sig.titleFontSize}pt` : '12px'
-                      }}
-                      value={sig.title || ''}
-                      onChange={(e) => updateSignature(i, 'title', e.target.value)}
-                      onFocus={() => setFocusedField({ type: 'signature', index: i, field: 'title' })}
-                      placeholder="Ej: Empleado"
-                    />
+                    <div className="mb-3">
+                      <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Título</label>
+                      <input
+                        id={`sig-title-${i}`}
+                        className={`w-full border rounded px-2 py-1 outline-none bg-background text-foreground placeholder:text-muted-foreground/50 transition-all ${focusedField.type === 'signature' && focusedField.index === i && focusedField.field === 'title'
+                          ? 'ring-1 ring-primary border-primary'
+                          : 'focus:ring-1 focus:ring-primary'
+                          }`}
+                        style={{
+                          fontFamily: sig.titleFontFamily || 'inherit',
+                          fontSize: sig.titleFontSize ? `${sig.titleFontSize}pt` : '12px'
+                        }}
+                        value={sig.title || ''}
+                        onChange={(e) => updateSignature(i, 'title', e.target.value)}
+                        onFocus={() => setFocusedField({ type: 'signature', index: i, field: 'title' })}
+                        placeholder="Ej: Empleado"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Contenido</label>
+                      <textarea
+                        id={`sig-text-${i}`}
+                        className={`w-full h-24 border rounded-md p-2 resize-none outline-none bg-background text-foreground placeholder:text-muted-foreground/50 transition-all chain-input ${focusedField.type === 'signature' && focusedField.index === i && focusedField.field === 'text'
+                          ? 'ring-1 ring-primary border-primary'
+                          : 'focus:ring-1 focus:ring-primary'
+                          }`}
+                        style={{
+                          fontFamily: sig.textFontFamily || 'monospace',
+                          fontSize: sig.textFontSize ? `${sig.textFontSize}pt` : '12px'
+                        }}
+                        placeholder="Variables, RUT, etc..."
+                        value={sig.text || ''}
+                        onChange={(e) => updateSignature(i, 'text', e.target.value)}
+                        onFocus={() => setFocusedField({ type: 'signature', index: i, field: 'text' })}
+                      />
+                    </div>
                   </div>
+                ))}
 
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Contenido</label>
-                    <textarea
-                      id={`sig-text-${i}`}
-                      className={`w-full h-24 border rounded-md p-2 resize-none outline-none bg-background text-foreground placeholder:text-muted-foreground/50 transition-all chain-input ${focusedField.type === 'signature' && focusedField.index === i && focusedField.field === 'text'
-                        ? 'ring-1 ring-primary border-primary'
-                        : 'focus:ring-1 focus:ring-primary'
-                        }`}
-                      style={{
-                        fontFamily: sig.textFontFamily || 'monospace',
-                        fontSize: sig.textFontSize ? `${sig.textFontSize}pt` : '12px'
-                      }}
-                      placeholder="Variables, RUT, etc..."
-                      value={sig.text || ''}
-                      onChange={(e) => updateSignature(i, 'text', e.target.value)}
-                      onFocus={() => setFocusedField({ type: 'signature', index: i, field: 'text' })}
-                    />
-                  </div>
-                </div>
-              ))}
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full border-dashed text-primary hover:bg-primary/5 h-8 text-[10px]"
-                onClick={addSignature}
-              >
-                + Agregar Firma
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-dashed text-primary hover:bg-primary/5 h-8 text-[10px]"
+                  onClick={addSignature}
+                >
+                  + Agregar Firma
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div >
+    </div>
   );
 };
 
