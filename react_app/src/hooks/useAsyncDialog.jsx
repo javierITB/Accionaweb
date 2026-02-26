@@ -8,17 +8,18 @@ export default function useAsyncDialog() {
    const closeDialog = useCallback(() => {
       setOpen(false);
 
-       const shouldRun = shouldRunAfterSuccessRef.current;
+      const shouldRun = shouldRunAfterSuccessRef.current;
 
-    setConfig((prev) => {
-      if (shouldRun && prev?.onAfterSuccess) {
-        prev.onAfterSuccess();
-      }
-      return {};
-    });
+      setConfig((prev) => {
+         if (shouldRun && prev?.onAfterSuccess) {
+            setTimeout(() => {
+               prev.onAfterSuccess();
+            }, 0);
+         }
+         return {};
+      });
 
-   shouldRunAfterSuccessRef.current = false;
-
+      shouldRunAfterSuccessRef.current = false;
    }, []);
 
    /**
