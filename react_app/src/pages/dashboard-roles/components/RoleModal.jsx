@@ -289,9 +289,10 @@ export function RoleModal({ isOpen, onClose, onSuccess, role = null, permisos, a
                         (activeTab === "cliente" && isClientPanelEnabled) ? (
                         availablePermissions
                            .filter((g) => g.tagg === activeTab)
-                           // Ocultar sección de comprobantes para formsdb
+                           // Ocultar sección de comprobantes para tenants de administración (formsdb y relacionados)
                            .filter((g) => {
-                              if (CURRENT_TENANT === 'api') {
+                              const adminTenants = ["api", "formsdb", "infodesa", "acciona", "solunex"];
+                              if (adminTenants.includes(CURRENT_TENANT)) {
                                  const isComprobantes = g.label === 'Vista: Comprobantes de Pago' ||
                                     g.permissions.some(p => p.id === 'view_comprobantes');
                                  return !isComprobantes;
