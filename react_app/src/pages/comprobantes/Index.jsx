@@ -150,20 +150,20 @@ const ComprobantesIndex = () => {
 
                     {/* Filters Bar */}
                     <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex gap-2">
-                            <button onClick={() => setFilter('Todos')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Todos' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>Todos</button>
-                            <button onClick={() => setFilter('Pendiente')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Pendiente' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>Pendientes</button>
-                            <button onClick={() => setFilter('En Revisión')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'En Revisión' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>En Revisión</button>
-                            <button onClick={() => setFilter('Aprobado')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Aprobado' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>Aprobados</button>
-                            <button onClick={() => setFilter('Rechazado')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Rechazado' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>Rechazados</button>
+                        <div className="flex gap-2 overflow-x-auto whitespace-nowrap pb-2 hide-scrollbar w-full md:w-auto snap-x">
+                            <button onClick={() => setFilter('Todos')} className={`snap-start shrink-0 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Todos' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>Todos</button>
+                            <button onClick={() => setFilter('Pendiente')} className={`snap-start shrink-0 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Pendiente' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>Pendientes</button>
+                            <button onClick={() => setFilter('En Revisión')} className={`snap-start shrink-0 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'En Revisión' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>En Revisión</button>
+                            <button onClick={() => setFilter('Aprobado')} className={`snap-start shrink-0 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Aprobado' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>Aprobados</button>
+                            <button onClick={() => setFilter('Rechazado')} className={`snap-start shrink-0 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'Rechazado' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>Rechazados</button>
                         </div>
                     </div>
 
                     {/* Table Container */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
+                    <div className="bg-transparent md:bg-white md:dark:bg-slate-800 md:rounded-2xl md:border md:border-slate-200 md:dark:border-slate-700 md:shadow-sm overflow-hidden">
+                        <div className="overflow-x-visible md:overflow-x-auto">
+                            <table className="w-full text-left border-collapse block md:table">
+                                <thead className="hidden md:table-header-group">
                                     <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-200 dark:border-slate-700">
                                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-40">Estado</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Concepto</th>
@@ -171,15 +171,16 @@ const ComprobantesIndex = () => {
                                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right w-48">Acción</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                <tbody className="block md:table-row-group divide-y divide-transparent md:divide-y md:divide-slate-100 md:dark:divide-slate-700/50 space-y-4 md:space-y-0">
                                     {loading ? (
-                                        <tr><td colSpan="4" className="px-6 py-8 text-center text-slate-500">Cargando historial...</td></tr>
+                                        <tr className="block md:table-row bg-white dark:bg-slate-800 rounded-xl md:rounded-none md:bg-transparent"><td colSpan="4" className="block md:table-cell px-6 py-8 text-center text-slate-500">Cargando historial...</td></tr>
                                     ) : filteredTransactions.length === 0 ? (
-                                        <tr><td colSpan="4" className="px-6 py-8 text-center text-slate-500">No hay cobros registrados</td></tr>
+                                        <tr className="block md:table-row bg-white dark:bg-slate-800 rounded-xl md:rounded-none md:bg-transparent"><td colSpan="4" className="block md:table-cell px-6 py-8 text-center text-slate-500">No hay cobros registrados</td></tr>
                                     ) : (
                                         filteredTransactions.map((tx) => (
-                                            <tr key={tx._id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors group">
-                                                <td className="px-6 py-5">
+                                            <tr key={tx._id} className="block md:table-row bg-white dark:bg-slate-800 shadow-sm md:shadow-none border border-slate-200 dark:border-slate-700 md:border-none rounded-xl md:rounded-none hover:bg-slate-50/80 md:dark:hover:bg-slate-700/40 transition-colors group mb-4 md:mb-0 overflow-hidden">
+                                                <td className="block md:table-cell px-4 py-3 md:px-6 md:py-5 border-b border-slate-100 dark:border-slate-700 md:border-none flex justify-between md:justify-start items-center">
+                                                    <span className="md:hidden text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</span>
                                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border 
                                                         ${tx.status === 'Aprobado' ? 'bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/20' :
                                                             tx.status === 'Pendiente' ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20' :
@@ -191,23 +192,28 @@ const ComprobantesIndex = () => {
                                                         {tx.status}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-5">
+                                                <td className="block md:table-cell px-4 py-3 md:px-6 md:py-5 border-b border-slate-100 dark:border-slate-700 md:border-none">
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-semibold text-slate-900 dark:text-white">{tx.concept}</span>
-                                                        <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                                        <span className="md:hidden text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Concepto</span>
+                                                        <span className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">{tx.concept}</span>
+                                                        <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                                             {tx.period}
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-5 text-center font-bold text-slate-700 dark:text-slate-300">
-                                                    {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(tx.amount)}
+                                                <td className="block md:table-cell px-4 py-3 md:px-6 md:py-5 border-b border-slate-100 dark:border-slate-700 md:border-none md:text-center text-left flex justify-between md:table-cell items-center">
+                                                    <span className="md:hidden text-xs font-semibold text-slate-500 uppercase tracking-wider">Monto</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300">
+                                                        {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(tx.amount)}
+                                                    </span>
                                                 </td>
-                                                <td className="px-6 py-5 text-right">
+                                                <td className="block md:table-cell px-4 py-4 md:px-6 md:py-5 text-right bg-slate-50/50 dark:bg-slate-800/30 md:bg-transparent">
                                                     {tx.status === 'Pendiente' || tx.status === 'Rechazado' ? (
                                                         <Button
                                                             size="sm"
                                                             onClick={() => handleUploadClick(tx)}
                                                             iconName="Upload"
+                                                            className="w-full md:w-auto"
                                                         >
                                                             Subir Pago
                                                         </Button>
@@ -216,6 +222,7 @@ const ComprobantesIndex = () => {
                                                             size="sm"
                                                             variant="ghost"
                                                             onClick={() => handleViewDetails(tx)}
+                                                            className="w-full md:w-auto border border-slate-200 dark:border-slate-700 md:border-none"
                                                         >
                                                             Ver Detalles
                                                         </Button>
