@@ -20,7 +20,7 @@ const CompanyReg = ({ userPermissions = [] }) => {
    const [selectedRegistro, setSelectedRegistro] = useState(null);
 
    const [page, setPage] = useState(1);
-   const [limit] = useState(10);
+   const [limit] = useState(20);
    const [pagination, setPagination] = useState(null);
    const [loading, setLoading] = useState(false);
 
