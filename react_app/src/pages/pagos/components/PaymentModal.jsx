@@ -8,6 +8,13 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
     const [selectedCharge, setSelectedCharge] = useState(null);
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
+    const [showMobileDetail, setShowMobileDetail] = useState(false);
+
+    // Reset mobile detail when selecting a charge on desktop or closing/opening
+    const handleSelectCharge = (charge) => {
+        setSelectedCharge(charge);
+        setShowMobileDetail(true);
+    };
 
     useEffect(() => {
         if (isOpen && company?.dbName) {
@@ -122,11 +129,11 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-slate-900/40">
-            <div className="bg-white dark:bg-slate-900 w-full max-w-6xl h-[85vh] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm bg-slate-900/40">
+            <div className="bg-white dark:bg-slate-900 w-full md:max-w-6xl h-full md:h-[85vh] rounded-t-2xl md:rounded-2xl shadow-2xl border-t md:border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 md:zoom-in duration-300">
 
                 {/* Header */}
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex-shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="p-4 md:p-6 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex-shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
                     <div>
                         <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
                             <span className="text-primary">
@@ -137,55 +144,51 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Historial de Cobros y Pagos</p>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 md:gap-4">
                         {/* Mini Metrics Bar */}
-                        <div className="flex gap-4">
-                            <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3">
-                                <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-md text-green-600 dark:text-green-400">
-                                    <Icon name="DollarSign" size={16} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Pagado</p>
-                                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                        <div className="flex gap-1.5 md:gap-3 bg-slate-50 md:bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm md:shadow-none">
+                            <div className="px-2.5 md:px-4 py-1 md:py-1.5 rounded-lg flex items-center gap-2 shrink-0">
+                                <Icon name="CheckCircle" size={14} className="text-emerald-500" />
+                                <div className="min-w-0">
+                                    <p className="text-[7px] md:text-[9px] uppercase font-black text-slate-500 dark:text-slate-400 leading-none mb-0.5">Pagado</p>
+                                    <p className="text-[11px] md:text-sm font-black text-slate-900 dark:text-white whitespace-nowrap leading-none">
                                         {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(
                                             charges.filter(c => c.status === 'Aprobado').reduce((acc, curr) => acc + (curr.amount || 0), 0)
-                                        )}
+                                        ).replace(',00', '')}
                                     </p>
                                 </div>
                             </div>
-                            <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3">
-                                <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-md text-amber-600 dark:text-amber-400">
-                                    <Icon name="Clock" size={16} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Pendiente</p>
-                                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 self-center"></div>
+                            <div className="px-2.5 md:px-4 py-1 md:py-1.5 rounded-lg flex items-center gap-2 shrink-0">
+                                <Icon name="Clock" size={14} className="text-amber-500" />
+                                <div className="min-w-0">
+                                    <p className="text-[7px] md:text-[9px] uppercase font-black text-slate-500 dark:text-slate-400 leading-none mb-0.5">Pdt.</p>
+                                    <p className="text-[11px] md:text-sm font-black text-slate-900 dark:text-white whitespace-nowrap leading-none">
                                         {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(
                                             charges.filter(c => ['Pendiente', 'En Revisión'].includes(c.status)).reduce((acc, curr) => acc + (curr.amount || 0), 0)
-                                        )}
+                                        ).replace(',00', '')}
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2 hidden md:block"></div>
-
                         <button
                             onClick={onClose}
-                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
+                            className="absolute top-4 right-4 md:static text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg active:scale-90"
                         >
-                            <Icon name="X" size={24} />
+                            <Icon name="X" size={20} />
                         </button>
                     </div>
                 </div>
 
                 {/* Body */}
-                <div className="flex flex-1 overflow-hidden">
+                <div className="flex flex-1 overflow-hidden relative">
 
                     {/* Sidebar: List of Charges */}
-                    <div className="w-1/3 border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30 flex flex-col">
-                        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-                            <h3 className="font-semibold text-slate-700 dark:text-slate-300">Cobros Generados</h3>
+                    <div className={`${showMobileDetail ? 'hidden md:flex' : 'flex'} w-full md:w-1/3 border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30 flex-col`}>
+                        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-900/50">
+                            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Cobros Generados</h3>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{charges.length}</span>
                         </div>
                         <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
                             {loading ? (
@@ -196,26 +199,29 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                                 charges.map(charge => (
                                     <div
                                         key={charge._id}
-                                        onClick={() => setSelectedCharge(charge)}
-                                        className={`p-3 rounded-lg cursor-pointer transition-all border ${selectedCharge?._id === charge._id
+                                        onClick={() => handleSelectCharge(charge)}
+                                        className={`p-4 rounded-xl cursor-pointer transition-all border ${selectedCharge?._id === charge._id
                                             ? 'bg-white dark:bg-slate-800 border-primary shadow-md ring-1 ring-primary/20'
                                             : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-600'
                                             }`}
                                     >
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className="font-bold text-slate-900 dark:text-white">{formatPeriod(charge.period)}</span>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${charge.status === 'Aprobado' ? 'bg-green-100 text-green-700' :
+                                        <div className="flex justify-between items-start mb-1 gap-2">
+                                            <span className="font-bold text-slate-900 dark:text-white text-sm">{formatPeriod(charge.period)}</span>
+                                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${charge.status === 'Aprobado' ? 'bg-green-100 text-green-700' :
                                                 charge.status === 'Pendiente' ? 'bg-amber-100 text-amber-700' :
                                                     charge.status === 'En Revisión' ? 'bg-blue-100 text-blue-700' :
                                                         'bg-red-100 text-red-700'
                                                 }`}>
-                                                {charge.status}
+                                                {charge.status === 'En Revisión' ? 'Revisión' : charge.status}
                                             </span>
                                         </div>
-                                        <p className="text-sm text-slate-500 mb-1 truncate">{charge.concept}</p>
-                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(charge.amount)}
-                                        </p>
+                                        <p className="text-xs text-slate-500 mb-2 truncate font-medium">{charge.concept}</p>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-sm font-black text-slate-800 dark:text-white">
+                                                {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(charge.amount)}
+                                            </p>
+                                            <Icon name="ChevronRight" size={14} className="text-slate-300 md:hidden" />
+                                        </div>
                                     </div>
                                 ))
                             )}
@@ -223,7 +229,15 @@ const PaymentModal = ({ isOpen, onClose, company }) => {
                     </div>
 
                     {/* Main Content: Charge Details */}
-                    <div className="w-2/3 bg-white dark:bg-slate-900 flex flex-col h-full relative">
+                    <div className={`${showMobileDetail ? 'flex' : 'hidden md:flex'} w-full md:w-2/3 bg-white dark:bg-slate-900 flex-col h-full relative`}>
+                        {/* Mobile Back Button */}
+                        <div className="md:hidden p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 shrink-0 bg-white dark:bg-slate-900">
+                            <button onClick={() => setShowMobileDetail(false)} className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+                                <Icon name="ArrowLeft" size={20} />
+                            </button>
+                            <h3 className="font-bold text-slate-900 dark:text-white">Detalle del Pago</h3>
+                        </div>
+
                         {selectedCharge ? (
                             <>
                                 {/* Scrollable Top Section: Details & File Info */}

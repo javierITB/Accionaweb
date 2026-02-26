@@ -19,7 +19,7 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
    }), [userPermissions]);
 
    // --- ESTADOS DE PESTAÑAS Y SELECCIÓN ---
-   const [activeTab, setActiveTab] = useState(permisos.verCambios ? "registro" : "ingresos"); 
+   const [activeTab, setActiveTab] = useState(permisos.verCambios ? "registro" : "ingresos");
    const [selectedCompany, setSelectedCompany] = useState("");
    const [empresasOptions, setEmpresasOptions] = useState([]);
 
@@ -77,26 +77,26 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
       if (!selectedCompany) return;
       try {
          setLoading(true);
-         const endpoint = activeTab === "registro" 
-            ? "registro/todos/registroempresa"    
-            : "auth/logins/registroempresas";      
-   
+         const endpoint = activeTab === "registro"
+            ? "registro/todos/registroempresa"
+            : "auth/logins/registroempresas";
+
          const baseUrl = API_BASE_URL.replace(/\/api$/, "");
          const segment = (selectedCompany === "formsdb" || selectedCompany === "api") ? "api" : selectedCompany;
          const url = `${baseUrl}/${segment}/${endpoint}?page=${currentPage}&limit=${limit}`;
-   
+
          const response = await apiFetch(url);
 
          if (response.ok) {
             const result = await response.json();
             const dataFinal = result.data || result;
-            
+
             // Invertimos el orden para ver lo más nuevo arriba
             let finalArray = Array.isArray(dataFinal) ? dataFinal : [];
             if (activeTab === "ingresos" || activeTab === "registro") {
                finalArray = [...finalArray].reverse();
             }
-            
+
             setRegistros(finalArray);
             setPagination(result.pagination || null);
          }
@@ -174,10 +174,10 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
 
             {loading ? <LoadingCard text="Consultando base de datos..." /> : (
                <div className="overflow-x-auto w-full">
-                  <table className="min-w-full border border-border rounded-lg">
+                  <table className="min-w-full border border-border rounded-lg block md:table">
                      {activeTab === "registro" ? (
                         <>
-                           <thead className="bg-muted text-sm text-muted-foreground">
+                           <thead className="hidden md:table-header-group bg-muted text-sm text-muted-foreground">
                               <tr>
                                  <th className="px-4 py-2 text-center">Código</th>
                                  <th className="px-4 py-2 text-center">Rol</th>
@@ -187,17 +187,42 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
                                  <th className="px-4 py-2 text-center">Detalles</th>
                               </tr>
                            </thead>
-                           <tbody>
+                           <tbody className="block md:table-row-group">
                               {registros.map((reg, i) => (
-                                 <tr key={i} className="border-t hover:bg-muted/30 transition">
-                                    <td className="px-4 py-2 text-[11px] text-center">{reg.code}</td>
-                                    <td className="px-4 py-2 text-sm text-center">{reg.actor?.role}</td>
-                                    <td className="px-4 py-2 text-sm">{reg.description}</td>
-                                    <td className="px-4 py-2 text-sm text-center">{reg.target?.type}</td>
-                                    <td className="px-4 py-2 text-sm">{formatDateSplit(reg.createdAt)}</td>
-                                    <td className="px-4 py-2 text-center">
+                                 <tr key={i} className="border-b md:border-b-0 border-border hover:bg-muted/30 transition block md:table-row mb-4 md:mb-0 pb-4 md:pb-0">
+                                    <td className="px-4 py-3 md:py-2 text-[11px] md:text-center block md:table-cell">
+                                       <div className="flex justify-between md:justify-center items-center w-full">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Código:</span>
+                                          <span>{reg.code}</span>
+                                       </div>
+                                    </td>
+                                    <td className="px-4 py-3 md:py-2 text-sm md:text-center block md:table-cell">
+                                       <div className="flex justify-between md:justify-center items-center w-full">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Rol:</span>
+                                          <span>{reg.actor?.role}</span>
+                                       </div>
+                                    </td>
+                                    <td className="px-4 py-3 md:py-2 text-sm block md:table-cell">
+                                       <div className="flex flex-col md:flex-row md:items-center w-full gap-1">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Descripción:</span>
+                                          <span>{reg.description}</span>
+                                       </div>
+                                    </td>
+                                    <td className="px-4 py-3 md:py-2 text-sm md:text-center block md:table-cell">
+                                       <div className="flex justify-between md:justify-center items-center w-full">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Afectado:</span>
+                                          <span>{reg.target?.type}</span>
+                                       </div>
+                                    </td>
+                                    <td className="px-4 py-3 md:py-2 text-sm block md:table-cell">
+                                       <div className="flex justify-between md:justify-center items-center w-full">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Fecha:</span>
+                                          <div className="text-right md:text-center">{formatDateSplit(reg.createdAt)}</div>
+                                       </div>
+                                    </td>
+                                    <td className="px-4 py-3 md:py-2 text-center block md:table-cell mt-2 md:mt-0">
                                        {permisos.verDetalles && (
-                                          <Button variant="outlineTeal" size="sm" onClick={() => { setSelectedRegistro(reg); setModalOpen(true); }}>Ver más</Button>
+                                          <Button variant="outlineTeal" size="sm" className="w-full md:w-auto" onClick={() => { setSelectedRegistro(reg); setModalOpen(true); }}>Ver más</Button>
                                        )}
                                     </td>
                                  </tr>
@@ -206,7 +231,7 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
                         </>
                      ) : (
                         <>
-                           <thead className="bg-muted text-sm text-muted-foreground">
+                           <thead className="hidden md:table-header-group bg-muted text-sm text-muted-foreground">
                               <tr>
                                  <th className="px-4 py-2 text-left">Nombre</th>
                                  <th className="px-4 py-2 text-left">Email</th>
@@ -217,16 +242,51 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
                                  <th className="px-4 py-2 text-left">Fecha Ingreso</th>
                               </tr>
                            </thead>
-                           <tbody>
+                           <tbody className="block md:table-row-group">
                               {registros.map((login, i) => (
-                                 <tr key={i} className="border-t hover:bg-muted/30 transition">
-                                    <td className="px-4 py-2 font-medium text-sm">{login.usr?.name}</td>
-                                    <td className="px-4 py-2 text-sm">{login.usr?.email}</td>
-                                    <td className="px-4 py-2 text-sm">{login.usr?.cargo || '—'}</td>
-                                    <td className="px-4 py-2 text-sm">{login.ipAddress || '—'}</td>
-                                    <td className="px-4 py-2 text-sm">{login.browser || '—'}</td>
-                                    <td className="px-4 py-2 text-sm">{login.os || '—'}</td>
-                                    <td className="px-4 py-2 text-sm">{login.now ? login.now.replace("T", " ").split(".")[0] : '—'}</td>
+                                 <tr key={i} className="border-b md:border-b-0 border-border hover:bg-muted/30 transition block md:table-row mb-4 md:mb-0 pb-4 md:pb-0">
+                                    <td className="px-4 py-3 md:py-2 font-medium text-sm block md:table-cell">
+                                       <div className="flex flex-col md:flex-row md:items-center w-full gap-1">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Nombre:</span>
+                                          <span>{login.usr?.name}</span>
+                                       </div>
+                                    </td>
+                                    <td className="px-4 py-3 md:py-2 text-sm block md:table-cell">
+                                       <div className="flex flex-col md:flex-row md:items-center w-full gap-1">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Email:</span>
+                                          <span>{login.usr?.email}</span>
+                                       </div>
+                                    </td>
+                                    <td className="px-4 py-3 md:py-2 text-sm block md:table-cell">
+                                       <div className="flex justify-between md:justify-start items-center w-full gap-3">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Cargo:</span>
+                                          <span>{login.usr?.cargo || '—'}</span>
+                                       </div>
+                                    </td>
+                                    <td className="px-4 py-3 md:py-2 text-sm block md:table-cell">
+                                       <div className="flex justify-between md:justify-start items-center w-full gap-3">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">IP:</span>
+                                          <span>{login.ipAddress || '—'}</span>
+                                       </div>
+                                    </td>
+                                    <td className="px-4 py-3 md:py-2 text-sm block md:table-cell">
+                                       <div className="flex justify-between md:justify-start items-center w-full gap-3">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Navegador:</span>
+                                          <span>{login.browser || '—'}</span>
+                                       </div>
+                                    </td>
+                                    <td className="px-4 py-3 md:py-2 text-sm block md:table-cell">
+                                       <div className="flex justify-between md:justify-start items-center w-full gap-3">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">S.O.:</span>
+                                          <span>{login.os || '—'}</span>
+                                       </div>
+                                    </td>
+                                    <td className="px-4 py-3 md:py-2 text-sm block md:table-cell">
+                                       <div className="flex justify-between md:justify-start items-center w-full gap-3">
+                                          <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Fecha Ingreso:</span>
+                                          <span>{login.now ? login.now.replace("T", " ").split(".")[0] : '—'}</span>
+                                       </div>
+                                    </td>
                                  </tr>
                               ))}
                            </tbody>
@@ -248,12 +308,30 @@ const RegistroEmpresas = ({ userPermissions = [] }) => {
       <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
          <Header />
          <Sidebar isCollapsed={!isDesktopOpen} onToggleCollapse={toggleSidebar} isMobileOpen={isMobileOpen} onNavigate={handleNavigation} />
-         
+
+         {/* Mobile Overlay */}
+         {isMobileScreen && isMobileOpen && (
+            <div className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300" onClick={toggleSidebar}></div>
+         )}
+
+         {/* BOTÓN MÓVIL ESTÁTICO (FLOATING) */}
+         {!isMobileOpen && isMobileScreen && (
+            <div className="fixed bottom-4 left-4 z-50">
+               <Button
+                  variant="default"
+                  size="icon"
+                  onClick={toggleSidebar}
+                  iconName="Menu"
+                  className="w-12 h-12 rounded-full shadow-brand-active active:scale-95 transition-transform"
+               />
+            </div>
+         )}
+
          <main className={`transition-all duration-300 ${mainMarginClass} pt-20 md:pt-16 flex-1 flex flex-col`}>
             <div className="p-6 space-y-6 container-main">
                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <h1 className="text-2xl md:text-3xl font-bold text-foreground">Registro de Empresas</h1>
-                  
+
                   {/* SELECTOR CONDICIONAL: Solo si tiene permiso de ingresos O de cambios */}
                   {(permisos.verIngresos || permisos.verCambios) && (
                      <div className="relative min-w-[260px] w-full md:w-auto">

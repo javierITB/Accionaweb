@@ -207,8 +207,8 @@ const CompanyReg = ({ userPermissions = [] }) => {
                <p className="text-muted-foreground">No hay Eventos registrados.</p>
             ) : (
                <div className="overflow-x-auto w-full">
-                  <table className="min-w-full border border-border rounded-lg">
-                     <thead className="bg-muted text-sm text-muted-foreground">
+                  <table className="min-w-full border border-border rounded-lg block md:table">
+                     <thead className="hidden md:table-header-group bg-muted text-sm text-muted-foreground">
                         <tr>
                            <th className="px-4 py-2 text-center whitespace-nowrap">Código</th>
                            <th className="px-4 py-2 text-center whitespace-nowrap">Rol</th>
@@ -220,19 +220,40 @@ const CompanyReg = ({ userPermissions = [] }) => {
                      </thead>
                      <tbody>
                         {registros.map((registro, index) => (
-                           <tr key={index} className="border-t hover:bg-muted/30 transition">
-                              <td className="px-4 py-2 text-[11px] text-center whitespace-nowrap">{registro.code}</td>
-                              <td className="px-4 py-2 text-sm text-center whitespace-nowrap">{registro.actor.role}</td>
-                              <td className="px-4 py-2 text-sm">{registro.description}</td>
-                              <td className="px-4 py-2 text-sm text-center whitespace-nowrap">
-                                 {registro.target.type || "—"}
+                           <tr key={index} className="border-b md:border-b-0 border-border hover:bg-muted/30 transition block md:table-row mb-4 md:mb-0 pb-4 md:pb-0">
+                              <td className="px-4 py-3 md:py-2 text-[11px] md:text-center block md:table-cell">
+                                 <div className="flex justify-between md:justify-center items-center w-full">
+                                    <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Código:</span>
+                                    <span>{registro.code}</span>
+                                 </div>
                               </td>
-                              <td className="px-4 py-2 text-sm whitespace-nowrap">
-                                 {formatDateSplit(registro.createdAt) || "—"}
+                              <td className="px-4 py-3 md:py-2 text-sm md:text-center block md:table-cell">
+                                 <div className="flex justify-between md:justify-center items-center w-full">
+                                    <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Rol:</span>
+                                    <span>{registro.actor.role}</span>
+                                 </div>
+                              </td>
+                              <td className="px-4 py-3 md:py-2 text-sm block md:table-cell">
+                                 <div className="flex flex-col md:flex-row md:items-center w-full gap-1">
+                                    <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Descripción:</span>
+                                    <span>{registro.description}</span>
+                                 </div>
+                              </td>
+                              <td className="px-4 py-3 md:py-2 text-sm md:text-center block md:table-cell">
+                                 <div className="flex justify-between md:justify-center items-center w-full">
+                                    <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Afectado:</span>
+                                    <span>{registro.target.type || "—"}</span>
+                                 </div>
+                              </td>
+                              <td className="px-4 py-3 md:py-2 text-sm block md:table-cell">
+                                 <div className="flex justify-between md:justify-center items-center w-full">
+                                    <span className="md:hidden font-semibold text-xs text-muted-foreground uppercase">Fecha:</span>
+                                    <div className="text-right md:text-center">{formatDateSplit(registro.createdAt) || "—"}</div>
+                                 </div>
                               </td>
                               {permisos.ver && (
-                                 <td className="px-4 py-2 text-sm text-center whitespace-nowrap">
-                                    <Button variant="outlineTeal" size="sm" onClick={() => openModal(registro)}>
+                                 <td className="px-4 py-3 md:py-2 text-sm text-center block md:table-cell mt-2 md:mt-0">
+                                    <Button variant="outlineTeal" size="sm" onClick={() => openModal(registro)} className="w-full md:w-auto">
                                        Ver más
                                     </Button>
                                  </td>

@@ -227,7 +227,7 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
 
    return (
       <div
-         className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+         className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-sm"
          onClick={onClose}
       >
          <div
@@ -235,10 +235,10 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
             onClick={(e) => e.stopPropagation()}
          >
             {/* HEADER */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-               <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Database size={20} className="text-accent" />
-                  {company ? "Editar Empresa y Permisos" : "Crear Nueva Empresa"}
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border shrink-0">
+               <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+                  <Database size={20} className="text-accent shrink-0" />
+                  {company ? "Editar Empresa" : "Crear Empresa"}
                </h2>
                <button
                   onClick={onClose}
@@ -461,12 +461,12 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                )}
             </div>
 
-            <div className="px-6 py-4 border-t border-border flex justify-between items-center bg-muted/10 shrink-0">
-               <div>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border flex flex-col md:flex-row justify-between items-center gap-3 bg-muted/10 shrink-0">
+               <div className="w-full md:w-auto">
                   {company && (
                      <button
                         onClick={() => setFormData({ ...formData, isSuspended: !formData.isSuspended })}
-                        className={`px-6 py-2 text-xs font-black uppercase text-white rounded-xl transition-all shadow-lg active:scale-95 flex items-center gap-2 ${formData.isSuspended
+                        className={`w-full md:w-auto px-6 py-2.5 sm:py-2 text-xs font-black uppercase text-white rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${formData.isSuspended
                            ? "bg-green-600 hover:bg-green-700 shadow-green-600/20"
                            : "bg-red-600 hover:bg-red-700 shadow-red-600/20"
                            }`}
@@ -475,11 +475,11 @@ export function EmpresaModal({ isOpen, onClose, onSuccess, company = null, plans
                      </button>
                   )}
                </div>
-               <div className="flex gap-3">
+               <div className="flex w-full md:w-auto">
                   <button
                      onClick={handleSubmit}
                      disabled={isSaving || !formData.name || isSuccess}
-                     className="px-8 py-2 bg-accent text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20 min-w-[200px] transition-all duration-200"
+                     className="w-full md:w-auto px-8 py-2.5 sm:py-2 bg-accent text-white text-sm font-bold rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20 min-w-[200px] transition-all duration-200"
                   >
                      {isSaving ? (
                         <>

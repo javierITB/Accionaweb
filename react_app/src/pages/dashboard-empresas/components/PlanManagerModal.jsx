@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Check, Loader2, ShieldCheck, LayoutGrid, FileText, Ticket, Users, Building, Database, Save, Trash2, FolderOpen, MoreHorizontal, Layers, ChevronRight, UserCircle, Lock, Monitor, Shield } from "lucide-react";
+import { X, Check, Loader2, ShieldCheck, LayoutGrid, FileText, Ticket, Users, Building, Database, Save, Trash2, FolderOpen, MoreHorizontal, Layers, ChevronRight, UserCircle, Lock, Monitor, Shield, Package } from "lucide-react";
 import { apiFetch, API_BASE_URL } from "../../../utils/api";
 import { PERMISSION_GROUPS } from "../../../config/permissionGroups";
 
@@ -296,78 +296,73 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
             >
                 {/* HEADER */}
                 {/* HEADER */}
-                <div className="relative h-28 bg-gradient-to-r from-blue-600 to-indigo-700 flex items-center justify-between px-8 shrink-0">
-                    <div className="flex items-center gap-6 flex-1 pr-6">
-
-                        {/* Name Input */}
-                        <div className="flex-1 space-y-1.5 group">
-                            <label className="text-[10px] font-bold text-blue-100 uppercase tracking-wider opacity-60 pl-1 group-hover:opacity-100 transition-opacity">
-                                Nombre del Plan
-                            </label>
+                <div className="relative h-auto min-h-[7rem] md:h-28 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 flex flex-col md:flex-row md:items-center justify-between px-4 md:px-8 shrink-0">
+                    <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 flex-1 pr-6 mt-6 md:mt-0">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 md:w-14 md:h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner shrink-0 text-white">
+                                <Package size={24} />
+                            </div>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="Ej: Plan Corp"
-                                className="w-full h-12 bg-white/10 border border-white/20 rounded-lg px-4 text-white placeholder:text-white/30 font-bold focus:outline-none focus:border-white/40 focus:bg-white/20 transition-all text-base"
+                                placeholder="Nombre del Plan"
+                                className="bg-transparent text-white text-xl md:text-2xl lg:text-3xl font-bold placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 rounded-lg px-2 py-1 w-full max-w-sm"
                                 autoFocus={!plan}
                             />
                         </div>
 
                         {/* Price Input with CLP prefix */}
-                        <div className="w-56 space-y-1.5 group">
-                            <label className="text-[10px] font-bold text-blue-100 uppercase tracking-wider opacity-60 pl-1 group-hover:opacity-100 transition-opacity">
-                                Precio Neto
-                            </label>
-                            <div className="relative h-12 w-full">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <span className="text-white font-bold text-xs opacity-50 tracking-wide">CLP</span>
-                                </div>
+                        <div className="flex items-center bg-black/20 rounded-xl p-1 backdrop-blur-sm self-start md:self-auto w-full md:w-auto">
+                            <span className="text-white/70 font-bold px-3 py-1 bg-black/20 rounded-lg shadow-inner shrink-0">CLP</span>
+                            <div className="relative h-12 w-full md:w-32">
                                 <input
                                     type="text"
                                     value={price ? Number(price).toLocaleString('es-CL') : ""}
                                     onChange={(e) => {
-                                        // Remove any dots or non-numeric chars to keep raw number
                                         const rawValue = e.target.value.replace(/\D/g, "");
                                         setPrice(rawValue);
                                     }}
                                     placeholder="0"
-                                    className="w-full h-full bg-white/10 border border-white/20 rounded-lg pl-12 pr-14 text-white placeholder:text-white/30 font-bold focus:outline-none focus:border-white/40 focus:bg-white/20 transition-all text-base text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    className="w-full h-full bg-transparent text-white text-lg md:text-xl font-bold placeholder:text-white/50 focus:outline-none text-right pr-14 pl-3 py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
-                                <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
-                                    <span className="text-white font-black text-xs opacity-90 tracking-tighter -translate-y-[1px]">
+                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <span className="text-white/80 font-black text-[10px] tracking-tighter -translate-y-[1px]">
                                         + IVA
                                     </span>
                                 </div>
                             </div>
                         </div>
-
                     </div>
-                    <button onClick={onClose} className="text-white/50 hover:text-white p-2 hover:bg-white/10 rounded-full transition-all self-start mt-6">
-                        <X size={24} />
+
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 md:static md:w-10 md:h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white backdrop-blur-md transition-all shrink-0"
+                    >
+                        <X size={20} />
                     </button>
                 </div>
 
-                <div className="flex flex-1 overflow-hidden">
+                <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                     {/* SIDEBAR TABS */}
-                    <div className="w-56 bg-muted/20 border-r border-border p-4 space-y-2 shrink-0 pt-8">
+                    <div className="w-full md:w-56 bg-muted/20 border-b md:border-b-0 md:border-r border-border p-3 md:p-4 flex flex-row md:flex-col gap-2 shrink-0 md:pt-8 overflow-x-auto hide-scrollbar">
                         {mainTabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${activeTab === tab.id
-                                    ? "bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 shadow-sm" // Active state
-                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                className={`whitespace-nowrap md:w-full flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-xl transition-all duration-200 ${activeTab === tab.id
+                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                    : 'text-muted-foreground hover:bg-muted font-medium'
                                     }`}
                             >
-                                <tab.icon size={16} />
-                                {tab.label}
+                                <tab.icon size={18} />
+                                <span className="text-sm">{tab.label}</span>
                             </button>
                         ))}
                     </div>
 
                     {/* CONTENT AREA */}
-                    <div className="flex-1 overflow-y-auto p-8 bg-background/50">
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-background/50">
 
                         {/* TAB PERMISSIONS */}
                         {activeTab === "permissions" && (
@@ -580,16 +575,17 @@ export function PlanManagerModal({ isOpen, onClose, onSuccess, plan = null }) {
                 </div>
 
                 {/* FOOTER */}
-                <div className="px-8 py-5 border-t border-border flex justify-between items-center bg-muted/10 shrink-0">
-                    <div>
+                <div className="px-4 sm:px-6 md:px-8 py-4 md:py-5 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4 bg-muted/10 shrink-0">
+                    <div className="w-full md:w-auto flex justify-center md:justify-start">
                         {plan && (
-                            <button onClick={handleDelete} disabled={isDeleting} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-all" title="Eliminar Plan">
+                            <button onClick={handleDelete} disabled={isDeleting} className="w-full md:w-auto flex items-center justify-center gap-2 text-red-500 hover:text-white hover:bg-red-600 p-2.5 rounded-xl transition-all border border-red-500 hover:border-transparent font-bold" title="Eliminar Plan">
                                 {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                                <span className="md:hidden uppercase text-xs">Eliminar Plan</span>
                             </button>
                         )}
                     </div>
-                    <div className="flex gap-3">
-                        <button onClick={handleSubmit} disabled={isSaving || isSuccess || !name} className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl disabled:opacity-50 transition-all active:scale-95 shadow-lg shadow-indigo-600/20 flex items-center gap-2">
+                    <div className="w-full md:w-auto">
+                        <button onClick={handleSubmit} disabled={isSaving || isSuccess || !name} className="w-full md:w-auto px-8 py-3 md:py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl disabled:opacity-50 transition-all active:scale-95 shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2">
                             {isSaving ? <Loader2 size={14} className="animate-spin" /> : isSuccess ? <Check size={14} /> : <Save size={14} />}
                             {isSuccess ? "Guardado" : "Guardar Plan"}
                         </button>
