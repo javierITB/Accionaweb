@@ -447,20 +447,20 @@ const RequestTracking = () => {
          <main className={`transition-all duration-300 ${mainMarginClass} pt-8 lg:pt-4`}>
             <div className="px-4 sm:px-6 lg:p-6 space-y-6 max-w-7xl mx-auto">
                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div>
-                     <div className="flex items-center gap-3">
-                        <span className="flex items-center justify-center min-w-8 h-8 px-2 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
-                           {filters.status === "archivado" ? serverStats?.archivado || 0 : totalItems}
-                        </span>
+                  <div className="flex items-start gap-3">
+                     <span className="flex shrink-0 items-center justify-center min-w-8 h-8 px-2 sm:mt-0.5 lg:mt-1 rounded-full text-sm font-bold bg-accent text-accent-foreground shadow-sm">
+                        {filters.status === "archivado" ? serverStats?.archivado || 0 : totalItems}
+                     </span>
+                     <div>
                         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
                            Seguimiento de Solicitudes
                         </h1>
+                        <p className="text-muted-foreground mt-1 text-sm lg:text-base">
+                           {filters.status === "archivado"
+                              ? "Historial de solicitudes archivadas"
+                              : "Monitorea el estado de tus solicitudes activas"}
+                        </p>
                      </div>
-                     <p className="text-muted-foreground mt-1 text-sm lg:text-base ml-11">
-                        {filters.status === "archivado"
-                           ? "Historial de solicitudes archivadas"
-                           : "Monitorea el estado de tus solicitudes activas"}
-                     </p>
                   </div>
                </div>
 
