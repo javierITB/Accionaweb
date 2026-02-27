@@ -494,31 +494,118 @@ const RequestTracking = () => {
                   }}
                />
 
-               <div
-                  className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6" : "space-y-4"}
-               >
+               {/* Reemplazo de la sección de renderizado de solicitudes */}
+               <div className="min-h-[400px]">
                   {isLoading && currentRequests.length === 0 ? (
-                     <div className="col-span-full py-12 text-center">
+                     <div className="py-12 text-center">
                         <Icon name="Loader2" size={32} className="mx-auto text-accent animate-spin mb-4" />
-                        <p className="text-muted-foreground">Buscando solicitud...</p>
+                        <p className="text-muted-foreground">Cargando solicitudes...</p>
                      </div>
                   ) : currentRequests.length > 0 ? (
-                     currentRequests.map((request) => (
-                        <RequestCard
-                           key={request._id}
-                           request={request}
-                           onRemove={handleRemove}
-                           onViewDetails={(req) => {
-                              setSelectedRequest(req);
-                              setShowRequestDetails(true);
-                           }}
-                           onSendMessage={(req) => {
-                              setMessageRequest(req);
-                              setShowMessageModal(true);
-                           }}
-                           userPermissions={permissions}
-                        />
-                     ))
+                     viewMode === "grid" ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                           {currentRequests.map((request) => (
+                              <RequestCard
+                                 key={request._id}
+                                 request={request}
+                                 onRemove={handleRemove}
+                                 onViewDetails={(req) => {
+                                    setSelectedRequest(req);
+                                    setShowRequestDetails(true);
+                                 }}
+                                 onSendMessage={(req) => {
+                                    setMessageRequest(req);
+                                    setShowMessageModal(true);
+                                 }}
+                                 userPermissions={permissions}
+                              />
+                           ))}
+                        </div>
+                     ) : (
+                        /* VISTA DE TABLA CON ESTÉTICA COMPANYREG */
+                        <div className="overflow-x-auto border border-border rounded-lg shadow-sm bg-card">
+                           <table className="min-w-full">
+                              <thead className="bg-muted text-sm text-muted-foreground">
+                                 <tr>
+                                    <th className="px-4 py-3 text-left font-medium">Solicitud</th>
+                                    <th className="px-4 py-3 text-left font-medium">Empresa</th>
+                                    <th className="px-4 py-3 text-left font-medium">Usuario / Trabajador</th>
+                                    <th className="px-4 py-3 text-left font-medium">Estado</th>
+                                    <th className="px-4 py-3 text-left font-medium">Fecha</th>
+                                    <th className="px-4 py-3 text-center font-medium">Acciones</th>
+                                 </tr>
+                              </thead>
+                              <tbody className="divide-y divide-border">
+                                 {currentRequests.map((request) => (
+                                    <tr key={request._id} className="hover:bg-muted/20 transition-colors">
+                                       <td className="px-4 py-3">
+                                          <div className="flex flex-col">
+                                             <span className="text-sm font-semibold text-foreground truncate max-w-[200px]">
+                                                {request.title}
+                                             </span>
+                                             <span className="text-xs text-muted-foreground">{request.trabajador}</span>
+                                          </div>
+                                       </td>
+                                       <td className="px-4 py-3 text-sm">{request.company}</td>
+                                       <td className="px-4 py-3">
+                                          <div className="flex flex-col">
+                                             <span className="text-sm">{request.submittedBy}</span>
+                                             
+                                          </div>
+                                       </td>
+                                       <td className="px-4 py-3">
+                                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                              ${request.status === 'aprobado' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                                request.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                   'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                                             {request.status.replace('_', ' ').toUpperCase()}
+                                          </span>
+                                       </td>
+                                       <td className="px-4 py-3 text-sm">
+                                          {request.submittedAt ? new Date(request.submittedAt).toLocaleDateString() : '—'}
+                                       </td>
+                                       <td className="px-4 py-3">
+                                          <div className="flex justify-center items-center gap-2">
+                                             <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                   setSelectedRequest(request);
+                                                   setShowRequestDetails(true);
+                                                }}
+                                                iconName="Eye"
+                                                className="h-8"
+                                             />
+                                             {permissions.createMessages && (
+                                                <Button
+                                                   variant="outline"
+                                                   size="sm"
+                                                   onClick={() => {
+                                                      setMessageRequest(request);
+                                                      setShowMessageModal(true);
+                                                   }}
+                                                   iconName="MessageSquare"
+                                                   className="h-8"
+                                                />
+                                             )}
+                                             {permissions.delete && (
+                                                <Button
+                                                   variant="ghost"
+                                                   size="icon"
+                                                   onClick={() => handleRemove(request)}
+                                                   className="h-8 w-8 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                >
+                                                   <Icon name="Trash2" size={14} />
+                                                </Button>
+                                             )}
+                                          </div>
+                                       </td>
+                                    </tr>
+                                 ))}
+                              </tbody>
+                           </table>
+                        </div>
+                     )
                   ) : (
                      <div className="col-span-full py-12 text-center bg-card border border-border rounded-xl">
                         <Icon name="Search" size={40} className="mx-auto text-muted-foreground opacity-20 mb-4" />
