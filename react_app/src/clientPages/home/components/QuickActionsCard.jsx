@@ -1,122 +1,126 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Icon from '../../../components/AppIcon';
 import { useNavigate } from 'react-router-dom';
-const QuickActionsCard = ({ orientation = 'horizontal' }) => { // Agregamos la prop orientation
-  const navigate = useNavigate();
-  const quickActions = [
-    {
-      id: 2,
-      title: 'Anexos',
-      description: '',
-      icon: 'Calendar',
-      color: 'bg-green-500',
-      path: '/Anexos'
-    },
-    {
-      id: 5,
-      title: 'Envío de documentos',
-      description: '',
-      icon: 'FileText',
-      color: 'bg-blue-500',
-      path: '/forms?id=6902379d46e3a2e6e0d8a57f'
-    },
-    {
-      id: 3,
-      title: 'Finiquitos',
-      description: '',
-      icon: 'Clock',
-      color: 'bg-orange-500',
-      path: '/Finiquitos'
-    },
-    {
-      id: 1,
-      title: 'Remuneraciones',
-      description: '',
-      icon: 'Receipt',
-      color: 'bg-blue-500',
-      path: '/remuneraciones'
-    },
-    {
-      id: 4,
-      title: 'Otras',
-      description: '',
-      icon: 'Route',
-      color: 'bg-purple-500',
-      path: '/otras'
-    },
-    {
-      id: 6,
-      title: 'Ayuda y Soporte',
-      description: 'reporte de errores y consultas',
-      icon: 'Monitor',
-      color: 'bg-blue-500',
-      path: '/soporte'
-    }
-  ];
+import { apiFetch, API_BASE_URL } from '../../../utils/api';
 
-  const handleActionClick = (path) => {
-    // window.location.href = path;
-    navigate(path);
+const QuickActionsCard = ({ orientation = 'horizontal' }) => {
+  const navigate = useNavigate();
+  const [actions, setActions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Obtenemos el mail del usuario desde el localStorage o contexto de auth
+  const userMail = localStorage.getItem("email");
+
+  useEffect(() => {
+    const fetchQuickActions = async () => {
+      if (!userMail) return;
+      try {
+         setIsLoading(true);
+         const res = await apiFetch(`${API_BASE_URL}/auth/quick-actions/${userMail}`);
+         if (res) {
+            const result = await res.json();
+            setActions(result.quickActions || []);
+         }
+      } catch (error) {
+         console.error("Error al cargar acciones rápidas:", error);
+      } finally {
+         setIsLoading(false);
+      }
+    };
+
+    fetchQuickActions();
+  }, [userMail]);
+
+  // LÓGICA DE PRIORIDAD PONDERADA (Top 6)
+  const prioritizedActions = useMemo(() => {
+    return [...actions]
+      .map(action => {
+        const lastUsedMs = new Date(action.lastUsed || 0).getTime();
+        const nowMs = Date.now();
+        
+        // Normalización de tiempo (0 a 1, donde 1 es "ahora mismo")
+        // Consideramos una ventana de relevancia de 30 días para el decaimiento
+        const timeScore = Math.max(0, 1 - (nowMs - lastUsedMs) / (30 * 24 * 60 * 60 * 1000));
+        
+        // Puntuación de uso (Logarítmica para evitar que un solo form domine por siempre)
+        const usageScore = Math.log10((action.usageCount || 0) + 1);
+
+        // Score Final: 70% tiempo, 30% frecuencia
+        const finalScore = (timeScore * 0.7) + (usageScore * 0.3);
+        
+        return { ...action, finalScore };
+      })
+      .sort((a, b) => b.finalScore - a.finalScore)
+      .slice(0, 6); // Solo los 6 más relevantes
+  }, [actions]);
+
+  const handleActionClick = (formId) => {
+    // Redirigir al formulario usando el ID dinámico
+    navigate(`/forms?id=${formId}`);
   };
 
-  // 💡 Definimos las clases de layout según la orientación
   const gridClasses = orientation === 'vertical'
-    ? 'space-y-3 sm:space-y-4' // Lista vertical simple con espacio
-    : 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4'; // Grid original
+    ? 'space-y-3 sm:space-y-4'
+    : 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4';
 
   return (
     <div className="bg-card rounded-xl shadow-brand border border-border w-full">
-      {/* Header */}
       <div className="p-4 sm:p-6 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
             <h2 className="text-lg sm:text-xl font-semibold text-foreground">Acciones Rápidas</h2>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Accede directamente a las funciones más utilizadas
+              Tus formularios más utilizados y recientes
             </p>
           </div>
           <Icon name="Zap" size={20} className="text-secondary flex-shrink-0 ml-4 sm:w-6 sm:h-6" />
         </div>
       </div>
 
-      {/* Actions Grid / List */}
       <div className="p-4 sm:p-6">
-        {/* Aplicamos las clases dinámicas */}
-        <div className={gridClasses}>
-          {quickActions?.map((action) => (
-            <button
-              key={action?.id}
-              onClick={() => handleActionClick(action?.path)}
-              className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg border border-border hover:border-primary hover:shadow-brand-hover transition-brand text-left group w-full"
-              title={action.title}
-            >
-              {/* Icon */}
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 ${action?.color} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
-                <Icon name={action?.icon} size={18} color="white" className="sm:w-5 sm:h-5" />
-              </div>
+        {isLoading ? (
+          <div className="flex justify-center py-10">
+            <Icon name="Loader2" className="animate-spin text-primary" size={32} />
+          </div>
+        ) : prioritizedActions.length > 0 ? (
+          <div className={gridClasses}>
+            {prioritizedActions.map((action) => (
+              <button
+                key={action.formId}
+                onClick={() => handleActionClick(action.formId)}
+                className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg border border-border hover:border-primary hover:shadow-brand-hover transition-brand text-left group w-full"
+                title={action.nombre}
+              >
+                {/* Icon con color dinámico del backend */}
+                <div 
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform"
+                  style={{ backgroundColor: action.color || '#3b82f6' }}
+                >
+                  <Icon name={action.logo || 'FileText'} size={18} color="white" className="sm:w-5 sm:h-5" />
+                </div>
 
-              {/* Text Content */}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-foreground group-hover:text-primary transition-colors text-sm sm:text-base">
-                  {action?.title}
-                </h3>
-                {/* Ocultamos la descripción si no hay espacio, aunque la descripción estaba vacía en tus datos */}
-                {action?.description && (
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
-                    {action?.description}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-foreground group-hover:text-primary transition-colors text-sm sm:text-base truncate">
+                    {action.nombre}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                    {action.descripcion || 'Acceso rápido'}
                   </p>
-                )}
-              </div>
+                </div>
 
-              {/* Chevron */}
-              <Icon
-                name="ChevronRight"
-                size={14}
-                className="text-muted-foreground group-hover:text-primary transition-colors mt-1 flex-shrink-0 sm:w-4 sm:h-4"
-              />
-            </button>
-          ))}
-        </div>
+                <Icon
+                  name="ChevronRight"
+                  size={14}
+                  className="text-muted-foreground group-hover:text-primary transition-colors mt-1 flex-shrink-0"
+                />
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 text-muted-foreground text-sm italic">
+            Aún no tienes acciones registradas.
+          </div>
+        )}
       </div>
     </div>
   );

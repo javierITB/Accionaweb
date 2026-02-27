@@ -357,13 +357,67 @@ router.get("/:id", async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
+    const { id } = req.params;
+    // Recibimos el mail por query string: /forms/ID?mail=usuario@correo.com
+    const { mail } = req.query; 
+
     const form = await req.db
       .collection("forms")
-      .findOne({ _id: new ObjectId(req.params.id) });
+      .findOne({ _id: new ObjectId(id) });
 
     if (!form) return res.status(404).json({ error: "Not found" });
+
+    // --- LÓGICA DE ACCIONES RÁPIDAS ---
+    if (mail) {
+      try {
+        const { createBlindIndex } = require("../utils/seguridad.helper");
+        const userEmail = mail.toLowerCase().trim();
+        const mailIndex = createBlindIndex(userEmail);
+        const now = new Date();
+
+        // Buscamos si el usuario existe y si ya tiene este formId en sus acciones
+        const user = await req.db.collection("usuarios").findOne({ mail_index: mailIndex });
+
+        if (user) {
+          const existingActions = user.quickActions || [];
+          const hasAction = existingActions.some(a => a.formId === id);
+
+          if (hasAction) {
+            // CASO 1: Ya existe, incrementamos contador y actualizamos fecha
+            await req.db.collection("usuarios").updateOne(
+              { mail_index: mailIndex, "quickActions.formId": id },
+              { 
+                $inc: { "quickActions.$.usageCount": 1 },
+                $set: { "quickActions.$.lastUsed": now }
+              }
+            );
+          } else {
+            // CASO 2: No existe, lo añadimos al array con los datos del form encontrado
+            const newAction = {
+              formId: id,
+              nombre: form.title || "Sin título",
+              logo: form.icon || "FileText",
+              color: form.primaryColor || "#3b82f6",
+              descripcion: form.description || "",
+              usageCount: 1,
+              lastUsed: now
+            };
+
+            await req.db.collection("usuarios").updateOne(
+              { mail_index: mailIndex },
+              { $push: { quickActions: newAction } }
+            );
+          }
+        }
+      } catch (quickActionErr) {
+        // Logueamos el error pero no bloqueamos la respuesta del formulario
+        console.error("Error silencioso en Quick Actions:", quickActionErr);
+      }
+    }
+
     res.json(form);
   } catch (err) {
+    console.error("Error en GET /forms/:id:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
