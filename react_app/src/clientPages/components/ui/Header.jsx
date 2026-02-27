@@ -218,111 +218,108 @@ const Header = ({ className = "" }) => {
                </div>
             </div>
 
-            {/* Desktop Navigation - Hidden on LG, visible on XL */}
-            <nav className="hidden xl:flex items-center space-x-1">
-               {navigationItems?.map((item) => (
-                  <Button
-                     key={item?.path}
-                     variant="ghost"
-                     size="sm"
-                     onClick={() => handleNavigation(item?.path)}
-                     iconName={item?.icon}
-                     iconPosition="left"
-                     iconSize={18}
-                     className="px-4 py-2 text-md font-medium text-foreground hover:text-foreground hover:bg-muted transition-brand"
-                  >
-                     {item?.name}
-                  </Button>
-               ))}
+            {/* Desktop Navigation - Solo visible cuando hay sesión */}
+            {user && (
+               <nav className="hidden xl:flex items-center space-x-1">
+                  {navigationItems?.map((item) => (
+                     <Button
+                        key={item?.path}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleNavigation(item?.path)}
+                        iconName={item?.icon}
+                        iconPosition="left"
+                        iconSize={18}
+                        className="px-4 py-2 text-md font-medium text-foreground hover:text-foreground hover:bg-muted transition-brand"
+                     >
+                        {item?.name}
+                     </Button>
+                  ))}
 
-               {/* More Menu */}
-               <div className="relative" ref={menuRef}>
-                  <Button
-                     variant="ghost"
-                     size="sm"
-                     onClick={toggleMenu}
-                     iconName="MoreHorizontal"
-                     iconSize={18}
-                     className="px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-brand"
-                  >
-                     Más
-                  </Button>
+                  {/* More Menu */}
+                  <div className="relative" ref={menuRef}>
+                     <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleMenu}
+                        iconName="MoreHorizontal"
+                        iconSize={18}
+                        className="px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-brand"
+                     >
+                        Más
+                     </Button>
 
-                  {isMenuOpen && (
-                     <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
-                        <div className="py-2">
-                           {moreMenuItems?.map((item) => (
-                              <button
-                                 key={item?.path}
-                                 onClick={() => handleNavigation(item?.path)}
-                                 className="flex items-center w-full px-4 py-2 text-sm text-popover-foreground hover:bg-muted transition-brand"
-                                 title={item.name}
-                              >
-                                 <Icon name={item?.icon} size={16} className="mr-3" />
-                                 {item?.name}
-                              </button>
-                           ))}
+                     {isMenuOpen && (
+                        <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
+                           <div className="py-2">
+                              {moreMenuItems?.map((item) => (
+                                 <button
+                                    key={item?.path}
+                                    onClick={() => handleNavigation(item?.path)}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-popover-foreground hover:bg-muted transition-brand"
+                                    title={item.name}
+                                 >
+                                    <Icon name={item?.icon} size={16} className="mr-3" />
+                                    {item?.name}
+                                 </button>
+                              ))}
+                           </div>
                         </div>
-                     </div>
-                  )}
-               </div>
-            </nav>
+                     )}
+                  </div>
+               </nav>
+            )}
 
             {/* User Profile & Actions */}
             <div className="flex items-center space-x-2 lg:space-x-3">
-               {/* Notifications */}
-               <div ref={notiRef}>
-                  <Button
-                     variant="ghost"
-                     size="icon"
-                     title="Notificaciones"
-                     onClick={toggleNoti}
-                     // APLICACIÓN DE LA CLASE DE AGITACIÓN
-                     className={`relative hover:bg-primary transition-brand w-10 h-10 lg:w-12 lg:h-12 ${shouldShake ? "animate-bell-shake" : ""}`}
-                     iconName="Bell"
-                     iconSize={18}
-                  >
-                     {unreadCount > 0 && (
-                        <span
-                           className="
+               {/* Notifications - solo con sesión activa */}
+               {user && (
+                  <div ref={notiRef}>
+                     <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Notificaciones"
+                        onClick={toggleNoti}
+                        className={`relative hover:bg-primary transition-brand w-10 h-10 lg:w-12 lg:h-12 ${shouldShake ? "animate-bell-shake" : ""}`}
+                        iconName="Bell"
+                        iconSize={18}
+                     >
+                        {unreadCount > 0 && (
+                           <span
+                              className="
                     absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4
                     min-w-[1.25rem] h-5 px-1.5 
                     text-xs font-bold text-white 
                     bg-error rounded-full flex items-center justify-center
                   "
-                        >
-                           {unreadCount}
-                        </span>
-                     )}
-                  </Button>
+                           >
+                              {unreadCount}
+                           </span>
+                        )}
+                     </Button>
 
-                  {isNotiOpen && (
-                     <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
-                        <div className="py-2">
-                           <NotificationsCard user={userMail} onUnreadChange={setUnreadCount} />
+                     {isNotiOpen && (
+                        <div className="absolute right-0 top-full mt-2 mr-2 bg-popover border border-border rounded-lg shadow-brand-hover animate-scale-in z-50">
+                           <div className="py-2">
+                              <NotificationsCard user={userMail} onUnreadChange={setUnreadCount} />
+                           </div>
                         </div>
-                     </div>
-                  )}
-               </div>
+                     )}
+                  </div>
+               )}
 
-               {/* User Profile */}
-               <div className="hidden sm:flex items-center space-x-2 lg:space-x-3 pl-2 lg:pl-3 border-l border-border">
-                  {user && (
+               {/* User Profile - solo con sesión activa */}
+               {user && (
+                  <div className="hidden sm:flex items-center space-x-2 lg:space-x-3 pl-2 lg:pl-3 border-l border-border">
                      <div className="hidden md:block text-right">
                         <p className="text-sm font-medium text-foreground">{user}</p>
                         <p className="text-xs text-muted-foreground">{cargo}</p>
                      </div>
-                  )}
 
-                  {/* User Avatar with Dropdown */}
-                  {user && (
+                     {/* User Avatar */}
                      <div className="relative" ref={userMenuRef}>
                         <button
-                           // onClick={() => {
-                           //    window.location.href = "/perfil";
-                           // }}
                            onClick={() => navigate("/perfil")}
-
                            className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-white to-[#F2F2F2] rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
                            title="Perfil de usuario"
                         >
@@ -342,33 +339,31 @@ const Header = ({ className = "" }) => {
                            )}
                         </button>
                      </div>
-                  )}
-                  <div className="relative" ref={userMenuRef}>
-                     <button
-                        onClick={() => {
-                           user ? handleLogout() : (window.location.href = "/login");
-                        }}
-                        className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
-                        title={user ? "Cerrar sesión" : "Iniciar Sesión"}
-                     >
-                        {user ? (
-                           <Icon name="LogOut" size={16} className="text-white" />
-                        ) : (
-                           <Icon name="LogIn" size={16} className="text-white" />
-                        )}
-                     </button>
-                  </div>
-               </div>
 
-               {/* Mobile Menu Toggle */}
-               <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleMenu}
-                  className="xl:hidden hover:bg-muted transition-brand w-10 h-10"
-               >
-                  <Icon name={isMenuOpen ? "X" : "Menu"} size={20} />
-               </Button>
+                     <div className="relative">
+                        <button
+                           onClick={handleLogout}
+                           className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+                           title="Cerrar sesión"
+                        >
+                           <Icon name="LogOut" size={16} className="text-white" />
+                        </button>
+                     </div>
+                  </div>
+               )}
+
+
+               {/* Mobile Menu Toggle - solo con sesión activa */}
+               {user && (
+                  <Button
+                     variant="ghost"
+                     size="icon"
+                     onClick={toggleMenu}
+                     className="xl:hidden hover:bg-muted transition-brand w-10 h-10"
+                  >
+                     <Icon name={isMenuOpen ? "X" : "Menu"} size={20} />
+                  </Button>
+               )}
             </div>
          </div>
 

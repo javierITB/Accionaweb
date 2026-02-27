@@ -6,8 +6,8 @@ export const MENU_STRUCTURE = [
       children: [
          { name: "Solicitudes de Clientes", path: "/RespuestasForms", icon: "FileText", permission: "view_solicitudes_clientes" },
          { name: "Solicitudes a Cliente", path: "/Solicitudes", icon: "Pencil", permission: "view_solicitudes_a_cliente" },
-         { name: "Tickets", path: "/Tickets", icon: "FileText", permission: "view_tickets" },
          { name: "Domicilio Virtual", path: "/DomicilioVirtual", icon: "Home", permission: "view_domicilio_virtual" },
+         { name: "Tickets", path: "/Tickets", icon: "FileText", permission: "view_tickets" },
       ]
    },
    {

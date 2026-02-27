@@ -5,6 +5,7 @@ import Icon from "../AppIcon";
 import { API_BASE_URL, CURRENT_TENANT, LOGO_TENANT } from "../../utils/api";
 import { MENU_STRUCTURE } from "../../config/menuStructure";
 import { usePermissions } from "../../context/PermissionsContext";
+import { getFirstAdminRoute } from "../../utils/getFirstAdminRoute";
 
 const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobileOpen = false, onNavigate }) => {
 
@@ -136,11 +137,16 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
         setActiveFloatingMenu(null);
     };
 
-    // Corrección: Función específica para el logo que limpia el modo oscuro
     const handleLogoClick = () => {
-        // document.documentElement.classList.remove('dark');
-        // localStorage.setItem('theme', 'light');
-        handleNavigation('/');
+        // Redirección context-aware del logo
+        if (location.pathname === "/" || location.pathname === "/perfil" || location.pathname === "/forms") {
+            // Zona cliente
+            handleNavigation('/');
+        } else {
+            // Zona admin
+            const firstAdminRoute = getFirstAdminRoute(MENU_STRUCTURE, hasPermission);
+            handleNavigation(firstAdminRoute);
+        }
     };
 
     const isTextVisible = !(isCollapsed && !isMobileOpen);
@@ -293,10 +299,10 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                     })}
                 </nav>
 
-                <div className="px-3 pb-2">
+                <div className="px-3 border-t border-border mt-auto pt-2 space-y-0.5">
                     <button
                         onClick={onToggleCollapse}
-                        className={`w-full flex items-center rounded-lg transition-all duration-200 px-3 py-3 text-muted-foreground hover:bg-muted hover:text-foreground
+                        className={`w-full flex items-center rounded-lg transition-all duration-200 px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground
                      ${!isTextVisible ? "justify-center" : ""}
                   `}
                         title={isTextVisible ? "Contraer menú" : "Expandir menú"}
@@ -306,12 +312,23 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                             <div className="text-sm font-medium">Contraer menú</div>
                         )}
                     </button>
-                </div>
-
-                <div className="p-3 border-t border-border mt-auto">
+                    <button
+                        onClick={() => handleNavigation("/")}
+                        className={`w-full flex items-center rounded-lg transition-all duration-200 px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground
+                     ${!isTextVisible ? "justify-center" : ""} ${location.pathname === "/" && !isTextVisible ? "bg-primary text-primary-foreground shadow-md" : ""}
+                  `}
+                        title={!isTextVisible ? "Ir a zona de clientes" : ""}
+                    >
+                        <Icon name="Home" size={20} className={isTextVisible ? "mr-2" : ""} />
+                        {isTextVisible && (
+                            <div className="flex-1 text-left min-w-0">
+                                <div className="text-sm font-medium truncate">Ir a zona de clientes</div>
+                            </div>
+                        )}
+                    </button>
                     <button
                         onClick={() => handleNavigation("/perfil")}
-                        className={`w-full flex items-center rounded-lg transition-all duration-200 px-3 py-3 text-muted-foreground hover:bg-muted hover:text-foreground
+                        className={`w-full flex items-center rounded-lg transition-all duration-200 px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground
                      ${!isTextVisible ? "justify-center" : ""} ${location.pathname === "/perfil" && !isTextVisible ? "bg-primary text-primary-foreground shadow-md" : ""}
                   `}
                         title={!isTextVisible ? "Ir a mi Perfil" : ""}
@@ -325,7 +342,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, className = "", isMobi
                     </button>
                 </div>
 
-                <div className="p-4 pt-0 flex items-center">
+                <div className="p-3 pt-1 flex items-center">
                     <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold text-xs uppercase">
                         {(userRole || "GU").substring(0, 2)}
                     </div>
