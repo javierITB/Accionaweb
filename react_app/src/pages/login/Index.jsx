@@ -18,7 +18,11 @@ export default function App() {
    const [lockoutTime, setLockoutTime] = useState(0); // Segundos restantes
    const [isLocked, setIsLocked] = useState(false);
 
-   const from = location.state?.from?.pathname || "/";
+   // Capturamos la URL completa de origen (pathname + query params)
+   const fromLocation = location.state?.from;
+   const from = fromLocation
+      ? fromLocation.pathname + (fromLocation.search || "") + (fromLocation.hash || "")
+      : "/panel";
    const ORANGE_COLOR = "#f97316";
 
    // --- LÓGICA DE PERSISTENCIA DE INTENTOS ---
@@ -133,7 +137,7 @@ export default function App() {
                sessionStorage.setItem("user", data?.usr?.name);
                sessionStorage.setItem("token", data?.token);
 
-               navigate("/panel", { replace: true });
+               navigate(from, { replace: true });
             }
          } else {
             registerFailedAttempt();
