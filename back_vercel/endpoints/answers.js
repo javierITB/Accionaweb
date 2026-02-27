@@ -2297,18 +2297,9 @@ router.post("/chat", async (req, res) => {
       if (!respuesta) return res.status(404).json({ error: "Respuesta no encontrada" });
 
       // --- VALIDAR ROL DEL REMITENTE ---
-      const token = req.headers["authorization"]?.split(" ")[1];
-      let isSenderStaff = false;
-
-      if (token) {
-         const authData = await validarToken(req.db, token);
-         if (authData.ok) {
-            const rolActual = authData.data.rol;
-            if (rolActual === "Administrador" || rolActual === "RRHH" || rolActual === "root") {
-               isSenderStaff = true;
-            }
-         }
-      }
+      // Usamos auth.data.rol del verifyRequest ya realizado arriba, sin llamar validarToken de nuevo
+      const rolActual = auth.data?.rol || "";
+      const isSenderStaff = rolActual === "Administrador" || rolActual === "RRHH" || rolActual === "root";
 
       // --- DETERMINAR QUÉ FECHA ACTUALIZAR ---
       let updateField = {};
@@ -2478,7 +2469,7 @@ router.post("/chat", async (req, res) => {
          descripcion: `En: ${formTitleNoti} (${trabajadorNombre}) - ${autor}: ${mensaje.substring(0, 40)}${mensaje.length > 40 ? "..." : ""}`,
          icono: "MessageCircle",
          color: internal ? "#f59e0b" : "#45577eff",
-         actionUrl: isSenderStaff ? `/?id=${respuesta._id}` : `/RespuestasForms?id=${respuesta._id}`,
+         actionUrl: isSenderStaff ? `/RespuestasForms?id=${respuesta._id}` : `/RespuestasForms?id=${respuesta._id}`,
       };
 
       if (internal) {
