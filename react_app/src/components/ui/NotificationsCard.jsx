@@ -368,7 +368,12 @@ const NotificationsCard = ({ user, onUnreadChange }) => {
                         style={{ backgroundColor: notification?.color || "transparent" }}
                      ></div>
 
-                     <div className="flex items-start">
+                     <div className="flex items-start gap-3">
+                         {notification?.icon && (
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5" style={{ backgroundColor: (notification?.color || '#6b7280') + '22', color: notification?.color || '#6b7280' }}>
+                               <Icon name={notification.icon} size={16} />
+                            </div>
+                         )}
                         <div className="flex-1 min-w-0">
                            <div className="flex items-start justify-between mb-1">
                               <div className="flex items-center space-x-2 min-w-0 flex-1">
