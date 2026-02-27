@@ -145,7 +145,7 @@ router.post("/admin/generate-charges", verifyAuth, async (req, res) => {
                 titulo: "Nuevo cobro generado",
                 descripcion: `Se ha generado un nuevo cobro por $${chargeAmount} (${concept}).`,
                 color: "#ef4444",
-                icono: "paper",
+                icono: "CreditCard",
                 actionUrl: "/comprobantes"
             }).catch(err => console.error(`Error sending notification to ${company.name}:`, err));
         }
@@ -455,7 +455,7 @@ router.post("/client/upload/:chargeId", verifyAuth, upload.single("file"), async
                 titulo: "Comprobante de pago subido",
                 descripcion: `La empresa ${companyName} ha subido un comprobante para el cobro de $${charge.amount} (${charge.concept}).`,
                 color: "#3b82f6",
-                icono: "paper",
+                icono: "Receipt",
                 actionUrl: "/pagos"
             });
         } catch (notifErr) {
