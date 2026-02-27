@@ -27,17 +27,23 @@ const DashboardHome = ({ userPermissions = [] }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { dialogProps, openAsyncDialog } = useAsyncDialog();
 
+  const userMail = sessionStorage.getItem("email");
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const formId = urlParams?.get('id');
 
     const fetchForm = async () => {
       try {
-        const res = await apiFetch(`${API_BASE_URL}/forms/${formId}`);
+        // Construimos la URL con el mail como parámetro de búsqueda
+        const queryParams = new URLSearchParams();
+        if (userMail) queryParams.append("mail", userMail);
+        
+        const res = await apiFetch(`${API_BASE_URL}/forms/${formId}?${queryParams.toString()}`);
+        
         if (!res.ok) throw new Error('Formulario no encontrado');
         const data = await res.json();
 
-        // Normalización corregida - incluyendo section
         const normalizedForm = {
           id: data._id || data.id || null,
           title: data.title || '',
@@ -57,15 +63,17 @@ const DashboardHome = ({ userPermissions = [] }) => {
         
       } catch (err) {
         console.error('Error cargando el formulario:', err);
-        // alert('No se pudo cargar el formulario');
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     if (formId) {
       fetchForm();
+    } else {
+      setIsLoading(false);
     }
-  }, []);
+  }, [userMail]);
 
 
 

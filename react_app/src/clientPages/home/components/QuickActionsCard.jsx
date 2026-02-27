@@ -9,7 +9,7 @@ const QuickActionsCard = ({ orientation = 'horizontal' }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Obtenemos el mail del usuario desde el localStorage o contexto de auth
-  const userMail = localStorage.getItem("email");
+  const userMail = sessionStorage.getItem("email");
 
   useEffect(() => {
     const fetchQuickActions = async () => {
