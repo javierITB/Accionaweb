@@ -3851,7 +3851,7 @@ router.post("/:responseId/upload-client-signature", upload.single("signedPdf"), 
          titulo: `Documento ${respuesta.formTitle} Firmado`,
          descripcion: `se ha recibido el Documento Firmado asociado al Formulario ${respuesta.formTitle} de ${nombreTrabajador}`,
          prioridad: 2,
-         icono: "Pen",
+         icono: "Edit",
          color: "#dbca34ff",
          actionUrl: `/RespuestasForms?id=${respuesta._id}`,
       };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, Plus, Shield, Users, Edit2, Trash2, CheckCircle2, Lock, Loader2, Eye, Copy } from "lucide-react";
+import { Search, Plus, Shield, Users, Edit, Trash2, CheckCircle2, Lock, Loader2, Eye, Copy } from "lucide-react";
 
 // Helpers y componentes de UI
 import { apiFetch, API_BASE_URL } from "../../utils/api";

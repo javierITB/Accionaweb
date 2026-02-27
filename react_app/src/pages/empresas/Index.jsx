@@ -41,7 +41,7 @@ const CompanyReg = ({ userPermissions = [] }) => {
       logoUrl: null,
    });
    const [isLoading, setIsLoading] = useState(false);
-   const [activeTab, setActiveTab] = useState("list");
+   const [activeTab, setActiveTab] = useState(permisos.crear ? "register" : "list");
 
    const [searchTerm, setSearchTerm] = useState("");
    const [sortConfig, setSortConfig] = useState({ key: "nombre", direction: "asc" });
@@ -354,7 +354,6 @@ const CompanyReg = ({ userPermissions = [] }) => {
                                           iconName="Edit"
                                           className="h-8"
                                        >
-                                          Editar
                                        </Button>
                                     )}
                                     {permisos.eliminar && (

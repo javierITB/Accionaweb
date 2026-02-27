@@ -338,8 +338,7 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
                         <th className="px-4 py-2 text-left">Preguntas</th>
                         <th className="px-4 py-2 text-left">Estado</th>
                         <th className="px-4 py-2 text-left">Última Modificación</th>
-                        <th className="px-4 py-2 text-center">Acción</th>
-                        {permisos.eliminar && <th className="px-4 py-2 text-center">Eliminar</th>}
+                        {(permisos.eliminar || permisos.crear || permisos.editar || permisos.copiar) && <th className="px-4 py-2 text-center">Acción</th>}
                      </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -365,18 +364,17 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
                            <td className="px-4 py-3 text-muted-foreground text-sm">{form.updatedAt}</td>
 
                            {/* Columna Acción */}
-                           <td className="px-4 py-3 text-center">
+                           <td className="px-4 py-3 text-center flex">
                               {form.formId ? (
                                  permisos.editar ? (
                                     <Button
                                        variant="outline"
                                        size="sm"
                                        onClick={() => handleEditTemplate(form)}
-                                       iconName="Pen"
+                                       iconName="Edit"
                                        iconPosition="left"
                                        className="w-full max-w-[160px]"
                                     >
-                                       Editar Plantilla
                                     </Button>
                                  ) : (
                                     <Button
@@ -387,7 +385,6 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
                                        iconPosition="left"
                                        className="w-full max-w-[160px] text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                     >
-                                       Vista Previa
                                     </Button>
                                  )
                               ) : permisos.crear ? (
@@ -395,29 +392,24 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleCreateTemplateClick(form)}
-                                    iconName="Dock"
+                                    iconName="Plus"
                                     iconPosition="left"
                                     className="w-full max-w-[160px]"
                                  >
-                                    Crear Plantilla
                                  </Button>
                               ) : (
                                  <span className="text-xs font-bold text-muted-foreground uppercase italic tracking-tight">
                                     Acceso Restringido
                                  </span>
                               )}
-                           </td>
-
-                           {/* Columna Eliminar Dinámica */}
-                           {permisos.eliminar && (
-                              <td className="px-4 py-3 text-center">
-                                 {form.formId && (
+                              {permisos.eliminar && (
+                                 form.formId && (
                                     <Button
-                                       variant="ghost"
-                                       size="icon"
+                                       variant="outline"
+                                       size="sm"
                                        onClick={() => handleDeleteTemplate(form.id, form.formId)}
                                        disabled={deletingId === form.formId}
-                                       className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                       className="w-full max-w-[160px] text-red-600 hover:text-red-700 hover:bg-red-50"
                                        type="button"
                                     >
                                        {deletingId === form.formId ? (
@@ -426,9 +418,10 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
                                           <Icon name="Trash2" size={14} />
                                        )}
                                     </Button>
-                                 )}
-                              </td>
+                                 )
                            )}
+                           </td>
+
                         </tr>
                      ))}
                   </tbody>

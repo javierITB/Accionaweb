@@ -512,7 +512,7 @@ const TicketConfig = ({ userPermissions = {} }) => {
                               >
                                  <Icon name={editingCategory.icon || "FileText"} size={24} />
                                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Icon name="Edit2" size={16} className="text-white" />
+                                    <Icon name="Edit" size={16} className="text-white" />
                                  </div>
                               </button>
                               <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-medium text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">

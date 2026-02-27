@@ -457,23 +457,31 @@ const FormReg = ({ userPermissions = [] }) => {
                               <td className="px-4 py-3">
                                  <div className={"flex gap-2 md:gap-3 text-xs md:text-sm" + (isMobileScreen && " flex-col")}>
                                     {permisos.editar && myLevel >= getUserLevel(u) && (
-                                       <button
+                                       <Button
+                                          variant="outline"
+                                          size="sm"
                                           onClick={() => {
                                              handleEditUser(u);
                                              setActiveTab("register");
                                           }}
-                                          className="text-primary hover:underline"
+                                          iconName="Edit"
+                                          iconPosition="left"
+                                          className="w-full max-w-[160px]"
                                        >
-                                          Editar
-                                       </button>
+                                       </Button>
+
                                     )}
                                     {permisos.eliminar && myLevel >= getUserLevel(u) && (
-                                       <button
-                                          onClick={() => handleRemoveUser(u._id)}
-                                          className="text-destructive hover:underline"
-                                       >
-                                          Borrar
-                                       </button>
+                                       <Button
+                                       variant="outline"
+                                       size="sm"
+                                       onClick={() => handleRemoveUser(u._id)}
+                                       className="w-full max-w-[160px] text-red-600 hover:text-red-700 hover:bg-red-50"
+                                       type="button"
+                                    >
+                                       <Icon name="Trash2" size={14} className="" />
+                                       
+                                    </Button>
                                     )}
                                  </div>
                               </td>
