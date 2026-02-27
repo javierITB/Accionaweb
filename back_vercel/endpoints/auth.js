@@ -1885,7 +1885,7 @@ router.post("/set-password", async (req, res) => {
 });
 
 router.get("/quick-actions/:mail", async (req, res) => {
-   try {      
+   try {
       const auth = await verifyRequest(req);
       if (!auth.ok) {
          return res.status(403).json({ error: auth.error });
@@ -1941,7 +1941,7 @@ router.post("/quick-actions", async (req, res) => {
 
       // Buscamos si el formulario ya existe en las acciones del usuario
       const user = await req.db.collection("usuarios").findOne({ mail_index: mailIndex });
-      
+
       if (!user) {
          return res.status(404).json({ error: "Usuario no encontrado" });
       }
@@ -1953,7 +1953,7 @@ router.post("/quick-actions", async (req, res) => {
          // CASO 1: El formulario ya existe, actualizamos estadísticas
          await req.db.collection("usuarios").updateOne(
             { mail_index: mailIndex, "quickActions.formId": form.formId },
-            { 
+            {
                $inc: { "quickActions.$.usageCount": 1 },
                $set: { "quickActions.$.lastUsed": now }
             }
@@ -2002,6 +2002,12 @@ router.post("/quick-actions", async (req, res) => {
  *         description: Lista de empresas ordenada alfabéticamente.
  */
 router.get("/empresas/todas", async (req, res) => {
+   // Helper para descifrar sin romper si el valor es nulo o no está cifrado
+   const safeDecrypt = (val) => {
+      if (!val || typeof val !== 'string') return '';
+      try { return decrypt(val); } catch (e) { return val; }
+   };
+
    try {
       const auth = await verifyRequest(req);
       if (!auth.ok) {
@@ -2014,11 +2020,11 @@ router.get("/empresas/todas", async (req, res) => {
          // Descifrar campos de texto
          const empresaDescifrada = {
             _id: emp._id,
-            nombre: decrypt(emp.nombre),
-            rut: decrypt(emp.rut),
-            direccion: decrypt(emp.direccion),
-            encargado: decrypt(emp.encargado),
-            rut_encargado: decrypt(emp.rut_encargado),
+            nombre: safeDecrypt(emp.nombre),
+            rut: safeDecrypt(emp.rut),
+            direccion: safeDecrypt(emp.direccion),
+            encargado: safeDecrypt(emp.encargado),
+            rut_encargado: safeDecrypt(emp.rut_encargado),
             createdAt: emp.createdAt,
             updatedAt: emp.updatedAt,
             logo: null,
@@ -2070,7 +2076,7 @@ router.get("/empresas/todas", async (req, res) => {
       res.json(empresasDescifradas);
    } catch (err) {
       console.error("Error al obtener empresas:", err);
-      res.status(500).json({ error: "Error al obtener empresas" });
+      res.status(500).json({ error: "Error al obtener empresas: " + err.message });
    }
 });
 
