@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 const FormPreview = ({ formData, openAsyncDialog }) => {
    const [answers, setAnswers] = useState({});
-   const [respaldo, setRespaldo] = useState("");
+   const [respaldo, setRespaldo] = useState(false);
    const [errors, setErrors] = useState({});
    const [touched, setTouched] = useState({});
    const [fileErrors, setFileErrors] = useState({});
@@ -48,7 +48,7 @@ const FormPreview = ({ formData, openAsyncDialog }) => {
 
       fetchForm();
    }, []);
-   
+
    useEffect(() => {
       if (shouldNavigate) {
          setShouldNavigate(false);
@@ -354,8 +354,8 @@ const FormPreview = ({ formData, openAsyncDialog }) => {
                   question.type === "single_choice"
                      ? answers[question.id] === optionText
                      : question.type === "multiple_choice"
-                       ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
-                       : false;
+                        ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
+                        : false;
 
                if (shouldValidateSubsection) {
                   const subErrors = validateQuestions(option.subformQuestions, answers, questionPath);
@@ -420,8 +420,8 @@ const FormPreview = ({ formData, openAsyncDialog }) => {
                      question.type === "single_choice"
                         ? answers[question.id] === optionText
                         : question.type === "multiple_choice"
-                          ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
-                          : false;
+                           ? Array.isArray(answers[question.id]) && answers[question.id].includes(optionText)
+                           : false;
 
                   if (isOptionSelected) {
                      const subContext = currentContext ? `${currentContext}|${optionText}` : optionText;
@@ -898,7 +898,7 @@ const FormPreview = ({ formData, openAsyncDialog }) => {
             formId: formData?.id,
             formTitle: formData?.title,
             responses: cleanAnswers,
-            mail: respaldo,
+            mail: respaldo ? (user.mail || mail) : "",
             submittedAt: new Date().toISOString(),
             user: user,
             adjuntos: [],
@@ -1010,7 +1010,7 @@ const FormPreview = ({ formData, openAsyncDialog }) => {
          }
 
          // setAnswers({});
-         setRespaldo("");
+         setRespaldo(false);
          setErrors({});
          setTouched({});
          setFileErrors({});
@@ -1034,7 +1034,7 @@ const FormPreview = ({ formData, openAsyncDialog }) => {
 
    const handleCancel = () => {
       setAnswers({});
-      setRespaldo("");
+      setRespaldo(false);
       setErrors({});
       setTouched({});
       setFileErrors({});
@@ -1106,39 +1106,43 @@ const FormPreview = ({ formData, openAsyncDialog }) => {
                   {formData?.questions?.map((question, index) => renderQuestion(question, index, true))}
 
                   <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
-                     <div className="mb-4">
-                        <div className="flex items-start space-x-3">
-                           {formData?.questions?.length && (
-                              <div
-                                 className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm"
-                                 style={{
-                                    backgroundColor: formData?.primaryColor || "#3B82F6",
-                                 }}
-                              >
-                                 {formData?.questions?.length + 1}
-                              </div>
-                           )}
-
-                           <div className="flex-1 min-w-0">
-                              <h3 className="text-base sm:text-lg font-semibold text-black mb-1">
-                                 Respaldo de información
-                              </h3>
-
-                              <p className="text-gray-600 text-sm sm:text-base">
-                                 mail de envio de respaldo de respuestas (opcional)
-                              </p>
+                     <div className="flex items-start space-x-3">
+                        {formData?.questions?.length && (
+                           <div
+                              className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm"
+                              style={{
+                                 backgroundColor: formData?.primaryColor || "#3B82F6",
+                              }}
+                           >
+                              {formData?.questions?.length + 1}
                            </div>
-                        </div>
-                     </div>
+                        )}
 
-                     <div className={"ml-0 sm:ml-11"}>
-                        <input
-                           type="email"
-                           placeholder="Escribe tu mail aquí (opcional)..."
-                           className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-md bg-white text-black text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                           value={respaldo}
-                           onChange={(e) => setRespaldo(e.target.value)}
-                        />
+                        <div className="flex-1 min-w-0">
+                           <h3 className="text-base sm:text-lg font-semibold text-black mb-1">
+                              Respaldo de información
+                           </h3>
+
+                           <label className="flex items-center space-x-3 cursor-pointer group mt-2">
+                              <div className="relative flex items-center">
+                                 <input
+                                    type="checkbox"
+                                    className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-300 bg-white checked:bg-blue-600 checked:border-blue-600 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                    checked={respaldo}
+                                    onChange={(e) => setRespaldo(e.target.checked)}
+                                 />
+                                 <Icon
+                                    name="Check"
+                                    size={14}
+                                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"
+                                    strokeWidth={3}
+                                 />
+                              </div>
+                              <span className="text-gray-700 text-sm sm:text-base group-hover:text-black transition-colors">
+                                 Enviar una copia de mis respuestas a <span className="font-semibold text-blue-600">{user.mail || mail || "mi correo"}</span>
+                              </span>
+                           </label>
+                        </div>
                      </div>
                   </div>
 
@@ -1155,7 +1159,7 @@ const FormPreview = ({ formData, openAsyncDialog }) => {
                               disabled={isSubmitting}
                               title="Cancelar y limpiar el formulario"
                            >
-                              Cancelar
+                              Limpiar Respuestas
                            </button>
 
                            <button
