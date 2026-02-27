@@ -327,6 +327,90 @@ async function registerCargoUpdateEvent(req, auth, currentCargoState = {}, newCa
 
 }
 
+// --- FORMULARIO ---
+
+async function registerFormCreationEvent(req, auth, formData = {}) {
+   const { title, section, status } = formData;
+   const metadata = { Formulario: { titulo: title, seccion: section, estado: status || 'borrador' } };
+   const descriptionBuilder = (actor) => `${formatActor(actor)} creó el formulario "${title}"`;
+   const payload = {
+      code: CODES.FORMULARIO_CREACION,
+      target: { type: TARGET_TYPES.FORMULARIO },
+   };
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
+async function registerFormUpdateEvent(req, auth, formData = {}) {
+   const { title, section } = formData;
+   const metadata = { Formulario: { titulo: title, seccion: section } };
+   const descriptionBuilder = (actor) => `${formatActor(actor)} modificó el formulario "${title}"`;
+   const payload = {
+      code: CODES.FORMULARIO_ACTUALIZACION,
+      target: { type: TARGET_TYPES.FORMULARIO },
+   };
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
+async function registerFormPublishEvent(req, auth, formData = {}) {
+   const { title, section } = formData;
+   const metadata = { Formulario: { titulo: title, seccion: section, estado: 'publicado' } };
+   const descriptionBuilder = (actor) => `${formatActor(actor)} publicó el formulario "${title}"`;
+   const payload = {
+      code: CODES.FORMULARIO_PUBLICACION,
+      target: { type: TARGET_TYPES.FORMULARIO },
+   };
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
+async function registerFormDeletionEvent(req, auth, formData = {}) {
+   const { title, section } = formData;
+   const metadata = { Formulario_eliminado: { titulo: title, seccion: section } };
+   const descriptionBuilder = (actor) => `${formatActor(actor)} eliminó el formulario "${title}"`;
+   const payload = {
+      code: CODES.FORMULARIO_ELIMINACION,
+      target: { type: TARGET_TYPES.FORMULARIO },
+   };
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
+// --- PLANTILLA ---
+
+async function registerPlantillaCreationEvent(req, auth, plantillaData = {}) {
+   const { documentTitle, formId } = plantillaData;
+   const nombre = documentTitle || 'sin nombre';
+   const metadata = { Plantilla: { nombre, formulario_id: formId } };
+   const descriptionBuilder = (actor) => `${formatActor(actor)} creó la plantilla "${nombre}"`;
+   const payload = {
+      code: CODES.PLANTILLA_CREACION,
+      target: { type: TARGET_TYPES.PLANTILLA },
+   };
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
+async function registerPlantillaUpdateEvent(req, auth, plantillaData = {}) {
+   const { documentTitle, formId } = plantillaData;
+   const nombre = documentTitle || 'sin nombre';
+   const metadata = { Plantilla: { nombre, formulario_id: formId } };
+   const descriptionBuilder = (actor) => `${formatActor(actor)} modificó la plantilla "${nombre}"`;
+   const payload = {
+      code: CODES.PLANTILLA_ACTUALIZACION,
+      target: { type: TARGET_TYPES.PLANTILLA },
+   };
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
+async function registerPlantillaDeletionEvent(req, auth, plantillaData = {}) {
+   const { documentTitle, formId } = plantillaData;
+   const nombre = documentTitle || 'sin nombre';
+   const metadata = { Plantilla_eliminada: { nombre, formulario_id: formId } };
+   const descriptionBuilder = (actor) => `${formatActor(actor)} eliminó la plantilla "${nombre}"`;
+   const payload = {
+      code: CODES.PLANTILLA_ELIMINACION,
+      target: { type: TARGET_TYPES.PLANTILLA },
+   };
+   await registerEvent(req, auth, payload, metadata, descriptionBuilder);
+}
+
 // codes
 const CODES = {
    SOLICITUD_CREACION: "SOLICITUD_CREACION",
@@ -343,6 +427,13 @@ const CODES = {
    EMPRESA_ELIMINACION: "EMPRESA_ELIMINACION",
    CARGO_CREACION: "CARGO_CREACION",
    CARGO_ACTUALIZACION: "CARGO_ACTUALIZACION",
+   FORMULARIO_CREACION: "FORMULARIO_CREACION",
+   FORMULARIO_ACTUALIZACION: "FORMULARIO_ACTUALIZACION",
+   FORMULARIO_PUBLICACION: "FORMULARIO_PUBLICACION",
+   FORMULARIO_ELIMINACION: "FORMULARIO_ELIMINACION",
+   PLANTILLA_CREACION: "PLANTILLA_CREACION",
+   PLANTILLA_ACTUALIZACION: "PLANTILLA_ACTUALIZACION",
+   PLANTILLA_ELIMINACION: "PLANTILLA_ELIMINACION",
 };
 
 // target types
@@ -352,6 +443,8 @@ const TARGET_TYPES = {
    USUARIO: "Usuario",
    EMPRESA: "Empresa",
    CARGO: "Cargo",
+   FORMULARIO: "Formulario",
+   PLANTILLA: "Plantilla",
 };
 
 module.exports = {
@@ -369,4 +462,11 @@ module.exports = {
    registerUserPasswordChange,
    registerCargoCreationEvent,
    registerCargoUpdateEvent,
+   registerFormCreationEvent,
+   registerFormUpdateEvent,
+   registerFormPublishEvent,
+   registerFormDeletionEvent,
+   registerPlantillaCreationEvent,
+   registerPlantillaUpdateEvent,
+   registerPlantillaDeletionEvent,
 };

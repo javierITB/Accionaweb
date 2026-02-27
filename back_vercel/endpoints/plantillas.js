@@ -2,6 +2,11 @@ const express = require("express");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
 const { validarToken } = require("../utils/validarToken.js");
+const {
+  registerPlantillaCreationEvent,
+  registerPlantillaUpdateEvent,
+  registerPlantillaDeletionEvent,
+} = require("../utils/registerEvent.js");
 
 const verifyRequest = async (req) => {
   let token = req.headers.authorization?.split(" ")[1];
@@ -56,6 +61,9 @@ router.post("/", async (req, res) => {
 
       res.status(201).json({ ...req.body, _id: newPlantillaId });
 
+      // Registrar evento de creación (async)
+      registerPlantillaCreationEvent(req, auth, { ...req.body, _id: newPlantillaId }).catch(console.error);
+
     } else {
       // 1. ACTUALIZACIÓN (PUT): Actualizar la plantilla existente
       result = await req.db.collection("plantillas").findOneAndUpdate(
@@ -72,6 +80,9 @@ router.post("/", async (req, res) => {
       if (!result) return res.status(404).json({ error: "Plantilla no encontrada" });
 
       res.status(200).json(result);
+
+      // Registrar evento de actualización (async)
+      registerPlantillaUpdateEvent(req, auth, req.body).catch(console.error);
     }
   } catch (err) {
     console.error("Error al crear/actualizar plantilla:", err);
@@ -149,6 +160,11 @@ router.delete("/:id", async (req, res) => {
     }
 
     res.status(200).json({ message: "Plantilla eliminada y desvinculada exitosamente" });
+
+    // Registrar evento de eliminación (async)
+    if (plantilla) {
+      registerPlantillaDeletionEvent(req, auth, plantilla).catch(console.error);
+    }
   } catch (err) {
     console.error("Error al eliminar plantilla:", err);
     res.status(500).json({ error: "Error al eliminar plantilla" });

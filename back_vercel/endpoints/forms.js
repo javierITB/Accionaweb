@@ -5,6 +5,12 @@ const { createBlindIndex } = require("../utils/seguridad.helper");
 
 // Importar TU función validarToken
 const { validarToken } = require("../utils/validarToken.js");
+const {
+  registerFormCreationEvent,
+  registerFormUpdateEvent,
+  registerFormPublishEvent,
+  registerFormDeletionEvent,
+} = require("../utils/registerEvent.js");
 
 // Helper para verificar token en cualquier request - SOLO CAMBIO DE MENSAJES
 const verifyRequest = async (req) => {
@@ -113,6 +119,10 @@ router.post("/", async (req, res) => {
         _id: result.insertedId,
         ...formData
       });
+
+      // Registrar evento de creación (async, no bloquea respuesta)
+      registerFormCreationEvent(req, tokenCheck, { ...formData, _id: result.insertedId }).catch(console.error);
+
     } else {
       // UPDATE
       result = await req.db.collection("forms").findOneAndUpdate(
@@ -126,6 +136,9 @@ router.post("/", async (req, res) => {
       }
 
       res.status(200).json(result.value || result);
+
+      // Registrar evento de actualización (async, no bloquea respuesta)
+      registerFormUpdateEvent(req, tokenCheck, formData).catch(console.error);
     }
 
   } catch (err) {
@@ -480,6 +493,9 @@ router.put("/:id", async (req, res) => {
 
     if (!result) return res.status(404).json({ error: "Not found" });
     res.json(result.value || result);
+
+    // Registrar evento de actualización (async)
+    registerFormUpdateEvent(req, tokenCheck, req.body).catch(console.error);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -523,6 +539,9 @@ router.put("/public/:id", async (req, res) => {
     }
 
     res.status(200).json(result.value);
+
+    // Registrar evento de publicación (async)
+    registerFormPublishEvent(req, tokenCheck, result.value).catch(console.error);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -538,6 +557,9 @@ router.delete("/:id", async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
+    // Obtener el formulario antes de eliminar para tener su info en el log
+    const formToDelete = await req.db.collection("forms").findOne({ _id: new ObjectId(req.params.id) });
+
     const result = await req.db
       .collection("forms")
       .deleteOne({ _id: new ObjectId(req.params.id) });
@@ -547,6 +569,11 @@ router.delete("/:id", async (req, res) => {
     }
 
     res.status(200).json({ message: "Deleted" });
+
+    // Registrar evento de eliminación (async)
+    if (formToDelete) {
+      registerFormDeletionEvent(req, tokenCheck, formToDelete).catch(console.error);
+    }
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
