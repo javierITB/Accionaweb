@@ -419,7 +419,7 @@ const TemplateList = ({ onUpdateFormData, permisos = {} }) => {
                                        )}
                                     </Button>
                                  )
-                           )}
+                              )}
                            </td>
 
                         </tr>

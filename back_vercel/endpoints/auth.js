@@ -1751,8 +1751,6 @@ router.post("/change-password", async (req, res) => {
    }
 });
 
-
-
 router.delete("/users/:id", async (req, res) => {
    try {
       const auth = await verifyRequest(req);
@@ -1886,6 +1884,110 @@ router.post("/set-password", async (req, res) => {
    }
 });
 
+router.get("/quick-actions/:mail", async (req, res) => {
+   try {      
+      const auth = await verifyRequest(req);
+      if (!auth.ok) {
+         return res.status(403).json({ error: auth.error });
+      }
+
+      const { createBlindIndex } = require("../utils/seguridad.helper");
+      const userEmail = req.params.mail.toLowerCase().trim();
+      const mailIndex = createBlindIndex(userEmail);
+
+      const user = await req.db.collection("usuarios").findOne(
+         { mail_index: mailIndex },
+         { projection: { quickActions: 1 } }
+      );
+
+      let actions = user?.quickActions || [];
+
+      // Ordenar por fecha de uso (descendente) y luego por cantidad de usos
+      actions.sort((a, b) => {
+         const dateA = new Date(a.lastUsed || 0);
+         const dateB = new Date(b.lastUsed || 0);
+         if (dateB - dateA !== 0) return dateB - dateA;
+         return (b.usageCount || 0) - (a.usageCount || 0);
+      });
+
+      res.json({
+         success: true,
+         quickActions: actions,
+      });
+
+   } catch (err) {
+      console.error("Error al obtener quick actions:", err);
+      res.status(500).json({ error: "Error al obtener quick actions" });
+   }
+});
+
+router.post("/quick-actions", async (req, res) => {
+   try {
+      const auth = await verifyRequest(req);
+      if (!auth.ok) {
+         return res.status(403).json({ error: auth.error });
+      }
+
+      const { createBlindIndex } = require("../utils/seguridad.helper");
+      const { form, mail } = req.body; // Recibe el objeto formulario y el mail
+
+      if (!form || !form.formId) {
+         return res.status(400).json({ error: "Datos de formulario incompletos" });
+      }
+
+      const userEmail = mail.toLowerCase().trim();
+      const mailIndex = createBlindIndex(userEmail);
+      const now = new Date();
+
+      // Buscamos si el formulario ya existe en las acciones del usuario
+      const user = await req.db.collection("usuarios").findOne({ mail_index: mailIndex });
+      
+      if (!user) {
+         return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+
+      const existingActions = user.quickActions || [];
+      const actionIndex = existingActions.findIndex(a => a.formId === form.formId);
+
+      if (actionIndex !== -1) {
+         // CASO 1: El formulario ya existe, actualizamos estadísticas
+         await req.db.collection("usuarios").updateOne(
+            { mail_index: mailIndex, "quickActions.formId": form.formId },
+            { 
+               $inc: { "quickActions.$.usageCount": 1 },
+               $set: { "quickActions.$.lastUsed": now }
+            }
+         );
+      } else {
+         // CASO 2: Es un nuevo acceso directo
+         const newAction = {
+            formId: form.formId,
+            nombre: form.nombre,
+            logo: form.logo,
+            color: form.color,
+            descripcion: form.descripcion,
+            usageCount: 1,
+            lastUsed: now
+         };
+
+         await req.db.collection("usuarios").updateOne(
+            { mail_index: mailIndex },
+            { $push: { quickActions: newAction } }
+         );
+      }
+
+      res.json({
+         success: true,
+         message: "Acción rápida registrada con éxito"
+      });
+
+   } catch (err) {
+      console.error("Error al actualizar quick actions:", err);
+      res.status(500).json({ error: "Error al actualizar quick actions" });
+   }
+});
+
+
 /**
  * @openapi
  * /auth/empresas/todas:
@@ -1901,7 +2003,11 @@ router.post("/set-password", async (req, res) => {
  */
 router.get("/empresas/todas", async (req, res) => {
    try {
-      await verifyRequest(req);
+      const auth = await verifyRequest(req);
+      if (!auth.ok) {
+         return res.status(403).json({ error: auth.error });
+      }
+
       const empresas = await req.db.collection("empresas").find().toArray();
 
       const empresasDescifradas = empresas.map((emp) => {
